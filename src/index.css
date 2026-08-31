@@ -1,0 +1,881 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS — CRED light canvas, skeuomorphic surfaces
+
+   The reference is CRED's current home: a warm neutral page, white cards
+   floating on it with soft elevation, generous corner radii, one dark bar at
+   the bottom, and colour arriving only through promo banners.
+
+   Two rules carry it:
+     1. The page is never white and the ink is never pure black. #f1efec and
+        #0f0e0e each hold the faintest warm cast — a true #fff/#000 pairing is
+        what makes a light UI look like a default stylesheet.
+     2. Depth is a soft shadow plus a radius, not a border. Borders are the
+        fallback for surfaces that sit ON another surface, where a shadow has
+        nothing to cast onto.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #f1efec; /* page — warm neutral, the canvas cards sit on   */
+  --surface: #ffffff; /* card                                           */
+  --surface-2: #f7f5f2; /* a block inside a card: inputs, inner tiles      */
+  --stroke: rgba(15, 14, 14, 0.07); /* hairline on a raised surface     */
+  --rule: #e4e0da; /* divider on the page itself                     */
+
+  /* Ink. The base is near-black; the GREY comes from the gradient every ink
+     surface is filled with, not from lightening the token. A flat mid-grey
+     reads as paint — a near-black graded up to #2a2a2d at its lit edge reads
+     as a dark material with light falling on it. */
+  --ink: #0e0e10;
+  --ink-2: #1a1a1d; /* one step up, for a block sitting on the ink   */
+  --ink-lit: #232327; /* the top of an ink gradient, where light lands */
+
+  /* Skeuomorphic light. One source, directly above, for the whole app: a
+     raised surface takes a hairline of it on the TOP edge and drops its
+     shadow downward; a recessed one is shaded at the top and lit at the
+     bottom. Every rule below is one of those two, and mixing them is what
+     makes soft-UI look muddy rather than physical. */
+  --hi: rgba(255, 255, 255, 0.9); /* highlight on a light surface  */
+  --hi-ink: rgba(255, 255, 255, 0.12); /* highlight on a dark one  */
+  --lo: rgba(14, 14, 16, 0.1); /* the shade under a lip            */
+
+  --text: #0f0e0e; /* 17.2:1 on the canvas                           */
+  --text-2: #4e4a46; /*  8.1:1 — body                                  */
+  --text-3: #6b665f; /*  5.1:1 — the floor for anything readable       */
+  --text-4: #a5a09a; /*  2.6:1 — NON-TEXT ONLY: ticks, rules, spokes   */
+
+  /* The single voltage. Gold keeps the astrology identity, but a light canvas
+     needs two of it: one dark enough to read as text, one bright enough to
+     read as a fill. Using the bright one for text is the classic light-theme
+     contrast failure. */
+  /* Gold, not yellow. #e3a63c sat close to amber; pulling the hue warmer and
+     dropping the lightness a step reads as metal rather than highlighter.
+
+     Deepening --gold also fixed a contrast bug it did not set out to: the old
+     #97670f was annotated "4.9:1", which was its ratio against a white CARD.
+     Against the canvas it was 4.29:1 — under AA — and gold text appears on
+     both. Measure the tighter surface, and say which one you measured. */
+  --gold: #8f6210; /* text/borders — 4.7:1 on canvas, 5.4:1 on a card */
+  --gold-fill: #d29a2b; /* backgrounds only — ink on it is 7.7:1        */
+  --gold-dim: #6f4a0c;
+  --gold-wash: rgba(210, 154, 43, 0.18);
+
+  /* Status, darkened for a light background. */
+  --live: #cf3a25;
+  --ok: #0b8b50;
+
+  --sp: 8px;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: theme('fontFamily.sans');
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    /* Safe area insets: respect status bar and notches on mobile */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top);
+    /* No padding-bottom: navbar is fixed-positioned, not a flex sibling */
+  }
+
+  main {
+    /* Account for fixed navbar at bottom (calc navbar height + safe area) */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+
+  /* Everything that is not explicitly a rectangle gets the house radius. The
+     previous build enforced the opposite with `border-radius: 0 !important`,
+     which is the single reason the layout could never read as CRED. */
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+  }
+
+  .is-round {
+    border-radius: 9999px;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* ── Type roles ───────────────────────────────────────────────────────── */
+
+  .label {
+    @apply text-label uppercase tracking-label text-t2;
+  }
+
+  .label-c {
+    @apply label text-center;
+  }
+
+  .horoscope {
+    @apply text-read text-center mx-auto max-w-measure;
+    color: var(--text);
+  }
+
+  .prose-c {
+    @apply text-body text-center mx-auto max-w-prose2 text-t2;
+  }
+
+  /* Figures. Same family as everything else — CRED sets ₹50 in the interface
+     sans, not in a mono. All this does is lock the digits to one width so a
+     price or a count does not jitter as it changes. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* A display heading is this family at 800 with the tracking pulled in. The
+     Tailwind `font-display` utility only sets the family, so the weight and
+     tracking that actually make it a headline live here. */
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+
+  /* CAPS — every label, tag, kicker and button string. */
+  .caps {
+    @apply uppercase;
+    font-size: 11px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .caps-sm {
+    @apply uppercase;
+    font-size: 10px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  /* The hierarchy ladder. On a light canvas these are ink at four opacities —
+     the same mechanic as the dark build, inverted. */
+  .t-heading {
+    color: rgba(15, 14, 14, 0.95);
+  }
+  .t-sub {
+    color: rgba(15, 14, 14, 0.74);
+  }
+  .t-body {
+    color: rgba(15, 14, 14, 0.6);
+  }
+  .t-faint {
+    color: rgba(15, 14, 14, 0.45);
+  }
+  .gold {
+    color: var(--gold);
+  }
+
+  /* Ladder for text sitting ON the ink (bottom bar, dark CTAs, banners). */
+  .on-ink {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  .on-ink-sub {
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .on-ink-faint {
+    color: rgba(255, 255, 255, 0.48);
+  }
+
+  /* ── Structure ────────────────────────────────────────────────────────── */
+
+  .section {
+    padding: calc(var(--sp) * 4) calc(var(--sp) * 2.5);
+  }
+
+  .section-tight {
+    padding: calc(var(--sp) * 2.5) calc(var(--sp) * 2.5);
+  }
+
+  .rule-b {
+    border-bottom: 1px solid var(--rule);
+  }
+  .rule-t {
+    border-top: 1px solid var(--rule);
+  }
+
+  .rule-stub {
+    width: 24px;
+    height: 1px;
+    background: var(--rule);
+    margin: 0 auto;
+  }
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────────
+     Every raised surface is the same three things: a gradient running light
+     at the top to slightly darker at the bottom, a 1px specular highlight
+     along the top edge, and a soft shadow beneath. That is the entire
+     skeuomorphic grammar — the restraint is in how small each value is. The
+     gradient is a 3% delta, not a 30% one. */
+
+  .pop-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f6f3 100%);
+    border: 1px solid var(--stroke);
+    border-radius: 20px;
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
+      0 6px 16px -8px rgba(15, 14, 14, 0.12);
+  }
+
+  /* One tile per screen — the object the screen is actually about. */
+  .pop-raised {
+    background: linear-gradient(180deg, #ffffff 0%, #f6f4f0 100%);
+    border: 1px solid var(--stroke);
+    border-radius: 24px;
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(15, 14, 14, 0.05),
+      0 16px 32px -12px rgba(15, 14, 14, 0.18);
+  }
+
+  /* Cards that navigate somewhere lift on hover and settle on press. The
+     shadow grows with the travel, so the two read as one movement. */
+  .pop-tap {
+    transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease;
+  }
+  .pop-tap:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 0 1px 0 var(--hi), 0 4px 8px rgba(15, 14, 14, 0.06),
+      0 20px 36px -14px rgba(15, 14, 14, 0.22);
+  }
+  /* Pressed, the card sits INTO the page: the highlight moves off the top
+     edge and a shade appears there instead. */
+  .pop-tap:active {
+    transform: translateY(1px) scale(0.995);
+    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.1), 0 1px 2px rgba(15, 14, 14, 0.05);
+  }
+
+  /* A well. The inverse of a card — shaded at the top, lit along the bottom
+     lip, no drop shadow. Inputs, tracks, image mounts and the quiet half of
+     a split all sit in one of these. */
+  .pop-inset {
+    background: linear-gradient(180deg, #efece8 0%, #f7f5f2 100%);
+    border-radius: 14px;
+    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.07), inset 0 -1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  /* ── Buttons ──────────────────────────────────────────────────────────────
+     Default is the dark one: ink fill, white caps. That is where the "black
+     primary" lives on a light canvas. Gold is the voltage CTA, one per screen.
+     Ghost is the quiet third. All three press the same way. */
+
+  .pop-btn {
+    @apply inline-flex items-center justify-center whitespace-nowrap text-center;
+    padding: calc(var(--sp) * 1.5) calc(var(--sp) * 2.5);
+    border: 1px solid #08080a;
+    border-radius: 12px;
+    /* Lit at the top, near-black at the bottom. This gradient is the whole
+       reason the ink reads as grey without the token being grey. */
+    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 2px rgba(15, 14, 14, 0.14),
+      0 6px 14px -6px rgba(15, 14, 14, 0.32);
+    transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.12s ease,
+      filter 0.12s ease;
+  }
+  .pop-btn:hover {
+    filter: brightness(1.15);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 2px 4px rgba(15, 14, 14, 0.14),
+      0 10px 20px -8px rgba(15, 14, 14, 0.36);
+  }
+  /* Pressed. The gradient flips, the top highlight is replaced by a shade,
+     and the drop shadow collapses — the face is now below the surface it was
+     sitting on. Nothing here is a colour change; it is all light direction. */
+  .pop-btn:active {
+    transform: translateY(1px);
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .pop-btn-sm {
+    padding: calc(var(--sp) * 1) calc(var(--sp) * 1.75);
+    border-radius: 10px;
+    font-size: 10px;
+  }
+
+  .pop-btn-gold {
+    background: linear-gradient(180deg, #e8b64a 0%, #c68c1c 100%);
+    border-color: #96690c;
+    color: #1a1204;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 2px rgba(111, 74, 12, 0.26),
+      0 8px 18px -8px rgba(111, 74, 12, 0.52);
+  }
+  .pop-btn-gold:hover {
+    filter: brightness(1.07);
+  }
+  .pop-btn-gold:active {
+    background: linear-gradient(180deg, #b57d16 0%, #d9a336 100%);
+    box-shadow: inset 0 2px 5px rgba(72, 48, 5, 0.52), inset 0 -1px 0 rgba(255, 255, 255, 0.26);
+  }
+
+  /* Quiet — a white pill on the canvas. CRED uses this shape for everything
+     that is a choice rather than a commitment. */
+  .pop-btn-ghost {
+    background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
+    border-color: rgba(15, 14, 14, 0.12);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
+      0 4px 10px -6px rgba(15, 14, 14, 0.12);
+  }
+  .pop-btn-ghost:hover {
+    filter: none;
+    border-color: rgba(15, 14, 14, 0.2);
+  }
+  .pop-btn-ghost:active {
+    background: linear-gradient(180deg, #eae6e1 0%, #f6f4f1 100%);
+    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Disabled sits flush with the page — no gradient, no lip, nothing to press. */
+  .pop-btn[disabled] {
+    background: var(--surface-2);
+    border-color: var(--stroke);
+    color: var(--text-4);
+    box-shadow: none;
+    transform: none;
+    filter: none;
+    cursor: not-allowed;
+  }
+
+  /* ── Chrome ───────────────────────────────────────────────────────────────
+     The top bar is cut from the same ink as the tab bar and rounds the
+     opposite way, so the screen is held between two slabs instead of trailing
+     off at the top. That bracket is what makes the layout read as finished
+     rather than as a feed that happens to stop. */
+
+  /* The two bars are no longer the same material, and that is the point. The
+     tab bar is the slab of ink that anchors the screen; the top bar is a white
+     surface continuous with the page — the same card stock as everything
+     scrolling under it, just fixed. Only the bottom carries weight now.
+
+     Because it is a light surface it needs NO scoped text overrides: the
+     normal ink ladder, the normal pills and the normal avatar all read
+     correctly on it, which is a whole block of CSS that stops existing. */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex: none;
+    background: linear-gradient(180deg, #ffffff 0%, #faf8f5 100%);
+    border-bottom: 1px solid var(--rule);
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(15, 14, 14, 0.04),
+      0 8px 20px -14px rgba(15, 14, 14, 0.16);
+  }
+
+  /* ── Glass ────────────────────────────────────────────────────────────────
+     Frosting goes on chrome and nothing else. The two bars and the side
+     panels genuinely sit over scrolling content, so there is something real
+     behind them to refract; a translucent CARD on a flat canvas has nothing
+     to blur and just reads as a weaker card.
+
+     Every rule below is opaque by default and only goes translucent inside
+     the @supports guard. Without `backdrop-filter` the transparency alone
+     would leave body text legible straight through the bar — the failure
+     mode is unreadable chrome, so the fallback has to be the solid fill. */
+
+  /* The two bars frost themselves — no extra class at the call site. Six
+     screens hand-roll their own <header>, and any rule that needs remembering
+     on each of them is a rule that will be missed on the seventh. */
+  .glass-panel {
+    background: var(--surface);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.68);
+      -webkit-backdrop-filter: blur(34px) saturate(190%);
+      backdrop-filter: blur(34px) saturate(190%);
+    }
+    /* A hairline of light along the frosted edge — it is what separates a
+       pane of glass from a flat wash of colour. Set as a border rather than an
+       inset shadow so it does not clobber the drop shadows these elements
+       already carry. */
+    .navbar {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .topbar {
+      background-color: rgba(255, 255, 255, 0.82);
+      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(250, 248, 245, 0.7) 100%);
+      -webkit-backdrop-filter: blur(30px) saturate(190%);
+      backdrop-filter: blur(30px) saturate(190%);
+    }
+  }
+
+  /* The tab bar. Fixed at bottom with safe area insets, not in flex layout. */
+  .navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    box-shadow: 0 -2px 6px rgba(15, 14, 14, 0.06), 0 -12px 28px -12px rgba(15, 14, 14, 0.22);
+  }
+
+  /* ── The bar material ─────────────────────────────────────────────────────
+     BOTH bars, in one place, declared AFTER both rule blocks above. They were
+     previously set separately: `.navbar` happened to land after the @supports
+     override and stayed opaque, `.topbar` landed before it and went
+     translucent. Same intent, opposite results, and the top bar washed out to
+     grey while the bottom stayed near-black. One declaration, no ordering to
+     get wrong again. */
+  .navbar {
+    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .navbar {
+      /* 0.9, not 0.72. The bars have to read as near-black slabs first and
+         glass second — at 0.72 a bar with nothing dark behind it composites
+         to mid-grey, which is exactly the wash this was fixing. The frosting
+         is still there; it is just no longer the loudest thing about it. */
+      background-color: rgba(14, 14, 16, 0.9);
+      background-image: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0) 45%,
+        rgba(0, 0, 0, 0.18) 100%
+      );
+      -webkit-backdrop-filter: blur(30px) saturate(190%);
+      backdrop-filter: blur(30px) saturate(190%);
+    }
+  }
+
+  /* Controls inside the ink adapt automatically — a white pill up there would
+     shout louder than anything on the page below it. */
+  /* Glyphs on the tab bar sit IN the ink: a hard black drop under the stroke,
+     the same trick as engraved markings on a physical remote. On the white
+     top bar the equivalent is a soft drop that lifts the glyph off the
+     surface instead — same intent, opposite direction of light. */
+  .navbar svg {
+    filter: drop-shadow(0 1px 0.5px rgba(0, 0, 0, 0.75));
+  }
+  .topbar svg {
+    filter: drop-shadow(0 1px 1px rgba(15, 14, 14, 0.16));
+  }
+
+  /* A knob is a pill with no text in it. It needs no colours of its own —
+     it inherits the light pill treatment wherever it sits. */
+  .pill.knob {
+    padding: 0;
+  }
+
+  /* ── Sub-nav ──────────────────────────────────────────────────────────────
+     A second bar, for a section that has modes rather than pages. It sticks to
+     the bottom of the SCROLLER, which puts it directly above the tab bar —
+     rendering it in the shell instead would mean the shell knowing which
+     screens have modes.
+
+     Lighter than `.navbar` on purpose: this is a level below the tab bar and
+     must not compete with it. Surface, not ink. */
+  .subnav {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    margin: 0 12px 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--stroke);
+    background: linear-gradient(180deg, #ffffff 0%, #f5f2ef 100%);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 6px rgba(15, 14, 14, 0.06),
+      0 12px 24px -10px rgba(15, 14, 14, 0.22);
+  }
+  .subnav-item {
+    @apply flex flex-1 flex-col items-center justify-center gap-1 caps-sm;
+    padding: 8px 0 7px;
+    border-radius: 9999px;
+    color: var(--text-3);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  /* Selected is the raised thumb, the same grammar as `.seg-item`. */
+  .subnav-item[aria-selected='true'] {
+    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 3px rgba(15, 14, 14, 0.3);
+  }
+
+  /* ── Pills ────────────────────────────────────────────────────────────────
+     The filter row, the category chips, the "explore" row. Fully rounded,
+     white on the canvas, and they carry the same soft lift as a card. */
+
+  .pill {
+    @apply inline-flex flex-none items-center gap-2 whitespace-nowrap;
+    padding: calc(var(--sp) * 1.25) calc(var(--sp) * 2);
+    border-radius: 9999px;
+    border: 1px solid rgba(15, 14, 14, 0.1);
+    background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
+    color: var(--text-2);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
+      0 3px 8px -5px rgba(15, 14, 14, 0.14);
+    transition: transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.16s ease,
+      background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  }
+  .pill:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(15, 14, 14, 0.06),
+      0 8px 16px -8px rgba(15, 14, 14, 0.2);
+  }
+  .pill:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.14);
+  }
+  /* Selected reads as ink, not as a tint — a tinted pill on a warm canvas is
+     too close to the unselected one to survive a glance. */
+  /* Selected is a pressed switch, not a recoloured chip — it stays down. */
+  .pill[aria-pressed='true'],
+  .pill[data-active='true'] {
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    border-color: #08080a;
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  /* Right-edge fade for a pill/chip row that can overflow — signals there is
+     more to scroll to without needing a visible scrollbar. Fades to `--bg`
+     since this sits directly on the page canvas, not a card. */
+  .scroll-fade {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(90deg, rgba(241, 239, 236, 0), var(--bg));
+    pointer-events: none;
+  }
+
+  /* ── Banners ──────────────────────────────────────────────────────────────
+     The colour in this app arrives here and nowhere else: a gradient block,
+     rounded, with a headline and one CTA. They scroll horizontally and snap,
+     so three fit above the fold with the next one peeking. */
+
+  .rail {
+    @apply no-scrollbar flex overflow-x-auto;
+    scroll-snap-type: x mandatory;
+  }
+  .rail > * {
+    scroll-snap-align: center;
+    flex: none;
+  }
+
+  .banner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(15, 14, 14, 0.1), 0 14px 30px -14px rgba(15, 14, 14, 0.4);
+    transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease;
+  }
+  .banner:active {
+    transform: scale(0.985);
+  }
+
+  /* One sheen pass across the gradient, on a long loop. The only ambient
+     motion in the app besides the live dot. */
+  .sheen {
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    width: 40%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  }
+
+  /* ── Circular action tiles ────────────────────────────────────────────────
+     CRED's "for you" row: a circle, an icon, a two-line label underneath. */
+
+  .tile {
+    @apply flex flex-col items-center gap-2 text-center;
+  }
+  .tile-face {
+    @apply flex items-center justify-center;
+    width: 58px;
+    height: 58px;
+    border-radius: 9999px;
+    /* 145deg, not 180 — a sphere catches light off-axis, a slab does not. */
+    background: linear-gradient(145deg, #ffffff 0%, #eeebe6 100%);
+    border: 1px solid rgba(15, 14, 14, 0.08);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
+      0 6px 14px -8px rgba(15, 14, 14, 0.18);
+    transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.18s ease;
+  }
+  .tile:hover .tile-face {
+    transform: translateY(-3px);
+    box-shadow: 0 3px 6px rgba(15, 14, 14, 0.05), 0 14px 24px -10px rgba(15, 14, 14, 0.24);
+  }
+  .tile:active .tile-face {
+    transform: translateY(1px) scale(0.96);
+    background: linear-gradient(145deg, #eae7e2 0%, #f7f5f2 100%);
+    box-shadow: inset 0 2px 5px rgba(15, 14, 14, 0.14);
+  }
+
+  /* Selected tile. Pressed in, the same grammar as a selected pill — the
+     circle stays a circle, it just stops being raised. */
+  .tile-face-on {
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    border-color: #08080a;
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  /* A prop resting on the shrine — the mandir's offering rail, its murti and
+     sangeet knobs. These sit directly on a painting, which is why they cannot
+     borrow `.tile-face`: a near-white disc vanishes on a pale oleograph and a
+     flat one looks pasted on. Smoked glass carries the same light-from-above
+     grammar and reads on every murti in the set, dark or bright. */
+  .plinth {
+    @apply flex h-11 w-11 items-center justify-center rounded-full;
+    color: #f7ecd4;
+    background: linear-gradient(160deg, rgba(40, 32, 21, 0.7) 0%, rgba(19, 15, 10, 0.82) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 7px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(3px);
+    transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.18s ease;
+  }
+  .plinth:active {
+    transform: scale(0.94);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+  /* Lit. Gold fill rather than the ink one a pressed tile uses — the rail is
+     already dark, so pressing in has to go brighter to register. */
+  .plinth-on {
+    color: var(--ink);
+    background: linear-gradient(160deg, #f4dc93 0%, #d8ac3e 100%);
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 9px rgba(201, 162, 39, 0.5);
+  }
+
+  /* ── Rows ─────────────────────────────────────────────────────────────── */
+
+  .act-row {
+    @apply flex w-full items-center justify-between gap-4 text-left;
+    padding: calc(var(--sp) * 2) calc(var(--sp) * 1.5);
+    margin-inline: calc(var(--sp) * -1.5);
+    width: calc(100% + var(--sp) * 3);
+    border-radius: 14px;
+    transition: background-color 0.18s ease, transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .act-row:hover {
+    background: var(--surface);
+    transform: translateX(3px);
+  }
+  .act-row::after {
+    content: '→';
+    color: var(--text-3);
+    font-size: 13px;
+    line-height: 1;
+    flex: none;
+    transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), color 0.18s ease;
+  }
+  .act-row:hover::after {
+    color: var(--gold);
+    transform: translateX(4px);
+  }
+
+  .act-link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  /* ── Segmented control ────────────────────────────────────────────────── */
+
+  .seg {
+    @apply flex items-stretch gap-1;
+    padding: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, #e9e6e1 0%, #f4f2ee 100%);
+    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .seg-item {
+    @apply flex-1 text-center caps-sm;
+    padding: calc(var(--sp) * 1.25) 0;
+    border-radius: 9999px;
+    color: var(--text-3);
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  /* The thumb is the one thing in the track that is raised. */
+  .seg-item[aria-selected='true'],
+  .seg-item[data-active='true'] {
+    background: linear-gradient(180deg, #ffffff 0%, #f6f4f1 100%);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(15, 14, 14, 0.08),
+      0 3px 8px -4px rgba(15, 14, 14, 0.2);
+  }
+
+  /* ── Imagery ──────────────────────────────────────────────────────────────
+     Texture is generated: fractal-noise grain over engraved SVG line art. On a
+     light canvas the engraving reads as ink on paper, which is the register
+     the rest of the type is already in. */
+
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.1;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Two steps down from the card, not one. At `--surface-2` the engraving sat
+     on a near-white ground and the artwork disappeared into the card behind
+     it; media has to hold its own edge without needing a border. */
+  /* A plate is mounted into its card rather than laid on top — recessed, so
+     the artwork reads as something set behind glass. */
+  .plate {
+    @apply relative overflow-hidden;
+    background: linear-gradient(180deg, #e4e0da 0%, #edeae5 100%);
+    border-radius: 16px;
+    box-shadow: inset 0 2px 5px rgba(15, 14, 14, 0.11), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  /* Greyscale belongs to the ARTWORK, not the container — while the filter sat
+     on `.plate` it also desaturated the badges overlaid on top. */
+  .plate > svg {
+    filter: grayscale(1) contrast(1.05);
+  }
+
+  /* ── Badges & meters ──────────────────────────────────────────────────── */
+
+  .badge-live {
+    @apply caps-sm inline-flex items-center gap-1.5;
+    background: var(--live);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 9999px;
+  }
+
+  .tick {
+    height: 4px;
+    flex: 1;
+    border-radius: 9999px;
+    background: #e2ded8;
+    box-shadow: inset 0 1px 2px rgba(15, 14, 14, 0.16);
+    transition: background 0.3s ease;
+  }
+  .tick-on {
+    background: linear-gradient(180deg, #e8b64a 0%, #c68c1c 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  /* ── Entrance ─────────────────────────────────────────────────────────────
+     Every screen deals its top-level blocks in, 50ms apart. The stagger is
+     what makes a layout feel assembled rather than painted; it is capped at
+     eight so a long screen does not sit waiting on itself. */
+
+  .deal > * {
+    animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  .deal > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .deal > *:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .deal > *:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .deal > *:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .deal > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .deal > *:nth-child(6) {
+    animation-delay: 250ms;
+  }
+  .deal > *:nth-child(7) {
+    animation-delay: 300ms;
+  }
+  .deal > *:nth-child(n + 8) {
+    animation-delay: 350ms;
+  }
+  /* A transform on a sticky element makes it a containing block and the bar
+     comes unstuck, so the header fades only. */
+  .deal > header,
+  .deal > .subnav {
+    animation: fade 0.3s ease-out both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Frosting is decoration, and some people have asked the OS to stop showing it
+   — usually because translucency makes text harder to hold on to. Honour that
+   and go back to the solid fills. */
+@media (prefers-reduced-transparency: reduce) {
+  .navbar {
+    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .topbar {
+    background: linear-gradient(180deg, #ffffff 0%, #faf8f5 100%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-panel {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Restraint is the brand — and a hard requirement for anyone who asked the
+   OS to stop moving things. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

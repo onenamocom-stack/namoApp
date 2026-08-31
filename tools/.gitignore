@@ -1,0 +1,13 @@
+# Working files for the deity-art scripts. `raw/` is 64 MB of downloads and
+# `cand/` 38 MB of contact-sheet thumbnails — both re-fetch on demand.
+#
+# The candidate JSON is NOT ignored, deliberately: PICKS in
+# deity-art-process.py indexes into those files by position, and Commons
+# search results drift, so without them the indices point at different
+# paintings and the pipeline is no longer reproducible.
+raw/
+cand/*.jpg
+cand/*.png
+deity-meta.json
+preview-*.jpg
+chart-preview.html

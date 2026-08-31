@@ -1,0 +1,26 @@
+node_modules
+dist
+.DS_Store
+*.local
+.vite
+
+# Claude Code scratch worktrees. Throwaway checkouts, not work.
+.claude/
+
+# A 157 MB copy of the raw Bhaktamar scans landed in the repo root. The deck
+# ships from public/cards/ as 48 webps; these are the originals and have no
+# business in git. Ignored rather than deleted — they are not ours to remove.
+Bhaktambar Guidance Card/
+
+# Scratch bundle dir for rendering components to static SVG without a browser
+# (see the chart section of docs/HANDOFF.md). Regenerated on demand.
+.render/
+
+# Credential files that have landed in the repo root by accident — a Supabase
+# service-role key and the Razorpay keys, both one `git add -A` away from a
+# public repo that publishes to GitHub Pages. This net is a backstop, not a
+# home: nothing holding a credential belongs in the working tree at all. Move
+# it outside, and keep secrets in the three stores INSTRUCTIONS.md §3 names.
+*key*.txt
+*key*.csv
+*.pem
