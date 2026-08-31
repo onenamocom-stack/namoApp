@@ -13,7 +13,8 @@ Updated 30 Aug 2026.
 | 3 · payments in | **Built and deployed. One done-condition short**, blocked on Razorpay's website review. The site is now on `1namo.com` (the move Razorpay's review wanted — §6); registering that domain and its policy pages with Razorpay is the remaining step. Until it clears, live checkout is refused and **production wallets cannot be funded** |
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
-| **6 · metered chat** | **Next, and roughly twice its planned size** — chat is per-minute, so the meter moves here from phase 11 (§3) |
+| **6 · metered chat** | **Built and walked on dev.** The meter, sessions, threads and messages. Production has none of it yet (§2) |
+| 7 · charts | Next |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -73,6 +74,7 @@ touched, in the **dev** SQL editor.
 | `006_payments_check.sql` | payments: idempotency, a failure leaving no ledger row |
 | `009_slots_check.sql` | consultants: slots on all seven weekdays, approval, bands, grants |
 | `012_bookings_transaction_check.sql` | bookings: the transaction, the refusals, the reversing credit, both books append-only, the new policies |
+| `014_metered_chat_check.sql` | chat: the hold, the round-up, the cutoff, the sweeper, and the live-session gate on messages |
 
 **Passing looks like a failure:** `ERROR: PHASE 2 CHECKS PASSED`, and the same
 shape from the other three. Each raises on its last line to roll back every row it
@@ -228,6 +230,9 @@ thing that ran it — keep the two in step by hand.
 | `011_round_price_bands.sql` | derived band prices to whole rupees; restores the six the PRD names |
 | `012_bookings_transaction.sql` | `orders`, `order_items`, `earnings_ledger`, `book_session()`, `booking_reverse()` and the decline trigger. On both projects |
 | `013_booking_review_fixes.sql` | Four defects found by review of 012. On both projects |
+| `014_metered_chat.sql` | `sessions`, `threads`, `messages`, the meter, the sweeper, `threads_view`. **Dev only** |
+| `015_realtime_publication.sql` | Publishes `messages` and `sessions` to Realtime. **Dev only** |
+| `016_thread_preview.sql` | Keeps `threads.last_preview` in step, by trigger. **Dev only** |
 
 **Four `_check.sql` files sit beside them and are tests, not migrations.**
 `003_wallets_ledger_check`, `006_payments_check`, `009_slots_check`,
@@ -513,6 +518,77 @@ exists (`booking_reverse(booking, 'no answer')`). What is missing is a deadline,
 and that is a product decision: too short and a consultant loses bookings to a
 slow morning, too long and a seeker's money is held for a week. Logged in
 `01-PRD.md` §5.4 and in §4 below.
+
+### Phase 6 — metered chat
+
+**Built and walked on DEV. Production has none of it.** Three migrations:
+`014_metered_chat.sql`, `015_realtime_publication.sql`, `016_thread_preview.sql`,
+plus `014_metered_chat_check.sql` beside them — eleven assertions, all relative,
+all passing.
+
+Chat is per-minute and live, so this phase is the meter as much as it is chat.
+Phase 11 inherits both.
+
+- **Hold and settle, not a debit per minute.** Accept locks the wallet, works
+  out the affordable minutes, takes the WHOLE hold and stamps `expires_at`. End
+  works out the real duration from the server's timestamps and credits back
+  what was not used. **Two ledger rows per session, not fifty.** The wallet
+  cannot go negative because the money is already gone, and the cutoff is a
+  timestamp rather than a countdown — a paused tab, a dead heartbeat or a lying
+  clock cannot buy a free minute.
+- **Asking costs nothing.** `session_request` moves no money; the clock starts
+  on the consultant's *accept*. A consultant who never answers has cost the
+  seeker nothing, which is the opposite of a booking — that charges up front
+  because it claims a slot somebody else wanted.
+- **Earnings are written at the END**, not at accept, because until the
+  conversation stops nobody knows what was used.
+- **The sweeper is not optional.** `session_sweep()` runs every minute under
+  `pg_cron` (`jobid 1`) and settles anything past `expires_at` or silent for
+  60 seconds. Without it an abandoned session holds the seeker's money forever
+  and nothing notices — the silent shape this project already paid for once.
+- **Messages are gated on a live session** by the INSERT policy, so outside a
+  paid window the transcript is read-only. That is what stops chat being free
+  to anyone who never presses End.
+- Four constants, named once in the functions: 60s grace, round UP with a
+  one-minute minimum, a 30-minute hold cap, accept-before-clock.
+
+**Walked end to end on dev, both sides:** seeker asked from `/consult/:id`,
+consultant saw the request in `/pro/consult` with the rate on the row and
+joined, the meter ran at ₹75/min, messages went both ways, and ending settled:
+
+| | |
+|---|---|
+| Real duration | 2.80 min |
+| Billed | **3** — rounded up |
+| Charged | ₹225 at ₹75/min |
+| Hold, then refund | ₹2,250 held (the cap), ₹2,025 back |
+| Earnings | gross ₹225, fee ₹40.50, net ₹184.50 |
+| Ledger rows | two |
+
+**Two defects the walk found that the build and the check both missed:**
+
+- **Realtime was delivering nothing at all.** Supabase ships an EMPTY
+  `supabase_realtime` publication, and a `postgres_changes` subscription
+  against an unpublished table connects, reports itself SUBSCRIBED, and pushes
+  nothing. No error anywhere: the row lands, the policy is fine, and the other
+  person simply never sees the message. `015` publishes `messages` and
+  `sessions`. **A table is not published because it exists.**
+- **`threads.last_preview` and `last_message_at` were columns nothing wrote**, so
+  every thread read "No messages yet." over a full transcript. `016` maintains
+  them by trigger, for the same reason the wallet balance is a trigger: a cache
+  each writer must remember to update is one that eventually disagrees.
+
+The sender also renders their own message immediately rather than waiting for
+the Realtime echo — which is how the publication bug was found, and would have
+hidden it if written that way first.
+
+**The front end:** `src/lib/chat.js` is every session/thread/message call in one
+file. `ChatPanel`'s consultant tab is real — **the two flip helpers are gone**,
+because `sender_id` is a column and "mine" is `m.sender_id === myId`, which
+cannot be backwards. The room shows time left and the rate the whole time, since
+a charge nobody watches accruing is a charge that gets disputed. `Chat now` sits
+on the consultant profile beside `Book`; incoming requests sit at the top of
+`/pro/consult`, pushed by Realtime rather than polled.
 
 ### The seed
 

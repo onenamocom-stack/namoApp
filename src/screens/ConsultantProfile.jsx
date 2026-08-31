@@ -19,6 +19,7 @@ import {
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
+import { requestChat } from '../lib/chat.js'
 
 const TABS = [
   { key: 'about', label: 'About' },
@@ -53,7 +54,8 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
-  const { showToast, hasFlag, toggleFlag, openChat, bookSession, spending } = useStore()
+  const { showToast, hasFlag, toggleFlag, openChat, bookSession, spending, session } = useStore()
+  const [asking, setAsking] = useState(false)
   const [tab, setTab] = useState('about')
   const [sheet, setSheet] = useState(false)
   const [slot, setSlot] = useState(null)
@@ -110,6 +112,24 @@ export default function ConsultantProfile() {
     setSlot(null)
     setDay(days[0].key)
     setSheet(true)
+  }
+
+  /* Ask for a metered chat. This costs NOTHING — no money moves until the
+     consultant joins, which is the opposite of booking a slot. The panel opens
+     straight away so the seeker can watch for the answer; the meter appears in
+     it the moment the session goes live. */
+  const askForChat = async () => {
+    if (!session) return showToast('Sign in to start a chat.')
+    if (!c.perMinute) return showToast(`${firstName(c.name)} is not taking chats.`)
+    setAsking(true)
+    try {
+      const res = await requestChat(c.id, c.perMinute.id)
+      if (!res?.ok) return showToast(res?.reason ?? 'Could not reach the consultant.')
+      showToast(`Asked ${firstName(c.name)} · ₹${rupees(c.perMinute.price_paise)}/min once they join`)
+      openChat('live')
+    } finally {
+      setAsking(false)
+    }
   }
 
   /* One call, one transaction. The sheet sends the consultant, the service and
@@ -223,8 +243,9 @@ export default function ConsultantProfile() {
             </button>
             <button
               type="button"
-              aria-label={`Message ${firstName(c.name)}`}
-              onClick={() => openChat('live')}
+              aria-label={`Chat with ${firstName(c.name)}`}
+              onClick={askForChat}
+              disabled={asking}
               className="pill knob !h-10 flex-1 justify-center"
             >
               <Icon name="chat" size={18} />
@@ -286,9 +307,20 @@ export default function ConsultantProfile() {
             {c.perMinutePaise != null && ` · ₹${rupees(c.perMinutePaise)}/min live`}
           </p>
         </div>
-        <Button onClick={openSheet} variant="solid" className="flex-1">
-          Book a call
-        </Button>
+        {c.perMinute ? (
+          <>
+            <Button onClick={openSheet} variant="quiet" className="flex-1">
+              Book
+            </Button>
+            <Button onClick={askForChat} variant="solid" disabled={asking} className="flex-1">
+              {asking ? 'Asking' : 'Chat now'}
+            </Button>
+          </>
+        ) : (
+          <Button onClick={openSheet} variant="solid" className="flex-1">
+            Book a call
+          </Button>
+        )}
       </div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title={`Book ${firstName(c.name)}`}>

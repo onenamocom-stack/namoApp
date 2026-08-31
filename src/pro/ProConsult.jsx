@@ -14,6 +14,7 @@ import {
   openSlots,
   setAvailability,
 } from '../lib/consultants.js'
+import { acceptChat, listSessions, subscribeToRequests } from '../lib/chat.js'
 
 /**
  * Consult — everything that runs today's practice, bundled: who is asking,
@@ -139,6 +140,32 @@ const dayLabel = (iso) => {
 
 function Sessions({ me, rows, bookings, reload }) {
   const { showToast, openChat } = useStore()
+  /* Incoming CHAT requests. These are not bookings: nobody has been charged,
+     the seeker is sitting there waiting, and accepting is what starts both the
+     conversation and the meter. Realtime rather than polling, because a
+     request nobody sees for thirty seconds is a seeker who has left. */
+  const [requests, setRequests] = useState([])
+
+  const loadRequests = useCallback(() => {
+    if (!me) return
+    listSessions().then((all) =>
+      setRequests(all.filter((s) => s.consultant_id === me && s.status === 'requested')),
+    )
+  }, [me])
+
+  useEffect(() => {
+    if (!me) return
+    loadRequests()
+    return subscribeToRequests(me, loadRequests)
+  }, [me, loadRequests])
+
+  const takeChat = async (sess) => {
+    const res = await acceptChat(sess.id)
+    if (!res?.ok) return showToast(res?.reason ?? 'Could not start that session.')
+    showToast(`Live · ${res.minutes_held} min held`)
+    loadRequests()
+    openChat('live')
+  }
   const navigate = useNavigate()
   const [dayIndex, setDayIndex] = useState(0)
   const [rules, setRules] = useState([])
@@ -251,6 +278,35 @@ function Sessions({ me, rows, bookings, reload }) {
           </ul>
         )}
       </section>
+
+      {/* ── Chat requests ─────────────────────────────────────────────────
+          Someone is waiting right now. Nothing has been charged yet — the hold
+          is taken and the clock starts the moment this is accepted, which is
+          why the rate is on the button rather than buried in a confirmation. */}
+      {requests.length > 0 && (
+        <section className="border-b border-rule px-5 py-6">
+          <Kicker>{`${requests.length} waiting to chat`}</Kicker>
+          <ul className="mt-4 space-y-2">
+            {requests.map((r) => (
+              <li key={r.id} className="pop-inset flex items-center gap-3 p-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta t-heading">Chat request</span>
+                  <span className="mt-0.5 block caps-sm t-faint tnum">
+                    ₹{rupees(r.rate_paise)}/min · asked{' '}
+                    {new Date(r.requested_at).toLocaleTimeString('en-IN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </span>
+                <PopButton size="sm" variant="gold" full={false} onClick={() => takeChat(r)}>
+                  Join
+                </PopButton>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ── Confirmed ──────────────────────────────────────────────────── */}
       <section className="border-b border-rule px-5 py-6">

@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { askSuggestions, chatThreads, consultantReplies, notifications } from '../data/mock.js'
+import { askSuggestions, consultantReplies, notifications } from '../data/mock.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
+import {
+  clock,
+  endChat,
+  heartbeat,
+  listMessages,
+  listThreads,
+  markRead,
+  sendMessage,
+  subscribeToThread,
+} from '../lib/chat.js'
 
 /** Canned AI replies. Blunt, chart-citing, never reassuring for its own sake. */
 const AI_REPLIES = [
@@ -97,158 +107,294 @@ export default function ChatPanel() {
   )
 }
 
-/* ── Live consultant ─────────────────────────────────────────────────────── */
+/* ── Live consultant ───────────────────────────────────────────────────────
+   Real threads, real messages, and a real meter. Phase 6.
+
+   The shape worth holding: a THREAD is the transcript and lives forever; a
+   SESSION is the paid window and is the only time anybody can write into it.
+   Outside a live session the composer is gone and the server would refuse the
+   insert anyway — the policy is the enforcement, this is only the courtesy of
+   not offering a button that cannot work.
+
+   The two flip helpers this file used to carry are GONE. `sender_id` is a
+   column and the thread knows which side is the consultant, so "mine" is
+   `m.sender_id === myId` and cannot be backwards. That was the bug the mock
+   made unavoidable. */
 
 function LiveConsultant({ isPro }) {
+  const { session } = useStore()
+  const myId = session?.user?.id
+  const [threads, setThreads] = useState(null)
   const [activeId, setActiveId] = useState(null)
-  const active = chatThreads.find((t) => t.id === activeId)
 
-  if (!active) return <ThreadList onOpen={setActiveId} isPro={isPro} />
-  return <Thread thread={active} isPro={isPro} onBack={() => setActiveId(null)} />
+  const load = useCallback(() => {
+    listThreads().then(setThreads)
+  }, [])
+
+  useEffect(() => {
+    if (myId) load()
+    else setThreads([])
+  }, [myId, load])
+
+  if (!myId) {
+    return (
+      <div className="px-4 py-6">
+        <p className="text-meta t-body">Sign in to see your conversations.</p>
+        <PopButton to="/consult" variant="ghost" className="mt-4">
+          Find a consultant
+        </PopButton>
+      </div>
+    )
+  }
+
+  if (activeId) {
+    const t = (threads ?? []).find((x) => x.id === activeId)
+    if (t) {
+      return (
+        <Thread
+          thread={t}
+          myId={myId}
+          onBack={() => {
+            setActiveId(null)
+            load()
+          }}
+        />
+      )
+    }
+  }
+
+  return <ThreadList threads={threads} isPro={isPro} onOpen={setActiveId} />
 }
 
-/**
- * Whoever is reading is "me".
- *
- * The mock threads are written from the seeker's side — `from: 'me'` is the
- * seeker and the thread is named after the consultant. Read by a consultant
- * that is exactly backwards: her own name at the top and her own replies in
- * the other party's bubbles. These two helpers flip it, and are the only place
- * that knows the threads have a fixed authorial side.
- */
-const otherEnd = (t, isPro) => (isPro ? t.seeker : t.name)
-const otherInitials = (t, isPro) => (isPro ? t.seekerInitials : t.initials)
+function ThreadList({ threads, isPro, onOpen }) {
+  if (threads === null) {
+    return <p className="px-4 py-6 text-meta t-faint">Loading your conversations.</p>
+  }
 
-function ThreadList({ onOpen, isPro }) {
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
       <ul>
-        {chatThreads.map((t) => (
-          <li key={t.id}>
-            <button
-              type="button"
-              onClick={() => onOpen(t.id)}
-              className="flex w-full items-start gap-3 border-b border-rule px-4 py-4 text-left transition-opacity hover:opacity-70"
-            >
-              <PopAvatar initials={otherInitials(t, isPro)} size={40} online={t.online} />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className="truncate text-body t-heading">{otherEnd(t, isPro)}</span>
-                  <span className="ml-auto flex-none caps-sm t-faint tnum">{t.time}</span>
+        {threads.map((t) => {
+          const other = isPro ? t.seeker_name : t.consultant_name
+          return (
+            <li key={t.id}>
+              <button
+                type="button"
+                onClick={() => onOpen(t.id)}
+                className="flex w-full items-start gap-3 border-b border-rule px-4 py-4 text-left transition-opacity hover:opacity-70"
+              >
+                <PopAvatar initials={initialsOf(other)} size={40} online={!!t.live_session_id} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2">
+                    <span className="truncate text-body t-heading">{other}</span>
+                    {t.live_session_id && (
+                      <span className="ml-auto flex-none caps-sm text-ok">Live</span>
+                    )}
+                  </span>
+                  <span className="mt-1 block truncate text-meta t-body">
+                    {t.last_preview ?? 'No messages yet.'}
+                  </span>
                 </span>
-                <span className="mt-1 block truncate text-meta t-body">{t.last}</span>
-              </span>
-              {t.unread > 0 && (
-                <span className="caps-sm flex-none rounded-full bg-gold-fill px-2 py-0.5 text-ink tnum">
-                  {t.unread}
-                </span>
-              )}
-            </button>
-          </li>
-        ))}
+                {t.unread > 0 && (
+                  <span className="caps-sm flex-none rounded-full bg-gold-fill px-2 py-0.5 text-ink tnum">
+                    {t.unread}
+                  </span>
+                )}
+              </button>
+            </li>
+          )
+        })}
       </ul>
 
       <div className="px-4 py-6">
-        {isPro ? (
+        {threads.length === 0 && (
           <p className="text-meta t-body">
-            Replies inside the session window count toward your response time.
+            {isPro
+              ? 'No conversations yet. They start when you accept a chat request.'
+              : 'No conversations yet. Chat is charged by the minute and starts when the consultant joins.'}
           </p>
-        ) : (
-          <>
-            <p className="text-meta t-body">
-              Consultants reply inside their session window. Outside it, use Ask AI.
-            </p>
-            <PopButton to="/consult" variant="ghost" className="mt-4">
-              Find a consultant
-            </PopButton>
-          </>
+        )}
+        {!isPro && (
+          <PopButton to="/consult" variant="ghost" className="mt-4">
+            Find a consultant
+          </PopButton>
         )}
       </div>
     </div>
   )
 }
 
-function Thread({ thread, isPro, onBack }) {
-  const [messages, setMessages] = useState(thread.messages)
+/**
+ * One conversation, and the meter over it.
+ *
+ * The countdown is cosmetic. `expires_at` on the server is what actually ends
+ * the session, and `session_sweep` settles it whether or not this tab is still
+ * open — so a paused tab, a dead battery or a lying clock changes the display
+ * and nothing else. The heartbeat says "still here" and asks how long is left;
+ * it cannot extend anything.
+ */
+function Thread({ thread, myId, onBack }) {
+  const { refreshWallet, session, showToast } = useStore()
+  const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
+  const [live, setLive] = useState(thread.live_session_id ?? null)
+  const [left, setLeft] = useState(null)
+  const [rate, setRate] = useState(null)
   const endRef = useRef(null)
-  const replyRef = useRef(0)
 
-  // Reset when switching threads, otherwise the previous conversation leaks in.
   useEffect(() => {
-    setMessages(thread.messages)
-    setDraft('')
-    replyRef.current = 0
-  }, [thread.id, thread.messages])
+    listMessages(thread.id).then(setMessages)
+    markRead(thread.id, myId)
+    return subscribeToThread(thread.id, (m) =>
+      setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m])),
+    )
+  }, [thread.id, myId])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [messages])
 
-  const send = () => {
+  /* One beat a second: it ticks the display down locally and asks the server
+     for the truth every tenth beat. The server's number always wins — a client
+     that drifts must not be able to drift in its own favour. */
+  useEffect(() => {
+    if (!live) return
+    let n = 0
+    let alive = true
+    const tick = async () => {
+      if (!alive) return
+      if (n % 10 === 0) {
+        const h = await heartbeat(live)
+        if (!alive) return
+        if (!h?.live) {
+          setLive(null)
+          setLeft(0)
+          refreshWallet(session?.user?.id)
+          return
+        }
+        setLeft(h.seconds_left)
+        setRate(h.rate_paise)
+      } else {
+        setLeft((s) => (s === null ? null : Math.max(0, s - 1)))
+      }
+      n += 1
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [live, refreshWallet, session])
+
+  const send = async () => {
     const text = draft.trim()
     if (!text) return
-    setMessages((m) => [
-      ...m,
-      { id: `me${m.length}`, from: isPro ? 'them' : 'me', text, time: 'now' },
-    ])
     setDraft('')
-    // `consultantReplies` is a consultant answering a seeker. Playing it back
-    // to the consultant would have her talking to herself, so the pro side
-    // simply sends and waits, which is also what really happens.
-    if (isPro) return
-    setTimeout(() => {
-      const reply = consultantReplies[replyRef.current % consultantReplies.length]
-      replyRef.current += 1
-      setMessages((m) => [...m, { id: `th${m.length}`, from: 'them', text: reply, time: 'now' }])
-    }, 900)
+    const res = await sendMessage(thread.id, text)
+    if (!res.ok) {
+      if (res.reason) showToast(res.reason)
+      setDraft(text)                       // give it back rather than eat it
+      return
+    }
+    /* Show my own message straight away rather than waiting for Realtime to
+       echo it back. The echo usually arrives — but the sender watching their
+       own words fail to appear is the worst possible way to discover that a
+       table was never added to the publication, which is exactly how this was
+       found. The de-dupe in the subscription handles the echo when it lands. */
+    if (res.message) {
+      setMessages((prev) => (prev.some((p) => p.id === res.message.id) ? prev : [...prev, res.message]))
+    } else {
+      listMessages(thread.id).then(setMessages)
+    }
   }
 
+  const hangUp = async () => {
+    const res = await endChat(live)
+    setLive(null)
+    setLeft(0)
+    await refreshWallet(session?.user?.id)
+    if (res?.ok && !res.already_ended) {
+      showToast(`Session ended · ${res.minutes} min · ₹${rupees(res.charged_paise)}`)
+    }
+  }
+
+  const other = thread.seeker_id === myId ? thread.consultant_name : thread.seeker_name
+
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-none items-center gap-3 border-b border-rule px-4 py-3">
-        <button type="button" onClick={onBack} className="text-body t-body" aria-label="Back">
-          ←
+        <button type="button" onClick={onBack} className="caps-sm t-body" aria-label="Back">
+          Back
         </button>
-        <PopAvatar initials={otherInitials(thread, isPro)} size={30} online={thread.online} />
-        {/* A consultant tapping the name should not be sent to a consultant
-            profile — that is the seeker's route, and on this side it is the
-            seeker's name in the header. */}
-        {isPro ? (
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-meta t-heading">{otherEnd(thread, isPro)}</span>
-            <span className="block caps-sm t-faint">{thread.online ? 'Online' : 'Offline'}</span>
-          </span>
-        ) : (
-          <Link to={`/consult/${thread.consultantId}`} className="min-w-0 flex-1">
-            <span className="block truncate text-meta t-heading">{thread.name}</span>
-            <span className="block caps-sm t-faint">{thread.online ? 'Online' : 'Offline'}</span>
-          </Link>
-        )}
-        <CallButton name={otherEnd(thread, isPro)} />
+        <PopAvatar initials={initialsOf(other)} size={30} online={!!live} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-meta t-heading">{other}</span>
+          <span className="block caps-sm t-faint">{live ? 'In session' : 'Not in session'}</span>
+        </span>
       </div>
 
-      <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      {/* The meter. A charge nobody can see accruing is a charge that gets
+          disputed, so the time left and the rate are on screen the whole time
+          rather than in a receipt afterwards. */}
+      {live && (
+        <div className="flex flex-none items-center justify-between border-b border-rule bg-gold-fill/10 px-4 py-2">
+          <span className="caps-sm t-faint tnum">
+            {left === null ? 'Starting' : `${clock(left)} left`}
+            {rate ? ` · ₹${rupees(rate)}/min` : ''}
+          </span>
+          <button type="button" onClick={hangUp} className="caps-sm text-bad">
+            End session
+          </button>
+        </div>
+      )}
+
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {messages.map((m) => (
           <Bubble
             key={m.id}
-            mine={m.from === (isPro ? 'them' : 'me')}
-            text={m.text}
-            time={m.time}
+            mine={m.sender_id === myId}
+            text={m.body}
+            time={new Date(m.created_at).toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           />
         ))}
         <div ref={endRef} />
       </div>
 
-      <Composer
-        value={draft}
-        onChange={setDraft}
-        onSend={send}
-        placeholder={isPro ? 'Reply to your client' : 'Write a message'}
-      />
-    </>
+      {live ? (
+        <Composer
+          value={draft}
+          onChange={setDraft}
+          onSend={send}
+          placeholder="Type a message"
+        />
+      ) : (
+        <div className="flex-none border-t border-rule px-4 py-4">
+          <p className="text-meta t-faint">
+            This session has ended. The conversation stays here; starting another
+            begins the meter again.
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
+
+/** Initials from a name. Derived, never stored — a column holding this is a
+ *  second thing to keep in step with the name it came from. */
+function initialsOf(name) {
+  return (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 
 /* ── Ask AI ──────────────────────────────────────────────────────────────── */
 
