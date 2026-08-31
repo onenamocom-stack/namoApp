@@ -780,9 +780,17 @@ seconds. Without it a session both parties abandon holds the seeker's money
 forever, and nothing anywhere notices — the shape of failure this project has
 already paid for once on the payment path.
 
-Four product constants, all named once in the functions: **60s grace** on a
+Three product constants, all named once in the functions: **60s grace** on a
 dropped connection, **rounding up** to the whole minute with a one-minute
-minimum, a **30-minute hold cap**, and **accept-before-clock**.
+minimum, and **accept-before-clock**.
+
+**There is no cap on the hold — removed 1 Sep.** Accept holds every minute the
+wallet can buy, so a session runs until the money does and nothing cuts a
+reading short while there is balance left to pay for it. The cost is that a
+seeker's wallet reads ₹0 for the length of a chat: it all comes back at the
+settle, but nothing else in the app can be bought while one is running. A
+rolling hold — take five minutes, top up as it goes — is the fix if that turns
+out to bother real seekers, and is written up in `017_no_hold_cap.sql`.
 
 ```sql
 create table threads (

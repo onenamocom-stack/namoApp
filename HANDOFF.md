@@ -233,6 +233,7 @@ thing that ran it — keep the two in step by hand.
 | `014_metered_chat.sql` | `sessions`, `threads`, `messages`, the meter, the sweeper, `threads_view`. **Dev only** |
 | `015_realtime_publication.sql` | Publishes `messages` and `sessions` to Realtime. **Dev only** |
 | `016_thread_preview.sql` | Keeps `threads.last_preview` in step, by trigger. **Dev only** |
+| `017_no_hold_cap.sql` | Removes the 30-minute hold cap. **Dev only** |
 
 **Four `_check.sql` files sit beside them and are tests, not migrations.**
 `003_wallets_ledger_check`, `006_payments_check`, `009_slots_check`,
@@ -549,8 +550,20 @@ Phase 11 inherits both.
 - **Messages are gated on a live session** by the INSERT policy, so outside a
   paid window the transcript is read-only. That is what stops chat being free
   to anyone who never presses End.
-- Four constants, named once in the functions: 60s grace, round UP with a
-  one-minute minimum, a 30-minute hold cap, accept-before-clock.
+- Three constants, named once in the functions: 60s grace, round UP with a
+  one-minute minimum, accept-before-clock.
+- **No cap on the hold — removed 1 Sep (`017`).** Accept holds every minute the
+  wallet can buy, so nothing cuts a reading short while there is money left.
+  The knowing cost: a seeker's wallet reads ₹0 for the length of a chat and
+  nothing else in the app can be bought until it settles. A rolling hold is the
+  fix if that bites; the shape is in `017`'s header.
+- **While a chat is live the seeker cannot buy anything else** — not another
+  chat, not a booking, not a report. Their whole balance is held until the
+  session settles. That is the direct consequence of having no cap, and it is
+  a standing fact about the product rather than a bug. The phase 6 check proves
+  it sideways: assertion 3 had to switch to a SECOND seeker to test "one live
+  session per consultant", because the first seeker's second request is refused
+  for want of money before it ever reaches the unique index.
 
 **Walked end to end on dev, both sides:** seeker asked from `/consult/:id`,
 consultant saw the request in `/pro/consult` with the rate on the row and

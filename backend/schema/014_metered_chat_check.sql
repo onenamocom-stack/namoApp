@@ -29,6 +29,7 @@ declare
   v_order   uuid;
   v_hold    integer;
   v_expect  integer;
+  v_other   uuid;
   v_bal0    integer;
   v_bal     integer;
   v_led0    integer;
@@ -104,11 +105,11 @@ begin
 
   ---------------------------------------------------------------------------
   -- 2. The consultant's join is what starts the clock and takes the hold. The
-  --    hold is every minute the wallet can buy, up to the 30-minute cap —
-  --    computed here from the same two numbers the function uses, so this
-  --    asserts the RULE rather than one wallet's arithmetic.
+  --    hold is EVERY minute the wallet can buy — the 30-minute cap was removed
+  --    on 1 Sep (017). Computed here from the same two numbers the function
+  --    uses, so this asserts the RULE rather than one wallet's arithmetic.
   ---------------------------------------------------------------------------
-  v_expect := least(v_bal0 / v_rate, 30);
+  v_expect := v_bal0 / v_rate;
   perform set_config('request.jwt.claims',
                      json_build_object('sub', v_pro, 'role', 'authenticated')::text, true);
   v_res := public.session_accept(v_sess);
@@ -119,15 +120,16 @@ begin
   v_hold   := (v_res ->> 'hold_paise')::integer;
 
   if (v_res ->> 'minutes_held')::integer <> v_expect then
-    raise exception '2. held % minutes, expected % (balance %, rate %, cap 30)',
+    raise exception '2. held % minutes, expected % (balance %, rate %)',
       v_res ->> 'minutes_held', v_expect, v_bal0, v_rate;
   end if;
   if v_hold <> v_rate * v_expect then
     raise exception '2. hold was % for % minutes at %', v_hold, v_expect, v_rate;
   end if;
-  -- And the cap is a cap, not a coincidence.
-  if v_bal0 / v_rate > 30 and v_expect <> 30 then
-    raise exception '2. a rich wallet held % minutes rather than the 30-minute cap', v_expect;
+  -- The whole affordable balance, and not a paise more: a part-minute nobody
+  -- can afford is neither held nor sold.
+  if v_bal0 - v_hold >= v_rate then
+    raise exception '2. % left unheld, which is another whole minute', v_bal0 - v_hold;
   end if;
 
   select balance_paise into v_bal from public.wallets where profile_id = v_seeker;
@@ -147,18 +149,35 @@ begin
   end if;
 
   ---------------------------------------------------------------------------
-  -- 3. One live session per consultant. A second request accepted while the
-  --    first is live loses on the unique index, not on application logic.
+  -- 3. One live session per consultant, and it takes a SECOND SEEKER to test
+  --    it honestly. The first seeker cannot be used: with the hold cap gone
+  --    (017) their entire balance is held by the live session, so their next
+  --    request is refused for want of money long before it reaches the index.
+  --    That refusal is correct behaviour and it is also not what this
+  --    assertion is about.
   ---------------------------------------------------------------------------
-  perform set_config('request.jwt.claims',
-                     json_build_object('sub', v_seeker, 'role', 'authenticated')::text, true);
-  v_res := public.session_request(v_pro, v_svc);
-  v_sess2 := (v_res ->> 'session_id')::uuid;
-  perform set_config('request.jwt.claims',
-                     json_build_object('sub', v_pro, 'role', 'authenticated')::text, true);
-  v_res := public.session_accept(v_sess2);
-  if (v_res ->> 'ok')::boolean then
-    raise exception '3. a consultant was put in two live sessions at once';
+  select id into v_other from public.profiles
+   where id not in (v_seeker, v_pro) order by created_at limit 1;
+
+  if v_other is not null then
+    insert into public.wallets (profile_id) values (v_other) on conflict do nothing;
+    insert into public.ledger (wallet_id, delta_paise, kind, ref_type, note)
+    values (v_other, v_rate * 5, 'Added money', 'adjustment', 'phase 6 check');
+
+    perform set_config('request.jwt.claims',
+                       json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+    v_res := public.session_request(v_pro, v_svc);
+    v_sess2 := (v_res ->> 'session_id')::uuid;
+
+    perform set_config('request.jwt.claims',
+                       json_build_object('sub', v_pro, 'role', 'authenticated')::text, true);
+    v_res := public.session_accept(v_sess2);
+    if (v_res ->> 'ok')::boolean then
+      raise exception '3. a consultant was put in two live sessions at once';
+    end if;
+    if v_res ->> 'reason' <> 'You are already in a live session.' then
+      raise exception '3. refused for the wrong reason: %', v_res ->> 'reason';
+    end if;
   end if;
 
   ---------------------------------------------------------------------------
@@ -278,10 +297,24 @@ begin
                     + (v_rate - 1),
           'Check drain', 'adjustment', 'phase 6 check');
 
+  -- A fresh request from the drained seeker: `session_request` still lets it
+  -- through (it only refuses below one minute at request time, and the wallet
+  -- holds rate - 1), so the ACCEPT is what must refuse.
+  perform set_config('request.jwt.claims',
+                     json_build_object('sub', v_seeker, 'role', 'authenticated')::text, true);
+  v_res := public.session_request(v_pro, v_svc);
+  v_sess2 := (v_res ->> 'session_id')::uuid;
+
   perform set_config('request.jwt.claims',
                      json_build_object('sub', v_pro, 'role', 'authenticated')::text, true);
   select count(*) into v_led0 from public.ledger where wallet_id = v_seeker;
-  v_res := public.session_accept(v_sess2);
+  if v_sess2 is null then
+    -- Refused at request time instead, which is also correct and also proves
+    -- an unfundable wallet cannot start a session.
+    v_res := jsonb_build_object('ok', false, 'reason', 'Not enough balance');
+  else
+    v_res := public.session_accept(v_sess2);
+  end if;
   if (v_res ->> 'ok')::boolean then
     raise exception '9. a session started on a wallet that cannot buy a minute';
   end if;
