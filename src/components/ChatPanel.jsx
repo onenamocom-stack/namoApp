@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { askSuggestions, consultantReplies, notifications } from '../data/mock.js'
+import { askSuggestions, notifications } from '../data/mock.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -12,6 +11,7 @@ import {
   listThreads,
   markRead,
   sendMessage,
+  subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
 
@@ -132,8 +132,12 @@ function LiveConsultant({ isPro }) {
   }, [])
 
   useEffect(() => {
-    if (myId) load()
-    else setThreads([])
+    if (!myId) return setThreads([])
+    load()
+    /* The thread does not exist until the consultant accepts, so without this
+       the seeker who just asked sits on an empty list watching nothing happen
+       while the meter runs. Any change to a session of mine reloads the list. */
+    return subscribeToMySessions(myId, load)
   }, [myId, load])
 
   if (!myId) {
@@ -243,7 +247,19 @@ function Thread({ thread, myId, onBack }) {
   const endRef = useRef(null)
 
   useEffect(() => {
-    listMessages(thread.id).then(setMessages)
+    setLive(thread.live_session_id ?? null)
+  }, [thread.live_session_id])
+
+  useEffect(() => {
+    /* MERGE rather than replace. The subscription is registered in this same
+       effect, so a message arriving between subscribe and this fetch resolving
+       would be appended by the handler and then wiped by the fetch result. */
+    listMessages(thread.id).then((rows) =>
+      setMessages((prev) => {
+        const seen = new Set(rows.map((r) => r.id))
+        return [...rows, ...prev.filter((p) => !seen.has(p.id))]
+      }),
+    )
     markRead(thread.id, myId)
     return subscribeToThread(thread.id, (m) =>
       setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m])),
@@ -259,6 +275,11 @@ function Thread({ thread, myId, onBack }) {
      that drifts must not be able to drift in its own favour. */
   useEffect(() => {
     if (!live) return
+    /* The hold is taken at accept, so the wallet has already moved by the time
+       this room opens. Without this the seeker reads their pre-hold balance
+       for the whole session and gets refused against a number still on screen
+       — and with no cap (017) that number is their entire wallet. */
+    refreshWallet(session?.user?.id)
     let n = 0
     let alive = true
     const tick = async () => {
@@ -266,7 +287,14 @@ function Thread({ thread, myId, onBack }) {
       if (n % 10 === 0) {
         const h = await heartbeat(live)
         if (!alive) return
-        if (!h?.live) {
+        /* Could not ask. Keep the room exactly as it is and try again next
+           beat — the server is still billing, so tearing the meter down here
+           would hide a charge that is still running. */
+        if (h?.unreachable) {
+          n += 1
+          return
+        }
+        if (!h.live) {
           setLive(null)
           setLeft(0)
           refreshWallet(session?.user?.id)

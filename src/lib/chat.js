@@ -57,7 +57,13 @@ export async function endChat(sessionId) {
  */
 export async function heartbeat(sessionId) {
   const { data, error } = await supabase.rpc('session_heartbeat', { p_session_id: sessionId })
-  if (error) return { ok: false, live: false, seconds_left: 0 }
+  /* A failed REQUEST is not an ended session, and conflating them is expensive:
+     the room would tear down its meter and composer on one dropped packet
+     while the server kept the session live and kept billing. `live` is left
+     UNDEFINED here so the caller can tell "the server says it is over" from
+     "I could not ask" — the same distinction `consultantError` draws in the
+     store, for the same reason. */
+  if (error) return { ok: false, unreachable: true, seconds_left: null }
   return data
 }
 
@@ -142,6 +148,25 @@ export function subscribeToThread(threadId, onMessage) {
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `thread_id=eq.${threadId}` },
       (payload) => onMessage(payload.new),
+    )
+    .subscribe()
+  return () => supabase.removeChannel(channel)
+}
+
+/**
+ * A seeker's own sessions. This is how the room learns the consultant has
+ * JOINED — the thread does not exist until accept, so without this the seeker
+ * sits on "No conversations yet" for the whole paid session while the meter
+ * runs. `015` publishes `sessions` to Realtime for exactly this and nothing
+ * was listening.
+ */
+export function subscribeToMySessions(seekerId, onChange) {
+  const channel = supabase
+    .channel(`mysessions:${seekerId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'sessions', filter: `seeker_id=eq.${seekerId}` },
+      onChange,
     )
     .subscribe()
   return () => supabase.removeChannel(channel)

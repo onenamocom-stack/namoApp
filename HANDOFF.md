@@ -234,6 +234,7 @@ thing that ran it — keep the two in step by hand.
 | `015_realtime_publication.sql` | Publishes `messages` and `sessions` to Realtime. **Dev only** |
 | `016_thread_preview.sql` | Keeps `threads.last_preview` in step, by trigger. **Dev only** |
 | `017_no_hold_cap.sql` | Removes the 30-minute hold cap. **Dev only** |
+| `018_session_review_fixes.sql` | The accept row lock, request dedupe and expiry, mode guard, non-client reason. **Dev only** |
 
 **Four `_check.sql` files sit beside them and are tests, not migrations.**
 `003_wallets_ledger_check`, `006_payments_check`, `009_slots_check`,
@@ -577,6 +578,22 @@ joined, the meter ran at ₹75/min, messages went both ways, and ending settled:
 | Hold, then refund | ₹2,250 held (the cap), ₹2,025 back |
 | Earnings | gross ₹225, fee ₹40.50, net ₹184.50 |
 | Ledger rows | two |
+
+**`session_accept` had no row lock, and that was the expensive one.** It read
+the session with a bare SELECT while `session_end` used `for update`, so two
+accepts of one request both passed the guard and the second wrote a SECOND full
+debit — orphaning the first hold. `sessions_one_live_per_consultant` does not
+catch it: that index guards INSERTs, and this is two UPDATEs of one row.
+Removing the cap did not cause it; it raised the price from 30 minutes to the
+seeker's whole balance. Fixed in `018` and proven with six concurrent accepts:
+one accepted, five refused, one hold, wallet moved by exactly that hold.
+
+**And the seeker never saw their own session start.** The thread does not exist
+until accept, so the flow was ask → open panel → "No conversations yet", with
+nothing subscribed to `sessions`. `015` published that table with a comment
+saying it was for exactly this, and no client code listened. **The first walk
+missed it because it only ever watched the consultant's side after accept** —
+walking one side of a two-sided flow is walking half of it.
 
 **Two defects the walk found that the build and the check both missed:**
 
