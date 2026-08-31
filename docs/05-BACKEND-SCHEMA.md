@@ -720,18 +720,78 @@ this?" check has a race between the read and the write. The index does not.
 `ledger` cannot serve this role — the event and the credit have different
 lifecycles and a failed payment produces an event with no ledger row.
 
-### 4.9 Chat
+### 4.9 Chat, and the meter under it
+
+Chat is **per-minute and live** (`01-PRD.md` §5.1, decided 1 Sep). That answer
+is what puts a `sessions` table in v1 and brings the meter forward from phase
+11 — video later reuses both.
 
 ```sql
-create table threads (
+create table sessions (
   id             uuid primary key default gen_random_uuid(),
   seeker_id      uuid not null references profiles(id),
   consultant_id  uuid not null references consultants(profile_id),
-  booking_id     uuid references bookings(id),
-  open_until     timestamptz,
+  service_id     uuid not null references consultant_services(id),
+  thread_id      uuid references threads(id),
+  order_id       uuid references orders(id),
+  mode           text not null check (mode in ('chat','call','live')),
+  rate_paise     integer not null check (rate_paise > 0),   -- frozen copy
+  status         text not null default 'requested'
+                 check (status in ('requested','live','ended','declined','expired')),
+  requested_at   timestamptz not null default now(),
+  started_at     timestamptz,      -- the consultant joined; the clock starts here
+  expires_at     timestamptz,      -- started_at + the minutes held
+  ended_at       timestamptz,
+  heartbeat_at   timestamptz,
+  hold_paise     integer,
+  charged_paise  integer
+);
+
+create unique index sessions_one_live_per_consultant
+  on sessions (consultant_id) where status = 'live';
+```
+
+**Two ledger rows per session, not one per minute.** The obvious design is a
+debit each minute. It is worse in every way that matters: fifty chances to fail
+inside one session, a scheduler on the critical path, and a wallet that can go
+negative between two ticks.
+
+| | |
+|---|---|
+| **accept** | Lock the wallet, work out the affordable minutes, **debit the whole hold**, stamp `expires_at` |
+| **end** | Work out the real duration from the server's timestamps, **credit back the unused minutes** |
+
+The wallet can never go negative because the money is already gone. The cutoff
+is a timestamp rather than a countdown, so a client with a broken clock, a
+paused tab or no heartbeat at all cannot buy a free minute. And a statement
+reads as two lines a person can explain.
+
+**The clock starts on the consultant's join, never on the seeker's request.**
+`session_request` writes a row and moves no money — a consultant who never
+answers has cost the seeker nothing. That is the opposite of a booking, which
+charges immediately because it claims a slot somebody else could have had.
+
+**Earnings are written at the END**, unlike a booking's, because until the
+conversation stops nobody knows what was used.
+
+**The sweeper is not optional.** `session_sweep()` runs every minute under
+`pg_cron` and settles sessions past `expires_at` or silent for more than 60
+seconds. Without it a session both parties abandon holds the seeker's money
+forever, and nothing anywhere notices — the shape of failure this project has
+already paid for once on the payment path.
+
+Four product constants, all named once in the functions: **60s grace** on a
+dropped connection, **rounding up** to the whole minute with a one-minute
+minimum, a **30-minute hold cap**, and **accept-before-clock**.
+
+```sql
+create table threads (
+  id              uuid primary key default gen_random_uuid(),
+  seeker_id       uuid not null references profiles(id),
+  consultant_id   uuid not null references consultants(profile_id),
   last_message_at timestamptz,
-  last_preview   text,                     -- cache, §1.3 exception by name
-  legacy_id      text,
+  last_preview    text,                     -- cache, §1.3 exception by name
+  legacy_id       text,
   unique (seeker_id, consultant_id)
 );
 
@@ -739,11 +799,17 @@ create table messages (
   id          uuid primary key default gen_random_uuid(),
   thread_id   uuid not null references threads(id) on delete cascade,
   sender_id   uuid not null references profiles(id),
-  body        text not null,
+  body        text not null check (btrim(body) <> ''),
   created_at  timestamptz not null default now(),
   read_at     timestamptz
 );
 ```
+
+**A thread is the transcript and outlives every session.** One per pair,
+forever: a second session between the same two people continues the same
+conversation. `booking_id` and `open_until` are gone from this sketch — they
+encoded the two answers to the chat-window question that 1 Sep rejected, and a
+column nothing writes is a column somebody later reads.
 
 **`sender_id` only. There is no role column, deliberately.**
 
@@ -761,11 +827,12 @@ get a message that disagrees with its own thread.**
 **`online` is not a column.** Presence is a Supabase Realtime primitive. A boolean
 here is stale the moment a tab closes.
 
-**`booking_id` / `open_until` is an open question.** Both the store and
-`ChatPanel` state that consultants only reply inside a session window, and
-nothing in the mock expresses one. Whether paid chat is a booking with a
-duration or a thread with a message quota must be decided before the chat phase
-— both columns are present so either answer fits.
+**Messages are the one direct client write in v1, and the meter bounds it.** The
+INSERT policy requires a LIVE session on the thread, so outside a paid session
+the transcript is read-only. That is what stops chat being free to anyone who
+simply never presses End. Every column of the new row is qualified inside that
+policy — unqualified, the predicate collapses to `s.thread_id = s.thread_id` and
+gives away paid minutes.
 
 ---
 
