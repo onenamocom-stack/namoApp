@@ -12,8 +12,8 @@ Updated 30 Aug 2026.
 | 2 · wallet | Done |
 | 3 · payments in | **Built and deployed. One done-condition short**, blocked on Razorpay's website review. The site is now on `1namo.com` (the move Razorpay's review wanted — §6); registering that domain and its policy pages with Razorpay is the remaining step. Until it clears, live checkout is refused and **production wallets cannot be funded** |
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
-| **5 · bookings** | **Done**, with a review follow-up outstanding. All four done-conditions pass on dev, walked in a browser; `012` is on both projects. `013` fixes four defects a review found and **is not applied anywhere** (§2) |
-| 6 · chat | **Next** |
+| **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
+| **6 · metered chat** | **Next, and roughly twice its planned size** — chat is per-minute, so the meter moves here from phase 11 (§3) |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -227,7 +227,7 @@ thing that ran it — keep the two in step by hand.
 | `010_bookings_view.sql` | `bookings_view`, which carries the other party's name |
 | `011_round_price_bands.sql` | derived band prices to whole rupees; restores the six the PRD names |
 | `012_bookings_transaction.sql` | `orders`, `order_items`, `earnings_ledger`, `book_session()`, `booking_reverse()` and the decline trigger. On both projects |
-| `013_booking_review_fixes.sql` | Four defects found by review of 012. **On dev; production still needs it** |
+| `013_booking_review_fixes.sql` | Four defects found by review of 012. On both projects |
 
 **Four `_check.sql` files sit beside them and are tests, not migrations.**
 `003_wallets_ledger_check`, `006_payments_check`, `009_slots_check`,
@@ -463,10 +463,17 @@ refusal path, the savepoint semantics hold, `order_items_select_own` is properly
 qualified (the phase 4 collapse is not repeated), the grants are right, and the
 basis-point arithmetic satisfies rule 1.
 
-**`013_booking_review_fixes.sql` carries the four schema fixes. It is applied to
-DEV, where the check passes with the new assertion 10 covering the reversal
-index. Production still needs it** — paste the file into its SQL editor, the
-same way `007`–`011` went.
+**`013_booking_review_fixes.sql` is applied to BOTH projects.** The check passes
+on dev with assertion 10 covering the reversal index, and production was
+verified by inspection: the index exists and all three function fixes are in the
+live definitions.
+
+**Re-running `013` raises `42P07`, and that is expected.** The three function
+statements are `create or replace` and replay fine; `create unique index` does
+not. If it ever needs re-running, skip that first statement. It is not edited to
+say `if not exists` because it has run against real databases, which makes it
+history (`INSTRUCTIONS.md` §2) — re-runnability is a property of the next
+migration, not a retrofit to this one.
 
 - **The reversal guard was a check-then-insert race** — the exact pattern rule 6
   bans. Two reversals at once (an admin calling `booking_reverse` for a platform
