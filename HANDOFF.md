@@ -227,7 +227,7 @@ thing that ran it — keep the two in step by hand.
 | `010_bookings_view.sql` | `bookings_view`, which carries the other party's name |
 | `011_round_price_bands.sql` | derived band prices to whole rupees; restores the six the PRD names |
 | `012_bookings_transaction.sql` | `orders`, `order_items`, `earnings_ledger`, `book_session()`, `booking_reverse()` and the decline trigger. On both projects |
-| `013_booking_review_fixes.sql` | Four defects found by review of 012. **Written and applied NOWHERE yet** — see below |
+| `013_booking_review_fixes.sql` | Four defects found by review of 012. **On dev; production still needs it** |
 
 **Four `_check.sql` files sit beside them and are tests, not migrations.**
 `003_wallets_ledger_check`, `006_payments_check`, `009_slots_check`,
@@ -463,8 +463,10 @@ refusal path, the savepoint semantics hold, `order_items_select_own` is properly
 qualified (the phase 4 collapse is not repeated), the grants are right, and the
 basis-point arithmetic satisfies rule 1.
 
-**`013_booking_review_fixes.sql` carries the four schema fixes and is applied
-nowhere.** It must go to dev first, then production, both by hand.
+**`013_booking_review_fixes.sql` carries the four schema fixes. It is applied to
+DEV, where the check passes with the new assertion 10 covering the reversal
+index. Production still needs it** — paste the file into its SQL editor, the
+same way `007`–`011` went.
 
 - **The reversal guard was a check-then-insert race** — the exact pattern rule 6
   bans. Two reversals at once (an admin calling `booking_reverse` for a platform
@@ -672,13 +674,16 @@ reversed (§2).
 
 **One thing is owed before the next agent session writes anything:**
 
-- **The MCP is fixed** — `~/.claude.json` had a second server called `supabase`
-  on the production ref, shadowing the project's, and it now carries the dev ref
-  like `.mcp.json` does. **This takes effect on the next session**, not in the
-  one that changed it: a running connection keeps the URL it opened with.
-  **`get_project_url` before the first write stays a rule** (`INSTRUCTIONS.md`
-  §3) — it is one read, it would have caught this on the first call, and config
-  can drift again.
+- **The MCP is fixed and CONFIRMED** — `~/.claude.json` had a second server
+  called `supabase` on the production ref, shadowing the project's. Both now
+  carry the dev ref, and `get_project_url` returns `mrjsatelbuiypodeulcx` once
+  the server reconnects. **`get_project_url` before the first write stays a
+  rule** (`INSTRUCTIONS.md` §3) — one read, it would have caught this on the
+  first call, and config can drift again.
+
+  **The consequence is intended: no agent session can write to production any
+  more.** Production migrations are pasted by hand, which is how `007`–`011`
+  went and how `013` must go.
 
 **Dev test artefacts, deliberately left:** both test accounts funded ₹10,000
 each by hand, six bookings against seeded consultant `a1` from the race, one
