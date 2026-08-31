@@ -437,7 +437,7 @@ origin. Allowed origins are an explicit list, not a wildcard.
 |---|---|
 | Video SDK — 100ms or Agora | The live phase. Compare pricing at expected minutes |
 | Ephemeris reference chart | The chart service. Pick it *before* writing code |
-| Chat window semantics — booking-bound or quota-bound | The chat phase |
+| ~~Chat window semantics~~ | **Answered 1 Sep: neither. Chat is a per-minute live session — `01-PRD.md` §5.1** |
 | Refund and cancellation policy | The booking function |
 | Charge at booking or at session start | The booking function. Recommending at booking |
 | Whether the admin console needs its own auth provider or reuses phone OTP | Phase 4 |

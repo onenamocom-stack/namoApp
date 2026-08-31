@@ -210,32 +210,58 @@ worst migration in this project. It costs about twenty lines today.
 
 ---
 
-## Phase 6 — Chat
+## Phase 6 — Metered chat
 
-**Build** — `threads`, `messages`, Realtime subscription. Presence via Realtime,
-not a column.
+**The chat window question is answered — chat is per-minute, decided 1 Sep 2026**
+(`01-PRD.md` §5.1). Not booking-bound, not a quota. That answer brings the meter
+forward from phase 11, so **this phase is roughly twice what it was**: the
+schema, the meter, and the room, shipped together.
+
+**Build** — `sessions` with join and leave timestamps. **The meter**: a hold at
+join, a per-minute debit while the room is live, and a cutoff when the wallet
+cannot pay for the next minute. `threads`, `messages`, Realtime subscription.
+Presence via Realtime, not a column.
+
+The rate is the consultant's band rate, read on the server like every other
+price — the client starts a session, it never says what a minute costs.
+
+**Why the meter lands here rather than in 11.** It is the same machinery video
+needs, and chat is the cheaper place to get it wrong: a metering bug in chat
+costs a refund, the same bug in a video call costs the session as well. Phase 11
+then adds an SDK on top of a meter that real sessions have already exercised.
+
+**The hard part is the cutoff, and it is a money path.** A wallet that runs dry
+mid-sentence must stop the session, not go negative and not keep serving. Every
+debit is a ledger row, so a fifty-minute chat is fifty rows and the ledger is
+still the truth. The reversing rules from phase 5 apply unchanged: a session the
+platform failed to deliver reverses in full.
 
 **Front end** — `ChatPanel` reads real threads. **The direction bug cannot be
 expressed any more** — sender identity is a column and role is derived from the
 thread, so the two flip helpers come out. Unread becomes a count of unread rows.
+The room shows the meter running and what is left, because a charge nobody can
+see accruing is a charge that gets disputed.
 
 **Done when:**
 1. A message sent from the seeker side appears on the consultant side without a
    reload, **attributed correctly on both.**
 2. Nobody can read a thread they are not in.
 3. Unread clears when the thread is opened, on the right side only.
-
-**Blocked on:** the chat window question (`01-PRD.md`, `02-TRD.md`) — is paid
-chat a booking with a duration, or a thread with a quota? Both columns exist so
-either answer fits, but the enforcement rule needs deciding before this ships.
+4. **A ten-minute session debits ten minutes at the consultant's band rate** —
+   not nine, not eleven — and the ledger replays to the balance.
+5. **A wallet that runs out mid-session ends the session** rather than going
+   negative, and the last minute charged is one the seeker actually got.
+6. Both sides agree on the duration after a reload, and after one side drops
+   their connection.
 
 ---
 
 ## ═══ The v1 line ═══
 
 **After phase 6, a seeker can sign in, top up with real money, see real
-consultants, book a real slot that charges them, and chat about it. Consultants
-get real requests and a real earnings ledger.**
+consultants, book a real slot that charges them, and hold a paid per-minute chat
+with them. Consultants get real requests, a real earnings ledger, and a second
+revenue line that does not need a slot.**
 
 Everything below is post-v1. Everything not yet touched — Shop, Academy, Pooja,
 Tarot, Reports, Premium, Ask AI, Live, insights, referrals, payouts — **keeps
@@ -322,11 +348,10 @@ the catalogue price changes.
 
 ## Phase 11 — Live video
 
-**Build** — the SDK integration, `sessions` with join and leave timestamps, room
-lifecycle. **And the per-minute meter**, deferred here from phase 5: a balance
-hold, a per-minute debit, and a cutoff when the wallet runs out mid-call. The
-`per_minute` price rows and the band behind them already exist (phase 4);
-`book_session()` refuses them until this phase.
+**Build** — the SDK integration and the room lifecycle, on top of `sessions` and
+the meter, **both of which phase 6 already built and proved on chat**. What is
+new here is video: the SDK, the ringing, and a dropped connection that must not
+keep charging.
 
 **Done when:** a call actually rings, both parties connect, and the session's
 actual duration is recorded — which is also what phase 14 measures.
@@ -468,7 +493,7 @@ no-show or a platform failure, which are not refunds.
 
 | Decision | Blocks | Default if undecided |
 |---|---|---|
-| Chat window semantics | 6 | — |
+| ~~Chat window semantics~~ | 6 | **Answered 1 Sep — per-minute live session** |
 | Ephemeris reference chart | 7 | — |
 | Report prices, and the duplicate SKUs | 8, 10 | — |
 | Video SDK | 11 | — |

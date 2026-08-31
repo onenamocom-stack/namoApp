@@ -1176,7 +1176,7 @@ money.
 | Open | Blocks | Note |
 |---|---|---|
 | **`REPORT_MULTIPLIER` and duplicate SKUs** | report / premium seed | `01-PRD.md` |
-| **Chat window semantics** | `threads` | `booking_id` or `open_until` — both columns exist so either answer fits |
+| ~~**Chat window semantics**~~ | `threads`, `sessions` | **Answered 1 Sep: neither `booking_id` nor a quota. Chat is a per-minute live session, so the billable unit is a `sessions` row with join and leave timestamps, and a thread is the transcript that outlives it — `01-PRD.md` §5.1** |
 | **Consultant ranking formula** | `rank_score_cache` | `01-PRD.md` |
 | **Free tarot pull window** | `tarot_pulls` | Leaning rolling seven days from `pulled_at` |
 | **Bhaktamar card provenance** | `tarot_cards` seed | 48 faces with no attribution recorded |

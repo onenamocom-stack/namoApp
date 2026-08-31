@@ -243,7 +243,7 @@ against their wallet. They are two products, not two opinions about one.
 | | |
 |---|---|
 | Scheduled | 15 / 20 / 30 minutes, one price each, paid up front, claims a slot |
-| Instant | Per minute, no slot, the wallet drains live |
+| Instant | Per minute, no slot, the wallet drains live. **Call and chat both** |
 
 Both come from the same band. Choosing a tier gives a consultant all four
 prices — three lengths and a rate — so there is still exactly one pricing
@@ -253,9 +253,32 @@ The 20-minute price is the one everything is quoted against; the other two are
 rounded to the nearest ₹10 rather than derived exactly, because ₹2,248.50 is
 not a price. See `05-BACKEND-SCHEMA.md` §4.3.
 
-**Per-minute is modelled but not metered.** Phase 4 gives it a row and a rate.
-The meter — a balance hold, a per-minute debit, a mid-session cutoff — is phase
-5/11, and it is the reason instant sessions cannot be sold before then.
+**Chat is per-minute too — decided 1 Sep 2026.** It is an instant session that
+happens to be typed, not a second product: the same band, the same rate, the
+same meter. A consultant picks a tier and that tier's per-minute rate applies to
+both an instant call and a chat.
+
+**And it is a LIVE room, not async messaging.** That follows from the price
+rather than being a separate choice: there is no honest way to bill wall-clock
+minutes against a conversation where the reply comes four hours later. Both
+parties are present, the timer runs, and it ends when someone leaves or the
+wallet empties. A thread that outlives the session is a transcript, not a
+billable surface.
+
+**The consultant picks a tier; they do not type a rate.** Considered and
+rejected on 1 Sep: free-form pricing means dropping the band check from the
+write policy on `consultant_services`, which is the thing that makes "the
+platform sets the price" true rather than merely rendered as six buttons. The
+ladder already spans ₹37 to ₹110 a minute, which is a 3x spread — wide enough to
+express that one reader is worth more than another, narrow enough to keep
+margin predictable and a price change a catalogue edit.
+
+**Per-minute is modelled but not metered.** Phase 4 gave it a row and a rate.
+The meter — a balance hold, a per-minute debit, a mid-session cutoff — **moves
+to phase 6, decided 1 Sep**, because metered chat is what phase 6 now ships. It
+is the same machinery video needs, so phase 11 inherits a meter that has already
+been exercised on the cheaper surface: a meter bug in chat costs a refund, the
+same bug in a video call costs the session as well.
 
 What this replaces: the three incompatible ladders in the mock. `SESSION`'s
 flat 20 minutes survives as the quoted length. The booking records' ₹2,998 for

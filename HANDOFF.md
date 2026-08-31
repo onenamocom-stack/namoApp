@@ -568,10 +568,23 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 - **Platform sets price bands**; consultants pick one, out of `price_bands`, and
   the database refuses anything else. 18% commission, in basis points.
 - **Sessions are sold two ways** — scheduled 15/20/30, and per-minute. Decided
-  26 Aug; per-minute is modelled in phase 4 and **metered in phase 11, decided
-  30 Aug** — a meter needs a call it can cut off, and `sessions` with join and
-  leave timestamps is phase 11's build. Phase 5 refuses a `per_minute` service
-  by name rather than half-charging it.
+  26 Aug; per-minute is modelled in phase 4, and phase 5 refuses a `per_minute`
+  service by name rather than half-charging it.
+- **Chat is per-minute, off the same band — decided 1 Sep.** Not booking-bound
+  and not a quota. It is an instant session that happens to be typed, so it
+  shares the rate, the band and the meter with an instant call. It follows that
+  chat is a **live room**, not async messaging: there is no honest way to bill
+  wall-clock minutes against a reply that arrives four hours later.
+- **The consultant picks a tier; they never type a rate.** Re-confirmed 1 Sep
+  against the per-minute question. Free-form pricing means dropping the band
+  check from the write policy, which is the thing that makes "the platform sets
+  the price" true rather than six buttons on a screen. The ladder spans ₹37 to
+  ₹110 a minute already.
+- **The meter moves from phase 11 to phase 6 — decided 1 Sep**, because metered
+  chat is what phase 6 now ships. Same machinery video needs, built once and
+  debugged on the cheaper surface: a metering bug in chat costs a refund, the
+  same bug in a call costs the session too. **Phase 6 is roughly twice the size
+  it was**, and that was known before it started rather than halfway through.
 - **Seeded consultants land unapproved on production**, and **the marketplace
   launches empty rather than seeded** — decided 26 Aug, reasoning in
   `01-PRD.md` §7. `/consult` says so and offers the application. Flipping the
@@ -593,9 +606,9 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 |---|---|
 | How long a `pending` booking may hold a seeker's money before it expires | Phase 12, and any consultant who is not the founder — `01-PRD.md` §5.4 |
 | Report prices and the duplicate SKUs | Phases 8, 10 |
-| Chat window — booking-bound or quota-bound | Phase 6 |
 | Ephemeris reference chart | Phase 7 |
 | Video SDK — 100ms or Agora | Phase 11 |
+| Whether a dropped connection stops the meter or grants a grace period | Phase 6 |
 | Consultant ranking formula | Phase 13 |
 | Blocking a consultant who has pending money | Phase 13 |
 | Provenance of the 48 Bhaktamar card faces | Seed |
