@@ -18,10 +18,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       # A missing secret is substituted as an empty string, so without this the
@@ -43,8 +43,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -56,4 +56,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
+        with:
+          # GitHub Pages accepts the artifact and then applies it, and this
+          # action only POLLS for that to finish. On 1 Sep it polled
+          # `updating_pages` for the full default ten minutes and aborted —
+          # build had passed in 19s, the artifact was fine, and the identical
+          # commit deployed in 19s on a plain re-run. Nothing in this repo can
+          # fail once and pass on a retry.
+          #
+          # Twenty minutes turns a slow Pages into a slow green build instead
+          # of a red X and a site left serving the previous bundle. It does not
+          # make anything faster; it stops us calling GitHub's queue our
+          # failure. Normal here is 33-43s, so anything near this ceiling is
+          # still worth looking at.
+          timeout: 1200000
