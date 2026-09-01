@@ -57,17 +57,18 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
-        with:
-          # GitHub Pages accepts the artifact and then applies it, and this
-          # action only POLLS for that to finish. On 1 Sep it polled
-          # `updating_pages` for the full default ten minutes and aborted —
-          # build had passed in 19s, the artifact was fine, and the identical
-          # commit deployed in 19s on a plain re-run. Nothing in this repo can
-          # fail once and pass on a retry.
-          #
-          # Twenty minutes turns a slow Pages into a slow green build instead
-          # of a red X and a site left serving the previous bundle. It does not
-          # make anything faster; it stops us calling GitHub's queue our
-          # failure. Normal here is 33-43s, so anything near this ceiling is
-          # still worth looking at.
-          timeout: 1200000
+        # NO `timeout:` HERE, AND THAT IS THE FINDING. The action caps it at
+        # 600000ms and warns "timeout value is greater than the allowed maximum
+        # - timeout set to the maximum of 600000 milliseconds" — so ten minutes
+        # is a ceiling, not a default, and raising it is a no-op that reads like
+        # a fix. Tried on 1 Sep and reverted the same day.
+        #
+        # Which means: a GitHub Pages deploy that hangs past ten minutes WILL
+        # fail here, and there is nothing in this file that can prevent it.
+        # It is not our failure and it leaves the previous bundle serving, so
+        # the site stays up and stays stale. The remedy is one command:
+        #
+        #     gh run rerun <run-id> --failed
+        #
+        # On 1 Sep that turned a ten-minute timeout into a 19-second success on
+        # the identical commit. Normal here is 33-43s; ten minutes means stuck.
