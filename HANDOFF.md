@@ -13,7 +13,7 @@ Updated 1 Sep 2026.
 | 3 · payments in | **Built and deployed. One done-condition short**, blocked on Razorpay's website review. The site is now on `1namo.com` (the move Razorpay's review wanted — §6); registering that domain and its policy pages with Razorpay is the remaining step. Until it clears, live checkout is refused and **production wallets cannot be funded** |
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
-| **6 · metered chat** | **Built, walked on dev, and deployed.** The meter, sessions, threads and messages. **Production's DATABASE has none of it** — `014`–`018` and `pg_cron` still to paste (§6) |
+| **6 · metered chat** | **Done.** On both projects, front end deployed, five of six done-conditions verified both sides. One visual check outstanding (§2) |
 | **7 · charts** | **Next.** Third-party API chosen (§3); blocked on the reference chart, which the key does not unblock |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -529,10 +529,24 @@ slow morning, too long and a seeker's money is held for a week. Logged in
 `014_metered_chat_check.sql` beside them — eleven assertions, all relative, all
 passing on dev.
 
-**PRODUCTION'S DATABASE HAS NONE OF THEM.** The front end is live and the tables
-it talks to do not exist there, so chat is inert on production until `014`–`018`
-and `pg_cron` are pasted in (§6). That is a deliberate order, not an oversight:
-the front end going first is harmless, a metering bug on a live wallet is not.
+**Applied to production 1 Sep and verified there**: `3` tables, `5` functions,
+`threads_view`, `messages` published to Realtime, and `pg_cron` reporting
+`ext=1, job=1, job_active=true`. The front end went first and the schema
+followed, which is the deliberate order — a front end arriving early is
+harmless, a metering bug on a live wallet is not.
+
+**Chat is therefore live on production.** The one approved consultant
+(`57da8a0e`) has an active per-minute service at ₹37/min, and `session_request`
+needs exactly that plus `status = 'approved'`. Nobody can pay for one yet:
+production wallets cannot be funded until Razorpay clears the domain, and the
+only funded production wallet is that consultant's own — who cannot chat with
+themselves. The six seeded consultants have per-minute rows and stay `pending`,
+so they remain unreachable, which is the launch-empty decision holding.
+
+**Production runs on Supabase's FREE tier.** Worth knowing now that a scheduled
+job guards money: a free project that goes genuinely idle can be paused, and a
+paused project runs no cron. A live site with users should not idle, but if
+production is ever quiet for a week, the sweeper is the thing that stops.
 
 Chat is per-minute and live, so this phase is the meter as much as it is chat.
 Phase 11 inherits both.
@@ -846,23 +860,14 @@ it is built.
 that is deliberate: a metering bug found in a browser is cheaper than one found
 on a live wallet.
 
-### Owed on phase 6, before real people use chat
+### Owed on phase 6 — one thing, and it is a look
 
-1. **Paste `014`, `015`, `016`, `017`, `018` into the PRODUCTION SQL editor, in
-   order.** No agent session can: the MCP is pinned to dev and there is no
-   `psql`, no driver and no connection string on this machine.
-2. **Enable `pg_cron` on production** and schedule the sweep:
-   ```sql
-   create extension if not exists pg_cron;
-   select cron.schedule('session-sweep', '* * * * *',
-                        $$select public.session_sweep()$$);
-   ```
-   **This is not optional.** Without the scheduler a session both parties walk
-   away from never settles, and with no hold cap that is the seeker's entire
-   balance held forever, silently.
-3. Two done-conditions are still unproven in a browser: **unread clearing on the
-   right side only**, and **both sides agreeing on duration after a mid-session
-   reload**. The check covers the money; those two are UI behaviour.
+**Nobody has seen the chat bubbles render.** Condition 1 asks for messages
+"attributed correctly on both", and that is proven at the data layer — the same
+two rows come back MINE/THEIRS to one party and THEIRS/MINE to the other — but
+the pixels are unverified because Chrome's MCP dropped mid-session. The data
+cannot be backwards (`m.sender_id === myId`, and the flip helpers are deleted),
+but that is an argument rather than a look. Thirty seconds on dev closes it.
 
 ### Phase 7 — decided, and what is still open
 
