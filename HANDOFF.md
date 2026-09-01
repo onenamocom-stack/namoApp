@@ -585,6 +585,29 @@ joined, the meter ran at ₹75/min, messages went both ways, and ending settled:
 | Earnings | gross ₹225, fee ₹40.50, net ₹184.50 |
 | Ledger rows | two |
 
+**Where the six done-conditions stand — checked 1 Sep, both sides.**
+
+| # | Condition | State |
+|---|---|---|
+| 1 | Seeker→consultant without a reload, **attributed correctly on both** | **Delivery yes** (Realtime, watched live). **Attribution yes at the data layer**: the same two rows come back MINE/THEIRS on one side and THEIRS/MINE on the other. **The pixels are unverified** — Chrome's MCP was down; nobody has seen the bubbles render |
+| 2 | Nobody reads a thread they are not in | **Yes** — check assertion 11 |
+| 3 | Unread clears on open, **right side only** | **Yes** — `(2,1)` → `(0,1)`: cleared for the consultant who opened it, untouched for the seeker |
+| 4 | Ten minutes debits ten at the band rate; the ledger replays | **Yes** — check assertion 5, plus a live 2.8→3 min settle |
+| 5 | A wallet that runs out ends the session; the last minute is one they got | **Yes** — wallet set to exactly one minute, session ran 20:01:04→20:02:04 and was ended by the sweeper at 20:03:00, charged exactly that minute, wallet to zero, ledger replays |
+| 6 | Both sides agree on the duration | **Yes** — both JWTs read byte-identical rows including `ended_at` |
+
+**`pg_cron` has been observed firing on its own**, which matters more than it
+sounds: everything else about the sweeper had only ever been proved by calling
+`session_sweep()` by hand. The session above was ended at `20:03:00.014` — a
+tick on the minute boundary, by the scheduler, with nobody watching. A
+scheduler that is scheduled but not running is the silent failure this phase
+cannot survive.
+
+**The one thing still unwalked is visual**: the chat bubbles rendering on the
+correct side of the panel for each party. The data underneath cannot be
+backwards — "mine" is `m.sender_id === myId` and the flip helpers are deleted —
+but that is an argument, not a look. Worth thirty seconds in a browser.
+
 **`session_accept` had no row lock, and that was the expensive one.** It read
 the session with a bare SELECT while `session_end` used `for update`, so two
 accepts of one request both passed the guard and the second wrote a SECOND full
