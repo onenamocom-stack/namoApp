@@ -272,19 +272,50 @@ bulk actions. See `04-UI-UX.md`.
 | Payouts | RazorpayX / Cashfree Payouts | Paying out is a different product from taking in, with its own KYC gate |
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
 | Ask AI | Claude, behind a server proxy | The key cannot ship to a browser and the quota is money |
-| Ephemeris | **Swiss Ephemeris** | The alternative is being subtly wrong forever |
+| Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
 
-### The ephemeris is a second service, in a second language
+### Charts come from a third-party API — decided 1 Sep 2026
 
-Swiss Ephemeris is the reference implementation and its best-maintained binding
-is Python (`pyswisseph`). A ~200-line service taking a date, a time, a place and
-a zone and returning planetary positions is a legitimate second process.
+**This replaces an earlier decision on this page** that Swiss Ephemeris would
+run as our own Python service. It will not. Charts come from
+`freeastroapi.com` (Entry tier: $8/month, 50,000 requests/month, 5 req/sec,
+commercial use permitted), which covers natal charts in both traditions,
+divisional charts, panchang, Vimshottari dasha, Ashtakoota matching and
+personalised horoscopes.
 
-JavaScript ports exist and are less proven. Indian astrology is unforgiving about
-ayanamsa and house system being exactly right, **and a wrong one is wrong
-silently** — the chart renders, it is just not yours. Pick a reference birth
-chart with an independently verified result *before* writing the service, or
-there is nothing to test against.
+What the reversal buys: no second language, no second service to deploy, no
+hosting decision, and unlimited geo/timezone lookup — which retires the
+Open-Meteo licence problem in `01-PRD.md` §8 rather than leaving it on the
+signup path.
+
+**What it does not buy is confidence in the numbers, and that is the part that
+matters.** The original reasoning on this page still holds word for word:
+Indian astrology is unforgiving about ayanamsa and house system being exactly
+right, **and a wrong one is wrong silently** — the chart renders, it is just not
+yours. The risk has moved rather than gone. With `pyswisseph` the ayanamsa was
+ours to set and the danger was forgetting to; with a third-party API it is
+theirs to default, we cannot see it, and it can change without a release note.
+That API offers Placidus, Whole Sign, Equal and Koch, and tropical as well as
+sidereal, so its default is emphatically not what this product wants.
+
+Therefore, unchanged from the original decision and now load-bearing:
+
+- **Pick a reference birth chart with an independently verified result BEFORE
+  writing the integration**, or there is nothing to test against.
+- **Pass ayanamsa and house system explicitly on every call.** Never rely on a
+  default, and never assume one call's default is the next one's.
+
+Two consequences of a third party that a local service did not have:
+
+- **The key is a secret** (INSTRUCTIONS.md rule 7). An Edge Function proxies
+  every call — four CORS headers, key as a function secret. The browser never
+  holds it.
+- **Birth details leave this system.** Date, time and place for every user, sent
+  to somebody else's server. That is a bigger version of the open question
+  `01-PRD.md` §8 already carries about email, and it belongs in the same place.
+- **Charts now depend on someone else's uptime**, so a failure has to be a
+  stated answer rather than an empty screen. This project has already learned
+  that a failed read and an absent row must not look alike.
 
 ---
 

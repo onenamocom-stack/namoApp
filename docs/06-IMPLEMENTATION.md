@@ -276,8 +276,15 @@ console when the GUI hurts.
 
 ## Phase 7 — Charts
 
-**Build** — the Swiss Ephemeris service. Chart computation from stored birth
-details. Panchang for a real date.
+**Build** — an Edge Function proxying `freeastroapi.com` (decided 1 Sep,
+`02-TRD.md` §8 — **not** our own ephemeris service any more). Chart computation
+from stored birth details, cached because a natal chart never changes. Panchang
+for a real date.
+
+**The key is a function secret and the browser never holds it** (rule 7). Every
+call passes ayanamsa and house system **explicitly** — the API defaults to
+tropical and offers four house systems, so a defaulted call returns a chart
+belonging to nobody.
 
 **Front end** — `placements`, `chartHouses`, `days` and `panchang` come out of the
 mock.

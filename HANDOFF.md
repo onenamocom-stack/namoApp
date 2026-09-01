@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 30 Aug 2026.
+Updated 1 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -13,8 +13,8 @@ Updated 30 Aug 2026.
 | 3 · payments in | **Built and deployed. One done-condition short**, blocked on Razorpay's website review. The site is now on `1namo.com` (the move Razorpay's review wanted — §6); registering that domain and its policy pages with Razorpay is the remaining step. Until it clears, live checkout is refused and **production wallets cannot be funded** |
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
-| **6 · metered chat** | **Built and walked on dev.** The meter, sessions, threads and messages. Production has none of it yet (§2) |
-| 7 · charts | Next |
+| **6 · metered chat** | **Built, walked on dev, and deployed.** The meter, sessions, threads and messages. **Production's DATABASE has none of it** — `014`–`018` and `pg_cron` still to paste (§6) |
+| **7 · charts** | **Next.** Third-party API chosen (§3); blocked on the reference chart, which the key does not unblock |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -208,7 +208,7 @@ Everything else evaporates on reload, deliberately.
 
 ---
 
-## 2. Backend — phases 1 to 5
+## 2. Backend — phases 1 to 6
 
 **All four phases are built and applied to both projects.** Migrations are
 numbered SQL files in `backend/schema/`, forward-only. There is no
@@ -523,10 +523,16 @@ slow morning, too long and a seeker's money is held for a week. Logged in
 
 ### Phase 6 — metered chat
 
-**Built and walked on DEV. Production has none of it.** Three migrations:
+**Built, walked on dev, and DEPLOYED to the live site.** Five migrations:
 `014_metered_chat.sql`, `015_realtime_publication.sql`, `016_thread_preview.sql`,
-plus `014_metered_chat_check.sql` beside them — eleven assertions, all relative,
-all passing.
+`017_no_hold_cap.sql`, `018_session_review_fixes.sql`, plus
+`014_metered_chat_check.sql` beside them — eleven assertions, all relative, all
+passing on dev.
+
+**PRODUCTION'S DATABASE HAS NONE OF THEM.** The front end is live and the tables
+it talks to do not exist there, so chat is inert on production until `014`–`018`
+and `pg_cron` are pasted in (§6). That is a deliberate order, not an oversight:
+the front end going first is harmless, a metering bug on a live wallet is not.
 
 Chat is per-minute and live, so this phase is the meter as much as it is chat.
 Phase 11 inherits both.
@@ -703,7 +709,16 @@ Recorded so they are not re-argued. Reasoning is in the documents.
   `01-PRD.md` §7. `/consult` says so and offers the application. Flipping the
   six on for a demo is one reversible statement; approving them for the public
   is a different decision and gets re-argued there, not here.
-- **Swiss Ephemeris** for charts, as its own Python service.
+- **Charts come from a third-party API — decided 1 Sep 2026, and this REVERSES
+  Swiss Ephemeris as our own Python service.** `freeastroapi.com`, Entry tier:
+  $8/month, 50,000 requests/month, 5 req/sec, commercial use permitted. It
+  covers natal charts, both Vedic and Western, divisional charts, panchang,
+  Ashtakoota matching, personalised horoscopes — and unlimited geo/timezone
+  lookup, which retires the Open-Meteo licence problem (`01-PRD.md` §8).
+  What it removes is the second language, the second service and a hosting
+  decision. What it does NOT remove is the reference chart: the ayanamsa is now
+  theirs to default rather than ours to set, so it must be passed explicitly and
+  verified against a known birth. `02-TRD.md` §8 is rewritten, not extended.
 - **Payouts and KYC last.** Most regulated, least urgent.
 - **Dev and production are separate Supabase projects**, as of 23 Aug.
 - **Server functions run on Supabase Edge Functions.** Deno, next to the
@@ -719,7 +734,10 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 |---|---|
 | How long a `pending` booking may hold a seeker's money before it expires | Phase 12, and any consultant who is not the founder — `01-PRD.md` §5.4 |
 | Report prices and the duplicate SKUs | Phases 8, 10 |
-| Ephemeris reference chart | Phase 7 |
+| **Ephemeris reference chart** — still unchosen, and the key does not unblock it | Phase 7 |
+| Ayanamsa and house system, to be passed explicitly rather than defaulted | Phase 7 |
+| Whether onboarding can say the birth time is unknown — `birth_time_known` is hardcoded `true` | Phase 7 |
+| Whether the API's geo endpoint replaces Open-Meteo | Phase 7, and `01-PRD.md` §8 |
 | Video SDK — 100ms or Agora | Phase 11 |
 | Whether a dropped connection stops the meter or grants a grace period | Phase 6 |
 | Consultant ranking formula | Phase 13 |
@@ -769,6 +787,13 @@ Shani as a single figure is thin on Commons.
   into the same account, then restart Chrome.
 - **CDP input dispatch times out on this machine** while screenshots and
   `javascript_tool` work fine. Drive clicks from JS.
+- **A GitHub Pages deploy can fail on GitHub's side, long after the build
+  passed.** On 1 Sep, run `33536321043` built in 19s, uploaded its artifact, and
+  then sat at `updating_pages` for ten minutes before aborting with "Timeout
+  reached, aborting!". The site kept serving the PREVIOUS bundle, so nothing
+  broke and nothing was live either. `gh run rerun <id> --failed` cleared it in
+  19 seconds. Check `gh run list` after a push rather than assuming ~40s;
+  normal here is 37s–2m22s, and ten minutes means stuck, not slow.
 - **A function that is plainly in the database and returns `PGRST202` over REST
   is probably not a stale schema cache. It is probably two databases.** Phase 5
   lost an hour to that: the SQL editor could see `book_session`, the browser
@@ -792,36 +817,101 @@ it is built.
 
 ---
 
-## 6. Next — phase 6, chat
+## 6. Next — phase 7, charts
 
-**Phase 5 is closed.** Both projects carry `012`, all four done-conditions pass
-on dev, and production's stray data from the mis-targeted session is fully
-reversed (§2).
+**Phase 6 is built, walked and deployed.** What is left of it is production, and
+that is deliberate: a metering bug found in a browser is cheaper than one found
+on a live wallet.
 
-**One thing is owed before the next agent session writes anything:**
+### Owed on phase 6, before real people use chat
 
-- **The MCP is fixed and CONFIRMED** — `~/.claude.json` had a second server
-  called `supabase` on the production ref, shadowing the project's. Both now
-  carry the dev ref, and `get_project_url` returns `mrjsatelbuiypodeulcx` once
-  the server reconnects. **`get_project_url` before the first write stays a
-  rule** (`INSTRUCTIONS.md` §3) — one read, it would have caught this on the
-  first call, and config can drift again.
+1. **Paste `014`, `015`, `016`, `017`, `018` into the PRODUCTION SQL editor, in
+   order.** No agent session can: the MCP is pinned to dev and there is no
+   `psql`, no driver and no connection string on this machine.
+2. **Enable `pg_cron` on production** and schedule the sweep:
+   ```sql
+   create extension if not exists pg_cron;
+   select cron.schedule('session-sweep', '* * * * *',
+                        $$select public.session_sweep()$$);
+   ```
+   **This is not optional.** Without the scheduler a session both parties walk
+   away from never settles, and with no hold cap that is the seeker's entire
+   balance held forever, silently.
+3. Two done-conditions are still unproven in a browser: **unread clearing on the
+   right side only**, and **both sides agreeing on duration after a mid-session
+   reload**. The check covers the money; those two are UI behaviour.
 
-  **The consequence is intended: no agent session can write to production any
-  more.** Production migrations are pasted by hand, which is how `007`–`011`
-  went and how `013` must go.
+### Phase 7 — decided, and what is still open
 
-**Dev test artefacts, deliberately left:** both test accounts funded ₹10,000
-each by hand, six bookings against seeded consultant `a1` from the race, one
-booked-then-declined session between the two accounts, and `+919999900002` given
-birth details so it can reach `/consult` at all — there is still no
-sign-in-only route, so a signed-in account without birth details lands back on
-onboarding. None of this is on production.
+**Charts come from a third-party API, not our own ephemeris service — decided
+1 Sep 2026.** `freeastroapi.com`, Entry tier: $8/month, 50,000 requests/month,
+5 req/sec, commercial use permitted. This **reverses** `02-TRD.md` §8, which
+chose Swiss Ephemeris as a second Python service; that section is rewritten
+rather than extended.
 
-**`race.py` lives in the session scratchpad, not the repo.** If done-condition 1
-ever needs re-running, the shape that matters is in §2: pre-connect the sockets,
-release them with a barrier, and check that the loser's reason came from the
-index rather than the pre-check.
+What the tier covers, against surfaces this app already has:
+
+| Surface | Endpoint |
+|---|---|
+| `/chart` — `placements`, `chartHouses` | Kundli/Rasi, planetary positions, divisional charts |
+| Three chart systems (Vedic, South Indian, Western) | Vedic **and** Western natal, both included |
+| Panchang — `tithi/nakshatra/yoga/karana/rahuKaal` | Panchang endpoint, same fields |
+| Sun / moon / rising on four screens | Dedicated endpoints |
+| `/synastry` | Western synastry **and** Ashtakoota kundli matching |
+| Daily horoscope — `days` | Sign-based and personalised |
+| Place → lat/lon/zone | **Unlimited geo city search on Entry** |
+
+**The geo endpoint may be the most valuable thing in the tier.** `01-PRD.md` §8
+records that Open-Meteo's free geocoder is non-commercial and this product is
+not — a live licence problem sitting on the signup path since phase 1. This
+retires it, with the same shape of data `AskPlace` already consumes.
+
+**Still open, and none of it is unblocked by having the key:**
+
+- **THE REFERENCE CHART.** Named in `01-PRD.md`, `02-TRD.md` §8 and
+  `06-IMPLEMENTATION.md` phase 7, and still not chosen. It matters *more* with a
+  third-party API than it did with our own ephemeris: with `pyswisseph` the
+  ayanamsa was ours to set and the risk was forgetting; here it is theirs to
+  default and we cannot see it. Pick a birth with an independently verified
+  chart and check every position before believing anything.
+- **Ayanamsa and house system, passed explicitly on every call.** The API
+  supports Placidus / Whole Sign / Equal / Koch and tropical / sidereal — so the
+  default is emphatically not what this product wants, and tropical + Placidus
+  would render a beautiful chart belonging to nobody.
+- **`birth_time_known` is hardcoded `true`** at `Computing.jsx:111`, and
+  `AskTime.jsx` offers no "I don't know". The column exists because, as
+  `05-BACKEND-SCHEMA.md` §4.1 puts it, a large share of Indian users do not know
+  their minute of birth. All four production users are marked as knowing it and
+  some are guessing. **Planets survive a rough time; the ascendant moves a whole
+  sign every two hours,** so the houses are fiction while looking precise.
+- **Birth details will leave this system.** Date, time and place for every user,
+  sent to a third party. Belongs beside the email question in `01-PRD.md` §8.
+- **Reports cannot be sold on Entry.** Two report credits a month, against a
+  ₹4,041 Full Birth Chart. Phase 8/10's problem, but decide before listing a
+  price.
+
+**Two things to build in from the first commit**, both already paid for once:
+
+- **The key never reaches the browser** (rule 7). An Edge Function proxies it,
+  four CORS headers, key as a function secret — phase 3's lessons, unchanged.
+- **Cache the charts.** A natal chart never changes. 50,000/month is generous,
+  5 req/sec is not, and recomputing a constant on every screen visit is money
+  and latency. Rule 8: store the input, compute the derivation — and a cached
+  derivation carries `_cache` in the column name so it is obviously throwaway.
+  Panchang caches per date, horoscope per user per day.
+
+**Sequence: charts first.** Sun/moon/rising, reports and synastry all read the
+same computation. Panchang and horoscope are independent and can follow.
+Phase 7 must change **four** screens, not one — `Computing.jsx`,
+`HoroscopePanel.jsx`, `Shop.jsx` and `useProfileFields()`. Changing only the
+hook leaves three screens quietly lying.
+
+### Still parked
+
+**Razorpay's website review.** Applied for; nothing to do but wait. When it
+clears, one ₹1 payment closes phase 3's last done-condition *and* proves the
+webhook secret set on 31 Aug matches. Run
+`backend/tools/reconcile-payments.mjs` straight after.
 
 ---
 
