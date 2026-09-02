@@ -14,7 +14,7 @@ Updated 3 Sep 2026.
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
-| **7 · charts** | **Done and closed, on both projects and live.** All three done-conditions pass, routes walked, reference chart verified by arithmetic that does not go through the API. Production runs one function version behind dev — logging only (§6) |
+| **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -994,14 +994,18 @@ in the bundle:
 one. `C:\Atharv 2\PHASE7-PROMPT.md`, outside the repo, still contains the dead
 key in plaintext.
 
-#### Owed on phase 7
+#### Nothing is owed on phase 7
 
-1. **Production runs one function version behind.** Dev is on **v6**, which logs a failed
-   cache read or write; production is on the deploy before it, which does not.
-   Same behaviour in every other respect. It matters because a broken cache is
-   invisible by construction — the answers stay correct and every call misses,
-   which spends 50,000 requests a month looking healthy. Redeploy production
-   from `backend/functions/astro/index.ts` next time you touch it.
+Both projects run the same function. A failed cache read or write is logged on
+each — worth keeping, because a broken cache is invisible by construction: the
+answers stay correct, every call misses, and 50,000 requests a month drain while
+everything looks healthy.
+
+Production was re-checked after its redeploy, on the paths that would break if a
+dashboard paste were truncated: `geo` still returns seven rows from their eight,
+so the population sort and the duplicate collapse are both there; an uncached
+panchang computes and the repeat comes back `cached: true`, which exercises the
+write; and all three refusal shapes are intact.
 
 **The front end is deployed.** `5f18150` on `main`, built in 32s, and the live
 bundle is `index-DcSBECHe.js` — checked rather than assumed, because a green
