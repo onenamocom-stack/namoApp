@@ -14,7 +14,7 @@ Updated 3 Sep 2026.
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
-| **7 · charts** | **Backend done and closed on both projects; FRONT END NOT DEPLOYED.** All three done-conditions pass, routes walked on dev, reference chart verified by arithmetic that does not go through the API. Nothing is committed or pushed, so the live site still serves the seed chart (§6) |
+| **7 · charts** | **Done and closed, on both projects and live.** All three done-conditions pass, routes walked, reference chart verified by arithmetic that does not go through the API. Production runs one function version behind dev — logging only (§6) |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -124,12 +124,7 @@ Two sides in one codebase. Most values on screen still come from
 - **Charts, the panchang and the daily reading** (phase 7). Computed from the
   signed-in person's own birth row by the `astro` Edge Function and memoised in
   `astro_cache`. `/chart`, `/chart/:id`, `/horoscope`, the horoscope overlay and
-  both computed cards on `/home` are real.
-
-  **The backend is on both projects. The front end is not deployed.** Nothing
-  has been pushed, so `https://1namo.com` still serves the pre-phase-7 bundle
-  and still shows the seed chart to everybody. Both halves are needed and only
-  one is there.
+  both computed cards on `/home` are real, **on both projects and deployed**.
 
 Everything else evaporates on reload, deliberately.
 
@@ -1001,17 +996,17 @@ key in plaintext.
 
 #### Owed on phase 7
 
-1. **The front end is not deployed, and this is the one that matters.**
-   Nothing is committed and nothing is pushed, so `https://1namo.com` still
-   serves the pre-phase-7 bundle: the four real production accounts still see
-   the seed person's chart. The Edge Function underneath them is live and
-   correct and nobody can reach it. Pushing to `main` deploys in ~40s.
-2. **Production runs one function version behind.** Dev is on **v6**, which logs a failed
+1. **Production runs one function version behind.** Dev is on **v6**, which logs a failed
    cache read or write; production is on the deploy before it, which does not.
    Same behaviour in every other respect. It matters because a broken cache is
    invisible by construction — the answers stay correct and every call misses,
    which spends 50,000 requests a month looking healthy. Redeploy production
    from `backend/functions/astro/index.ts` next time you touch it.
+
+**The front end is deployed.** `5f18150` on `main`, built in 32s, and the live
+bundle is `index-DcSBECHe.js` — checked rather than assumed, because a green
+Actions run and a served bundle are different facts here. The four deleted mock
+strings are absent from it and the phase 7 copy is present.
 
 **Reports still cannot be sold on Entry** — two report credits a month against a
 ₹4,041 Full Birth Chart. Phase 8/10's problem, but do not build a checkout
