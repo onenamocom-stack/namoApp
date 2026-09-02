@@ -785,15 +785,18 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 |---|---|
 | How long a `pending` booking may hold a seeker's money before it expires | Phase 12, and any consultant who is not the founder — `01-PRD.md` §5.4 |
 | Report prices and the duplicate SKUs | Phases 8, 10 |
-| **Ephemeris reference chart** — still unchosen, and the key does not unblock it | Phase 7 |
-| Ayanamsa and house system, to be passed explicitly rather than defaulted | Phase 7 |
-| Whether onboarding can say the birth time is unknown — `birth_time_known` is hardcoded `true` | Phase 7 |
-| Whether the API's geo endpoint replaces Open-Meteo | Phase 7, and `01-PRD.md` §8 |
 | Video SDK — 100ms or Agora | Phase 11 |
 | Whether a dropped connection stops the meter or grants a grace period | Phase 6 |
 | Consultant ranking formula | Phase 13 |
 | Blocking a consultant who has pending money | Phase 13 |
 | Provenance of the 48 Bhaktamar card faces | Seed |
+| **Which freeastroapi tier, and when** — Entry's 50,000/month is roughly 1,600 daily actives once the panchang key is fixed. Above that it is High, and above ~16,000 it is neither | Nothing yet. Bites at ~1,600 DAU |
+| **Whether `astro_cache` ever gets a sweeper** — horoscope rows are 11 kB each, one per person per day, and nothing deletes them | Nothing yet. Bites at ~1,000 users |
+
+Four phase 7 questions were closed on 2–3 Sep and have been removed from this
+table rather than left with an answer beside them: the reference chart, the
+ayanamsa and house system, the unknown birth time, and the geo endpoint. Each is
+now stated as settled in the document that owns it.
 
 ---
 
@@ -868,7 +871,7 @@ it is built.
 
 ---
 
-## 6. Phase 7, charts — built on dev, one secret short
+## 6. Phase 7 is done. What is left is phase 3's, and it is not code
 
 **Phase 6 is built, walked and deployed.** What is left of it is production, and
 that is deliberate: a metering bug found in a browser is cheaper than one found
