@@ -317,6 +317,14 @@ export function readingFrom(horoscope, label, context) {
       money: s.wealth?.score ?? null,
     },
     sections: horoscope.sections ?? [],
+    /* The almanac for this day, carried on the reading itself.
+       It is here because it is the part that ACTUALLY MOVES between yesterday,
+       today and tomorrow. Their ruleset derives the headline and the six scores
+       from the dasha stack and ranked gochar, neither of which shifts in three
+       days, so those come back identical across the tabs — measured, not
+       assumed. The tithi, the nakshatra and the windows do change daily, so the
+       screen leads with them and the three tabs stop looking broken. */
+    panchang: panchangFrom(horoscope.panchang),
     transits: (horoscope.influences?.all_ranked ?? []).map((i) => ({
       id: i.fact_id ?? i.id,
       title: i.title,

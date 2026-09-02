@@ -121,7 +121,24 @@ export default function Horoscope() {
               app, so it sits above the fold with nothing competing for the
               position. */}
           <section key={key} className="animate-fade section pt-10">
-            <p className="label mb-8">{longDate(day.date)}</p>
+            <p className="label mb-4">{longDate(day.date)}</p>
+
+            {/* The day's own almanac, directly under its date.
+                This is here because it is the only part of the reading that
+                CHANGES between the three tabs. Their ruleset builds the
+                headline and the scores from the dasha stack and ranked gochar,
+                which do not move in three days, so those come back identical
+                for yesterday, today and tomorrow — checked field by field, not
+                assumed. Leading with the tithi and the nakshatra means
+                switching tabs visibly does something true, instead of looking
+                like a broken forecast. */}
+            {day.panchang && (
+              <p className="mb-8 text-center text-micro uppercase tracking-caps text-t3">
+                {[day.panchang.tithi, day.panchang.nakshatra, day.panchang.yoga]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            )}
 
             {/* Tense marker. Without it, a past-tense reading under a big
                 headline reads as a broken forecast rather than a review. */}

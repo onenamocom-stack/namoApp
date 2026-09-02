@@ -60,9 +60,17 @@ export default function Chart() {
 
   return (
     <>
+      {/* `back` without `hardBack`: /chart is reached from Profile, from the
+          horoscope's Go deeper rows, from a placement page and from the
+          panchang card, so the right answer is wherever you came from. It fell
+          back to /home on a cold load, which is also right — a deep link has
+          nothing behind it. It had no back control at all until now, which on a
+          screen with no bottom nav meant the only way out was the browser. */}
       <TopBar
         title={viewingOther ? `${firstName(display.name)}’s chart` : 'Your chart'}
         sub={[display.date, display.time].filter(Boolean).join(' · ')}
+        back
+        backTo="/home"
       />
 
       {viewingOther && (

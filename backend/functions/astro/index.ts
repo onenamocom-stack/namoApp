@@ -106,6 +106,26 @@ function dateParts(date: string) {
   return { year, month, day, hour: 12, minute: 0 }
 }
 
+/**
+ * The panchang's cache key, deliberately COARSER than the coordinates it is
+ * computed from.
+ *
+ * A panchang is a function of a date and a place, and it was first keyed on the
+ * birth place to six decimals — which is about ten centimetres, so no two people
+ * ever shared a row and every user cost a request every day. That is a 2× bill
+ * for an answer that does not vary.
+ *
+ * One decimal is roughly 11 km. Across that, sunrise moves about twelve seconds
+ * and every transition time with it, against a card that prints HH:MM. So a city
+ * shares one row and the displayed answer is unchanged.
+ *
+ * The chart is NOT rounded and must not be — a house cusp does move over 11 km,
+ * and that key is per person anyway.
+ */
+function placeKey(lat: number, lng: number) {
+  return `${lat.toFixed(1)},${lng.toFixed(1)}`
+}
+
 /** Short digest of everything about a birth that moves a chart. It is half the
  *  cache key, and it is why there is no TTL and no invalidation anywhere: a
  *  corrected birth time produces a different key and therefore a miss. Nothing
@@ -289,7 +309,7 @@ Deno.serve(async (req) => {
   if (!user) {
     if (op !== 'panchang') return refuse('signed_out', 'Sign in to see your chart.', 401, headers)
     const { lat, lng, zone } = DEFAULT_PLACE
-    const got = await memo(`panchang:${date}:${lat},${lng}`, () =>
+    const got = await memo(`panchang:${date}:${placeKey(lat, lng)}`, () =>
       post('/api/v2/vedic/panchang', { ...dateParts(date), lat, lng, tz_str: zone, ...RECKONING }))
     if (!got) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
     return ok({ ok: true, data: got.payload, date, cached: got.cached }, headers)
@@ -326,7 +346,7 @@ Deno.serve(async (req) => {
       // Anchored on this person's birth place, on the same ruleset the
       // horoscope uses, so the two calendars on the home screen cannot disagree
       // — which is precisely what the mock they replace did.
-      key: `panchang:${date}:${birth.lat},${birth.lng}`,
+      key: `panchang:${date}:${placeKey(birth.lat, birth.lng)}`,
       run: () => post('/api/v2/vedic/panchang', {
         ...dateParts(date), lat: birth.lat, lng: birth.lng, tz_str: birth.tz_str, ...RECKONING,
       }),

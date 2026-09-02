@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
 import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
+import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import HoroscopePanel from './components/HoroscopePanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
@@ -56,7 +57,11 @@ function TabLayout() {
   return (
     <>
       <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <Outlet />
+        {/* Inside the shell, not around it: a screen that throws must not take
+            the bottom nav with it, or there is no way out of the crash. */}
+        <Boundary resetKey={pathname}>
+          <Outlet />
+        </Boundary>
       </main>
       <BottomNav />
     </>
@@ -76,7 +81,11 @@ function ProLayout() {
   return (
     <>
       <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <Outlet />
+        {/* Inside the shell, not around it: a screen that throws must not take
+            the bottom nav with it, or there is no way out of the crash. */}
+        <Boundary resetKey={pathname}>
+          <Outlet />
+        </Boundary>
       </main>
       <BottomNav tabs={PRO_TABS} />
     </>
@@ -88,7 +97,9 @@ function PlainLayout() {
   const { pathname } = useLocation()
   return (
     <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
-      <Outlet />
+      <Boundary resetKey={pathname}>
+        <Outlet />
+      </Boundary>
     </main>
   )
 }
