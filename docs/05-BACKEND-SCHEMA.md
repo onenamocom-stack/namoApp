@@ -81,6 +81,13 @@ Every seeded table carries `legacy_id text` — see §8.
 Birth details are stored; charts, horoscopes and panchang are computed. If a
 derivation is ever cached, the column says `_cache` and it can be thrown away.
 
+Built in phase 7 as **one table, `astro_cache`** (§4.10) rather than a `_cache`
+column on `profiles`. The reason is that the same rule covers three different
+derivations with three different lifetimes — a natal chart, a panchang for a
+date, a horoscope for a person and a date — and a column per derivation on a
+table about people would put the panchang, which is about nowhere in particular,
+on somebody's row.
+
 ### 1.6 Timestamps are `timestamptz`, with exactly one exception
 
 Everything is UTC. The exception is birth time — §4.1, and it is the one column
@@ -149,6 +156,13 @@ that exist only because there is no backend. They do not survive.
 `placements` · `chartHouses` · `days` / `today` · `panchang` · `bookedSlots` ·
 `insights` · `proMetrics` · `earningsSeries` · `warnings` · `reports[].price` ·
 `sessionHistory` · `mine()` · `pro`
+
+The first four are **done** — deleted from `mock.js` in phase 7 and computed by
+the `astro` Edge Function, memoised in `astro_cache` (§4.10). Four fields went
+with them and were not replaced: a placement's authored `line`, `detail` and
+`keywords`, and the day's `mood`, `luckyColour`, `luckyNumber`, `gettingAlong`
+and `friction`. Nothing computes those, they were identical for every user, and
+a lucky number presented as yours has to come from somewhere.
 
 `sessionHistory` and `proLedger` are **the same events seen from two sides** —
 one `bookings` table plus two ledgers produces both. A `session_history` table
@@ -242,6 +256,17 @@ chart time.
 `birth_time_known` exists because a large share of Indian users do not know their
 minute of birth, rectification is a real product, and `NULL` must be
 distinguishable from midnight.
+
+**It is honoured as of phase 7, and was not before.** `AskTime` now offers "I do
+not know my birth time"; ticking it writes `birth_time` as NULL and
+`birth_time_known` as false, where the onboarding write previously hardcoded
+`true` for everyone. What the app does with a false: planets and the moon sign
+are shown as normal — they survive a rough time — and the **ascendant and all
+twelve houses are withheld and said to be withheld**, because the ascendant moves
+a whole sign every two hours. The chart is computed against noon local so the
+planets have something to be computed from; that noon never reaches the screen.
+The four production accounts created before this all read `true`, and some of
+them are guesses.
 
 **No `role` column.** One person can be a seeker, a consultant and an admin
 simultaneously — an enum forces a false choice. Consultant-ness is the existence
@@ -841,6 +866,46 @@ the transcript is read-only. That is what stops chat being free to anyone who
 simply never presses End. Every column of the new row is qualified inside that
 policy — unqualified, the predicate collapses to `s.thread_id = s.thread_id` and
 gives away paid minutes.
+
+### 4.10 The one cached derivation
+
+```sql
+create table astro_cache (
+  key        text primary key,
+  payload    jsonb not null,
+  fetched_at timestamptz not null default now()
+);
+
+alter table astro_cache enable row level security;
+```
+
+Every value `freeastroapi.com` computes for us, memoised. One table for all
+three derivations, because there is nothing to say about a cached chart that is
+not also true of a cached panchang.
+
+**`key` carries every input that produced `payload`:**
+
+| Derivation | Key |
+|---|---|
+| Chart | `chart:<profile_id>:<digest of the six birth columns>` |
+| Panchang | `panchang:<date>:<lat>,<lng>` |
+| Horoscope | `horoscope:<profile_id>:<digest>:<date>` |
+
+**Which is why there is no TTL, no `expires_at` and no sweeper.** A value cannot
+go stale, only go unused: a corrected birth time changes the digest and
+therefore misses. Nothing has to remember to invalidate anything, which is the
+part that would eventually be forgotten. The chart key has no date in it at all,
+because a natal chart never changes.
+
+**RLS is on and there is no policy for anybody.** The `astro` Edge Function
+reaches it with the service role and nothing else does. That is stricter than it
+looks and it is deliberate: `payload` is birth-derived output and the key holds a
+profile id, so a read policy of any shape would be one join away from one
+person's chart on another person's screen. `019_astro_cache_check.sql` asserts
+the policy count is zero rather than trusting it.
+
+Truncating this table is safe and costs one refetch per row anybody asks for
+again. That is what `_cache` in the name promises.
 
 ---
 

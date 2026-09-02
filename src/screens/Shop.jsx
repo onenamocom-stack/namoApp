@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
-import { products, shopCategories, shopSubcategories, user } from '../data/mock.js'
+import { products, shopCategories, shopSubcategories } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
+import { useMyChart } from '../lib/astro.js'
 
 /**
  * The three promo banners at the top of the shop.
@@ -74,7 +75,11 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, spending, setCartOpen, showToast } = useStore()
+  const { cartCount, addToCart, buyNow, spending, setCartOpen, showToast, session, sessionReady } =
+    useStore()
+  // One line of copy on the hero card names your sun sign. It was the seed
+  // person's until phase 7, on a card recommending a stone for it.
+  const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   const [cat, setCat] = useState('All')
   const [query, setQuery] = useState('')
   const [slide, setSlide] = useState(0)
@@ -258,9 +263,13 @@ export default function Shop() {
             <div className="p-5">
               <p className="text-lead t-heading">{hero.name}</p>
               <p className="mt-1 text-meta t-faint">{hero.subtitle}</p>
+              {/* No sun sign yet — loading, signed out, or no birth details —
+                  and the sentence drops the personal half rather than naming
+                  somebody else's. */}
               <p className="mt-3 text-meta t-body">
-                Commonly named for a {user.sunSign} sun with Saturn in the 12th. Commonly named is
-                not the same as proven.
+                {mine.sun
+                  ? `Commonly named for a ${mine.sun} sun with Saturn in the 12th. Commonly named is not the same as proven.`
+                  : 'Commonly named for a Saturn in the 12th. Commonly named is not the same as proven.'}
               </p>
 
               <div className="mt-5 flex items-center gap-2">

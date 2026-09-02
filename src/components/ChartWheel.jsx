@@ -1,5 +1,3 @@
-import { chartHouses } from '../data/mock.js'
-
 /**
  * Birth-chart wheel, drawn as an engraving: hairlines, no fills, no gradients,
  * no rotation. The spokes and ticks use --text-4 (the non-text grey) and every
@@ -7,10 +5,19 @@ import { chartHouses } from '../data/mock.js'
  *
  * The wheel is the *alternate* view of the chart. The table is primary, because
  * a wheel is unreadable to anyone who has not been taught to read one.
+ *
+ * `houses` comes from `housesFrom()` and is **null while the chart is loading,
+ * and null when the birth time is unknown** — a whole-sign wheel is twelve
+ * house cusps and there are none without a minute of birth. Null draws the
+ * engraving and nothing else: an ornament that is plainly empty, rather than
+ * twelve numbered boxes that read as a chart with nothing in it.
  */
-export default function ChartWheel({ size = 260, active = null, onSelect }) {
+export default function ChartWheel({ size = 260, houses = null, active = null, onSelect }) {
   const c = 110
   const R = { outer: 96, inner: 68, core: 34 }
+  // Geometry is always twelve, because the engraving is. Only the labels
+  // depend on there being a chart.
+  const spokes = Array.from({ length: 12 }, (_, i) => i)
 
   const polar = (r, deg) => {
     const rad = ((deg - 90) * Math.PI) / 180
@@ -42,12 +49,12 @@ export default function ChartWheel({ size = 260, active = null, onSelect }) {
       <circle cx={c} cy={c} r={R.core} fill="none" stroke="var(--rule)" strokeWidth="1" />
 
       {/* house spokes */}
-      {chartHouses.map((h, i) => {
+      {spokes.map((i) => {
         const [x1, y1] = polar(R.core, i * 30)
         const [x2, y2] = polar(R.outer, i * 30)
         return (
           <line
-            key={h.house}
+            key={i}
             x1={x1}
             y1={y1}
             x2={x2}
@@ -65,7 +72,7 @@ export default function ChartWheel({ size = 260, active = null, onSelect }) {
       </g>
 
       {/* houses + planet glyphs */}
-      {chartHouses.map((h, i) => {
+      {(houses ?? []).map((h, i) => {
         const mid = i * 30 + 15
         const [hx, hy] = polar(R.outer - 13, mid)
         const [px, py] = polar(R.inner - 16, mid)

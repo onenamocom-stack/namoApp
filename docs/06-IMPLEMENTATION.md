@@ -303,6 +303,22 @@ wrong one is wrong *silently* — the chart renders, it just is not yours.
 **Also fixes:** the mock's two calendars disagree — the panchang is dated a week
 apart from the horoscope.
 
+**Reference chart, chosen 2 Sep 2026:** Indira Gandhi, 19 Nov 1917, 23:11,
+Allahabad. Rodden AA and pre-1945, so it answers conditions 2 and 3 together.
+Settings and the arithmetic that verified them are `02-TRD.md` §8's.
+
+**Conditions 2 and 3 pass at the API**, checked before any code was written:
+independently computed ascendants agree to 0.005°, and a 1943 Kolkata birth
+returns the wartime **+06:30** answer rather than the +05:30 one, a whole sign
+apart. Condition 1 is a two-account walk on dev and is the outstanding one.
+
+**One thing this phase added that is not in the list above**, because the list
+predates it: `birth_time_known` is honoured. `AskTime` offers "I do not know",
+the onboarding write stops hardcoding `true`, and a chart without a time shows
+planets and withholds the ascendant and houses (`03-APP-FLOW.md` §3,
+`05-BACKEND-SCHEMA.md` §4.1). It belonged here because a chart is the first
+thing that makes the difference visible.
+
 ---
 
 ## Phase 8 — Ask AI

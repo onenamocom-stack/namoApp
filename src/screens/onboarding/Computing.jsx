@@ -5,6 +5,7 @@ import ChartWheel from '../../components/ChartWheel.jsx'
 import { Button, Field, Stub } from '../../components/Primitives.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
 import { supabase } from '../../lib/supabase.js'
+import { housesFrom, signOf, useAstro } from '../../lib/astro.js'
 
 /** '14/11/1996' -> '1996-11-14'. The onboarding Slot fields are already
  * zero-padded, so this is a reorder, not a parse. */
@@ -51,8 +52,22 @@ export default function Computing() {
      returns the string '00:undefined:00', which Postgres rejects as a `time`;
      and a draft saved before the place search carried zones has no `zone`, which
      would write a null birth_zone and quietly cost the chart its offset. Both
-     route back to re-answer instead. */
-  const draftComplete = Boolean(birth.date && birth.time && birth.place && birth.zone)
+     route back to re-answer instead.
+
+     An unknown birth time is COMPLETE, not missing. `timeKnown === false` is an
+     answer somebody gave; an absent `timeKnown` is a draft from before the
+     checkbox existed, and that one still needs a time. */
+  const timeAnswered = Boolean(birth.time) || birth.timeKnown === false
+  const draftComplete = Boolean(birth.date && timeAnswered && birth.place && birth.zone)
+
+  /* The reveal's three lines and its wheel, computed rather than seeded.
+     Gated on the profile actually carrying a birth date, because the chart is
+     derived server-side FROM that row — asking before the write below lands
+     returns 'no_birth', which is true for a moment and wrong afterwards. */
+  const chart = useAstro('chart', {
+    ready: Boolean(session && profile?.birth_date),
+    who: session?.user?.id ?? null,
+  })
 
   /* The account exists but there is nothing complete to write and nothing
      already stored — the draft was lost between the questions and the code.
@@ -107,8 +122,12 @@ export default function Computing() {
         name: birth.name,
         email: (birth.email ?? '').trim() || null,
         birth_date: toIsoDate(birth.date),
-        birth_time: to24Hour(birth.time),
-        birth_time_known: true,
+        // NULL rather than midnight when nobody knows it. The column exists so
+        // the two are distinguishable (05-BACKEND-SCHEMA.md §4.1), and this was
+        // hardcoded `true` until phase 7 — which is why four production
+        // accounts are marked certain about a minute somebody estimated.
+        birth_time: birth.timeKnown === false ? null : to24Hour(birth.time),
+        birth_time_known: birth.timeKnown !== false,
         birth_place: birth.place,
         birth_lat: birth.lat,
         birth_lon: birth.lon,
@@ -170,17 +189,42 @@ export default function Computing() {
         <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-light">Here you are, {name}.</h1>
 
         <Stub className="my-10" />
-        <ChartWheel size={240} />
+        <ChartWheel size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />
 
-        <div className="mx-auto mt-12 w-full max-w-[18rem] text-left">
-          <Field k="Sun" v={`${user.sunSign} — how you push`} />
-          <Field k="Moon" v={`${user.moonSign} — how you feel`} />
-          <Field k="Rising" v={`${user.risingSign} — how you land`} />
-        </div>
+        {/* Four states, and the last two must not read alike. A chart service
+            that is down is not a person with no birth details — this project
+            has already sent a working consultant to a signup form by treating
+            those as the same answer. */}
+        {chart.loading && (
+          <p className="mt-12 text-meta text-t3">Working out where everything was.</p>
+        )}
 
-        <p className="prose-c mt-10">
-          Three positions out of eight. The rest are in your chart, and none of them are a verdict.
-        </p>
+        {chart.refusal && (
+          <p className="mx-auto mt-12 max-w-measure text-meta text-live">{chart.refusal.reason}</p>
+        )}
+
+        {chart.payload && (
+          <>
+            <div className="mx-auto mt-12 w-full max-w-[18rem] text-left">
+              <Field k="Sun" v={`${signOf(chart.payload, 'Sun')} — how you push`} />
+              <Field k="Moon" v={`${signOf(chart.payload, 'Moon')} — how you feel`} />
+              {chart.timeKnown ? (
+                <Field
+                  k="Rising"
+                  v={`${chart.payload.ascendant?.sign ?? '—'} — how you land`}
+                />
+              ) : (
+                <Field k="Rising" v="Needs your birth time" />
+              )}
+            </div>
+
+            <p className="prose-c mt-10">
+              {chart.timeKnown
+                ? 'Three positions out of nine. The rest are in your chart, and none of them are a verdict.'
+                : 'Two positions out of nine. Rising and the houses need the minute you were born — add it in your profile and they appear.'}
+            </p>
+          </>
+        )}
 
         {/* Both routes land in the tabbed app shell. Sending someone
             straight to /horoscope or /chart dropped them on a screen with no

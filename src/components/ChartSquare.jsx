@@ -1,5 +1,3 @@
-import { chartHouses } from '../data/mock.js'
-
 /**
  * The two Indian charts. Squares, not wheels, and not interchangeable.
  *
@@ -14,8 +12,13 @@ import { chartHouses } from '../data/mock.js'
  *   ascendant has to be marked or the chart cannot be read.
  *
  * Getting that backwards produces a chart that looks right and is wrong, which
- * is worse than one that looks broken. Both read from the same `chartHouses`,
- * so neither can drift from the table view.
+ * is worse than one that looks broken. Both take the same `houses` array the
+ * table view renders, so neither can drift from it.
+ *
+ * `houses` is **null while the chart is loading, and null when the birth time
+ * is unknown** — whole-sign houses are twelve cusps and there are none without
+ * a minute of birth. Null draws the empty diagram: the frame is the frame
+ * either way, and an unlabelled one is honest about having nothing in it.
  *
  * Drawn in the same register as `ChartWheel`: hairlines, no fills, no
  * gradients, house numbers in the non-text grey and planets in a grey that
@@ -91,27 +94,29 @@ const NORTH = [
   { h: 12, x: 152, y: 20 },
 ]
 
-export function ChartNorth({ size = 260, active = null, onSelect }) {
+export function ChartNorth({ size = 260, houses = null, active = null, onSelect }) {
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className="mx-auto block overflow-visible">
       <rect x="0.5" y="0.5" width="199" height="199" fill="none" stroke={RULE} strokeWidth="1" />
       <path d="M0 0L200 200M200 0L0 200" stroke={FAINT} strokeWidth="0.7" fill="none" />
       <path d="M100 0L200 100L100 200L0 100Z" stroke={FAINT} strokeWidth="0.7" fill="none" />
 
-      {NORTH.map(({ h, x, y }) => {
-        const house = chartHouses.find((c) => c.house === h)
-        return (
-          <Cell
-            key={h}
-            x={x}
-            y={y}
-            top={signNo(house.sign)}
-            planets={house.planets}
-            active={active}
-            onSelect={onSelect}
-          />
-        )
-      })}
+      {houses &&
+        NORTH.map(({ h, x, y }) => {
+          const house = houses.find((c) => c.house === h)
+          if (!house) return null
+          return (
+            <Cell
+              key={h}
+              x={x}
+              y={y}
+              top={signNo(house.sign)}
+              planets={house.planets}
+              active={active}
+              onSelect={onSelect}
+            />
+          )
+        })}
     </svg>
   )
 }
@@ -139,16 +144,16 @@ const SOUTH = [
   { sign: 'Aquarius', r: 1, c: 0 },
 ]
 
-export function ChartSouth({ size = 260, active = null, onSelect }) {
+export function ChartSouth({ size = 260, houses = null, active = null, onSelect }) {
   const S = 50 // cell edge, 4 x 50 = the 200 viewBox
-  const ascendant = chartHouses.find((c) => c.house === 1)?.sign
+  const ascendant = houses?.find((c) => c.house === 1)?.sign
 
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className="mx-auto block overflow-visible">
       <rect x="0.5" y="0.5" width="199" height="199" fill="none" stroke={RULE} strokeWidth="1" />
 
       {SOUTH.map(({ sign, r, c }) => {
-        const house = chartHouses.find((h) => h.sign === sign)
+        const house = houses?.find((h) => h.sign === sign)
         const x = c * S
         const y = r * S
         return (
@@ -157,6 +162,9 @@ export function ChartSouth({ size = 260, active = null, onSelect }) {
             {sign === ascendant && (
               <line x1={x} y1={y} x2={x + S} y2={y + S} stroke={LABEL} strokeWidth="0.9" />
             )}
+            {/* The sign number stays even with no chart: in a South Indian
+                square the signs are fixed to the page and are the diagram. Only
+                the planets and the ascendant mark are the person's. */}
             <Cell
               x={x + S / 2}
               y={y + 16}

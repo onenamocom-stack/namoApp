@@ -116,7 +116,7 @@ In file order, which is also resolution order.
 | 2 | `/onboarding/side` | **The fork.** Two cards, no continue button | — | *"I want a reading"* → `/onboarding/name`, *"I give readings"* → `/pro/studio` |
 | 3 | `/onboarding/name` | What to call you | non-empty | `/onboarding/date` |
 | 4 | `/onboarding/date` | Birth date — D / M / Y | 1–31, 1–12, ≥ 1900 | `/onboarding/time` |
-| 5 | `/onboarding/time` | Birth time — H : M, AM/PM | 1–12, 0–59 | `/onboarding/place` |
+| 5 | `/onboarding/time` | Birth time — H : M, AM/PM, **or "I do not know"** | 1–12, 0–59 — *or* the checkbox ticked, which disables the fields and continues | `/onboarding/place` |
 | 6 | `/onboarding/place` | Birth place — worldwide search, debounced 300ms | a result must be **picked**, not typed; the pick carries lat, lon and IANA zone | `/onboarding/phone` |
 | 7 | `/onboarding/phone` | Mobile number and email, together | number matches `[6-9]` + 9 digits; email matches a shape check. **Both required** | `/onboarding/verify` |
 | 8 | `/onboarding/verify` | Six-digit code, with a resend | six digits, accepted by Supabase | `/onboarding/computing` |
@@ -152,6 +152,32 @@ London differ by four hours, and that difference is invisible once stored.
 
 A draft saved before this step carried zones has no zone, so it is treated as
 incomplete and routed back to re-answer rather than written with a null.
+
+### The time step can be declined, and what that changes downstream
+
+Step 5 offers "I do not know my birth time". Ticking it disables the hour and
+minute fields, allows Continue, and writes a null time with
+`birth_time_known: false` — the column existed from phase 1 and the write
+hardcoded `true` until phase 7.
+
+The consequence is visible on four screens and is stated on each rather than
+inferred:
+
+| Screen | With a time | Without one |
+|---|---|---|
+| `/onboarding/computing` reveal | Sun, Moon, Rising | Sun and Moon; Rising reads *"Needs your birth time"* |
+| `/chart` table | Nine rows including Rising, House column filled | Eight rows, House column dashed |
+| `/chart` Houses section | Twelve houses | A line saying they need the minute, and a link to add it |
+| `/chart` diagrams, `/profile` overview | The chart drawn | The empty frame, with the reason under it |
+
+The rule the table encodes: **planets survive a rough time and the ascendant does
+not.** The chart is computed against noon local so the planets have an instant to
+be computed from, and that noon never reaches the screen — a rising sign derived
+from it would be precise and wrong, which is worse than absent.
+
+A draft from before the checkbox existed has no `timeKnown` at all, and that is
+treated as incomplete rather than as "unknown": it still needs a time. Only an
+explicit `false` counts as an answer.
 
 ### The draft, and where it becomes real
 
@@ -324,6 +350,32 @@ wallet figure. `/chart`, `/chart/:id`, `/people`, `/people/:id`, `/read/:id`,
 
 `/reels/:id` rewrites the URL as you scroll, so the address bar tracks the
 visible reel.
+
+### Five states, not two, wherever something is computed
+
+`/chart`, `/chart/:id`, `/horoscope`, the horoscope overlay, the home reading and
+panchang cards, and `/profile`'s horoscope tab all read from the `astro` Edge
+Function, and all of them handle the same five outcomes. They are listed here
+because the last two are the ones that get collapsed into each other, and this
+project has already sent a working consultant to a signup form by doing exactly
+that.
+
+| State | What the screen says | Where it goes |
+|---|---|---|
+| Loading | *"Working out where everything was."* | — |
+| Computed | The chart, the reading | — |
+| Incomplete | Planets yes, houses withheld with the reason | Link to add a birth time |
+| **No birth details** | *"Add your birth details to see your chart."* | Link to the birth questions |
+| **Service unavailable** | *"Charts are unavailable right now. Try again shortly."* | Nothing to fix; try again |
+
+The last two must never render the same sentence. One is the person's to act on
+and the other is ours, and a chart service that is down told somebody they never
+entered a birth date would send them to re-enter one they already have.
+
+The panchang is the one exception to needing a session: it is a function of a
+date and a place, not of a person, so the home card renders signed-out. It is
+anchored on the birth place when there is one, which is also what keeps it from
+disagreeing with the reading card beside it.
 
 ---
 

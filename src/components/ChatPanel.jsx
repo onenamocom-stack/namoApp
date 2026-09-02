@@ -431,7 +431,13 @@ function AskAi({ questionsLeft, spendQuestion }) {
     {
       id: 'a0',
       from: 'them',
-      text: 'Your Moon is in Pisces and Mercury is easing off. A soft, thinking sort of day. Ask.',
+      /* This used to open by naming your moon sign, which was true of the seed
+         person and of nobody else. Harmless while every chart in the app was
+         the same one; a contradiction the moment phase 7 made the rest real —
+         four screens saying Libra and this panel saying Pisces. The greeting
+         does not name a placement until phase 8 wires it to something that
+         actually reads the chart. */
+      text: 'Ask about your chart. A real question gets a better answer than a general one.',
       time: '09:02',
     },
   ])

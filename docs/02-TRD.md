@@ -273,6 +273,7 @@ bulk actions. See `04-UI-UX.md`.
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
 | Ask AI | Claude, behind a server proxy | The key cannot ship to a browser and the quota is money |
 | Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
+| Place search | **`freeastroapi.com`** geo endpoint — *replaced Open-Meteo, 2 Sep 2026* | Same tier, commercially licensed, returns the IANA zone. Open-Meteo's free geocoder was non-commercial and sat on the signup path |
 
 ### Charts come from a third-party API — decided 1 Sep 2026
 
@@ -304,6 +305,50 @@ Therefore, unchanged from the original decision and now load-bearing:
   writing the integration**, or there is nothing to test against.
 - **Pass ayanamsa and house system explicitly on every call.** Never rely on a
   default, and never assume one call's default is the next one's.
+
+### What was settled when it was built — 2 Sep 2026
+
+| | | |
+|---|---|---|
+| Ayanamsa | `lahiri` | Verified, not assumed — see below |
+| House system | `whole_sign` | Twelve houses, one sign each, no split signs |
+| Node type | `mean` | |
+| Endpoints | `/api/v2/geo/search`, `/api/v2/vedic/chart`, `/api/v2/vedic/panchang`, `/api/v2/vedic/horoscope/daily/personal` | The four with a screen |
+
+All three settings are constants in `backend/functions/astro/index.ts` and are
+merged into every outbound body. **There is no code path that omits them.**
+
+**The reference chart is Indira Gandhi — 19 Nov 1917, 23:11, Allahabad
+(25.4358 N, 81.8463 E).** Rodden AA, from a birth certificate, so it can be
+checked without anyone's private details entering the repo. It is also pre-1945,
+which is the third done-condition's case.
+
+**And it was checked by arithmetic rather than against a website.** The
+ascendant is spherical trigonometry on sidereal time — no ephemeris needed — so
+it was computed independently and came out at 117.371°, against their 117.366°.
+Five thousandths of a degree apart is Lahiri sidereal and nothing else; a
+tropical answer would have been off by twenty-two degrees and Raman or KP by
+tenths. That is the check to repeat if their numbers are ever doubted, and it
+does not depend on them staying online.
+
+**The historical-offset case passes and is worth stating, because it is the one
+that fails silently.** A birth on 15 June 1943 in Kolkata returns an ascendant
+of Leo 21.7°, which is the answer for **+06:30** — India's wartime offset. The
+naive `+05:30` answer is Virgo 5.6°, a whole sign away. They resolve the zone
+from historical tzdata, which is why `birth_zone` is stored as an IANA name and
+never as an offset (`05-BACKEND-SCHEMA.md` §4.1).
+
+**Geo search replaces Open-Meteo** on the signup path, which retires the licence
+problem `01-PRD.md` §8 carried. One difference matters in the interface: their
+ordering is relevance, and relevance puts a hamlet of a hundred people above the
+city of three million with the same name. The Edge Function re-sorts by
+population, because on the signup path a wrong pick is a wrong chart for the
+life of the account.
+
+**Every derivation is cached in one table** (`astro_cache`, `05-BACKEND-SCHEMA.md`),
+with no TTL and no sweeper — every cache key carries every input that produced
+its value, so a value cannot go stale, only go unused. Corrected birth details
+produce a different key and therefore a miss.
 
 Two consequences of a third party that a local service did not have:
 

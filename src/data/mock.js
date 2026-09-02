@@ -14,9 +14,9 @@ import { bhaktamarCards } from './bhaktamar.js'
 
 export const user = {
   name: 'Ananya',
-  sunSign: 'Scorpio',
-  moonSign: 'Pisces',
-  risingSign: 'Leo',
+  // `sunSign`, `moonSign` and `risingSign` were here and are computed now —
+  // `useMyChart()` in src/lib/astro.js. Leaving them would mean a signed-out
+  // demo and a signed-in person disagreeing about whose chart is on screen.
   birthDate: '14 November 1996',
   birthTime: '04:35 AM',
   birthPlace: 'Pune, Maharashtra, India',
@@ -25,270 +25,15 @@ export const user = {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DAY — three days of readings. The horoscope body is the first thing on the
-   home screen; everything else on TODAY is subordinate to it.
+   DAY, CHART and PANCHANG USED TO LIVE HERE — `days`, `today`, `placements`,
+   `chartHouses` and `panchang`, deleted in phase 7.
+
+   They are computed now, from the signed-in person's own birth details, by
+   the `astro` Edge Function. `src/lib/astro.js` turns what it returns into
+   the same shapes these had. Nothing seeded replaced them: an authored line
+   about a placement, a lucky number and a mood were never derived from
+   anybody's birth, so they are gone rather than kept as filler.
    ══════════════════════════════════════════════════════════════════════════ */
-
-export const days = {
-  yesterday: {
-    key: 'yesterday',
-    label: 'Yesterday',
-    date: 'Sunday, 2 August',
-    headline: 'You were right to wait.',
-    body: 'The morning asked more of you than it gave back. Whatever you left unsaid at lunch was the correct call. It would have landed badly and you knew it.',
-    // Shown above the reading on any day that is not today, so the tense of
-    // the copy is never a surprise.
-    context: 'Looking back.',
-    // The one instruction. On yesterday it is framed as a review.
-    focus: 'Note what you avoided, and why.',
-    focusLabel: 'Looking back',
-    mood: 'Restless',
-    luckyColour: 'Rust',
-    luckyNumber: 3,
-    // "Day at a Glance" — three plain readings, no icons, no scores out of ten.
-    glance: [
-      { key: 'Mood', value: 'Restless' },
-      { key: 'Energy', value: 'Low until dusk' },
-      { key: 'Theme', value: 'Restraint' },
-    ],
-    intensity: 42,
-    do: ['Finish the thing from Thursday', 'Eat before the call', 'Let the silence sit'],
-    dont: ['Reopen the argument', 'Check what they posted', 'Promise a date you cannot keep'],
-    gettingAlong: [
-      { sign: 'Capricorn', note: 'They will not flatter you. Useful today.' },
-      { sign: 'Cancer', note: 'Same weather, different room.' },
-    ],
-    friction: [{ sign: 'Aries', note: 'Too fast for the mood you are in.' }],
-    transits: [
-      {
-        id: 't-y1',
-        title: 'Moon square Saturn',
-        window: '2 Aug, evening',
-        weight: 'Passing',
-        body: 'A heavy few hours around dusk. Low energy was the transit, not a verdict on you.',
-      },
-    ],
-    reflections: [
-      'Name the thing you avoided. Then name why.',
-      'What did the silence cost you, and was it worth it.',
-    ],
-    power: 'Reading the room before you spoke. It saved you a conversation.',
-    pressure: 'Filling every silence. Two of them did not need you.',
-    ratings: { love: 3, career: 2, health: 4, money: 3 },
-  },
-  today: {
-    key: 'today',
-    label: 'Today',
-    date: 'Monday, 3 August',
-    headline: 'Say less than you want to.',
-    body: 'Mercury softens the noise around a decision you have been circling for weeks. The person you are negotiating with is closer to yes than they look. Do not talk them out of it.',
-    context: null,
-    focus: 'Say the plain version of the thing.',
-    focusLabel: 'Do this',
-    mood: 'Reflective',
-    luckyColour: 'Deep teal',
-    luckyNumber: 7,
-    glance: [
-      { key: 'Mood', value: 'Reflective' },
-      { key: 'Energy', value: 'Steady' },
-      { key: 'Theme', value: 'Precision' },
-    ],
-    intensity: 68,
-    do: ['Send the plain version', 'Ask once, then stop', 'Take the long walk'],
-    dont: ['Explain yourself twice', 'Decide before noon', 'Mistake quiet for rejection'],
-    gettingAlong: [
-      { sign: 'Virgo', note: 'They will edit you. Let them.' },
-      { sign: 'Pisces', note: 'You do not have to finish your sentences.' },
-    ],
-    friction: [{ sign: 'Gemini', note: 'Three ideas, none of them landing.' }],
-    transits: [
-      {
-        id: 't-t1',
-        title: 'Venus enters your 7th house',
-        window: '3 Aug — 27 Aug',
-        weight: 'Moderate',
-        body: 'Partnership matters soften. A good window for repair conversations and for contracts you have been rereading.',
-      },
-      {
-        id: 't-t2',
-        title: 'Mercury direct in Cancer',
-        window: 'Until 11 Aug',
-        weight: 'Background',
-        body: 'Old messages resurface. Answer the one you have been pretending not to see.',
-      },
-    ],
-    reflections: [
-      'What are you waiting to be given permission for.',
-      'Who benefits from you staying vague.',
-    ],
-    power: 'Your instinct for reading a room. Use it in the conversation you have been avoiding.',
-    pressure: 'Wanting the outcome guaranteed before you begin. Nothing today will offer that.',
-    ratings: { love: 4, career: 5, health: 3, money: 4 },
-  },
-  tomorrow: {
-    key: 'tomorrow',
-    label: 'Tomorrow',
-    date: 'Tuesday, 4 August',
-    headline: 'Protect the first two hours.',
-    body: 'Mars moves into your 3rd house and the pace picks up sharply. Front-load anything that needs care. By afternoon you will be reacting rather than choosing.',
-    context: 'Keep the morning clear.',
-    focus: 'Front-load the day.',
-    focusLabel: 'Do this',
-    mood: 'Charged',
-    luckyColour: 'Gold',
-    luckyNumber: 1,
-    glance: [
-      { key: 'Mood', value: 'Charged' },
-      { key: 'Energy', value: 'Front-loaded' },
-      { key: 'Theme', value: 'Speed' },
-    ],
-    intensity: 81,
-    do: ['Start before you feel ready', 'Say the number out loud', 'Close one open loop'],
-    dont: ['Agree to three things by noon', 'Reply while angry', 'Book the evening'],
-    gettingAlong: [
-      { sign: 'Aries', note: 'Finally a matching tempo.' },
-      { sign: 'Leo', note: 'They will take the room. Let them, and use the cover.' },
-    ],
-    friction: [{ sign: 'Taurus', note: 'They are not slow. You are early.' }],
-    transits: [
-      {
-        id: 't-m1',
-        title: 'Mars enters your 3rd house',
-        window: '4 Aug — 19 Sep',
-        weight: 'Strong',
-        body: 'Conversations get sharper and faster. Useful for negotiation. Dangerous for old arguments.',
-      },
-    ],
-    reflections: [
-      'What would you start if nobody asked how it went.',
-      'Be the absence of want, for one hour.',
-    ],
-    power: 'Speed. For one day, your first instinct is the correct one.',
-    pressure: 'Saying yes to three things before noon. Pick one.',
-    ratings: { love: 3, career: 5, health: 3, money: 5 },
-  },
-}
-
-export const today = days.today
-
-/* ══════════════════════════════════════════════════════════════════════════
-   CHART — table view is the primary; the wheel is the alternate. Every row
-   drills into a placement page.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-export const placements = [
-  {
-    id: 'sun',
-    glyph: '☉',
-    body: 'Sun',
-    sign: 'Scorpio',
-    house: 4,
-    degree: '22° 14′',
-    line: 'You do not do small talk and you do not pretend to.',
-    detail:
-      'The Sun in the 4th house puts your centre of gravity indoors. You build the room before you build the career, and you are unusually hard to move once the room is right. In Scorpio it means privacy is not shyness — it is a filter, and you apply it early.',
-    keywords: ['Private', 'Rooted', 'Unbudgeable'],
-  },
-  {
-    id: 'moon',
-    glyph: '☽',
-    body: 'Moon',
-    sign: 'Pisces',
-    house: 8,
-    degree: '03° 47′',
-    line: 'You feel other people’s weather before they announce it.',
-    detail:
-      'An 8th-house Moon recovers slowly and in private. You process by disappearing, which the people around you read as withdrawal. It is not. Tell them the difference once, plainly, and stop apologising for the pattern.',
-    keywords: ['Porous', 'Slow to recover', 'Nocturnal'],
-  },
-  {
-    id: 'asc',
-    glyph: 'Asc',
-    body: 'Rising',
-    sign: 'Leo',
-    house: 1,
-    degree: '11° 02′',
-    line: 'You are read as confident before you have said anything.',
-    detail:
-      'Leo rising means you are handed authority you did not ask for. It works in rooms and costs you in friendships, where people wait for you to go first because they assume you want to.',
-    keywords: ['Presented', 'Warm front', 'Assumed capable'],
-  },
-  {
-    id: 'mercury',
-    glyph: '☿',
-    body: 'Mercury',
-    sign: 'Scorpio',
-    house: 4,
-    degree: '29° 51′',
-    line: 'You ask the question under the question.',
-    detail:
-      'Mercury at the last degree of a sign is impatient with the obvious. You skip the preamble, which reads as sharp. It is not unkindness. It is a refusal to spend time on the part everyone already knows.',
-    keywords: ['Investigative', 'Terse', 'Impatient'],
-  },
-  {
-    id: 'venus',
-    glyph: '♀',
-    body: 'Venus',
-    sign: 'Sagittarius',
-    house: 5,
-    degree: '08° 33′',
-    line: 'You want to be interested more than you want to be comfortable.',
-    detail:
-      'Venus in the 5th wants the thing to stay a little unfinished. You are drawn to people who are going somewhere, which is thrilling for two years and a logistics problem in the third.',
-    keywords: ['Curious', 'Restless', 'Generous'],
-  },
-  {
-    id: 'mars',
-    glyph: '♂',
-    body: 'Mars',
-    sign: 'Libra',
-    house: 3,
-    degree: '17° 26′',
-    line: 'You argue politely and win late.',
-    detail:
-      'Mars in Libra does not raise its voice. It waits, restates the other side better than they did, and then moves. The cost is delay — you will sit on a decision for a month to keep a room calm.',
-    keywords: ['Strategic', 'Deferring', 'Verbal'],
-  },
-  {
-    id: 'jupiter',
-    glyph: '♃',
-    body: 'Jupiter',
-    sign: 'Taurus',
-    house: 10,
-    degree: '05° 19′',
-    line: 'Your luck arrives through work, slowly, and it holds.',
-    detail:
-      'A 10th-house Jupiter in Taurus does not do windfalls. It does compounding. Reputation is your actual asset and it grows in years, not quarters. Protect it accordingly.',
-    keywords: ['Compounding', 'Public', 'Slow'],
-  },
-  {
-    id: 'saturn',
-    glyph: '♄',
-    body: 'Saturn',
-    sign: 'Cancer',
-    house: 12,
-    degree: '14° 08′',
-    line: 'The thing you are hardest on is the thing nobody sees.',
-    detail:
-      'Saturn in the 12th audits you in private. You hold a standard for your inner life that you would never impose on anyone else, and you call the gap between them a character flaw. It is not. It is the placement.',
-    keywords: ['Self-auditing', 'Hidden', 'Severe'],
-  },
-]
-
-export const chartHouses = [
-  { house: 1, sign: 'Leo', planets: ['Ke'] },
-  { house: 2, sign: 'Virgo', planets: [] },
-  { house: 3, sign: 'Libra', planets: ['Ma'] },
-  { house: 4, sign: 'Scorpio', planets: ['Su', 'Me'] },
-  { house: 5, sign: 'Sagittarius', planets: ['Ve'] },
-  { house: 6, sign: 'Capricorn', planets: [] },
-  { house: 7, sign: 'Aquarius', planets: ['Ra'] },
-  { house: 8, sign: 'Pisces', planets: ['Mo'] },
-  { house: 9, sign: 'Aries', planets: [] },
-  { house: 10, sign: 'Taurus', planets: ['Ju'] },
-  { house: 11, sign: 'Gemini', planets: [] },
-  { house: 12, sign: 'Cancer', planets: ['Sa'] },
-]
 
 /* ══════════════════════════════════════════════════════════════════════════
    PEOPLE — friend list → synastry breakdown → invite.
@@ -1000,24 +745,6 @@ export const SESSION = { mins: 20, label: '20 min', promise: 'Unlimited question
     it, not stored separately, so there is nothing to keep in sync. */
 export const SESSION_LENGTHS = [15, 20, 30]
 
-/**
- * Today's panchang. The almanac half of the app — the daily reading says what
- * to do with the day, this says what the day is made of.
- */
-export const panchang = {
-  date: 'Monday, 10 August 2026',
-  tithi: 'Shukla Tritiya',
-  nakshatra: 'Uttara Phalguni',
-  yoga: 'Siddhi',
-  karana: 'Taitila',
-  paksha: 'Shukla',
-  sunrise: '06:14',
-  sunset: '19:02',
-  moonSign: 'Kanya',
-  rahuKaal: '07:52 - 09:29',
-  abhijit: '12:19 - 13:10',
-  line: 'Siddhi yoga runs until sunset. Start the thing you have been staging, and do not sign it during Rahu kaal.',
-}
 
 /* ==========================================================================
    MANDIR - e-puja only. Nothing here books a pandit or takes a payment; the
@@ -1213,7 +940,10 @@ export const askConversation = [
   {
     id: 'm1',
     role: 'ai',
-    text: 'Your Moon is in Pisces and Mercury is easing off. A soft, thinking sort of day. Ask.',
+    // Named a moon sign until phase 7. It was the seed person's, which was
+    // invisible while everyone shared one chart and is a contradiction now
+    // that the chart screens are real. Phase 8 replaces this whole array.
+    text: 'Ask about your chart. A real question gets a better answer than a general one.',
     time: '09:02',
   },
   { id: 'm2', role: 'user', text: 'I have been offered a role in Bangalore. Should I take it?', time: '09:04' },

@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 1 Sep 2026.
+Updated 3 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -13,8 +13,8 @@ Updated 1 Sep 2026.
 | 3 · payments in | **Built and deployed. One done-condition short**, blocked on Razorpay's website review. The site is now on `1namo.com` (the move Razorpay's review wanted — §6); registering that domain and its policy pages with Razorpay is the remaining step. Until it clears, live checkout is refused and **production wallets cannot be funded** |
 | 4 · consultants, availability, approval | **Done.** Schema, seed and front end live on both projects; its check passes on both |
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
-| **6 · metered chat** | **Done.** On both projects, front end deployed, five of six done-conditions verified both sides. One visual check outstanding (§2) |
-| **7 · charts** | **Next.** Third-party API chosen (§3); blocked on the reference chart, which the key does not unblock |
+| **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
+| **7 · charts** | **Backend done and closed on both projects; FRONT END NOT DEPLOYED.** All three done-conditions pass, routes walked on dev, reference chart verified by arithmetic that does not go through the API. Nothing is committed or pushed, so the live site still serves the seed chart (§6) |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -65,7 +65,7 @@ sub-routes.
 
 ### The checks
 
-Three runnable checks live in `backend/schema/`. Run the ones whose area you
+Six runnable checks live in `backend/schema/`. Run the ones whose area you
 touched, in the **dev** SQL editor.
 
 | File | Covers |
@@ -75,9 +75,10 @@ touched, in the **dev** SQL editor.
 | `009_slots_check.sql` | consultants: slots on all seven weekdays, approval, bands, grants |
 | `012_bookings_transaction_check.sql` | bookings: the transaction, the refusals, the reversing credit, both books append-only, the new policies |
 | `014_metered_chat_check.sql` | chat: the hold, the round-up, the cutoff, the sweeper, and the live-session gate on messages |
+| `019_astro_cache_check.sql` | charts: the cache table's shape, RLS on, and **zero policies** — service role only |
 
 **Passing looks like a failure:** `ERROR: PHASE 2 CHECKS PASSED`, and the same
-shape from the other three. Each raises on its last line to roll back every row it
+shape from the other five. Each raises on its last line to roll back every row it
 wrote — the ledger is append-only, so a check that inserted real rows could not
 clean up after itself. Any other error names the assertion that broke.
 
@@ -108,7 +109,7 @@ with real data in it.
 library, no state library, no UI kit, **no linter, no type checker, no tests.**
 
 Two sides in one codebase. Most values on screen still come from
-`src/data/mock.js` and `src/data/bhaktamar.js`. Four things are real:
+`src/data/mock.js` and `src/data/bhaktamar.js`. Five things are real:
 
 - **Identity and birth details** (phase 1). The onboarding questions plus phone
   verification write a `profiles` row; Profile, Chart and Horoscope read it back.
@@ -120,6 +121,15 @@ Two sides in one codebase. Most values on screen still come from
   charge, when they are open, and which requests are waiting. `/consult`,
   `/consult/:id` and every `/pro` screen read real rows; the availability grid
   and accept/decline write them.
+- **Charts, the panchang and the daily reading** (phase 7). Computed from the
+  signed-in person's own birth row by the `astro` Edge Function and memoised in
+  `astro_cache`. `/chart`, `/chart/:id`, `/horoscope`, the horoscope overlay and
+  both computed cards on `/home` are real.
+
+  **The backend is on both projects. The front end is not deployed.** Nothing
+  has been pushed, so `https://1namo.com` still serves the pre-phase-7 bundle
+  and still shows the seed chart to everybody. Both halves are needed and only
+  one is there.
 
 Everything else evaporates on reload, deliberately.
 
@@ -175,9 +185,18 @@ Everything else evaporates on reload, deliberately.
   not a consultant" are different answers, and conflating them sent a working
   consultant to the application form. Anything gating on `consultant` must
   check the error first.
-- **Sun, moon and rising are still seed for everyone**, on four screens
-  (`Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx`, and via the hook). They
-  need the ephemeris service. **Phase 7 must change all four**, not just the hook.
+- **Sun, moon and rising are computed** as of phase 7, by `useMyChart()` in
+  `src/lib/astro.js`. They are **not** on `useProfileFields()` any more and must
+  not go back: that hook is called on screens with no interest in a chart, and a
+  fetch inside it would spend a request on every one of them.
+
+  The note this replaces said four screens printed the signs —
+  `Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx` and the hook. **It was five.**
+  `Profile.jsx` prints them twice, in the header and in the horoscope tab, and
+  the count missed it. Grep before trusting a list like that again.
+- **`rising` is null when the birth time is unknown**, never a substituted
+  value, and every caller decides what to say about that. The ascendant moves a
+  whole sign every two hours, so the alternative is a precise wrong answer.
 
 ### Screen-level facts that are not obvious from the code
 
@@ -854,85 +873,149 @@ it is built.
 
 ---
 
-## 6. Next — phase 7, charts
+## 6. Phase 7, charts — built on dev, one secret short
 
 **Phase 6 is built, walked and deployed.** What is left of it is production, and
 that is deliberate: a metering bug found in a browser is cheaper than one found
 on a live wallet.
 
-### Owed on phase 6 — one thing, and it is a look
+### Phase 6 is closed — the bubbles were looked at, 3 Sep
 
-**Nobody has seen the chat bubbles render.** Condition 1 asks for messages
-"attributed correctly on both", and that is proven at the data layer — the same
-two rows come back MINE/THEIRS to one party and THEIRS/MINE to the other — but
-the pixels are unverified because Chrome's MCP dropped mid-session. The data
-cannot be backwards (`m.sender_id === myId`, and the flip helpers are deleted),
-but that is an argument rather than a look. Thirty seconds on dev closes it.
+The last open condition was a look rather than a question, and it passes.
+Signed in as `+919999900002` on dev, the seeded thread renders that account's
+two messages right and dark and the other party's two left and light, matching
+the `sender_id`s in `messages` exactly. **All six done-conditions now hold.**
 
-### Phase 7 — decided, and what is still open
+### Phase 7 — what exists
 
-**Charts come from a third-party API, not our own ephemeris service — decided
-1 Sep 2026.** `freeastroapi.com`, Entry tier: $8/month, 50,000 requests/month,
-5 req/sec, commercial use permitted. This **reverses** `02-TRD.md` §8, which
-chose Swiss Ephemeris as a second Python service; that section is rewritten
-rather than extended.
+Built 2 Sep 2026. **On dev, not on production.** Charts come from
+`freeastroapi.com` Entry tier, which reversed Swiss Ephemeris as our own Python
+service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 
-What the tier covers, against surfaces this app already has:
-
-| Surface | Endpoint |
+| | |
 |---|---|
-| `/chart` — `placements`, `chartHouses` | Kundli/Rasi, planetary positions, divisional charts |
-| Three chart systems (Vedic, South Indian, Western) | Vedic **and** Western natal, both included |
-| Panchang — `tithi/nakshatra/yoga/karana/rahuKaal` | Panchang endpoint, same fields |
-| Sun / moon / rising on four screens | Dedicated endpoints |
-| `/synastry` | Western synastry **and** Ashtakoota kundli matching |
-| Daily horoscope — `days` | Sign-based and personalised |
-| Place → lat/lon/zone | **Unlimited geo city search on Entry** |
+| `backend/schema/019_astro_cache.sql` | Applied to dev. **Not production** |
+| `backend/schema/019_astro_cache_check.sql` | Passes on dev |
+| `backend/functions/astro/index.ts` | Deployed to dev, version 1, `verify_jwt` on |
+| Front end | `src/lib/astro.js` plus eleven screens and components |
 
-**The geo endpoint may be the most valuable thing in the tier.** `01-PRD.md` §8
-records that Open-Meteo's free geocoder is non-commercial and this product is
-not — a live licence problem sitting on the signup path since phase 1. This
-retires it, with the same shape of data `AskPlace` already consumes.
+**The reference chart is Indira Gandhi**, 19 Nov 1917, 23:11, Allahabad — Rodden
+AA, and pre-1945, so it answers done-conditions 2 and 3 with one birth. It was
+chosen and checked before a line of integration code was written, which is what
+`06-IMPLEMENTATION.md` asked for.
 
-**Still open, and none of it is unblocked by having the key:**
+**It was checked by arithmetic, not against a website.** The ascendant is
+spherical trigonometry on sidereal time, so it was computed independently:
+117.371° against their 117.366°. Five thousandths of a degree is Lahiri sidereal
+and nothing else — tropical would have been twenty-two degrees out. **That check
+is repeatable and does not depend on them staying online**, and it is the one to
+rerun if their numbers are ever doubted.
 
-- **THE REFERENCE CHART.** Named in `01-PRD.md`, `02-TRD.md` §8 and
-  `06-IMPLEMENTATION.md` phase 7, and still not chosen. It matters *more* with a
-  third-party API than it did with our own ephemeris: with `pyswisseph` the
-  ayanamsa was ours to set and the risk was forgetting; here it is theirs to
-  default and we cannot see it. Pick a birth with an independently verified
-  chart and check every position before believing anything.
-- **Ayanamsa and house system, passed explicitly on every call.** The API
-  supports Placidus / Whole Sign / Equal / Koch and tropical / sidereal — so the
-  default is emphatically not what this product wants, and tropical + Placidus
-  would render a beautiful chart belonging to nobody.
-- **`birth_time_known` is hardcoded `true`** at `Computing.jsx:111`, and
-  `AskTime.jsx` offers no "I don't know". The column exists because, as
-  `05-BACKEND-SCHEMA.md` §4.1 puts it, a large share of Indian users do not know
-  their minute of birth. All four production users are marked as knowing it and
-  some are guessing. **Planets survive a rough time; the ascendant moves a whole
-  sign every two hours,** so the houses are fiction while looking precise.
-- **Birth details will leave this system.** Date, time and place for every user,
-  sent to a third party. Belongs beside the email question in `01-PRD.md` §8.
-- **Reports cannot be sold on Entry.** Two report credits a month, against a
-  ₹4,041 Full Birth Chart. Phase 8/10's problem, but decide before listing a
-  price.
+**The historical-offset case passes too.** A 15 June 1943 Kolkata birth returns
+Leo 21.7°, which is the **+06:30** answer — India's wartime offset. The naive
++05:30 answer is Virgo 5.6°, a whole sign away, and it is exactly the failure
+that raises nothing.
 
-**Two things to build in from the first commit**, both already paid for once:
+**`birth_time_known` is honoured now, and was hardcoded `true` before.**
+`AskTime` has an "I do not know" checkbox; `Computing.jsx` writes the real value
+and a null time. Without a time the chart shows planets and the moon sign, and
+withholds the ascendant and all twelve houses with the reason on screen. **The
+four production accounts still read `true` and some of them are guesses** —
+nothing backfills that, and nothing should: only the person knows.
 
-- **The key never reaches the browser** (rule 7). An Edge Function proxies it,
-  four CORS headers, key as a function secret — phase 3's lessons, unchanged.
-- **Cache the charts.** A natal chart never changes. 50,000/month is generous,
-  5 req/sec is not, and recomputing a constant on every screen visit is money
-  and latency. Rule 8: store the input, compute the derivation — and a cached
-  derivation carries `_cache` in the column name so it is obviously throwaway.
-  Panchang caches per date, horoscope per user per day.
+**Geo search moved off Open-Meteo**, closing the licence item that sat on the
+signup path since phase 1 (`01-PRD.md` §8, now rewritten as settled). One thing
+worth knowing: their ordering is relevance, and relevance returns a hamlet of a
+hundred people above the city of three million with the same name. The function
+re-sorts by population.
 
-**Sequence: charts first.** Sun/moon/rising, reports and synastry all read the
-same computation. Panchang and horoscope are independent and can follow.
-Phase 7 must change **four** screens, not one — `Computing.jsx`,
-`HoroscopePanel.jsx`, `Shop.jsx` and `useProfileFields()`. Changing only the
-hook leaves three screens quietly lying.
+**`mock.js` lost five exports** — `days`, `today`, `placements`, `chartHouses`,
+`panchang` — and `user` lost its three signs. Fields nothing computes went with
+them rather than being kept as filler: a placement's `line`, `detail` and
+`keywords`, and a day's `mood`, `luckyColour`, `luckyNumber`, `gettingAlong` and
+`friction`.
+
+**Five screens changed, not four.** The old note here named `Computing.jsx`,
+`HoroscopePanel.jsx`, `Shop.jsx` and `useProfileFields()`. `Profile.jsx` prints
+the three signs twice and was missed by that list — grep before trusting a count
+like it again.
+
+#### All three done-conditions pass, walked on dev 3 Sep
+
+1. **Two different births, two different charts.** `+919999900001` (Pune,
+   6 Dec 2001 01:12, time known) returns Virgo rising with Sun in Scorpio;
+   `+919999900002` (Varanasi, 12 Apr 1998, **time not known**) returns Sun in
+   Pisces, Moon in Libra and no ascendant at all.
+2. **The reference chart reproduces**, to 0.005° against arithmetic that does
+   not go through them.
+3. **A pre-1945 birth uses its own offset** — the 1943 Kolkata case returns the
+   +06:30 ascendant, a whole sign off the naive one.
+
+**The routes are walked**, both accounts, on the harder one: `/onboarding`
+name → date → time → place → verify → computing, then `/chart`, `/chart/:id`,
+`/horoscope`, `/profile/horoscope`, `/home`, `/shop`, and the horoscope overlay.
+Everything an unknown birth time should hide is hidden and says why.
+
+**The mock's two calendars agree now.** The home reading card and the panchang
+card both read the same day, which is the §6 note in `06-IMPLEMENTATION.md`
+closing.
+
+**Three things the walk found and fixed**, none of which the build would have
+caught:
+
+- **Place search showed the four default cities underneath a running search.**
+  The first call is a few seconds cold, and for those seconds the screen offered
+  Pune, Mumbai, Bengaluru and Delhi as answers to "Varanasi". Somebody tapping
+  one has filed their chart in the wrong city and nothing downstream would say
+  so. The shortlist is now for an empty box only.
+- **Their geo results repeat.** "Varanasi" came back three times with an
+  identical name, district and state at coordinates that round to the same two
+  decimals — three rows a reader cannot choose between. The function collapses
+  exact renders and keeps the largest.
+- **The Ask AI panel opened by naming your moon sign.** It was the seed
+  person's, which was invisible while everyone shared one chart and became a
+  flat contradiction the moment the chart screens went real — four screens
+  saying Libra, that panel saying Pisces. The greeting no longer names a
+  placement; phase 8 replaces it properly.
+
+#### Production, 3 Sep — live and verified
+
+`019_astro_cache` applied, the `astro` function deployed, and both secrets set.
+Verified from outside with no credentials beyond the anon key that already ships
+in the bundle:
+
+- Preflight from `https://1namo.com` returns **204** with all four headers and
+  the origin echoed. An unrecognised origin gets the fallback rather than being
+  reflected back.
+- `geo` and `panchang` compute, and the panchang's metadata reports
+  `ayanamsha: lahiri` — the setting is arriving, not being defaulted away.
+- The second identical `panchang` call returned **`cached: true`**, which is what
+  actually proves `astro_cache` is present and being written. The function
+  serves a correct answer whether or not the cache works, so nothing else
+  distinguishes a live cache from a missing table.
+- `chart` with no session refuses `signed_out` rather than leaking one.
+
+**The API key was rotated and the old one revoked.** Both projects hold the new
+one. `C:\Atharv 2\PHASE7-PROMPT.md`, outside the repo, still contains the dead
+key in plaintext.
+
+#### Owed on phase 7
+
+1. **The front end is not deployed, and this is the one that matters.**
+   Nothing is committed and nothing is pushed, so `https://1namo.com` still
+   serves the pre-phase-7 bundle: the four real production accounts still see
+   the seed person's chart. The Edge Function underneath them is live and
+   correct and nobody can reach it. Pushing to `main` deploys in ~40s.
+2. **Production runs one function version behind.** Dev is on **v6**, which logs a failed
+   cache read or write; production is on the deploy before it, which does not.
+   Same behaviour in every other respect. It matters because a broken cache is
+   invisible by construction — the answers stay correct and every call misses,
+   which spends 50,000 requests a month looking healthy. Redeploy production
+   from `backend/functions/astro/index.ts` next time you touch it.
+
+**Reports still cannot be sold on Entry** — two report credits a month against a
+₹4,041 Full Birth Chart. Phase 8/10's problem, but do not build a checkout
+against it.
 
 ### Still parked
 

@@ -883,10 +883,13 @@ export function useProfileFields() {
     birthDate: profile?.birth_date ? formatIsoDate(profile.birth_date) : seed(user.birthDate),
     birthTime: profile?.birth_time ? formatSqlTime(profile.birth_time) : seed(user.birthTime),
     birthPlace: profile?.birth_place || seed(user.birthPlace),
-    // Phase 7 computes these. Until then they are the same for everyone by
-    // design rather than by accident — docs/03-APP-FLOW.md §10.
-    sunSign: user.sunSign,
-    moonSign: user.moonSign,
-    risingSign: user.risingSign,
+    // Whether the birth time is a fact or a guess. NULL time and `false` here
+    // are the same answer said twice, and the screens need it to know not to
+    // print an ascendant (05-BACKEND-SCHEMA.md §4.1).
+    birthTimeKnown: profile ? profile.birth_time_known !== false : true,
+    /* Sun, moon and rising USED TO LIVE HERE, identical for everyone. Phase 7
+       computes them, so they moved to `useMyChart()` in lib/astro.js — this
+       hook is called on screens with no interest in a chart, and a fetch inside
+       it would spend a request on every one of them. */
   }
 }

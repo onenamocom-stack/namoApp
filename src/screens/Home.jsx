@@ -2,14 +2,11 @@ import { Link } from 'react-router-dom'
 import {
   clips,
   courses,
-  days,
   feed,
   liveSessions,
-  panchang,
   posts,
   products,
   reads,
-  user,
 } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -17,6 +14,7 @@ import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Acts, firstName } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
+import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
 /**
  * The free tools, as circles across the top of the feed.
@@ -71,9 +69,13 @@ export default function Home({ action }) {
     })
     .filter(Boolean)
 
+  /* Both cards fetch for themselves rather than being handed data. They are
+     rendered once each, they are the only two things on this screen that are
+     computed, and threading two loading states through the feed loop to save
+     two hooks would be the expensive kind of tidy. */
   const PANCHANG_AFTER = 3
   const items = [
-    { id: 'f-reading', kind: 'reading', data: days.today },
+    { id: 'f-reading', kind: 'reading' },
     ...rest.slice(0, PANCHANG_AFTER),
     { id: 'f-panchang', kind: 'panchang' },
     ...rest.slice(PANCHANG_AFTER),
@@ -93,7 +95,7 @@ export default function Home({ action }) {
             case 'reel':
               return <ReelCard key={item.id} reel={item.data} />
             case 'reading':
-              return <ReadingCard key={item.id} day={item.data} />
+              return <ReadingCard key={item.id} />
             case 'panchang':
               return <PanchangCard key={item.id} />
             case 'article':
@@ -277,30 +279,45 @@ function ReelCard({ reel: r }) {
 }
 
 /** The daily reading, inline. The product's core content, in the stream. */
-function ReadingCard({ day }) {
-  const { setHoroscopeOpen: setOpen } = useStore()
+function ReadingCard() {
+  const { setHoroscopeOpen: setOpen, session, sessionReady } = useStore()
+  const horoscope = useAstro('horoscope', {
+    ready: sessionReady,
+    who: session?.user?.id ?? null,
+  })
+  const day = readingFrom(horoscope.payload, 'today', null)
+
   return (
     <article className="pop-card p-4">
       <Kicker action="Read all" onAction={() => setOpen(true)}>
         Today&apos;s reading
       </Kicker>
       <div className="pop-inset mt-4 p-4">
-        <p className="caps-sm gold">{day.date}</p>
-        <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
-        <p className="mt-3 text-body t-body">{day.body}</p>
+        {horoscope.loading && <p className="text-meta t-faint">Reading the sky.</p>}
 
-        <dl className="mt-5 grid grid-cols-3 border-t border-stroke pt-4">
-          {[
-            ['Mood', day.mood],
-            ['Colour', day.luckyColour],
-            ['Number', day.luckyNumber],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <dt className="caps-sm t-faint">{k}</dt>
-              <dd className="mt-1 text-meta tnum t-heading">{v}</dd>
-            </div>
-          ))}
-        </dl>
+        {/* Signed out, or with no birth details, this says which. It does not
+            show somebody else's reading and it does not go blank — a card that
+            is empty for no stated reason is the same bug as a card that is
+            confidently wrong. */}
+        {horoscope.refusal && <p className="text-meta t-body">{horoscope.refusal.reason}</p>}
+
+        {day && (
+          <>
+            <p className="caps-sm gold">{longDate(day.date)}</p>
+            <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
+            <p className="mt-3 text-body t-body">{day.body}</p>
+
+            {day.intensity !== null && (
+              <div className="mt-5 border-t border-stroke pt-4">
+                <div className="mb-2 flex items-baseline justify-between">
+                  <span className="caps-sm t-faint">Overall</span>
+                  <span className="caps-sm gold tnum">{day.intensity}/100</span>
+                </div>
+                <PopBar value={day.intensity} />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </article>
   )
@@ -309,52 +326,70 @@ function ReadingCard({ day }) {
 /**
  * Today's panchang, as the second card.
  *
- * Six figures in a grid and the two windows anyone actually checks. Rahu kaal
- * gets the warning colour because it is the only line here that tells you not
- * to do something.
+ * Six figures in a grid and the window anyone actually checks. Rahu kaal gets
+ * the warning colour because it is the only line here that tells you not to do
+ * something. Abhijit used to sit beside it and has moved to the reading's own
+ * Windows section, which is where the API computes it.
+ *
+ * **This is the one computed thing on the screen that works signed out**, and
+ * it should: a panchang is a function of a date and a place, not of a person.
+ * The server anchors it on the birth place when there is one and on Pune when
+ * there is not. Anchoring it the same way the reading is anchored is what stops
+ * the two cards naming different tithis — which is exactly what the mock they
+ * replace did, a week apart.
  */
 function PanchangCard() {
+  const { session, sessionReady } = useStore()
+  const got = useAstro('panchang', { ready: sessionReady, who: session?.user?.id ?? null })
+  const p = panchangFrom(got.payload)
+
   return (
     <article className="pop-card p-4">
       <Kicker action="Full chart" to="/chart">
         Today&apos;s panchang
       </Kicker>
-      <p className="mt-2 caps-sm t-faint tnum">{panchang.date}</p>
 
-      <dl className="mt-4 grid grid-cols-3 gap-y-4">
-        {[
-          ['Tithi', panchang.tithi],
-          ['Nakshatra', panchang.nakshatra],
-          ['Yoga', panchang.yoga],
-          ['Karana', panchang.karana],
-          ['Moon', panchang.moonSign],
-          ['Paksha', panchang.paksha],
-        ].map(([k, v]) => (
-          <div key={k}>
-            <dt className="caps-sm t-faint">{k}</dt>
-            <dd className="mt-1 text-meta t-heading">{v}</dd>
+      {got.loading && <p className="mt-3 text-meta t-faint">Working out the day.</p>}
+      {got.refusal && <p className="mt-3 text-meta t-body">{got.refusal.reason}</p>}
+
+      {p && (
+        <>
+          <p className="mt-2 caps-sm t-faint tnum">
+            {longDate(p.date)}
+            {p.lunarMonth && ` · ${p.lunarMonth}`}
+            {p.samvat && ` · VS ${p.samvat}`}
+          </p>
+
+          <dl className="mt-4 grid grid-cols-3 gap-y-4">
+            {[
+              ['Tithi', p.tithi],
+              ['Nakshatra', p.nakshatra],
+              ['Yoga', p.yoga],
+              ['Karana', p.karana],
+              ['Moon', p.moonSign],
+              ['Paksha', p.paksha],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt className="caps-sm t-faint">{k}</dt>
+                <dd className="mt-1 text-meta t-heading">{v || '—'}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {p.rahuKaal && (
+            <div className="pop-inset mt-4 p-3">
+              <p className="caps-sm text-live">Rahu kaal</p>
+              <p className="mt-1 text-meta tnum t-heading">{p.rahuKaal}</p>
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center gap-3 caps-sm t-faint tnum">
+            <span>Sunrise {p.sunrise}</span>
+            <span aria-hidden="true">·</span>
+            <span>Sunset {p.sunset}</span>
           </div>
-        ))}
-      </dl>
-
-      <div className="mt-4 flex gap-2">
-        <div className="pop-inset flex-1 p-3">
-          <p className="caps-sm text-live">Rahu kaal</p>
-          <p className="mt-1 text-meta tnum t-heading">{panchang.rahuKaal}</p>
-        </div>
-        <div className="pop-inset flex-1 p-3">
-          <p className="caps-sm gold">Abhijit</p>
-          <p className="mt-1 text-meta tnum t-heading">{panchang.abhijit}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-3 caps-sm t-faint tnum">
-        <span>Sunrise {panchang.sunrise}</span>
-        <span aria-hidden="true">·</span>
-        <span>Sunset {panchang.sunset}</span>
-      </div>
-
-      <p className="mt-4 text-meta t-body">{panchang.line}</p>
+        </>
+      )}
     </article>
   )
 }
