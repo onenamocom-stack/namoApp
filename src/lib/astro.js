@@ -63,6 +63,107 @@ export async function callAstro(op, params = {}) {
   return data ?? UNREACHABLE
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   The client's own cache.
+
+   The SERVER already memoises every derivation, so a second call is cheap for
+   our API quota — but it is not free for the person holding the phone. Every
+   mount was a network round trip, and `/home` alone mounts the reading card
+   and the panchang card, then opening the horoscope overlay asks for the same
+   reading a third time. Three requests, one answer, on a phone on Indian
+   mobile data.
+
+   Two mechanisms, because they solve two different problems:
+
+   - `inFlight` de-duplicates CONCURRENT callers. Two components mounting in
+     the same tick share one promise instead of racing two identical requests.
+   - `localStorage` de-duplicates callers SEPARATED IN TIME — a reload, a new
+     tab, coming back this evening.
+
+   localStorage rather than sessionStorage, deliberately: sessionStorage dies
+   with the tab, so every new tab would refetch a chart that cannot have
+   changed. The cost of the stronger store is that entries outlive a sign-out,
+   which is why THE USER ID IS IN THE KEY — a second person on the same phone
+   gets different keys and cannot read the first one's chart. Supabase already
+   keeps the session itself in localStorage, so this stores nothing in a place
+   the app was not already using.
+
+   Refusals are NEVER cached. `no_birth` stops being true the moment somebody
+   adds their birth details, and `upstream` stops being true when the service
+   comes back; caching either would make a temporary answer permanent.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const inFlight = new Map()
+
+/** A chart is a function of a birth and nothing else, so it has no expiry at
+ *  all. Everything else is a function of the IST day and dies with it. */
+const cacheStamp = (op) => (op === 'chart' ? 'never' : istDate())
+
+const cacheKey = (op, date, who) => `astro:${op}:${who ?? 'anon'}:${date ?? 'today'}`
+
+function readCache(op, date, who) {
+  try {
+    const raw = localStorage.getItem(cacheKey(op, date, who))
+    if (!raw) return null
+    const entry = JSON.parse(raw)
+    return entry?.stamp === cacheStamp(op) ? entry.value : null
+  } catch {
+    // Private mode, a full quota, or a half-written entry. A cache that cannot
+    // be read is a miss, never an error the person sees.
+    return null
+  }
+}
+
+function writeCache(op, date, who, value) {
+  try {
+    localStorage.setItem(
+      cacheKey(op, date, who),
+      JSON.stringify({ stamp: cacheStamp(op), value }),
+    )
+  } catch {
+    /* Quota full or storage denied. The answer is already on screen. */
+  }
+}
+
+/**
+ * `callAstro` with the two caches in front of it.
+ *
+ * Not folded into `callAstro` itself, because `geo` goes through that one on
+ * every keystroke and must never be cached — a search for "Var" is not an
+ * answer to "Varanasi".
+ */
+function cachedAstro(op, { date, who }) {
+  const hit = readCache(op, date, who)
+  if (hit) return Promise.resolve(hit)
+
+  const key = cacheKey(op, date, who)
+  const running = inFlight.get(key)
+  if (running) return running
+
+  const promise = callAstro(op, date ? { date } : {})
+    .then((res) => {
+      if (res.ok) writeCache(op, date, who, res)
+      return res
+    })
+    .finally(() => inFlight.delete(key))
+
+  inFlight.set(key, promise)
+  return promise
+}
+
+/** Forget everything cached for everybody. Called on sign-out, so a shared
+ *  phone does not keep the previous person's chart one key lookup away. */
+export function clearAstroCache() {
+  inFlight.clear()
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('astro:')) localStorage.removeItem(k)
+    }
+  } catch {
+    /* Storage denied. There is nothing cached to clear either. */
+  }
+}
+
 /**
  * The hook every screen uses.
  *
@@ -90,7 +191,7 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
     let live = true
     setState((s) => ({ ...s, loading: true }))
 
-    callAstro(op, date ? { date } : {}).then((res) => {
+    cachedAstro(op, { date, who }).then((res) => {
       if (!live) return
       setState(
         res.ok
@@ -131,6 +232,21 @@ export function useMyChart({ ready = true, who = null } = {}) {
     sun: chart.payload ? signOf(chart.payload, 'Sun') : null,
     moon: chart.payload ? signOf(chart.payload, 'Moon') : null,
     rising: chart.timeKnown ? (chart.payload?.ascendant?.sign ?? null) : null,
+    /* RASHI IS THE MOON SIGN, not the sun sign. In Indian usage "rashi" on its
+       own means janma rashi — where the Moon stood at birth — and it is what
+       every rashifal in the country is keyed on. Western daily horoscopes key
+       on the Sun, which is why the same person is told two different signs by
+       two different apps.
+
+       It comes off the natal chart, so it is a function of the birth and never
+       changes, and the chart is cached with no expiry. It also survives an
+       unknown birth time: the Moon moves about half a degree an hour, so it is
+       in the right sign whatever the hour — unlike the ascendant, which is not.
+
+       Same value as `moon` deliberately. The two names are here because the
+       screens mean different things by them: `moon` is one placement among
+       nine on a chart, `rashi` is the bucket a daily reading is chosen by. */
+    rashi: chart.payload ? signOf(chart.payload, 'Moon') : null,
   }
 }
 

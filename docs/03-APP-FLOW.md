@@ -351,6 +351,25 @@ wallet figure. `/chart`, `/chart/:id`, `/people`, `/people/:id`, `/read/:id`,
 `/reels/:id` rewrites the URL as you scroll, so the address bar tracks the
 visible reel.
 
+### A computed answer is fetched once a day, not once a mount
+
+Every screen below reads through a browser-side cache in `src/lib/astro.js`,
+stamped with the IST day. What that changes on screen:
+
+- **A reload costs nothing.** The reading, the panchang and the chart are
+  already there and render immediately instead of showing a loading line.
+- **Opening the horoscope overlay from `/home` costs nothing**, because the
+  reading card on the same screen already fetched that day's reading. Two
+  components mounting together produce one request, not two.
+- **A chart never refetches at all.** It is a function of a birth.
+- **Tomorrow still costs one request**, once, the first time somebody asks for
+  it. Verified by counting: a cached day is zero requests, an uncached one is
+  exactly one.
+
+**The sun, moon and rising line in a header comes from the CHART**, not from the
+day's reading. It used to read the reading's `profile` block, which meant a
+permanent fact about a birth could not appear until a daily fetch had landed.
+
 ### Five states, not two, wherever something is computed
 
 `/chart`, `/chart/:id`, `/horoscope`, the horoscope overlay, the home reading and

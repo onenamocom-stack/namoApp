@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Kicker, PopBar, PopButton, PopCard, PopTag } from './Pop.jsx'
 import { useStore } from '../store.jsx'
-import { istDate, longDate, readingFrom, useAstro } from '../lib/astro.js'
+import { istDate, longDate, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
 const DAYS = [
   { key: 'yesterday', label: 'Yest' },
@@ -43,11 +43,20 @@ export default function HoroscopePanel() {
     who: session?.user?.id ?? null,
   })
 
+  /* The header line is a fact about a birth, not about today, so it comes off
+     the chart — which is cached with no expiry and costs nothing to ask for
+     again. Reading it off the day's reading, as this used to, tied a permanent
+     fact to a daily fetch and would start lying the moment the reading stops
+     being per-person. */
+  const mine = useMyChart({
+    ready: sessionReady && horoscopeOpen,
+    who: session?.user?.id ?? null,
+  })
+
   if (!horoscopeOpen) return null
 
   const day = readingFrom(horoscope.payload, key, null)
   const transit = day?.transits[0]
-  const who = horoscope.payload?.profile
   const close = () => setHoroscopeOpen(false)
 
   return (
@@ -64,17 +73,12 @@ export default function HoroscopePanel() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="min-w-0">
               <p className="caps t-heading">Horoscope</p>
-              {/* The lagna is computed from noon when nobody knows the birth
-                  time, so it is named only when the time is real. */}
+              {/* `rising` is already null when the birth time is unknown, so
+                  there is no second guard here. */}
               <p className="mt-0.5 caps-sm t-faint">
-                {who
-                  ? [
-                      who.moon?.sign && `${who.moon.sign} moon`,
-                      horoscope.timeKnown && who.lagna?.sign && `${who.lagna.sign} rising`,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')
-                  : ''}
+                {[mine.rashi && `${mine.rashi} moon`, mine.rising && `${mine.rising} rising`]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </div>
             <button type="button" onClick={close} className="caps-sm t-body" aria-label="Close">

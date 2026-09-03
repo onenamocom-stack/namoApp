@@ -12,7 +12,7 @@ import {
   Stub,
 } from '../components/Primitives.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
-import { istDate, longDate, readingFrom, useAstro } from '../lib/astro.js'
+import { istDate, longDate, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
 const TABS = [
   { key: 'yesterday', label: 'Yesterday' },
@@ -54,20 +54,25 @@ export default function Horoscope() {
   })
 
   const day = readingFrom(horoscope.payload, TABS.find((tb) => tb.key === key).label, CONTEXT[key])
-  const who = horoscope.payload?.profile
 
-  /* The lagna is computed from noon when nobody knows the birth time, so it is
-     named only when the time is real. The moon survives a rough time and is
-     shown either way — which is also the honest version of what this line was
-     always doing. */
-  const sub = who
-    ? [
-        who.moon?.sign && `${who.moon.sign} moon`,
-        horoscope.timeKnown && who.lagna?.sign && `${who.lagna.sign} rising`,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : ''
+  /* The header line comes from the CHART, not from the reading.
+
+     It used to read `horoscope.payload.profile`, which worked only because the
+     reading happened to be computed from this person's birth. Two problems with
+     that: the line could not appear until the day's reading had loaded, even
+     though it is a fact about a birth that never changes; and it would quietly
+     become a lie the moment the reading stops being per-person.
+
+     The chart is cached with no expiry, so this now renders immediately and
+     stays right. `rising` is already null when the birth time is unknown, so
+     there is no second guard here. */
+  const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
+  const sub = [
+    mine.rashi && `${mine.rashi} moon`,
+    mine.rising && `${mine.rising} rising`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <>

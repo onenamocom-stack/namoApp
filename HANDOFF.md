@@ -290,10 +290,19 @@ expected; the files are the record.
 - **The onboarding draft lives in `sessionStorage`.** Reading the SMS means
   leaving the app, and an evicted page created an account with no birth details,
   silently. That is what landed the first live signup an empty row.
-- **Onboarding never overwrites an existing birth record.** There is no
-  sign-in-only route, so a returning user re-answers the questions to get a
-  session; `Computing.jsx` waits for the profile to load and, if `birth_date` is
-  already set, signs them in and leaves the row alone.
+- **Onboarding never overwrites an existing birth record.** `Computing.jsx`
+  waits for the profile to load and, if `birth_date` is already set, signs
+  them in and leaves the row alone — which is what makes the sign-in route
+  below safe to skip straight to the phone step with an empty draft.
+- **There is now a sign-in-only route** — `AskSide.jsx` carries a "Sign in
+  instead" link under each card, straight to `/onboarding/phone?mode=signin`
+  (`&next=pro` for the consultant side), skipping name/date/time/place
+  entirely. `AskPhone.jsx` in that mode drops the email field, calls
+  `signInWithOtp` with `shouldCreateUser: false` so a number with no account
+  is refused rather than silently minted, and shows "Create one instead"
+  on that refusal. Nothing downstream needed to change: `VerifyOtp.jsx`
+  already sent a non-pro verification to `Computing.jsx`, which already did
+  the right thing with an empty draft against an existing birth record.
 
 **Phone auth on production is Twilio Verify.** The route cost most of the setup
 time, so it is written down:
@@ -821,10 +830,11 @@ now stated as settled in the document that owns it.
 Reports writes to the cart with no way to
 open it · question packs charge nothing · Ask AI shows a hardcoded wallet figure
 · `/chart` has no back control · consultant metrics disagree with the warnings
-citing them, 88% against 68% · **there is no sign-in-only route**, so a
-returning user must re-answer the onboarding questions to get a session — the
-consultant branch now routes through the same steps to `/pro/apply`, so the
-gap is felt on both sides.
+citing them, 88% against 68%.
+
+**Closed:** there was no sign-in-only route, so a returning user had to
+re-answer the onboarding questions to get a session on both branches. See
+"There is now a sign-in-only route" under Phase 1 above.
 
 ### Deliberate omissions
 
@@ -996,6 +1006,32 @@ in the bundle:
 **The API key was rotated and the old one revoked.** Both projects hold the new
 one. `C:\Atharv 2\PHASE7-PROMPT.md`, outside the repo, still contains the dead
 key in plaintext.
+
+#### The browser caches the day too — 4 Sep
+
+The server cache never protected the phone, only the quota. Every mount was a
+round trip, `/home` asked for the same reading twice, and a reload asked again.
+`src/lib/astro.js` now holds answers in `localStorage` stamped with the IST day,
+with an in-flight map so two components mounting together make one request.
+
+Counted in a browser rather than assumed:
+
+| | Requests |
+|---|---|
+| Reload `/home` with the day already fetched | **0** |
+| Open the horoscope overlay on top of that | **0** |
+| Switch to a day never fetched before | **1** |
+| Switch back to a day already fetched | **0** |
+
+A chart has no expiry at all. Refusals are never cached — `no_birth` stops being
+true the moment somebody adds their details. The user id is in every key and
+sign-out clears the store, because `localStorage` outliving a session is the
+whole point and a shared phone must not carry the last person's chart.
+
+**Sun, moon and rising in a header now come from the chart**, not from the day's
+reading. A fact about a birth should not wait on a daily fetch, and `rashi` is
+named on `useMyChart()` as what it is: the MOON sign, which is what every
+rashifal in India keys on, and which survives an unknown birth time.
 
 #### Nothing is owed on phase 7
 

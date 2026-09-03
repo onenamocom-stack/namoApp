@@ -907,6 +907,13 @@ the policy count is zero rather than trusting it.
 Truncating this table is safe and costs one refetch per row anybody asks for
 again. That is what `_cache` in the name promises.
 
+**The browser keeps its own copy too**, in `localStorage`, stamped with the IST
+day (`src/lib/astro.js`, added 4 Sep 2026). The two caches solve different
+problems and neither replaces the other: this table stops us spending API quota,
+the browser one stops the phone spending a round trip on every mount. A row here
+can be deleted at any time without the client noticing anything but one slower
+load.
+
 ---
 
 ## 5. Post-v1 tables

@@ -350,6 +350,56 @@ with no TTL and no sweeper — every cache key carries every input that produced
 its value, so a value cannot go stale, only go unused. Corrected birth details
 produce a different key and therefore a miss.
 
+**And cached again in the browser**, added 4 Sep 2026. The server cache protects
+the API quota; it does nothing for the person holding the phone, who was paying
+a network round trip on every mount. `/home` alone asked for the same reading
+twice — the reading card and the horoscope overlay — and every reload asked
+again. `src/lib/astro.js` now keeps answers in `localStorage`, stamped with the
+IST day, and de-duplicates concurrent callers through an in-flight map.
+
+Three rules it follows, each for a reason:
+
+- **A chart never expires.** It is a function of a birth. Everything else dies
+  with the IST day it was computed for.
+- **Refusals are never cached.** `no_birth` stops being true the moment somebody
+  adds their details; `upstream` stops being true when the service returns.
+  Caching either would make a temporary answer permanent.
+- **The user id is in the key, and sign-out clears the store.** `localStorage`
+  outliving a session is the point — it is what makes a reload free — so a
+  second person on a shared phone must not be one key lookup from the first
+  one's chart.
+
+`localStorage` rather than `sessionStorage` because `sessionStorage` dies with
+the tab, and a new tab would then refetch a chart that cannot have changed.
+
+### Per-sign daily readings are not available from this vendor — checked 4 Sep 2026
+
+The obvious way to stop the daily horoscope scaling with users is to serve
+**twelve readings a day, one per rashi**, instead of one per person. It would
+make API usage a constant. **It cannot be done here, and the reason is not
+effort.**
+
+- The only Vedic daily endpoint is `/api/v2/vedic/horoscope/daily/personal`. It
+  takes a **birth**, not a sign. Serving twelve readings from it means inventing
+  twelve canonical births and presenting their charts as the reader's, which is
+  fabricated data of exactly the kind this repo refuses elsewhere.
+- A sign-based daily endpoint does exist — `/api/v2/horoscope/daily/sign` — and
+  its own documentation says **"Western/tropical zodiac only. This is not
+  compatible with Vedic/sidereal systems."** Probed directly: it returns 200,
+  and every Vedic spelling of the path returns 404.
+
+Adopting the tropical endpoint would put a **tropical** sign in the daily
+reading beside a **sidereal** chart computed on Lahiri. Those disagree for most
+people — a sidereal Libra moon is usually a tropical Scorpio one — so the app
+would name two different signs for the same person on two screens, and the
+reader has no way to see which is which. That is the silent wrongness §8 exists
+to prevent, and it also contradicts the Vedic-first non-goal in `01-PRD.md` §10.
+
+**So the per-user call stays.** If the cost of it ever forces the issue, the
+honest options are a vendor with a sidereal sign-based daily endpoint, or
+computing the twelve readings ourselves — not relabelling tropical output as
+rashi.
+
 Two consequences of a third party that a local service did not have:
 
 - **The key is a secret** (INSTRUCTIONS.md rule 7). An Edge Function proxies

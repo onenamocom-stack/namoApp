@@ -12,6 +12,7 @@ import { pro, user } from './data/mock.js'
 import { translate } from './data/i18n.js'
 import { supabase } from './lib/supabase.js'
 import { bookSession as book } from './lib/consultants.js'
+import { clearAstroCache } from './lib/astro.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -245,6 +246,12 @@ export function AppProvider({ children }) {
         setProfile(null)
         setConsultant(null)
         refreshWallet(null)
+        /* Charts and readings are cached in localStorage, which outlives a
+           session by design — that is what stops a reload costing a request.
+           The keys carry the user id, so a second person cannot read the
+           first one's entries, but on a shared phone there is no reason to
+           leave them sitting there either. */
+        clearAstroCache()
       }
     })
 

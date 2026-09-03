@@ -19,11 +19,18 @@ import { Kicker } from '../../components/Pop.jsx'
  * carries `?next=pro` through the same name and phone steps the seeker takes,
  * and lands on the application instead of the birth questions — a consultant
  * still does not give us his own moment of birth.
+ *
+ * `signInTo` is the other door, straight to the phone step with nothing to
+ * fill in first — this is what closes the gap where a returning person had
+ * to re-answer name/date/time/place just to reach the code screen. It carries
+ * the same `?next=pro` a side already threads, because which door is which
+ * account is still the one thing this screen has to decide.
  */
 const SIDES = [
   {
     key: 'seeker',
     to: '/onboarding/name',
+    signInTo: '/onboarding/phone?mode=signin',
     kicker: 'I want a reading',
     line: 'Bring the question you have been rewriting in your head. Not the polite version of it.',
     art: 'orbit',
@@ -31,6 +38,7 @@ const SIDES = [
   {
     key: 'pro',
     to: '/onboarding/name?next=pro',
+    signInTo: '/onboarding/phone?mode=signin&next=pro',
     kicker: 'I give readings',
     line: 'You take the sessions. We take the scheduling, the payments and the arguing about time zones.',
     art: 'contour',
@@ -57,13 +65,21 @@ export default function AskSide() {
 
       <div className="mt-10 space-y-4">
         {SIDES.map((s) => (
-          <Link key={s.key} to={s.to} className="pop-card pop-tap block overflow-hidden">
-            <Plate seed={`side-${s.key}`} variant={s.art} className="!rounded-none h-28 w-full !shadow-none" />
-            <span className="block p-5">
-              <Kicker>{s.kicker}</Kicker>
-              <span className="mt-2 block text-meta t-sub">{s.line}</span>
-            </span>
-          </Link>
+          <div key={s.key} className="pop-card overflow-hidden">
+            <Link to={s.to} className="pop-tap block">
+              <Plate seed={`side-${s.key}`} variant={s.art} className="!rounded-none h-28 w-full !shadow-none" />
+              <span className="block p-5 pb-3">
+                <Kicker>{s.kicker}</Kicker>
+                <span className="mt-2 block text-meta t-sub">{s.line}</span>
+              </span>
+            </Link>
+            <Link
+              to={s.signInTo}
+              className="block border-t border-rule px-5 py-3 text-center text-meta text-t2 underline"
+            >
+              Already have an account? Sign in
+            </Link>
+          </div>
         ))}
       </div>
 
