@@ -359,6 +359,14 @@ function PanchangCard() {
             {p.lunarMonth && ` · ${p.lunarMonth}`}
             {p.samvat && ` · VS ${p.samvat}`}
           </p>
+          {/* Named, not implied. One almanac serves every user and it is
+              computed at Ujjain — the classical meridian of Indian astronomy —
+              so a reader in Chennai is looking at a sunrise about forty minutes
+              from their own. Saying so is the difference between a simplifying
+              choice and a quiet inaccuracy. */}
+          {got.city && (
+            <p className="mt-1 caps-sm t-faint">Computed at {got.city}</p>
+          )}
 
           <dl className="mt-4 grid grid-cols-3 gap-y-4">
             {[

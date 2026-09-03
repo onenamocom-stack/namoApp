@@ -12,7 +12,7 @@ import {
   Stub,
 } from '../components/Primitives.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
-import { istDate, longDate, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
+import { istDate, longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
 const TABS = [
   { key: 'yesterday', label: 'Yesterday' },
@@ -54,6 +54,15 @@ export default function Horoscope() {
   })
 
   const day = readingFrom(horoscope.payload, TABS.find((tb) => tb.key === key).label, CONTEXT[key])
+
+  /* The almanac comes from the SHARED panchang, not from the reading.
+     The reading carries its own, computed at this person's birth place, while
+     the home screen shows the one computed at Ujjain for everybody. Two tithis
+     for one day is the disagreement phase 7 set out to end, so there is one
+     source and this is it. Costs nothing extra: one row a day for the whole
+     user base, and the client caches it for the day on top. */
+  const almanac = useAstro('panchang', { date, ready: sessionReady })
+  const sky = panchangFrom(almanac.payload)
 
   /* The header line comes from the CHART, not from the reading.
 
@@ -137,11 +146,10 @@ export default function Horoscope() {
                 assumed. Leading with the tithi and the nakshatra means
                 switching tabs visibly does something true, instead of looking
                 like a broken forecast. */}
-            {day.panchang && (
+            {sky && (
               <p className="mb-8 text-center text-micro uppercase tracking-caps text-t3">
-                {[day.panchang.tithi, day.panchang.nakshatra, day.panchang.yoga]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {[sky.tithi, sky.nakshatra, sky.yoga].filter(Boolean).join(' · ')}
+                {almanac.city && <span className="text-t4"> · {almanac.city}</span>}
               </p>
             )}
 

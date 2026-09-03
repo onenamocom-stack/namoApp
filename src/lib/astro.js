@@ -177,11 +177,13 @@ export function clearAstroCache() {
  * `loading`, `payload` (what the API computed), `timeKnown`, `refusal`.
  */
 export function useAstro(op, { date, ready = true, who = null } = {}) {
-  const [state, setState] = useState({ loading: true, payload: null, timeKnown: true, refusal: null })
+  const [state, setState] = useState({
+    loading: true, payload: null, timeKnown: true, city: null, refusal: null,
+  })
 
   useEffect(() => {
     if (!ready) {
-      setState({ loading: true, payload: null, timeKnown: true, refusal: null })
+      setState({ loading: true, payload: null, timeKnown: true, city: null, refusal: null })
       return undefined
     }
 
@@ -195,8 +197,18 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
       if (!live) return
       setState(
         res.ok
-          ? { loading: false, payload: res.data, timeKnown: res.time_known !== false, refusal: null }
-          : { loading: false, payload: null, timeKnown: true, refusal: res },
+          ? {
+              loading: false,
+              payload: res.data,
+              timeKnown: res.time_known !== false,
+              // Only the panchang carries this: the city its almanac was
+              // computed at. Every screen showing that almanac has to name it,
+              // because a sunrise from a place you have never been is wrong
+              // without looking wrong.
+              city: res.city ?? null,
+              refusal: null,
+            }
+          : { loading: false, payload: null, timeKnown: true, city: null, refusal: res },
       )
     })
 
@@ -417,7 +429,7 @@ export function readingFrom(horoscope, label, context) {
     glance: [
       ['Tone', s.overall?.band],
       ['Dasha', horoscope.dasha?.dominant_period?.lord],
-      ['Nakshatra', horoscope.panchang?.nakshatra?.name],
+
     ]
       .filter(([, v]) => v)
       .map(([key, value]) => ({ key, value })),
@@ -433,14 +445,13 @@ export function readingFrom(horoscope, label, context) {
       money: s.wealth?.score ?? null,
     },
     sections: horoscope.sections ?? [],
-    /* The almanac for this day, carried on the reading itself.
-       It is here because it is the part that ACTUALLY MOVES between yesterday,
-       today and tomorrow. Their ruleset derives the headline and the six scores
-       from the dasha stack and ranked gochar, neither of which shifts in three
-       days, so those come back identical across the tabs — measured, not
-       assumed. The tithi, the nakshatra and the windows do change daily, so the
-       screen leads with them and the three tabs stop looking broken. */
-    panchang: panchangFrom(horoscope.panchang),
+    /* NO PANCHANG HERE, deliberately, and it used to be.
+       The personal endpoint returns its own almanac computed at the reader's
+       BIRTH PLACE, while the shared `panchang` op is computed at Ujjain for
+       everybody. Rendering both would put two tithis on two screens for the
+       same day and let them disagree at a transition — which is exactly the
+       bug the mock had, a week apart, and which phase 7 was supposed to end.
+       The screen fetches the shared almanac instead. One source. */
     transits: (horoscope.influences?.all_ranked ?? []).map((i) => ({
       id: i.fact_id ?? i.id,
       title: i.title,

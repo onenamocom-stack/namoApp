@@ -1051,6 +1051,26 @@ bundle is `index-DcSBECHe.js` — checked rather than assumed, because a green
 Actions run and a served bundle are different facts here. The four deleted mock
 strings are absent from it and the phase 7 copy is present.
 
+**The panchang is one row a day for everybody, anchored on Ujjain** (4 Sep).
+It was per birth place. Verified on dev: a Pune user misses, then a Varanasi
+user and a signed-out visitor both hit the same `panchang:<date>` row and all
+three read Ujjain's 06:10 sunrise. Every screen showing it names the city,
+because sunrise moves about two hours across India and an unnamed almanac from
+somewhere you have never been is wrong without looking wrong.
+
+`/horoscope` now draws its tithi from that shared almanac rather than from the
+reading's own — the personal endpoint computes a second panchang at the birth
+place, and showing both would put two tithis for one day on two screens. That
+is the mock's week-apart calendar bug, and it nearly came back through the side
+door.
+
+**Per-rashi horoscopes are NOT built and cannot be on this vendor.** There is no
+Vedic sign-based daily endpoint — four spellings probed, all 404. The sign
+endpoint that does exist is Western, takes no ayanamsa, and would print a
+tropical sign beside a sidereal Lahiri chart, naming two different signs for one
+person on two screens. The reading stays per person. `02-TRD.md` §8 has the
+finding.
+
 **Reports still cannot be sold on Entry** — two report credits a month against a
 ₹4,041 Full Birth Chart. Phase 8/10's problem, but do not build a checkout
 against it.

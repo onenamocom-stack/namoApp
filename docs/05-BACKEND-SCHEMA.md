@@ -888,8 +888,22 @@ not also true of a cached panchang.
 | Derivation | Key |
 |---|---|
 | Chart | `chart:<profile_id>:<digest of the six birth columns>` |
-| Panchang | `panchang:<date>:<lat>,<lng>` |
+| Panchang | `panchang:<date>` — **no place at all**, see below |
 | Horoscope | `horoscope:<profile_id>:<digest>:<date>` |
+
+**The panchang key carries no place, as of 4 Sep 2026.** It was the reader's
+birth place to six decimals, then rounded to about 11 km, and is now a single
+row a day for the entire user base — computed at **Ujjain**, the classical
+zero-longitude of Indian jyotisha. A panchang is a function of a date and a
+place; making the place a constant makes the whole product cost one request a
+day for that derivation no matter how many people use it.
+
+The cost is real and is paid on screen rather than hidden: sunrise moves about
+two hours across India, so this is Ujjain's almanac and every screen that shows
+it names the city. An almanac silently computed somewhere the reader has never
+been is wrong in this project's least acceptable way — wrong without looking
+wrong. The anchor travels back on the response as `city` precisely so no screen
+can render it anonymously.
 
 **Which is why there is no TTL, no `expires_at` and no sweeper.** A value cannot
 go stale, only go unused: a corrected birth time changes the digest and

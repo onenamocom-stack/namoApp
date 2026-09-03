@@ -32,10 +32,22 @@ const RECKONING = {
   node_type: 'mean',
 } as const
 
-// Where the panchang is anchored for somebody with no birth place yet — the
-// signed-out home screen. First entry of AskPlace's DEFAULTS, so the almanac on
-// the landing page is a real one rather than a blank card.
-const DEFAULT_PLACE = { lat: 18.5204, lng: 73.8567, zone: 'Asia/Kolkata' }
+// WHERE THE PANCHANG IS COMPUTED, FOR EVERYBODY.
+//
+// Ujjain, chosen 4 Sep 2026. It is the classical zero-longitude of Indian
+// astronomy — the meridian jyotisha has reckoned from for centuries — so it is
+// the one arbitrary choice here that is defensible to a reader who knows why.
+//
+// One anchor rather than the reader's own birth place, deliberately. A panchang
+// is a function of a date and a place, and keying it per person meant a request
+// per person per day for an answer nobody's copy of differed meaningfully from.
+// This makes it ONE request a day for the entire user base, at any size.
+//
+// THE COST IS REAL AND MUST BE STATED ON SCREEN: sunrise moves about two hours
+// across India, so this is Ujjain's almanac, not the reader's. An almanac
+// silently computed for a city you have never been to is wrong in the way this
+// project cares about — wrong without looking wrong.
+const PANCHANG_ANCHOR = { lat: 23.1765, lng: 75.7885, zone: 'Asia/Kolkata', city: 'Ujjain' }
 
 const PAGES_ORIGIN = Deno.env.get('PAGES_ORIGIN') ?? 'https://1namo.com'
 
@@ -104,26 +116,6 @@ function allowedDate(date: unknown): string | null {
 function dateParts(date: string) {
   const [year, month, day] = date.split('-').map(Number)
   return { year, month, day, hour: 12, minute: 0 }
-}
-
-/**
- * The panchang's cache key, deliberately COARSER than the coordinates it is
- * computed from.
- *
- * A panchang is a function of a date and a place, and it was first keyed on the
- * birth place to six decimals — which is about ten centimetres, so no two people
- * ever shared a row and every user cost a request every day. That is a 2× bill
- * for an answer that does not vary.
- *
- * One decimal is roughly 11 km. Across that, sunrise moves about twelve seconds
- * and every transition time with it, against a card that prints HH:MM. So a city
- * shares one row and the displayed answer is unchanged.
- *
- * The chart is NOT rounded and must not be — a house cusp does move over 11 km,
- * and that key is per person anyway.
- */
-function placeKey(lat: number, lng: number) {
-  return `${lat.toFixed(1)},${lng.toFixed(1)}`
 }
 
 /** Short digest of everything about a birth that moves a chart. It is half the
@@ -296,6 +288,20 @@ Deno.serve(async (req) => {
   const date = allowedDate(body.date)
   if (!date) return refuse('bad_request', 'That date is outside what we compute.', 400, headers)
 
+  // ── panchang ─────────────────────────────────────────────────────────────
+  // Answered before we even look at who is asking, because it no longer
+  // depends on them. One anchor, one row a day, shared by everybody signed in
+  // or out. The key carries no place because there is only one.
+  if (op === 'panchang') {
+    const { lat, lng, zone, city } = PANCHANG_ANCHOR
+    const got = await memo(`panchang:${date}`, () =>
+      post('/api/v2/vedic/panchang', { ...dateParts(date), lat, lng, tz_str: zone, ...RECKONING }))
+    if (!got) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
+    // `city` travels with the payload so the screen can name it. A shared
+    // almanac that does not say whose sunrise it used is the silent-wrong case.
+    return ok({ ok: true, data: got.payload, date, city, cached: got.cached }, headers)
+  }
+
   const asCaller = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -303,17 +309,9 @@ Deno.serve(async (req) => {
   )
   const { data: { user } } = await asCaller.auth.getUser()
 
-  // Signed out, a panchang is still a real almanac: it is a function of a date
-  // and a place, not of a person. The chart and the horoscope are functions of a
-  // person, and say so instead of showing somebody else's.
-  if (!user) {
-    if (op !== 'panchang') return refuse('signed_out', 'Sign in to see your chart.', 401, headers)
-    const { lat, lng, zone } = DEFAULT_PLACE
-    const got = await memo(`panchang:${date}:${placeKey(lat, lng)}`, () =>
-      post('/api/v2/vedic/panchang', { ...dateParts(date), lat, lng, tz_str: zone, ...RECKONING }))
-    if (!got) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
-    return ok({ ok: true, data: got.payload, date, cached: got.cached }, headers)
-  }
+  // What is left is the chart and the horoscope, and both are functions of a
+  // person. They say so rather than showing somebody else's.
+  if (!user) return refuse('signed_out', 'Sign in to see your chart.', 401, headers)
 
   const { data: profile, error } = await asServer
     .from('profiles')
@@ -341,15 +339,6 @@ Deno.serve(async (req) => {
       // A natal chart never changes, so its key carries no date at all.
       key: `chart:${user.id}:${digest}`,
       run: () => post('/api/v2/vedic/chart', birth),
-    },
-    panchang: {
-      // Anchored on this person's birth place, on the same ruleset the
-      // horoscope uses, so the two calendars on the home screen cannot disagree
-      // — which is precisely what the mock they replace did.
-      key: `panchang:${date}:${placeKey(birth.lat, birth.lng)}`,
-      run: () => post('/api/v2/vedic/panchang', {
-        ...dateParts(date), lat: birth.lat, lng: birth.lng, tz_str: birth.tz_str, ...RECKONING,
-      }),
     },
     horoscope: {
       key: `horoscope:${user.id}:${digest}:${date}`,

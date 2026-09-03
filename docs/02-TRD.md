@@ -345,6 +345,22 @@ city of three million with the same name. The Edge Function re-sorts by
 population, because on the signup path a wrong pick is a wrong chart for the
 life of the account.
 
+**The panchang is computed at Ujjain for everybody — decided 4 Sep 2026.** It
+was anchored on each reader's birth place, which cost a request per person per
+day for an answer that barely varied. One anchor makes it one request a day at
+any user count. Ujjain because it is the classical zero-longitude of Indian
+astronomy, which makes the one arbitrary choice here defensible rather than
+merely convenient. **Sunrise moves about two hours across India, so the city is
+named on every screen that shows the almanac** — and the chart and the daily
+reading stay per person, because those genuinely differ.
+
+One consequence worth stating, because it is the failure this replaced: the
+personal horoscope endpoint returns its own panchang, computed at the birth
+place. Rendering that alongside the shared one would put two tithis for one day
+on two screens and let them disagree at a transition — the mock's week-apart
+calendars, reintroduced. So the reading's own almanac is discarded and every
+screen reads the shared one.
+
 **Every derivation is cached in one table** (`astro_cache`, `05-BACKEND-SCHEMA.md`),
 with no TTL and no sweeper — every cache key carries every input that produced
 its value, so a value cannot go stale, only go unused. Corrected birth details
