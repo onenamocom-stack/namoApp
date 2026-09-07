@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadingLines, user } from '../../data/mock.js'
-import ChartWheel from '../../components/ChartWheel.jsx'
+import { ChartNorth } from '../../components/ChartSquare.jsx'
 import { Button, Field, Stub } from '../../components/Primitives.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
 import { supabase } from '../../lib/supabase.js'
@@ -189,7 +189,7 @@ export default function Computing() {
         <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-light">Here you are, {name}.</h1>
 
         <Stub className="my-10" />
-        <ChartWheel size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />
+        <ChartNorth size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />
 
         {/* Four states, and the last two must not read alike. A chart service
             that is down is not a person with no birth details — this project

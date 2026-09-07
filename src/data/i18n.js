@@ -122,21 +122,10 @@ export const strings = {
 
   // ── Chart systems ────────────────────────────────────────────────────────
   'chart.vedic': { en: 'Vedic', hi: 'वैदिक' },
-  'chart.south': { en: 'South Indian', hi: 'दक्षिण भारतीय' },
-  'chart.western': { en: 'Western', hi: 'पाश्चात्य' },
   'chart.table': { en: 'Table', hi: 'सूची' },
-  'chart.ascendant': { en: 'Ascendant', hi: 'लग्न' },
   'chart.northNote': {
     en: 'Houses are fixed; the number in each is its sign. House 1 is the top diamond.',
     hi: 'भाव स्थिर हैं; हर भाव में लिखी संख्या उसकी राशि है। पहला भाव ऊपर का कोण है।',
-  },
-  'chart.southNote': {
-    en: 'Signs are fixed; the struck box is the ascendant, and houses count clockwise from it.',
-    hi: 'राशियाँ स्थिर हैं; कटा हुआ खाना लग्न है, और भाव वहीं से दक्षिणावर्त गिने जाते हैं।',
-  },
-  'chart.westernNote': {
-    en: 'One ring, twelve houses, read anticlockwise from the left.',
-    hi: 'एक वृत्त, बारह भाव, बाएँ से वामावर्त पढ़ें।',
   },
 
   // ── Settings ─────────────────────────────────────────────────────────────

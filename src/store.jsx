@@ -278,11 +278,6 @@ export function AppProvider({ children }) {
 
   const t = useCallback((key, vars) => translate(lang, key, vars), [lang])
 
-  /* Which chart the user reads. A preference, not screen state: someone who
-     reads South Indian reads it everywhere, and finding the wheel again on
-     Profile after choosing it on /chart is the app forgetting who you are. */
-  const [chartSystem, setChartSystem] = useState('vedic')
-
   /* The chat panel — a right-side overlay rather than a route, so it can be
      opened from any tab and from the floating button without navigating. */
   const [chatOpen, setChatOpen] = useState(false)
@@ -672,8 +667,6 @@ export function AppProvider({ children }) {
       lang,
       setLang,
       t,
-      chartSystem,
-      setChartSystem,
     }),
     [
       isPro,
@@ -719,7 +712,6 @@ export function AppProvider({ children }) {
       showToast,
       lang,
       t,
-      chartSystem,
     ],
   )
 

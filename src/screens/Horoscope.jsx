@@ -155,9 +155,15 @@ export default function Horoscope() {
 
             {/* Tense marker. Without it, a past-tense reading under a big
                 headline reads as a broken forecast rather than a review. */}
-            {day.context && (
+            {(day.context || horoscope.rashi) && (
               <p className="mb-6 text-center text-micro uppercase tracking-caps text-t3">
-                {day.context}
+                {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
+                chosen by rashi rather than one computed from this person's
+                birth, and a sign reading shown without its sign reads as a
+                personal one. */}
+                {[day.context, horoscope.rashi && `${horoscope.rashi} rashi`]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             )}
 

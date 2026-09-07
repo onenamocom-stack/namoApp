@@ -313,7 +313,7 @@ Therefore, unchanged from the original decision and now load-bearing:
 | Ayanamsa | `lahiri` | Verified, not assumed — see below |
 | House system | `whole_sign` | Twelve houses, one sign each, no split signs |
 | Node type | `mean` | |
-| Endpoints | `/api/v2/geo/search`, `/api/v2/vedic/chart`, `/api/v2/vedic/panchang`, `/api/v2/vedic/horoscope/daily/personal` | The four with a screen |
+| Endpoints | `/api/v2/geo/search`, `/api/v2/vedic/chart`, `/api/v2/vedic/panchang`, `/api/v2/vedic/horoscope/daily/personal` | The four with a screen. Since 7 Sep the last one is driven by twelve canonical births rather than the reader's, one per rashi — see below |
 
 All three settings are constants in `backend/functions/astro/index.ts` and are
 merged into every outbound body. **There is no code path that omits them.**
@@ -384,37 +384,87 @@ Three rules it follows, each for a reason:
   outliving a session is the point — it is what makes a reload free — so a
   second person on a shared phone must not be one key lookup from the first
   one's chart.
+- **Except the panchang, which carries no user at all.** It stopped being a
+  function of one on 4 Sep. Keying it per person meant `/home` (which passes the
+  signed-in id) and `/horoscope` (which passes none) wrote two entries for one
+  answer, and a signed-out reader then refetched what the signed-in one already
+  had.
 
 `localStorage` rather than `sessionStorage` because `sessionStorage` dies with
 the tab, and a new tab would then refetch a chart that cannot have changed.
 
-### Per-sign daily readings are not available from this vendor — checked 4 Sep 2026
+### The daily reading is twelve readings a day, one per rashi — 7 Sep 2026
 
-The obvious way to stop the daily horoscope scaling with users is to serve
-**twelve readings a day, one per rashi**, instead of one per person. It would
-make API usage a constant. **It cannot be done here, and the reason is not
-effort.**
+**This reverses the finding recorded here on 4 Sep** that per-sign readings
+could not be served from this vendor. They can, at a cost that is now stated
+rather than avoided.
 
-- The only Vedic daily endpoint is `/api/v2/vedic/horoscope/daily/personal`. It
-  takes a **birth**, not a sign. Serving twelve readings from it means inventing
-  twelve canonical births and presenting their charts as the reader's, which is
-  fabricated data of exactly the kind this repo refuses elsewhere.
-- A sign-based daily endpoint does exist — `/api/v2/horoscope/daily/sign` — and
-  its own documentation says **"Western/tropical zodiac only. This is not
-  compatible with Vedic/sidereal systems."** Probed directly: it returns 200,
-  and every Vedic spelling of the path returns 404.
+The reading used to be a function of each reader's own birth, which meant one
+request per person per day and therefore usage that scaled with the user base —
+Entry's 50,000 a month is about 1,600 daily actives. A rashifal is keyed on
+janma rashi and nothing else, so **twelve readings answer everybody, at any
+size, forever.**
 
-Adopting the tropical endpoint would put a **tropical** sign in the daily
-reading beside a **sidereal** chart computed on Lahiri. Those disagree for most
-people — a sidereal Libra moon is usually a tropical Scorpio one — so the app
-would name two different signs for the same person on two screens, and the
-reader has no way to see which is which. That is the silent wrongness §8 exists
-to prevent, and it also contradicts the Vedic-first non-goal in `01-PRD.md` §10.
+**What has not changed is the vendor.** There is still no sidereal sign-based
+daily endpoint: every Vedic spelling of the path returns 404, and the sign
+endpoint that does exist (`/api/v2/horoscope/daily/sign`) says in its own
+documentation *"Western/tropical zodiac only. This is not compatible with
+Vedic/sidereal systems."* **Adopting it is still refused**, and for the reason
+given on 4 Sep — a tropical sign printed beside a Lahiri sidereal chart names
+two different signs for one person on two screens, which is the silent
+wrongness this section exists to prevent.
 
-**So the per-user call stays.** If the cost of it ever forces the issue, the
-honest options are a vendor with a sidereal sign-based daily endpoint, or
-computing the twelve readings ourselves — not relabelling tropical output as
-rashi.
+**So the twelve readings come from the personal endpoint driven by twelve fixed
+births**, one whose Moon stands in each sign. They are constants in
+`backend/functions/astro/index.ts`, all born at Ujjain — the same anchor the
+panchang uses, so a reading's timing windows agree with the almanac card beside
+it.
+
+**The cost is that the reading is computed from a birth that is not the
+reader's, and this is the honest accounting of what that does and does not
+touch:**
+
+| | |
+|---|---|
+| The rashi | **Right.** It is read off the reader's own natal chart, not the canonical one |
+| Transits to that rashi | **Right.** A transit to a sign is a transit to a sign |
+| The dasha | **Not theirs, and only half removable.** A Vimshottari period is a function of the Moon's exact degree at a particular birth. It is dropped from the at-a-glance row in `readingFrom()` — but **the vendor's own narrative prose names it**, in sentences like *"the active Vimshottari stack is Jupiter / Venus / Venus"*, and that prose is the body of the reading. See the open problem below |
+| The ascendant, the houses | Never surfaced by the reading. `/chart` is where a reader's own houses live |
+
+**Every screen showing a reading names the rashi**, for the same reason the
+panchang names Ujjain: a sign reading presented as a personal one is wrong
+without looking wrong, and a sign reading labelled as one is what every rashifal
+in the country already is.
+
+**The unsolved half, stated rather than buried.** The reading's body is the
+vendor's prose, and that prose names the dasha of the birth it was computed
+from. Dropping the structured `dasha` field removes it from the glance row and
+does nothing to the sentence. Three ways out, none taken yet: accept it, cut
+`narrative.summary` and show only the theme, remedy and scores, or string-surgery
+the vendor's sentences. The third is refused — editing somebody else's prose to
+hide where it came from is worse than the problem. **This is the reason to
+revisit the decision, and it should be revisited before production.**
+
+**Each canonical Moon sits within 0.05° of the middle of its sign.** That is the
+safety margin, and it is deliberate: the Moon crosses a sign every 2.2 days, so
+a birth chosen near a boundary would hand every reader of one rashi the
+neighbouring rashi's reading, forever and silently. Fifteen degrees of margin on
+both sides means no arithmetic error reaches an edge. **The function checks
+anyway** — it fetches each canonical chart once, asserts its Moon is in the sign
+the table claims, and refuses rather than serving a mismatch. The margin
+protects against our arithmetic; the check protects against a typo in the table.
+
+**What this costs in requests**, which is the whole point of the change:
+
+| | Before | After |
+|---|---|---|
+| Daily reading | one per person per day | **twelve a day, total** |
+| Natal chart | one per person, ever | one per person, ever — and now every reader has one, because it is what picks their rashi |
+| Canonical charts | — | twelve, ever |
+| Panchang | one a day, total | one a day, total |
+
+Usage no longer grows with the user base at all. The open question about which
+tier and when (`HANDOFF.md` §4) is closed by this rather than answered.
 
 Two consequences of a third party that a local service did not have:
 

@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 3 Sep 2026.
+Updated 7 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -799,8 +799,11 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 | Consultant ranking formula | Phase 13 |
 | Blocking a consultant who has pending money | Phase 13 |
 | Provenance of the 48 Bhaktamar card faces | Seed |
-| **Which freeastroapi tier, and when** — Entry's 50,000/month is roughly 1,600 daily actives once the panchang key is fixed. Above that it is High, and above ~16,000 it is neither | Nothing yet. Bites at ~1,600 DAU |
-| **Whether `astro_cache` ever gets a sweeper** — horoscope rows are 11 kB each, one per person per day, and nothing deletes them | Nothing yet. Bites at ~1,000 users |
+| **Whether `astro_cache` ever gets a sweeper** — rows are 11 kB each and nothing deletes them | Nothing. Much smaller than it was: the reading is twelve rows a day rather than one per person per day, so growth is now a constant |
+
+Two closed on 7 Sep by the per-rashi change and removed rather than left with an
+answer beside them: which freeastroapi tier and when (usage no longer grows with
+the user base), and the daily reading's per-person cost.
 
 Four phase 7 questions were closed on 2–3 Sep and have been removed from this
 table rather than left with an answer beside them: the reference chart, the
@@ -904,7 +907,7 @@ service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 |---|---|
 | `backend/schema/019_astro_cache.sql` | Applied to dev. **Not production** |
 | `backend/schema/019_astro_cache_check.sql` | Passes on dev |
-| `backend/functions/astro/index.ts` | Deployed to dev, version 1, `verify_jwt` on |
+| `backend/functions/astro/index.ts` | Deployed to dev, `verify_jwt` on. **The 7 Sep per-rashi rewrite is NOT deployed** — see below |
 | Front end | `src/lib/astro.js` plus eleven screens and components |
 
 **The reference chart is Indira Gandhi**, 19 Nov 1917, 23:11, Allahabad — Rodden
@@ -1064,16 +1067,80 @@ place, and showing both would put two tithis for one day on two screens. That
 is the mock's week-apart calendar bug, and it nearly came back through the side
 door.
 
-**Per-rashi horoscopes are NOT built and cannot be on this vendor.** There is no
-Vedic sign-based daily endpoint — four spellings probed, all 404. The sign
-endpoint that does exist is Western, takes no ayanamsa, and would print a
-tropical sign beside a sidereal Lahiri chart, naming two different signs for one
-person on two screens. The reading stays per person. `02-TRD.md` §8 has the
-finding.
+**The daily reading is twelve readings a day, one per rashi** (7 Sep). **This
+replaces the line that stood here saying per-rashi readings could not be built
+on this vendor.** They can — the vendor is unchanged and there is still no
+sidereal sign endpoint, so the twelve come from the personal endpoint driven by
+twelve fixed births, one whose Moon stands in each sign, all at Ujjain. The
+tropical sign endpoint is still refused for the reason the old line gave.
 
-**Reports still cannot be sold on Entry** — two report credits a month against a
-₹4,041 Full Birth Chart. Phase 8/10's problem, but do not build a checkout
-against it.
+The reader's rashi is the Moon's sign off their **own** natal chart, so nothing
+about which reading they get is invented. What is not theirs is everything else
+on the canonical birth, which is why the dasha is dropped from the glance row
+and why every screen showing a reading names the sign. `02-TRD.md` §8 has the
+accounting of what is right and what is not.
+
+**One thing is not solved and must be looked at before production.** The dasha
+is gone from the glance row but **not from the vendor's prose**, which is the
+body of the reading — seen on dev 7 Sep: *"Rahu brings the current dasha stack
+into sharper focus today. The active Vimshottari stack is Jupiter / Venus /
+Venus."* Under twelve canonical births that sentence describes an invented
+person. It cannot be dropped without dropping the reading's body, and rewriting
+somebody else's prose to hide where it came from is worse than the problem.
+`02-TRD.md` §8 lists the three ways out.
+
+Each canonical Moon sits within 0.05° of the middle of its sign — the Moon
+crosses a sign every 2.2 days, so a birth near a boundary would give every
+reader of one rashi the next one's reading, forever and silently. The function
+also fetches each canonical chart once and refuses if its Moon is not where the
+table claims.
+
+**Usage no longer grows with the user base.** Twelve readings a day, one
+panchang a day, one chart per account ever, twelve canonical charts ever. That
+closes the "which freeastroapi tier, and when" question in §4 rather than
+answering it.
+
+**NOT YET DEPLOYED.** The code is written and the front end builds, but
+`backend/functions/astro/index.ts` is still at the previous version on dev — the
+deploy was blocked in the session that wrote it. Until it is deployed, the front
+end asks for a `rashi` field the function does not return yet, and every reading
+renders without its sign named. **Deploy to dev, walk the four reading surfaces,
+then production.**
+
+**One chart form now: the North Indian square** (7 Sep). The Western wheel
+(`ChartWheel.jsx`, deleted) and the South Indian square (`ChartSouth`, removed
+from `ChartSquare.jsx`) are gone, with them the tradition switcher on `/chart`,
+the `chartSystem` preference in `store.jsx`, and four `chart.*` i18n strings.
+The onboarding reveal drew the wheel and now draws the square. Reasoning is in
+`04-UI-UX.md` §4 and the non-goal it makes literal is `01-PRD.md` §10.
+
+**Reports still cannot be sold on Entry** — the ephemeris vendor's tier
+generates two reports a month. That is a **supply** limit, not a customer
+allowance, and it is unrelated to what a report costs. Phase 10's problem; do
+not build a report checkout against it. The ₹4,041 half of this line is gone:
+that was the multiplier, now deleted (below).
+
+**Prices are decided and typed** (7 Sep). `REPORT_MULTIPLIER` and the `base`
+field it multiplied are deleted from `mock.js`; the six report prices are the
+former ×3 figures, typed once — ₹1,497 / ₹2,097 / ₹2,697 / ₹3,897 / ₹1,797 /
+₹1,347. The ₹4,041 `proLedger` row, which was 449 × 9 and matched no report,
+now reads ₹1,497 gross at the same 18% fee as the rows beside it.
+
+`premiumTiers` stopped being a third catalogue. Each tier names the SKU it
+sells and **reads that SKU's price**, so the ₹899-vs-₹2,697 kind of drift
+cannot recur by editing one list — there is only one list per product now. A
+tier naming a SKU that does not exist throws at module load. `Ask the Stars` is
+the `p12` question pack, which keeps all three rungs. Prices live in
+`01-PRD.md` §5.2 and §5.3; `05-BACKEND-SCHEMA.md` §6 inherits the resolution
+rather than forcing it.
+
+**Verified by assertion, not by a walk.** `/premium` and `/reports` sit behind
+the onboarding gate, which needs a real phone OTP, so neither screen was opened
+in a browser. What was checked: the module loads, no report carries a `base`,
+the six prices are exactly the six above, every premium tier's price equals the
+price of the SKU it names, and the `pl3` ledger row matches a real report with
+gross − fee = net. `npm run build` passes, which per §11 proves almost nothing.
+**Walk both screens on a logged-in session before trusting them.**
 
 ### Still parked
 
@@ -1103,18 +1170,23 @@ feed screens, so it collides with anything else removing mock exports. The
 collision is deletions in different regions of one file — annoying, not
 dangerous.
 
-**Phase 8 is parallel except for its last wire.** All the plumbing — the model
-proxy, `ask_messages`, `entitlements`, the quota as a SUM, the pack purchase —
-is independent. But Ask AI's whole pitch is "Reads your chart": `Ask.jsx` says
-so in the header, the loading state and the footer, and the canned replies cite
-house lords. So the final step wants phase 7's chart. Build it against seed and
-swap at the seam, or ship with the AI not citing the chart yet.
+**Phase 8 is now fully parallel.** This replaces the line that stood here
+saying it was "parallel except for its last wire", which was true only while
+phase 7 was open. All the plumbing — the model proxy, `ask_messages`,
+`entitlements`, the quota as a SUM, the pack purchase — was always independent,
+and Ask AI's pitch of "Reads your chart" (`Ask.jsx` says so in the header, the
+loading state and the footer) now has a real chart behind it. Nothing needs
+building against seed and swapping at the seam.
+
+Its one prerequisite was a **price**, not a phase, and that is now settled —
+see "Prices are decided" below. `p12` at ₹349 is the SKU the pack sheet charges
+the wallet against, and premium no longer sells a second copy of it.
 
 **Three that should not start yet, and the reasons are not scheduling:**
 
 | Phase | Why |
 |---|---|
-| 10 · shop and academy | Blocked on §5.2 duplicate SKUs and §5.3 the multiplier, which "must be deleted before anything is seeded". Start it and you seed prices you then have to unpick |
+| 10 · shop and academy | **No longer blocked on pricing** — §5.2 and §5.3 are decided and the multiplier is deleted, so seeding is safe. Still the most operationally expensive phase (stock, shipping, returns, courier tracking, none of which the UI has), and its report SKUs cannot be *sold* until the vendor tier grows past two reports a month |
 | 11 · live video | Blocked on the SDK choice, and it builds directly on phase 6's meter. Also the natural place to revisit the rolling hold |
 | 12 · payouts | Two hard gates: KYC clears before the first rupee leaves, and **talk to a CA before writing the code, not after** |
 

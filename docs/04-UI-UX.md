@@ -257,7 +257,23 @@ badges keep their colour.
 | `Plate.jsx` | Procedural greyscale artwork |
 | `PujaProps.jsx` | `Ghanti` · `Thali` · `Marigold` · `Diya` · `Dhoop` |
 | `Chrome.jsx` | `TopBar` · `TabHeader` · `BottomNav` · `Sheet` · `Toast` |
-| `ChartWheel.jsx` · `ReelFeed.jsx` | |
+| `ChartSquare.jsx` | `ChartNorth` |
+| `ReelFeed.jsx` | |
+
+**There is one chart form, and it is the North Indian square** — decided
+7 Sep 2026. A South Indian square and a Western wheel used to sit beside it
+behind a switcher; `ChartWheel.jsx` is deleted and `ChartSouth` is gone from
+`ChartSquare.jsx`. The wheel because the product is Vedic-first
+(`01-PRD.md` §10) and a tropical diagram invites reading a tropical sign off a
+Lahiri chart; the square because a second Indian form was a preference to keep
+in step across screens rather than anything anybody asked for. **Reinstating
+either is a product decision, not a revert.**
+
+In the North Indian square the twelve **houses** are fixed to the page — house 1
+is the top diamond, the rest run anticlockwise — and what moves is the sign, so
+each compartment carries a sign *number*. It draws its empty frame when `houses`
+is null, which is both while the chart loads and when the birth time is
+unknown.
 
 **Read `index.css` before writing markup.** Most of what a new screen needs
 already exists.

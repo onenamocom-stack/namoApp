@@ -2,8 +2,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
-import ChartWheel from '../components/ChartWheel.jsx'
-import { ChartNorth, ChartSouth } from '../components/ChartSquare.jsx'
+import { ChartNorth } from '../components/ChartSquare.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
 import { Acts, Row, Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore, useProfileFields } from '../store.jsx'
@@ -80,7 +79,7 @@ export default function Profile() {
 /* ── Overview ────────────────────────────────────────────────────────────── */
 
 function Overview() {
-  const { showToast, questionsLeft, cartCount, lang, setLang, t, chartSystem, session, sessionReady } =
+  const { showToast, questionsLeft, cartCount, lang, setLang, t, session, sessionReady } =
     useStore()
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
@@ -89,12 +88,8 @@ function Overview() {
   return (
     <>
       <section className="border-b border-rule px-5 py-6 text-center">
-        {/* Follows the preference set on /chart. Showing a wheel here to
-            someone who reads South Indian is the app forgetting who they are
-            between two screens. */}
-        {chartSystem === 'vedic' && <ChartNorth size={200} houses={houses} />}
-        {chartSystem === 'south' && <ChartSouth size={200} houses={houses} />}
-        {chartSystem === 'western' && <ChartWheel size={200} houses={houses} />}
+        {/* The same diagram /chart draws, because there is only one now. */}
+        <ChartNorth size={200} houses={houses} />
         <div className="mt-6 flex gap-3">
           <PopButton onClick={() => showToast('Kundli PDF downloaded')}>Download</PopButton>
           <PopButton onClick={() => showToast('Chart link copied')}>Share</PopButton>
@@ -242,7 +237,14 @@ function HoroscopeTab() {
         </Kicker>
 
         <PopCard raised className="mt-4 p-5">
-          <p className="caps-sm gold">{longDate(day.date)}</p>
+          <p className="caps-sm gold">
+            {longDate(day.date)}
+            {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
+                chosen by rashi rather than one computed from this person's
+                birth, and a sign reading shown without its sign reads as a
+                personal one. */}
+            {horoscope.rashi && <span className="t-faint"> · {horoscope.rashi} rashi</span>}
+          </p>
           <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
 
           {day.intensity !== null && (

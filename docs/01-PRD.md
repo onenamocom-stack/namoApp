@@ -285,34 +285,60 @@ flat 20 minutes survives as the quoted length. The booking records' ₹2,998 for
 30 minutes does not — it was twice the 20-minute rate where the bands say one
 and a half times.
 
-### 5.2 The duplicate SKUs — TBD
+### 5.2 The duplicate SKUs — decided, 7 Sep 2026
 
-The same products are sold twice at different prices:
+Three products were sold twice, from two lists, at two prices.
 
-| Product | As a premium tier | As a report | Ratio |
+| Product | Was, as a premium tier | Was, as a report | Now |
 |---|---|---|---|
-| The Relationship Report | ₹899 | ₹2,697 | 3× |
-| Eros — for two | ₹1,299 | ₹3,897 | 3× |
+| The Relationship Report | ₹899 | ₹2,697 | **₹2,697** |
+| Eros — for two | ₹1,299 | ₹3,897 | **₹3,897** |
+| Ask the Stars | ₹349 | — | **₹349**, and it is the 12-question pack |
 
-And **Ask the Stars at ₹349 is the same SKU as the 12-question pack at ₹349** —
-identical price, identical grant, sold from two places.
+**The report price wins**, and §5.3 explains why that is one decision rather
+than two: the premium figure was only ever the report's price before a
+placeholder multiplier was applied to it.
 
-Whichever price wins, one of those lists loses rows. Premium becomes a
-*merchandising view* over reports and question packs rather than a third
-catalogue, which is what forces this to be resolved rather than encoded.
+**Ask the Stars is the 12-question pack**, not a product beside it. Identical
+price, identical grant. `questionPacks` keeps all three rungs — 6 at ₹199, 12
+at ₹349, 20 at ₹499 — because the middle one is the most-taken, and premium
+routes to it.
 
-### 5.3 The report multiplier — decide, then delete
+**Premium is now a merchandising view, not a third catalogue.** Every tier
+names the SKU it sells and reads that SKU's price. Nothing in premium carries
+a price of its own, so the two lists cannot drift apart again. A tier naming a
+SKU that does not exist throws at module load rather than rendering a blank.
 
-Report prices are `base × 3`, computed when the module loads. It is a placeholder
-that was never replaced.
+### 5.3 The report multiplier — deleted, 7 Sep 2026
 
-It has **already compounded once**: a consultant ledger row bills a "Natal
-report" at ₹4,041, which is 449 × 9 — the multiplier applied twice, to the
-*Remedial* base rather than Natal's. That number matches no report in the
+Report prices were `base × 3`, computed when the module loaded, a placeholder
+for a reference screenshot that was never supplied.
+
+It had **already compounded once**: a consultant ledger row billed a "Natal
+report" at ₹4,041, which is 449 × 9 — the multiplier applied twice, and to the
+*Remedial* base rather than Natal's. That number matched no report in the
 catalogue.
 
-Six real prices get typed once, and the multiplier is deleted before anything
-reaches a database.
+The six prices are now **typed once, in `src/data/mock.js`**, and are the real
+ones. `REPORT_MULTIPLIER` is gone, along with the `base` field it multiplied
+and the line on `/reports` that told the reader prices were 3× the catalogue
+rate.
+
+| Report | Price |
+|---|---|
+| Full Birth Chart Report | ₹1,497 |
+| Career & Timing Report | ₹2,097 |
+| The Relationship Report | ₹2,697 |
+| Eros — Synastry for Two | ₹3,897 |
+| Year Ahead Forecast | ₹1,797 |
+| Remedies & Gemstone Report | ₹1,347 |
+
+The ₹4,041 ledger row now reads ₹1,497 gross against the 18% platform fee the
+rows beside it use.
+
+**These prices are not yet sellable**, for a reason that is supply rather than
+pricing: the ephemeris vendor's Entry tier generates two reports a month. That
+is phase 10's problem and `02-TRD.md` §8 owns the tier.
 
 ### 5.4 Money movement on a booking — decided, 27 Aug
 
@@ -580,8 +606,12 @@ milestone.
 - A social network. The feed exists to surface consultants, not to retain
   scrollers.
 - Free astrology at scale. The free tools are an entrance, not the product.
-- Western astrology parity. The product is Vedic-first, with other traditions
-  present in the tarot decks only.
+- Western astrology parity. The product is Vedic-first, and since 7 Sep 2026
+  this is literal rather than a leaning: the Western wheel and the South Indian
+  square are both deleted, and the only tradition surviving outside Vedic is the
+  tarot decks. A tropical diagram or a tropical daily reading beside a Lahiri
+  sidereal chart names two different signs for one person on two screens
+  (`02-TRD.md` §8).
 - A pandit-booking or physical-puja marketplace. The mandir is e-puja and charges
   nothing, on purpose.
 - Desktop for seekers. The app is a 420px phone frame. Only the admin console is

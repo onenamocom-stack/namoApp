@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
-import ChartWheel from '../components/ChartWheel.jsx'
-import { ChartNorth, ChartSouth } from '../components/ChartSquare.jsx'
+import { ChartNorth } from '../components/ChartSquare.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, placementsFrom, useAstro } from '../lib/astro.js'
 import { Field, Section, Segmented, Stub, firstName } from '../components/Primitives.jsx'
-
-const SYSTEMS = ['vedic', 'south', 'western']
-const NOTE = { vedic: 'northNote', south: 'southNote', western: 'westernNote' }
 
 /**
  * Table view is the default, not the diagram.
@@ -32,7 +28,7 @@ const NOTE = { vedic: 'northNote', south: 'southNote', western: 'westernNote' }
  */
 export default function Chart() {
   const [view, setView] = useState('table')
-  const { chartSystem, setChartSystem, t, session, sessionReady } = useStore()
+  const { t, session, sessionReady } = useStore()
   const me = useProfileFields()
   const [params] = useSearchParams()
 
@@ -100,15 +96,13 @@ export default function Chart() {
 
       {chart.payload && (
         <>
-          {/* Two switches, not one four-way. The first is *what you are looking
-              at* — the numbers or the diagram — and the second is *which
-              tradition's diagram*. Folding them together would put "Table"
-              beside "South Indian" as though they were the same kind of
-              choice. */}
+          {/* One switch now, and it is the only one there ever should have
+              been: the numbers or the diagram. The second chose between three
+              traditions' diagrams and is gone with two of them. */}
           <Segmented
             items={[
               { key: 'table', label: t('chart.table') },
-              { key: 'chart', label: t(`chart.${chartSystem}`) },
+              { key: 'chart', label: t('chart.vedic') },
             ]}
             value={view}
             onChange={setView}
@@ -184,26 +178,10 @@ export default function Chart() {
           ) : (
             <div key="chart" className="animate-fade">
               <Section label="Whole sign · Lahiri ayanamsa">
-                <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto">
-                  {SYSTEMS.map((sys) => (
-                    <button
-                      key={sys}
-                      type="button"
-                      aria-pressed={chartSystem === sys}
-                      onClick={() => setChartSystem(sys)}
-                      className="pill caps-sm flex-none"
-                    >
-                      {t(`chart.${sys}`)}
-                    </button>
-                  ))}
-                </div>
-
-                {/* All three take `houses`, which is null without a birth time.
-                    Each draws its own empty frame in that case — the diagram is
-                    the diagram, it just has nobody in it. */}
-                {chartSystem === 'vedic' && <ChartNorth size={280} houses={houses} />}
-                {chartSystem === 'south' && <ChartSouth size={280} houses={houses} />}
-                {chartSystem === 'western' && <ChartWheel size={280} houses={houses} />}
+                {/* `houses` is null without a birth time, and this draws its
+                    empty frame in that case — the diagram is the diagram, it
+                    just has nobody in it. */}
+                <ChartNorth size={280} houses={houses} />
 
                 {!houses && (
                   <p className="prose-c mt-8">
@@ -214,12 +192,7 @@ export default function Chart() {
                 )}
 
                 <Stub className="mt-8" />
-                <p className="prose-c mt-8">{t(`chart.${NOTE[chartSystem]}`)}</p>
-                {chartSystem === 'south' && houses && (
-                  <p className="mt-3 text-meta text-t3">
-                    {t('chart.ascendant')} · {houses.find((h) => h.house === 1)?.sign}
-                  </p>
-                )}
+                <p className="prose-c mt-8">{t('chart.northNote')}</p>
               </Section>
 
               <Section label="Birth data" last>

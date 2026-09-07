@@ -1,28 +1,25 @@
 /**
- * The two Indian charts. Squares, not wheels, and not interchangeable.
+ * The North Indian chart. A square, not a wheel.
  *
- * These are genuinely different diagrams rather than skins of each other, and
- * the difference is *what stays still*:
+ * The twelve **houses** are fixed to the page: house 1 is always the top
+ * diamond and the rest run anticlockwise. What moves is the sign, so each
+ * compartment is labelled with a sign *number*.
  *
- * - **North Indian** — the twelve **houses** are fixed to the page. House 1 is
- *   always the top diamond and the rest run anticlockwise. What moves is the
- *   sign, so each compartment is labelled with a sign *number*.
- * - **South Indian** — the twelve **signs** are fixed to the page, laid out
- *   clockwise with Pisces at the top left. What moves is the house, so the
- *   ascendant has to be marked or the chart cannot be read.
- *
- * Getting that backwards produces a chart that looks right and is wrong, which
- * is worse than one that looks broken. Both take the same `houses` array the
- * table view renders, so neither can drift from it.
+ * IT IS THE ONLY CHART FORM IN THE APP - decided 7 Sep 2026. A South Indian
+ * square and a Western wheel used to sit beside it behind a switcher. Both are
+ * gone: the wheel because this product is sidereal and Vedic-first
+ * (`01-PRD.md` section 10) and a tropical diagram invites reading a tropical
+ * sign off a Lahiri chart, and the South Indian square because a second Indian
+ * form was a preference to maintain rather than a thing anybody asked for.
+ * Reinstating either is a product decision, not a revert.
  *
  * `houses` is **null while the chart is loading, and null when the birth time
- * is unknown** — whole-sign houses are twelve cusps and there are none without
+ * is unknown** - whole-sign houses are twelve cusps and there are none without
  * a minute of birth. Null draws the empty diagram: the frame is the frame
  * either way, and an unlabelled one is honest about having nothing in it.
  *
- * Drawn in the same register as `ChartWheel`: hairlines, no fills, no
- * gradients, house numbers in the non-text grey and planets in a grey that
- * actually passes contrast.
+ * Hairlines, no fills, no gradients, house numbers in the non-text grey and
+ * planets in a grey that actually passes contrast.
  */
 
 const SIGNS = [
@@ -117,65 +114,6 @@ export function ChartNorth({ size = 260, houses = null, active = null, onSelect 
             />
           )
         })}
-    </svg>
-  )
-}
-
-/**
- * South Indian. A 4x4 grid with the middle four cells empty, signs fixed and
- * running clockwise from Pisces at the top left.
- *
- * The ascendant is struck through with a diagonal — the traditional mark, and
- * the only thing that says where the houses start. Without it the chart is
- * twelve boxes of planets and no first house.
- */
-const SOUTH = [
-  { sign: 'Pisces', r: 0, c: 0 },
-  { sign: 'Aries', r: 0, c: 1 },
-  { sign: 'Taurus', r: 0, c: 2 },
-  { sign: 'Gemini', r: 0, c: 3 },
-  { sign: 'Cancer', r: 1, c: 3 },
-  { sign: 'Leo', r: 2, c: 3 },
-  { sign: 'Virgo', r: 3, c: 3 },
-  { sign: 'Libra', r: 3, c: 2 },
-  { sign: 'Scorpio', r: 3, c: 1 },
-  { sign: 'Sagittarius', r: 3, c: 0 },
-  { sign: 'Capricorn', r: 2, c: 0 },
-  { sign: 'Aquarius', r: 1, c: 0 },
-]
-
-export function ChartSouth({ size = 260, houses = null, active = null, onSelect }) {
-  const S = 50 // cell edge, 4 x 50 = the 200 viewBox
-  const ascendant = houses?.find((c) => c.house === 1)?.sign
-
-  return (
-    <svg viewBox="0 0 200 200" width={size} height={size} className="mx-auto block overflow-visible">
-      <rect x="0.5" y="0.5" width="199" height="199" fill="none" stroke={RULE} strokeWidth="1" />
-
-      {SOUTH.map(({ sign, r, c }) => {
-        const house = houses?.find((h) => h.sign === sign)
-        const x = c * S
-        const y = r * S
-        return (
-          <g key={sign}>
-            <rect x={x} y={y} width={S} height={S} fill="none" stroke={FAINT} strokeWidth="0.7" />
-            {sign === ascendant && (
-              <line x1={x} y1={y} x2={x + S} y2={y + S} stroke={LABEL} strokeWidth="0.9" />
-            )}
-            {/* The sign number stays even with no chart: in a South Indian
-                square the signs are fixed to the page and are the diagram. Only
-                the planets and the ascendant mark are the person's. */}
-            <Cell
-              x={x + S / 2}
-              y={y + 16}
-              top={signNo(sign)}
-              planets={house?.planets ?? []}
-              active={active}
-              onSelect={onSelect}
-            />
-          </g>
-        )
-      })}
     </svg>
   )
 }

@@ -49,6 +49,72 @@ const RECKONING = {
 // project cares about — wrong without looking wrong.
 const PANCHANG_ANCHOR = { lat: 23.1765, lng: 75.7885, zone: 'Asia/Kolkata', city: 'Ujjain' }
 
+// THE TWELVE CANONICAL BIRTHS, one per rashi. Decided 7 Sep 2026, and it is a
+// REVERSAL of the finding in docs/02-TRD.md §8 that per-sign readings could not
+// be served from this vendor.
+//
+// The daily reading used to be a function of the reader's own birth, which cost
+// one request per person per day and therefore scaled with the user base —
+// 50,000 a month is about 1,600 daily actives. A rashifal is keyed on janma
+// rashi and nothing else, so twelve readings a day answer everybody, at any
+// size, forever.
+//
+// The vendor has no sidereal sign endpoint — every Vedic spelling 404s, and the
+// sign endpoint that exists is tropical, which would name a different sign than
+// the chart on the next screen. So the twelve readings come from the personal
+// endpoint driven by twelve fixed births, one whose Moon stands in each sign.
+//
+// WHAT THIS COSTS, STATED PLAINLY BECAUSE IT IS NOT FREE: the reading is a
+// function of a birth that is not the reader's. Everything in it that is a
+// function of the RASHI is honest — the Moon's sign is exactly right, and
+// transits to it are the reader's own. Everything that is a function of the
+// rest of that birth is not, which is why the dasha is dropped in
+// `readingFrom()` and every screen showing this says "Rashifal" and names the
+// sign. A sign reading presented as a personal one is the silent wrongness this
+// file exists to avoid; a sign reading labelled as one is what every rashifal
+// in the country already is.
+//
+// EACH MOON SITS WITHIN 0.05 DEGREES OF THE MIDDLE OF ITS SIGN. That is
+// deliberate and it is the safety margin: the Moon crosses a sign every 2.2
+// days, so a birth chosen near a boundary would hand every reader of one rashi
+// the neighbouring rashi's reading, forever and silently. Fifteen degrees of
+// margin on both sides means no error anybody could make here reaches the edge.
+// The horoscope branch still fetches each canonical chart once and checks its
+// Moon anyway, because the margin protects against our arithmetic and not
+// against a typo in this table.
+//
+// All twelve are born at Ujjain, the same anchor the panchang uses, so the
+// timing windows in a reading agree with the almanac card beside it.
+const CANONICAL_PLACE = { lat: 23.1765, lng: 75.7885, tz_str: 'Asia/Kolkata' }
+
+const CANONICAL: Record<string, { year: number; month: number; day: number; hour: number; minute: number }> = {
+  Aries:       { year: 1995, month: 6, day: 23, hour: 10, minute: 40 },
+  Taurus:      { year: 1995, month: 6, day: 25, hour: 23, minute: 30 },
+  Gemini:      { year: 1995, month: 6, day: 28, hour: 12, minute: 10 },
+  Cancer:      { year: 1995, month: 6, day: 3,  hour: 18, minute: 10 },
+  Leo:         { year: 1995, month: 6, day: 6,  hour: 3,  minute: 50 },
+  Virgo:       { year: 1995, month: 6, day: 8,  hour: 10, minute: 20 },
+  Libra:       { year: 1995, month: 6, day: 10, hour: 13, minute: 10 },
+  Scorpio:     { year: 1995, month: 6, day: 12, hour: 13, minute: 20 },
+  Sagittarius: { year: 1995, month: 6, day: 14, hour: 12, minute: 30 },
+  Capricorn:   { year: 1995, month: 6, day: 16, hour: 12, minute: 50 },
+  Aquarius:    { year: 1995, month: 6, day: 18, hour: 16, minute: 10 },
+  Pisces:      { year: 1995, month: 6, day: 20, hour: 23, minute: 40 },
+}
+
+const canonicalBirth = (rashi: string) => ({
+  ...CANONICAL[rashi],
+  ...CANONICAL_PLACE,
+  ...RECKONING,
+})
+
+/** The Moon's sign off a chart payload. The Moon is the whole of what a rashifal
+ *  is keyed on, and it is the one placement that survives an unknown birth time
+ *  — it moves half a degree an hour, so it is in the right sign whatever the
+ *  hour, unlike the ascendant. */
+const moonSign = (chart: any): string | null =>
+  chart?.planets?.find((p: any) => p.name === 'Moon')?.sign ?? null
+
 const PAGES_ORIGIN = Deno.env.get('PAGES_ORIGIN') ?? 'https://1namo.com'
 
 /** Explicit list, never a wildcard (docs/02-TRD.md §11). The dev server picks a
@@ -334,25 +400,55 @@ Deno.serve(async (req) => {
   const birth = birthBody(profile)
   const timeKnown = Boolean(profile.birth_time_known && profile.birth_time)
 
-  const plan = {
-    chart: {
-      // A natal chart never changes, so its key carries no date at all.
-      key: `chart:${user.id}:${digest}`,
-      run: () => post('/api/v2/vedic/chart', birth),
-    },
-    horoscope: {
-      key: `horoscope:${user.id}:${digest}:${date}`,
-      run: () => post('/api/v2/vedic/horoscope/daily/personal', {
-        ...birth,
-        target_date: date,
-        include_evidence: false,
-        include_raw_facts: false,
-      }),
-    },
-  }[op]
+  // A natal chart never changes, so its key carries no date at all.
+  const mine = await memo(`chart:${user.id}:${digest}`, () => post('/api/v2/vedic/chart', birth))
+  if (!mine) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
 
-  const got = await memo(plan.key, plan.run)
+  if (op === 'chart') {
+    return ok({ ok: true, data: mine.payload, time_known: timeKnown, date, cached: mine.cached }, headers)
+  }
+
+  // ── horoscope ────────────────────────────────────────────────────────────
+  // TWELVE READINGS A DAY FOR EVERYBODY, not one per person. The reader's own
+  // chart above is what picks which of the twelve — it is a function of their
+  // birth and cached with no expiry, so it costs one request per account ever
+  // and nothing daily. What used to scale with the user base now does not.
+  const rashi = moonSign(mine.payload)
+
+  // The Moon is the whole of the key. If the vendor ever renames a sign or
+  // returns a chart with no Moon in it, every reader would silently fall
+  // through to one arbitrary rashi's reading, so this is a refusal instead.
+  if (!rashi || !(rashi in CANONICAL)) {
+    console.error('[astro] no usable moon sign on chart:', user.id, rashi)
+    return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
+  }
+
+  // The canonical chart, fetched once ever and then read from cache. This is
+  // the check that the table above says what it means: a birth whose Moon has
+  // drifted a sign would hand every reader of one rashi the neighbouring one's
+  // reading, forever, and nothing else in the system would notice.
+  const canon = await memo(`canon-chart:${rashi}`, () =>
+    post('/api/v2/vedic/chart', canonicalBirth(rashi)))
+  if (!canon) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
+
+  if (moonSign(canon.payload) !== rashi) {
+    console.error(
+      '[astro] CANONICAL BIRTH IS WRONG:', rashi, 'moon is', moonSign(canon.payload),
+    )
+    return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
+  }
+
+  const got = await memo(`rashifal:${rashi}:${date}`, () =>
+    post('/api/v2/vedic/horoscope/daily/personal', {
+      ...canonicalBirth(rashi),
+      target_date: date,
+      include_evidence: false,
+      include_raw_facts: false,
+    }))
   if (!got) return refuse('upstream', 'Charts are unavailable right now. Try again shortly.', 502, headers)
 
-  return ok({ ok: true, data: got.payload, time_known: timeKnown, date, cached: got.cached }, headers)
+  // `rashi` travels with the payload because the screen has to name it. A sign
+  // reading that does not say which sign it is for reads as a personal one,
+  // which is the one thing this must never be mistaken for.
+  return ok({ ok: true, data: got.payload, time_known: timeKnown, date, rashi, cached: got.cached }, headers)
 })

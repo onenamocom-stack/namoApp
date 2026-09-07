@@ -99,7 +99,32 @@ const inFlight = new Map()
  *  all. Everything else is a function of the IST day and dies with it. */
 const cacheStamp = (op) => (op === 'chart' ? 'never' : istDate())
 
-const cacheKey = (op, date, who) => `astro:${op}:${who ?? 'anon'}:${date ?? 'today'}`
+/* THE PANCHANG CARRIES NO USER, because since 4 Sep it is not a function of
+   one — it is computed at Ujjain for everybody. Keying it per person meant
+   /home (which passes the signed-in id) and /horoscope (which passes none)
+   wrote two entries for one answer, and a signed-out reader then refetched what
+   the signed-in one already had. Everything else stays per user: the chart is a
+   birth, and the reading is chosen by a rashi read off that birth. */
+const PER_USER = (op) => op !== 'panchang'
+
+/* THE DATE IS RESOLVED, NEVER LEFT AS THE WORD "today". Screens disagree about
+   how to ask for the current day: /home sends no date at all and lets the
+   server default it, while /horoscope sends an explicit one because its tabs
+   need yesterday and tomorrow too. Keying those literally wrote
+   `...:today` and `...:2026-09-07` for one answer, so opening the second
+   screen refetched what the first already had. The server resolves both to one
+   row so it never cost quota — it cost a round trip on a phone, every time,
+   which is the whole reason this cache exists. */
+/* A CHART CARRIES NO DATE AT ALL, for the same reason its stamp is `never`: it
+   is a function of a birth. Resolving the day into its key instead would miss
+   at every midnight and refetch a chart that cannot have changed — which is
+   the exact cost this cache exists to remove, reintroduced one line above
+   where it is described. It also means a caller passing a date to `chart`
+   cannot split the entry. */
+const keyDate = (op, date) => (op === 'chart' ? 'birth' : (date ?? istDate()))
+
+const cacheKey = (op, date, who) =>
+  `astro:${op}:${PER_USER(op) ? (who ?? 'anon') : 'all'}:${keyDate(op, date)}`
 
 function readCache(op, date, who) {
   try {
@@ -178,12 +203,12 @@ export function clearAstroCache() {
  */
 export function useAstro(op, { date, ready = true, who = null } = {}) {
   const [state, setState] = useState({
-    loading: true, payload: null, timeKnown: true, city: null, refusal: null,
+    loading: true, payload: null, timeKnown: true, city: null, rashi: null, refusal: null,
   })
 
   useEffect(() => {
     if (!ready) {
-      setState({ loading: true, payload: null, timeKnown: true, city: null, refusal: null })
+      setState({ loading: true, payload: null, timeKnown: true, city: null, rashi: null, refusal: null })
       return undefined
     }
 
@@ -206,9 +231,14 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
               // because a sunrise from a place you have never been is wrong
               // without looking wrong.
               city: res.city ?? null,
+              // Only the horoscope carries this: the rashi its reading is for.
+              // The reading is chosen by sign, not computed from the reader's
+              // own birth, and a screen that shows it without naming the sign
+              // is presenting a rashifal as a personal chart.
+              rashi: res.rashi ?? null,
               refusal: null,
             }
-          : { loading: false, payload: null, timeKnown: true, city: null, refusal: res },
+          : { loading: false, payload: null, timeKnown: true, city: null, rashi: null, refusal: res },
       )
     })
 
@@ -426,11 +456,19 @@ export function readingFrom(horoscope, label, context) {
     // 0–100 already, and it is the API's own overall band rather than
     // anything this file arithmetic'd into existence.
     intensity: s.overall?.score ?? null,
-    glance: [
-      ['Tone', s.overall?.band],
-      ['Dasha', horoscope.dasha?.dominant_period?.lord],
+    /* NO DASHA HERE, and it used to be. A Vimshottari period is a function of
+       the Moon's exact degree at a particular birth, and since 7 Sep the
+       reading comes from one of twelve canonical births rather than the
+       reader's own — so the dasha on this payload is that invented person's,
+       not theirs. The sign is right and the transits to it are right; the
+       dasha is the one field that is not.
 
-    ]
+       DROPPING IT HERE IS ONLY HALF THE FIX, and the other half is not solved:
+       `narrative.summary` below is the vendor's prose and it names the dasha in
+       sentences of its own. That is `02-TRD.md` §8's open problem, recorded
+       rather than quietly patched — string-surgery on somebody else's prose to
+       hide where it came from would be worse than the thing it hides. */
+    glance: [['Tone', s.overall?.band]]
       .filter(([, v]) => v)
       .map(([key, value]) => ({ key, value })),
     power: horoscope.narrative?.opportunity ?? '',

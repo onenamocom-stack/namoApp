@@ -303,7 +303,14 @@ function ReadingCard() {
 
         {day && (
           <>
-            <p className="caps-sm gold">{longDate(day.date)}</p>
+            <p className="caps-sm gold">
+              {longDate(day.date)}
+              {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
+                chosen by rashi rather than one computed from this person's
+                birth, and a sign reading shown without its sign reads as a
+                personal one. */}
+              {horoscope.rashi && <span className="t-faint"> · {horoscope.rashi} rashi</span>}
+            </p>
             <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
             <p className="mt-3 text-body t-body">{day.body}</p>
 

@@ -168,7 +168,7 @@ inferred:
 | `/onboarding/computing` reveal | Sun, Moon, Rising | Sun and Moon; Rising reads *"Needs your birth time"* |
 | `/chart` table | Nine rows including Rising, House column filled | Eight rows, House column dashed |
 | `/chart` Houses section | Twelve houses | A line saying they need the minute, and a link to add it |
-| `/chart` diagrams, `/profile` overview | The chart drawn | The empty frame, with the reason under it |
+| `/chart` diagram, `/profile` overview | The chart drawn | The empty frame, with the reason under it |
 
 The rule the table encodes: **planets survive a rough time and the ascendant does
 not.** The chart is computed against noon local so the planets have an instant to
@@ -313,11 +313,23 @@ Two free pulls a week, then **the wallet is charged for real** (price in
 wallet. **The price appears nowhere until a card has been pulled** — not in the
 header, not on the button, not as a footnote.
 
+### `/chart`
+One switch: **Table or Chart**. The table leads, because a diagram is
+illegible to anyone who has not been taught to read one and the table carries
+the same placements in a form you can scan; every row drills into `/chart/:id`.
+
+**A second switch used to choose between three traditions' diagrams and is gone
+with two of them** — 7 Sep 2026. There is one chart form now
+(`04-UI-UX.md` §4), so the tradition switch had nothing left to choose. The
+ayanamsa and house system stay printed under *Birth data*, because a wrong one
+is wrong silently and being told which was used is the only defence a reader
+has.
+
 ### `/profile/:tab`
 Four tabs in the URL — overview, horoscope, wallet, settings. Back always means
 Home here, regardless of history.
 
-Overview holds the chart wheel, birth data, language pills and a row list into
+Overview holds the chart, birth data, language pills and a row list into
 most of the app. Settings holds **Switch to consultant → `/pro/feed`**, which is
 an ordinary link because the side is not state.
 
@@ -365,6 +377,20 @@ stamped with the IST day. What that changes on screen:
 - **Tomorrow still costs one request**, once, the first time somebody asks for
   it. Verified by counting: a cached day is zero requests, an uncached one is
   exactly one.
+- **And the panchang is cached once for everybody, not once per reader.** It is
+  the same almanac either way, so a signed-out reader on `/horoscope` gets the
+  entry `/home` already wrote.
+
+**The daily reading is one of twelve, chosen by rashi** — since 7 Sep, and this
+is visible on screen rather than only in the request count. Every surface that
+shows a reading names the sign it is for, beside the date: the home reading
+card, the horoscope overlay, `/horoscope` and `/profile/horoscope`. **The dasha
+line is gone from the at-a-glance row**, because a Vimshottari period belongs to
+a birth and the reading is no longer computed from the reader's.
+
+Which rashi is read off the reader's own natal chart — the Moon's sign, which
+survives an unknown birth time — so a reading now depends on the chart having
+loaded once. That costs one request per account, ever, and nothing daily.
 
 **The sun, moon and rising line in a header comes from the CHART**, not from the
 day's reading. It used to read the reading's `profile` block, which meant a
