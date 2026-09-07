@@ -222,7 +222,7 @@ Everything else evaporates on reload, deliberately.
 
 ---
 
-## 2. Backend — phases 1 to 6
+## 2. Backend — phases 1 to 7
 
 **All four phases are built and applied to both projects.** Migrations are
 numbered SQL files in `backend/schema/`, forward-only. There is no
@@ -1081,6 +1081,54 @@ against it.
 clears, one ₹1 payment closes phase 3's last done-condition *and* proves the
 webhook secret set on 31 Aug matches. Run
 `backend/tools/reconcile-payments.mjs` straight after.
+
+---
+
+## 7. What can be built at the same time
+
+Worked out 3 Sep, from the phase specs rather than intuition, because two
+sessions on one repo is cheap right up until it is not.
+
+**The safest pair is 7 and 13.** Phase 13's admin console is a SEPARATE
+application — `admin/`, service role, no admin role in client RLS, its own
+layout because the phone frame does not transfer. It shares almost nothing with
+the seeker app: no `store.jsx`, no `mock.js`, no `src/` screens. It is also the
+highest-payoff thing not being built, because approving a consultant is
+currently somebody typing SQL in a GUI. Its two blocked capabilities (ranking
+formula §5.5, blocked-consultant-with-pending-money §6) sit at the BOTTOM of its
+own payoff order — approval, moderation and search need neither.
+
+**Phase 9 can run alongside too**, with one caveat: it touches `mock.js` and the
+feed screens, so it collides with anything else removing mock exports. The
+collision is deletions in different regions of one file — annoying, not
+dangerous.
+
+**Phase 8 is parallel except for its last wire.** All the plumbing — the model
+proxy, `ask_messages`, `entitlements`, the quota as a SUM, the pack purchase —
+is independent. But Ask AI's whole pitch is "Reads your chart": `Ask.jsx` says
+so in the header, the loading state and the footer, and the canned replies cite
+house lords. So the final step wants phase 7's chart. Build it against seed and
+swap at the seam, or ship with the AI not citing the chart yet.
+
+**Three that should not start yet, and the reasons are not scheduling:**
+
+| Phase | Why |
+|---|---|
+| 10 · shop and academy | Blocked on §5.2 duplicate SKUs and §5.3 the multiplier, which "must be deleted before anything is seeded". Start it and you seed prices you then have to unpick |
+| 11 · live video | Blocked on the SDK choice, and it builds directly on phase 6's meter. Also the natural place to revisit the rolling hold |
+| 12 · payouts | Two hard gates: KYC clears before the first rupee leaves, and **talk to a CA before writing the code, not after** |
+
+**Three things that make parallel sessions survivable**, and the first one is
+not optional:
+
+1. **Assign migration numbers up front.** Two files called `020_*.sql` is
+   unrecoverable under a forward-only rule. Give each session a range.
+2. **Branch per phase.** `main` deploys on push, so two sessions pushing to
+   `main` is two deploys racing — and a Pages deploy has already hung for ten
+   minutes once.
+3. **Tell each session the other exists**, and which files are shared.
+   `store.jsx`'s hand-maintained `useMemo` dependency array is the one that will
+   merge cleanly and behave wrongly.
 
 ---
 
