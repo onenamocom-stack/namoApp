@@ -37,6 +37,7 @@ Enough to pick the project up cold.
 npm install
 npm run dev -- --port 5260     # any free port
 npm run build                  # proves less than you think
+npm run lint                   # proves the part the build cannot
 ```
 
 **Two Supabase projects, and never mix them.** Rules in
@@ -106,7 +107,9 @@ with real data in it.
 
 **Complete as a prototype.** Vite 5 · React 18.3 · Tailwind 3.4 ·
 `react-router-dom` 6.28 · plain JSX. Three runtime dependencies. No icon
-library, no state library, no UI kit, **no linter, no type checker, no tests.**
+library, no state library, no UI kit, no type checker, no tests. There **is** a
+linter as of 7 Sep — five rules, no style opinions, `npm run lint`; see "There
+is a linter now" under §5.
 
 Two sides in one codebase. Most values on screen still come from
 `src/data/mock.js` and `src/data/bhaktamar.js`. Five things are real:
@@ -199,6 +202,11 @@ Everything else evaporates on reload, deliberately.
   `node tools/verify-pooja-swipe.mjs`.
 - **Deity images are uncropped by default.** `setting:croppedDeityImage` is an
   **opt-in back to the crop**, so its absence is the common case.
+- **The free-tools row lives on `/consult`, above the search field** — moved
+  off `/home` on 7 Sep 2026, reversing the earlier move in the other direction.
+  It renders in Consult's empty-roster branch too, deliberately: production's
+  roster is empty by decision, so the other branch would hide the free half of
+  the app from every real user. Home now opens straight into the stream.
 - **Tarot is a guided flow**, deck then question then card, the first two as
   centred modal dialogs. Two free pulls a week, then the wallet is charged.
 - **Three chart systems** — Vedic, South Indian, Western. `chartSystem` on the
@@ -830,12 +838,27 @@ now stated as settled in the document that owns it.
 
 ### Front-end defects, all recorded in `docs/03-APP-FLOW.md` §10
 
-Reports writes to the cart with no way to
-open it · question packs charge nothing · Ask AI shows a hardcoded wallet figure
-· `/chart` has no back control · consultant metrics disagree with the warnings
-citing them, 88% against 68%.
+**All five are closed, 7 Sep 2026**, and each was walked signed in on dev
+rather than declared done off a green build:
 
-**Closed:** there was no sign-in-only route, so a returning user had to
+- **Reports had no way to open the cart.** The sheet is mounted globally in
+  `Frame`; Shop simply held the only opener. Reports' top bar has a `BarAction`
+  now. Reports also claimed "nothing is charged" while `buyNow` really debited
+  the wallet — that sentence is gone too.
+- **Question packs granted questions free.** `Add` awaits
+  `spend(p.price, …)` and grants only on a `true`. The ledger row
+  `6 questions · −₹199` is the proof it charges.
+- **Ask AI's wallet was the string `₹1,240`.** It reads `balance` through
+  `rupees()` now, em dash until loaded. On the walk it showed the em dash and
+  that was correct — the boot read had failed with `JWT issued at future`,
+  the clock skew recorded under Tooling below.
+- **`/chart` had no back control.** It already had one. The row outlived the
+  fix by several weeks, which is its own lesson about this file.
+- **88% against 68%.** `answerRatePct` is derived once in `mock.js` and read by
+  both Earnings and the warning that cites it. Neither number is typed now, so
+  they cannot drift apart again.
+
+**Closed earlier:** there was no sign-in-only route, so a returning user had to
 re-answer the onboarding questions to get a session on both branches. See
 "There is now a sign-in-only route" under Phase 1 above.
 
@@ -845,6 +868,29 @@ No audio anywhere — the mandir's sangeet button says so. The chosen murti does
 not survive leaving the tab. Bhaktamar is the only deck with real faces. Shani
 has three murtis where the rest have four, because pre-modern devotional art of
 Shani as a single figure is thin on Commons.
+
+### There is a linter now, and it is deliberately small
+
+`npm run lint`. ESLint 9 flat config, four dev dependencies, and **no style
+rules at all** — no formatter, no import ordering, nothing that is taste. It
+enforces five things: `no-undef`, `react/jsx-no-undef`, `import-x/named`,
+`import-x/no-unresolved`, and the two `react-hooks` rules. Everything else is a
+warning or off, so a red lint always means something is actually broken. The
+moment it cries wolf it stops being run, and then it gets deleted.
+
+It exists for the trap at the top of `docs/04-UI-UX.md` §11: **the build is
+green on code that cannot run.** Both halves were live in this repo on 7 Sep —
+`no-undef` catches a renamed variable and an unimported component, and
+`import-x/named` catches the more expensive one, an import of a name the other
+module no longer exports. That last one is not a broken screen, it is a broken
+app: imports evaluate at module load, so `Reports.jsx` importing the deleted
+`REPORT_MULTIPLIER` white-screened **every** route including onboarding, with
+`npm run build` silent and `dist/` shipping fine.
+
+Baseline is **0 errors, 3 warnings**. The warnings are two `exhaustive-deps` on
+`setBalance` in `store.jsx` (a `useState` setter, stable, safe) and one unused
+`showToast` in `Shop.jsx`. Lint does not replace walking the routes. It removes
+the class of error not worth opening a browser to find.
 
 ### Tooling, because both cost days
 
@@ -907,7 +953,7 @@ service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 |---|---|
 | `backend/schema/019_astro_cache.sql` | Applied to dev. **Not production** |
 | `backend/schema/019_astro_cache_check.sql` | Passes on dev |
-| `backend/functions/astro/index.ts` | Deployed to dev, `verify_jwt` on. **The 7 Sep per-rashi rewrite is NOT deployed** — see below |
+| `backend/functions/astro/index.ts` | Dev **v9**, the per-rashi rewrite, `verify_jwt` on. Production is still on the per-person reading |
 | Front end | `src/lib/astro.js` plus eleven screens and components |
 
 **The reference chart is Indira Gandhi**, 19 Nov 1917, 23:11, Allahabad — Rodden
@@ -1100,12 +1146,27 @@ panchang a day, one chart per account ever, twelve canonical charts ever. That
 closes the "which freeastroapi tier, and when" question in §4 rather than
 answering it.
 
-**NOT YET DEPLOYED.** The code is written and the front end builds, but
-`backend/functions/astro/index.ts` is still at the previous version on dev — the
-deploy was blocked in the session that wrote it. Until it is deployed, the front
-end asks for a `rashi` field the function does not return yet, and every reading
-renders without its sign named. **Deploy to dev, walk the four reading surfaces,
-then production.**
+**Deployed to dev as version 9 and walked, 7 Sep. NOT on production**, which
+is still on the per-person reading — the MCP is pinned to the dev project and a
+production function deploy is done by hand from the dashboard, as phase 3's was.
+The front end for this IS live on `1namo.com`, and it degrades cleanly against
+the old function: no `rashi` comes back, so the sign is simply not named.
+
+**Two of the twelve canonical births are confirmed against the vendor**, not
+just against our arithmetic. Signing in as `+919999900002` (Moon in Libra)
+wrote `canon-chart:Libra` with the vendor's own Moon in Libra, then
+`rashifal:Libra:2026-09-07`, in that order — the check runs before the reading
+is trusted. `+919999900001` (Moon in Cancer) did the same for Cancer. Both
+screens named the sign: *LIBRA RASHI*, *CANCER RASHI*.
+
+**The other ten are unverified against the vendor and that is a stated
+position, not an oversight.** They come from the same arithmetic as the two
+that passed, they sit within 0.05° of their sign's midpoint, and if any is
+wrong the function refuses with *"Charts are unavailable right now"* and names
+it in the log rather than serving the neighbouring rashi's reading. A visible
+failure for one sign, never a silent wrong answer. Warming the remaining ten
+needs an account whose Moon is in each, so it happens as real users arrive —
+**watch the function log for `CANONICAL BIRTH IS WRONG`.**
 
 **One chart form now: the North Indian square** (7 Sep). The Western wheel
 (`ChartWheel.jsx`, deleted) and the South Indian square (`ChartSouth`, removed
@@ -1314,6 +1375,8 @@ is a `security definer` function callable by `anon`, which is the point of it.
   `backend/functions/razorpay-order/index.ts` *and* the client copy in
   `Wallet.jsx`, redeploy the function, and push.
 
-**`npm run build` passing proves almost nothing** — no linter, no type checker,
-and an undefined identifier inside JSX compiles cleanly and throws at runtime.
-It has shipped a blank screen twice. Walk the routes.
+**`npm run build` passing proves almost nothing** — no type checker, and an
+undefined identifier inside JSX compiles cleanly and throws at runtime. It has
+shipped a blank screen twice. `npm run lint` catches that identifier and the
+stale cross-module import beside it; it does not catch a screen that renders
+the wrong thing. Walk the routes.
