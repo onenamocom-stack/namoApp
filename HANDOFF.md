@@ -1172,6 +1172,20 @@ bundle:
   arriving, not being defaulted away, which is the whole risk in
   `02-TRD.md` §8.
 
+**The cost model was measured across a real midnight, 9 Sep**, which is the
+check that matters because it is the one a mistake would have hidden. The IST
+day rolled at 00:06 and the first reader wrote exactly two rows —
+`panchang:2026-09-09` and `rashifal:Cancer:2026-09-09`. **`canon-chart:Cancer`
+was NOT rewritten**; it still carries its 7 Sep timestamp. Had the canonical
+chart's key been made a function of the day, every midnight would have cost
+twelve extra upstream calls and nothing on any screen would have looked
+different. A second cold reader of the same rashi then got all three answers
+back with `cached: true` and wrote nothing at all.
+
+Note when reading `astro_cache` by hand: **`fetched_at` is UTC and the keys are
+IST**, so rows written early on an IST day carry the previous UTC date. Group by
+`(fetched_at at time zone 'Asia/Kolkata')::date`, or a day's rows look missing.
+
 **What is NOT verified on production, and cannot be from outside: the rashi path
 itself.** Every line of it sits behind a session, and the accounts there belong
 to real people. So the twelve-a-day behaviour is proven on dev and inferred on
