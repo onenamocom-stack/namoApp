@@ -99,10 +99,16 @@ assertion.
 
 ### Verification
 
-**`npm run build` passing proves almost nothing.** There is no linter and no type
-checker, so an undefined identifier inside JSX compiles cleanly and throws at
-runtime. It has shipped a blank screen twice. **Every phase ends with walking the
-affected routes in a browser.**
+**`npm run build` passing proves almost nothing.** There is no type checker, so
+an undefined identifier inside JSX compiles cleanly and throws at runtime. It
+has shipped a blank screen twice.
+
+**There IS a linter now** — `npm run lint`, added 7 Sep. It catches the
+undefined identifier and the stale cross-module import, which is most of what
+the blank screens were, and it is cheap enough to run after every edit. It
+cannot catch a screen that renders the wrong thing.
+
+**Every phase still ends with walking the affected routes in a browser.**
 
 ---
 
@@ -152,6 +158,23 @@ The rules that keep them apart:
   check which project each is talking to before debugging either.
 - **Migrations run against dev first, then production.** Same file, same order,
   no edits between. A migration that has run anywhere is history (§2).
+- **Production Edge Functions deploy with the CLI, naming the ref on the command
+  line.** Never by repointing `.mcp.json`, which is the same mistake as the
+  30 Aug incident with a different file: an agent that *can* reach production
+  reaches it by accident eventually. The CLI makes the target explicit and
+  one-shot, and it uploads the file rather than pasting it, which retires the
+  truncated-dashboard-paste worry that shaped the 3 Sep verification.
+
+      cd <a dir holding supabase/functions/<name>/index.ts>
+      npx -y supabase@latest functions deploy <name> --project-ref talqzgolttfgdzcoaqno
+
+  Two things that will bite. **`supabase login` needs a real TTY** — inside
+  Claude Code it fails with `LegacyLoginMissingTokenError`, so run it once in an
+  ordinary terminal window; the token then persists on disk for later sessions.
+  And **do not put a personal access token through the prompt.** It is full
+  account access across both projects, and the transcript keeps it for good.
+  Deploying does not change `verify_jwt`; check the version bumped afterwards
+  with `functions list --project-ref`.
 - **Dev signs in with test OTP, production with Twilio Verify.** Dev has
   `+919999900001` and `+919999900002`, both code `123456`: no SMS, no cost, and
   two accounts whenever a test needs them. **Never configure those numbers on

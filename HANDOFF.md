@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 7 Sep 2026.
+Updated 8 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -15,6 +15,7 @@ Updated 7 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
+| **9 · reviews and content** | **Built on dev, NOT walked and NOT on production.** Four tables, three views, a storage bucket and the whole front end are in; the check passes. All three done-conditions are verified by assertion rather than in a browser, because `/home`, `/pro/studio` and `/consult/:id` sit behind the phone-OTP gate. §9 has what to walk |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -77,6 +78,7 @@ touched, in the **dev** SQL editor.
 | `012_bookings_transaction_check.sql` | bookings: the transaction, the refusals, the reversing credit, both books append-only, the new policies |
 | `014_metered_chat_check.sql` | chat: the hold, the round-up, the cutoff, the sweeper, and the live-session gate on messages |
 | `019_astro_cache_check.sql` | charts: the cache table's shape, RLS on, and **zero policies** — service role only |
+| `020_content_reviews_check.sql` | content and reviews: draft and blocked-consultant leaks, counts starting at zero, **the review anti-fraud gate**, `verified` derived, the rating cache reproducing its source, and a stranger reading counts but not who is behind them |
 
 **Passing looks like a failure:** `ERROR: PHASE 2 CHECKS PASSED`, and the same
 shape from the other five. Each raises on its last line to roll back every row it
@@ -953,7 +955,7 @@ service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 |---|---|
 | `backend/schema/019_astro_cache.sql` | Applied to **both**. The line here said "not production" until 8 Sep and was wrong — the production verification below proves the table is there, and re-applying it under a forward-only rule is the mess that line invited |
 | `backend/schema/019_astro_cache_check.sql` | Passes on dev |
-| `backend/functions/astro/index.ts` | Dev **v9**, the per-rashi rewrite, `verify_jwt` on. Production is still on the per-person reading |
+| `backend/functions/astro/index.ts` | The per-rashi rewrite is on **both** — dev v9, production v5, `verify_jwt` on either side |
 | Front end | `src/lib/astro.js` plus eleven screens and components |
 
 **The reference chart is Indira Gandhi**, 19 Nov 1917, 23:11, Allahabad — Rodden
@@ -1146,11 +1148,37 @@ panchang a day, one chart per account ever, twelve canonical charts ever. That
 closes the "which freeastroapi tier, and when" question in §4 rather than
 answering it.
 
-**Deployed to dev as version 9 and walked, 7 Sep. NOT on production**, which
-is still on the per-person reading — the MCP is pinned to the dev project and a
-production function deploy is done by hand from the dashboard, as phase 3's was.
-The front end for this IS live on `1namo.com`, and it degrades cleanly against
-the old function: no `rashi` comes back, so the sign is simply not named.
+**On both projects.** Dev v9 (7 Sep), production v5 (8 Sep), `verify_jwt` on
+either side. The front end has been live on `1namo.com` since 7 Sep and spent a
+day against the old function without anybody noticing, which is the degradation
+working: no `rashi` came back, so the sign was simply not named.
+
+**Production was deployed with the Supabase CLI rather than the dashboard, and
+that is now the rule for every production function** — it is written down in
+`backend/INSTRUCTIONS.md` §3, along with the two things that bite.
+
+#### Production verified from outside, 8 Sep
+
+Same method as 3 Sep — nothing but the anon key that already ships in the
+bundle:
+
+- Preflight from `https://1namo.com` returns **204**, origin echoed, all four
+  headers. An unrecognised origin gets the fallback rather than being reflected.
+- `chart` with no session refuses **`signed_out`**, not `no_birth`.
+- `panchang` computes at **Ujjain**, and the repeat returns **`cached: true`** —
+  which is the only thing that distinguishes a live cache from a missing table,
+  since the function answers correctly either way.
+- The payload's `metadata.ayanamsha` reads **`lahiri`**. The setting is
+  arriving, not being defaulted away, which is the whole risk in
+  `02-TRD.md` §8.
+
+**What is NOT verified on production, and cannot be from outside: the rashi path
+itself.** Every line of it sits behind a session, and the accounts there belong
+to real people. So the twelve-a-day behaviour is proven on dev and inferred on
+production from the two being the same file. The first real signed-in reader
+exercises it. **That is safe rather than merely hopeful**: if a canonical birth
+is wrong the function refuses and logs `CANONICAL BIRTH IS WRONG` instead of
+serving the neighbouring rashi's reading.
 
 **Two of the twelve canonical births are confirmed against the vendor**, not
 just against our arithmetic. Signing in as `+919999900002` (Moon in Libra)
@@ -1212,6 +1240,139 @@ webhook secret set on 31 Aug matches. Run
 
 ---
 
+## 8. Phase 9 — what is built, and the one thing that is not
+
+Built 8 Sep on **dev only**. Nothing here has run against production.
+
+### The four tables, and the three views that keep counts honest
+
+`020_content_reviews.sql` — `content`, `reactions`, `reviews`, `feed_pins`.
+`05-BACKEND-SCHEMA.md` §5.1-§5.4 has the design; the migration is the DDL.
+
+**No count is a column.** Not likes, not saves, not followers. §1.3 allows one
+cached aggregate in this database plus the two rating caches, and the mock is
+the argument — four of its stored totals contradict their own line items inside
+one file written in one sitting. Counts come from three views instead:
+`content_public` (likes and saves, aggregated once rather than N+1),
+`consultant_follower_counts`, `reviews_public`. All three run as their owner,
+the `consultants_public` pattern, because the tables under them are own-row-only
+and an invoker-rights view would return 0 for everyone but yourself.
+
+**`view_count` is a column and it stays 0.** A counter the client increments is
+a number the user benefits from, which is rule 3. It exists so it is not
+retrofitted later, and nothing writes it until something server-side owns it.
+Every screen that used to print `312k views` now prints a timestamp instead.
+
+**The rating caches are a trigger that RECOMPUTES, never increments.** An
+increment cannot be checked and drifts under concurrency, which is the whole
+failure §1.3 describes. The check asserts the cache equals the reviews under it,
+including after a removal.
+
+### The review gate is the phase, and it is enforced in the policy
+
+A review requires a booking that is **the caller's own and `completed`**. Not
+pending, not confirmed. The check proves all four cases — no booking refused,
+pending booking refused, completed booking accepted, a second review on the same
+booking refused by the unique index.
+
+`booking_id` is unique but NULLABLE on purpose: Postgres permits many NULLs in a
+unique index, and `verified` is derived from `booking_id is not null`. So a
+seeded review is visible and visibly unverified, and no seed has to fabricate a
+session that never happened.
+
+**A metered chat session does not let you review.** The policy names `bookings`,
+and phase 6's `sessions` is a different table. A seeker whose only contact was a
+chat cannot review that consultant. That is a real gap and a decision for
+somebody, not a bug in the policy — noted in `05-BACKEND-SCHEMA.md` §5.4.
+
+### The `flags` Set did not go away, and should not have
+
+`store.jsx` still holds one flat Set. Four kinds — `follow`, `save`, `like`,
+`remind` — now also write a row; the rest stay local, because they are not
+reactions: `setting:croppedDeityImage` is a preference, `offair:<room>` is one
+screen's UI state, `event:<id>` is phase 10's, the tarot keys are §5.6's
+`tarot_pulls`, and `save:day-<key>` is a saved *reading*, which is derived and
+has no table to point at.
+
+`lib/reactions.js` decides which is which, and it also requires the target to
+**look like a UUID** — a reaction against a mock row cannot be stored and must
+not throw. It stays local and starts persisting by itself the moment that screen
+reads real rows. Every one of the twenty-odd `toggleFlag` call sites is
+unchanged, which was the point.
+
+The write is optimistic and **rolls back on failure**. A heart that stays filled
+after the write failed is the interface telling a lie it gets caught in on the
+next reload.
+
+### What the front end reads now
+
+| Screen | Was | Is |
+|---|---|---|
+| `/home` | `feed`, 14 hand-ordered rows | a query over `content_public`; live/course/product are the three mock rows left, and they belong to phases 10 and 11 |
+| `/read/:id` | `reads` lookup | a row; body splits on blank lines, read time computed from it |
+| `/reels/:id` | `clips` lookup | a query; the counter is told the total by the feed rather than counting a mock array |
+| `/consult/:id` Work and Reviews | **matched to the real consultant BY DISPLAY NAME** | queries. That join is gone |
+| `/pro/studio` | two toasts | publishes rows, uploads files, lists what you actually published |
+| `/pro/profile` | `mine(clips)` etc., and the seed person's 4.9 rating | your rows, your rating caches, your follower count |
+
+**`posts`, `reads`, `clips` and `mine` are deleted from `mock.js`** — 204 lines.
+`feed` is down to three rows.
+
+The `seedFor` join in `ConsultantProfile.jsx` is the one worth noting: it
+matched a real consultant row to a mock one by display name, which is the join
+`05-BACKEND-SCHEMA.md` §9 spends a section warning about. The file already said
+"Phase 9 deletes this function." It does.
+
+### Storage
+
+`022_content_media_bucket.sql` — `content-media`, **public-read**, 25 MB,
+images and video only. Public is right *here* and nowhere else: the row pointing
+at the file is already readable by anon through `content_public`, so a signed
+URL would cost a round trip per card and buy nothing. `kyc_documents` and
+anything carrying a chart are private buckets with signed URLs.
+
+Writes are scoped by folder and the folder is the owner's UUID —
+`<auth.uid()>/<file>` — so a consultant writes their own files and nobody
+else's.
+
+### 021 was wrong and 023 fixes it
+
+`021` ran `revoke execute ... from anon, authenticated` on the two cache
+functions, reported success, and did nothing: neither role ever held a grant of
+its own. The access came from the **PUBLIC** pseudo-role, which Postgres grants
+on every new function, and which shows in the ACL as a bare `=X/postgres`.
+
+`023` revokes from `public` and the linter goes quiet. The trigger still fires —
+asserted as a seeker, with the revoke in place, because it runs as the definer.
+
+**The lesson worth keeping: a revoke that succeeds is not a revoke that did
+anything.** Check the ACL or the linter, not the absence of an error.
+
+### NOT DONE, and it is the honest gap
+
+**Nothing was walked in a browser.** `/home`, `/pro/studio`, `/consult/:id` and
+`/reels/:id` all sit behind the onboarding gate, which needs a phone OTP.
+`npm run lint` passes with only the three pre-existing warnings and
+`npm run build` is green, and §11 says both prove almost nothing.
+
+Dev has **8 approved consultants, 0 content, 0 reviews, 0 reactions** — empty
+and honest. To close the three done-conditions, someone signed in has to:
+
+1. `/pro/studio` as an approved consultant — write a caption, attach a file,
+   publish. Then `/home` as a different account: it should be there. That is
+   done-condition 1, and it is also how your partner's posts get in. **There is
+   no seed step; content arrives through the studio.**
+2. Follow a consultant, reload, and open the app on a second device or a private
+   window. The follow survives. Done-condition 2.
+3. Complete a booking, review it, and check the review carries **Verified**
+   while a seeded one does not. Done-condition 3. Trying to review without a
+   completed booking should refuse — the check already proves the database
+   refuses it; what is unwalked is that the screen says so in the app's voice.
+
+**Production has none of this.** Migrations 020-023 have run on dev only.
+
+---
+
 ## 7. What can be built at the same time
 
 Worked out 3 Sep, from the phase specs rather than intuition, because two
@@ -1226,10 +1387,11 @@ currently somebody typing SQL in a GUI. Its two blocked capabilities (ranking
 formula §5.5, blocked-consultant-with-pending-money §6) sit at the BOTTOM of its
 own payoff order — approval, moderation and search need neither.
 
-**Phase 9 can run alongside too**, with one caveat: it touches `mock.js` and the
-feed screens, so it collides with anything else removing mock exports. The
-collision is deletions in different regions of one file — annoying, not
-dangerous.
+**Phase 9 is built** (§8), so this no longer describes work to schedule. What it
+predicted was right and is worth keeping for the next phase that touches
+`mock.js`: the collision is deletions in different regions of one file. Phase 9
+removed `posts`, `reads`, `clips` and `mine`, and trimmed `feed` to three rows.
+Migrations 020-023 are taken.
 
 **Phase 8 is now fully parallel.** This replaces the line that stood here
 saying it was "parallel except for its last wire", which was true only while
