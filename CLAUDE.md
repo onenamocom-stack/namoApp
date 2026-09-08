@@ -61,12 +61,13 @@ Two boundaries that get crossed first:
 `docs/04-UI-UX.md` §11 lists nine that have already cost time. The two that
 recur:
 
-1. **`npm run build` passing proves almost nothing.** No linter, no type checker
-   — an undefined identifier inside JSX is a runtime error with a green build.
-   Walk the routes.
-2. **Tailwind's opacity modifier silently emits nothing on this palette**, because
-   every colour resolves through a CSS variable. Anything translucent needs an
-   inline literal `rgba()`.
+1. **`npm run build` passing proves almost nothing.** No type checker — an
+   undefined identifier inside JSX is a runtime error with a green build.
+   **`npm run lint`** catches that and a stale cross-module import; it cannot
+   catch a screen that renders the wrong thing. Walk the routes anyway.
+2. ~~Tailwind's opacity modifier emits nothing on this palette.~~ **Fixed
+   7 Sep** — the tokens are wrapped in `color-mix()` in `tailwind.config.js`,
+   so `bg-gold/10` works. New markup does not need an inline literal `rgba()`.
 
 ## House style
 

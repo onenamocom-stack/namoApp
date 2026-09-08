@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  answerRatePct,
   earnings,
   earningsSeries,
   insights,
@@ -83,7 +84,6 @@ function Earnings() {
 
   const fee = Math.round((amount * earnings.commissionPct) / 100)
 
-  const answerRate = Math.round((proMetrics.callsAttended / proMetrics.callsRequested) * 100)
   const missed = proMetrics.callsRequested - proMetrics.callsAttended
   // `Bars` wants {label, value}; the reply series is seven bare minutes.
   const replySeries = proMetrics.replyByDay.map((value, i) => ({
@@ -157,7 +157,7 @@ function Earnings() {
               {proMetrics.callsAttended}
               <span className="t-faint">/{proMetrics.callsRequested}</span>
             </p>
-            <p className="mt-1 caps-sm tnum t-body">{answerRate}% answered</p>
+            <p className="mt-1 caps-sm tnum t-body">{answerRatePct}% answered</p>
           </PopCard>
         </div>
 

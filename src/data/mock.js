@@ -651,6 +651,15 @@ export const proMetrics = {
   replyByDay: [6, 4, 3, 5, 4, 2, 3],
 }
 
+/**
+ * Answered share, derived rather than typed. Earnings computed it locally and
+ * the warning below quoted a different number for the same figure — 88%
+ * against 68% — so the screen argued with itself. One export, both readers.
+ */
+export const answerRatePct = Math.round(
+  (proMetrics.callsAttended / proMetrics.callsRequested) * 100,
+)
+
 export const earningsSeries = [
   { label: 'Mon', value: 4200 },
   { label: 'Tue', value: 7480 },
@@ -715,7 +724,7 @@ export const insights = {
  * items on the screen that ask for an action rather than describing the past.
  */
 export const warnings = [
-  { id: 'w1', tone: 'bad', title: 'Response rate is 68%', line: 'It was 94% last month. Two requests have sat unanswered for six hours.', to: '/pro/consult' },
+  { id: 'w1', tone: 'bad', title: `Response rate is ${answerRatePct}%`, line: 'It was 94% last month. Two requests have sat unanswered for six hours.', to: '/pro/consult' },
   { id: 'w2', tone: 'warn', title: '3 slots unfilled tomorrow', line: 'Morning is empty. Opening an evening slot fills faster on a Thursday.', to: '/pro/consult' },
   { id: 'w3', tone: 'warn', title: '“Relocation and the 4th house” is 31% below your average', line: 'Reels you post before 6 pm consistently underperform. Yours went out at 2 pm.', to: '/pro/studio' },
 ]

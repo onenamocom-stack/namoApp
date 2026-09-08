@@ -13,8 +13,26 @@
  * Colours resolve through CSS variables (declared in index.css) so the
  * high-contrast accessibility mode can re-point them at runtime.
  *
+ * They are wrapped in `alpha()` below, and that wrapper is the whole reason
+ * `bg-gold/10` works here. Tailwind's opacity modifier rewrites a colour into
+ * `rgb(<channels> / <alpha>)`, which needs the token to BE channels — a token
+ * holding `#8f6210` produces `rgb(#8f6210 / 0.1)`, invalid, and the utility is
+ * dropped from the stylesheet silently. Every translucent class in this app
+ * used to emit nothing and had to be written as a literal inline `rgba()`.
+ * `color-mix()` takes a whole colour rather than channels, so the hex tokens
+ * stay hex, every raw `var(--gold)` in index.css keeps working, and the
+ * modifier is live on all of them.
+ *
  * @type {import('tailwindcss').Config}
  */
+/**
+ * A theme colour that honours `/opacity`. With no modifier Tailwind
+ * substitutes `1`, so `bg-ink` is the flat colour and `bg-ink/40` is 40% of
+ * it. Works on hex, rgb() and rgba() tokens alike — `--stroke` is already
+ * translucent, and mixing toward transparent scales the alpha it has.
+ */
+const alpha = (v) => `color-mix(in srgb, ${v} calc(<alpha-value> * 100%), transparent)`
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
@@ -22,28 +40,28 @@ export default {
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
-      black: '#000000',
-      white: '#FFFFFF',
-      bg: 'var(--bg)',
-      surface: 'var(--surface)',
-      surface2: 'var(--surface-2)',
-      stroke: 'var(--stroke)',
-      t1: 'var(--text)',
-      t2: 'var(--text-2)',
-      t3: 'var(--text-3)',
-      t4: 'var(--text-4)', // non-text only: ticks, spokes, placeholders
-      rule: 'var(--rule)',
+      black: alpha('#000000'),
+      white: alpha('#FFFFFF'),
+      bg: alpha('var(--bg)'),
+      surface: alpha('var(--surface)'),
+      surface2: alpha('var(--surface-2)'),
+      stroke: alpha('var(--stroke)'),
+      t1: alpha('var(--text)'),
+      t2: alpha('var(--text-2)'),
+      t3: alpha('var(--text-3)'),
+      t4: alpha('var(--text-4)'), // non-text only: ticks, spokes, placeholders
+      rule: alpha('var(--rule)'),
       // The single voltage accent. NeoPOP allows one per screen; this app
       // spends it on gold to keep the astrology identity.
-      gold: 'var(--gold)',
-      'gold-fill': 'var(--gold-fill)', // background only — never small text
-      'gold-dim': 'var(--gold-dim)',
-      'gold-wash': 'var(--gold-wash)',
-      live: 'var(--live)',
-      ok: 'var(--ok)',
+      gold: alpha('var(--gold)'),
+      'gold-fill': alpha('var(--gold-fill)'), // background only — never small text
+      'gold-dim': alpha('var(--gold-dim)'),
+      'gold-wash': alpha('var(--gold-wash)'),
+      live: alpha('var(--live)'),
+      ok: alpha('var(--ok)'),
       // The grey-black. Bottom bar, primary CTA, raised Live button.
-      ink: 'var(--ink)',
-      ink2: 'var(--ink-2)',
+      ink: alpha('var(--ink)'),
+      ink2: alpha('var(--ink-2)'),
     },
     borderRadius: {
       none: '0',

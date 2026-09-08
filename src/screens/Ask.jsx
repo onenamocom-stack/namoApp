@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { askConversation, askSuggestions, questionPacks } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import { Button, Field, Section, Stub } from '../components/Primitives.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
 
 /** Canned replies. Blunt, chart-citing, never reassuring for its own sake. */
 const REPLIES = [
@@ -13,7 +13,8 @@ const REPLIES = [
 ]
 
 export default function Ask() {
-  const { questionsLeft, spendQuestion, addQuestions, showToast } = useStore()
+  const { questionsLeft, spendQuestion, addQuestions, showToast, spend, spending, balance } =
+    useStore()
   const [messages, setMessages] = useState(askConversation)
   const [draft, setDraft] = useState('')
   const [thinking, setThinking] = useState(false)
@@ -26,6 +27,16 @@ export default function Ask() {
   }, [messages, thinking])
 
   const locked = questionsLeft === 0
+
+  /* Packs granted questions for free while displaying a price, and the sheet
+     printed a hardcoded wallet figure underneath it. `spend` is a promise —
+     without the await a refused payment still grants the questions. */
+  const buyPack = async (p) => {
+    if (await spend(p.price, `${p.questions} questions`)) {
+      addQuestions(p.questions)
+      setSheet(false)
+    }
+  }
 
   const send = (text) => {
     const q = (text ?? draft).trim()
@@ -159,17 +170,17 @@ export default function Ask() {
             {p.tag && <p className="mt-1 text-micro uppercase tracking-caps text-t3">{p.tag}</p>}
             <Button
               className="mt-4"
-              onClick={() => {
-                addQuestions(p.questions)
-                setSheet(false)
-              }}
+              disabled={spending}
+              onClick={() => buyPack(p)}
             >
-              Add
+              {spending ? 'Paying…' : 'Add'}
             </Button>
           </div>
         ))}
-        <Field k="Wallet" v="₹1,240" />
-        <p className="mt-6 text-center text-meta text-t3">Prototype — no payment is taken.</p>
+        <Field k="Wallet" v={balance === null ? '—' : `₹${rupees(balance)}`} />
+        <p className="mt-6 text-center text-meta text-t3">
+          The wallet is charged. Questions themselves are still canned copy.
+        </p>
       </Sheet>
     </>
   )

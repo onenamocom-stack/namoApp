@@ -232,6 +232,14 @@ take a hard engraved shadow; top-bar icons take a soft lift.
 **Rails and banners** — `.rail` (x-scroll with snap) · `.banner` (r20) ·
 `.sheen`
 
+`.banner` carries only the radius, shadow and press — height comes from what is
+inside it. Consult's are **kicker, title, CTA**, at ~95px; they were ~197px and
+were halved on 7 Sep 2026. The line that went was the descriptive `note`, which
+is where most of that height lived: two lines of 13px, plus its margin. The
+field is still on the banner objects, so restoring it is one span. Shop's
+banners keep the taller four-part shape — halve them only on the same
+instruction, not for consistency's sake.
+
 **Tiles** — `.tile` · `.tile-face` (58px circle) · `.tile-face-on` ·
 `.plinth` / `.plinth-on`, a smoked-glass 44px disc for props sitting **on the
 shrine painting**, where a near-white disc would vanish. Its lit state goes gold
@@ -455,13 +463,27 @@ Nine that have already cost time.
 1. **A green build proves almost nothing.** An undefined identifier inside JSX is
    a runtime error, not a compile error. It has shipped a blank screen once and
    silently dropped an import once. **Always load the app and walk the routes.**
+
+   `npm run lint` now catches the two forms that are pure oversight —
+   an identifier that was never defined, and an import of a name the other
+   module no longer exports. The second is the expensive one: imports are
+   evaluated at module load, so a single stale name in a single screen white-
+   screens **every** route, onboarding included. Lint does not replace the
+   walk; it removes the errors not worth a browser to find.
 2. **Tailwind cannot see runtime-built class names.** Anything interpolated
    produces a class that is never generated. Anything that varies goes in inline
    `style`.
-3. **Tailwind's opacity modifier silently does nothing on this palette.** Every
-   colour resolves through a variable, so a modifier cannot be computed and
-   Tailwind emits **no background at all** rather than failing. Anything
-   translucent needs an inline literal `rgba()`.
+3. ~~**Tailwind's opacity modifier silently does nothing on this palette.**~~
+   **Fixed, 7 Sep 2026.** It used to emit nothing: the modifier rewrites a
+   colour into `rgb(<channels> / <alpha>)`, which needs the token to be
+   channels, and every token here holds a whole colour like `#8f6210`. The
+   result was invalid and the utility was dropped from the stylesheet without
+   an error. Every translucent surface had to be an inline literal `rgba()`.
+
+   `tailwind.config.js` wraps each token in `color-mix()`, which takes a whole
+   colour rather than channels, so the tokens stay hex, every raw `var(--gold)`
+   in `index.css` keeps working, and `bg-gold/10` is live on all of them.
+   Inline `rgba()` is no longer needed and new markup should not use it.
 4. **Scripted multi-edit passes corrupt files.** A sequence of index-based
    splices once duplicated half a screen. Beyond one or two replacements, rewrite
    the block.

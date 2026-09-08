@@ -951,7 +951,7 @@ service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 
 | | |
 |---|---|
-| `backend/schema/019_astro_cache.sql` | Applied to dev. **Not production** |
+| `backend/schema/019_astro_cache.sql` | Applied to **both**. The line here said "not production" until 8 Sep and was wrong — the production verification below proves the table is there, and re-applying it under a forward-only rule is the mess that line invited |
 | `backend/schema/019_astro_cache_check.sql` | Passes on dev |
 | `backend/functions/astro/index.ts` | Dev **v9**, the per-rashi rewrite, `verify_jwt` on. Production is still on the per-person reading |
 | Front end | `src/lib/astro.js` plus eleven screens and components |

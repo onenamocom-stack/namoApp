@@ -208,8 +208,8 @@ single-field edit.
 ## 4. Seeker screens
 
 ### `/home`
-Free-tools row of four circles — Horoscope and Ask AI open overlays, Tarot and
-Matching navigate. Then one feed stream where `kind` picks the card:
+One feed stream where `kind` picks the card. The free-tools row used to sit
+above it and is on `/consult` now, as of 7 Sep 2026 — Home opens on content:
 
 | Card | Actions |
 |---|---|
@@ -227,7 +227,13 @@ component**, not by reordering the feed data, so the feed stays a list of
 content.
 
 ### `/consult`
-The roster, read from `consultants_public` — so an unapproved practice is
+**Free-tools row of four circles, above the search field** — Horoscope and Ask
+AI open overlays, Tarot and Matching navigate. It sat on `/home` until 7 Sep
+2026. It is here because this is the screen somebody reaches already asking a
+question, and the free answer belongs in front of the paid one rather than
+buried above a stream.
+
+Then the roster, read from `consultants_public` — so an unapproved practice is
 absent because the server never sent it, not because a filter here dropped it.
 Search and category counts run over what came back.
 
@@ -242,8 +248,11 @@ that is always green is worse than no dot. The rail above the list counts
 
 **With nobody approved, the empty state is the whole screen.** Not a line of
 grey text under the furniture: the banners, the category chips, the verified
-rail and the session line all describe a roster that does not exist, so none of
-them render. What remains says the list is empty because the practice is new,
+rail, the search field and the session line all describe a roster that does not
+exist, so none of them render. **The free-tools row is the exception and does
+render there** — it needs no roster, and production's roster is empty by
+decision, so dropping it in that branch would take the free half of the app off
+production entirely. What remains says the list is empty because the practice is new,
 and offers `/pro/apply`. The reasoning, and the rejected alternative of
 approving six invented astrologers, is in `01-PRD.md` §7.
 
@@ -668,12 +677,12 @@ next rather than showing an empty list.
 |---|---|
 | **ChatPanel threw on the first tap of the messages knob** — `isPro` was used but never defined, in two places, with no error boundary | **Fixed** |
 | The consultant's availability view applied booked slots only on Thursday; the seeker's sheet applied them always and ignored the consultant's own closures | **Closed** — phase 4. Both call `consultant_open_slots()`; there is no second rule left to disagree with, and `009_slots_check.sql` asserts it on all seven weekdays |
-| Reports adds to the cart with no way to open the cart from that screen | Open |
-| Question packs display a price and grant questions free | Open |
-| Ask AI's wallet figure is a hardcoded string, not the live balance | Open |
-| `/chart` has no back control | Open |
+| Reports adds to the cart with no way to open the cart from that screen | **Closed** — 7 Sep. The sheet was always mounted globally; Shop simply held the only opener. Reports' top bar has one now |
+| Question packs display a price and grant questions free | **Closed** — 7 Sep. `Add` awaits `spend(p.price, …)` and grants only on a `true`. Verified against a real ledger row, `6 questions · −₹199` |
+| Ask AI's wallet figure is a hardcoded string, not the live balance | **Closed** — 7 Sep. Reads `balance` through `rupees()`, em dash until loaded, same contract as every other wallet figure |
+| `/chart` has no back control | **Closed** — it has `back backTo="/home"`. The row outlived the fix; confirmed in a browser 7 Sep |
 | The consultant's feed is the seeker's feed, including shop and free tools | **Closed** — `ProFeed.jsx` deleted, Feed is no longer a concept on the pro side |
-| Consultant performance metrics disagree with the warnings that cite them — 88% against 68% for the same figure | Open |
+| Consultant performance metrics disagree with the warnings that cite them — 88% against 68% for the same figure | **Closed** — 7 Sep. `answerRatePct` is derived once in `mock.js` and read by both. Neither number is typed, so they cannot drift again |
 | Birth details are collected in onboarding and never used | **Closed** — phase 1. Written to `profiles`, read back by Profile, Chart and Horoscope |
 | `/people/:id` showed the **mock user's initial under the label "You"** — a signed-in Rahul saw Atharv's `A` | **Fixed** — `Synastry.jsx` reads `useProfileFields()`. Found by auditing identity reads, not by the browser walk, which is still owed |
 | Sun, moon and rising are the mock's for every account, on four screens — `Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx` and via `useProfileFields()` | Open by design — they need the ephemeris service. **Phase 7 must change all four**, not just the hook |

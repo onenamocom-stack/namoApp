@@ -1,5 +1,5 @@
 import { REPORT_MULTIPLIER, reports } from '../data/mock.js'
-import { TopBar } from '../components/Chrome.jsx'
+import { BarAction, TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -16,11 +16,28 @@ import { rupees, useStore } from '../store.jsx'
  * `mock.js` — so if the reference numbers turn up, one constant changes.
  */
 export default function Reports() {
-  const { showToast, addToCart, buyNow, spending, balance } = useStore()
+  const { showToast, addToCart, buyNow, spending, balance, cartCount, setCartOpen } = useStore()
 
   return (
     <>
-      <TopBar title="Reports" back backTo="/profile" sub={`${reports.length} available`} />
+      {/* Add to cart used to be a one-way door on this screen: the sheet is
+          mounted globally but Shop held the only opener, so a report added
+          here could only be paid for by walking to Shop. */}
+      <TopBar
+        title="Reports"
+        back
+        backTo="/profile"
+        sub={`${reports.length} available`}
+        right={
+          <BarAction
+            onClick={() => setCartOpen(true)}
+            badge={cartCount || null}
+            label={`Cart, ${cartCount} items`}
+          >
+            Cart
+          </BarAction>
+        }
+      />
 
       <section className="border-b border-rule px-5 py-6">
         <p className="font-display text-title leading-tight t-heading">
@@ -96,8 +113,8 @@ export default function Reports() {
         </ul>
 
         <p className="mt-8 text-center text-meta t-faint">
-          Prices shown are {REPORT_MULTIPLIER}× the standard catalogue rate. Prototype — nothing is
-          charged and no report is generated.
+          Prices shown are {REPORT_MULTIPLIER}× the standard catalogue rate. The wallet is
+          charged for real. No report is generated — that is phase 10.
         </p>
 
         <PopButton size="sm" className="mt-6" onClick={() => showToast('Sample — prototype only')}>

@@ -10,6 +10,69 @@ import { rupees, useStore } from '../store.jsx'
 import { listConsultants, listMyBookings } from '../lib/consultants.js'
 
 /**
+ * The free tools, as circles above the search field.
+ *
+ * They started here, moved to the top of Home on the argument that free
+ * belongs on the first screen before anything asks for money, and are back.
+ * **That reversed on 7 Sep 2026.** Home is a stream, and a row of circles
+ * pinned above a stream is furniture the scroll immediately buries. Consult is
+ * where somebody arrives already asking a question, and the honest answer to
+ * most of them is one of these four rather than a paid session — so they sit
+ * above the search field, in front of the thing that costs money.
+ *
+ * They render in the empty-roster branch too. With nobody approved there is
+ * nothing to consult and these are the only working answers on the screen;
+ * dropping them there would take the free half of the app off production
+ * entirely, because production's roster is empty by decision (`01-PRD.md` §7).
+ *
+ * Each is a route or an overlay; none of them opens a dead end.
+ */
+const FREE_TOOLS = [
+  {
+    key: 'horoscope',
+    label: 'tool.horoscope',
+    icon: 'horoscope',
+    act: ({ setHoroscopeOpen }) => setHoroscopeOpen(true),
+  },
+  { key: 'ai', label: 'tool.ai', icon: 'ai', act: ({ openChat }) => openChat('ai') },
+  { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
+  { key: 'match', label: 'tool.match', icon: 'consult', to: '/people' },
+]
+
+/** Circles, because a circle reads as a tool and a card reads as content. */
+function FreeTools() {
+  const { openChat, setHoroscopeOpen, t } = useStore()
+  const bag = { openChat, setHoroscopeOpen }
+
+  return (
+    <section className="px-2 pb-1 pt-3">
+      <ul className="flex items-start justify-around">
+        {FREE_TOOLS.map((f) => (
+          <li key={f.key}>
+            {f.to ? (
+              <Link to={f.to} className="tile w-[76px]">
+                <span className="tile-face">
+                  <Icon name={f.icon} size={23} />
+                </span>
+                <span className="caps-sm leading-tight t-body">{t(f.label)}</span>
+              </Link>
+            ) : (
+              <button type="button" onClick={() => f.act(bag)} className="tile w-[76px]">
+                <span className="tile-face">
+                  <Icon name={f.icon} size={23} />
+                </span>
+                <span className="caps-sm leading-tight t-body">{t(f.label)}</span>
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-center caps-sm t-faint">{t('a.free')}</p>
+    </section>
+  )
+}
+
+/**
  * The three promo banners at the top of Consult — same object as Shop's, a
  * gradient block with one CTA, just themed for this roster. Kept as a local
  * const rather than a mock.js export: Shop.jsx set that precedent (its own
@@ -161,6 +224,7 @@ export default function Consult() {
     return (
       <>
         <TabHeader />
+        <FreeTools />
         <section className="px-5 pt-6">
           <NobodyYet />
         </section>
@@ -172,6 +236,8 @@ export default function Consult() {
   return (
     <>
       <TabHeader />
+
+      <FreeTools />
 
       <Search value={query} onChange={setQuery} placeholder="Search by name, concern or language" />
 
@@ -187,7 +253,7 @@ export default function Consult() {
                 else if (b.id === 'bn-refer') showToast('Opening invite — prototype only')
                 else showToast('Offer — prototype only')
               }}
-              className="banner w-[86%] p-5 text-left"
+              className="banner w-[86%] p-3 text-left"
               style={{
                 backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
                 animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
@@ -200,13 +266,20 @@ export default function Consult() {
               />
               <span className="sheen animate-sweep" style={{ animationDelay: `${i * 2}s` }} />
 
-              <span className="relative block">
+              {/* Half height, 7 Sep 2026 — 197px to ~98px. Padding, type step
+                  and CTA all come down, and `note` is dropped rather than
+                  shrunk: two lines of 13px is most of the height being cut,
+                  and a banner is a kicker, a claim and a way in. The note is
+                  still on the object, so restoring it is one line. */}
+              {/* `flex flex-col`, not `block`. As a block the children are
+                  inline and the last one carries a line-box descender — 11px
+                  of dead space under the CTA that no padding rule explains. */}
+              <span className="relative flex flex-col items-start">
                 <span className="caps-sm text-white/70">{b.kicker}</span>
-                <span className="mt-2.5 block max-w-[16ch] text-title font-medium leading-tight text-white">
+                <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
                   {b.title}
                 </span>
-                <span className="mt-2 block max-w-[26ch] text-meta text-white/75">{b.note}</span>
-                <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 caps-sm text-ink shadow-md">
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
                   {b.cta} <span aria-hidden="true">→</span>
                 </span>
               </span>
