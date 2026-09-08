@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 8 Sep 2026.
+Updated 9 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -957,6 +957,9 @@ service; `02-TRD.md` §8 owns that decision and now also owns the settings.
 | `backend/schema/019_astro_cache_check.sql` | Passes on dev |
 | `backend/functions/astro/index.ts` | The per-rashi rewrite is on **both** — dev v9, production v5, `verify_jwt` on either side |
 | Front end | `src/lib/astro.js` plus eleven screens and components |
+| `backend/functions/astro/canonical.json` | The twelve births, split out of `index.ts` on 9 Sep so the verifier below checks the same rows the function reads rather than a copy |
+| `backend/tools/verify-canonical-births.mjs` | Checks all twelve against the vendor in one command. **Not yet run** — it needs `FREE_ASTRO_API_KEY`, which lives in the function secrets and comes back as a digest from the CLI |
+| `backend/tools/astro-usage.mjs` | What we have actually spent. One cache row is one upstream request, so the table is an exact ledger |
 
 **The reference chart is Indira Gandhi**, 19 Nov 1917, 23:11, Allahabad — Rodden
 AA, and pre-1945, so it answers done-conditions 2 and 3 with one birth. It was
@@ -1128,14 +1131,25 @@ on the canonical birth, which is why the dasha is dropped from the glance row
 and why every screen showing a reading names the sign. `02-TRD.md` §8 has the
 accounting of what is right and what is not.
 
-**One thing is not solved and must be looked at before production.** The dasha
-is gone from the glance row but **not from the vendor's prose**, which is the
-body of the reading — seen on dev 7 Sep: *"Rahu brings the current dasha stack
-into sharper focus today. The active Vimshottari stack is Jupiter / Venus /
-Venus."* Under twelve canonical births that sentence describes an invented
-person. It cannot be dropped without dropping the reading's body, and rewriting
-somebody else's prose to hide where it came from is worse than the problem.
-`02-TRD.md` §8 lists the three ways out.
+**The reading is much smaller since 9 Sep, and that is the fix rather than a
+regression.** Reading a live payload showed the canonical birth contaminates
+almost all of it, not just the dasha: the scores, every section, the remedy
+block, and an asserted `lagna` and Moon nakshatra that belong to the invented
+person. The daily reading now renders only the panchang mood and the day's four
+clock windows, which are the two things in the payload that are true for the
+person reading them. Headline, summary, score, four area ratings, Do/Don't,
+transits, long sections and the reflection are all gone. `02-TRD.md` §8 has the
+field-by-field table.
+
+**The rashi label came off every reading surface at the same time**, because the
+surviving fields are byte-identical across all twelve signs — checked against
+two cached days, not assumed. A sign named beside content that does not vary by
+sign claims something that is not there. The reader's own moon sign still shows
+in the headers, off their own chart.
+
+**So the personal-horoscope endpoint now returns twelve copies of one answer a
+day.** It is on notice; §8 names gochara computed here as the successor and that
+is the next decision, not a thing already done.
 
 Each canonical Moon sits within 0.05° of the middle of its sign — the Moon
 crosses a sign every 2.2 days, so a birth near a boundary would give every
@@ -1201,14 +1215,21 @@ wrote `canon-chart:Libra` with the vendor's own Moon in Libra, then
 is trusted. `+919999900001` (Moon in Cancer) did the same for Cancer. Both
 screens named the sign: *LIBRA RASHI*, *CANCER RASHI*.
 
-**The other ten are unverified against the vendor and that is a stated
-position, not an oversight.** They come from the same arithmetic as the two
-that passed, they sit within 0.05° of their sign's midpoint, and if any is
-wrong the function refuses with *"Charts are unavailable right now"* and names
-it in the log rather than serving the neighbouring rashi's reading. A visible
-failure for one sign, never a silent wrong answer. Warming the remaining ten
-needs an account whose Moon is in each, so it happens as real users arrive —
-**watch the function log for `CANONICAL BIRTH IS WRONG`.**
+**The other ten are still unverified against the vendor, and there is now a
+command for it**: `node backend/tools/verify-canonical-births.mjs`, which needs
+`FREE_ASTRO_API_KEY` from the function secrets — the CLI returns secrets as
+digests, so it has to be run by a person who can read the key. It also warns on
+any birth within 5° of a sign boundary rather than only on an outright wrong
+one.
+
+Until somebody runs it, the position is unchanged and it is safe rather than
+merely hopeful: the ten come from the same arithmetic as the two that passed and
+sit within 0.05° of their sign's midpoint, and if any is wrong the function
+refuses with *"Charts are unavailable right now"* and logs
+`CANONICAL BIRTH IS WRONG` rather than serving the neighbouring rashi's reading.
+A visible failure for one sign, never a silent wrong answer. Without the script
+that guard only fires when a real person of that sign signs in, which is exactly
+the wait the script exists to end.
 
 **One chart form now: the North Indian square** (7 Sep). The Western wheel
 (`ChartWheel.jsx`, deleted) and the South Indian square (`ChartSouth`, removed

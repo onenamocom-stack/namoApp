@@ -252,22 +252,38 @@ function ReadingCard() {
           <>
             <p className="caps-sm gold">
               {longDate(day.date)}
-              {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
-                chosen by rashi rather than one computed from this person's
-                birth, and a sign reading shown without its sign reads as a
-                personal one. */}
-              {horoscope.rashi && <span className="t-faint"> · {horoscope.rashi} rashi</span>}
+              {/* NO RASHI LABEL HERE ANY MORE, 9 Sep, and removing it is the
+                honest move rather than a retreat. What is left of this reading
+                after the canonical-birth fields came out is the panchang mood
+                and the day's clock windows — and those are byte-identical
+                across all twelve signs, checked. Naming a sign beside content
+                that does not vary by sign claims a personalisation that is not
+                there, which is the same failure as the fields we just removed.
+                The reader's own moon sign still appears where it is true: in
+                the header, off their own chart. */}
             </p>
-            <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
-            <p className="mt-3 text-body t-body">{day.body}</p>
+            {/* THE HEADLINE, THE SUMMARY AND THE 0-100 SCORE ARE GONE, 9 Sep.
+                All three were computed from the canonical birth this reading
+                comes from rather than from the reader — the score is weighted
+                by that invented person's dasha, and the headline named it out
+                loud. What is left is the day itself, which is the same day for
+                everybody and true for all of them. `readingFrom()` has the
+                field-by-field reasoning. */}
+            <p className="mt-3 text-body t-body">{day.dayMood}</p>
 
-            {day.intensity !== null && (
+            {day.windows.length > 0 && (
               <div className="mt-5 border-t border-stroke pt-4">
-                <div className="mb-2 flex items-baseline justify-between">
-                  <span className="caps-sm t-faint">Overall</span>
-                  <span className="caps-sm gold tnum">{day.intensity}/100</span>
-                </div>
-                <PopBar value={day.intensity} />
+                <span className="caps-sm t-faint">Windows</span>
+                <ul className="mt-2">
+                  {day.windows.map((w) => (
+                    <li key={w.key} className="flex items-baseline justify-between py-1">
+                      <span className="text-meta t-body">{w.label}</span>
+                      <span className="text-meta t-faint tnum">
+                        {w.start} – {w.end}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </>

@@ -1,0 +1,20 @@
+{
+  "_why": "The twelve canonical births, one per rashi. Read by index.ts at runtime and by backend/tools/verify-canonical-births.mjs. It lives in its own file so those two cannot drift: a table copied into a verifier verifies the copy. See docs/02-TRD.md section 8 for what this costs and index.ts for how it is used.",
+  "_margin": "Each Moon sits within 0.05 degrees of the middle of its sign. The Moon crosses a sign every 2.2 days, so a birth chosen near a boundary would hand every reader of one rashi the neighbouring rashi's reading, forever and silently. Fifteen degrees of margin either side means no arithmetic error reaches an edge.",
+  "_place": "All twelve are born at Ujjain, the same anchor the panchang uses, so a reading's timing windows agree with the almanac card beside it.",
+  "place": { "lat": 23.1765, "lng": 75.7885, "tz_str": "Asia/Kolkata" },
+  "births": {
+    "Aries":       { "year": 1995, "month": 6, "day": 23, "hour": 10, "minute": 40 },
+    "Taurus":      { "year": 1995, "month": 6, "day": 25, "hour": 23, "minute": 30 },
+    "Gemini":      { "year": 1995, "month": 6, "day": 28, "hour": 12, "minute": 10 },
+    "Cancer":      { "year": 1995, "month": 6, "day": 3,  "hour": 18, "minute": 10 },
+    "Leo":         { "year": 1995, "month": 6, "day": 6,  "hour": 3,  "minute": 50 },
+    "Virgo":       { "year": 1995, "month": 6, "day": 8,  "hour": 10, "minute": 20 },
+    "Libra":       { "year": 1995, "month": 6, "day": 10, "hour": 13, "minute": 10 },
+    "Scorpio":     { "year": 1995, "month": 6, "day": 12, "hour": 13, "minute": 20 },
+    "Sagittarius": { "year": 1995, "month": 6, "day": 14, "hour": 12, "minute": 30 },
+    "Capricorn":   { "year": 1995, "month": 6, "day": 16, "hour": 12, "minute": 50 },
+    "Aquarius":    { "year": 1995, "month": 6, "day": 18, "hour": 16, "minute": 10 },
+    "Pisces":      { "year": 1995, "month": 6, "day": 20, "hour": 23, "minute": 40 }
+  }
+}

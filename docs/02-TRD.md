@@ -436,14 +436,53 @@ panchang names Ujjain: a sign reading presented as a personal one is wrong
 without looking wrong, and a sign reading labelled as one is what every rashifal
 in the country already is.
 
-**The unsolved half, stated rather than buried.** The reading's body is the
-vendor's prose, and that prose names the dasha of the birth it was computed
-from. Dropping the structured `dasha` field removes it from the glance row and
-does nothing to the sentence. Three ways out, none taken yet: accept it, cut
-`narrative.summary` and show only the theme, remedy and scores, or string-surgery
-the vendor's sentences. The third is refused — editing somebody else's prose to
-hide where it came from is worse than the problem. **This is the reason to
-revisit the decision, and it should be revisited before production.**
+**The contamination is far wider than the dasha, found 9 Sep by reading a live
+payload.** The paragraph that stood here said the dasha survived only in the
+vendor's prose. That was wrong, and the correction matters because the decision
+to use canonical births was taken on it:
+
+| Field | True for the reader? |
+|---|---|
+| `timing.*` — abhijit, rahu_kalam, yamaganda, gulika, chaughadia, hora | **Yes.** A function of the date at Ujjain |
+| `narrative.best_use` | **Yes.** Pure panchang mood |
+| `theme.headline`, `narrative.summary`, `narrative.opportunity` | No — dasha-derived |
+| `scores.*` and every `sections[]` band, advice and explanation | No — weighted by dasha influences |
+| `remedy.*` | No — `remedy.basis.dominant_dasha_lord` says so in the payload |
+| `profile.lagna`, `profile.moon.nakshatra`, `profile.active_dasha_stack` | No — the canonical person's |
+| `influences[]` | No — every entry is `active_dasha_lord_gochar_peak`, `dasha_gochar_alignment` or a nakshatra-derived `moon_state_window` |
+
+"Career 94/100, support comes through Jupiter activates the dasha stack" is a
+statement about nobody. **So `readingFrom()` in `src/lib/astro.js` now returns
+only the two true rows and the screens render only those.** The daily reading
+lost its headline, its summary, its score, its four area ratings, its Do/Don't
+lists, its transits, its long sections and its reflection. That is a large loss
+and it is the correct one: the alternative was a full screen of confident text
+about an invented person.
+
+**AND THE SURVIVING FIELDS ARE IDENTICAL ACROSS ALL TWELVE SIGNS — checked, not
+assumed.** `rashifal:Cancer:2026-09-08` and `rashifal:Libra:2026-09-08` hold
+byte-identical `narrative.best_use` and byte-identical `abhijit`, `rahu_kalam`,
+`yamaganda` and `gulika`. They are functions of the day and the place, and the
+place is Ujjain for all twelve.
+
+Two consequences, and the second is the one to act on:
+
+- **The rashi label came off every reading surface**, 9 Sep. Naming a sign
+  beside content that does not vary by sign claims a personalisation that is not
+  there, which is the same failure as the fields just removed. The reader's own
+  moon sign still appears in the headers, where it comes off their own chart and
+  is true.
+- **The personal-horoscope endpoint no longer earns its calls.** Twelve requests
+  a day now return twelve copies of one answer. One would do — or none, since
+  the shared `panchang` op already covers the same day, missing only three of
+  the four windows and the mood sentence.
+
+**The honest successor is gochara, computed here.** One transit chart a day,
+then each planet's house counted from each rashi — which is what a rashifal
+actually is, depends on nothing but the sign, and is true for everyone under it.
+It gives twelve genuinely different readings for one API call a day instead of
+twelve identical ones for twelve. **That is the next decision on this page**, and
+it is a build rather than a deletion, so it has not been taken here.
 
 **Each canonical Moon sits within 0.05° of the middle of its sign.** That is the
 safety margin, and it is deliberate: the Moon crosses a sign every 2.2 days, so
@@ -458,7 +497,7 @@ protects against our arithmetic; the check protects against a typo in the table.
 
 | | Before | After |
 |---|---|---|
-| Daily reading | one per person per day | **twelve a day, total** |
+| Daily reading | one per person per day | **twelve a day, total** — and since 9 Sep those twelve return identical content, so the honest number is one. See below |
 | Natal chart | one per person, ever | one per person, ever — and now every reader has one, because it is what picks their rashi |
 | Canonical charts | — | twelve, ever |
 | Panchang | one a day, total | one a day, total |

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Kicker, PopBar, PopButton, PopCard, PopTag } from './Pop.jsx'
+import { Kicker, PopButton } from './Pop.jsx'
 import { useStore } from '../store.jsx'
 import { istDate, longDate, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
@@ -56,7 +56,6 @@ export default function HoroscopePanel() {
   if (!horoscopeOpen) return null
 
   const day = readingFrom(horoscope.payload, key, null)
-  const transit = day?.transits[0]
   const close = () => setHoroscopeOpen(false)
 
   return (
@@ -126,64 +125,53 @@ export default function HoroscopePanel() {
           <section className="border-b border-rule px-4 py-5">
             <p className="caps-sm gold">
               {longDate(day.date)}
-              {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
-                chosen by rashi rather than one computed from this person's
-                birth, and a sign reading shown without its sign reads as a
-                personal one. */}
-              {horoscope.rashi && <span className="t-faint"> · {horoscope.rashi} rashi</span>}
+              {/* NO RASHI LABEL HERE ANY MORE, 9 Sep, and removing it is the
+                honest move rather than a retreat. What is left of this reading
+                after the canonical-birth fields came out is the panchang mood
+                and the day's clock windows — and those are byte-identical
+                across all twelve signs, checked. Naming a sign beside content
+                that does not vary by sign claims a personalisation that is not
+                there, which is the same failure as the fields we just removed.
+                The reader's own moon sign still appears where it is true: in
+                the header, off their own chart. */}
             </p>
-            <h2 className="mt-2 font-display text-title leading-tight t-heading">{day.headline}</h2>
-            <p className="mt-3 text-meta t-body">{day.body}</p>
+            {/* THE HEADLINE, THE SUMMARY, THE SCORE, THE FOCUS, THE TRANSIT
+                AND THE FOUR AREA RATINGS ALL STOOD HERE AND ARE GONE, 9 Sep.
+                Every one of them was computed from the canonical birth this
+                reading comes from rather than from the reader: the ratings and
+                the score are weighted by that invented person's dasha, the
+                focus block is built on `remedy.basis.dominant_dasha_lord`, and
+                the only transits the payload carries are dasha alignments.
 
-            {/* Mood, lucky colour and lucky number stood here and are gone.
-                Nothing computes them, and a number presented as yours has to
-                come from somewhere. The overall score does come from
-                somewhere. */}
-            {day.intensity !== null && (
-              <div className="mt-5 border-t border-stroke pt-4">
-                <div className="mb-2 flex items-baseline justify-between">
-                  <span className="caps-sm t-faint">Overall</span>
-                  <span className="caps-sm gold tnum">{day.intensity}/100</span>
-                </div>
-                <PopBar value={day.intensity} />
-              </div>
-            )}
+                The old comment here said mood and lucky number were dropped
+                because nothing computes them. This is the same rule reaching
+                the fields that ARE computed — for somebody else. */}
+            <p className="mt-3 text-meta t-body">{day.dayMood}</p>
           </section>
 
-          <section className="border-b border-rule px-4 py-5">
-            <Kicker>{day.focusLabel}</Kicker>
-            <PopCard className="mt-3 p-3">
-              <p className="text-body t-heading">{day.focus}</p>
-            </PopCard>
-          </section>
-
-          {transit && (
+          {day.windows.length > 0 && (
             <section className="border-b border-rule px-4 py-5">
-              <Kicker>Current transit</Kicker>
-              <PopCard className="mt-3 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-meta t-heading">{transit.title}</p>
-                  <PopTag tone="gold">{transit.weight}</PopTag>
-                </div>
-                <p className="mt-2 text-meta t-body">{transit.body}</p>
-              </PopCard>
+              <Kicker>Windows</Kicker>
+              <ul className="mt-3">
+                {day.windows.map((w) => (
+                  <li
+                    key={w.key}
+                    className="flex items-baseline justify-between gap-3 border-b border-rule py-2.5"
+                  >
+                    <span className="text-meta t-body">{w.label}</span>
+                    <span className="flex-none text-meta t-faint tnum">
+                      {w.start} – {w.end}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-meta t-faint">
+                Clock windows for the day at Ujjain, the same for everyone. Your own placements are
+                on your chart.
+              </p>
             </section>
           )}
 
-          <section className="border-b border-rule px-4 py-5">
-            <Kicker>Across four areas</Kicker>
-            <ul className="mt-3">
-              {Object.entries(day.ratings)
-                .filter(([, value]) => value !== null)
-                .map(([area, value]) => (
-                  <li key={area} className="flex items-center gap-3 border-b border-rule py-2.5">
-                    <span className="w-14 flex-none caps-sm t-faint">{area}</span>
-                    <PopBar value={value} className="flex-1" />
-                    <span className="w-10 flex-none text-right caps-sm tnum t-sub">{value}</span>
-                  </li>
-                ))}
-            </ul>
-          </section>
             </>
           )}
 

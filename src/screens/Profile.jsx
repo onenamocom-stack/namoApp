@@ -3,8 +3,8 @@ import { sessionHistory } from '../data/mock.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { ChartNorth } from '../components/ChartSquare.jsx'
-import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
-import { Acts, Row, Segmented } from '../components/Primitives.jsx'
+import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
+import { Row, Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, longDate, readingFrom, signLine, useAstro, useMyChart } from '../lib/astro.js'
 
@@ -194,18 +194,22 @@ function Overview() {
 /* ── Horoscope tab ───────────────────────────────────────────────────────── */
 
 /**
- * The daily reading, as a tab. Summary cards, the three placements, the
- * current transit and a short reading — the compact version. The full
- * three-day view with Do/Don't and transits lives on `/horoscope`.
+ * The daily reading, as a tab — the day itself and the reader's own three
+ * placements, which are the two things here that are true.
+ *
+ * It used to carry a transit, a short reading, a focus card and four area
+ * ratings. All four came from the canonical birth behind the rashi rather than
+ * from the reader (`readingFrom()` in lib/astro.js has the field list), so they
+ * are gone rather than relabelled. The placements stay because they come from
+ * this person's own chart.
  */
 function HoroscopeTab() {
-  const { showToast, hasFlag, toggleFlag, session, sessionReady } = useStore()
+  const { session, sessionReady } = useStore()
   const who = session?.user?.id ?? null
   const mine = useMyChart({ ready: sessionReady, who })
   const horoscope = useAstro('horoscope', { ready: sessionReady, who })
 
   const day = readingFrom(horoscope.payload, 'today', null)
-  const transit = day?.transits[0]
 
   /* The whole tab is one reading. If there is not one, say why once at the top
      rather than four times down the page in four different empty cards. */
@@ -239,26 +243,19 @@ function HoroscopeTab() {
         <PopCard raised className="mt-4 p-5">
           <p className="caps-sm gold">
             {longDate(day.date)}
-            {/* NAMED, NOT IMPLIED. Since 7 Sep the reading is one of twelve
-                chosen by rashi rather than one computed from this person's
-                birth, and a sign reading shown without its sign reads as a
-                personal one. */}
-            {horoscope.rashi && <span className="t-faint"> · {horoscope.rashi} rashi</span>}
+            {/* NO RASHI LABEL HERE ANY MORE, 9 Sep. What survives of this
+                reading is the panchang mood and the day's windows, and those
+                are byte-identical across all twelve signs — checked. Naming a
+                sign beside content that does not vary by sign claims a
+                personalisation that is not there. The reader's own moon sign
+                still appears where it is true: in Your placements below, off
+                their own chart. */}
           </p>
-          <h2 className="mt-3 font-display text-title leading-tight t-heading">{day.headline}</h2>
-
-          {day.intensity !== null && (
-            <div className="mt-5 border-t border-stroke pt-4">
-              <div className="mb-2 flex items-baseline justify-between">
-                <span className="caps-sm t-faint">Overall</span>
-                <span className="caps-sm gold tnum">{day.intensity}/100</span>
-              </div>
-              <PopBar value={day.intensity} />
-              <p className="mt-2 text-meta t-faint">
-                The day&apos;s own score, out of a hundred, before you do anything with it.
-              </p>
-            </div>
-          )}
+          {/* THE HEADLINE AND THE OVERALL SCORE ARE GONE, 9 Sep. Both came
+              from the canonical birth behind this rashi, and the score was
+              weighted by that invented person's dasha — "the day's own score
+              before you do anything with it" was not this reader's day. */}
+          <p className="mt-3 text-read t-sub">{day.dayMood}</p>
         </PopCard>
       </section>
 
@@ -284,63 +281,13 @@ function HoroscopeTab() {
         </div>
       </section>
 
-      {/* Current transit */}
-      {transit && (
-        <section className="border-b border-rule px-5 py-6">
-          <Kicker>Current transit</Kicker>
-          <PopCard className="mt-4 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-body t-heading">{transit.title}</p>
-              <PopTag tone="gold">{transit.weight}</PopTag>
-            </div>
-            <p className="mt-3 text-meta t-body">{transit.body}</p>
-          </PopCard>
-        </section>
-      )}
+      {/* THE TRANSIT, THE READING AND THE FOUR RATINGS STOOD HERE AND ARE
+          GONE, 9 Sep. Every one was the canonical birth's: the only transits
+          the payload carries are alignments to that person's dasha, the focus
+          card is built on `remedy.basis.dominant_dasha_lord`, and love /
+          career / health / money are scores weighted by both. The placements
+          above are the reader's own and stay — they come from their chart. */}
 
-      {/* Daily reading */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>Daily reading</Kicker>
-        <p className="mt-4 text-read t-sub">{day.body}</p>
-
-        <PopCard className="mt-5 p-4">
-          <p className="caps-sm gold">{day.focusLabel}</p>
-          <p className="mt-2 text-body t-heading">{day.focus}</p>
-        </PopCard>
-
-        <Acts
-          className="mt-5"
-          items={[
-            {
-              label: 'Save',
-              onLabel: 'Saved',
-              on: hasFlag('save:day-today'),
-              onClick: () =>
-                toggleFlag('save:day-today', {
-                  on: 'Saved to your readings',
-                  off: 'Removed from your readings',
-                }),
-            },
-            { label: 'Share', onClick: () => showToast('Reading copied') },
-          ]}
-        />
-      </section>
-
-      {/* Ratings */}
-      <section className="px-5 py-6">
-        <Kicker>Across four areas</Kicker>
-        <ul className="mt-4">
-          {Object.entries(day.ratings)
-            .filter(([, value]) => value !== null)
-            .map(([area, value]) => (
-              <li key={area} className="flex items-center gap-4 border-b border-rule py-3.5">
-                <span className="w-16 flex-none caps-sm t-faint">{area}</span>
-                <PopBar value={value} className="flex-1" />
-                <span className="w-10 flex-none text-right caps-sm tnum t-sub">{value}</span>
-              </li>
-            ))}
-        </ul>
-      </section>
     </>
   )
 }

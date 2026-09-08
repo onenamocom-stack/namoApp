@@ -24,3 +24,11 @@ Bhaktambar Guidance Card/
 *key*.txt
 *key*.csv
 *.pem
+
+# Supabase CLI scratch. Running the CLI from the repo root drops a
+# `supabase/.temp/linked-project.json` here naming a project ref — a second,
+# silent answer to "which project is in force" sitting beside `.mcp.json`.
+# INSTRUCTIONS.md §3 lost a phase to exactly that disagreement, in a different
+# file. The functions live in `backend/functions/`; this directory is never
+# ours, so it never enters git.
+supabase/

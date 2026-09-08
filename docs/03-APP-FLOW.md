@@ -390,16 +390,25 @@ stamped with the IST day. What that changes on screen:
   the same almanac either way, so a signed-out reader on `/horoscope` gets the
   entry `/home` already wrote.
 
-**The daily reading is one of twelve, chosen by rashi** — since 7 Sep, and this
-is visible on screen rather than only in the request count. Every surface that
-shows a reading names the sign it is for, beside the date: the home reading
-card, the horoscope overlay, `/horoscope` and `/profile/horoscope`. **The dasha
-line is gone from the at-a-glance row**, because a Vimshottari period belongs to
-a birth and the reading is no longer computed from the reader's.
+**The daily reading is now the day itself, not a reading of the person** —
+9 Sep. It shows the panchang mood sentence and the four clock windows (Abhijit,
+Rahu Kalam, Yamaganda, Gulika) and nothing else. Gone from all four surfaces —
+the home reading card, the horoscope overlay, `/horoscope` and
+`/profile/horoscope` — are the headline, the summary, the 0–100 score, the four
+area ratings, the Do/Don't lists, the transits, the long sections and the
+reflection. Every one of them was computed from a birth that is not the
+reader's (`02-TRD.md` §8 has the field table).
 
-Which rashi is read off the reader's own natal chart — the Moon's sign, which
-survives an unknown birth time — so a reading now depends on the chart having
-loaded once. That costs one request per account, ever, and nothing daily.
+**No surface names a rashi any more.** They did for two days. The surviving
+fields are identical across all twelve signs, so a sign printed beside them
+claimed a personalisation that was not there. `/horoscope` says on screen that
+the day is the same for everyone and links to `/chart`, which is where anything
+that turns on a birth actually lives. The reader's own moon sign still appears
+in the headers, where it comes off their own chart.
+
+The reading still depends on the chart having loaded once, because the rashi is
+what selects which of the twelve is fetched. That costs one request per account,
+ever, and nothing daily.
 
 **The sun, moon and rising line in a header comes from the CHART**, not from the
 day's reading. It used to read the reading's `profile` block, which meant a

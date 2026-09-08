@@ -64,43 +64,22 @@ const PANCHANG_ANCHOR = { lat: 23.1765, lng: 75.7885, zone: 'Asia/Kolkata', city
 // the chart on the next screen. So the twelve readings come from the personal
 // endpoint driven by twelve fixed births, one whose Moon stands in each sign.
 //
-// WHAT THIS COSTS, STATED PLAINLY BECAUSE IT IS NOT FREE: the reading is a
-// function of a birth that is not the reader's. Everything in it that is a
-// function of the RASHI is honest — the Moon's sign is exactly right, and
-// transits to it are the reader's own. Everything that is a function of the
-// rest of that birth is not, which is why the dasha is dropped in
-// `readingFrom()` and every screen showing this says "Rashifal" and names the
-// sign. A sign reading presented as a personal one is the silent wrongness this
-// file exists to avoid; a sign reading labelled as one is what every rashifal
-// in the country already is.
+// WHAT THIS COSTS IS LARGER THAN IT FIRST LOOKED, and `readingFrom()` in
+// src/lib/astro.js is where the consequence is handled. The payload's `profile`
+// asserts a lagna and a Moon nakshatra belonging to the invented person, and
+// every influence driving `scores` and `sections` is dasha-derived. Only the
+// `timing` windows and the panchang mood are true for every reader of the sign,
+// and only those are rendered. docs/02-TRD.md §8 has the field-by-field table.
 //
-// EACH MOON SITS WITHIN 0.05 DEGREES OF THE MIDDLE OF ITS SIGN. That is
-// deliberate and it is the safety margin: the Moon crosses a sign every 2.2
-// days, so a birth chosen near a boundary would hand every reader of one rashi
-// the neighbouring rashi's reading, forever and silently. Fifteen degrees of
-// margin on both sides means no error anybody could make here reaches the edge.
-// The horoscope branch still fetches each canonical chart once and checks its
-// Moon anyway, because the margin protects against our arithmetic and not
-// against a typo in this table.
-//
-// All twelve are born at Ujjain, the same anchor the panchang uses, so the
-// timing windows in a reading agree with the almanac card beside it.
-const CANONICAL_PLACE = { lat: 23.1765, lng: 75.7885, tz_str: 'Asia/Kolkata' }
+// THE TABLE ITSELF LIVES IN `canonical.json`, not here, so that
+// `backend/tools/verify-canonical-births.mjs` can check the same rows this
+// reads rather than a copy of them. A verifier holding its own copy of the
+// table verifies the copy.
+import CANONICAL_FILE from './canonical.json' with { type: 'json' }
 
-const CANONICAL: Record<string, { year: number; month: number; day: number; hour: number; minute: number }> = {
-  Aries:       { year: 1995, month: 6, day: 23, hour: 10, minute: 40 },
-  Taurus:      { year: 1995, month: 6, day: 25, hour: 23, minute: 30 },
-  Gemini:      { year: 1995, month: 6, day: 28, hour: 12, minute: 10 },
-  Cancer:      { year: 1995, month: 6, day: 3,  hour: 18, minute: 10 },
-  Leo:         { year: 1995, month: 6, day: 6,  hour: 3,  minute: 50 },
-  Virgo:       { year: 1995, month: 6, day: 8,  hour: 10, minute: 20 },
-  Libra:       { year: 1995, month: 6, day: 10, hour: 13, minute: 10 },
-  Scorpio:     { year: 1995, month: 6, day: 12, hour: 13, minute: 20 },
-  Sagittarius: { year: 1995, month: 6, day: 14, hour: 12, minute: 30 },
-  Capricorn:   { year: 1995, month: 6, day: 16, hour: 12, minute: 50 },
-  Aquarius:    { year: 1995, month: 6, day: 18, hour: 16, minute: 10 },
-  Pisces:      { year: 1995, month: 6, day: 20, hour: 23, minute: 40 },
-}
+const CANONICAL_PLACE = CANONICAL_FILE.place
+const CANONICAL: Record<string, { year: number; month: number; day: number; hour: number; minute: number }> =
+  CANONICAL_FILE.births
 
 const canonicalBirth = (rashi: string) => ({
   ...CANONICAL[rashi],

@@ -432,72 +432,58 @@ export function housesFrom(chart, timeKnown = true) {
 }
 
 /**
- * The daily reading, in the shape the horoscope screens were built against.
+ * The daily reading — reduced, on 9 Sep 2026, to the fields that are actually
+ * true for the person reading them.
  *
- * Fields the API does not compute are GONE rather than invented: mood, lucky
- * colour, lucky number, and the sign-compatibility lists. A number presented
- * as your lucky one has to come from somewhere, and "we made it up" is not a
- * somewhere this app is willing to have.
+ * WHY IT IS SO SHORT NOW. Since 7 Sep the reading is one of twelve chosen by
+ * rashi and computed from a canonical birth, not the reader's. The intent was
+ * that only the dasha came from that invented person. Reading a live payload
+ * showed otherwise, and the list is long: `profile` asserts a `lagna.sign` and
+ * a `moon.nakshatra`/`pada` that belong to the canonical person; every entry in
+ * `influences` is `active_dasha_lord_gochar_peak` or `dasha_gochar_alignment`;
+ * and `scores` and `sections` are weighted by those influences, so "Career
+ * 94/100 — support comes through Jupiter activates the dasha stack" is a
+ * statement about nobody at all. `theme.headline`, `narrative.summary`,
+ * `narrative.opportunity` and the whole `remedy` block go the same way —
+ * `remedy.basis.dominant_dasha_lord` says so in the payload itself.
+ *
+ * What survives is what is a function of the DAY AND THE PLACE rather than of a
+ * birth: the panchang windows, and the panchang mood sentence. Those are true
+ * for every reader of every sign, which is a weaker claim than the screen used
+ * to make and the first one it can actually support.
+ *
+ * This is the same rule the old comment here already applied to mood, lucky
+ * colour and lucky number — fields nothing honestly computes are deleted rather
+ * than invented. The only change is recognising that a field computed for the
+ * WRONG PERSON is in exactly that category. docs/02-TRD.md §8 carries the
+ * field-by-field table and the reason the endpoint is now on notice.
  */
 export function readingFrom(horoscope, label, context) {
   if (!horoscope) return null
 
-  const s = horoscope.scores ?? {}
   const t = horoscope.timing ?? {}
 
   return {
     label,
     context,
     date: horoscope.meta?.target_date ?? null,
-    headline: horoscope.theme?.headline ?? '',
-    body: horoscope.narrative?.summary ?? '',
-    focus: horoscope.remedy?.simple_action ?? '',
-    focusLabel: horoscope.remedy?.focus ?? 'Do this',
-    // 0–100 already, and it is the API's own overall band rather than
-    // anything this file arithmetic'd into existence.
-    intensity: s.overall?.score ?? null,
-    /* NO DASHA HERE, and it used to be. A Vimshottari period is a function of
-       the Moon's exact degree at a particular birth, and since 7 Sep the
-       reading comes from one of twelve canonical births rather than the
-       reader's own — so the dasha on this payload is that invented person's,
-       not theirs. The sign is right and the transits to it are right; the
-       dasha is the one field that is not.
 
-       DROPPING IT HERE IS ONLY HALF THE FIX, and the other half is not solved:
-       `narrative.summary` below is the vendor's prose and it names the dasha in
-       sentences of its own. That is `02-TRD.md` §8's open problem, recorded
-       rather than quietly patched — string-surgery on somebody else's prose to
-       hide where it came from would be worse than the thing it hides. */
-    glance: [['Tone', s.overall?.band]]
-      .filter(([, v]) => v)
-      .map(([key, value]) => ({ key, value })),
-    power: horoscope.narrative?.opportunity ?? '',
-    pressure: horoscope.narrative?.caution ?? '',
-    reflections: [horoscope.remedy?.reflection, horoscope.remedy?.avoid].filter(Boolean),
-    do: [horoscope.remedy?.simple_action].filter(Boolean),
-    dont: [horoscope.remedy?.avoid].filter(Boolean),
-    ratings: {
-      love: s.relationships?.score ?? null,
-      career: s.career?.score ?? null,
-      health: s.health?.score ?? null,
-      money: s.wealth?.score ?? null,
-    },
-    sections: horoscope.sections ?? [],
-    /* NO PANCHANG HERE, deliberately, and it used to be.
-       The personal endpoint returns its own almanac computed at the reader's
-       BIRTH PLACE, while the shared `panchang` op is computed at Ujjain for
-       everybody. Rendering both would put two tithis on two screens for the
-       same day and let them disagree at a transition — which is exactly the
-       bug the mock had, a week apart, and which phase 7 was supposed to end.
-       The screen fetches the shared almanac instead. One source. */
-    transits: (horoscope.influences?.all_ranked ?? []).map((i) => ({
-      id: i.fact_id ?? i.id,
-      title: i.title,
-      body: i.summary,
-      weight: i.polarity,
-      window: horoscope.meta?.target_date ?? '',
-    })),
+    /* The panchang's own reading of the day — nakshatra, tithi and yoga, in a
+       sentence. A function of the date at Ujjain, so it is the same sentence
+       for everybody and it is true for all of them. */
+    dayMood: horoscope.narrative?.best_use ?? '',
+
+    /* Abhijit, Rahu Kalam, Yamaganda, Gulika. Clock windows for the day at the
+       anchor city, and the one part of this payload that was never about a
+       birth at all. */
     windows: [t.abhijit, t.rahu_kalam, t.yamaganda, t.gulika].filter(Boolean),
+
+    /* NO PANCHANG BLOCK HERE, deliberately, and it used to be. The personal
+       endpoint returns its own almanac computed at the birth place, while the
+       shared `panchang` op is computed at Ujjain for everybody. Rendering both
+       would put two tithis on two screens for the same day and let them
+       disagree at a transition — the mock's week-apart calendar bug. The
+       screens read the shared almanac. One source. */
   }
 }
 
