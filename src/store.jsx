@@ -13,6 +13,7 @@ import { translate } from './data/i18n.js'
 import { supabase } from './lib/supabase.js'
 import { bookSession as book } from './lib/consultants.js'
 import { clearAstroCache } from './lib/astro.js'
+import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -297,11 +298,22 @@ export function AppProvider({ children }) {
 
   /**
    * One flat set of boolean flags for every "sticky" toggle in the app:
-   * `follow:a1`, `save:po2`, `like:r3`, `remind:l4`. A screen that toggles a
-   * flag and then navigates away finds it still set on the way back — which is
-   * the difference between a prototype and a broken one.
+   * `follow:<id>`, `save:<id>`, `like:<id>`, `remind:<id>`, plus
+   * `setting:croppedDeityImage`, `offair:<room>`, `event:<id>` and the tarot
+   * pull keys. A screen that toggles a flag and then navigates away finds it
+   * still set on the way back.
+   *
+   * Since phase 9 the first four ALSO write a row, when the target is a real
+   * UUID and somebody is signed in — `lib/reactions.js` decides both. The Set
+   * stays because it is still the right answer for the rest of the keys, and
+   * because it keeps this optimistic: the toggle is instant, the row catches
+   * up, and a failed write is rolled back below rather than left lying.
+   *
+   * Deliberately unchanged: every `hasFlag` / `toggleFlag` call site. There are
+   * twenty-odd of them and none of them should have to know which flags are
+   * durable.
    */
-  const [flags, setFlags] = useState(() => new Set(['save:po2']))
+  const [flags, setFlags] = useState(() => new Set())
 
   const hasFlag = useCallback((key) => flags.has(key), [flags])
 
@@ -319,8 +331,48 @@ export function AppProvider({ children }) {
       clearTimeout(timer.current)
       timer.current = setTimeout(() => setToast(null), 2400)
     }
+
+    // Persist the four reaction kinds. `setReaction` returns false for keys
+    // this table cannot hold — a mock ID, a preference, a signed-out visitor —
+    // and those stay exactly as they were: local, and working.
+    if (parseKey(key)) {
+      setReaction(key, next).catch((err) => {
+        console.error('[reactions] write failed:', err.message)
+        // Put the Set back. A heart that stays filled after the write failed is
+        // the interface telling a lie it will be caught in on the next reload.
+        setFlags((prev) => {
+          const copy = new Set(prev)
+          if (next) copy.delete(key)
+          else copy.add(key)
+          return copy
+        })
+      })
+    }
     return next
   }, [])
+
+  /**
+   * Reactions belong to the account, not the tab. They are loaded on sign-in
+   * and dropped on sign-out — leaving one person's follows on screen for the
+   * next person to sign in on the same phone is the shared-device bug that
+   * `clearAstroCache` already exists to avoid.
+   */
+  useEffect(() => {
+    if (!session) {
+      setFlags((prev) => new Set([...prev].filter((k) => !parseKey(k))))
+      return
+    }
+    let active = true
+    fetchMyReactions()
+      .then((keys) => {
+        if (!active) return
+        setFlags((prev) => new Set([...prev, ...keys]))
+      })
+      .catch((err) => console.error('[reactions] load failed:', err.message))
+    return () => {
+      active = false
+    }
+  }, [session])
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -858,10 +910,14 @@ export function useConsultantFields(services = []) {
     fixed,
     perMinute,
     pricePaise: base?.price_paise ?? null,
-    // Phase 9 owns these. They are seed for everybody, visibly.
-    rating: pro.rating,
-    reviewCount: pro.reviewCount,
-    followers: pro.followers,
+    /* Phase 9 made these rows. `rating_avg_cache` and `rating_count_cache` are
+       maintained by a trigger over `reviews`, so they are the consultant's own
+       numbers rather than the seed person's 4.9 and 2,148. A consultant with no
+       reviews gets null and 0, and every screen renders that as "New". The
+       follower count is a COUNT and is fetched where it is shown, not here —
+       this hook has no consultant id to ask with until `consultant` lands. */
+    rating: consultant?.rating_avg_cache ?? null,
+    reviewCount: consultant?.rating_count_cache ?? 0,
   }
 }
 
