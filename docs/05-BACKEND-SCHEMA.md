@@ -663,12 +663,15 @@ price and a tax rate.** That point is the order line. So the discriminator sits
 on four columns instead of forty, real domain tables keep real constraints, and
 the ledger never learns what a course is.
 
-This also structurally kills a bug the mock already demonstrates. `premiumTiers`
-sells two products that are also in `reports` at a third of the price, and one of
-its tiers is the same SKU as a question pack at an identical price — one product
-sold from two tables (the figures are in `01-PRD.md` §5.2). **`premiumTiers`
-stops being a catalogue and becomes a merchandising view** over `reports` and
-`question_packs`, which forces that conflict to be resolved rather than encoded.
+This also matches what the mock now does. `premiumTiers` used to sell two
+products that were also in `reports` at a third of the price, plus a tier that
+was the same SKU as a question pack at an identical price — one product sold
+from two tables. That was resolved in the front end on 7 Sep 2026 (`01-PRD.md`
+§5.2 has the prices): **`premiumTiers` is no longer a catalogue but a
+merchandising view** over `reports` and `question_packs`, reading the price of
+whichever SKU each tier names. The schema inherits the resolution rather than
+having to force it — `products`, `courses` and the rest carry the price, and
+nothing that merely *presents* a SKU is allowed to restate one.
 
 `item_id` has no foreign key — it points into one of six tables. Same trade as
 `reactions` (§5.1): UUIDs make orphans harmless and collisions impossible.
@@ -935,6 +938,15 @@ load.
 Sketched at the level needed to keep v1 columns compatible. Full DDL lands with
 the phase that builds them.
 
+**§5.1 to §5.4 are built.** `reactions`, `content`, `feed_pins` and `reviews`
+shipped with phase 9 in `backend/schema/020_content_reviews.sql`, which is the
+authority on their exact DDL — the blocks below are the design and stay here
+because they carry the reasoning. Three things the migration added that these
+sketches do not show: `created_at` on `content` and `feed_pins`, a
+`view_count >= 0` check, and the three views the counts are read through
+(`content_public`, `consultant_follower_counts`, `reviews_public`). §5.5 and
+§5.6 are still ahead.
+
 ### 5.1 Reactions — the `flags` Set, normalised
 
 ```sql
@@ -1001,6 +1013,20 @@ panchang cards in the component rather than reordering `feed`. Those two stay
 client-side.
 
 ### 5.4 Reviews
+
+Two things the phase learned that the block below does not say.
+
+**The rating caches are maintained by a trigger**, and it RECOMPUTES from
+`reviews` rather than incrementing. §1.3 permits a cache only where replaying
+its source reproduces it; an increment cannot be checked and drifts under
+concurrency, which is the exact failure that section exists to prevent.
+
+**A review needs a booking, and metered chat does not create one.** The RLS
+policy requires `bookings.status = 'completed'`, so a seeker whose only contact
+was a phase 6 chat session cannot review the consultant they spoke to. That is
+a real gap, not an oversight in the policy — `sessions` and `bookings` are
+different tables and the done-condition names bookings. Widening it to sessions
+is a decision, and it belongs to whoever wants chat reviews.
 
 ```sql
 create table reviews (
