@@ -1,4 +1,4 @@
-import { REPORT_MULTIPLIER, reports } from '../data/mock.js'
+import { reports } from '../data/mock.js'
 import { BarAction, TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
@@ -9,11 +9,6 @@ import { rupees, useStore } from '../store.jsx'
  *
  * Reachable from both Profile and Consult, since it is the thing a consult
  * converts into and the thing a profile owner comes back for.
- *
- * On pricing: the brief specified 3x the price shown in a reference
- * screenshot that was not supplied. Each report carries a `base` catalogue
- * price and the displayed figure is `base × REPORT_MULTIPLIER`, derived in
- * `mock.js` — so if the reference numbers turn up, one constant changes.
  */
 export default function Reports() {
   const { showToast, addToCart, buyNow, spending, balance, cartCount, setCartOpen } = useStore()
@@ -113,8 +108,7 @@ export default function Reports() {
         </ul>
 
         <p className="mt-8 text-center text-meta t-faint">
-          Prices shown are {REPORT_MULTIPLIER}× the standard catalogue rate. The wallet is
-          charged for real. No report is generated — that is phase 10.
+          The wallet is charged for real. No report is generated — that is phase 10.
         </p>
 
         <PopButton size="sm" className="mt-6" onClick={() => showToast('Sample — prototype only')}>
