@@ -1,13 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  clips,
-  courses,
-  feed,
-  liveSessions,
-  posts,
-  products,
-  reads,
-} from '../data/mock.js'
+import { courses, feed, liveSessions, products } from '../data/mock.js'
+import { fetchFeed } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
@@ -16,15 +10,21 @@ import { Acts, firstName } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
-/** Every feed record resolves against one of these by `refId`. */
+/**
+ * What is still hand-ordered in `mock.js`, and why each one is.
+ *
+ * `live` belongs to phase 11 (the room lifecycle, not a content row) and
+ * `course` / `product` to phase 10. Posts, reels and articles are gone from
+ * here because they are a query now.
+ */
 const SOURCES = {
-  post: posts,
-  reel: clips,
-  article: reads,
   live: liveSessions,
   course: courses,
   product: products,
 }
+
+/** `content.kind` in the database → which card renders it. */
+const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
 
 /**
  * Home — one stream, mixed formats.
@@ -37,16 +37,40 @@ const SOURCES = {
  * data and stays in sync with the screen it links to.
  */
 export default function Home({ action }) {
+  /* The feed is a QUERY, not a table (05-BACKEND-SCHEMA.md §5.3). Newest live
+     content from approved consultants, and nothing here re-sorts it — a second
+     ordering in the client would be the ranking system that section refuses. */
+  const [published, setPublished] = useState([])
+
+  useEffect(() => {
+    let active = true
+    fetchFeed({ kinds: ['post', 'clip', 'article'] })
+      .then((rows) => active && setPublished(rows))
+      .catch((err) => console.error('[feed] load failed:', err.message))
+    return () => {
+      active = false
+    }
+  }, [])
+
   /* The reading leads ahead of anything social. Panchang is pushed down after
      3-4 feed items so the daily reading is the immediate follow-up, not both
      product cards back-to-back. */
-  const rest = feed
-    .filter((f) => f.kind !== 'reading')
+  const real = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
+
+  /* What is left of the hand-ordered mock: live rooms, courses and products.
+     They sit AFTER the real content rather than interleaved, because
+     interleaving would need a rank to interleave on and there is no ranking
+     yet. When phases 10 and 11 make these queries too, this list goes away and
+     the sort above is already the right one. */
+  const stillMock = feed
+    .filter((f) => SOURCES[f.kind])
     .map((f) => {
       const found = SOURCES[f.kind]?.find((x) => x.id === f.refId)
       return found ? { ...f, data: found } : null
     })
     .filter(Boolean)
+
+  const rest = [...real, ...stillMock]
 
   /* Both cards fetch for themselves rather than being handed data. They are
      rendered once each, they are the only two things on this screen that are
@@ -157,17 +181,29 @@ function PostCard({ post: p }) {
   const { showToast, hasFlag, toggleFlag } = useStore()
   const liked = hasFlag(`like:${p.id}`)
 
+  /* The like count is the view's aggregate plus your own un-saved tap, so the
+     number moves the instant you press it and still agrees with the database
+     on the next load. Reply and Share carry NO count: there is no comments
+     table and no share to count, and the mock's 96 replies against zero rows
+     is the lie this phase is here to stop telling. */
   return (
     <article className="pop-card p-4">
       <Byline
         initials={p.initials}
         name={p.consultant}
-        note={p.role}
         meta={p.time}
         to={`/consult/${p.consultantId}`}
       />
-      <p className="mt-4 text-body t-sub">{p.text}</p>
-      {p.plate && <Plate seed={p.id} className="mt-4 h-44 w-full" label={p.plate} />}
+      <p className="mt-4 text-body t-sub">{p.body || p.caption}</p>
+      {/* A photo post carries an image; a plain note does not. Both are
+          kind 'post' — the media is what separates them, not a fourth kind. */}
+      {p.mediaUrl && (
+        <img
+          src={p.mediaUrl}
+          alt=""
+          className="mt-4 max-h-[26rem] w-full rounded-lg object-cover"
+        />
+      )}
 
       <Acts
         className="mt-5"
@@ -179,8 +215,8 @@ function PostCard({ post: p }) {
             count: (p.likes + (liked ? 1 : 0)).toLocaleString('en-IN'),
             onClick: () => toggleFlag(`like:${p.id}`),
           },
-          { label: 'Reply', count: p.comments, onClick: () => showToast('Replies — prototype only') },
-          { label: 'Share', count: p.shares, onClick: () => showToast('Note copied') },
+          { label: 'Reply', onClick: () => showToast('Replies — prototype only') },
+          { label: 'Share', onClick: () => showToast('Note copied') },
           {
             label: 'Save',
             onLabel: 'Saved',
@@ -207,6 +243,13 @@ function ReelCard({ reel: r }) {
 
       <Link to={`/reels/${r.id}`} className="group block">
         <Plate seed={r.id} className="aspect-[4/5] w-full">
+          {r.mediaUrl && !r.mediaUrl.match(/\.(mp4|webm|mov)$/i) && (
+            <img
+              src={r.mediaUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full rounded-[inherit] object-cover"
+            />
+          )}
           <span className="absolute inset-0 flex items-center justify-center">
             <span
               className="flex h-14 w-14 items-center justify-center rounded-full bg-ink text-white shadow-lg transition-transform duration-200 group-hover:scale-105"
@@ -214,13 +257,14 @@ function ReelCard({ reel: r }) {
               <span className="caps-sm leading-none">▶</span>
             </span>
           </span>
-          <span className="caps-sm absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 shadow-sm t-sub tnum">
-            {r.views} · {r.duration}
-          </span>
         </Plate>
         <p className="mt-3 text-body t-heading">{r.caption}</p>
       </Link>
-      <p className="mt-1.5 caps-sm t-faint">{r.audio}</p>
+      {/* No duration and no audio credit. Both were mock strings on a Plate
+          that plays nothing; there is no upload path yet, so there is nothing
+          to state a length for. The view count is real, which is why it is
+          usually 0 — nothing server-side increments it (020's `view_count`). */}
+      <p className="mt-1.5 caps-sm t-faint tnum">{r.time}</p>
     </article>
   )
 }
@@ -356,6 +400,12 @@ function PanchangCard() {
   )
 }
 
+/** 200 words a minute, the same arithmetic the studio shows while writing. */
+export function readMins(body) {
+  const words = (body || '').trim() ? body.trim().split(/\s+/).length : 0
+  return Math.max(1, Math.ceil(words / 200))
+}
+
 function ArticleCard({ read: b }) {
   const { hasFlag, toggleFlag } = useStore()
 
@@ -365,7 +415,7 @@ function ArticleCard({ read: b }) {
         initials={b.initials}
         name={b.consultant}
         note="published an article"
-        meta={b.date}
+        meta={b.time}
         to={`/consult/${b.consultantId}`}
       />
 
@@ -373,11 +423,10 @@ function ArticleCard({ read: b }) {
         <div className="pop-inset flex gap-4 p-3">
           <Plate seed={b.id} className="h-[72px] w-[72px] flex-none" />
           <span className="min-w-0 flex-1">
-            <span className="caps-sm gold">{b.tag}</span>
             <span className="mt-1 block text-body t-heading">{b.title}</span>
-            <span className="mt-1.5 block caps-sm t-faint tnum">
-              {b.readTime} · {b.views} read
-            </span>
+            {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
+                one goes stale the first time the article is edited. */}
+            <span className="mt-1.5 block caps-sm t-faint tnum">{readMins(b.body)} min</span>
           </span>
         </div>
       </Link>

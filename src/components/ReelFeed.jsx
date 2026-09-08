@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { clips } from '../data/mock.js'
+import { fetchFeed } from '../lib/content.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
 import { firstName } from './Primitives.jsx'
@@ -23,18 +23,49 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
   const navigate = useNavigate()
   const scroller = useRef(null)
 
+  /* Reels are rows since phase 9. The whole list is loaded because the format
+     is a vertical scroll THROUGH the list — paging it in would mean deciding
+     what happens when the reader outruns the fetch, and there is no volume yet
+     that makes that worth solving. */
+  const [clips, setClips] = useState([])
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+
+  /* Through a ref, so the fetch does not depend on the callback's identity. A
+     caller passing an inline arrow would otherwise refetch on every render, and
+     the loop only shows up for whoever adds the second consumer of this
+     component. */
+  const report = useRef(onIndexChange)
+  report.current = onIndexChange
+
+  useEffect(() => {
+    let active = true
+    fetchFeed({ kinds: ['clip'] })
+      .then((rows) => {
+        if (!active) return
+        setClips(rows)
+        report.current?.(0, rows.length)
+      })
+      .catch((err) => console.error('[reels] load failed:', err.message))
+    return () => {
+      active = false
+    }
+  }, [])
+
   const startIndex = Math.max(
     0,
     clips.findIndex((c) => c.id === startId),
   )
-  const [index, setIndex] = useState(startIndex)
-  const [paused, setPaused] = useState(false)
 
-  // Jump straight to the tapped reel rather than animating past the others.
+  /* Jump straight to the tapped reel rather than animating past the others.
+     This waits on `clips` as well as `startIndex`: the list arrives after the
+     first paint, and scrolling to an index of a list that is not there yet
+     lands on the first reel every time. */
   useEffect(() => {
     const el = scroller.current
     if (el && startIndex > 0) el.scrollTop = el.clientHeight * startIndex
-  }, [startIndex])
+    if (startIndex > 0) setIndex(startIndex)
+  }, [startIndex, clips.length])
 
   const onScroll = () => {
     const el = scroller.current
@@ -42,7 +73,7 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
     const next = Math.round(el.scrollTop / el.clientHeight)
     if (next !== index && clips[next]) {
       setIndex(next)
-      onIndexChange?.(next)
+      report.current?.(next, clips.length)
       if (syncUrl) navigate(`/reels/${clips[next].id}`, { replace: true })
     }
   }
@@ -53,6 +84,11 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
       onScroll={onScroll}
       className="no-scrollbar h-full snap-y snap-mandatory overflow-y-scroll overscroll-contain bg-ink"
     >
+      {!clips.length && (
+        <p className="flex h-full items-center justify-center px-8 text-center text-meta text-white/70">
+          No reels yet.
+        </p>
+      )}
       {clips.map((c, i) => (
         <ReelFrame
           key={c.id}
@@ -100,7 +136,25 @@ function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
         aria-label={paused ? 'Play' : 'Pause'}
         className="absolute inset-0 h-full w-full"
       >
-        <Plate seed={c.id} className="!rounded-none h-full w-full !shadow-none" />
+        {c.mediaUrl ? (
+          /* A real upload. Muted and looping because the format autoplays and
+             a reel that starts talking at full volume in a quiet room is how
+             people close the tab. */
+          c.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
+            <video
+              src={c.mediaUrl}
+              className="h-full w-full object-cover"
+              autoPlay={!paused}
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            <img src={c.mediaUrl} alt={c.caption ?? ''} className="h-full w-full object-cover" />
+          )
+        ) : (
+          <Plate seed={c.id} className="!rounded-none h-full w-full !shadow-none" />
+        )}
       </button>
 
       {/* Scrims. Two gradients, top and bottom, so white text holds up over
@@ -132,14 +186,13 @@ function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
           label={liked ? 'Liked' : 'Like'}
           tone="like"
           on={liked}
-          count={c.likes}
+          count={(c.likes + (liked ? 1 : 0)).toLocaleString('en-IN')}
           onClick={() => toggleFlag(`like:${c.id}`)}
         />
         <RailAct
           icon="chat"
           label="Reply"
           tone="plain"
-          count={c.comments}
           onClick={() => showToast('Replies — prototype only')}
         />
         <RailAct
@@ -189,9 +242,7 @@ function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
         </div>
 
         <p className="mt-3 text-meta leading-snug text-white">{c.caption}</p>
-        <p className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-white/60">
-          {c.audio} · {c.views} views
-        </p>
+        <p className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-white/60">{c.time}</p>
 
         {/* The commercial hook. Small and inline — a full-width block here
             would cover the thing you came to watch. */}

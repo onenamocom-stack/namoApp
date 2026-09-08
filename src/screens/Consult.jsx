@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { categories, liveSessions, SESSION } from '../data/mock.js'
-import { TabHeader } from '../components/Chrome.jsx'
+import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName, Search } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants, listMyBookings } from '../lib/consultants.js'
+import { leaveReview, reviewableBookings } from '../lib/content.js'
 
 /**
  * The free tools, as circles above the search field.
@@ -113,6 +114,94 @@ const BANNERS = [
 ]
 
 /**
+ * Leaving a review.
+ *
+ * The rating is required and the words are not — a star with no sentence is
+ * still a signal, and demanding prose is how review counts stay at three.
+ *
+ * There is no client-side check that the booking is completed and unreviewed.
+ * The RLS policy is the enforcement (`020_content_reviews.sql`), and a second
+ * copy of the rule here would be a second thing to keep in step. What this does
+ * instead is show the server's refusal in the app's voice.
+ */
+function ReviewSheet({ booking, onClose, onDone }) {
+  const { showToast } = useStore()
+  const [rating, setRating] = useState(0)
+  const [body, setBody] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  /* Reset when a different booking opens the sheet, so last time's four stars
+     are not sitting there waiting to be submitted against somebody else. */
+  useEffect(() => {
+    setRating(0)
+    setBody('')
+  }, [booking?.id])
+
+  if (!booking) return null
+
+  async function submit() {
+    setBusy(true)
+    try {
+      await leaveReview({
+        bookingId: booking.id,
+        consultantId: booking.consultant_id,
+        rating,
+        body: body.trim() || null,
+      })
+      showToast('Review posted')
+      onDone()
+    } catch (err) {
+      showToast(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Sheet open onClose={onClose} title={`Review ${firstName(booking.consultant_name)}`}>
+      <div className="px-5 pb-6">
+        <p className="prose-c">Rate the session, not the news in it.</p>
+
+        <div className="mt-5 flex justify-center gap-2">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-label={`${n} out of 5`}
+              aria-pressed={rating === n}
+              onClick={() => setRating(n)}
+              className={`h-11 w-11 rounded-full border text-body tnum transition-colors ${
+                n <= rating ? 'border-gold bg-gold/10 t-heading' : 'border-rule t-faint'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={4}
+          placeholder="What did they actually help you decide? Optional."
+          aria-label="Your review"
+          className="mt-5 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
+        />
+
+        <PopButton
+          variant="gold"
+          className="mt-6"
+          disabled={!rating || busy}
+          onClick={submit}
+        >
+          {busy ? 'Posting' : rating ? 'Post review' : 'Pick a rating first'}
+        </PopButton>
+      </div>
+    </Sheet>
+  )
+}
+
+/**
  * The seven booking statuses as a seeker reads them, and what colour each one
  * is. Rendering `b.status` raw printed the enum — `no_show` came out as
  * "NO_SHOW" under `caps-sm` — and colouring everything except `declined` with
@@ -172,6 +261,23 @@ export default function Consult() {
       live = false
     }
   }, [session])
+
+  /* Which completed bookings have no review yet. The list is asked for rather
+     than worked out from `mine`, because "already reviewed" lives in a table
+     this screen does not otherwise read. */
+  const [reviewable, setReviewable] = useState([])
+  const [reviewing, setReviewing] = useState(null)
+
+  const reloadReviewable = useCallback(() => {
+    reviewableBookings()
+      .then(setReviewable)
+      .catch((err) => console.error('[reviews] load failed:', err.message))
+  }, [])
+
+  useEffect(() => {
+    if (!session) return setReviewable([])
+    reloadReviewable()
+  }, [session, reloadReviewable])
 
   const step = (el) =>
     el.children[1] ? el.children[1].offsetLeft - el.children[0].offsetLeft : el.clientWidth
@@ -330,15 +436,38 @@ export default function Consult() {
                 </span>
                 <span className="flex-none text-right">
                   <span className="block caps-sm tnum t-heading">₹{rupees(b.amount_paise)}</span>
-                  <span className={`mt-0.5 block caps-sm ${STATUS[b.status]?.tone ?? 't-faint'}`}>
-                    {STATUS[b.status]?.label ?? b.status}
-                  </span>
+                  {/* A review is offered only where one can actually be left:
+                      a completed booking of yours that has none yet. That is
+                      the same condition the RLS policy enforces, so the button
+                      never appears on something the server would refuse. */}
+                  {reviewable.some((r) => r.id === b.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => setReviewing(b)}
+                      className="act-link mt-0.5 block caps-sm"
+                    >
+                      Review
+                    </button>
+                  ) : (
+                    <span className={`mt-0.5 block caps-sm ${STATUS[b.status]?.tone ?? 't-faint'}`}>
+                      {STATUS[b.status]?.label ?? b.status}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <ReviewSheet
+        booking={reviewing}
+        onClose={() => setReviewing(null)}
+        onDone={() => {
+          setReviewing(null)
+          reloadReviewable()
+        }}
+      />
 
       {/* ── Category chips ─────────────────────────────────────────────── */}
       <div className="relative mt-4">

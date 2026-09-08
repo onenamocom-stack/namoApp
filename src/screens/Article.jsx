@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { reads } from '../data/mock.js'
+import { fetchFeed } from '../lib/content.js'
+import { readMins } from './Home.jsx'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Acts, Avatar, Button, Row, Section, Stub, Tag } from '../components/Primitives.jsx'
@@ -21,12 +23,52 @@ export default function Article() {
   const { id } = useParams()
   const { showToast, hasFlag, toggleFlag } = useStore()
 
-  const idx = reads.findIndex((b) => b.id === id)
+  /* Articles are rows now, so this screen loads rather than looks up. It asks
+     for the whole article list and picks its own out of it, because the same
+     request also answers "read next" — two round trips for one screen would be
+     the expensive kind of tidy. */
+  const [articles, setArticles] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetchFeed({ kinds: ['article'] })
+      .then((rows) => active && setArticles(rows))
+      .catch((err) => {
+        console.error('[article] load failed:', err.message)
+        if (active) setArticles([])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  /* Nothing is rendered against a half-loaded list: `null` means still asking,
+     `[]` means asked and got nothing. Without the distinction a slow network
+     redirects to /home before the article arrives. */
+  if (articles === null) {
+    return (
+      <>
+        <TopBar title="Article" back backTo="/home" />
+        <p className="prose-c">Loading.</p>
+      </>
+    )
+  }
+
+  const idx = articles.findIndex((b) => b.id === id)
   if (idx === -1) return <Navigate to="/home" replace />
 
-  const b = reads[idx]
-  const next = reads[(idx + 1) % reads.length]
+  const b = articles[idx]
+  const next = articles[(idx + 1) % articles.length]
   const saved = hasFlag(`save:${b.id}`)
+
+  /* One text column in the database, paragraphs on screen. Splitting on blank
+     lines is what a writer typing into the studio's textarea actually produces,
+     and it keeps the stored value the thing they typed (§1.5). */
+  const paras = (b.body || '')
+    .split(/\n\s*\n/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+  const mins = `${readMins(b.body)} min`
 
   return (
     <>
@@ -34,7 +76,7 @@ export default function Article() {
         title="Article"
         back
         backTo="/home"
-        sub={b.readTime}
+        sub={mins}
         right={
           <button
             type="button"
@@ -50,14 +92,13 @@ export default function Article() {
 
       <section className="section pt-8">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <Tag>{b.tag}</Tag>
-          <span className="text-micro uppercase tracking-caps text-t3 tnum">
-            {b.readTime} · {b.views} read
-          </span>
+          <Tag>Article</Tag>
+          {/* No view count. Nothing server-side increments one yet, and a
+              number the client made up is worse than no number. */}
+          <span className="text-micro uppercase tracking-caps text-t3 tnum">{mins}</span>
         </div>
 
         <h1 className="text-title font-light">{b.title}</h1>
-        <p className="mt-5 text-read text-t2">{b.excerpt}</p>
 
         <Link
           to={`/consult/${b.consultantId}`}
@@ -67,7 +108,7 @@ export default function Article() {
           <span className="min-w-0 flex-1">
             <span className="block truncate text-meta text-t1">{b.consultant}</span>
             <span className="block text-micro uppercase tracking-caps text-t3">
-              Published {b.date}
+              Published {b.time}
             </span>
           </span>
           <span className="flex-none text-micro uppercase tracking-caps text-t3">Profile →</span>
@@ -78,7 +119,7 @@ export default function Article() {
           this reads as an article rather than as a long horoscope. */}
       <article className="section">
         <div className="mx-auto max-w-prose2">
-          {b.body.map((para, i) => (
+          {paras.map((para, i) => (
             <p key={para} className={`text-read text-t1 ${i > 0 ? 'mt-6' : ''}`}>
               {para}
             </p>
@@ -121,7 +162,9 @@ export default function Article() {
       </Section>
 
       <Section label="Read next" last>
-        <Row to={`/read/${next.id}`} title={next.title} note={`${next.tag} · ${next.readTime}`} />
+        {next && next.id !== b.id && (
+          <Row to={`/read/${next.id}`} title={next.title} note={`${readMins(next.body)} min`} />
+        )}
         <Row to="/home" title="Back to the feed" />
       </Section>
 
