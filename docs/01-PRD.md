@@ -504,6 +504,12 @@ again the first week nobody signs up:
 way.** Content is now seeded from the mock consultants until real consultants
 are publishing. The feed launches furnished; the marketplace does not.
 
+"Publishing" here does not mean "typed into the studio". A real consultant
+arriving with a batch of posts and reels is loaded from the backend by the same
+tool, against their own profile UUID — and that path never strips or approves
+them, because they are a person. The exit condition below is about whose
+content is in the feed, not about which door it came through.
+
 The split is the whole decision, and it maps onto the three grounds above:
 
 | Ground | Where it landed |

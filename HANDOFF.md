@@ -28,8 +28,19 @@ reversed: the FEED is to be seeded from them until real consultants publish, the
 MARKETPLACE is not. `backend/seed/content.mjs` approves them for authorship and
 then deletes their availability, deactivates their per-minute services and
 clears their fabricated credentials — so they can post and cannot be booked,
-chatted or believed. Nothing has been seeded yet; §8 has the tool and its
-untested edges.
+chatted or believed. Nothing has been seeded yet on either project.
+
+**Content is loaded from the BACKEND, not typed into the studio, and that is a
+decision rather than a shortcut** (9 Sep). It holds for real consultants as much
+as for the seeded six: a partner arriving with a lot of posts and reels is not
+going to sit in `/pro/studio` uploading them one at a time. `content.mjs` takes
+a real consultant's profile UUID for exactly that. The studio remains the path
+for a consultant posting one thing they just wrote; it is not the path for
+volume.
+
+**Parked, deliberately.** The tool is written and the route is decided; nobody
+has run it against a database. Picking it up needs media files, a manifest and
+the service-role key — §8 has the shape and the untested edges.
 
 This file describes **state**. It does not describe the system — that is
 `docs/` — and it is not a changelog. History lives in `git log`, which is
@@ -1462,6 +1473,18 @@ standard catalogue rate" line.
 **Production has no content yet, and the plan for that changed on 9 Sep.** The
 feed is to be seeded from the mock consultants until real ones are publishing —
 `01-PRD.md` §7's launch-empty decision, partially reversed and re-argued there.
+
+**And the loading route is the backend, for everybody.** An earlier line here
+said the feed fills through the studio and there is no seed step. That was true
+of the mechanism and wrong about the plan: real content arrives in batches, from
+a partner, and hand-posting it from their account does not scale past the first
+afternoon. So `content.mjs` publishes for real consultants as well as invented
+ones, and the studio is what a consultant uses for the single thing they just
+wrote.
+
+**NOT RUN YET, on either project, and parked on purpose.** The decision is made
+and the tool exists; the work of assembling media and a manifest is the user's,
+later. Nothing below has touched a database.
 
 `backend/seed/content.mjs` is the tool. It reads
 `backend/seed/content/content.json` plus files in `content/media/`, uploads the
