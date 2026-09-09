@@ -15,7 +15,7 @@ Updated 9 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
-| **9 · reviews and content** | **Built on dev, NOT walked and NOT on production.** Four tables, three views, a storage bucket and the whole front end are in; the check passes. All three done-conditions are verified by assertion rather than in a browser, because `/home`, `/pro/studio` and `/consult/:id` sit behind the phone-OTP gate. §9 has what to walk |
+| **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. The six seeded
@@ -1277,7 +1277,8 @@ webhook secret set on 31 Aug matches. Run
 
 ## 8. Phase 9 — what is built, and the one thing that is not
 
-Built 8 Sep on **dev only**. Nothing here has run against production.
+Built 8 Sep, walked and closed 9 Sep. **Migrations 020-023 are on both
+projects** and the check passes on both; the front end is deployed.
 
 ### The four tables, and the three views that keep counts honest
 
@@ -1401,28 +1402,48 @@ asserted as a seeker, with the revoke in place, because it runs as the definer.
 **The lesson worth keeping: a revoke that succeeds is not a revoke that did
 anything.** Check the ACL or the linter, not the absence of an error.
 
-### NOT DONE, and it is the honest gap
+### The walk, and the two bugs only clicking could find
 
-**Nothing was walked in a browser.** `/home`, `/pro/studio`, `/consult/:id` and
-`/reels/:id` all sit behind the onboarding gate, which needs a phone OTP.
-`npm run lint` passes with only the three pre-existing warnings and
-`npm run build` is green, and §11 says both prove almost nothing.
+Walked on dev 9 Sep across three signed-in windows. All three done-conditions
+pass, verified in the database rather than by looking at the screen: three
+`content` rows with two objects in `content-media`, a `follow` row that survived
+a reload and a second window, and one review carrying `verified = true` with the
+rating cache reading 1.0 / 1.
 
-Dev has **8 approved consultants, 0 content, 0 reviews, 0 reactions** — empty
-and honest. To close the three done-conditions, someone signed in has to:
+**Both bugs were in code that lint and build had already passed**, which is §11
+paying for itself again.
 
-1. `/pro/studio` as an approved consultant — write a caption, attach a file,
-   publish. Then `/home` as a different account: it should be there. That is
-   done-condition 1, and it is also how your partner's posts get in. **There is
-   no seed step; content arrives through the studio.**
-2. Follow a consultant, reload, and open the app on a second device or a private
-   window. The follow survives. Done-condition 2.
-3. Complete a booking, review it, and check the review carries **Verified**
-   while a seeded one does not. Done-condition 3. Trying to review without a
-   completed booking should refuse — the check already proves the database
-   refuses it; what is unwalked is that the screen says so in the app's voice.
+**The session you could review was unreachable.** `listMyBookings` sorts
+`starts_at` DESCENDING and the list renders four rows. A completed session is in
+the past by definition and pending ones are in the future, so the only row
+carrying a Review link sorted below four that could not. Not one account's bad
+luck — it would have hidden the button for almost everybody. Reviewable rows are
+now hoisted before the slice.
 
-**Production has none of this.** Migrations 020-023 have run on dev only.
+**The rating circles had no flex centering**, so the numeral sat low and left.
+
+The lesson is the shape of both: the review composer was written last, after
+everything around it, and shipped with the phase's own verification saying
+green. Neither bug was reachable from an assertion.
+
+### On production, and what the walk there still needs
+
+Migrations ran 9 Sep; the check passes; the deployed bundle carries
+`content_public`, `consultant_follower_counts`, `reviews_public`,
+`content-media` and all six new report prices, and no longer carries the "3× the
+standard catalogue rate" line.
+
+**Production has no content, and that is correct.** It has one real approved
+consultant and nothing published. The feed is empty until somebody publishes
+through `/pro/studio` — there is no seed step and there should not be one.
+Approving a second consultant is still somebody typing SQL, which is the
+argument for phase 13.
+
+Ordering worth keeping for the next phase that adds tables: **migrations went on
+production BEFORE the merge.** `main` deploys on push, so a front end querying
+`content_public` against a database without it would have shown an empty feed
+and empty Work and Reviews tabs on every consultant — no crash, just quietly
+wrong.
 
 ---
 
@@ -1444,7 +1465,7 @@ own payoff order — approval, moderation and search need neither.
 predicted was right and is worth keeping for the next phase that touches
 `mock.js`: the collision is deletions in different regions of one file. Phase 9
 removed `posts`, `reads`, `clips` and `mine`, and trimmed `feed` to three rows.
-Migrations 020-023 are taken.
+Migrations 020-023 are taken and are on both projects.
 
 **Phase 8 is now fully parallel.** This replaces the line that stood here
 saying it was "parallel except for its last wire", which was true only while
