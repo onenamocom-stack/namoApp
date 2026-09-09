@@ -1497,6 +1497,24 @@ granting it:
 trigger-maintained over `reviews`, so with no reviews they read false, New and
 0. The mock's 4.9 and 2,148 cannot come back through a seed.
 
+**It loads real consultants' content too, and that is the point of it.** The
+manifest's `consultant` field takes either a seeded mock id (`a1`..`a6`) or a
+REAL consultant's profile UUID -- which is how a partner with a lot of content
+gets loaded without posting each item by hand from their account.
+
+The two are not treated the same, and the difference is the safety property.
+The strip runs ONLY on `a1`..`a6`. A real consultant is published as and
+otherwise untouched: their availability, their credentials and their approval
+are theirs. Before 9 Sep the strip applied to every author in the manifest, so
+pointing it at a partner would have deleted the availability they tapped in and
+cleared the credentials they earned -- silently, from a script called `seed`.
+Real rows carry both: `dev:1` on dev has 35 availability rows and a credential.
+
+A real author must ALREADY be approved. The script refuses rather than approving
+them, because `content_public` requires approval for a post to be visible, so
+the alternative is uploading into a black hole -- and approving a person is a
+human decision, not a side effect of uploading their video.
+
 **Untested end to end.** The manifest validator and both `--ref` guards were
 exercised; the database and upload path were not, because that needs the
 service-role key. The first real run should be `--dry-run` on dev, then dev, then

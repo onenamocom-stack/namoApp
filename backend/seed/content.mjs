@@ -48,9 +48,16 @@
 //
 //   id          your own stable string. Becomes `legacy_id`, so re-running
 //               UPDATES the row rather than adding a second copy.
-//   consultant  a seeded consultant's mock id: a1 Ritu Kashyap, a2 Dev
+//   consultant  EITHER a seeded consultant's mock id -- a1 Ritu Kashyap, a2 Dev
 //               Malhotra, a3 Meher Bano, a4 Dr. Nandita Rao, a5 Yogesh Pandit,
-//               a6 Simran Kaur. Resolved through `legacy_id`, never by name.
+//               a6 Simran Kaur, resolved through `legacy_id` -- OR a REAL
+//               consultant's profile UUID, for bulk-loading a partner's work
+//               without posting it by hand from their account.
+//
+//               The difference is not cosmetic. The strip below runs ONLY on
+//               a1..a6. A real consultant is published as and otherwise left
+//               alone: their availability, credentials and approval are theirs.
+//               They must already be approved, and this script will not do it.
 //   kind        clip (reel, wants a video) · post (photo, wants an image) ·
 //               article (wants title + body)
 //   agoHours    how long ago it was published. The feed shows relative time, so
@@ -137,27 +144,101 @@ for (const [i, it] of items.entries()) {
 }
 if (problems.length) die(`manifest has ${problems.length} problem(s):\n  ` + problems.join('\n  '))
 
-/* ── Resolve consultants through legacy_id, never by name ──────────────────
-   Matching a real row to a mock one by display name is the join
-   05-BACKEND-SCHEMA.md §9 warns about, and phase 9 deleted the last one. */
-const wanted = [...new Set(items.map((i) => i.consultant))]
-const { data: rows, error: cErr } = await db
-  .from('consultants')
-  .select('profile_id, legacy_id, status')
-  .in('legacy_id', wanted)
-if (cErr) die(`could not read consultants: ${cErr.message}`)
+/* -- Resolve consultants, and decide which ones get the strip --------------
+   Never by display name: matching a real row to a mock one that way is the
+   join 05-BACKEND-SCHEMA.md 9 warns about, and phase 9 deleted the last one.
 
-const byLegacy = new Map((rows ?? []).map((r) => [r.legacy_id, r]))
-const missing = wanted.filter((w) => !byLegacy.has(w))
-if (missing.length) {
-  die(`no seeded consultant for ${missing.join(', ')} on ${ref}. Run backend/seed/seed.mjs first.`)
+   TWO KINDS OF AUTHOR, and telling them apart is the whole safety property of
+   this script now that it publishes for real people too:
+
+     a1..a6   the six INVENTED consultants from mock.js. Approved, then
+              stripped of availability, per-minute chat and credentials,
+              because nobody is behind them to answer a booking.
+
+     a UUID   a REAL consultant - a partner with a lot of content to load.
+              Published as, and NOTHING ELSE about them is touched.
+
+   Running the strip on a real consultant would delete the availability they
+   tapped in by hand and clear the credentials they earned, silently, from a
+   script whose name says "seed". Real rows carry both: on dev, `dev:1` has 35
+   availability rows and a credential. So the strip is gated on the author being
+   one of the invented six - and a real author is never approved here either,
+   because approving a person is a human decision, not a side effect of
+   uploading their video. */
+const SEEDED = /^a[1-6]$/
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const wanted = [...new Set(items.map((i) => i.consultant))]
+const seededIds = wanted.filter((w) => SEEDED.test(w))
+const realIds = wanted.filter((w) => !SEEDED.test(w))
+
+const badRefs = realIds.filter((r) => !UUID.test(r))
+if (badRefs.length) {
+  die(
+    `not a consultant reference: ${badRefs.join(', ')}
+` +
+      `  Use a1..a6 for the seeded consultants, or a real consultant's profile UUID.`,
+  )
 }
 
-console.log(`${ref} · ${items.length} item(s) for ${wanted.length} consultant(s)${dryRun ? ' · DRY RUN' : ''}\n`)
+const byRef = new Map()
+
+if (seededIds.length) {
+  const { data, error } = await db
+    .from('consultants')
+    .select('profile_id, legacy_id, status')
+    .in('legacy_id', seededIds)
+  if (error) die(`could not read seeded consultants: ${error.message}`)
+  for (const r of data ?? []) byRef.set(r.legacy_id, { ...r, seeded: true })
+
+  const gone = seededIds.filter((w) => !byRef.has(w))
+  if (gone.length) {
+    die(`no seeded consultant for ${gone.join(', ')} on ${ref}. Run backend/seed/seed.mjs first.`)
+  }
+}
+
+if (realIds.length) {
+  const { data, error } = await db
+    .from('consultants')
+    .select('profile_id, legacy_id, status')
+    .in('profile_id', realIds)
+  if (error) die(`could not read consultants: ${error.message}`)
+  for (const r of data ?? []) byRef.set(r.profile_id, { ...r, seeded: false })
+
+  const gone = realIds.filter((w) => !byRef.has(w))
+  if (gone.length) {
+    die(`no consultant row for ${gone.join(', ')} on ${ref}. They apply through /pro/apply first.`)
+  }
+
+  // Deliberately NOT approved here. `content_public` requires approval for a
+  // post to be visible, so this fails loudly rather than uploading into a black
+  // hole - and approving a real person stays a human decision.
+  const unapproved = realIds.filter((w) => byRef.get(w).status !== 'approved')
+  if (unapproved.length) {
+    die(
+      `not approved: ${unapproved.join(', ')}
+` +
+        `  This script will not approve a real consultant - that is a human decision.
+` +
+        `  Approve them first, then re-run.`,
+    )
+  }
+}
+
+console.log(
+  `${ref} · ${items.length} item(s) · ${seededIds.length} seeded author(s), ` +
+    `${realIds.length} real${dryRun ? ' · DRY RUN' : ''}
+`,
+)
 
 /* ── Approve, then take away everything that makes them bookable ─────────── */
-for (const legacy of wanted) {
-  const c = byLegacy.get(legacy)
+for (const legacy of seededIds) {
+  const c = byRef.get(legacy)
+
+  // The loop already iterates the seeded six, so this can only fire if someone
+  // widens it later. It stays because the cost of being wrong here is deleting
+  // a real consultant's availability and credentials from a script called seed.
+  if (!c.seeded) die(`refusing to strip ${legacy}: not one of the seeded six`)
 
   if (dryRun) {
     console.log(`  ${legacy}  would drop availability, deactivate per-minute, clear credentials, then approve`)
@@ -224,7 +305,7 @@ for (const legacy of wanted) {
 /* ── Upload media, then write the rows ───────────────────────────────────── */
 let written = 0
 for (const it of items) {
-  const c = byLegacy.get(it.consultant)
+  const c = byRef.get(it.consultant)
   let mediaUrl = null
 
   if (KINDS[it.kind] === 'media') {
