@@ -1468,9 +1468,20 @@ feed is to be seeded from the mock consultants until real ones are publishing �
 media, and writes `content` rows idempotently on `legacy_id`. Same `--ref=`
 guard as `seed.mjs`, and `--dry-run` validates the manifest without writing.
 
-**What it does beyond publishing is the part that matters.** For every
-consultant it publishes as it approves them — unavoidable, `content_public`
-requires it — and then removes everything that makes an approved row dangerous:
+**What it does beyond publishing is the part that matters, and the ORDER is
+the protection.** It strips first and approves LAST.
+
+That was backwards until 9 Sep and it was a live hazard, not a tidiness point.
+`book_session` needs `status = 'approved'` **and** an open slot
+(`012_bookings_transaction.sql:174`, `:190`). Approving first made all six
+bookable with real money for the rest of the loop — and `die()` on any later
+step would have left them that way permanently. Stripping first inverts the
+failure: a crash leaves them `pending`, which is invisible. **The safe direction
+to fail is the one where nothing is published.**
+
+Approving at all is unavoidable — `content_public` requires it — so what the
+script does is remove everything that makes an approved row dangerous before
+granting it:
 
 - availability rows **deleted**, so nothing is bookable. This is not cosmetic:
   `seed.mjs` gives every seeded consultant prices AND a week of open slots, and
@@ -1490,6 +1501,11 @@ trigger-maintained over `reviews`, so with no reviews they read false, New and
 exercised; the database and upload path were not, because that needs the
 service-role key. The first real run should be `--dry-run` on dev, then dev, then
 production.
+
+The rolled-back dev transaction that proved 35 slots become 0 proved the
+STATEMENTS, not the script — it ran them in the safe order by hand. The ordering
+bug above survived that check and was found by reading. Worth remembering when
+the next "verified on dev" line goes into this file.
 
 **Still open:** the legal note in §7 — astrology advertising checked by someone
 qualified before publishing, including for profiles labelled as demos — has not

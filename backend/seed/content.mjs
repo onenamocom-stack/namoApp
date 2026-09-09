@@ -23,12 +23,19 @@
 // up. `book_session` debits the wallet in the same transaction that claims the
 // slot, so that is a real debit and a real refund, not a cosmetic problem.
 //
-// So for every consultant it publishes as, this script:
+// So for every consultant it publishes as, this script does four things, and
+// the ORDER is the protection, not just the list:
 //
-//   - sets status = 'approved'          (required for the feed)
-//   - DELETES their availability rows   (no open slots, so nothing is bookable)
-//   - deactivates per_minute services   (no instant chat request left unanswered)
-//   - CLEARS their credentials          (no fabricated certifications published)
+//   1. CLEARS their credentials          (no fabricated certifications published)
+//   2. DELETES their availability rows   (no open slots, so nothing is bookable)
+//   3. deactivates per_minute services   (no instant chat request left unanswered)
+//   4. sets status = 'approved'          (required for the feed) — LAST
+//
+// Approving last is the whole safety property. `book_session` requires
+// `approved` AND an open slot, so approving first would make them bookable with
+// real money until the delete landed — and any failure in between would have
+// left them that way for good. Failing this way leaves them `pending`, which is
+// invisible.
 //
 // Fixed-duration services stay, so the profile still shows a rate. With no
 // availability, `consultant_open_slots` returns nothing and the booking sheet
@@ -153,17 +160,22 @@ for (const legacy of wanted) {
   const c = byLegacy.get(legacy)
 
   if (dryRun) {
-    console.log(`  ${legacy}  would approve, drop availability, deactivate per-minute, clear credentials`)
+    console.log(`  ${legacy}  would drop availability, deactivate per-minute, clear credentials, then approve`)
     continue
   }
 
-  if (c.status !== 'approved') {
-    const { error } = await db
-      .from('consultants')
-      .update({ status: 'approved' })
-      .eq('profile_id', c.profile_id)
-    if (error) die(`could not approve ${legacy}: ${error.message}`)
-  }
+  // ORDER MATTERS, AND IT IS THE OPPOSITE OF THE OBVIOUS ONE. Approving comes
+  // LAST. `book_session` requires `status = 'approved'` AND an open slot
+  // (012_bookings_transaction.sql:174, :190), so a consultant who is approved
+  // while still holding a week of availability is bookable with real money for
+  // as long as that state lasts. Approving first made that window every
+  // remaining round trip of this loop — and `die()` on any step below would
+  // have left it open permanently, with six invented people takeable on the
+  // marketplace and nobody behind them to turn up.
+  //
+  // Stripping first inverts the failure: a crash anywhere leaves them
+  // `pending`, which is invisible and unbookable. The safe direction to fail is
+  // the one where nothing is published, not the one where everything is.
 
   // Credentials are cleared, and this is the one protection that is not about
   // money. The seeded arrays are specific claims — "ICAS Certified", "Jyotish
@@ -195,8 +207,17 @@ for (const legacy of wanted) {
     .eq('billing', 'per_minute')
   if (sErr) die(`could not deactivate instant chat for ${legacy}: ${sErr.message}`)
 
+  // Last, now that there is nothing left to book.
+  if (c.status !== 'approved') {
+    const { error } = await db
+      .from('consultants')
+      .update({ status: 'approved' })
+      .eq('profile_id', c.profile_id)
+    if (error) die(`could not approve ${legacy}: ${error.message}`)
+  }
+
   console.log(
-    `  ${legacy}  approved · ${dropped ?? 0} availability dropped · ${off ?? 0} per-minute off · credentials cleared`,
+    `  ${legacy}  ${dropped ?? 0} availability dropped · ${off ?? 0} per-minute off · credentials cleared · approved`,
   )
 }
 
