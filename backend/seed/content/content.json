@@ -1,0 +1,26 @@
+[
+  {
+    "id": "sc1",
+    "consultant": "a1",
+    "kind": "clip",
+    "caption": "Replace me. One sentence, second person, present tense.",
+    "media": "example.mp4",
+    "agoHours": 2
+  },
+  {
+    "id": "sc2",
+    "consultant": "a3",
+    "kind": "post",
+    "caption": "Replace me. A photo post carries an image and a caption.",
+    "media": "example.jpg",
+    "agoHours": 5
+  },
+  {
+    "id": "sc3",
+    "consultant": "a1",
+    "kind": "article",
+    "title": "Replace me",
+    "body": "First paragraph.\n\nSecond paragraph. Blank lines are what split paragraphs on screen, so write it the way it should read.",
+    "agoHours": 26
+  }
+]

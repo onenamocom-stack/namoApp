@@ -498,10 +498,52 @@ again the first week nobody signs up:
 - **It hides the only signal that matters.** An empty marketplace is a supply
   problem, and fake supply removes the pressure to fix it.
 
-Flipping them on for a demo is one statement and reversible:
-`update consultants set status='approved' where legacy_id like 'a_';` — that is
-what they are for. Approving them for the public is a different decision, and
-this section is where it gets re-argued if it ever is.
+### Launch supply — PARTIALLY REVERSED, 9 Sep 2026
+
+**This is the re-argument the section above predicted, and it went the other
+way.** Content is now seeded from the mock consultants until real consultants
+are publishing. The feed launches furnished; the marketplace does not.
+
+The split is the whole decision, and it maps onto the three grounds above:
+
+| Ground | Where it landed |
+|---|---|
+| Phase 5 turns props into fraud | **Held.** They are approved but NOT bookable |
+| Fabricated credentials are specific claims | **Held.** Credentials are cleared, not published |
+| It hides the supply signal | **Conceded.** An empty feed was judged the worse launch |
+
+Approving them is unavoidable, because `content_public` joins `consultants` and
+requires `status = 'approved'` — an unapproved author's posts are invisible.
+What is avoidable is everything that turns an approved row into live inventory,
+and `backend/seed/content.mjs` removes all of it:
+
+- **Availability rows are deleted.** `consultant_open_slots` then returns
+  nothing, so the booking sheet has no slot to claim and `book_session` has
+  nothing to debit against. Verified on dev: 35 open slots become 0 while the
+  consultant stays listed in `consultants_public`.
+- **Per-minute services are deactivated**, so there is no instant chat request
+  to sit unanswered. Money only moves on accept, so an unanswered request costs
+  nothing — but a dead wait is still a bad promise.
+- **Credentials are cleared to an empty array.** "ICAS Certified", "Jyotish
+  Visharad", "10k+ sessions" are not published. A bio is opinion; a
+  certification is a claim, and the objection above stands unaddressed until
+  somebody qualified reviews it.
+
+**`verified` stays false and the rating caches stay null.** Phase 9 made those
+trigger-maintained over `reviews`, so the mock's 4.9 and 2,148 cannot come back
+by seeding — there are no reviews, so the columns read New and 0. That objection
+solved itself.
+
+**What is still true and still unaddressed:** the seeded people do not exist,
+their names and bios are invented, and the feed will attribute real content to
+them. The legal note above — get astrology advertising checked by someone
+qualified before publishing, including if profiles are labelled as demos — has
+not been done. This paragraph is here so it stays visible rather than becoming
+an assumption.
+
+**The exit condition:** delete the seeded content and set the six back to
+`pending` once real consultants publish. Every seeded row carries a `legacy_id`,
+so `delete from content where legacy_id like 'sc%'` is the whole undo.
 
 **No waitlist capture.** Everyone standing on `/consult` is already signed in,
 so their number is on file; a form asking for it collects data the database

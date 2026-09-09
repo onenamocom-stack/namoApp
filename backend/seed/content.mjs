@@ -1,0 +1,266 @@
+// Seed the feed with content attributed to the seeded consultants.
+//
+//   node backend/seed/content.mjs --ref=mrjsatelbuiypodeulcx
+//
+// Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. Same --ref guard as
+// seed.mjs and for the same reason: this file holds the service-role key, which
+// bypasses RLS entirely, and pointing it at the wrong project is unrecoverable.
+//
+// ── WHAT THIS REVERSES, AND WHAT IT REFUSES TO ─────────────────────────────
+// `01-PRD.md` §7 said the marketplace launches empty rather than furnished with
+// invented people, which is why the six seeded consultants land `pending` on
+// production. That was reversed on 9 Sep 2026: content is seeded from those
+// accounts until real consultants are publishing. §7 records the reversal.
+//
+// Approving them is unavoidable — `content_public` joins `consultants` and
+// requires `status = 'approved'`, so an unapproved author's posts are invisible
+// to everybody.
+//
+// What is NOT unavoidable is making them BOOKABLE, and this script refuses to.
+// `seed.mjs` gives every seeded consultant prices AND a week of open
+// availability, so approving them without more would put six invented people on
+// the marketplace, bookable with real money, with nobody behind them to turn
+// up. `book_session` debits the wallet in the same transaction that claims the
+// slot, so that is a real debit and a real refund, not a cosmetic problem.
+//
+// So for every consultant it publishes as, this script:
+//
+//   - sets status = 'approved'          (required for the feed)
+//   - DELETES their availability rows   (no open slots, so nothing is bookable)
+//   - deactivates per_minute services   (no instant chat request left unanswered)
+//   - CLEARS their credentials          (no fabricated certifications published)
+//
+// Fixed-duration services stay, so the profile still shows a rate. With no
+// availability, `consultant_open_slots` returns nothing and the booking sheet
+// has no slot to claim. `verified` is never set — that badge means somebody
+// checked real credentials, and nobody has.
+//
+// ── THE MANIFEST ───────────────────────────────────────────────────────────
+// `backend/seed/content/content.json` is the list. Media files sit beside it in
+// `backend/seed/content/media/`.
+//
+//   id          your own stable string. Becomes `legacy_id`, so re-running
+//               UPDATES the row rather than adding a second copy.
+//   consultant  a seeded consultant's mock id: a1 Ritu Kashyap, a2 Dev
+//               Malhotra, a3 Meher Bano, a4 Dr. Nandita Rao, a5 Yogesh Pandit,
+//               a6 Simran Kaur. Resolved through `legacy_id`, never by name.
+//   kind        clip (reel, wants a video) · post (photo, wants an image) ·
+//               article (wants title + body)
+//   agoHours    how long ago it was published. The feed shows relative time, so
+//               a stored date goes stale and an offset does not.
+//
+// Idempotent on `legacy_id`, like every other seed here. Media is re-uploaded
+// with `upsert` to the same path, so re-running does not accumulate files.
+
+import { createClient } from '@supabase/supabase-js'
+import { readFile, readdir } from 'node:fs/promises'
+import { basename, extname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HERE = fileURLToPath(new URL('.', import.meta.url))
+const DIR = join(HERE, 'content')
+const MEDIA = join(DIR, 'media')
+const BUCKET = 'content-media'
+
+const MIME = {
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+}
+
+const KINDS = { clip: 'media', post: 'media', article: 'text' }
+
+const ref = (process.argv.find((a) => a.startsWith('--ref=')) || '').slice(6)
+const url = process.env.SUPABASE_URL
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+const dryRun = process.argv.includes('--dry-run')
+
+if (!ref || !url || !key) {
+  die('Usage: SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node backend/seed/content.mjs --ref=<project ref> [--dry-run]')
+}
+if (!url.includes(ref)) {
+  die(`--ref says ${ref}, SUPABASE_URL says ${url}. One of them is wrong, and guessing which is not this script's job.`)
+}
+
+const db = createClient(url, key, { auth: { persistSession: false } })
+
+/* ── Read and validate the manifest before touching anything ───────────────
+   Every refusal names the entry, because a manifest is hand-written and
+   "invalid input" without a row number is a scavenger hunt. */
+const items = JSON.parse(await readFile(join(DIR, 'content.json'), 'utf8'))
+const onDisk = new Set(await readdir(MEDIA).catch(() => []))
+const problems = []
+const seenIds = new Set()
+
+for (const [i, it] of items.entries()) {
+  const at = `entry ${i} (${it.id ?? 'no id'})`
+  if (!it.id) problems.push(`${at}: needs an id — it becomes legacy_id`)
+  if (seenIds.has(it.id)) problems.push(`${at}: duplicate id, legacy_id is unique`)
+  seenIds.add(it.id)
+  if (!it.consultant) problems.push(`${at}: needs a consultant, e.g. "a1"`)
+  if (!KINDS[it.kind]) problems.push(`${at}: kind must be clip, post or article`)
+
+  const ext = it.media ? extname(it.media).toLowerCase() : null
+  const mime = ext ? MIME[ext] : null
+
+  if (KINDS[it.kind] === 'media') {
+    if (!it.media) problems.push(`${at}: a ${it.kind} needs a media file`)
+    else if (!onDisk.has(it.media)) problems.push(`${at}: ${it.media} is not in seed/content/media/`)
+    else if (!mime) problems.push(`${at}: ${it.media} is not a type the bucket accepts`)
+    if (!it.caption?.trim()) problems.push(`${at}: a ${it.kind} needs a caption`)
+    if (it.kind === 'clip' && mime && !mime.startsWith('video/')) {
+      problems.push(`${at}: a clip wants a video, ${it.media} is not one`)
+    }
+    if (it.kind === 'post' && mime && !mime.startsWith('image/')) {
+      problems.push(`${at}: a photo post wants an image, ${it.media} is not one`)
+    }
+  } else {
+    if (!it.title?.trim()) problems.push(`${at}: an article needs a title`)
+    if (!it.body?.trim()) problems.push(`${at}: an article needs a body`)
+  }
+
+  if (it.agoHours != null && !(Number.isFinite(it.agoHours) && it.agoHours >= 0)) {
+    problems.push(`${at}: agoHours must be a number of hours, not ${it.agoHours}`)
+  }
+}
+if (problems.length) die(`manifest has ${problems.length} problem(s):\n  ` + problems.join('\n  '))
+
+/* ── Resolve consultants through legacy_id, never by name ──────────────────
+   Matching a real row to a mock one by display name is the join
+   05-BACKEND-SCHEMA.md §9 warns about, and phase 9 deleted the last one. */
+const wanted = [...new Set(items.map((i) => i.consultant))]
+const { data: rows, error: cErr } = await db
+  .from('consultants')
+  .select('profile_id, legacy_id, status')
+  .in('legacy_id', wanted)
+if (cErr) die(`could not read consultants: ${cErr.message}`)
+
+const byLegacy = new Map((rows ?? []).map((r) => [r.legacy_id, r]))
+const missing = wanted.filter((w) => !byLegacy.has(w))
+if (missing.length) {
+  die(`no seeded consultant for ${missing.join(', ')} on ${ref}. Run backend/seed/seed.mjs first.`)
+}
+
+console.log(`${ref} · ${items.length} item(s) for ${wanted.length} consultant(s)${dryRun ? ' · DRY RUN' : ''}\n`)
+
+/* ── Approve, then take away everything that makes them bookable ─────────── */
+for (const legacy of wanted) {
+  const c = byLegacy.get(legacy)
+
+  if (dryRun) {
+    console.log(`  ${legacy}  would approve, drop availability, deactivate per-minute, clear credentials`)
+    continue
+  }
+
+  if (c.status !== 'approved') {
+    const { error } = await db
+      .from('consultants')
+      .update({ status: 'approved' })
+      .eq('profile_id', c.profile_id)
+    if (error) die(`could not approve ${legacy}: ${error.message}`)
+  }
+
+  // Credentials are cleared, and this is the one protection that is not about
+  // money. The seeded arrays are specific claims — "ICAS Certified", "Jyotish
+  // Visharad", "10k+ sessions" — and `consultants_public` exposes them. Under
+  // 01-PRD.md §7 fabricated certifications on fabricated people is an unfair
+  // trade practice, and that section says get it checked by someone qualified
+  // BEFORE any of it is published. Nobody has. So they go out with no claims
+  // rather than with invented ones; a bio is opinion, a certification is not.
+  //
+  // `verified` is already false and the rating caches are already null/0 — the
+  // trigger computes them from `reviews`, of which there are none. Nothing here
+  // needs to undo those.
+  const { error: credErr } = await db
+    .from('consultants')
+    .update({ credentials: [] })
+    .eq('profile_id', c.profile_id)
+  if (credErr) die(`could not clear credentials for ${legacy}: ${credErr.message}`)
+
+  const { error: aErr, count: dropped } = await db
+    .from('consultant_availability')
+    .delete({ count: 'exact' })
+    .eq('consultant_id', c.profile_id)
+  if (aErr) die(`could not clear availability for ${legacy}: ${aErr.message}`)
+
+  const { error: sErr, count: off } = await db
+    .from('consultant_services')
+    .update({ active: false }, { count: 'exact' })
+    .eq('consultant_id', c.profile_id)
+    .eq('billing', 'per_minute')
+  if (sErr) die(`could not deactivate instant chat for ${legacy}: ${sErr.message}`)
+
+  console.log(
+    `  ${legacy}  approved · ${dropped ?? 0} availability dropped · ${off ?? 0} per-minute off · credentials cleared`,
+  )
+}
+
+/* ── Upload media, then write the rows ───────────────────────────────────── */
+let written = 0
+for (const it of items) {
+  const c = byLegacy.get(it.consultant)
+  let mediaUrl = null
+
+  if (KINDS[it.kind] === 'media') {
+    // The same <uid>/<file> shape the studio uses, so a seeded file is
+    // indistinguishable from an uploaded one and the storage policy would
+    // accept it even without the service role.
+    const path = `${c.profile_id}/seed-${basename(it.media)}`
+    if (!dryRun) {
+      const body = await readFile(join(MEDIA, it.media))
+      const { error } = await db.storage.from(BUCKET).upload(path, body, {
+        contentType: MIME[extname(it.media).toLowerCase()],
+        upsert: true,
+      })
+      if (error) die(`upload failed for ${it.media}: ${error.message}`)
+    }
+    mediaUrl = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
+  }
+
+  const publishedAt = new Date(Date.now() - (it.agoHours ?? 0) * 3600_000).toISOString()
+
+  if (dryRun) {
+    console.log(`  ${it.id}  ${it.kind} as ${it.consultant} · ${it.agoHours ?? 0}h ago`)
+    continue
+  }
+
+  const { error } = await db.from('content').upsert(
+    {
+      consultant_id: c.profile_id,
+      kind: it.kind,
+      title: it.title ?? null,
+      body: it.body ?? null,
+      caption: it.caption ?? null,
+      media_url: mediaUrl,
+      status: 'live',
+      published_at: publishedAt,
+      legacy_id: it.id,
+    },
+    { onConflict: 'legacy_id' },
+  )
+  if (error) die(`could not write ${it.id}: ${error.message}`)
+  written++
+  console.log(`  ${it.id}  ${it.kind} as ${it.consultant} · ${it.agoHours ?? 0}h ago`)
+}
+
+/* ── Say what is true afterwards, not what was attempted ─────────────────── */
+if (dryRun) {
+  console.log('\nDry run. Nothing was written.')
+} else {
+  const { count } = await db
+    .from('content')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'live')
+  console.log(`\n${written} row(s) written. ${count} live content row(s) on ${ref}.`)
+  console.log('Counts stay honest: nothing here fakes a like, a view or a follower.')
+}
+
+function die(msg) {
+  console.error(msg)
+  process.exit(1)
+}

@@ -32,3 +32,8 @@ Bhaktambar Guidance Card/
 # file. The functions live in `backend/functions/`; this directory is never
 # ours, so it never enters git.
 supabase/
+
+# Seeded feed content. The manifest is tracked; the partner's media is not —
+# video and images do not belong in git history.
+backend/seed/content/media/*
+!backend/seed/content/media/.gitkeep

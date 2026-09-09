@@ -1433,10 +1433,43 @@ Migrations ran 9 Sep; the check passes; the deployed bundle carries
 `content-media` and all six new report prices, and no longer carries the "3× the
 standard catalogue rate" line.
 
-**Production has no content, and that is correct.** It has one real approved
-consultant and nothing published. The feed is empty until somebody publishes
-through `/pro/studio` — there is no seed step and there should not be one.
-Approving a second consultant is still somebody typing SQL, which is the
+**Production has no content yet, and the plan for that changed on 9 Sep.** The
+feed is to be seeded from the mock consultants until real ones are publishing —
+`01-PRD.md` §7's launch-empty decision, partially reversed and re-argued there.
+
+`backend/seed/content.mjs` is the tool. It reads
+`backend/seed/content/content.json` plus files in `content/media/`, uploads the
+media, and writes `content` rows idempotently on `legacy_id`. Same `--ref=`
+guard as `seed.mjs`, and `--dry-run` validates the manifest without writing.
+
+**What it does beyond publishing is the part that matters.** For every
+consultant it publishes as it approves them — unavoidable, `content_public`
+requires it — and then removes everything that makes an approved row dangerous:
+
+- availability rows **deleted**, so nothing is bookable. This is not cosmetic:
+  `seed.mjs` gives every seeded consultant prices AND a week of open slots, and
+  `book_session` debits the wallet in the same transaction that claims one. Six
+  invented people on the marketplace would have been a real debit and a real
+  refund. Verified on dev inside a rolled-back transaction: 35 open slots become
+  0, instant chat goes off, and they stay listed in `consultants_public`.
+- per-minute services **deactivated**, so no chat request sits unanswered.
+- credentials **cleared**, so "ICAS Certified" and "10k+ sessions" are not
+  published on someone who does not exist.
+
+`verified` and the rating caches needed no protection: phase 9 made them
+trigger-maintained over `reviews`, so with no reviews they read false, New and
+0. The mock's 4.9 and 2,148 cannot come back through a seed.
+
+**Untested end to end.** The manifest validator and both `--ref` guards were
+exercised; the database and upload path were not, because that needs the
+service-role key. The first real run should be `--dry-run` on dev, then dev, then
+production.
+
+**Still open:** the legal note in §7 — astrology advertising checked by someone
+qualified before publishing, including for profiles labelled as demos — has not
+been done, and seeding is what makes it live rather than theoretical.
+
+Approving a real second consultant is still somebody typing SQL, which is the
 argument for phase 13.
 
 Ordering worth keeping for the next phase that adds tables: **migrations went on
