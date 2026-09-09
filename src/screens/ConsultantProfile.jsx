@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { consultants as seedConsultants, SESSION } from '../data/mock.js'
+import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
 import {
-  Acts,
   Avatar,
   Button,
   Field,
@@ -20,6 +19,7 @@ import {
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { requestChat } from '../lib/chat.js'
+import { fetchByConsultant, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
   { key: 'about', label: 'About' },
@@ -27,14 +27,18 @@ const TABS = [
   { key: 'reviews', label: 'Reviews' },
 ]
 
-/** Star distribution, as a share of all reviews. */
-const DISTRIBUTION = [
-  [5, 92],
-  [4, 6],
-  [3, 1],
-  [2, 0.6],
-  [1, 0.4],
-]
+/**
+ * Star distribution as a share of all reviews, worked out from the reviews
+ * themselves. It used to be five hardcoded percentages that said 92% five-star
+ * for everybody, including a consultant with no reviews at all.
+ */
+function distribution(reviews) {
+  const n = reviews.length
+  return [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((r) => r.rating === stars).length
+    return [stars, n ? Math.round((count / n) * 100) : 0]
+  })
+}
 
 /** The next three days, as the sheet offers them. The server's horizon is
  *  fourteen; this is as far ahead as one screen of six slots is useful. */
@@ -64,6 +68,7 @@ export default function ConsultantProfile() {
   const [days] = useState(nextDays)
   const [day, setDay] = useState(days[0].key)
   const [slots, setSlots] = useState(null)
+  const [followers, setFollowers] = useState(null)
 
   useEffect(() => {
     let live = true
@@ -72,6 +77,20 @@ export default function ConsultantProfile() {
       setC(row)
       setService(row?.fixed.find((s) => s.duration_mins === SESSION.mins) ?? row?.fixed[0] ?? null)
     })
+    return () => {
+      live = false
+    }
+  }, [id])
+
+  /* The follower count, which is a COUNT of rows rather than a column — the
+     mock said '52.0k' for a consultant nobody had ever followed. Null until it
+     arrives, so the line renders a real number or nothing, never a 0 that is
+     only a placeholder. */
+  useEffect(() => {
+    let live = true
+    followerCount(id)
+      .then((n) => live && setFollowers(n))
+      .catch((err) => console.error('[followers] load failed:', err.message))
     return () => {
       live = false
     }
@@ -199,6 +218,15 @@ export default function ConsultantProfile() {
                 <span className="font-bold t-sub">
                   {c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}
                 </span>
+                {followers !== null && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-bold t-sub">
+                      {followers.toLocaleString('en-IN')}
+                    </span>{' '}
+                    {followers === 1 ? 'follower' : 'followers'}
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -420,22 +448,39 @@ function About({ c }) {
 }
 
 /**
- * Published work and reviews are phase 9 tables and do not exist yet, so both
- * tabs still read mock.js — matched to the real row BY DISPLAY NAME, which is
- * exactly the join the schema document spends a section warning about.
+ * Published work and reviews, both read from the tables phase 9 built.
  *
- * It is tolerable here and nowhere else: it decorates two tabs, it touches no
- * money and no identity, and it resolves to nothing for a consultant who
- * applied rather than being seeded — who then correctly shows zero. Phase 9
- * deletes this function.
+ * This replaces a function called `seedFor` that matched the real consultant
+ * row to a mock one BY DISPLAY NAME — the join the schema document spends a
+ * section warning about. It was tolerable while it decorated two tabs and
+ * touched no money; it is gone now, and with it the last place in this screen
+ * where a number came from somewhere other than a row.
  */
-function seedFor(c) {
-  return seedConsultants.find((m) => m.name === c.name) ?? null
-}
-
 function Work({ c }) {
-  const seed = seedFor(c)
-  if (!seed) {
+  const [items, setItems] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetchByConsultant(c.id)
+      .then((rows) => active && setItems(rows))
+      .catch((err) => {
+        console.error('[work] load failed:', err.message)
+        if (active) setItems([])
+      })
+    return () => {
+      active = false
+    }
+  }, [c.id])
+
+  if (items === null) {
+    return (
+      <Section label="Work">
+        <p className="prose-c">Loading.</p>
+      </Section>
+    )
+  }
+
+  if (!items.length) {
     return (
       <Section label="Nothing published">
         <p className="prose-c">
@@ -444,18 +489,18 @@ function Work({ c }) {
       </Section>
     )
   }
-  c = { ...c, content: seed.content }
+
   return (
-    <Section label={`${c.content.length} pieces`}>
+    <Section label={`${items.length} ${items.length === 1 ? 'piece' : 'pieces'}`}>
       <ul>
-        {c.content.map((p) => (
+        {items.map((p) => (
           <li
             key={p.id}
             className="flex items-baseline justify-between gap-4 border-b border-rule py-3.5"
           >
-            <span className="min-w-0 truncate text-body text-t2">{p.title}</span>
+            <span className="min-w-0 truncate text-body text-t2">{p.title || p.caption}</span>
             <span className="flex-none text-micro uppercase tracking-caps text-t3 tnum">
-              {p.type} · {p.views}
+              {p.kind === 'clip' ? 'Reel' : p.kind === 'article' ? 'Article' : 'Note'} · {p.time}
             </span>
           </li>
         ))}
@@ -468,13 +513,33 @@ function Work({ c }) {
 }
 
 function Reviews({ c }) {
-  const { showToast } = useStore()
-  const seed = seedFor(c)
+  const [reviews, setReviews] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetchReviews(c.id)
+      .then((rows) => active && setReviews(rows))
+      .catch((err) => {
+        console.error('[reviews] load failed:', err.message)
+        if (active) setReviews([])
+      })
+    return () => {
+      active = false
+    }
+  }, [c.id])
+
+  if (reviews === null) {
+    return (
+      <Section label="Reviews">
+        <p className="prose-c">Loading.</p>
+      </Section>
+    )
+  }
 
   /* Honest and small beats large and invented: a consultant with no completed
-     sessions has no reviews, and phase 9 is where a review becomes a row that
-     can only be written against one. */
-  if (!seed) {
+     sessions has no reviews, and a review is a row that can only be written
+     against one. */
+  if (!reviews.length) {
     return (
       <Section label="No reviews yet">
         <p className="prose-c">
@@ -484,19 +549,20 @@ function Reviews({ c }) {
       </Section>
     )
   }
-  c = { ...c, rating: seed.rating, reviewCount: seed.reviewCount, reviews: seed.reviews }
+
+  const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
 
   return (
-    <Section label={`${c.reviewCount.toLocaleString('en-IN')} reviews`}>
+    <Section label={`${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}>
       {/* The distribution, drawn as rules. A single average hides whether the
           rating is a consensus or a fight. */}
       <div className="flex items-center gap-6 border-b border-rule pb-8">
         <div className="flex-none text-center">
-          <p className="text-display font-light tnum">{c.rating}</p>
-          <Ticks value={Math.round(c.rating)} className="mt-2 w-16" />
+          <p className="text-display font-light tnum">{avg}</p>
+          <Ticks value={Math.round(avg)} className="mt-2 w-16" />
         </div>
         <ul className="min-w-0 flex-1">
-          {DISTRIBUTION.map(([stars, pct]) => (
+          {distribution(reviews).map(([stars, pct]) => (
             <li key={stars} className="flex items-center gap-3 py-1">
               <span className="w-2 flex-none text-micro text-t3 tnum">{stars}</span>
               <span className="h-[2px] flex-1 bg-rule">
@@ -509,29 +575,31 @@ function Reviews({ c }) {
       </div>
 
       <ul>
-        {c.reviews.map((r) => (
+        {reviews.map((r) => (
           <li key={r.id} className="border-b border-rule py-5">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-meta text-t1">{r.name}</span>
-              <span className="flex items-center gap-3">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-meta text-t1">{r.name}</span>
+                {/* Unverified reviews are visibly distinguished — the phase's
+                    third done-condition. `verified` is derived from whether a
+                    booking sits behind the row, so it cannot be set by hand. */}
+                {r.verified ? (
+                  <span className="flex-none text-micro uppercase tracking-caps gold">Verified</span>
+                ) : (
+                  <span className="flex-none text-micro uppercase tracking-caps t-faint">
+                    Unverified
+                  </span>
+                )}
+              </span>
+              <span className="flex flex-none items-center gap-3">
                 <Ticks value={r.rating} className="w-12" />
                 <span className="text-micro uppercase tracking-caps text-t3">{r.ago}</span>
               </span>
             </div>
-            <p className="mt-3 text-body text-t2">{r.text}</p>
+            {r.text && <p className="mt-3 text-body text-t2">{r.text}</p>}
           </li>
         ))}
       </ul>
-
-      <Acts
-        className="mt-6 justify-center"
-        items={[
-          {
-            label: `All ${c.reviewCount.toLocaleString('en-IN')} reviews`,
-            onClick: () => showToast('Full review list — prototype only'),
-          },
-        ]}
-      />
     </Section>
   )
 }

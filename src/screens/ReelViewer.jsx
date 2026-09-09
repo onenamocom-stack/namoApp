@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { clips } from '../data/mock.js'
+import { useCallback, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import ReelFeed from '../components/ReelFeed.jsx'
 
 /**
@@ -12,14 +11,21 @@ import ReelFeed from '../components/ReelFeed.jsx'
 export default function ReelViewer() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const startIndex = clips.findIndex((c) => c.id === id)
-  const [index, setIndex] = useState(Math.max(0, startIndex))
+  const [index, setIndex] = useState(0)
+  const [total, setTotal] = useState(0)
 
-  if (startIndex === -1) return <Navigate to="/home" replace />
+  /* The counter is told by the feed rather than working it out: since phase 9
+     the list is a query, and this screen redirecting on "not found" before the
+     rows arrived sent every reel link straight back to /home. ReelFeed shows
+     its own empty state if the id resolves to nothing. */
+  const onIndexChange = useCallback((next, count) => {
+    setIndex(next)
+    if (count != null) setTotal(count)
+  }, [])
 
   return (
     <div className="relative h-full bg-ink">
-      <ReelFeed startId={id} onIndexChange={setIndex} syncUrl />
+      <ReelFeed startId={id} onIndexChange={onIndexChange} syncUrl />
 
       <button
         type="button"
@@ -31,7 +37,7 @@ export default function ReelViewer() {
       </button>
 
       <span className="pointer-events-none absolute right-4 top-5 z-20 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 tnum">
-        {index + 1} / {clips.length}
+        {total ? `${index + 1} / ${total}` : ''}
       </span>
 
       <span className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/90">

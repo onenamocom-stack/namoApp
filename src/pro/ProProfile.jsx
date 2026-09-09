@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { clips, liveSessions, mine, posts, pro, reads } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
 import { rupees, useConsultantFields, useStore } from '../store.jsx'
 import { listServices } from '../lib/consultants.js'
+import { fetchByConsultant, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
   { key: 'content', label: 'Content' },
@@ -15,25 +15,44 @@ const TABS = [
 ]
 
 /**
- * Everything the consultant has published, pulled out of the shared lists
- * rather than stored again. Each item keeps the route its viewer already
- * lives at, so a tile opens the real screen a client would see.
+ * One published row as a tile. Each keeps the route its viewer already lives
+ * at, so a tile opens the real screen a client would see.
+ *
+ * This was a module-level constant built from four mock lists filtered by
+ * `mine()`. It is a query now, which also means it is empty for a consultant
+ * who has published nothing — rather than showing them somebody else's work.
  */
-const published = [
-  ...mine(clips).map((x) => ({ id: x.id, kind: 'Reel', title: x.caption, meta: `${x.views} views`, to: `/reels/${x.id}` })),
-  ...mine(reads).map((x) => ({ id: x.id, kind: 'Article', title: x.title, meta: `${x.views} read`, to: `/read/${x.id}` })),
-  ...mine(posts).map((x) => ({ id: x.id, kind: 'Note', title: x.text, meta: `${x.likes} likes`, to: '/home' })),
-  ...mine(liveSessions).map((x) => ({ id: x.id, kind: 'Live', title: x.topic, meta: `${x.viewers || '—'} watching`, to: `/live/${x.id}` })),
-]
+function tile(c) {
+  if (c.kind === 'clip') {
+    return { id: c.id, kind: 'Reel', title: c.caption, meta: c.time, to: `/reels/${c.id}` }
+  }
+  if (c.kind === 'article') {
+    return { id: c.id, kind: 'Article', title: c.title, meta: c.time, to: `/read/${c.id}` }
+  }
+  return { id: c.id, kind: 'Note', title: c.body || c.caption, meta: c.time, to: '/home' }
+}
 
 export default function ProProfile() {
   const { tab = 'content' } = useParams()
   const navigate = useNavigate()
   const { consultant } = useStore()
   const [services, setServices] = useState([])
+  const [followers, setFollowers] = useState(null)
 
   useEffect(() => {
     if (consultant?.profile_id) listServices(consultant.profile_id).then(setServices)
+  }, [consultant])
+
+  useEffect(() => {
+    const id = consultant?.profile_id
+    if (!id) return
+    let active = true
+    followerCount(id)
+      .then((n) => active && setFollowers(n))
+      .catch((err) => console.error('[pro followers] load failed:', err.message))
+    return () => {
+      active = false
+    }
   }, [consultant])
 
   /* Real identity from phase 4. `pro` is still spread underneath for the
@@ -55,18 +74,26 @@ export default function ProProfile() {
           <div className="min-w-0 flex-1 pt-1">
             <h1 className="truncate text-lead font-semibold t-heading">{me.name}</h1>
             <p className="mt-0.5 truncate text-meta t-body">{me.specialization}</p>
+            {/* Every number on this line is now yours. Rating and review count
+                come off the two `_cache` columns a trigger maintains over
+                `reviews`; the follower count is a COUNT of `reactions`. A
+                consultant nobody has reviewed reads "New", not 4.9. */}
             <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] t-faint tnum">
-              {/* Rating, reviews and followers are phase 9 and still seed —
-                  the experience figure beside them is not. */}
-              <span className="font-bold t-sub">{me.rating}</span> rating
+              <span className="font-bold t-sub">{me.rating ?? 'New'}</span> rating
               <span aria-hidden="true">·</span>
-              <span className="font-bold t-sub">{me.reviewCount.toLocaleString('en-IN')}</span> reviews
+              <span className="font-bold t-sub">{me.reviewCount.toLocaleString('en-IN')}</span>{' '}
+              {me.reviewCount === 1 ? 'review' : 'reviews'}
               <span aria-hidden="true">·</span>
               <span className="font-bold t-sub">
                 {me.experienceYrs ? `${me.experienceYrs} yrs` : '—'}
               </span>
-              <span aria-hidden="true">·</span>
-              <span className="font-bold t-sub">{me.followers}</span> followers
+              {followers !== null && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-bold t-sub">{followers.toLocaleString('en-IN')}</span>{' '}
+                  {followers === 1 ? 'follower' : 'followers'}
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -113,11 +140,30 @@ export default function ProProfile() {
 }
 
 function Content() {
+  const { consultant } = useStore()
+  const [published, setPublished] = useState([])
+
+  const me = consultant?.profile_id
+  useEffect(() => {
+    if (!me) return
+    let active = true
+    fetchByConsultant(me)
+      .then((rows) => active && setPublished(rows.map(tile)))
+      .catch((err) => console.error('[pro profile] load failed:', err.message))
+    return () => {
+      active = false
+    }
+  }, [me])
+
   return (
     <section className="px-5 py-6">
       <Kicker action="Post something" to="/pro/studio">
         {`${published.length} published`}
       </Kicker>
+
+      {!published.length && (
+        <p className="prose-c mt-4">Nothing yet. What you post in the studio appears here.</p>
+      )}
 
       <ul className="mt-4 grid grid-cols-3 gap-2">
         {published.map((p) => (
@@ -139,14 +185,45 @@ function Content() {
 }
 
 function Reviews() {
+  const { consultant } = useStore()
+  const [reviews, setReviews] = useState([])
+
+  const me = consultant?.profile_id
+  useEffect(() => {
+    if (!me) return
+    let active = true
+    fetchReviews(me)
+      .then((rows) => active && setReviews(rows))
+      .catch((err) => console.error('[pro reviews] load failed:', err.message))
+    return () => {
+      active = false
+    }
+  }, [me])
+
+  /* Your own reviews, not the seed person's. An empty list is the honest
+     answer for a consultant nobody has completed a session with — and it is
+     the only answer the table can give, since a review needs a booking. */
+  if (!reviews.length) {
+    return (
+      <section className="px-5 py-6">
+        <Kicker>No reviews yet</Kicker>
+        <p className="prose-c mt-4">
+          A client can review you once a session with them is completed.
+        </p>
+      </section>
+    )
+  }
+
+  const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+
   return (
     <section className="px-5 py-6">
-      <Kicker>{`${pro.reviewCount.toLocaleString('en-IN')} reviews`}</Kicker>
+      <Kicker>{`${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}</Kicker>
 
       <div className="mt-4 flex items-center gap-5 border-b border-rule pb-6">
         <div className="flex-none text-center">
-          <p className="font-display text-display tnum t-heading">{pro.rating}</p>
-          <Ticks value={Math.round(pro.rating)} className="mt-2 w-16" />
+          <p className="font-display text-display tnum t-heading">{avg}</p>
+          <Ticks value={Math.round(avg)} className="mt-2 w-16" />
         </div>
         <p className="min-w-0 flex-1 text-meta t-body">
           Clients rate the session, not the news in it. A four is usually a chart you did not
@@ -155,7 +232,7 @@ function Reviews() {
       </div>
 
       <ul>
-        {pro.reviews.map((r) => (
+        {reviews.map((r) => (
           <li key={r.id} className="border-b border-rule py-5 last:border-b-0">
             <div className="flex items-center justify-between gap-4">
               <span className="text-meta t-heading">{r.name}</span>
@@ -164,7 +241,7 @@ function Reviews() {
                 <span className="caps-sm t-faint">{r.ago}</span>
               </span>
             </div>
-            <p className="mt-3 text-meta t-sub">{r.text}</p>
+            {r.text && <p className="mt-3 text-meta t-sub">{r.text}</p>}
           </li>
         ))}
       </ul>

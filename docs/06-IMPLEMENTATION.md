@@ -364,8 +364,13 @@ returns and courier tracking, none of which the UI has today.
 two people at once, and the frozen line price on an old order does not move when
 the catalogue price changes.
 
-**Blocked on:** the duplicate-SKU and report-price decisions (`01-PRD.md` §5.2,
-§5.3). The multiplier must be deleted before anything is seeded.
+**No longer blocked on pricing.** §5.2 and §5.3 were decided 7 Sep 2026, the six
+report prices are typed, and `REPORT_MULTIPLIER` is deleted — so seeding no
+longer encodes a price that has to be unpicked.
+
+**Still blocked on supply, for reports only:** the ephemeris vendor's Entry tier
+generates two reports a month (`02-TRD.md` §8). Shop and Academy do not touch
+it; the report SKUs cannot be sold until that tier changes.
 
 ---
 

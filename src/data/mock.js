@@ -150,208 +150,6 @@ export const notifications = [
    long reads, short video, live rooms.
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const posts = [
-  {
-    id: 'po1',
-    consultantId: 'a1',
-    consultant: 'Ritu Kashyap',
-    initials: 'RK',
-    role: 'Vedic astrologer',
-    time: '2h',
-    text: 'For the people messaging me at midnight: a difficult transit is a forecast, not a sentence. Rain is coming. You still choose whether to carry an umbrella or cancel the trip.',
-    likes: 1842,
-    comments: 96,
-    shares: 41,
-    saved: false,
-  },
-  {
-    id: 'po2',
-    consultantId: 'a3',
-    consultant: 'Meher Bano',
-    initials: 'MB',
-    role: 'Tarot reader',
-    time: '5h',
-    text: 'Today’s pull for the collective: Eight of Cups. Something you built is no longer something you want. That is allowed.',
-    plate: 'Eight of Cups',
-    likes: 3120,
-    comments: 214,
-    shares: 88,
-    saved: true,
-  },
-  {
-    id: 'po3',
-    consultantId: 'a6',
-    consultant: 'Simran Kaur',
-    initials: 'SK',
-    role: 'Life coach',
-    time: '9h',
-    text: 'Four clients this week described the same thing: they know the decision, they are waiting for someone to approve it. Consider this your approval.',
-    likes: 967,
-    comments: 52,
-    shares: 23,
-    saved: false,
-  },
-  {
-    id: 'po4',
-    consultantId: 'a5',
-    consultant: 'Yogesh Pandit',
-    initials: 'YP',
-    role: 'Numerologist',
-    time: '1d',
-    text: 'A business name is not a lucky charm. It is a promise you have to keep saying out loud for ten years. Pick one you can stand to hear.',
-    likes: 512,
-    comments: 31,
-    shares: 12,
-    saved: false,
-  },
-]
-
-export const reads = [
-  {
-    id: 'b1',
-    consultantId: 'a1',
-    consultant: 'Ritu Kashyap',
-    initials: 'RK',
-    title: 'Saturn Return: what actually happens at 29',
-    excerpt:
-      'Everyone warns you about it and nobody explains it. A plain reading of the transit, what it asks of you, and the three places it lands hardest.',
-    readTime: '8 min',
-    views: '42.1k',
-    date: '1 Aug',
-    tag: 'Transits',
-    body: [
-      'Everyone tells you the Saturn return is coming. Almost nobody tells you what it actually does, which is why it arrives feeling like a personal failure rather than a scheduled transit.',
-      'Saturn takes roughly twenty-nine and a half years to go around the sun. At some point between twenty-eight and thirty-one it returns to the degree it occupied when you were born, and stays in the neighbourhood for about two years. That is the whole mechanism. There is nothing mystical about the timing.',
-      'What it asks is narrow and consistent: it audits the structures you built on borrowed assumptions. The career you chose because it was legible to your parents. The relationship that works as long as nobody raises the real question. The city you moved to for one job you no longer have.',
-      'It lands hardest in three places. The first is work, because that is where most people have accepted a default. The second is the relationship you have already privately decided about. The third is your relationship to your own authority — whether you are still waiting for someone to tell you it is allowed.',
-      'The advice everyone gives is to endure it. That is half right. What actually shortens it is being the one who ends things, rather than waiting to be ended. Saturn does not reward patience. It rewards accuracy.',
-    ],
-  },
-  {
-    id: 'b2',
-    consultantId: 'a4',
-    consultant: 'Dr. Nandita Rao',
-    initials: 'NR',
-    title: 'Grief, rituals and the 8th house',
-    excerpt:
-      'Where clinical psychology and astrology actually agree: ritual gives loss a shape. What to do when the shape keeps changing.',
-    readTime: '7 min',
-    views: '31.5k',
-    date: '29 Jul',
-    tag: 'Wellness',
-    body: [
-      'Clinical psychology and astrology agree on almost nothing. They agree on this: ritual gives loss a shape, and shapeless loss is the kind that does not move.',
-      'The 8th house is the traditional territory of death, inheritance and everything else you do not get to choose. Read plainly, it is the part of a chart that describes how you metabolise what happens to you rather than what you make happen.',
-      'In practice, people arrive with the same problem stated two ways. Either the ritual stopped working, or there was never one to begin with. The first group has a funeral, an anniversary, a set of gestures that used to hold — and now feel like theatre. The second has nothing but the date.',
-      'What helps is not a better ritual. It is accepting that the shape has to keep changing, because you keep changing, and a rite built for the person you were at the moment of the loss will not fit the person you are three years later.',
-      'Make one small enough to repeat. Big rituals fail because you cannot face them twice.',
-    ],
-  },
-  {
-    id: 'b3',
-    consultantId: 'a2',
-    consultant: 'Dev Malhotra',
-    initials: 'DM',
-    title: 'Reading your Moon sign without the jargon',
-    excerpt:
-      'Your Moon is not a mood board. A working guide to the placement that governs how you recover from things.',
-    readTime: '5 min',
-    views: '18.7k',
-    date: '27 Jul',
-    tag: 'Basics',
-    body: [
-      'Your Moon sign gets described as your emotional nature, which is vague enough to be useless. Here is a working definition: the Moon is how you recover.',
-      'Not what upsets you — that is most of the chart. Recovery. What you reach for when the day has already gone wrong, and how long it takes before you are available to other people again.',
-      'A water Moon recovers by withdrawing and processing in private, which the people around you will read as withdrawal, because it is. An air Moon recovers by talking it into a shape. An earth Moon recovers by doing something with a visible result. A fire Moon recovers by moving.',
-      'The useful part is not the label. It is that recovery styles are not interchangeable, and most conflict about feelings is actually conflict about method — one person wants to be talked through it and the other needs an hour alone, and both read the other as withholding.',
-      'Tell someone how you recover once, plainly, before the next time you need to. It is a much shorter conversation in advance than during.',
-    ],
-  },
-  {
-    id: 'b4',
-    consultantId: 'a6',
-    consultant: 'Simran Kaur',
-    initials: 'SK',
-    title: 'The messy middle of a career change',
-    excerpt:
-      'The year after you quit is not a gap. It is the work. A structure for the part nobody posts about.',
-    readTime: '6 min',
-    views: '17.4k',
-    date: '24 Jul',
-    tag: 'Career',
-    body: [
-      'The year after you quit is not a gap. It is the work. Nobody posts about it because there is no photograph of it.',
-      'The structure that helps is boring: name the thing you are actually optimising for, give the search a deadline, and separate the money question from the meaning question so they stop contaminating each other.',
-      'Most people conflate those two and then wonder why every option feels wrong. A job can be a bridge without being a betrayal of the plan. Deciding that in advance removes about half the anguish.',
-      'Expect the middle to be long, and expect to be worse company during it. Both are normal, and neither is evidence that the decision was wrong.',
-      'The people who come out of it well are the ones who set a review date and kept it, rather than the ones who waited to feel certain.',
-    ],
-  },
-]
-
-export const clips = [
-  {
-    id: 'r1',
-    consultantId: 'a1',
-    consultant: 'Ritu Kashyap',
-    initials: 'RK',
-    caption: 'Your Saturn return is not a punishment. It is an audit.',
-    audio: 'Original audio · Ritu Kashyap',
-    duration: '0:48',
-    views: '312k',
-    likes: '24.1k',
-    comments: '1.1k',
-  },
-  {
-    id: 'r2',
-    consultantId: 'a3',
-    consultant: 'Meher Bano',
-    initials: 'MB',
-    caption: 'Pull one card before you reply to that message. Here is how.',
-    audio: 'Original audio · Meher Bano',
-    duration: '1:12',
-    views: '186k',
-    likes: '15.7k',
-    comments: '642',
-  },
-  {
-    id: 'r3',
-    consultantId: 'a2',
-    consultant: 'Dev Malhotra',
-    initials: 'DM',
-    caption: 'Three compatibility myths that keep good people apart.',
-    audio: 'Original audio · Dev Malhotra',
-    duration: '0:36',
-    views: '97.4k',
-    likes: '8.9k',
-    comments: '410',
-  },
-  {
-    id: 'r4',
-    consultantId: 'a4',
-    consultant: 'Dr. Nandita Rao',
-    initials: 'NR',
-    caption: 'Grief does not have stages. It has weather.',
-    audio: 'Original audio · Dr. Nandita Rao',
-    duration: '1:04',
-    views: '441k',
-    likes: '52.3k',
-    comments: '2.8k',
-  },
-  {
-    id: 'r5',
-    consultantId: 'a5',
-    consultant: 'Yogesh Pandit',
-    initials: 'YP',
-    caption: 'Pick your launch date like you pick a wedding date.',
-    audio: 'Original audio · Yogesh Pandit',
-    duration: '0:52',
-    views: '64.2k',
-    likes: '5.1k',
-    comments: '288',
-  },
-]
-
 export const liveSessions = [
   {
     id: 'l1',
@@ -581,8 +379,6 @@ export const consultants = [
 export const pro = consultants[0]
 
 /** Everything `pro` has published, out of whichever shared list you pass. */
-export const mine = (list) => list.filter((x) => x.consultantId === pro.id)
-
 /* ══════════════════════════════════════════════════════════════════════════
    PRO — the consultant's own side. Bookings he must answer, the money that
    comes out of them, and the slots he has already sold.
@@ -680,7 +476,7 @@ export const payouts = [
 export const proLedger = [
   { id: 'pl1', label: 'Sana B. · 15 min', date: 'Today', gross: 1499, fee: 270, net: 1229 },
   { id: 'pl2', label: 'Vikram T. · 30 min', date: 'Yesterday', gross: 2998, fee: 540, net: 2458 },
-  { id: 'pl3', label: 'Natal report', date: 'Yesterday', gross: 4041, fee: 727, net: 3314 },
+  { id: 'pl3', label: 'Natal report', date: 'Yesterday', gross: 1497, fee: 269, net: 1228 },
   { id: 'pl4', label: 'Meera J. · 30 min', date: '6 Aug', gross: 2998, fee: 540, net: 2458 },
   { id: 'pl5', label: 'Live room · tips', date: '5 Aug', gross: 860, fee: 155, net: 705 },
   { id: 'pl6', label: 'Arjun P. · 10 min', date: '4 Aug', gross: 999, fee: 180, net: 819 },
@@ -978,35 +774,8 @@ export const questionPacks = [
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PREMIUM
+   PREMIUM — defined below REPORTS, because it is a view over them.
    ══════════════════════════════════════════════════════════════════════════ */
-
-export const premiumTiers = [
-  {
-    id: 'ask',
-    name: 'Ask the Stars',
-    price: 349,
-    unit: 'for 12 questions',
-    line: 'Put a real question to your chart. Get an answer that does not flatter you.',
-    includes: ['12 chart-aware questions', 'Answers cite the placement', 'Kept in one thread'],
-  },
-  {
-    id: 'love',
-    name: 'The Relationship Report',
-    price: 899,
-    unit: 'one-off',
-    line: 'Forty pages on how you attach, what you withhold, and the pattern you keep re-entering.',
-    includes: ['Venus & Mars audit', '7th house reading', 'The habit you deny'],
-  },
-  {
-    id: 'eros',
-    name: 'Eros — for two',
-    price: 1299,
-    unit: 'one-off',
-    line: 'A synastry reading written for both of you to read at the same time. It will start an argument. That is the product.',
-    includes: ['Full synastry grid', 'Composite chart', 'Two named friction points'],
-  },
-]
 
 /* ══════════════════════════════════════════════════════════════════════════
    SHOP
@@ -1235,46 +1004,45 @@ export const consultantReplies = [
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════
-   HOME FEED — one stream, mixed formats. `kind` decides how a card renders;
-   `refId` cross-references clips / reads / posts / consultants so every card
-   resolves to something real rather than carrying a duplicate copy.
+   HOME FEED — what is left of it.
+
+   This was 14 hand-ordered rows mixing posts, reels, articles, live rooms,
+   courses and products. Since phase 9 the first three are a QUERY over the
+   `content` table and are gone from here; `05-BACKEND-SCHEMA.md` §5.3 has the
+   reasoning, which is that a feed table is a ranking system and there is no
+   ranking.
+
+   What stays is the part no table holds yet: a live room (phase 11 owns the
+   room lifecycle) and one course and one product (phase 10). Both go the same
+   way this half did.
+
+   `reading` stays too, and it is NOT a content row — `refId: 'today'` points at
+   a key of `days`, not an ID, and Home.jsx hoists the reading and panchang
+   cards in the component rather than ordering them here. Seeding it would be
+   inventing content that does not exist.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export const feed = [
-  { id: 'f1', kind: 'post', refId: 'po1' },
-  { id: 'f2', kind: 'reel', refId: 'r1' },
-  { id: 'f3', kind: 'reading', refId: 'today' },
-  { id: 'f4', kind: 'article', refId: 'b1' },
-  { id: 'f5', kind: 'post', refId: 'po2' },
   { id: 'f6', kind: 'live', refId: 'l1' },
-  { id: 'f7', kind: 'reel', refId: 'r4' },
   { id: 'f8', kind: 'course', refId: 'c1' },
-  { id: 'f9', kind: 'article', refId: 'b2' },
-  { id: 'f10', kind: 'post', refId: 'po3' },
-  { id: 'f11', kind: 'reel', refId: 'r2' },
   { id: 'f12', kind: 'product', refId: 'sh1' },
-  { id: 'f13', kind: 'post', refId: 'po4' },
-  { id: 'f14', kind: 'article', refId: 'b3' },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════
    REPORTS — the paid long-form artefacts, sold from Profile and Consult.
 
-   PRICING NOTE: the brief asked for "3x the displayed price in the
-   screenshot", but no screenshot was supplied. `base` below is the ordinary
-   catalogue price for each report; `price` is the 3x figure the UI shows, and
-   it is DERIVED rather than typed so the multiplier stays visible and is
-   trivial to change in one place if the reference numbers turn up.
+   Prices are TYPED, once, and are the real ones. They were derived from a
+   `base × 3` placeholder until 7 Sep 2026; the multiplier is deleted because
+   it had already compounded once into a ₹4,041 ledger row that matched no
+   report in this list. `01-PRD.md` §5.3 has the decision.
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const REPORT_MULTIPLIER = 3
-
-const reportCatalogue = [
+export const reports = [
   {
     id: 'rp1',
     name: 'Full Birth Chart Report',
     tag: 'Natal',
-    base: 499,
+    price: 1497,
     pages: 42,
     delivery: '24 hours',
     line: 'Every placement, house and aspect written out in plain language. The whole chart, once, properly.',
@@ -1285,7 +1053,7 @@ const reportCatalogue = [
     id: 'rp2',
     name: 'Career & Timing Report',
     tag: 'Career',
-    base: 699,
+    price: 2097,
     pages: 28,
     delivery: '48 hours',
     line: 'The 10th house, your dasha sequence, and the windows worth moving in over the next three years.',
@@ -1296,7 +1064,7 @@ const reportCatalogue = [
     id: 'rp3',
     name: 'The Relationship Report',
     tag: 'Love',
-    base: 899,
+    price: 2697,
     pages: 40,
     delivery: '48 hours',
     line: 'How you attach, what you withhold, and the pattern you keep re-entering.',
@@ -1307,7 +1075,7 @@ const reportCatalogue = [
     id: 'rp4',
     name: 'Eros — Synastry for Two',
     tag: 'Synastry',
-    base: 1299,
+    price: 3897,
     pages: 56,
     delivery: '72 hours',
     line: 'One reading written for both of you to read at the same time. It will start an argument. That is the product.',
@@ -1318,7 +1086,7 @@ const reportCatalogue = [
     id: 'rp5',
     name: 'Year Ahead Forecast',
     tag: 'Transits',
-    base: 599,
+    price: 1797,
     pages: 34,
     delivery: '24 hours',
     line: 'Twelve months of transits, ranked by weight, with the three that actually matter marked.',
@@ -1329,7 +1097,7 @@ const reportCatalogue = [
     id: 'rp6',
     name: 'Remedies & Gemstone Report',
     tag: 'Remedial',
-    base: 449,
+    price: 1347,
     pages: 18,
     delivery: '24 hours',
     line: 'What is conventionally prescribed for your placements, and an honest note on what it can and cannot do.',
@@ -1338,7 +1106,53 @@ const reportCatalogue = [
   },
 ]
 
-export const reports = reportCatalogue.map((r) => ({
-  ...r,
-  price: r.base * REPORT_MULTIPLIER,
-}))
+/* ══════════════════════════════════════════════════════════════════════════
+   PREMIUM — a merchandising view over REPORTS and questionPacks, not a third
+   catalogue. Every price here is READ from the SKU it sells, so the two lists
+   cannot drift apart again. That drift was `01-PRD.md` §5.2: the same two
+   reports were sold at ₹899/₹2,697 and ₹1,299/₹3,897, and "Ask the Stars"
+   was the ₹349 12-question pack under a second name. Decided 7 Sep 2026 —
+   the pack and the report own their price; premium only dresses them.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const sku = (list, id) => {
+  const found = list.find((x) => x.id === id)
+  if (!found) throw new Error(`premiumTiers: no SKU ${id}`)
+  return found
+}
+
+const askPack = sku(questionPacks, 'p12')
+
+export const premiumTiers = [
+  {
+    id: 'ask',
+    sells: askPack.id,
+    name: 'Ask the Stars',
+    price: askPack.price,
+    unit: `for ${askPack.questions} questions`,
+    line: 'Put a real question to your chart. Get an answer that does not flatter you.',
+    includes: [
+      `${askPack.questions} chart-aware questions`,
+      'Answers cite the placement',
+      'Kept in one thread',
+    ],
+  },
+  {
+    id: 'love',
+    sells: 'rp3',
+    name: sku(reports, 'rp3').name,
+    price: sku(reports, 'rp3').price,
+    unit: 'one-off',
+    line: 'Forty pages on how you attach, what you withhold, and the pattern you keep re-entering.',
+    includes: sku(reports, 'rp3').includes,
+  },
+  {
+    id: 'eros',
+    sells: 'rp4',
+    name: 'Eros — for two',
+    price: sku(reports, 'rp4').price,
+    unit: 'one-off',
+    line: 'A synastry reading written for both of you to read at the same time. It will start an argument. That is the product.',
+    includes: sku(reports, 'rp4').includes,
+  },
+]

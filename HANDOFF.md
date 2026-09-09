@@ -1347,7 +1347,7 @@ next reload.
 | `/read/:id` | `reads` lookup | a row; body splits on blank lines, read time computed from it |
 | `/reels/:id` | `clips` lookup | a query; the counter is told the total by the feed rather than counting a mock array |
 | `/consult/:id` Work and Reviews | **matched to the real consultant BY DISPLAY NAME** | queries. That join is gone |
-| `/pro/studio` | two toasts | publishes rows, uploads files, lists what you actually published |
+| `/pro/studio` | two toasts that wrote nothing | three composers — **Reel** (video, required), **Photo** (image, required), **Blog** (title, body, optional cover) — each uploading to storage and writing a row |
 | `/pro/profile` | `mine(clips)` etc., and the seed person's 4.9 rating | your rows, your rating caches, your follower count |
 
 **`posts`, `reads`, `clips` and `mine` are deleted from `mock.js`** — 204 lines.
@@ -1357,6 +1357,24 @@ The `seedFor` join in `ConsultantProfile.jsx` is the one worth noting: it
 matched a real consultant row to a mock one by display name, which is the join
 `05-BACKEND-SCHEMA.md` §9 spends a section warning about. The file already said
 "Phase 9 deletes this function." It does.
+
+### The studio publishes three kinds, and the tab IS the column
+
+`content.kind` takes `post`, `article`, `clip`, `live_session`. The studio's
+three tabs are the first three, so a fourth composer is a value in the check
+constraint rather than a table. `live_session` is phase 11's.
+
+A **photo post** and a plain note are both `kind = 'post'`; the media is what
+separates them, not a fourth kind. `PostCard` renders the image when there is
+one.
+
+**The file uploads before the row is written**, so a failed publish never
+leaves a row pointing at nothing. The reverse — an orphan file with no row — is
+a few kilobytes nobody can see, which is the cheaper way to fail.
+
+Switching tabs clears the composer. A video chosen for a reel is not a cover
+image for a blog post, and carrying it across is how the wrong file gets
+published.
 
 ### Storage
 
