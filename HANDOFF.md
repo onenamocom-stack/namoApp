@@ -18,11 +18,18 @@ Updated 9 Sep 2026.
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
-approved by hand — the entire approval flow until phase 13. The six seeded
-consultants stay `pending` by decision (`01-PRD.md` §7): the marketplace
-launches empty rather than furnished with invented people. The real one has **no
+approved by hand — the entire approval flow until phase 13. They have **no
 availability rows**, so nothing is bookable until somebody taps cells in
 `/pro/consult`.
+
+**The six seeded consultants are still `pending` on production, and the plan for
+them changed on 9 Sep.** `01-PRD.md` §7's launch-empty decision was partially
+reversed: the FEED is to be seeded from them until real consultants publish, the
+MARKETPLACE is not. `backend/seed/content.mjs` approves them for authorship and
+then deletes their availability, deactivates their per-minute services and
+clears their fabricated credentials — so they can post and cannot be booked,
+chatted or believed. Nothing has been seeded yet; §8 has the tool and its
+untested edges.
 
 This file describes **state**. It does not describe the system — that is
 `docs/` — and it is not a changelog. History lives in `git log`, which is
@@ -573,8 +580,11 @@ harmless, a metering bug on a live wallet is not.
 needs exactly that plus `status = 'approved'`. Nobody can pay for one yet:
 production wallets cannot be funded until Razorpay clears the domain, and the
 only funded production wallet is that consultant's own — who cannot chat with
-themselves. The six seeded consultants have per-minute rows and stay `pending`,
-so they remain unreachable, which is the launch-empty decision holding.
+themselves. The six seeded consultants have per-minute rows and are still
+`pending`, so they remain unreachable. When content seeding approves them
+(§8), `content.mjs` deactivates exactly those per-minute rows — an approved
+consultant with an active per-minute service can be sent a chat request that
+nobody will ever answer.
 
 **Production runs on Supabase's FREE tier.** Worth knowing now that a scheduled
 job guards money: a free project that goes genuinely idle can be paused, and a
@@ -720,9 +730,13 @@ Three things about it worth knowing:
   a half times. Seeding the mock figure would put a price in the database the
   catalogue cannot reproduce.
 
-**On production the six are `pending` and stay that way** — the marketplace
-launches empty by decision, `01-PRD.md` §7. Publishing them is one reversible
-statement: `update consultants set status='approved' where legacy_id like 'a_';`
+**On production the six are still `pending`** — but no longer "and stay that
+way". `01-PRD.md` §7 was partially reversed on 9 Sep: the feed gets seeded from
+them, the marketplace does not. Do NOT approve them with the bare
+`update consultants set status='approved' where legacy_id like 'a_';` — that
+statement is what §7 warned about, because `seed.mjs` also gave them prices and
+a week of open availability. Use `backend/seed/content.mjs`, which approves and
+then removes all three of those hazards (§8).
 
 **Production's one real consultant** applied through `/pro/apply` and was
 approved by hand, which is the entire approval flow until phase 13. That
@@ -774,11 +788,13 @@ Recorded so they are not re-argued. Reasoning is in the documents.
   debugged on the cheaper surface: a metering bug in chat costs a refund, the
   same bug in a call costs the session too. **Phase 6 is roughly twice the size
   it was**, and that was known before it started rather than halfway through.
-- **Seeded consultants land unapproved on production**, and **the marketplace
-  launches empty rather than seeded** — decided 26 Aug, reasoning in
-  `01-PRD.md` §7. `/consult` says so and offers the application. Flipping the
-  six on for a demo is one reversible statement; approving them for the public
-  is a different decision and gets re-argued there, not here.
+- **The marketplace launches empty rather than seeded** — decided 26 Aug,
+  **partially reversed 9 Sep**, both argued in `01-PRD.md` §7. The reversal is
+  narrow: the FEED is seeded from the mock consultants, the MARKETPLACE is not.
+  They are approved so they can author content, then stripped of availability,
+  per-minute services and credentials so they cannot be booked, chatted or
+  believed. Two of §7's three original grounds are held by that; the third —
+  that fake supply hides a real supply problem — was conceded.
 - **Charts come from a third-party API — decided 1 Sep 2026, and this REVERSES
   Swiss Ephemeris as our own Python service.** `freeastroapi.com`, Entry tier:
   $8/month, 50,000 requests/month, 5 req/sec, commercial use permitted. It
@@ -803,13 +819,23 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 | Question | Blocks |
 |---|---|
 | How long a `pending` booking may hold a seeker's money before it expires | Phase 12, and any consultant who is not the founder — `01-PRD.md` §5.4 |
-| Report prices and the duplicate SKUs | Phases 8, 10 |
 | Video SDK — 100ms or Agora | Phase 11 |
-| Whether a dropped connection stops the meter or grants a grace period | Phase 6 |
 | Consultant ranking formula | Phase 13 |
 | Blocking a consultant who has pending money | Phase 13 |
 | Provenance of the 48 Bhaktamar card faces | Seed |
+| **Whether a metered chat can be reviewed.** The RLS policy names `bookings`; phase 6's `sessions` is a different table, so a seeker whose only contact was a chat cannot review that consultant. A decision, not a bug — widening it is a small migration | Nothing today. It bites the first consultant who works mostly by chat |
+| **Astrology advertising checked by someone qualified.** `01-PRD.md` §7 and §8 both say do this before publishing, *including* for profiles labelled as demos | **Seeding the feed from the mock consultants.** Theoretical until 9 Sep; live the moment §8's tool runs on production |
 | **Whether `astro_cache` ever gets a sweeper** — rows are 11 kB each and nothing deletes them | Nothing. Much smaller than it was: the reading is twelve rows a day rather than one per person per day, so growth is now a constant |
+
+**Report prices and the duplicate SKUs closed on 7 Sep** and are gone from this
+table. The six prices are typed in `mock.js`, `REPORT_MULTIPLIER` is deleted, and
+premium reads the SKU it sells rather than restating a price. `01-PRD.md` §5.2
+and §5.3 own the answer. It blocked phases 8 and 10; neither is blocked on it now.
+
+**The dropped-connection question closed with phase 6** and is likewise gone. The
+answer is a 60-second grace, named as a product constant in
+`014_metered_chat.sql` alongside the other three: round up to the whole minute,
+30-minute hold cap, clock starts on the consultant's join.
 
 Two closed on 7 Sep by the per-rashi change and removed rather than left with an
 answer beside them: which freeastroapi tier and when (usage no longer grows with
@@ -1485,14 +1511,32 @@ wrong.
 Worked out 3 Sep, from the phase specs rather than intuition, because two
 sessions on one repo is cheap right up until it is not.
 
-**The safest pair is 7 and 13.** Phase 13's admin console is a SEPARATE
-application — `admin/`, service role, no admin role in client RLS, its own
-layout because the phone frame does not transfer. It shares almost nothing with
-the seeker app: no `store.jsx`, no `mock.js`, no `src/` screens. It is also the
-highest-payoff thing not being built, because approving a consultant is
-currently somebody typing SQL in a GUI. Its two blocked capabilities (ranking
-formula §5.5, blocked-consultant-with-pending-money §6) sit at the BOTTOM of its
-own payoff order — approval, moderation and search need neither.
+**Phase 13's admin console is a SEPARATE application** — `admin/`, service role,
+no admin role in client RLS, its own layout because the phone frame does not
+transfer. It shares almost nothing with the seeker app: no `store.jsx`, no
+`mock.js`, no `src/` screens, so it collides with nothing. Its two blocked
+capabilities (ranking formula §5.5, blocked-consultant-with-pending-money §6)
+sit at the BOTTOM of its own payoff order — approval, moderation and search need
+neither.
+
+**Deliberately deferred, 9 Sep.** It stays the highest-payoff *unbuilt* thing,
+but the payoff scales with volume that does not exist. Approving a consultant is
+one statement against a `pending` row, and there are two people to approve, both
+approved by the same person who would use the console. What would pull it
+forward, none of which is true yet:
+
+| Signal | Where it stands |
+|---|---|
+| More than ~5-10 consultants to approve | two |
+| Somebody who is not the developer needs to approve | it is the same person |
+| Real moderation — a post to remove, a consultant to block | production has no content |
+| **Referrals switched on** | **this is the one to watch** |
+
+The referral row is the sharp one. `06-IMPLEMENTATION.md` lists referral fraud
+as a risk — the per-join bounty is the largest per-action payout in the product
+and has no controls, and it says design the control BEFORE phase 9. Phase 9
+shipped without it because it never touched referrals. Turning them on before an
+admin console exists means no way to see abuse, let alone stop it.
 
 **Phase 9 is built** (§8), so this no longer describes work to schedule. What it
 predicted was right and is worth keeping for the next phase that touches
