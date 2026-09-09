@@ -775,14 +775,6 @@
 
   /* ── Badges & meters ──────────────────────────────────────────────────── */
 
-  .badge-live {
-    @apply caps-sm inline-flex items-center gap-1.5;
-    background: var(--live);
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 9999px;
-  }
-
   .tick {
     height: 4px;
     flex: 1;

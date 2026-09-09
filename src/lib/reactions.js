@@ -1,8 +1,13 @@
 import { supabase } from './supabase.js'
 
 /**
- * `follow` / `save` / `like` / `remind`, moved out of a browser `Set` and into
- * rows that survive a reload and a different device.
+ * `follow` / `save` / `like`, moved out of a browser `Set` and into rows that
+ * survive a reload and a different device.
+ *
+ * A fourth kind, `remind` → `live_session`, was dropped on 9 Sep 2026 with
+ * live video: `LiveRoom.jsx` was its only writer. `020`'s target_type check
+ * still permits `live_session` and cannot be edited (forward-only), so phase
+ * 11 gets the row type back for free when it needs it.
  *
  * ── WHY THIS FILE DOES NOT REPLACE `flags` ──────────────────────────────────
  * The store keeps one flat Set of namespaced strings — `follow:a1`, `save:po2`,
@@ -11,7 +16,6 @@ import { supabase } from './supabase.js'
  * whole Set:
  *
  *   setting:croppedDeityImage   a preference, not a reaction
- *   offair:<room>               local UI state for one screen
  *   event:<id>                  phase 10's academy
  *   tarot:*                     §5.6's `tarot_pulls`, a rolling window
  *   save:day-<key>              a saved READING, which is derived and has no
@@ -30,7 +34,7 @@ import { supabase } from './supabase.js'
  * to be crossable one screen at a time rather than all at once.
  */
 
-const KINDS = { follow: 'consultant', save: 'content', like: 'content', remind: 'live_session' }
+const KINDS = { follow: 'consultant', save: 'content', like: 'content' }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

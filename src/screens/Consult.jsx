@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { categories, liveSessions, SESSION } from '../data/mock.js'
+import { categories, SESSION } from '../data/mock.js'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
@@ -222,7 +222,6 @@ const STATUS = {
 const CHANNELS = {
   call: { icon: 'phone', label: 'Call' },
   chat: { icon: 'chat', label: 'Chat' },
-  live: { icon: 'live', label: 'Live' },
 }
 
 export default function Consult() {
@@ -582,40 +581,29 @@ export default function Consult() {
               </Link>
 
               {/* Call is a permanent stub — no calling infra exists. Chat opens
-                  the real panel. Live goes straight to the real room when the
-                  consultant actually has one running; online does not mean
-                  broadcasting, so when they don't, it's the same honest toast
-                  as Call rather than a fake destination. */}
+                  the real panel and is the only one of the two that charges a
+                  wallet, so it takes the gold. Live was the third channel and
+                  the only gold one until live video was deleted on 9 Sep 2026;
+                  leaving the row all-ghost would have given a card with a
+                  working paid action no primary at all. */}
               <div className="mt-4 flex items-center gap-2 border-t border-rule pt-4">
-                {['call', 'chat', 'live'].map((kind) => {
-                  /* Live rooms are still mock and keyed on mock ids, so this
-                     never matches a real consultant and every Live tap is the
-                     honest toast below. Phase 9 gives `content` real rows. */
-                  const liveSession =
-                    kind === 'live' && liveSessions.find((l) => l.consultantId === c.id && l.live)
-                  const onClick = liveSession
-                    ? undefined
-                    : kind === 'call'
-                      ? () => showToast(`Calling ${firstName(c.name)} — prototype only`)
-                      : kind === 'chat'
-                        ? () => openChat('live')
-                        : () => showToast(`${firstName(c.name)} isn't live right now — prototype only`)
-
-                  return (
-                    <PopButton
-                      key={kind}
-                      size="sm"
-                      variant={kind === 'live' ? 'gold' : 'ghost'}
-                      full={false}
-                      className="flex-1"
-                      to={liveSession ? `/live/${liveSession.id}` : undefined}
-                      onClick={onClick}
-                    >
-                      <Icon name={CHANNELS[kind].icon} size={15} />
-                      <span className="ml-1.5">{CHANNELS[kind].label}</span>
-                    </PopButton>
-                  )
-                })}
+                {['call', 'chat'].map((kind) => (
+                  <PopButton
+                    key={kind}
+                    size="sm"
+                    variant={kind === 'chat' ? 'gold' : 'ghost'}
+                    full={false}
+                    className="flex-1"
+                    onClick={
+                      kind === 'call'
+                        ? () => showToast(`Calling ${firstName(c.name)} — prototype only`)
+                        : () => openChat('live')
+                    }
+                  >
+                    <Icon name={CHANNELS[kind].icon} size={15} />
+                    <span className="ml-1.5">{CHANNELS[kind].label}</span>
+                  </PopButton>
+                ))}
               </div>
             </li>
           ))}

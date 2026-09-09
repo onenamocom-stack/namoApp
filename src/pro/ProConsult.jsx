@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { timeSlots, weekDays } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -20,8 +20,7 @@ import { acceptChat, listSessions, subscribeToRequests } from '../lib/chat.js'
  * Consult — everything that runs today's practice, bundled: who is asking,
  * who is booked, and how you reach them. Sessions/Chat/Call are one screen
  * rather than three routes because they are three views onto the same
- * roster, not three separate places (mirrors how Live folded into the
- * seeker's own Consult tab as a mode).
+ * roster, not three separate places.
  *
  * Phase 4 made all of it real. The queue is `bookings` rows, Accept and
  * Decline are status writes the database validates, and the availability grid
@@ -116,7 +115,6 @@ export default function ProConsult() {
 const CHANNELS = {
   chat: { icon: 'chat', verb: 'Open chat' },
   call: { icon: 'phone', verb: 'Start call' },
-  live: { icon: 'live', verb: 'Go live' },
 }
 
 /** `weekDays` starts on Monday; the `weekday` column is Postgres `dow`, which
@@ -166,7 +164,6 @@ function Sessions({ me, rows, bookings, reload }) {
     loadRequests()
     openChat('live')
   }
-  const navigate = useNavigate()
   const [dayIndex, setDayIndex] = useState(0)
   const [rules, setRules] = useState([])
   const [open, setOpen] = useState(null)
@@ -187,10 +184,13 @@ function Sessions({ me, rows, bookings, reload }) {
     loadGrid()
   }, [loadGrid])
 
-  /** Chat opens the panel, live opens the room, a call is the one stub. */
+  /* Chat opens the panel; a call is the one stub. A `live` mode used to
+     navigate to a hardcoded `/live/l1`, which outlived the room it pointed
+     at — live video was deleted on 9 Sep 2026, and that route now falls
+     through the catch-all to the seeker's Home, which is the worst available
+     failure on the consultant side. Anything not chat is the honest toast. */
   const start = (b) => {
     if (b.mode === 'chat') return openChat('live')
-    if (b.mode === 'live') return navigate('/live/l1')
     return showToast(`Calling ${firstName(b.seeker_name)} — prototype only`)
   }
 

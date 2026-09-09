@@ -298,8 +298,8 @@ export function AppProvider({ children }) {
 
   /**
    * One flat set of boolean flags for every "sticky" toggle in the app:
-   * `follow:<id>`, `save:<id>`, `like:<id>`, `remind:<id>`, plus
-   * `setting:croppedDeityImage`, `offair:<room>`, `event:<id>` and the tarot
+   * `follow:<id>`, `save:<id>`, `like:<id>`, plus
+   * `setting:croppedDeityImage`, `event:<id>` and the tarot
    * pull keys. A screen that toggles a flag and then navigates away finds it
    * still set on the way back.
    *

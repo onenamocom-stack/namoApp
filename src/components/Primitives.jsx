@@ -222,9 +222,9 @@ export function Field({ k, v, className = '' }) {
  * moves you to another screen, so it cannot be confused with <Row> or
  * <TextLink>. An engaged toggle is inked and underlined; the rest are grey.
  */
-/* Label → glyph. Resolving the icon from the label keeps all eight call sites
-   untouched; anything unrecognised (LiveRoom's "Send a gift") falls through to
-   the original text rendering rather than vanishing. */
+/* Label → glyph. Resolving the icon from the label keeps every call site
+   untouched; anything unrecognised falls through to the original text
+   rendering rather than vanishing. */
 function iconFor(label) {
   const l = label.toLowerCase()
   if (l.includes('like') || l.includes('heart')) return 'heart'

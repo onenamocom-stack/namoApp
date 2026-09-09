@@ -27,7 +27,6 @@ import Tarot from './screens/Tarot.jsx'
 
 import ProEarnings from './pro/ProEarnings.jsx'
 import ProStudio from './pro/ProStudio.jsx'
-import ProGoLive from './pro/ProGoLive.jsx'
 import ProConsult from './pro/ProConsult.jsx'
 import ProProfile from './pro/ProProfile.jsx'
 import ProApply from './pro/ProApply.jsx'
@@ -43,7 +42,6 @@ import Synastry from './screens/Synastry.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
-import LiveRoom from './screens/LiveRoom.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
 import Notifications from './screens/Notifications.jsx'
 import Premium from './screens/Premium.jsx'
@@ -198,7 +196,6 @@ function Frame() {
             <Route path="/people/:id" element={<Synastry />} />
             <Route path="/read/:id" element={<Article />} />
             <Route path="/reels/:id" element={<ReelViewer />} />
-            <Route path="/live/:id" element={<LiveRoom />} />
             <Route path="/consult/:id" element={<ConsultantProfile />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/premium" element={<Premium />} />
@@ -218,7 +215,6 @@ function Frame() {
           <Route element={<ProLayout />}>
             <Route path="/pro/earnings" element={<ProEarnings />} />
             <Route path="/pro/studio" element={<ProStudio />} />
-            <Route path="/pro/live" element={<ProGoLive />} />
             <Route path="/pro/consult" element={<ProConsult />} />
             {/* Profile carries its tab in the URL too, same reason as the
                 seeker's — Earnings needs to stay deep-linkable now that it
@@ -231,11 +227,6 @@ function Frame() {
               path falls through to `*` and teleports the consultant into the
               seeker app with no error — the most confusing failure available
               here. */}
-          {/* Live has no destination of its own — the rooms that are on air
-              surface inside Consult now, so the old bare path still resolves
-              there rather than falling through to the catch-all. */}
-          <Route path="/live" element={<Navigate to="/consult" replace />} />
-
           <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />

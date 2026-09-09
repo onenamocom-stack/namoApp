@@ -12,15 +12,16 @@ import { useStore } from '../store.jsx'
 
    They are not symmetrical, and should not be. The tab bar is taller with a
    32px radius; the top bar is a slim lid at 18px. Weight belongs at the bottom,
-   where the thumb is and where the raised Live button needs mass to sit in. */
+   where the thumb is. */
 
 /**
  * Five destinations, with Consult dead centre — it is the thing the app is
  * for, and the middle slot is the one a thumb reaches without moving.
  *
- * Live is not among them: Consult absorbed it as a mode, since calling,
- * chatting, watching and booking are four ways at the same roster rather than
- * separate places.
+ * Bhakti holds the second slot as of 9 Sep 2026, where Pooja used to. The
+ * shrine did not shrink — it moved to `/darshan`, full screen, off the tab
+ * bar entirely, and the slot now carries the whole devotional-media surface
+ * rather than one screen.
  */
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
@@ -45,14 +46,13 @@ const TABS = [
  * Earnings leads the bar — it now carries Insights too, since a consultant
  * checks the money and the reach that drives it in the same breath.
  *
- * Go Live sits between Studio and Consult — its own tab now rather than a
- * card inside Studio, since going live on camera is frequent enough to earn
- * a permanent slot next to where it used to be buried.
+ * Four tabs since 9 Sep 2026. Go Live sat between Studio and Consult until
+ * live video was deleted outright — it was a getUserMedia prototype with no
+ * SDK behind it, and phase 11 rebuilds the surface when the SDK is chosen.
  */
 export const PRO_TABS = [
   { to: '/pro/earnings', label: 'nav.earnings', icon: 'rupee' },
   { to: '/pro/studio', label: 'nav.studio', icon: 'plus' },
-  { to: '/pro/live', label: 'nav.goLive', icon: 'live' },
   { to: '/pro/consult', label: 'nav.consult', icon: 'calendar' },
   { to: '/pro/profile', label: 'nav.profile', icon: 'consult' },
 ]
@@ -101,9 +101,8 @@ function Tab({ to, label, icon }) {
  * it anchors the page the way CRED's does, and it is why the canvas can stay
  * as pale as it is without the screen floating away at the bottom.
  *
- * Live used to be a raised circle breaking the top edge. It is a destination
- * like the other four, not a mode, and giving it the loudest shape on the
- * screen oversold it — it now sits in the row on the same footing.
+ * Nothing in the row gets a louder shape than its neighbours. A raised circle
+ * breaking the top edge was tried and oversold what sat in it.
  */
 export function BottomNav({ tabs = TABS }) {
   return (
@@ -126,8 +125,8 @@ export function BottomNav({ tabs = TABS }) {
  * labelled ACADEMY. The bar names the screen; the header does not need to say
  * it a second time, and the row is worth more as a constant.
  *
- * `action` is the one slot that varies: Home puts the horoscope there, Shop
- * the cart, Live its on-air badge. Everything else passes nothing.
+ * `action` is the one slot that varies: Shop puts the cart there and
+ * ProConsult its waiting count. Everything else passes nothing.
  */
 export function TabHeader({ action = null }) {
   const { openChat, me, isPro, t } = useStore()

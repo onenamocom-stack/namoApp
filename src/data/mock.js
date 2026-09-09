@@ -147,63 +147,10 @@ export const notifications = [
 
 /* ══════════════════════════════════════════════════════════════════════════
    READ — the content layer carried over from the previous layout: posts,
-   long reads, short video, live rooms.
+   long reads, short video.
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const liveSessions = [
-  {
-    id: 'l1',
-    consultantId: 'a1',
-    consultant: 'Ritu Kashyap',
-    initials: 'RK',
-    topic: 'Saturn transit Q&A — ask anything',
-    viewers: '1.2k',
-    startedAgo: '18 min',
-    live: true,
-    tag: 'Astrology',
-  },
-  {
-    id: 'l2',
-    consultantId: 'a3',
-    consultant: 'Meher Bano',
-    initials: 'MB',
-    topic: 'Live card pulls for career blocks',
-    viewers: '834',
-    startedAgo: '5 min',
-    live: true,
-    tag: 'Tarot',
-  },
-  {
-    id: 'l3',
-    consultantId: 'a4',
-    consultant: 'Dr. Nandita Rao',
-    initials: 'NR',
-    topic: 'Sleep, anxiety and the 8am spiral',
-    viewers: '2.6k',
-    startedAgo: '41 min',
-    live: true,
-    tag: 'Wellness',
-  },
-  {
-    id: 'l4',
-    consultantId: 'a6',
-    consultant: 'Simran Kaur',
-    initials: 'SK',
-    topic: 'Quitting well — a live workshop',
-    viewers: null,
-    startsIn: 'Today, 19:00',
-    live: false,
-    tag: 'Coaching',
-  },
-]
 
-export const liveChat = [
-  { id: 'lc1', name: 'Kabir', initials: 'K', text: 'Does this apply if Saturn is retrograde natally?' },
-  { id: 'lc2', name: 'Priya', initials: 'P', text: 'third time you have answered my question. thank you' },
-  { id: 'lc3', name: 'Anon', initials: 'A', text: 'joining late — what house are we on' },
-  { id: 'lc4', name: 'Rhea', initials: 'R', text: 'the umbrella line got me' },
-  { id: 'lc5', name: 'Ishaan', initials: 'I', text: 'can you look at 1994 births next' },
-]
 
 /* ══════════════════════════════════════════════════════════════════════════
    CONSULT
@@ -374,7 +321,7 @@ export const consultants = [
  *
  * Pinned to a real record rather than invented, so his profile, reviews,
  * credentials, price ladder and published content are all populated on day
- * one — a1 already owns posts, reels, articles, a live room and a chat thread.
+ * one — a1 already owns posts, reels, articles and a chat thread.
  */
 export const pro = consultants[0]
 
@@ -1010,11 +957,10 @@ export const consultantReplies = [
    courses and products. Since phase 9 the first three are a QUERY over the
    `content` table and are gone from here; `05-BACKEND-SCHEMA.md` §5.3 has the
    reasoning, which is that a feed table is a ranking system and there is no
-   ranking.
+   ranking. The live room went with live video on 9 Sep 2026.
 
-   What stays is the part no table holds yet: a live room (phase 11 owns the
-   room lifecycle) and one course and one product (phase 10). Both go the same
-   way this half did.
+   What stays is the part no table holds yet: one course and one product
+   (phase 10). Both go the same way this half did.
 
    `reading` stays too, and it is NOT a content row — `refId: 'today'` points at
    a key of `days`, not an ID, and Home.jsx hoists the reading and panchang
@@ -1023,7 +969,6 @@ export const consultantReplies = [
    ══════════════════════════════════════════════════════════════════════════ */
 
 export const feed = [
-  { id: 'f6', kind: 'live', refId: 'l1' },
   { id: 'f8', kind: 'course', refId: 'c1' },
   { id: 'f12', kind: 'product', refId: 'sh1' },
 ]

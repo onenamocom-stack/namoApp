@@ -1,24 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { courses, feed, liveSessions, products } from '../data/mock.js'
+import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
-import { Acts, firstName } from '../components/Primitives.jsx'
+import { Acts } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
 /**
  * What is still hand-ordered in `mock.js`, and why each one is.
  *
- * `live` belongs to phase 11 (the room lifecycle, not a content row) and
- * `course` / `product` to phase 10. Posts, reels and articles are gone from
- * here because they are a query now.
+ * `course` / `product` belong to phase 10. Posts, reels and articles are gone
+ * from here because they are a query now, and the live room went with live
+ * video on 9 Sep 2026.
  */
 const SOURCES = {
-  live: liveSessions,
   course: courses,
   product: products,
 }
@@ -30,7 +29,7 @@ const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
  * Home — one stream, mixed formats.
  *
  * The previous build split this into Feed / Reels / Live behind a switcher.
- * That is gone: reels, notes, articles, live rooms, courses, products and the
+ * That is gone: reels, notes, articles, courses, products and the
  * daily reading now interleave in a single scroll, and `kind` on each record
  * decides how the card renders. Nothing is duplicated — feed entries carry a
  * `refId` into the existing collections, so a card always resolves to real
@@ -57,10 +56,10 @@ export default function Home({ action }) {
      product cards back-to-back. */
   const real = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
 
-  /* What is left of the hand-ordered mock: live rooms, courses and products.
+  /* What is left of the hand-ordered mock: courses and products.
      They sit AFTER the real content rather than interleaved, because
      interleaving would need a rank to interleave on and there is no ranking
-     yet. When phases 10 and 11 make these queries too, this list goes away and
+     yet. When phase 10 makes these queries too, this list goes away and
      the sort above is already the right one. */
   const stillMock = feed
     .filter((f) => SOURCES[f.kind])
@@ -105,8 +104,6 @@ export default function Home({ action }) {
               return <PanchangCard key={item.id} />
             case 'article':
               return <ArticleCard key={item.id} read={item.data} />
-            case 'live':
-              return <LiveCard key={item.id} room={item.data} />
             case 'course':
               return <CourseCard key={item.id} course={item.data} />
             case 'product':
@@ -462,46 +459,6 @@ function ArticleCard({ read: b }) {
           },
         ]}
       />
-    </article>
-  )
-}
-
-function LiveCard({ room: l }) {
-  // The host's own End control (ProGoLive.jsx) sets `offair:{id}` when she
-  // stops broadcasting — the mock's `live: true` on l1 never flips back on
-  // its own, and nothing here should keep showing her as live after that.
-  const { hasFlag } = useStore()
-  const live = l.live && !hasFlag(`offair:${l.id}`)
-
-  return (
-    <article className="pop-card p-4">
-      <Link to={`/live/${l.id}`} className="block transition-opacity hover:opacity-80">
-        <Plate seed={l.id} variant="orbit" className="aspect-video w-full">
-          <span className="absolute left-3 top-3">
-            {live ? (
-              <span className="badge-live">● Live</span>
-            ) : (
-              <span className="caps-sm rounded-full bg-surface/90 px-2.5 py-1 shadow-sm t-sub">Soon</span>
-            )}
-          </span>
-          {l.viewers && (
-            <span className="caps-sm absolute right-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 shadow-sm t-sub tnum">
-              {l.viewers}
-            </span>
-          )}
-        </Plate>
-
-        <div className="mt-4 flex items-start gap-3">
-          <PopAvatar initials={l.initials} size={32} online={live} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-body t-heading">{l.topic}</span>
-            <span className="mt-1 block caps-sm t-faint tnum">
-              {firstName(l.consultant)} · {live ? `${l.startedAgo} ago` : l.startsIn ?? 'Ended'}
-            </span>
-          </span>
-          <PopTag tone={live ? 'live' : 'default'}>{l.tag}</PopTag>
-        </div>
-      </Link>
     </article>
   )
 }
