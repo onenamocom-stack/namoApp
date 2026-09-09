@@ -170,7 +170,7 @@ function ReviewSheet({ booking, onClose, onDone }) {
               aria-label={`${n} out of 5`}
               aria-pressed={rating === n}
               onClick={() => setRating(n)}
-              className={`h-11 w-11 rounded-full border text-body tnum transition-colors ${
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-body leading-none tnum transition-colors ${
                 n <= rating ? 'border-gold bg-gold/10 t-heading' : 'border-rule t-faint'
               }`}
             >
@@ -278,6 +278,17 @@ export default function Consult() {
     if (!session) return setReviewable([])
     reloadReviewable()
   }, [session, reloadReviewable])
+
+  /* A session waiting on your review comes first, whatever its date.
+     `listMyBookings` sorts starts_at DESCENDING and this list shows four rows,
+     which quietly made the review affordance unreachable: a COMPLETED session
+     is in the past by definition and pending ones are in the future, so the
+     only row you can review sorts below four you cannot. Not a data quirk —
+     it would have hidden the button for almost everybody. */
+  const shown = [
+    ...mine.filter((b) => reviewable.some((r) => r.id === b.id)),
+    ...mine.filter((b) => !reviewable.some((r) => r.id === b.id)),
+  ].slice(0, 4)
 
   const step = (el) =>
     el.children[1] ? el.children[1].offsetLeft - el.children[0].offsetLeft : el.clientWidth
@@ -419,7 +430,7 @@ export default function Consult() {
         <section className="px-5 pt-6">
           <Kicker>Your sessions</Kicker>
           <ul className="mt-3 space-y-2">
-            {mine.slice(0, 4).map((b) => (
+            {shown.map((b) => (
               <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-meta t-heading">{b.consultant_name}</span>
