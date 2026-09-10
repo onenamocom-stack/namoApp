@@ -51,7 +51,7 @@ export const strings = {
 
   // ── Free tools on Home ───────────────────────────────────────────────────
   'tool.horoscope': { en: 'Horoscope', hi: 'राशिफल' },
-  'tool.ai': { en: 'Ask AI', hi: 'AI से पूछें' },
+  'tool.ai': { en: 'Namo AI', hi: 'नमो AI' },
   'tool.tarot': { en: 'Tarot', hi: 'टैरो' },
   'tool.match': { en: 'Matching', hi: 'मिलान' },
 

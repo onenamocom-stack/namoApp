@@ -68,7 +68,6 @@ function FreeTools() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-center caps-sm t-faint">{t('a.free')}</p>
     </section>
   )
 }
@@ -353,9 +352,12 @@ export default function Consult() {
     <>
       <TabHeader />
 
-      <FreeTools />
-
+      {/* Search leads. Somebody arriving here already has a question, and the
+          tiles below are the free answers to it — furniture above the field
+          they came to type in was the wrong order. */}
       <Search value={query} onChange={setQuery} placeholder="Search by name, concern or language" />
+
+      <FreeTools />
 
       {/* ── Banners ─────────────────────────────────────────────────────── */}
       <div className="pt-4">
@@ -382,19 +384,21 @@ export default function Consult() {
               />
               <span className="sheen animate-sweep" style={{ animationDelay: `${i * 2}s` }} />
 
-              {/* Half height, 7 Sep 2026 — 197px to ~98px. Padding, type step
-                  and CTA all come down, and `note` is dropped rather than
-                  shrunk: two lines of 13px is most of the height being cut,
-                  and a banner is a kicker, a claim and a way in. The note is
-                  still on the object, so restoring it is one line. */}
-              {/* `flex flex-col`, not `block`. As a block the children are
-                  inline and the last one carries a line-box descender — 11px
+              {/* Halved on 7 Sep (197px → 95px), then back up ~50% on 10 Sep
+                  by restoring the one line that was cut. `note` was where
+                  most of that height lived — two lines of 13px plus its
+                  margin, ~46px — so putting it back is the whole change and
+                  nothing else moves. ~95px → ~141px.
+
+                  `flex flex-col`, not `block`: as a block the children are
+                  inline and the last one carries a line-box descender, 11px
                   of dead space under the CTA that no padding rule explains. */}
               <span className="relative flex flex-col items-start">
                 <span className="caps-sm text-white/70">{b.kicker}</span>
                 <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
                   {b.title}
                 </span>
+                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.note}</span>
                 <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
                   {b.cta} <span aria-hidden="true">→</span>
                 </span>

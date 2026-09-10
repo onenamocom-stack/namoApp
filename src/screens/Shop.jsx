@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { products, shopCategories, shopSubcategories } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
-import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
@@ -119,23 +118,12 @@ export default function Shop() {
 
   return (
     <>
-      <TabHeader
-        action={
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            aria-label={`Cart, ${cartCount} items`}
-            className="pill knob relative !h-9 !w-9 flex-none justify-center"
-          >
-            <Icon name="cart" size={18} />
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gold-fill px-1 text-[10px] font-bold tnum text-ink ring-2 ring-surface">
-                {cartCount}
-              </span>
-            )}
-          </button>
-        }
-      />
+      {/* The cart was a knob in this slot until 10 Sep 2026. The header now
+          carries wallet, messages and profile on every screen, and a fourth
+          control fought them for width at 360px. It is a floating button
+          instead — see `CartFab` in App.jsx, which is mounted against the
+          phone frame rather than this scroller so it cannot scroll away. */}
+      <TabHeader />
 
       <Search value={query} onChange={setQuery} placeholder="Search stones, maalas and kits" />
 
@@ -147,7 +135,7 @@ export default function Shop() {
               key={b.id}
               type="button"
               onClick={() => setCat(b.cat)}
-              className="banner w-[86%] p-5 text-left"
+              className="banner w-[86%] p-4 text-left"
               style={{
                 backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
                 // `backwards`, not `both` — `both` would pin the transform after
@@ -164,13 +152,19 @@ export default function Shop() {
               {/* One sheen pass, staggered per banner so they never sync up. */}
               <span className="sheen animate-sweep" style={{ animationDelay: `${i * 2}s` }} />
 
-              <span className="relative block">
+              {/* Down ~25% on 10 Sep, ~197px → ~155px. All four parts stay —
+                  this is a trim, not the cut Consult's took. Padding, the
+                  type step and the CTA come down, and the wrapper goes
+                  `flex flex-col`: as a block its last inline child carries a
+                  line-box descender, 11px of dead space under the CTA that no
+                  padding rule accounts for. */}
+              <span className="relative flex flex-col items-start">
                 <span className="caps-sm text-white/70">{b.kicker}</span>
-                <span className="mt-2.5 block max-w-[13ch] text-title font-medium leading-tight text-white">
+                <span className="mt-1.5 block max-w-[16ch] text-lead font-medium leading-tight text-white">
                   {b.title}
                 </span>
-                <span className="mt-2 block max-w-[26ch] text-meta text-white/75">{b.note}</span>
-                <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 caps-sm text-ink shadow-md">
+                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{b.note}</span>
+                <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 caps-sm text-ink shadow-md">
                   {b.cta} <span aria-hidden="true">→</span>
                 </span>
               </span>

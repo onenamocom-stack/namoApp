@@ -147,7 +147,7 @@ export function TabHeader({ action = null }) {
   return (
     <header className="topbar flex items-center gap-2 px-4 py-2">
       <Link to={me.homeTo} aria-label="Namo" className="transition-opacity hover:opacity-70">
-        <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="Namo" className="h-6 w-auto" />
+        <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="Namo" className="h-5 w-auto" />
       </Link>
 
       <span className="flex-1" />
