@@ -104,6 +104,16 @@
     padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 
+  /* The reservation above is unconditional, and every screen but one scrolls,
+     where 56px of extra run-off at the end is harmless. The shrine is the one
+     fixed-height screen — `h-full` against this box, no scrolling — so on
+     `/darshan`, which has no nav bar at all, that 56px is a dead band of bare
+     canvas under the murti. Cancel it where the shrine is mounted rather than
+     unpicking the rule for the twenty-odd routes it is right for. */
+  main:has(.darshan) {
+    padding-bottom: 0;
+  }
+
   /* Everything that is not explicitly a rectangle gets the house radius. The
      previous build enforced the opposite with `border-radius: 0 !important`,
      which is the single reason the layout could never read as CRED. */

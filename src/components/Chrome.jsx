@@ -1,7 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
 
 /* App chrome: the top bar, the bottom nav, the sheet and the toast.
 
@@ -25,7 +25,7 @@ import { useStore } from '../store.jsx'
  */
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
-  { to: '/pooja', label: 'nav.pooja', icon: 'pooja' },
+  { to: '/bhakti', label: 'nav.bhakti', icon: 'pooja' },
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
   { to: '/shop', label: 'nav.shop', icon: 'shop' },
   { to: '/academy', label: 'nav.academy', icon: 'academy' },
@@ -117,35 +117,53 @@ export function BottomNav({ tabs = TABS }) {
 }
 
 /**
- * The header every tab screen shares: profile on the left, the wordmark, then
- * the screen's own action (if it has one) and messages on the right.
+ * The header every tab screen shares: the mark on the left, then the screen's
+ * own action (if it has one) and, pinned right, wallet · messages · profile.
  *
  * Screens used to print their own name and tagline up here — "Academy /
  * Learn to read it yourself" sitting directly above a tab bar already
  * labelled ACADEMY. The bar names the screen; the header does not need to say
  * it a second time, and the row is worth more as a constant.
  *
+ * The wordmark was type; it is the real mark as of 9 Sep 2026. The source is
+ * a JPEG of black ink on solid white, which on this warm canvas renders as a
+ * white slab — `public/namo-logo.png` is that file with the white keyed to
+ * alpha and the whitespace cropped off, so padding is decided here and not by
+ * the artwork.
+ *
+ * Profile moved from the left to the far right the same day, and the wallet
+ * arrived beside it. Money used to be two taps inside Profile; it is the
+ * thing people check most and it now sits on every tab. It is the balance as
+ * text rather than a glyph — a rupee icon next to a rupee amount says the
+ * same thing twice — and it reads `—` until the wallet loads, because a zero
+ * shown to somebody who has money is worse than showing nothing yet.
+ *
  * `action` is the one slot that varies: Shop puts the cart there and
  * ProConsult its waiting count. Everything else passes nothing.
  */
 export function TabHeader({ action = null }) {
-  const { openChat, me, isPro, t } = useStore()
+  const { openChat, me, isPro, t, balance } = useStore()
 
   return (
-    <header className="topbar flex items-center gap-2.5 px-4 py-2">
-      {/* Identity comes from the store, not a hardcoded import — the same
-          header serves both sides, and threading avatar/link props through
-          every screen would be more code at ten call sites than one lookup
-          here. */}
-      <Link
-        to={me.profileTo}
-        aria-label={t('a.yourProfile')}
-        className="transition-opacity hover:opacity-70"
-      >
-        <PopAvatar initials={me.initials} size={30} />
+    <header className="topbar flex items-center gap-2 px-4 py-2">
+      <Link to={me.homeTo} aria-label="Namo" className="transition-opacity hover:opacity-70">
+        <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="Namo" className="h-6 w-auto" />
       </Link>
-      <p className="flex-1 font-display text-lead leading-none t-heading">Namo</p>
+
+      <span className="flex-1" />
+
       {action}
+
+      <Link
+        to="/wallet"
+        aria-label={t('a.wallet')}
+        className="pill knob !h-9 justify-center px-2.5"
+      >
+        <span className="caps-sm tnum t-body">
+          {balance === null ? '—' : `₹${rupees(balance)}`}
+        </span>
+      </Link>
+
       <button
         type="button"
         /* Ask AI is a seeker product. A consultant tapping messages wants his
@@ -157,6 +175,18 @@ export function TabHeader({ action = null }) {
         <Icon name="chat" size={18} />
         <span className="absolute -right-0.5 -top-0.5 block h-2.5 w-2.5 rounded-full bg-live ring-2 ring-surface" />
       </button>
+
+      {/* Identity comes from the store, not a hardcoded import — the same
+          header serves both sides, and threading avatar/link props through
+          every screen would be more code at ten call sites than one lookup
+          here. */}
+      <Link
+        to={me.profileTo}
+        aria-label={t('a.yourProfile')}
+        className="transition-opacity hover:opacity-70"
+      >
+        <PopAvatar initials={me.initials} size={30} />
+      </Link>
     </header>
   )
 }

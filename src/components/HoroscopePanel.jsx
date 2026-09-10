@@ -194,12 +194,13 @@ export default function HoroscopePanel() {
               </PopButton>
             </div>
 
-            <Link
-              to="/profile/horoscope"
-              onClick={close}
-              className="mt-5 block text-center caps-sm t-faint"
-            >
-              Open the full reading in Profile
+            {/* Was `/profile/horoscope`, which stopped existing on 9 Sep 2026
+                when Profile dropped to two tabs — it would have redirected to
+                `/profile` and quietly shown the wrong screen. `/horoscope` is
+                the full reading, and the only view with yesterday and
+                tomorrow on it. */}
+            <Link to="/horoscope" onClick={close} className="mt-5 block text-center caps-sm t-faint">
+              Open the full reading
             </Link>
           </section>
         </div>

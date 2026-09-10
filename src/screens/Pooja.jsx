@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities, offerings } from '../data/mock.js'
-import { TabHeader } from '../components/Chrome.jsx'
+import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { PopTag } from '../components/Pop.jsx'
 import { Dhoop, Diya, Ghanti, Marigold, Thali } from '../components/PujaProps.jsx'
@@ -210,10 +210,22 @@ export default function Pooja() {
   const image = deity.images[pic]
 
   return (
-    /* relative, because the murti sheet is absolute against this screen rather
-       than against the phone frame — it should not cover the tab bar. */
-    <div className="relative flex h-full flex-col">
-      <TabHeader action={<PopTag tone="gold">{t('puja.tag')}</PopTag>} />
+    /* relative, because the murti sheet is absolute against this screen
+       rather than against the phone frame, so it covers the shrine and not
+       the whole app. It used to be phrased as "should not cover the tab
+       bar"; there is no tab bar here since the shrine moved to `/darshan`
+       on 9 Sep 2026, but the containment is still what we want.
+
+       `h-full` needs `.darshan` on the scroller — see index.css. Every other
+       screen reserves 56px at the bottom for the nav, and this route has no
+       nav to reserve for. */
+    <div className="darshan relative flex h-full flex-col">
+      <TopBar
+        title={t('nav.pooja')}
+        back
+        backTo="/home"
+        right={<PopTag tone="gold">{t('puja.tag')}</PopTag>}
+      />
 
       {/* ── Choose a deity ─────────────────────────────────────────────── */}
       <section className="flex-none px-2 pb-2 pt-2">

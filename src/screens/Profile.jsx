@@ -3,15 +3,19 @@ import { sessionHistory } from '../data/mock.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { ChartNorth } from '../components/ChartSquare.jsx'
-import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
+import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Row, Segmented } from '../components/Primitives.jsx'
-import { rupees, useStore, useProfileFields } from '../store.jsx'
-import { housesFrom, longDate, readingFrom, signLine, useAstro, useMyChart } from '../lib/astro.js'
+import { useStore, useProfileFields } from '../store.jsx'
+import { housesFrom, signLine, useMyChart } from '../lib/astro.js'
 
+/**
+ * Two, since 9 Sep 2026. Horoscope and Wallet were tabs here and are now
+ * places of their own: the reading is Home's Today tab, and the wallet is in
+ * the top bar on every screen. Both were summaries whose only real control
+ * was a button to the full screen, which is a tab that exists to be left.
+ */
 const TABS = [
   { key: 'overview', label: 'Overview' },
-  { key: 'horoscope', label: 'Horoscope' },
-  { key: 'wallet', label: 'Wallet' },
   { key: 'settings', label: 'Settings' },
 ]
 
@@ -25,11 +29,14 @@ const SETTINGS = [
 /**
  * Profile.
  *
- * Horoscope is a tab in here rather than a separate page — the tab bar spends
- * its five slots on Home / Consult / Live / Academy / Shop, and the daily
- * reading belongs to the person, not to a destination. The URL still carries
- * the tab (`/profile/horoscope`) so it stays deep-linkable and the header
- * shortcut on Home can land straight on it.
+ * Two tabs, and the URL carries which (`/profile/settings`) so both stay
+ * deep-linkable. `overview` maps to the bare `/profile` so the default has
+ * one address rather than two.
+ *
+ * Horoscope was a third tab and Wallet a fourth. The reading is Home's Today
+ * tab now and the wallet is in the top bar on every screen, which is where a
+ * balance you check constantly belongs. What was here were summaries whose
+ * only real control was a button to the full screen.
  */
 export default function Profile() {
   const { tab = 'overview' } = useParams()
@@ -66,8 +73,6 @@ export default function Profile() {
 
       <div key={tab} className="animate-fade">
         {tab === 'overview' && <Overview />}
-        {tab === 'horoscope' && <HoroscopeTab />}
-        {tab === 'wallet' && <WalletTab />}
         {tab === 'settings' && <SettingsTab />}
       </div>
 
@@ -145,7 +150,6 @@ function Overview() {
           <Row to="/chart" title="Your full chart" note="Nine placements, plainly written" />
           <Row to="/people" title="People" note="Charts you have read against yours" />
           <Row to="/reports" title="Reports" note="Long-form readings, written once" />
-          <Row to="/wallet" title="Wallet" note="Balance, top-up and history" />
           <Row to="/premium" title="Premium" note="Eros, packs and more questions" />
           <Row to="/academy" title="Academy" note="Courses, events and downloads" />
           <Row to="/ask" title="Ask the Stars" meta={`${questionsLeft} left`} />
@@ -185,178 +189,6 @@ function Overview() {
               </button>
             </li>
           ))}
-        </ul>
-      </section>
-    </>
-  )
-}
-
-/* ── Horoscope tab ───────────────────────────────────────────────────────── */
-
-/**
- * The daily reading, as a tab — the day itself and the reader's own three
- * placements, which are the two things here that are true.
- *
- * It used to carry a transit, a short reading, a focus card and four area
- * ratings. All four came from the canonical birth behind the rashi rather than
- * from the reader (`readingFrom()` in lib/astro.js has the field list), so they
- * are gone rather than relabelled. The placements stay because they come from
- * this person's own chart.
- */
-function HoroscopeTab() {
-  const { session, sessionReady } = useStore()
-  const who = session?.user?.id ?? null
-  const mine = useMyChart({ ready: sessionReady, who })
-  const horoscope = useAstro('horoscope', { ready: sessionReady, who })
-
-  const day = readingFrom(horoscope.payload, 'today', null)
-
-  /* The whole tab is one reading. If there is not one, say why once at the top
-     rather than four times down the page in four different empty cards. */
-  if (horoscope.loading || horoscope.refusal) {
-    return (
-      <section className="px-5 py-8">
-        {horoscope.loading ? (
-          <p className="text-meta t-faint">Reading the sky.</p>
-        ) : (
-          <>
-            <p className="text-body t-heading">{horoscope.refusal.reason}</p>
-            {horoscope.refusal.code === 'no_birth' && (
-              <Link to="/onboarding/date" className="mt-3 block caps-sm t-faint">
-                Answer the four questions
-              </Link>
-            )}
-          </>
-        )}
-      </section>
-    )
-  }
-
-  return (
-    <>
-      {/* Summary cards */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker action="Full reading" to="/horoscope">
-          Today
-        </Kicker>
-
-        <PopCard raised className="mt-4 p-5">
-          <p className="caps-sm gold">
-            {longDate(day.date)}
-            {/* NO RASHI LABEL HERE ANY MORE, 9 Sep. What survives of this
-                reading is the panchang mood and the day's windows, and those
-                are byte-identical across all twelve signs — checked. Naming a
-                sign beside content that does not vary by sign claims a
-                personalisation that is not there. The reader's own moon sign
-                still appears where it is true: in Your placements below, off
-                their own chart. */}
-          </p>
-          {/* THE HEADLINE AND THE OVERALL SCORE ARE GONE, 9 Sep. Both came
-              from the canonical birth behind this rashi, and the score was
-              weighted by that invented person's dasha — "the day's own score
-              before you do anything with it" was not this reader's day. */}
-          <p className="mt-3 text-read t-sub">{day.dayMood}</p>
-        </PopCard>
-      </section>
-
-      {/* Sun / Moon / Rising */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker action="Full chart" to="/chart">
-          Your placements
-        </Kicker>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {[
-            ['Sun', mine.sun, 'how you push'],
-            ['Moon', mine.moon, 'how you feel'],
-            // Null without a birth time, and named as the reason rather than
-            // filled in from a noon the person did not give us.
-            ['Rising', mine.rising, mine.rising ? 'how you land' : 'needs your birth time'],
-          ].map(([label, sign, note]) => (
-            <PopCard key={label} className="p-3">
-              <p className="caps-sm gold">{label}</p>
-              <p className="mt-2 text-body t-heading">{sign ?? '—'}</p>
-              <p className="mt-1 caps-sm t-faint">{note}</p>
-            </PopCard>
-          ))}
-        </div>
-      </section>
-
-      {/* THE TRANSIT, THE READING AND THE FOUR RATINGS STOOD HERE AND ARE
-          GONE, 9 Sep. Every one was the canonical birth's: the only transits
-          the payload carries are alignments to that person's dasha, the focus
-          card is built on `remedy.basis.dominant_dasha_lord`, and love /
-          career / health / money are scores weighted by both. The placements
-          above are the reader's own and stay — they come from their chart. */}
-
-    </>
-  )
-}
-
-/* ── Wallet tab ──────────────────────────────────────────────────────────── */
-
-/** A compact wallet summary. The full screen lives at `/profile/wallet`. */
-function WalletTab() {
-  const { balance, ledger, questionsLeft } = useStore()
-  /* The seeded transactions are gone. They were denominated in rupees while
-     real rows are paise, and a list mixing the two is off by a hundred on
-     half its lines. The wallet starts with your own history and nothing
-     else — the same call as showing 0 followers rather than 84,200. */
-  const rows = ledger.slice(0, 5)
-
-  return (
-    <>
-      <section className="border-b border-rule px-5 py-6">
-        <PopCard raised className="p-5">
-          <p className="caps-sm t-faint">Available balance</p>
-          <p className="mt-2 font-display text-display leading-none tnum t-heading">
-            {balance === null ? '—' : `₹${rupees(balance)}`}
-          </p>
-          {/* One button, not two. Both went to /wallet, and since phase 2 the
-              gold one promised something that screen refuses — adding money
-              waits for payments. */}
-          <div className="mt-6">
-            <PopButton size="sm" to="/wallet" variant="gold">
-              Open wallet
-            </PopButton>
-          </div>
-        </PopCard>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <PopCard className="p-4">
-            <Stat label="Questions left" value={questionsLeft} />
-          </PopCard>
-          <PopCard className="p-4">
-            <Stat label="Sessions" value={sessionHistory.length} sub="all time" />
-          </PopCard>
-        </div>
-      </section>
-
-      <section className="px-5 py-6">
-        <Kicker action="All" to="/wallet">
-          Recent
-        </Kicker>
-        <ul className="mt-4">
-          {rows.map((t) => (
-            <li
-              key={t.id}
-              className="flex items-center gap-3 border-b border-rule py-3.5 last:border-b-0"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-meta t-heading">{t.label}</span>
-                <span className="mt-1 block caps-sm t-faint tnum">
-                  {t.date} · {t.method}
-                </span>
-              </span>
-              <span
-                className={`flex-none text-meta tnum ${t.kind === 'credit' ? 'text-ok' : 't-sub'}`}
-              >
-                {t.kind === 'credit' ? '+' : '−'}₹{rupees(t.amountPaise)}
-              </span>
-            </li>
-          ))}
-          {rows.length === 0 && (
-            <li className="py-4 text-meta t-faint">Nothing yet.</li>
-          )}
         </ul>
       </section>
     </>

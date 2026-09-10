@@ -491,7 +491,7 @@ function AskAi({ questionsLeft, spendQuestion }) {
             <p className="mt-2 text-meta t-body">
               You have used your five. The chart has not changed in the last ten minutes.
             </p>
-            <PopButton size="sm" to="/profile/wallet" variant="gold" className="mt-4">
+            <PopButton size="sm" to="/wallet" variant="gold" className="mt-4">
               Buy a pack
             </PopButton>
           </div>

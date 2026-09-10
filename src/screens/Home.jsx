@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
-import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
-import { Acts } from '../components/Primitives.jsx'
+import { Acts, Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
@@ -25,17 +24,51 @@ const SOURCES = {
 /** `content.kind` in the database → which card renders it. */
 const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
 
+const TABS = [
+  { key: 'feed', label: 'Feed' },
+  { key: 'today', label: 'Today' },
+  { key: 'darshan', label: 'Darshan' },
+]
+
 /**
- * Home — one stream, mixed formats.
+ * Home — three tabs as of 9 Sep 2026: the stream, today's reading, the shrine.
  *
- * The previous build split this into Feed / Reels / Live behind a switcher.
- * That is gone: reels, notes, articles, courses, products and the
- * daily reading now interleave in a single scroll, and `kind` on each record
- * decides how the card renders. Nothing is duplicated — feed entries carry a
- * `refId` into the existing collections, so a card always resolves to real
- * data and stays in sync with the screen it links to.
+ * An older build split this into Feed / Reels / Live, which was a switcher
+ * over three views of the same content and was rightly deleted. This is not
+ * that. These are three different questions — what's new, what does today say,
+ * and let me sit in front of a murti — and the middle one used to be answered
+ * by hoisting two cards to the top of the stream and hoping they were seen
+ * before the scroll buried them.
+ *
+ * The stream itself is unchanged and still mixes formats: reels, notes,
+ * articles, courses, products, with `kind` on each record picking the card and
+ * `refId` resolving into the existing collections, so nothing is duplicated.
+ *
+ * Tabs live in the URL (`/home/:tab`) rather than in state, for the same
+ * reason Profile's do: a tab worth switching to is worth linking to, and the
+ * back button should undo a tab change. `feed` maps to the bare `/home` so the
+ * default has one address and not two.
+ *
+ * Darshan is a LINK, not a panel. It navigates to `/darshan`, which is the
+ * shrine full screen with no tab bar — it needs the whole frame, and it is
+ * the one screen in the app that does not scroll.
  */
-export default function Home({ action }) {
+export default function Home() {
+  const { tab = 'feed' } = useParams()
+  const navigate = useNavigate()
+
+  /* Guard against a hand-typed segment, same as Profile. `darshan` is not in
+     here: it is a destination, and the effect below leaves before this runs. */
+  const known = TABS.some((t) => t.key === tab)
+
+  /* The third tab is a doorway. Redirecting in an effect rather than
+     rendering `<Navigate>` keeps `/home/darshan` out of the history stack, so
+     Back from the shrine returns to the feed rather than bouncing through a
+     tab that immediately forwards again. */
+  useEffect(() => {
+    if (tab === 'darshan') navigate('/darshan', { replace: true })
+  }, [tab, navigate])
+
   /* The feed is a QUERY, not a table (05-BACKEND-SCHEMA.md §5.3). Newest live
      content from approved consultants, and nothing here re-sorts it — a second
      ordering in the client would be the ranking system that section refuses. */
@@ -51,9 +84,6 @@ export default function Home({ action }) {
     }
   }, [])
 
-  /* The reading leads ahead of anything social. Panchang is pushed down after
-     3-4 feed items so the daily reading is the immediate follow-up, not both
-     product cards back-to-back. */
   const real = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
 
   /* What is left of the hand-ordered mock: courses and products.
@@ -69,86 +99,76 @@ export default function Home({ action }) {
     })
     .filter(Boolean)
 
-  const rest = [...real, ...stillMock]
+  /* No longer hoisted into the stream. The reading and the panchang were
+     spliced in at positions 1 and 4 so they would be seen before the scroll
+     buried them; they have their own tab now, which is what that splice was
+     approximating. */
+  const items = [...real, ...stillMock]
 
-  /* Both cards fetch for themselves rather than being handed data. They are
-     rendered once each, they are the only two things on this screen that are
-     computed, and threading two loading states through the feed loop to save
-     two hooks would be the expensive kind of tidy. */
-  const PANCHANG_AFTER = 3
-  const items = [
-    { id: 'f-reading', kind: 'reading' },
-    ...rest.slice(0, PANCHANG_AFTER),
-    { id: 'f-panchang', kind: 'panchang' },
-    ...rest.slice(PANCHANG_AFTER),
-  ]
+  if (!known) return <Navigate to="/home" replace />
+  if (tab === 'darshan') return null // the effect above is already leaving
 
   return (
     <>
-      <Header action={action} />
+      {/* Was a local `Header` wrapping this to inject a horoscope knob, and
+          taking an `action` prop for a pro-side reuse that never happened.
+          The knob opened the reading as a slide-over; the Today tab is that
+          content with an address. Both are gone and this is the bare header.
 
-      {/* The free tools row used to sit here, between the header and the
-          stream. It is on Consult now, above the search field — see
-          `FreeTools` there for why that reversed. */}
+          The free tools row used to sit here too. It is on Consult now, above
+          the search field — see `FreeTools` there for why that reversed. */}
+      <TabHeader />
 
-      <div className="space-y-3.5 p-4">
-        {items.map((item) => {
-          switch (item.kind) {
-            case 'post':
-              return <PostCard key={item.id} post={item.data} />
-            case 'reel':
-              return <ReelCard key={item.id} reel={item.data} />
-            case 'reading':
-              return <ReadingCard key={item.id} />
-            case 'panchang':
-              return <PanchangCard key={item.id} />
-            case 'article':
-              return <ArticleCard key={item.id} read={item.data} />
-            case 'course':
-              return <CourseCard key={item.id} course={item.data} />
-            case 'product':
-              return <ProductCard key={item.id} product={item.data} />
-            default:
-              return null
-          }
-        })}
-      </div>
+      <section className="px-4 pt-3">
+        <Segmented
+          items={TABS}
+          value={tab}
+          onChange={(k) => navigate(k === 'feed' ? '/home' : `/home/${k}`)}
+        />
+      </section>
 
-      <div className="px-5 py-10 text-center">
-        <p className="caps-sm t-faint">End of today&apos;s feed</p>
+      {/* `key` re-runs the fade on every switch, so the tabs feel like they
+          moved rather than repainted. Same trick as Profile. */}
+      <div key={tab} className="animate-fade">
+        {tab === 'today' ? (
+          <div className="space-y-3.5 p-4">
+            {/* Both fetch for themselves rather than being handed data, and
+                both memoise through `cachedAstro`, so mounting them here costs
+                nothing a hoisted card was not already costing. */}
+            <ReadingCard />
+            <PanchangCard />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3.5 p-4">
+              {items.map((item) => {
+                switch (item.kind) {
+                  case 'post':
+                    return <PostCard key={item.id} post={item.data} />
+                  case 'reel':
+                    return <ReelCard key={item.id} reel={item.data} />
+                  case 'article':
+                    return <ArticleCard key={item.id} read={item.data} />
+                  case 'course':
+                    return <CourseCard key={item.id} course={item.data} />
+                  case 'product':
+                    return <ProductCard key={item.id} product={item.data} />
+                  default:
+                    return null
+                }
+              })}
+            </div>
+
+            <div className="px-5 py-10 text-center">
+              <p className="caps-sm t-faint">End of today&apos;s feed</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Clears the floating AI button and the tab bar. */}
       <div className="h-24" />
     </>
-  )
-}
-
-/**
- * `action` lets the pro side reuse this whole screen — same stream, same seven
- * card types, one different button. Undefined means the seeker's horoscope
- * button, so /home is unchanged.
- */
-function Header({ action }) {
-  const { setHoroscopeOpen } = useStore()
-
-  return (
-    <TabHeader
-      action={
-        action ?? (
-        /* A focused action, not a redirect. This used to navigate to
-           Profile > Horoscope, which took you out of the tab you were on. */
-        <button
-          type="button"
-          onClick={() => setHoroscopeOpen(true)}
-          aria-label="Today's horoscope"
-          className="pill knob !h-9 !w-9 justify-center"
-        >
-          <Icon name="horoscope" size={18} />
-          </button>
-        )
-      }
-    />
   )
 }
 
@@ -268,7 +288,7 @@ function ReelCard({ reel: r }) {
 
 /** The daily reading, inline. The product's core content, in the stream. */
 function ReadingCard() {
-  const { setHoroscopeOpen: setOpen, session, sessionReady } = useStore()
+  const { session, sessionReady } = useStore()
   const horoscope = useAstro('horoscope', {
     ready: sessionReady,
     who: session?.user?.id ?? null,
@@ -277,7 +297,10 @@ function ReadingCard() {
 
   return (
     <article className="pop-card p-4">
-      <Kicker action="Read all" onAction={() => setOpen(true)}>
+      {/* Was a slide-over. Inside the Today tab that overlay showed the same
+          card it was launched from; `/horoscope` is the one view with
+          yesterday and tomorrow on it, which is what "read all" means. */}
+      <Kicker action="Read all" to="/horoscope">
         Today&apos;s reading
       </Kicker>
       <div className="pop-inset mt-4 p-4">

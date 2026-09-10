@@ -22,6 +22,7 @@ import Home from './screens/Home.jsx'
 import Consult from './screens/Consult.jsx'
 import Academy from './screens/Academy.jsx'
 import Pooja from './screens/Pooja.jsx'
+import Bhakti from './screens/Bhakti.jsx'
 import Shop from './screens/Shop.jsx'
 import Tarot from './screens/Tarot.jsx'
 
@@ -201,13 +202,24 @@ function Frame() {
             <Route path="/premium" element={<Premium />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/tarot" element={<Tarot />} />
+
+            {/* The shrine is full screen and off the tab bar as of 9 Sep 2026.
+                It reached its own layout by being the one screen that does not
+                scroll — a nav bar under a fixed-height shrine cost it 56px it
+                could not spare. Home's Darshan tab is how you get here. */}
+            <Route path="/darshan" element={<Pooja />} />
           </Route>
 
           {/* The five destinations. */}
           <Route element={<TabLayout />}>
+            {/* Home carries its tab in the URL, same as Profile — a tab worth
+                switching to is worth linking to, and Back should undo the switch.
+                Without the `:tab` route, `/home/today` falls through the catch-all
+                and bounces straight back to the feed. */}
             <Route path="/home" element={<Home />} />
+            <Route path="/home/:tab" element={<Home />} />
             <Route path="/consult" element={<Consult />} />
-            <Route path="/pooja" element={<Pooja />} />
+            <Route path="/bhakti" element={<Bhakti />} />
             <Route path="/academy" element={<Academy />} />
             <Route path="/shop" element={<Shop />} />
           </Route>

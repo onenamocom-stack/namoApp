@@ -30,6 +30,7 @@ export const LANGS = [
 export const strings = {
   // ── Navigation ───────────────────────────────────────────────────────────
   'nav.home': { en: 'Home', hi: 'होम' },
+  'nav.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
   'nav.pooja': { en: 'Pooja', hi: 'पूजा' },
   'nav.consult': { en: 'Consult', hi: 'परामर्श' },
   'nav.shop': { en: 'Shop', hi: 'दुकान' },
@@ -45,6 +46,7 @@ export const strings = {
   'a.messages': { en: 'Messages', hi: 'संदेश' },
   'a.yourProfile': { en: 'Your profile', hi: 'आपकी प्रोफ़ाइल' },
   'a.addMoney': { en: 'Add money', hi: 'पैसे जोड़ें' },
+  'a.wallet': { en: 'Wallet', hi: 'वॉलेट' },
   'a.free': { en: 'Free · no session needed', hi: 'निःशुल्क · सत्र की ज़रूरत नहीं' },
 
   // ── Free tools on Home ───────────────────────────────────────────────────

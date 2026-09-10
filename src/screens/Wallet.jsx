@@ -41,7 +41,7 @@ export default function Wallet() {
 
   return (
     <>
-      <TopBar title="Wallet" back backTo="/profile" />
+      <TopBar title="Wallet" back backTo="/home" />
 
       {/* ── Balance ───────────────────────────────────────────────────── */}
       <section className="px-5 py-6">
