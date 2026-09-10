@@ -29,12 +29,9 @@ import { leaveReview, reviewableBookings } from '../lib/content.js'
  * Each is a route or an overlay; none of them opens a dead end.
  */
 const FREE_TOOLS = [
-  {
-    key: 'horoscope',
-    label: 'tool.horoscope',
-    icon: 'horoscope',
-    act: ({ setHoroscopeOpen }) => setHoroscopeOpen(true),
-  },
+  /* A page, not a slide-over, since 10 Sep 2026. The overlay showed the same
+     reading `/horoscope` does with less of it and no address. */
+  { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/horoscope' },
   { key: 'ai', label: 'tool.ai', icon: 'ai', act: ({ openChat }) => openChat('ai') },
   { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
   { key: 'match', label: 'tool.match', icon: 'consult', to: '/people' },
@@ -42,8 +39,8 @@ const FREE_TOOLS = [
 
 /** Circles, because a circle reads as a tool and a card reads as content. */
 function FreeTools() {
-  const { openChat, setHoroscopeOpen, t } = useStore()
-  const bag = { openChat, setHoroscopeOpen }
+  const { openChat, t } = useStore()
+  const bag = { openChat }
 
   return (
     <section className="px-2 pb-1 pt-3">

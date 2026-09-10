@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
+import { Kicker, PopCard } from '../components/Pop.jsx'
 import {
   Acts,
-  Avatar,
   Button,
   Row,
   Section,
   Segmented,
   Stub,
 } from '../components/Primitives.jsx'
-import { useStore, useProfileFields } from '../store.jsx'
+import { useStore } from '../store.jsx'
 import { istDate, longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
 const TABS = [
@@ -40,7 +40,6 @@ const CONTEXT = { yesterday: 'Looking back.', today: null, tomorrow: 'Looking ah
 export default function Horoscope() {
   const [key, setKey] = useState('today')
   const { showToast, hasFlag, toggleFlag, session, sessionReady } = useStore()
-  const me = useProfileFields()
 
   // Recomputed only when the tab changes, because it is a `useAstro`
   // dependency — a fresh string every render would refetch every render.
@@ -84,20 +83,16 @@ export default function Horoscope() {
 
   return (
     <>
-      {/* Avatar into Profile on the left, share on the right — the same header
-          slots the reference app gives this screen. */}
+      {/* Back, as of 10 Sep 2026. This screen had none — the left slot was an
+          avatar into Profile, which is a fine shortcut and a bad answer to
+          "how do I get out of here". It is reached from Consult's Horoscope
+          tile now, which used to open a slide-over, so the way back matters
+          more than the shortcut did. */}
       <TopBar
         title="Daily horoscope"
         sub={sub}
-        left={
-          <Link
-            to="/profile"
-            aria-label="Your profile"
-            className="transition-opacity hover:opacity-60"
-          >
-            <Avatar initials={me.initials} size={28} />
-          </Link>
-        }
+        back
+        backTo="/consult"
         right={
           <button
             type="button"
@@ -108,6 +103,42 @@ export default function Horoscope() {
           </button>
         }
       />
+
+      {/* The two blocks that used to be Profile's Horoscope tab, which is the
+          shape people asked for back: today in one card, then the three
+          placements that are actually theirs. Everything below the switcher —
+          yesterday and tomorrow, the panchang, the timing windows — is what
+          this page has that the tab never did, and it stays. */}
+      {!horoscope.loading && !horoscope.refusal && (
+        <section className="border-b border-rule px-5 py-6">
+          <Kicker>Today</Kicker>
+          <PopCard raised className="mt-4 p-5">
+            <p className="caps-sm gold">{longDate(readingFrom(horoscope.payload, 'today', null).date)}</p>
+            <p className="mt-3 text-read t-sub">
+              {readingFrom(horoscope.payload, 'today', null).dayMood}
+            </p>
+          </PopCard>
+
+          <Kicker action="Full chart" to="/chart" className="mt-8">
+            Your placements
+          </Kicker>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[
+              ['Sun', mine.sun, 'how you push'],
+              ['Moon', mine.moon, 'how you feel'],
+              /* Null without a birth time, and named as the reason rather than
+                 filled in from a noon the person never gave us. */
+              ['Rising', mine.rising, mine.rising ? 'how you land' : 'needs your birth time'],
+            ].map(([label, sign, note]) => (
+              <PopCard key={label} className="p-3">
+                <p className="caps-sm gold">{label}</p>
+                <p className="mt-2 text-body t-heading">{sign ?? '—'}</p>
+                <p className="mt-1 caps-sm t-faint">{note}</p>
+              </PopCard>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Segmented items={TABS} value={key} onChange={setKey} />
 

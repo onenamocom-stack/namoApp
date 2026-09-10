@@ -4,7 +4,6 @@ import { AppProvider, useStore } from './store.jsx'
 import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
-import HoroscopePanel from './components/HoroscopePanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
 import Icon from './components/Icon.jsx'
 import Reports from './screens/Reports.jsx'
@@ -72,9 +71,9 @@ function TabLayout() {
  * The consultant's shell. Identical to TabLayout minus the floating Ask AI
  * button — the consultant is not the one asking.
  *
- * CartSheet and HoroscopePanel stay mounted in Frame and are simply never
- * opened from this side; they self-gate on state nothing here sets, so there
- * is nothing to guard against.
+ * CartSheet stays mounted in Frame and is simply never opened from this side;
+ * it self-gates on state nothing here sets, so there is nothing to guard
+ * against.
  */
 function ProLayout() {
   const { pathname } = useLocation()
@@ -284,7 +283,6 @@ function Frame() {
 
         {/* Global overlays — above every screen, inside the phone frame. */}
         <ChatPanel />
-        <HoroscopePanel />
         <CartSheet />
         <CartFab />
         <Toast message={toast} />

@@ -1,12 +1,28 @@
 import { Link } from 'react-router-dom'
 import { people } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
-import { Avatar, Button, Section } from '../components/Primitives.jsx'
+import { useStore } from '../store.jsx'
+import { Avatar, Button, Row, Section } from '../components/Primitives.jsx'
 
 export default function People() {
+  const { openChat } = useStore()
+
   return (
     <>
       <TopBar title="People" back backTo="/horoscope" />
+
+      {/* Pinned above the count, not inside it — Namo AI is not a chart on
+          file, and putting it in that list would make the number wrong. It
+          opens the same panel Consult's tile does rather than routing to
+          `/ask`: both doors exist, and a row that sits among people should
+          behave like the other quick answers on this side of the app. */}
+      <Section label="Ask instead">
+        <Row
+          onClick={() => openChat('ai')}
+          title="Namo AI"
+          note="Reads your chart. Answers now, no session needed."
+        />
+      </Section>
 
       <Section label={`${people.length} charts on file`}>
         <ul>

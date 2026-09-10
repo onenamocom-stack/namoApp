@@ -286,11 +286,6 @@ export function AppProvider({ children }) {
   // consultants only reply inside a session window.
   const [chatTab, setChatTab] = useState('ai')
 
-  /* The horoscope panel. Also an overlay: the top-right Horoscope control is a
-     focused action, so it must not navigate away from whatever tab you are on
-     — sending it to Profile was the bug. */
-  const [horoscopeOpen, setHoroscopeOpen] = useState(false)
-
   /* The cart, as real line items rather than a bare count, so the cart sheet
      has something to show and the total is computed rather than typed. */
   const [cart, setCart] = useState([])
@@ -712,8 +707,6 @@ export function AppProvider({ children }) {
       chatTab,
       setChatTab,
       openChat,
-      horoscopeOpen,
-      setHoroscopeOpen,
       toast,
       showToast,
       lang,
@@ -759,7 +752,6 @@ export function AppProvider({ children }) {
       chatOpen,
       chatTab,
       openChat,
-      horoscopeOpen,
       toast,
       showToast,
       lang,
