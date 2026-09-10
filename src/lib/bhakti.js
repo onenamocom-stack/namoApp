@@ -111,3 +111,66 @@ export async function shareFile(blob, filename, text) {
     return false
   }
 }
+
+/**
+ * Compose a 1080×1920 status image and burn the date onto it.
+ *
+ * The date is the point of the burn-in: a status is a daily object, and the
+ * one drawn onto the picture travels with it into WhatsApp where our UI cannot
+ * follow. A label in our own grid would be invisible the moment it is shared.
+ *
+ * Cover, not contain — a status with letterbox bars reads as a screenshot of
+ * something else. Overflow is cropped evenly from both sides.
+ *
+ * `crossOrigin` is set before `src` because it has no effect afterwards, and a
+ * tainted canvas throws on `toBlob` rather than returning a broken image, so
+ * getting this wrong fails loudly. Bucket and site assets are both same-origin
+ * or CORS-enabled, which is what makes this legal at all.
+ */
+export async function composeStatus(src, dateLabel) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = src
+  await img.decode()
+
+  const c = document.createElement('canvas')
+  c.width = 1080
+  c.height = 1920
+  const ctx = c.getContext('2d')
+
+  const scale = Math.max(c.width / img.width, c.height / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  ctx.fillStyle = '#0e0e10'
+  ctx.fillRect(0, 0, c.width, c.height)
+  ctx.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h)
+
+  if (dateLabel) {
+    /* A scrim under the text, not a text shadow. The artwork behind this is
+       sometimes a pale sky and sometimes a dark temple interior, and only one
+       of those is survivable with a shadow. */
+    const pad = 48
+    ctx.font = '600 40px "Plus Jakarta Sans", system-ui, sans-serif'
+    const width = ctx.measureText(dateLabel).width
+    const boxH = 96
+    ctx.fillStyle = 'rgba(14, 14, 16, 0.55)'
+    ctx.fillRect(0, c.height - boxH - pad, width + pad * 2, boxH)
+    ctx.fillStyle = '#ffffff'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(dateLabel, pad, c.height - pad - boxH / 2)
+  }
+
+  return new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
+}
+
+/** Save a blob the browser already holds. Shared by the share fallback. */
+export function saveBlob(blob, filename) {
+  const href = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = href
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(href), 10_000)
+}

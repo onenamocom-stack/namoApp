@@ -109,6 +109,10 @@ const PATHS = {
   plus: <path d="M12 5.2v13.6M5.2 12h13.6" />,
   rupee: <path d="M7.6 4.4h8.8M7.6 8.6h8.8M15 4.4a4.2 4.2 0 0 1 0 8.4H7.6l7.4 6.8" />,
   check: <path d="m4.6 12.6 5 5 9.8-11" />,
+  /* Play and pause. Bhakti's audio rows used the broadcast glyph as a
+     stand-in play button, which is the kind of placeholder that ships. */
+  play: <path d="M8.4 5.6v12.8l10-6.4z" />,
+  pause: <path d="M9.4 5.8v12.4M14.6 5.8v12.4" />,
   close: <path d="m6 6 12 12M18 6 6 18" />,
   eye: (
     <>
