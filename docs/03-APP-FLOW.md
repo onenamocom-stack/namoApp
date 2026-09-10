@@ -207,9 +207,21 @@ single-field edit.
 
 ## 4. Seeker screens
 
-### `/home`
-One feed stream where `kind` picks the card. The free-tools row used to sit
-above it and is on `/consult` now, as of 7 Sep 2026 — Home opens on content:
+### `/home` and `/home/:tab`
+**Three tabs since 9 Sep 2026** — Feed · Today · Darshan — in the URL, so a tab
+is linkable and Back undoes the switch. `feed` maps to the bare `/home`.
+
+**Today** is the daily reading and the panchang. Both were previously spliced
+into the stream at positions 1 and 4 to be seen before the scroll buried them;
+the tab is what that splice was approximating. Both cards fetch for themselves
+and memoise through `cachedAstro`, so the move costs nothing.
+
+**Darshan is a doorway, not a panel.** It redirects to `/darshan` with
+`replace`, so Back from the shrine returns to the feed rather than bouncing
+through a tab that forwards again.
+
+**Feed** is the stream, where `kind` picks the card. The free-tools row used to
+sit above it and is on `/consult` now, as of 7 Sep 2026:
 
 | Card | Actions |
 |---|---|
@@ -256,9 +268,40 @@ production entirely. What remains says the list is empty because the practice is
 and offers `/pro/apply`. The reasoning, and the rejected alternative of
 approving six invented astrologers, is in `01-PRD.md` §7.
 
-### `/pooja`
-**The one screen that does not scroll.** A fixed-height column: deity row,
-shrine, tab bar.
+### `/bhakti`
+**The devotional media library**, in the nav slot the shrine used to hold.
+Wallpapers, ringtones, pooja tunes and bhajans, read from `bhakti_assets`
+(migration 024) with a kind switcher and a deity filter built from whichever
+deities are present in the selected kind.
+
+**No client writes.** The table has a select policy and no other, so RLS denies
+inserts by default. Rows come from a service-role script today and the phase 13
+admin console later — `02-TRD.md` §7 refuses an admin role in the client, so
+there is nothing to add here.
+
+**What the web cannot do, the screen does not claim.** There is no native
+shell, so no API sets a wallpaper or a ringtone: every button reads *Download*
+and a line under the grid says what to do with the file.
+
+**WhatsApp status is a share, not a post.** The image is composited to
+1080×1920 on a canvas and handed to `navigator.share`; the person picks
+WhatsApp, then Status. Their own photo goes through the identical path. Desktop
+has no file share, so it falls back to saving the composed image.
+
+`price_paise` is nullable and **null means not priced yet**, which the screen
+distinguishes from free. Attribution is three NOT NULL columns and is rendered
+on every row — these files are downloaded and some will later be sold, and
+several deity images are share-alike.
+
+### `/darshan`
+**The one screen that does not scroll.** A fixed-height column: back bar, deity
+row, shrine. Reached from Home's Darshan tab; it was `/pooja` on the tab bar
+until 9 Sep 2026 and now takes the whole frame with a `TopBar` back control.
+
+Because it is fixed-height and has no nav under it, the 56px that `main`
+reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
+`index.css` cancels it for this route only. Every other route scrolls, where
+that reservation is harmless run-off.
 
 Gestures on the shrine — swipe **right/left for the next/previous deity**
 (which resets to that deity's first murti), **down/up for the next/previous
@@ -335,8 +378,13 @@ is wrong silently and being told which was used is the only defence a reader
 has.
 
 ### `/profile/:tab`
-Four tabs in the URL — overview, horoscope, wallet, settings. Back always means
-Home here, regardless of history.
+**Two tabs in the URL — overview, settings.** Back always means Home here,
+regardless of history.
+
+Horoscope and Wallet were the third and fourth until 9 Sep 2026. Both were
+summaries whose only real control was a button to the full screen — a tab that
+exists to be left. The reading is Home's Today tab; the wallet is in the top
+bar on every screen.
 
 Overview holds the chart, birth data, language pills and a row list into
 most of the app. Settings holds **Switch to consultant → `/pro/feed`**, which is

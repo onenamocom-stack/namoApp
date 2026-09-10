@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 9 Sep 2026.
+Updated 10 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -15,6 +15,7 @@ Updated 9 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
+| **UI · Home tabs, Bhakti, header** | **Front end done on `ui/home-bhakti-header`, not merged.** Live video deleted from both sides; Home split into Feed/Today/Darshan; the shrine moved to `/darshan`; Bhakti took its nav slot on `bhakti_assets` + `bhakti-media` (**migration 024**, applied to dev only). **Not walked in a browser yet** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -235,10 +236,25 @@ Everything else evaporates on reload, deliberately.
   tarot are translated; the editorial copy in `mock.js` deliberately is not.
   Noto Sans Devanagari sits **after** Plus Jakarta Sans in the stack — browsers
   resolve per glyph, so Latin is untouched.
-- **Pro nav is Earnings / Studio / Go Live / Consult / Profile.** Five tabs, no
-  Feed — a consultant runs a practice, she does not browse the seeker feed. The
-  route is `/pro/live`, **not** `/pro/golive`, which hits the catch-all and
-  lands silently on Studio.
+- **Pro nav is Earnings / Studio / Consult / Profile.** Four tabs since 9 Sep
+  2026, no Feed — a consultant runs a practice, she does not browse the seeker
+  feed. Go Live was the fifth until live video was deleted; `/pro/live` now
+  falls to `/pro/*` and lands on Studio.
+- **Seeker nav is Home / Bhakti / Consult / Shop / Academy.** Pooja held the
+  second slot until 9 Sep 2026. The shrine did not shrink — it moved to
+  `/darshan`, full screen with a back control, reached from Home's third tab.
+  The slot now carries Bhakti, the devotional media library.
+- **Home has three tabs** — Feed / Today / Darshan, at `/home/:tab`. Today is
+  the reading and the panchang, which used to be spliced into the stream.
+  Darshan is a doorway: it redirects to `/darshan` with `replace`, so Back from
+  the shrine lands on the feed and not on a tab that forwards again.
+- **The top bar is logo · wallet · message · profile.** Profile moved right and
+  the wallet joined it on 9 Sep 2026; the balance is text rather than a glyph
+  and reads an em dash until it loads. `public/namo-logo.png` is the supplied
+  JPEG with its white keyed to alpha — the original is black on solid white and
+  renders as a slab on this canvas.
+- **Profile is two tabs, Overview and Settings.** Horoscope and Wallet were
+  tabs until 9 Sep 2026 and are now Home's Today tab and the top bar.
 - **`/pro` is gated on a real `consultants` row** as of phase 4 — it used to be
   exempt from the session gate entirely, which is how anyone who typed the URL
   became `consultants[0]`. No session, or no row, lands on `/pro/apply`. Still
@@ -863,6 +879,23 @@ now stated as settled in the document that owns it.
 
 ### Needs a person, not code
 
+- **The Home/Bhakti branch has not been walked in a browser.** `npm run lint`
+  is clean and the build is green, and lint catches the class that white-
+  screens this app (an undefined identifier, an import of a name that no longer
+  exists). It does not catch a screen that renders the wrong thing, and this
+  branch moved every tab bar and top bar in the app. **Walk it before merging**
+  — `/home` all three tabs, `/darshan` (no dead band under the murti, both
+  swipe axes still work), `/bhakti`, `/profile`, `/consult`, `/pro/studio`, and
+  the chat panel on both sides, which is what proves live-removal did not take
+  metered chat with it. The routes and what to look for are in
+  `docs/03-APP-FLOW.md`.
+- **Bhakti has no audio and no ringtones.** The repo contains zero audio files;
+  the 16 seeded rows are all public-domain wallpapers. Sourcing and licensing
+  devotional audio is a content problem, not a code one, and the screen shows
+  an honest empty state for the three audio kinds until it is solved.
+- **`bhakti_assets` and `bhakti-media` are on dev only.** Migration 024 has not
+  been applied to production, and nothing is seeded there.
+
 - **Two Bhaktamar verses are incomplete** and need a verified printed source.
   Deliberately not reconstructed: a plausible wrong shloka in a devotional deck
   is undetectable to the person it misleads.
@@ -903,7 +936,10 @@ re-answer the onboarding questions to get a session on both branches. See
 
 ### Deliberate omissions
 
-No audio anywhere — the mandir's sangeet button says so. The chosen murti does
+~~No audio anywhere~~ — **reversed 9 Sep 2026.** Bhakti plays bhajans, pooja
+tunes and ringtones, so the app has an `<audio>` element for the first time.
+The mandir's sangeet button still toasts `puja.noAudio` and is now the odd one
+out; wiring it to a Bhakti tune is the obvious follow-up. The chosen murti does
 not survive leaving the tab. Bhaktamar is the only deck with real faces. Shani
 has three murtis where the rest have four, because pre-modern devotional art of
 Shani as a single figure is thin on Commons.
