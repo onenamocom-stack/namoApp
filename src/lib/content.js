@@ -36,14 +36,21 @@ import { supabase } from './supabase.js'
 function shape(row) {
   return {
     id: row.id,
-    authorId: row.author_id,
-    isConsultant: row.author_is_consultant,
-    // Kept so the twenty-odd call sites reading `consultantId` keep working.
-    // New code reads `authorId` and `isConsultant`, because since 025 an
-    // author is a person who may or may not also be a practitioner.
-    consultantId: row.author_id,
-    consultant: row.author_name,
-    initials: (row.author_name || '')
+    // Falls back to the pre-025 column names, because `main` deploys on push
+    // and production may not have the migration yet. Without this the new
+    // bundle against an old database renders a blank byline linking to
+    // /u/undefined — which is worse than the old behaviour, not merely
+    // different. `author_is_consultant` is absent there too, and treating that
+    // as TRUE is the safe default: the old feed was consultants only, so the
+    // byline goes to /consult/:id exactly as it did before.
+    authorId: row.author_id ?? row.consultant_id,
+    isConsultant: row.author_is_consultant ?? true,
+    // Kept so the call sites reading `consultantId` keep working. New code
+    // reads `authorId` and `isConsultant`, because since 025 an author is a
+    // person who may or may not also be a practitioner.
+    consultantId: row.author_id ?? row.consultant_id,
+    consultant: row.author_name ?? row.consultant_name,
+    initials: (row.author_name || row.consultant_name || '')
       .split(' ')
       .filter(Boolean)
       .map((w) => w[0])
@@ -97,14 +104,28 @@ export async function fetchFeed({ kinds, limit = 40 } = {}) {
   return (data ?? []).map(shape)
 }
 
-/** One consultant's published work — their profile tab and the studio list. */
+/**
+ * One person's published work — their profile tab and the studio list.
+ *
+ * Falls back to the pre-025 column for the same reason `shape` does: `main`
+ * deploys on push, and filtering on a column the database does not have is a
+ * 400 rather than an empty list. Without the retry every consultant's Work tab
+ * on an un-migrated production reads as if they had published nothing, which is
+ * a regression from working, not a feature arriving early.
+ *
+ * `42703` is undefined_column. Any other error is a real one and is thrown.
+ */
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
-  const { data, error } = await supabase
-    .from('content_public')
-    .select('*')
-    .eq('author_id', authorId)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(limit)
+  const ask = (column) =>
+    supabase
+      .from('content_public')
+      .select('*')
+      .eq(column, authorId)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(limit)
+
+  let { data, error } = await ask('author_id')
+  if (error?.code === '42703') ({ data, error } = await ask('consultant_id'))
   if (error) throw error
   return (data ?? []).map(shape)
 }

@@ -1503,6 +1503,19 @@ later without unpicking rows.
 Posts, followers and following are **counts**, never columns (§1.3). A new
 account reads 0 · 0 · 0, which is true.
 
+**The bundle survives a production that has not had 025 yet**, and that is
+deliberate rather than incidental: `main` deploys on push, and the migration is
+a separate manual step. `shape()` falls back to the pre-025 column names and
+treats a missing `author_is_consultant` as TRUE — the old feed was consultants
+only, so a byline still goes to `/consult/:id` exactly as before. `fetchByAuthor`
+retries on `consultant_id` when Postgres answers `42703` (undefined column),
+because filtering on a column that does not exist is a 400, not an empty list,
+and every consultant's Work tab would have read as empty.
+
+Without those two the new bundle against an old database is a blank byline
+linking to `/u/undefined`, which is worse than the old behaviour rather than
+merely different. Both fallbacks come out the day 025 is on production.
+
 **Not walked.** `025_seekers_publish_check.sql` passes on dev and covers the two
 refusals that matter — a seeker publishing a reel, and a seeker publishing as
 somebody else — plus the blocked-consultant gate. Nothing has been clicked.
