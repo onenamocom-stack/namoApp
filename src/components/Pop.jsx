@@ -141,15 +141,30 @@ export function PopBar({ value, className = '' }) {
   )
 }
 
-/** Round avatar. Initials only — no photographs anywhere in this layout. */
-export function PopAvatar({ initials, size = 36, online = false, className = '' }) {
+/**
+ * Round avatar. Initials, or a picture when there is one.
+ *
+ * Photographs arrived on 10 Sep 2026 and this doc line used to read "initials
+ * only — no photographs anywhere in this layout", which was true of the whole
+ * app for four months. It is still true of everybody except you: only your own
+ * `avatar_url` is readable (`027`), so `src` is set on your header and your
+ * profile and nowhere else until a public projection carries it.
+ *
+ * Initials remain the fallback and are not a placeholder to be replaced — a
+ * signed-in person with no picture is the normal case, not a loading state.
+ */
+export function PopAvatar({ initials, src = null, size = 36, online = false, className = '' }) {
   return (
     <span className={`relative inline-block flex-none ${className}`}>
       <span
-        className="avatar-face inline-flex items-center justify-center rounded-full border border-stroke bg-surface shadow-sm t-sub"
+        className="avatar-face inline-flex items-center justify-center overflow-hidden rounded-full border border-stroke bg-surface shadow-sm t-sub"
         style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}
       >
-        {initials}
+        {src ? (
+          <img src={src} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
       </span>
       {online && (
         <span

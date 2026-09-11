@@ -319,12 +319,13 @@ function AudioRow({ asset, busy, onSave }) {
  * On a desktop browser the attribute is ignored and it behaves as a file
  * picker, which is the right degradation.
  *
- * "Use profile picture" is not built yet — it needs the avatar work, which is
- * blocked on another session's `authors_public` view. Shown disabled with the
- * reason rather than hidden, so it is obviously coming rather than missing.
+ * "Use profile picture" is live as of 10 Sep 2026 and hides itself when you
+ * have not set one — an option that cannot do anything is worse than an option
+ * that is not there, and unlike the disabled state it used to carry, there is
+ * now a real thing behind it.
  */
 function ShareSheet({ asset, onClose }) {
-  const { showToast } = useStore()
+  const { showToast, me } = useStore()
   const gallery = useRef(null)
   const camera = useRef(null)
   const [working, setWorking] = useState(false)
@@ -365,9 +366,11 @@ function ShareSheet({ asset, onClose }) {
       </p>
 
       <div className="mt-5 space-y-2">
-        <PopButton disabled variant="ghost">
-          Use profile picture — coming with avatars
-        </PopButton>
+        {me.avatarUrl && (
+          <PopButton disabled={working} onClick={() => run(me.avatarUrl, null)}>
+            Use profile picture
+          </PopButton>
+        )}
         <PopButton
           variant="gold"
           disabled={working}

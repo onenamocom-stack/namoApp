@@ -646,6 +646,11 @@ export function AppProvider({ children }) {
                side. Blank beats confidently wrong. */
             name: session ? profile?.name || '' : pro.name,
             initials: session ? (profile ? initialsOf(profile.name) : '') : pro.initials,
+            /* Same rule as the name: signed in, it is the real row or nothing.
+               Signed out there is no face, because the seed person does not
+               have one and borrowing a stranger's would be the identity bug
+               above with a picture attached. */
+            avatarUrl: session ? profile?.avatar_url || null : null,
             profileTo: '/pro/profile',
             homeTo: '/pro/studio',
           }
@@ -657,6 +662,7 @@ export function AppProvider({ children }) {
                showed their own name one screen in. */
             name: session ? profile?.name || '' : user.name,
             initials: session ? (profile ? initialsOf(profile.name) : '') : user.initials,
+            avatarUrl: session ? profile?.avatar_url || null : null,
             profileTo: '/profile',
             homeTo: '/home',
           },

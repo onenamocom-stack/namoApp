@@ -185,7 +185,7 @@ export function TabHeader({ action = null }) {
         aria-label={t('a.yourProfile')}
         className="transition-opacity hover:opacity-70"
       >
-        <PopAvatar initials={me.initials} size={30} />
+        <PopAvatar initials={me.initials} src={me.avatarUrl} size={30} />
       </Link>
     </header>
   )

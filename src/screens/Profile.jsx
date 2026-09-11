@@ -1,7 +1,10 @@
+import { useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
+import Icon from '../components/Icon.jsx'
+import { uploadAvatar } from '../lib/avatar.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
 import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Row, Segmented } from '../components/Primitives.jsx'
@@ -54,7 +57,7 @@ export default function Profile() {
       <TopBar title="Profile" back backTo="/home" hardBack />
 
       <section className="flex items-center gap-4 border-b border-stroke px-5 py-6">
-        <PopAvatar initials={me.initials} size={56} />
+        <AvatarPicker />
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-title leading-none t-heading">{me.name}</h1>
           {/* Empty while the chart is in flight, rather than three dashes that
@@ -77,6 +80,68 @@ export default function Profile() {
       </div>
 
       <div className="h-24" />
+    </>
+  )
+}
+
+/**
+ * Your face, and the one control that sets it.
+ *
+ * The avatar is the button rather than carrying a button beside it — it is the
+ * thing being changed, it is already a 56px tap target, and a separate "change
+ * picture" row would be a second affordance for a job the first one implies.
+ *
+ * Only your own picture is readable (`027`), so this is the only place in the
+ * app that can offer this. Everybody else's face needs a public projection
+ * that does not exist yet.
+ */
+function AvatarPicker() {
+  const { me, showToast, refreshProfile, session } = useStore()
+  const input = useRef(null)
+  const [busy, setBusy] = useState(false)
+
+  const pick = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // so re-picking the same file still fires
+    if (!file) return
+
+    setBusy(true)
+    try {
+      await uploadAvatar(file)
+      /* The row is written; the store is not. Without this the header keeps
+         the old face until a reload, which reads as the upload having failed. */
+      await refreshProfile(session?.user?.id)
+      showToast('Picture updated')
+    } catch (err) {
+      showToast(err.message || 'Could not update that picture.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => input.current?.click()}
+        disabled={busy}
+        aria-label={me.avatarUrl ? 'Change your picture' : 'Add a picture'}
+        className="relative flex-none rounded-full transition-transform active:scale-95"
+      >
+        <PopAvatar initials={me.initials} src={me.avatarUrl} size={56} />
+        <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white ring-2 ring-bg">
+          <Icon name={busy ? 'check' : 'plus'} size={11} />
+        </span>
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        onChange={pick}
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+      />
     </>
   )
 }

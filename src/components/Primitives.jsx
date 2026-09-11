@@ -194,14 +194,14 @@ export function Ruler({ value, className = '' }) {
   )
 }
 
-/** Round avatar. Initials only — no photographs anywhere in this layout. */
-export function Avatar({ initials, size = 36, className = '' }) {
+/** Round avatar. The `PopAvatar`-less twin — same rules, see that one. */
+export function Avatar({ initials, src = null, size = 36, className = '' }) {
   return (
     <span
-      className={`avatar-face inline-flex flex-none items-center justify-center rounded-full border border-stroke bg-surface shadow-sm t-sub ${className}`}
+      className={`avatar-face inline-flex flex-none items-center justify-center overflow-hidden rounded-full border border-stroke bg-surface shadow-sm t-sub ${className}`}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}
     >
-      {initials}
+      {src ? <img src={src} alt="" className="h-full w-full object-cover" /> : initials}
     </span>
   )
 }
