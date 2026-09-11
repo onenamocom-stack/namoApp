@@ -15,7 +15,7 @@ Updated 10 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
-| **UI · Home tabs, Bhakti, header** | **Front end done on `ui/home-bhakti-header`, not merged.** Live video deleted from both sides; Home split into Feed/Today/Darshan; the shrine moved to `/darshan`; Bhakti took its nav slot on `bhakti_assets` + `bhakti-media` (**migration 024**, applied to dev only). **Not walked in a browser yet** — see §5 |
+| **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **Migrations 024, 026, 027 are DEV ONLY** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -893,8 +893,22 @@ now stated as settled in the document that owns it.
   the 16 seeded rows are all public-domain wallpapers. Sourcing and licensing
   devotional audio is a content problem, not a code one, and the screen shows
   an honest empty state for the three audio kinds until it is solved.
-- **`bhakti_assets` and `bhakti-media` are on dev only.** Migration 024 has not
-  been applied to production, and nothing is seeded there.
+- **Three migrations are on dev only: 024, 026, 027.** Production has no
+  `bhakti_assets`, so `/bhakti` renders "Could not reach the library" there —
+  which is the honest empty state, not a crash, but it is what real users see.
+  `backend/seed/bhakti.mjs` loads the 22 rows once the tables exist. Profile
+  pictures (027) are in the same position: the UI ships, the column does not
+  exist on production, so the upload fails there.
+- **025 belongs to another session, and it is applied to dev.** `authors_public`
+  and `profile_follow_counts` exist on dev and are missing from production, so
+  that feature is in exactly the same half-shipped state as Bhakti was.
+- **Avatars are your own face only, and that is a schema fact.**
+  `profiles_select_own` is `using (id = auth.uid())`; a profile row carries a
+  phone, an email and a birth time, so it will not be widened to let a picture
+  through. Nineteen of the app's twenty-three avatar spots render OTHER people
+  and still show initials. The fix is `avatar_url` on `authors_public` (025),
+  and it belongs to whoever owns that migration — do not add a second public
+  profile view.
 
 - **Two Bhaktamar verses are incomplete** and need a verified printed source.
   Deliberately not reconstructed: a plausible wrong shloka in a devotional deck
