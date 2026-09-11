@@ -999,6 +999,29 @@ This is also the payoff for admin item 6 — removing a post becomes one status
 column rather than three, and `status = 'removed'` is a **soft delete**. A
 removed post in a dispute is evidence; never hard-delete it.
 
+**Since `025`, the author is a PROFILE, not a consultant.** `consultant_id`
+was renamed `author_id` and its foreign key repointed at `profiles(id)`, because
+seekers publish too. Keeping the old name would have left every future reader
+believing content authors are practitioners.
+
+What a seeker may publish is an RLS predicate, not a CHECK constraint: `post`
+and `article` for anyone, `clip` only for an approved consultant. A CHECK cannot
+see another table, and the rule depends on one. `content_public` gained
+`author_is_consultant` so a byline can link to the right screen -- `/consult/:id`
+sells a practitioner, `/u/:id` does not -- and the approval gate moved from an
+inner join to a NOT EXISTS, so blocking a consultant still takes their posts
+down without turning approval into a gate on ordinary people.
+
+Three views came with it: `content_public` (rewritten), `profile_follow_counts`
+(followers and following for any profile, both counted), and `authors_public`
+(the name of someone who has published, and nothing else -- `profiles` stays
+own-row-only).
+
+`reactions.target_type` gained `'profile'`. Following a practitioner and
+following a person who posts photos are different acts, and keeping them as
+separate values means a count can answer either question later without unpicking
+rows.
+
 ### 5.3 The feed is not a table
 
 The mock's `feed` is 14 hand-ordered `{ kind, refId }` rows. **A feed table is a

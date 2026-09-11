@@ -15,7 +15,7 @@ Updated 10 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
-| **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **Migrations 024, 026, 027 are DEV ONLY** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
+| **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **Migrations 024, 025, 026, 027 are DEV ONLY** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -899,9 +899,11 @@ now stated as settled in the document that owns it.
   `backend/seed/bhakti.mjs` loads the 22 rows once the tables exist. Profile
   pictures (027) are in the same position: the UI ships, the column does not
   exist on production, so the upload fails there.
-- **025 belongs to another session, and it is applied to dev.** `authors_public`
-  and `profile_follow_counts` exist on dev and are missing from production, so
-  that feature is in exactly the same half-shipped state as Bhakti was.
+- **025 is seekers publishing, and it is applied to dev.** `authors_public` and
+  `profile_follow_counts` exist on dev and are missing from production, so that
+  feature is in exactly the same half-shipped state as Bhakti. **Four migrations
+  are dev-only, not three: 024, 025, 026, 027.** The section below on seekers
+  publishing has what 025 does and what has not been clicked.
 - **Avatars are your own face only, and that is a schema fact.**
   `profiles_select_own` is `using (id = auth.uid())`; a profile row carries a
   phone, an email and a birth time, so it will not be widened to let a picture
@@ -1463,6 +1465,49 @@ a few kilobytes nobody can see, which is the cheaper way to fail.
 Switching tabs clears the composer. A video chosen for a reel is not a cover
 image for a blog post, and carrying it across is how the wrong file gets
 published.
+
+### Seekers publish too, since 10 Sep
+
+`025` and its check. A seeker posts **photos and blog posts, not reels** — a
+reel is the consultant's marketing surface, and the format people judge a
+practitioner by. The rule is an RLS predicate rather than a missing tab: a
+composer offering the wrong kind is a bug in the composer, not a way in.
+
+`content.consultant_id` is now `author_id`, keyed to `profiles(id)`. A seeker
+could not author a row at all before — the column was NOT NULL against
+`consultants`. The rename is the point: repointing the key and keeping the name
+would have left the column lying to every future reader. `content_public` still
+exposes `consultant_id` as an alias so a bundle deployed before the migration
+does not break on the way through.
+
+**The approval gate had to move from an inner join to a NOT EXISTS.** Blocking a
+consultant must still take their posts down, but approval must not become a gate
+on ordinary people, who are never approved of. The check asserts both
+directions, because a view rewrite is exactly where that gets lost.
+
+**One composer, two callers.** `components/Composer.jsx` is shared by
+`/pro/studio` (three kinds) and the **Your posts** section on `/profile` (two).
+The difference is a `kinds` prop. Written twice it would have been the same
+upload path, validation and publish call, drifting apart the first time one of
+them got a fix.
+
+**Seekers are followable, and have a page.** `/u/:id` — deliberately NOT
+`/consult/:id`, which sells a practitioner with a rate, slots and a Book button.
+Publishing a photo does not make anybody bookable, and a screen that looked like
+a consultant's would undo the split in the one place a reader decides what
+somebody is. The article's "Book a session" becomes "See their posts" for the
+same reason. The store key is `followp:` → `target_type = 'profile'`, kept apart
+from `follow:` → `'consultant'` so a follower count can answer either question
+later without unpicking rows.
+
+Posts, followers and following are **counts**, never columns (§1.3). A new
+account reads 0 · 0 · 0, which is true.
+
+**Not walked.** `025_seekers_publish_check.sql` passes on dev and covers the two
+refusals that matter — a seeker publishing a reel, and a seeker publishing as
+somebody else — plus the blocked-consultant gate. Nothing has been clicked.
+Phase 9's own lesson was that both bugs its walk found were in code that lint
+and build had already passed.
 
 ### Storage
 
