@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
+import Composer from '../components/Composer.jsx'
+import { fetchByAuthor, followCounts } from '../lib/content.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -256,7 +258,92 @@ function Overview() {
           ))}
         </ul>
       </section>
+
+      <MyPosts />
     </>
+  )
+}
+
+/* ── What you have posted ────────────────────────────────────────────────── */
+
+/**
+ * A seeker publishes too, since `025`. Photos and blog posts, not reels — a
+ * reel is the consultant's marketing surface, and the rule is an RLS predicate
+ * rather than a tab that happens to be missing.
+ *
+ * Three counts, all of them queries rather than columns (§1.3). Followers and
+ * following come from one view in one round trip, because they sit side by side
+ * and two queries for two integers is two chances to disagree.
+ */
+function MyPosts() {
+  const { session } = useStore()
+  const me = session?.user?.id
+  const [posts, setPosts] = useState(null)
+  const [counts, setCounts] = useState({ followers: 0, following: 0 })
+  const [composing, setComposing] = useState(false)
+
+  const load = useCallback(() => {
+    if (!me) return
+    fetchByAuthor(me)
+      .then(setPosts)
+      .catch((err) => {
+        console.error('[my posts] load failed:', err.message)
+        setPosts([])
+      })
+    followCounts(me)
+      .then(setCounts)
+      .catch((err) => console.error('[follow counts] load failed:', err.message))
+  }, [me])
+
+  useEffect(load, [load])
+
+  if (!me) return null
+
+  return (
+    <section className="border-t border-stroke px-5 py-6">
+      <Kicker
+        action={composing ? 'Close' : 'New post'}
+        onAction={() => setComposing((v) => !v)}
+      >
+        Your posts
+      </Kicker>
+
+      {/* Counted, never quoted. A new account reads 0 · 0 · 0, which is true —
+          the mock's 84,200 followers against zero rows is what this replaces. */}
+      <p className="mt-2 caps-sm t-faint tnum">
+        {posts === null ? '—' : posts.length} posts · {counts.followers} followers ·{' '}
+        {counts.following} following
+      </p>
+
+      {composing && (
+        <div className="-mx-5 mt-4 border-y border-rule">
+          <Composer
+            kinds={['post', 'article']}
+            onPublished={() => {
+              setComposing(false)
+              load()
+            }}
+          />
+        </div>
+      )}
+
+      <div className="mt-3">
+        {(posts ?? []).map((c) => (
+          <Row
+            key={c.id}
+            to={c.kind === 'article' ? `/read/${c.id}` : undefined}
+            title={c.title || c.caption}
+            meta={c.time}
+            note={c.kind === 'article' ? 'Blog' : 'Photo'}
+          />
+        ))}
+        {posts !== null && !posts.length && !composing && (
+          <p className="prose-c">
+            Nothing yet. A photo or something you wrote — it goes in the feed under your name.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 

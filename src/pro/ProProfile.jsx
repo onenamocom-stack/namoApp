@@ -6,7 +6,7 @@ import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
 import { rupees, useConsultantFields, useStore } from '../store.jsx'
 import { listServices } from '../lib/consultants.js'
-import { fetchByConsultant, fetchReviews, followerCount } from '../lib/content.js'
+import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
   { key: 'content', label: 'Content' },
@@ -147,7 +147,7 @@ function Content() {
   useEffect(() => {
     if (!me) return
     let active = true
-    fetchByConsultant(me)
+    fetchByAuthor(me)
       .then((rows) => active && setPublished(rows.map(tile)))
       .catch((err) => console.error('[pro profile] load failed:', err.message))
     return () => {

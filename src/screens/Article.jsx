@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { fetchFeed } from '../lib/content.js'
-import { readMins } from './Home.jsx'
+import { authorHref, readMins } from './Home.jsx'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Acts, Avatar, Button, Row, Section, Stub, Tag } from '../components/Primitives.jsx'
@@ -101,7 +101,7 @@ export default function Article() {
         <h1 className="text-title font-light">{b.title}</h1>
 
         <Link
-          to={`/consult/${b.consultantId}`}
+          to={authorHref(b)}
           className="mt-8 flex items-center gap-3 border-t border-rule pt-6 transition-opacity hover:opacity-60"
         >
           <Avatar initials={b.initials} size={36} />
@@ -152,13 +152,22 @@ export default function Article() {
           <div className="min-w-0 flex-1">
             <p className="truncate text-body text-t1">{b.consultant}</p>
             <p className="mt-1 text-micro uppercase tracking-caps text-t3">
-              Reads charts for a living
+              {b.isConsultant ? 'Reads charts for a living' : 'Writes here'}
             </p>
           </div>
         </div>
-        <Button to={`/consult/${b.consultantId}`} variant="solid" className="mt-8">
-          Book a session
-        </Button>
+        {/* A seeker who wrote a blog post is not bookable, and offering a
+            session under their name is the one place this screen could quietly
+            turn a person into a practitioner. */}
+        {b.isConsultant ? (
+          <Button to={`/consult/${b.authorId}`} variant="solid" className="mt-8">
+            Book a session
+          </Button>
+        ) : (
+          <Button to={`/u/${b.authorId}`} variant="solid" className="mt-8">
+            See their posts
+          </Button>
+        )}
       </Section>
 
       <Section label="Read next" last>

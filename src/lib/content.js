@@ -36,9 +36,14 @@ import { supabase } from './supabase.js'
 function shape(row) {
   return {
     id: row.id,
-    consultantId: row.consultant_id,
-    consultant: row.consultant_name,
-    initials: (row.consultant_name || '')
+    authorId: row.author_id,
+    isConsultant: row.author_is_consultant,
+    // Kept so the twenty-odd call sites reading `consultantId` keep working.
+    // New code reads `authorId` and `isConsultant`, because since 025 an
+    // author is a person who may or may not also be a practitioner.
+    consultantId: row.author_id,
+    consultant: row.author_name,
+    initials: (row.author_name || '')
       .split(' ')
       .filter(Boolean)
       .map((w) => w[0])
@@ -93,11 +98,11 @@ export async function fetchFeed({ kinds, limit = 40 } = {}) {
 }
 
 /** One consultant's published work — their profile tab and the studio list. */
-export async function fetchByConsultant(consultantId, { limit = 40 } = {}) {
+export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const { data, error } = await supabase
     .from('content_public')
     .select('*')
-    .eq('consultant_id', consultantId)
+    .eq('author_id', authorId)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(limit)
   if (error) throw error
@@ -107,10 +112,14 @@ export async function fetchByConsultant(consultantId, { limit = 40 } = {}) {
 /**
  * Publish. The studio's "Published to your feed" toast becomes a row.
  *
- * `consultant_id` is sent because RLS checks it against `auth.uid()` — the
- * policy is `consultant_id = auth.uid()`, so a client claiming somebody else's
- * ID is refused by the database rather than trusted here. It is not an identity
- * the client gets to assert (rule 3); it is one the server checks.
+ * `author_id` is sent because RLS checks it against `auth.uid()`, so a client
+ * claiming somebody else's ID is refused by the database rather than trusted
+ * here. It is not an identity the client gets to assert (rule 3); it is one the
+ * server checks.
+ *
+ * The same policy decides WHAT may be published: a seeker gets `post` and
+ * `article`, and only an approved consultant gets `clip`. A composer that
+ * offers the wrong tab is a bug in the composer, not a way in.
  */
 export async function publish({ kind, title, body, caption, mediaUrl }) {
   const { data: { user } } = await supabase.auth.getUser()
@@ -119,7 +128,7 @@ export async function publish({ kind, title, body, caption, mediaUrl }) {
   const { data, error } = await supabase
     .from('content')
     .insert({
-      consultant_id: user.id,
+      author_id: user.id,
       kind,
       title: title ?? null,
       body: body ?? null,
@@ -137,7 +146,10 @@ export async function publish({ kind, title, body, caption, mediaUrl }) {
   // URL, so the screen renders for anybody, and the foreign key is what
   // actually stops them. Raw Postgres text is not the app's voice.
   if (error) {
-    if (error.code === '23503') throw new Error('Only an approved consultant can publish')
+    if (error.code === '23503') throw new Error('Sign in to publish')
+    // 42501 is the RLS refusal, and for a seeker the only way to earn it is
+    // asking for a reel.
+    if (error.code === '42501') throw new Error('Only a consultant can post a reel')
     throw error
   }
   return data.id
@@ -260,13 +272,36 @@ export async function reviewableBookings() {
   return data.filter((b) => !reviewed.has(b.id))
 }
 
-/** Follower count, for the consultant profile header. */
-export async function followerCount(consultantId) {
+/**
+ * Followers and following for any profile, consultant or not.
+ *
+ * One view and one round trip, because the profile screen shows both numbers
+ * side by side and two queries for two integers is two chances to disagree.
+ * A follow of a practitioner and a follow of a person both count: somebody who
+ * does both has one audience, not two.
+ */
+export async function followCounts(profileId) {
   const { data, error } = await supabase
-    .from('consultant_follower_counts')
-    .select('follower_count')
-    .eq('consultant_id', consultantId)
+    .from('profile_follow_counts')
+    .select('follower_count, following_count')
+    .eq('profile_id', profileId)
     .maybeSingle()
   if (error) throw error
-  return data?.follower_count ?? 0
+  return { followers: data?.follower_count ?? 0, following: data?.following_count ?? 0 }
+}
+
+/** Just the follower count — the consultant profile header shows only that. */
+export async function followerCount(profileId) {
+  return (await followCounts(profileId)).followers
+}
+
+/** A published author's public name, for /u/:id. */
+export async function fetchAuthor(profileId) {
+  const { data, error } = await supabase
+    .from('authors_public')
+    .select('id, name')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (error) throw error
+  return data
 }

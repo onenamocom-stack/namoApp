@@ -19,7 +19,7 @@ import {
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { requestChat } from '../lib/chat.js'
-import { fetchByConsultant, fetchReviews, followerCount } from '../lib/content.js'
+import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
   { key: 'about', label: 'About' },
@@ -461,7 +461,7 @@ function Work({ c }) {
 
   useEffect(() => {
     let active = true
-    fetchByConsultant(c.id)
+    fetchByAuthor(c.id)
       .then((rows) => active && setItems(rows))
       .catch((err) => {
         console.error('[work] load failed:', err.message)

@@ -42,6 +42,7 @@ import People from './screens/People.jsx'
 import Synastry from './screens/Synastry.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
+import UserProfile from './screens/UserProfile.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
 import Notifications from './screens/Notifications.jsx'
@@ -233,6 +234,10 @@ function Frame() {
             <Route path="/people/invite" element={<Invite />} />
             <Route path="/people/:id" element={<Synastry />} />
             <Route path="/read/:id" element={<Article />} />
+            {/* A person who posts. Deliberately not /consult/:id — that screen
+                sells a practitioner, and publishing a photo does not make
+                anybody bookable. */}
+            <Route path="/u/:id" element={<UserProfile />} />
             <Route path="/reels/:id" element={<ReelViewer />} />
             <Route path="/consult/:id" element={<ConsultantProfile />} />
             <Route path="/notifications" element={<Notifications />} />

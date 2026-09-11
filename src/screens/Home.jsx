@@ -10,6 +10,18 @@ import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
 /**
+ * Where an author's name links to.
+ *
+ * A consultant's byline goes to the screen that sells them; a seeker's goes to
+ * `/u/:id`, which has no rate, no slots and no Book button. Since `025` an
+ * author is a person who may or may not also be a practitioner, and `content_public`
+ * says which — so nothing here has to guess from the shape of the row.
+ */
+export function authorHref(c) {
+  return c.isConsultant ? `/consult/${c.authorId}` : `/u/${c.authorId}`
+}
+
+/**
  * What is still hand-ordered in `mock.js`, and why each one is.
  *
  * `course` / `product` belong to phase 10. Posts, reels and articles are gone
@@ -209,7 +221,7 @@ function PostCard({ post: p }) {
         initials={p.initials}
         name={p.consultant}
         meta={p.time}
-        to={`/consult/${p.consultantId}`}
+        to={authorHref(p)}
       />
       <p className="mt-4 text-body t-sub">{p.body || p.caption}</p>
       {/* A photo post carries an image; a plain note does not. Both are
@@ -254,7 +266,7 @@ function ReelCard({ reel: r }) {
   return (
     <article className="pop-card p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <Byline initials={r.initials} name={r.consultant} to={`/consult/${r.consultantId}`} />
+        <Byline initials={r.initials} name={r.consultant} to={authorHref(r)} />
         <PopTag>Reel</PopTag>
       </div>
 
@@ -452,7 +464,7 @@ function ArticleCard({ read: b }) {
         name={b.consultant}
         note="published an article"
         meta={b.time}
-        to={`/consult/${b.consultantId}`}
+        to={authorHref(b)}
       />
 
       <Link to={`/read/${b.id}`} className="mt-4 block transition-opacity hover:opacity-80">

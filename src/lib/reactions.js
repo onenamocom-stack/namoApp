@@ -34,7 +34,22 @@ import { supabase } from './supabase.js'
  * to be crossable one screen at a time rather than all at once.
  */
 
-const KINDS = { follow: 'consultant', save: 'content', like: 'content' }
+/**
+ * The namespace decides the `target_type`, and `follow` vs `followp` is the one
+ * distinction worth spelling out.
+ *
+ * Following a CONSULTANT is following a practitioner you might book. Following
+ * a PERSON is following someone whose photos you like. `025` keeps them as
+ * separate `target_type` values so a follower count can answer either question
+ * later without unpicking rows — and the key namespace has to carry the
+ * difference, because a UUID alone cannot say which kind of thing it names.
+ */
+const KINDS = {
+  follow: 'consultant',
+  followp: 'profile',
+  save: 'content',
+  like: 'content',
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
