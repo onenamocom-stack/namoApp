@@ -15,7 +15,7 @@ Updated 10 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
-| **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **Migrations 024, 025, 026, 027 are DEV ONLY** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
+| **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **024, 026, 027 are on production; 025 is DEV ONLY** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -902,11 +902,17 @@ now stated as settled in the document that owns it.
 - **025 is seekers publishing, applied to dev and deployed to `main`.**
   `authors_public` and `profile_follow_counts` exist on dev and are missing from
   production, so that feature is in exactly the same half-shipped state as
-  Bhakti. **Four migrations are dev-only, not three: 024, 025, 026, 027.** Dev
-  applied them in exactly that numeric order (confirmed from its migration
-  history, 13 Sep), so production replays them 024 → 025 → 026 → 027 with no
-  reordering. The section below on seekers publishing has what 025 does and what
-  has been clicked.
+  Bhakti was. **Production has 024, 026 and 027 and the Bhakti seed (22 rows),
+  and does NOT have 025** — verified 13 Sep by probing production's public API
+  read-only, not taken from a message. `content.consultant_id` still exists and
+  `author_id` does not, so 025 never ran rather than half-ran.
+
+  **025 now runs out of dev's order**, after 026 and 027 instead of before them.
+  That was checked rather than assumed: neither touches `content`, `reactions` or
+  `content_public`, so there is no dependency to break. The two fallbacks in
+  `lib/content.js` are what keep production's feed and Work tabs working until
+  it runs — **do not remove them first.** The section below on seekers publishing
+  has what 025 does and what has been clicked.
 - **Avatars are your own face only, and that is a schema fact.**
   `profiles_select_own` is `using (id = auth.uid())`; a profile row carries a
   phone, an email and a birth time, so it will not be widened to let a picture
