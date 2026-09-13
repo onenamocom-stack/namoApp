@@ -12,9 +12,12 @@ import { supabase } from './supabase.js'
  *
  * Everything reads through the views, never the tables:
  *
- *   content_public              live content from approved consultants, with
- *                               like and save counts already aggregated
- *   consultant_follower_counts  the number that used to be '84.2k' in a mock
+ *   content_public              live content from seekers and approved
+ *                               consultants, with like and save counts already
+ *                               aggregated and `author_is_consultant` to route
+ *                               a byline
+ *   profile_follow_counts       followers AND following for any profile — the
+ *                               number that used to be '84.2k' in a mock
  *   reviews_public             `verified` derived from booking_id, and the
  *                               reviewer named as "Tara V." rather than in full
  *
@@ -36,21 +39,14 @@ import { supabase } from './supabase.js'
 function shape(row) {
   return {
     id: row.id,
-    // Falls back to the pre-025 column names, because `main` deploys on push
-    // and production may not have the migration yet. Without this the new
-    // bundle against an old database renders a blank byline linking to
-    // /u/undefined — which is worse than the old behaviour, not merely
-    // different. `author_is_consultant` is absent there too, and treating that
-    // as TRUE is the safe default: the old feed was consultants only, so the
-    // byline goes to /consult/:id exactly as it did before.
-    authorId: row.author_id ?? row.consultant_id,
-    isConsultant: row.author_is_consultant ?? true,
+    authorId: row.author_id,
+    isConsultant: row.author_is_consultant,
     // Kept so the call sites reading `consultantId` keep working. New code
     // reads `authorId` and `isConsultant`, because since 025 an author is a
     // person who may or may not also be a practitioner.
-    consultantId: row.author_id ?? row.consultant_id,
-    consultant: row.author_name ?? row.consultant_name,
-    initials: (row.author_name || row.consultant_name || '')
+    consultantId: row.author_id,
+    consultant: row.author_name,
+    initials: (row.author_name || '')
       .split(' ')
       .filter(Boolean)
       .map((w) => w[0])
@@ -84,7 +80,8 @@ export function ago(iso) {
 }
 
 /**
- * The feed. Newest live content first, across every approved consultant.
+ * The feed. Newest live content first, from every seeker and every approved
+ * consultant.
  *
  * `kinds` narrows it for the screens that want one shape — Home's reel rail
  * asks for clips, the article list asks for articles. The default is
@@ -104,28 +101,14 @@ export async function fetchFeed({ kinds, limit = 40 } = {}) {
   return (data ?? []).map(shape)
 }
 
-/**
- * One person's published work — their profile tab and the studio list.
- *
- * Falls back to the pre-025 column for the same reason `shape` does: `main`
- * deploys on push, and filtering on a column the database does not have is a
- * 400 rather than an empty list. Without the retry every consultant's Work tab
- * on an un-migrated production reads as if they had published nothing, which is
- * a regression from working, not a feature arriving early.
- *
- * `42703` is undefined_column. Any other error is a real one and is thrown.
- */
+/** One person's published work — their profile tab and the studio list. */
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
-  const ask = (column) =>
-    supabase
-      .from('content_public')
-      .select('*')
-      .eq(column, authorId)
-      .order('published_at', { ascending: false, nullsFirst: false })
-      .limit(limit)
-
-  let { data, error } = await ask('author_id')
-  if (error?.code === '42703') ({ data, error } = await ask('consultant_id'))
+  const { data, error } = await supabase
+    .from('content_public')
+    .select('*')
+    .eq('author_id', authorId)
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .limit(limit)
   if (error) throw error
   return (data ?? []).map(shape)
 }
@@ -162,10 +145,11 @@ export async function publish({ kind, title, body, caption, mediaUrl }) {
     .single()
 
   // A refusal returns a reason the interface can show, in the app's voice
-  // (INSTRUCTIONS §2, Errors). The one a person actually hits is standing on
-  // /pro/studio without being an approved consultant: `isPro` comes from the
-  // URL, so the screen renders for anybody, and the foreign key is what
-  // actually stops them. Raw Postgres text is not the app's voice.
+  // (INSTRUCTIONS §2, Errors). Raw Postgres text is not the app's voice.
+  //
+  // Since 025 the foreign key is on `profiles`, so any signed-in person passes
+  // it and 23503 means there is no session behind the request. The refusal a
+  // person can actually earn is 42501, from the kind gate in the insert policy.
   if (error) {
     if (error.code === '23503') throw new Error('Sign in to publish')
     // 42501 is the RLS refusal, and for a seeker the only way to earn it is
