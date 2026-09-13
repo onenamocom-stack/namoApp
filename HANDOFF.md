@@ -899,11 +899,14 @@ now stated as settled in the document that owns it.
   `backend/seed/bhakti.mjs` loads the 22 rows once the tables exist. Profile
   pictures (027) are in the same position: the UI ships, the column does not
   exist on production, so the upload fails there.
-- **025 is seekers publishing, and it is applied to dev.** `authors_public` and
-  `profile_follow_counts` exist on dev and are missing from production, so that
-  feature is in exactly the same half-shipped state as Bhakti. **Four migrations
-  are dev-only, not three: 024, 025, 026, 027.** The section below on seekers
-  publishing has what 025 does and what has not been clicked.
+- **025 is seekers publishing, applied to dev and deployed to `main`.**
+  `authors_public` and `profile_follow_counts` exist on dev and are missing from
+  production, so that feature is in exactly the same half-shipped state as
+  Bhakti. **Four migrations are dev-only, not three: 024, 025, 026, 027.** Dev
+  applied them in exactly that numeric order (confirmed from its migration
+  history, 13 Sep), so production replays them 024 → 025 → 026 → 027 with no
+  reordering. The section below on seekers publishing has what 025 does and what
+  has been clicked.
 - **Avatars are your own face only, and that is a schema fact.**
   `profiles_select_own` is `using (id = auth.uid())`; a profile row carries a
   phone, an email and a birth time, so it will not be widened to let a picture
@@ -1516,11 +1519,22 @@ Without those two the new bundle against an old database is a blank byline
 linking to `/u/undefined`, which is worse than the old behaviour rather than
 merely different. Both fallbacks come out the day 025 is on production.
 
-**Not walked.** `025_seekers_publish_check.sql` passes on dev and covers the two
-refusals that matter — a seeker publishing a reel, and a seeker publishing as
-somebody else — plus the blocked-consultant gate. Nothing has been clicked.
-Phase 9's own lesson was that both bugs its walk found were in code that lint
-and build had already passed.
+**Walked on dev, 13 Sep — posting only.** A seeker published from the Your
+posts section on localhost and it worked. That is the one thing confirmed by a
+click. NOT yet confirmed by a click, though the check covers the database side
+of each: following a person on `/u/:id` and the counts moving, the `/u/:id` page
+itself, and `/pro/studio` still offering three tabs after the composer was
+extracted from it. The last is the one most likely to have regressed, since the
+extraction rewrote the consultant screen.
+
+`025_seekers_publish_check.sql` passes on dev and covers the two refusals that
+matter — a seeker publishing a reel, and a seeker publishing as somebody else —
+plus the blocked-consultant gate.
+
+**On `main` and deployed (`d5ced04`), verified in the live bundle** — it carries
+`author_is_consultant`, the `42703` fallback and the `/u/:id` route. Production
+does NOT have `025`, so there the fallbacks are doing the work and seekers
+cannot post yet.
 
 ### Storage
 
