@@ -82,13 +82,15 @@ export default function Home() {
   }, [tab, navigate])
 
   /* The feed is a QUERY, not a table (05-BACKEND-SCHEMA.md §5.3). Newest live
-     content from approved consultants, and nothing here re-sorts it — a second
-     ordering in the client would be the ranking system that section refuses. */
+     content from approved consultants, dealt in a random order on each load
+     (asked for 16 Sep). Random, not ranked — a rank is still the system that
+     section refuses. */
   const [published, setPublished] = useState([])
 
   useEffect(() => {
     let active = true
-    fetchFeed({ kinds: ['post', 'clip', 'article'] })
+    // ponytail: shuffles the newest 200 client-side; a server-side random pick when content outgrows that.
+    fetchFeed({ kinds: ['post', 'clip', 'article'], limit: 200, shuffle: true })
       .then((rows) => active && setPublished(rows))
       .catch((err) => console.error('[feed] load failed:', err.message))
     return () => {
@@ -272,6 +274,18 @@ function ReelCard({ reel: r }) {
 
       <Link to={`/reels/${r.id}`} className="group block">
         <Plate seed={r.id} className="aspect-[4/5] w-full">
+          {/* A video's cover is its own frame at half a second: the `#t=` fragment
+              seeks there and `preload="metadata"` fetches just enough to paint it.
+              ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
+          {r.mediaUrl?.match(/\.(mp4|webm|mov)$/i) && (
+            <video
+              src={`${r.mediaUrl}#t=0.5`}
+              preload="metadata"
+              muted
+              playsInline
+              className="absolute inset-0 h-full w-full rounded-[inherit] object-cover"
+            />
+          )}
           {r.mediaUrl && !r.mediaUrl.match(/\.(mp4|webm|mov)$/i) && (
             <img
               src={r.mediaUrl}

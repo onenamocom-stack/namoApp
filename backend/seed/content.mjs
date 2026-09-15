@@ -58,7 +58,7 @@
 //               a1..a6. A real consultant is published as and otherwise left
 //               alone: their availability, credentials and approval are theirs.
 //               They must already be approved, and this script will not do it.
-//   kind        clip (reel, wants a video) · post (photo, wants an image) ·
+//   kind        clip (reel, wants a video, caption optional) · post (photo, wants an image) ·
 //               article (wants title + body)
 //   agoHours    how long ago it was published. The feed shows relative time, so
 //               a stored date goes stale and an offset does not.
@@ -126,7 +126,8 @@ for (const [i, it] of items.entries()) {
     if (!it.media) problems.push(`${at}: a ${it.kind} needs a media file`)
     else if (!onDisk.has(it.media)) problems.push(`${at}: ${it.media} is not in seed/content/media/`)
     else if (!mime) problems.push(`${at}: ${it.media} is not a type the bucket accepts`)
-    if (!it.caption?.trim()) problems.push(`${at}: a ${it.kind} needs a caption`)
+    // A reel can go out bare: the partner's clips came with no captions (16 Sep).
+    if (it.kind === 'post' && !it.caption?.trim()) problems.push(`${at}: a post needs a caption`)
     if (it.kind === 'clip' && mime && !mime.startsWith('video/')) {
       problems.push(`${at}: a clip wants a video, ${it.media} is not one`)
     }
@@ -317,6 +318,10 @@ for (const it of items) {
       const body = await readFile(join(MEDIA, it.media))
       const { error } = await db.storage.from(BUCKET).upload(path, body, {
         contentType: MIME[extname(it.media).toLowerCase()],
+        // A year. Without it storage serves `no-cache` and every view re-fetches
+        // the whole reel. Replacing a file under the same name would stay stale
+        // in browsers that have it, so give changed media a new file name.
+        cacheControl: '31536000',
         upsert: true,
       })
       if (error) die(`upload failed for ${it.media}: ${error.message}`)
@@ -333,11 +338,11 @@ for (const it of items) {
 
   const { error } = await db.from('content').upsert(
     {
-      consultant_id: c.profile_id,
+      author_id: c.profile_id,
       kind: it.kind,
       title: it.title ?? null,
       body: it.body ?? null,
-      caption: it.caption ?? null,
+      caption: it.caption?.trim() || null,
       media_url: mediaUrl,
       status: 'live',
       published_at: publishedAt,

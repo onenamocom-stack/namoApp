@@ -30,6 +30,9 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
   const [clips, setClips] = useState([])
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+  // Sound on by default and only the rail button turns it off. The reader got
+  // here by tapping, which is the gesture browsers want before audio.
+  const [muted, setMuted] = useState(false)
 
   /* Through a ref, so the fetch does not depend on the callback's identity. A
      caller passing an inline arrow would otherwise refetch on every render, and
@@ -40,7 +43,7 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
 
   useEffect(() => {
     let active = true
-    fetchFeed({ kinds: ['clip'] })
+    fetchFeed({ kinds: ['clip'], limit: 200, shuffle: true })
       .then((rows) => {
         if (!active) return
         setClips(rows)
@@ -93,8 +96,12 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
         <ReelFrame
           key={c.id}
           reel={c}
+          active={i === index}
+          near={Math.abs(i - index) <= 1}
           paused={paused}
           onTogglePlay={() => setPaused((p) => !p)}
+          muted={muted}
+          setMuted={setMuted}
           isLast={i === clips.length - 1}
         />
       ))}
@@ -120,8 +127,33 @@ function RailAct({ icon, label, count, on, tone = 'default', onClick }) {
   )
 }
 
-function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
+function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMuted, isLast }) {
   const { showToast, hasFlag, toggleFlag } = useStore()
+  const video = useRef(null)
+
+  /* Only the reel on screen plays. Every frame used to autoplay at once, which
+     was silent only because all of them were muted. `muted` is set on the
+     element rather than as a prop because React does not keep that attribute
+     in step after the first render. */
+  useEffect(() => {
+    const v = video.current
+    if (!v) return
+    v.muted = muted
+    if (active && !paused) {
+      v.play().catch((err) => {
+        // Scrolling on cancels the previous play() with an AbortError — that is
+        // not the browser refusing sound, and treating it as one muted every
+        // reel after the first swipe. Only NotAllowedError (no tap on the page
+        // yet) mutes, and only this element, until the next tap anywhere.
+        if (err.name !== 'NotAllowedError' || v.muted) return
+        v.muted = true
+        v.play().catch(() => {})
+        window.addEventListener('pointerdown', () => (v.muted = false), { once: true })
+      })
+    } else {
+      v.pause()
+    }
+  }, [active, paused, muted])
   const liked = hasFlag(`like:${c.id}`)
   const saved = hasFlag(`save:${c.id}`)
   const following = hasFlag(`follow:${c.consultantId}`)
@@ -137,15 +169,18 @@ function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
         className="absolute inset-0 h-full w-full"
       >
         {c.mediaUrl ? (
-          /* A real upload. Muted and looping because the format autoplays and
-             a reel that starts talking at full volume in a quiet room is how
-             people close the tab. */
+          /* A real upload. Played by the effect above, looping, with the
+             frame at half a second as its cover until it starts. */
           c.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
             <video
-              src={c.mediaUrl}
+              ref={video}
+              src={`${c.mediaUrl}#t=0.5`}
               className="h-full w-full object-cover"
-              autoPlay={!paused}
-              muted
+              /* The reel on screen and one either side buffer fully, so a
+                 swipe lands on video that is already there. The rest load
+                 nothing — 48 metadata requests at once were competing with
+                 the one being watched. */
+              preload={near ? 'auto' : 'none'}
               loop
               playsInline
             />
@@ -181,6 +216,14 @@ function ReelFrame({ reel: c, paused, onTogglePlay, isLast }) {
 
       {/* ── The right rail ─────────────────────────────────────────────── */}
       <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
+        {c.mediaUrl?.match(/\.(mp4|webm|mov)$/i) && (
+          <RailAct
+            icon={muted ? 'muted' : 'sound'}
+            label={muted ? 'Unmute' : 'Mute'}
+            tone="plain"
+            onClick={() => setMuted((m) => !m)}
+          />
+        )}
         <RailAct
           icon="heart"
           label={liked ? 'Liked' : 'Like'}

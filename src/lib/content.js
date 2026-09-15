@@ -87,7 +87,7 @@ export function ago(iso) {
  * asks for clips, the article list asks for articles. The default is
  * everything, which is what the main feed wants.
  */
-export async function fetchFeed({ kinds, limit = 40 } = {}) {
+export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
   let q = supabase
     .from('content_public')
     .select('*')
@@ -98,7 +98,16 @@ export async function fetchFeed({ kinds, limit = 40 } = {}) {
 
   const { data, error } = await q
   if (error) throw error
-  return (data ?? []).map(shape)
+  const rows = (data ?? []).map(shape)
+  // Asked for 16 Sep: a reload should show the feed in a new order. Fisher–Yates
+  // over the newest `limit` rows — not ranking, just a deal of the same deck.
+  if (shuffle) {
+    for (let i = rows.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[rows[i], rows[j]] = [rows[j], rows[i]]
+    }
+  }
+  return rows
 }
 
 /** One person's published work — their profile tab and the studio list. */
@@ -179,7 +188,11 @@ export async function uploadMedia(file) {
   const safe = file.name.replace(/[^\w.-]+/g, '-').toLowerCase()
   const path = `${user.id}/${Date.now()}-${safe}`
 
-  const { error } = await supabase.storage.from('content-media').upload(path, file)
+  // The path is unique per upload, so the file never changes under it: cache for
+  // a year. Without this storage serves `no-cache` and every view re-fetches.
+  const { error } = await supabase.storage
+    .from('content-media')
+    .upload(path, file, { cacheControl: '31536000' })
   if (error) {
     // The two a person actually hits, in the app's voice.
     if (/exceeded the maximum allowed size/i.test(error.message)) {
