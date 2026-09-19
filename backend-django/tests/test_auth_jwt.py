@@ -203,3 +203,37 @@ class TestRSAVerifierInterop:
         assert not jwks_module.rsa_sha256_verify(
             signing_input + b"x", signature, rsa_keypair["n"], rsa_keypair["e"]
         )
+
+
+@pytest.mark.django_db
+class TestES256EndToEnd:
+    """ES256 is what Supabase's newer projects actually sign with — the
+    namo-dev JWKS is a P-256 key. Requires the cryptography package."""
+
+    def test_es256_token_accepted(
+        self, api_client, jwks_mode, jwks_document, mock_jwks_fetch, auth_headers
+    ):
+        jwk, sign = jwtutil.generate_es256_jwk(TEST_KID)
+        jwks_document["keys"] = [jwk]
+        response = api_client.get("/v1/me/", **auth_headers(sign(make_claims())))
+        assert response.status_code == 200
+        assert response.json()["id"] == make_claims()["sub"]
+
+    def test_es256_bad_signature_rejected(
+        self, api_client, jwks_mode, jwks_document, mock_jwks_fetch, auth_headers
+    ):
+        jwk, sign = jwtutil.generate_es256_jwk(TEST_KID)
+        jwks_document["keys"] = [jwk]
+        token = sign(make_claims())
+        tampered = token[:-2] + ("aa" if token[-2:] != "aa" else "bb")
+        response = api_client.get("/v1/me/", **auth_headers(tampered))
+        assert response.status_code == 401
+        assert response.json()["reason"] == "unauthenticated"
+
+    def test_es256_wrong_kid_rejected(
+        self, api_client, jwks_mode, jwks_document, mock_jwks_fetch, auth_headers
+    ):
+        jwk, sign = jwtutil.generate_es256_jwk("a-different-kid")
+        jwks_document["keys"] = [jwtutil.generate_es256_jwk(TEST_KID)[0]]
+        response = api_client.get("/v1/me/", **auth_headers(sign(make_claims())))
+        assert response.status_code == 401

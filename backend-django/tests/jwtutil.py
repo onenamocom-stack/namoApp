@@ -153,3 +153,45 @@ def verify_with_openssl(keypair, token: str) -> bool:
             capture_output=True,
         )
         return result.returncode == 0
+
+
+def generate_es256_jwk(kid):
+    """P-256 (ES256) keypair via cryptography — Supabase's newer projects
+    sign JWTs with EC keys (namo-dev's JWKS is ES256), which pure Python
+    cannot verify, unlike the RS256 path above. Returns (jwk, sign) where
+    sign(claims, headers=None) produces a compact JWT with a raw R||S
+    signature, exactly what PyJWT's ES256 decoder expects."""
+    import json as _json
+
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import ec, utils
+
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    numbers = private_key.public_key().public_numbers()
+
+    jwk = {
+        "kty": "EC",
+        "crv": "P-256",
+        "kid": kid,
+        "alg": "ES256",
+        "x": _b64url(numbers.x.to_bytes(32, "big")),
+        "y": _b64url(numbers.y.to_bytes(32, "big")),
+    }
+
+    def sign(claims, headers=None):
+        header = {"typ": "JWT", "alg": "ES256", "kid": kid}
+        if headers:
+            header.update(headers)
+        part1 = _b64url(
+            _json.dumps(header, separators=(",", ":")).encode("ascii")
+        )
+        part2 = _b64url(
+            _json.dumps(claims, separators=(",", ":")).encode("ascii")
+        )
+        signing_input = f"{part1}.{part2}".encode("ascii")
+        der = private_key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
+        r, s = utils.decode_dss_signature(der)
+        part3 = _b64url(r.to_bytes(32, "big") + s.to_bytes(32, "big"))
+        return f"{part1}.{part2}.{part3}"
+
+    return jwk, sign

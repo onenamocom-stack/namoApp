@@ -5,3 +5,4 @@ requests==2.34.2
 boto3==1.43.98
 pytest==9.1.1
 pytest-django==4.14.0
+cryptography>=43,<46
