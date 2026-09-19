@@ -2047,3 +2047,36 @@ services, views, urls, fake-in migration), `backend-django/tests/test_astro.py`
 (new), `backend-django/cutovers/astro.clientlib.js` (new — the staged client
 flip), `backend-django/config/` (app, route, provider settings), `HANDOFF.md`
 (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+## 10c. Module 4 — bhakti — 19 Sep 2026
+
+The bhakti module (step 4 of `docs/07-DJANGO-MIGRATION.md` §6) is built in
+`backend-django/` and **staged, not deployed** — Supabase still serves
+production; the client flip sits in `backend-django/cutovers/
+bhakti.clientlib.js` awaiting the deploy order. `apps/bhakti/` maps 1:1 onto
+`bhakti_assets` (`backend/schema/024_bhakti_assets.sql` as amended by `026`,
+which merged 'ringtone' into 'tune' and promoted WhatsApp-status artwork into
+the leading 'status' kind): uuid id, kind vocabulary, nullable-positive
+`price_paise`, the NOT NULL attribution triplet, soft withdrawal via `active`,
+curated `sort`, and the `legacy_id` unique key the seed script idempotently
+upserts on. It is a curated catalogue with no client writer — 024 grants one
+RLS policy (public select of active rows) and deliberately no write policy —
+so the module is one AllowAny read endpoint, `GET /v1/bhakti/assets/`, ordered
+kind-then-sort exactly like fetchAssets, returning the snake_case rows toAsset
+consumes; the only write path is the service layer's `seed_asset` (the
+service-role `backend/seed/bhakti.mjs` replacement, constraint-safe against a
+racing re-seed) reachable from no URL. No e-puja session state exists to
+migrate: the shrine (`src/screens/Pooja.jsx`, at `/darshan`) is fully
+client-side mock data with zero backend calls — §6's "one session write"
+turned out not to exist. No `*_check.sql` covers bhakti, so the 024/026 SQL
+itself is the ported spec. 29 new pytest-django tests cover the endpoint
+contract, the RLS-equivalent matrix (anonymous reads active rows; writes are
+405s, not 403s — the absence of the policy is the rule), the 026 kind
+vocabulary, the column checks, and the seed path's idempotency including a
+two-thread race; full suite 182 green.
+
+Files changed: `backend-django/apps/bhakti/` (new — models, services, views,
+urls, fake-in migration), `backend-django/tests/test_bhakti.py` (new),
+`backend-django/cutovers/bhakti.clientlib.js` (new — the staged client flip),
+`backend-django/config/` (app + route registration), `HANDOFF.md` (this
+section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
