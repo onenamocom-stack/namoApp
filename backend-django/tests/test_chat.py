@@ -61,7 +61,7 @@ from apps.chat.services import (
     REFUSAL_SESSION_ENDED,
     REFUSAL_SHORT_BALANCE,
 )
-from apps.consultants import gateway
+from apps.wallet import services as wallet_services
 from apps.consultants.models import (
     FEE_BPS,
     Consultant,
@@ -118,23 +118,14 @@ def stranger_token(sign_hs256, hs256_mode):
 @pytest.fixture
 def money_tables():
     """The raw tables module 7's gateway touches but modules 8/9 own —
-    test_consultants' fixture verbatim, including prod's refuse_mutation
-    triggers and the refund-per-order unique index."""
+    test_consultants' fixture verbatim, minus wallets/ledger: module 8's
+    models now own those (real tables, real 013 refund index), and the
+    fixture attaches only prod's refuse_mutation triggers to the ledger."""
     from django.db import connection
 
     with connection.cursor() as cursor:
         cursor.execute(
-            "create table profiles (id text primary key, name text,"
-            " birth_date text, birth_time text, birth_place text)"
-        )
-        cursor.execute(
-            "create table wallets (profile_id text primary key,"
-            " balance_paise integer not null default 0)"
-        )
-        cursor.execute(
-            "create table ledger (id text primary key, wallet_id text not null,"
-            " delta_paise integer not null check (delta_paise <> 0),"
-            " kind text, ref_type text, ref_id text, note text, created_at text)"
+            "create table profiles (id text primary key, name text)"
         )
         cursor.execute(
             "create trigger ledger_immutable before update on ledger"
@@ -143,10 +134,6 @@ def money_tables():
         cursor.execute(
             "create trigger ledger_immutable_delete before delete on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
-        )
-        cursor.execute(
-            "create unique index ledger_one_refund_per_order on ledger (ref_id)"
-            " where ref_type = 'refund' and ref_id is not null"
         )
         cursor.execute(
             "create table orders (id text primary key, profile_id text not null,"
@@ -163,7 +150,9 @@ def money_tables():
     from django.db import connection
 
     with connection.cursor() as cursor:
-        for table in ("order_items", "orders", "ledger", "wallets", "profiles"):
+        cursor.execute("drop trigger if exists ledger_immutable")
+        cursor.execute("drop trigger if exists ledger_immutable_delete")
+        for table in ("order_items", "orders", "profiles"):
             cursor.execute(f"drop table {table}")
 
 
@@ -184,12 +173,13 @@ def pro_user(money_tables):
         _profile(cursor, SECOND_SEEKER, "Arjun Nair")
         _profile(cursor, PRO, "Ritu Kashyap")
         _profile(cursor, STRANGER, "Pryia Sen")
-        # The gateway's SQLite emulation of the phase-2 balance trigger
-        # UPDATES wallets, so the row must exist before any top-up.
+        # The wallet service's SQLite emulation of the phase-2 balance
+        # trigger UPDATES wallets, so the row must exist before any top-up.
         for pid in (SEEKER, SECOND_SEEKER):
             cursor.execute(
-                "insert into wallets (profile_id, balance_paise) values (%s, 0)",
-                [str(pid)],
+                "insert into wallets (profile_id, balance_paise, created_at)"
+                " values (%s, 0, %s)",
+                [str(pid), timezone.now()],
             )
     consultant = Consultant.objects.create(
         profile_id=PRO, category="Astrologer", status="approved"
@@ -222,7 +212,7 @@ def _service(consultant_id=PRO, *, mode="chat", billing="per_minute",
 
 
 def _fund(pid, amount):
-    gateway.insert_ledger(pid, amount, "Added money", ref_type="adjustment")
+    wallet_services.insert_ledger(pid, amount, "Added money", ref_type="adjustment")
 
 
 def _balance(pid):

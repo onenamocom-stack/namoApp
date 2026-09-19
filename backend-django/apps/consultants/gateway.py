@@ -2,26 +2,17 @@
 
   profiles        — the profile module (9); read for names and birth details
                     exactly as the 007/010 views join them
-  wallets, ledger — the wallet module (8); prod carries the phase-2 triggers
-                    (balance follows ledger; refuse_mutation makes the ledger
-                    append-only) until that cutover
   orders,
   order_items     — 012's order layer; the booking transaction writes them
                     here exactly as 012's function does, inside the same
                     transaction
 
-A query ERROR here propagates on purpose: the views must not conflate a
-failed read with an absent row (the astro/content gateways carry the same
-warning).
-
-Two prod-trigger behaviours are emulated on SQLite, whose test fixtures have
-no triggers — both are the honest shape for that backend, documented at the
-site of each:
-
-  * lock_wallet_balance skips FOR UPDATE (SQLite's file lock is the
-    serializer), mirroring content's write_rating_cache
-  * insert_ledger carries the balance into wallets itself; on Postgres the
-    phase-2 trigger does that, so the gateway must NOT double-write it
+wallets/ledger were here until module 8 claimed them: the wallet lock and
+the ledger append moved to apps.wallet.services (THE only mutation path,
+rule 2) and this module's services import them from there — one
+implementation of the money primitives, not two. A query ERROR here
+propagates on purpose: the views must not conflate a failed read with an
+absent row (the astro/content gateways carry the same warning).
 """
 
 import uuid
@@ -47,44 +38,6 @@ def profile_name(profile_id):
         cursor.execute("select name from profiles where id = %s", [str(profile_id)])
         row = cursor.fetchone()
     return row[0] if row else None
-
-
-# ── wallets / ledger (wallet module) ─────────────────────────────────────────
-
-
-def lock_wallet_balance(profile_id):
-    """The seeker's balance under a row lock (012 step 1: two debits by the
-    same seeker serialise here; the check is against the LOCKED number, never
-    a client's copy). None when there is no wallet on this account."""
-    sql = "select balance_paise from wallets where profile_id = %s"
-    if connection.vendor == "postgresql":
-        sql += " for update"
-    with connection.cursor() as cursor:
-        cursor.execute(sql, [str(profile_id)])
-        row = cursor.fetchone()
-    return row[0] if row else None
-
-
-def insert_ledger(wallet_id, delta_paise, kind, ref_type=None, ref_id=None, note=None):
-    """One ledger row (012 step 5). Append-only in prod by 003's
-    refuse_mutation trigger; on SQLite, where the test fixture has no
-    trigger, the gateway also carries the balance — the phase-2 trigger's
-    exact job — so wallets stay correct by construction on both backends."""
-    row_id = str(uuid.uuid4())
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "insert into ledger (id, wallet_id, delta_paise, kind, ref_type, ref_id,"
-            " note, created_at) values (%s, %s, %s, %s, %s, %s, %s, %s)",
-            [row_id, str(wallet_id), delta_paise, kind, ref_type,
-             (str(ref_id) if ref_id is not None else None), note, timezone.now()],
-        )
-        if connection.vendor != "postgresql":
-            cursor.execute(
-                "update wallets set balance_paise = balance_paise + %s"
-                " where profile_id = %s",
-                [delta_paise, str(wallet_id)],
-            )
-    return row_id
 
 
 # ── orders / order_items (012's order layer) ─────────────────────────────────

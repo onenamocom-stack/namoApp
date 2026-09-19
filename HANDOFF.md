@@ -2432,6 +2432,129 @@ consultants/gateway.py` (`set_order_total` for the settle), `backend-django/
 config/` (app + route registration), `HANDOFF.md` (this section),
 `docs/07-DJANGO-MIGRATION.md` (§6 status).
 
+## 10g. Module 8 — wallet + payments, the money core — 19 Sep 2026
+
+The wallet module (step 8 of `docs/07-DJANGO-MIGRATION.md` §6 — the MONEY
+core: wallets, the append-only ledger, top-ups, Razorpay order/webhook) is
+built in `backend-django/` and **staged, not deployed** — Supabase still
+serves production; the client flip sits in
+`backend-django/cutovers/wallet.clientlib.js` awaiting the **feature-freeze
+cutover window** (docs/07 §6 step 8 — the one module with a freeze; the
+window and its deploy order are spelled out in the cutover file's header).
+Full suite **410 green** (354 + 56 new).
+
+**Ownership.** `apps/wallet/` maps 1:1 onto `wallets`, `ledger` (003,
+refuse_mutation fixed by 004, wallet_debit's client ref_type removed by 005,
+013's refund index) and `payments` (006): exact table/constraint/index names
+for the fake-in (`migrate --fake-initial` at cutover; prod's phase-2
+triggers stay in force and Django's services never double-write what a
+trigger does — documented at the site). `Ledger` carries the append-only
+refusal as an ORM guard like module 6's EarningsLedger, so 003's
+refuse_mutation rules are executable on SQLite: no UPDATE/DELETE, the
+never-negative CHECK, the nonzero-delta CHECK, the ref_type CHECK — and
+005's discipline in the service layer, a client debit writes ref_type
+'order' ALWAYS. The gateway moves: `apps.consultants.gateway`'s wallet
+functions (`lock_wallet_balance`, `insert_ledger`) moved to
+`apps.wallet.services` — THE only mutation path — and modules 6/7's money
+calls re-point there, same SQL, same results (their 118 tests unchanged
+green). Wallet/ledger access is format-agnostic SQL (`_xid`, the content
+gateway's helper) because Django stores UUIDs dashless on SQLite while raw
+rows are dashed — money reads must not depend on which.
+
+**Services are the only mutation path, stated back.** `debit` is 005's
+`wallet_debit` statement for statement — row lock, check against the LOCKED
+number, exact refusal sentences ('Not enough balance' byte-identical, with
+the post-refusal balance), ref_type forced 'order'. `credit` is
+server-side only — payment_capture and service-role adjustments, nothing
+client-callable creates a wallet or credits one (Supabase's
+handle_new_user still makes the row at signup; auth stays). Holds and
+refunds (chat's meter, bookings) are `insert_ledger` with ref_id, one
+refund per order by 013's unique index — the insert IS the check.
+
+**Razorpay, edge-function parity.** `apps/wallet/razorpay.py` is the seam
+(order create + order-payments lookup, key id/secret server-side, generic
+errors). `create_topup_order` replicates razorpay-order: the band
+MIN_PAISE ₹100 / MAX_PAISE ₹1,00,000 with the exact sentence 'Add between
+₹100 and ₹1,00,000.', amount in paise both directions, notes carrying
+profile_id for the dashboard (never the attribution path), and it fails
+BEFORE checkout opens rather than after — an unattributable payment must
+never reach the card form. `handle_webhook` replicates razorpay-webhook:
+verify-then-parse over the RAW body (stdlib hmac/hashlib, compare_digest),
+HANDLED = {payment.captured, payment.failed}, everything else a 200
+'Ignored.', 401/400/500 exactly like the function's. `payment_capture` is
+006 statement for statement: attribution through the 'created' row never
+the notes, the event row and the ledger credit in ONE transaction, and
+idempotency is the two unique columns — a retried delivery violates the
+index and the whole block, credit included, rolls back; the handler
+answers `{ok, duplicate}` so Razorpay stops. One documented hardening over
+006: amount-must-match-order — a capture whose amount differs from the
+order it attributes through is refused (500, retried, named by the
+reconciliation) rather than crediting either number silently. The webhook
+is a plain Django view (not DRF) at `/v1/wallet/webhook/razorpay/`, no
+auth — the signature IS the credential.
+
+**Reconciliation.** `manage.py reconcile_payments` ports
+`backend/tools/reconcile-payments.mjs`: every 'created' row with no
+terminal sibling is abandoned-or-lost and only Razorpay knows, so the
+sweep ASKS — read-only, crediting nothing (a script that mints undoes the
+reason the webhook is the only credit path), exiting non-zero and naming
+the people owed with the same two-things-in-order advice. Run it after any
+webhook change and before believing the first live payment worked.
+
+**Endpoints under `/v1/wallet/`** (call-for-call with the Supabase the
+client talks to today, documented in views.py): `GET /` balance
+(wallets_select_own as a query; no wallet reads 0 + wallet_exists false),
+`GET /ledger/` keyset-paged raw snake_case rows exactly like PostgREST,
+`POST /spend/` whose 200 body IS wallet_debit's jsonb (the refusal
+sentences and the post-refusal balance travel byte-identically),
+`POST /topup/order/` with `{ok:false, reason}` refusal bodies
+byte-identical to the edge function's, `GET /topup/<order_id>/` the
+client-visible payment outcome (404 so ids don't leak), and the webhook.
+The module-1 Idempotency-Key middleware replays a retried order POST; the
+client's toppingUpRef guard stays the first line.
+
+**Tests.** 56 pytest-django tests port both check files — 003 assertions
+1–8 verbatim (cache follows ledger; the affordable debit once as 'order';
+over-balance refused by the server with the exact string and NOTHING
+written; nonsense amounts; append-only at the ORM layer; the
+never-negative CHECK at the storage layer; replay == balance; no client
+write path as 405s) and 006 assertions 1–4 through the real webhook view
+(capture credits exactly once; redelivery and repeated-event-id credit
+nothing; a failure leaves a row and no credit; unattributable raises) —
+plus the band edges with exact sentences, not-configured/502/record-failure
+branches, HMAC vectors recomputed independently with the stdlib, bad
+signature rejected without parsing, amount-mismatch refused without
+credit, topup-status scoping, the reconciliation classifications and the
+command's exit codes, and three real-thread races (four concurrent debits
+serialise on the lock — exactly two of four pass, the wallet never
+negative; double top-up confirm credits once — one `duplicate: true`; a
+refund racing a reversal credits once — one caught IntegrityError).
+Refusal byte-parity is asserted string for string throughout.
+
+**Deliberate deviations from prod, small and documented.** (1)
+Amount-must-match-order, above. (2) 006's error classes become typed
+exceptions (CaptureFailed/Refusal) the webhook maps onto the function's
+exact statuses and bodies. (3) Unauthenticated topup gets the DRF 401
+envelope rather than the function's `{ok:false, reason:'Sign in to add
+money.'}`; the staged clientlib maps it back to that sentence. (4) The
+client's topup flow is unchanged — checkout.js in the browser, the 12s
+balance poll, the same settling toast.
+
+Files changed: `backend-django/apps/wallet/` (new — models, services,
+razorpay client, views, urls, the `reconcile_payments` command, fake-in
+migration), `backend-django/tests/test_wallet.py` (new),
+`backend-django/cutovers/wallet.clientlib.js` (new — the staged wallet
+slice + the freeze window and deploy order), `backend-django/apps/
+consultants/gateway.py` (wallet functions moved to apps.wallet.services),
+`backend-django/apps/consultants/services.py` + `backend-django/apps/chat/
+services.py` (money calls re-pointed), `backend-django/apps/consultants/
+models.py` (header: ledger's ORM guard now exists), `backend-django/tests/
+test_consultants.py` + `backend-django/tests/test_chat.py` (fixtures use
+the real wallet tables; triggers kept; one test's wallet-delete emulates
+003's cascade), `backend-django/config/` (app + route + Razorpay
+settings), `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md`
+(§6 row 8, §7 step 13).
+
 ## 11. UX direction — one look, three bets — 19 Sep 2026
 
 `mocks/ux-directions/` holds eleven artboards on a design canvas

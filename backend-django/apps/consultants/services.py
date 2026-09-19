@@ -65,6 +65,7 @@ from .models import (
     PriceBand,
     ServiceBilling,
 )
+from apps.wallet import services as wallet_services
 
 # ── the two product constants, named once (009) ──────────────────────────────
 
@@ -427,7 +428,7 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
         with transaction.atomic():
             # Steps 1 and 2 (012): the lock, then the check against the
             # locked number — never a balance the client sent.
-            balance = gateway.lock_wallet_balance(seeker_id)
+            balance = wallet_services.lock_wallet_balance(seeker_id)
             if balance is None:
                 return {"ok": False, "reason": REFUSAL_NO_WALLET}
             if service.price_paise > balance:
@@ -468,8 +469,8 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
             )
             # Step 5: the seeker's side. Append-only (rule 2); the wallet
             # balance follows by the phase-2 trigger on Postgres and by the
-            # gateway's emulation on SQLite (gateway.insert_ledger).
-            gateway.insert_ledger(
+            # gateway's emulation on SQLite (wallet_services.insert_ledger).
+            wallet_services.insert_ledger(
                 seeker_id, -service.price_paise, label, ref_type="order", ref_id=order_id
             )
             # Step 6: the consultant's side, in the transaction that is
@@ -515,9 +516,9 @@ def booking_reverse(booking_id, reason):
         return {"ok": True, "reversed": False}
     try:
         with transaction.atomic():
-            if gateway.lock_wallet_balance(booking.seeker_id) is None:
+            if wallet_services.lock_wallet_balance(booking.seeker_id) is None:
                 raise ValueError(f"booking {booking.id} has no seeker wallet to credit")
-            gateway.insert_ledger(
+            wallet_services.insert_ledger(
                 booking.seeker_id,
                 booking.amount_paise,
                 "Refund · session",

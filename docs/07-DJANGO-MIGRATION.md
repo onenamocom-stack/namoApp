@@ -186,7 +186,7 @@ green, and one walked route per affected screen.
 | 5 | Content (`content.js`) + R2 media | The feed, posts, reels on R2; largest read surface, cache-aside earns its keep — **API built, cutover staged (needs deploy)** |
 | 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) — **API built, cutover staged (needs deploy)** |
 | 7 | Chat (`chat.js`) | Metered billing; sweeper moves to Celery; highest correctness bar — every SQL check in 014 ports here — **API built, cutover staged (needs deploy)** |
-| 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover |
+| 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover — **API built, cutover staged (needs freeze + deploy)** |
 | 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 |
 | 10 | Shop, Academy, Notifications, remaining `store.jsx` reads | Whatever the client still reads from Supabase directly |
 | — | Auth | **Stays on Supabase Auth.** Revisit only if a requirement (SSO, email, deletion flows) forces it |
@@ -247,6 +247,11 @@ still open — they gate the first deployment, not the code.
 **Phase 11 — the edges**
 13. Razorpay order/webhook edge functions → Django services (same
     contract, plus the reconcile job from HANDOFF's phase 3 notes).
+    **Done as part of module 8 (HANDOFF §10g)** — `apps/wallet/` services,
+    `/v1/wallet/` endpoints incl. the signature-only webhook, and the
+    `reconcile_payments` management command; staged, not deployed. What
+    remains here is only the retirement half: after the module-8 cutover
+    window is quiet, undeploy the two edge functions.
 14. Astro provider edge function → provider interface behind Django
     (mock adapter kept for dev).
 15. What is left on Supabase is: Auth, and the database. That is the

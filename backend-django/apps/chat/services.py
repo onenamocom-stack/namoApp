@@ -49,8 +49,10 @@ semantics back before touching anything:
   write on SQLite (no triggers there) — the gateway precedent for prod's
   phase-2 balance trigger.
 
-Money paths go through apps.consultants.gateway unchanged (module 6 owns
-those raw tables); the fee arithmetic reuses consultants.services.fee_paise.
+Money paths go through apps.wallet.services (module 8 owns wallets and
+ledger; the booking/chat gateway calls moved there unchanged — same SQL,
+same results); orders/order_items stay module 6's raw gateway. The fee
+arithmetic reuses consultants.services.fee_paise.
 Every function takes an injectable `now` (defaulting to the server clock) so
 the 014 check's time-faking discipline — move started_at, never wait — ports
 to pytest with zero clock jitter.
@@ -64,6 +66,7 @@ from django.utils import timezone
 from apps.consultants import gateway
 from apps.consultants.models import EarningsLedger, FEE_BPS
 from apps.consultants.services import fee_paise
+from apps.wallet import services as wallet_services
 
 from .models import Message, Session, Thread
 
@@ -243,7 +246,7 @@ def accept_chat(consultant_id, session_id, now=None):
             ):
                 return {"ok": False, "reason": REFUSAL_NOT_OPEN}
 
-            balance = gateway.lock_wallet_balance(session.seeker_id)
+            balance = wallet_services.lock_wallet_balance(session.seeker_id)
             if balance is None:
                 return {"ok": False, "reason": REFUSAL_NO_WALLET}
             minutes = _minutes_held(balance, session.rate_paise)
@@ -289,7 +292,7 @@ def accept_chat(consultant_id, session_id, now=None):
             # The hold. Two ledger rows per session, not fifty; the wallet
             # follows by prod's phase-2 trigger and by the gateway's
             # emulation on SQLite.
-            gateway.insert_ledger(
+            wallet_services.insert_ledger(
                 session.seeker_id, -hold,
                 f"{label} · {minutes} min held",
                 ref_type="order", ref_id=order_id,
@@ -364,7 +367,7 @@ def end_session(actor_id, session_id, reason=None, now=None):
         # The unused minutes come back. ref_type='refund' and 013's unique
         # index mean one per order — exactly right: one settle per session.
         if refund > 0:
-            gateway.insert_ledger(
+            wallet_services.insert_ledger(
                 session.seeker_id, refund, "Refund · unused minutes",
                 ref_type="refund", ref_id=session.order_id, note=note,
             )

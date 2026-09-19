@@ -57,6 +57,7 @@ from apps.consultants.services import (
     REFUSAL_SLOT_TAKEN,
     ist_today,
 )
+from apps.wallet import services as wallet_services
 
 from .conftest import OTHER_USER, TEST_USER, make_claims
 
@@ -90,11 +91,13 @@ def pro_token(sign_hs256, hs256_mode):
 
 @pytest.fixture
 def money_tables():
-    """The raw tables module 6's gateway touches but module 8/9 own. On
-    SQLite tests stand them up by hand (test_content.py's pattern) — with
-    two prod behaviours reproduced for real: 003's refuse_mutation trigger
-    on the ledger (SQLite raises in triggers) and 013's
-    ledger_one_refund_per_order partial unique index."""
+    """The raw tables module 6's gateway touches but module 8/9 own.
+    wallets/ledger are REAL tables now — module 8's models create them,
+    carrying 013's ledger_one_refund_per_order index — so the fixture only
+    stands up the tables that stay raw (profiles, orders, order_items) and
+    attaches the one prod behaviour SQLite can still prove: 003's
+    refuse_mutation trigger on the ledger (the wallet module's ORM guard
+    covers the ORM side; the raw side is what 012's check asserts against)."""
     from django.db import connection
 
     with connection.cursor() as cursor:
@@ -103,25 +106,12 @@ def money_tables():
             " birth_date text, birth_time text, birth_place text)"
         )
         cursor.execute(
-            "create table wallets (profile_id text primary key,"
-            " balance_paise integer not null default 0)"
-        )
-        cursor.execute(
-            "create table ledger (id text primary key, wallet_id text not null,"
-            " delta_paise integer not null check (delta_paise <> 0),"
-            " kind text, ref_type text, ref_id text, note text, created_at text)"
-        )
-        cursor.execute(
             "create trigger ledger_immutable before update on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
         )
         cursor.execute(
             "create trigger ledger_immutable_delete before delete on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
-        )
-        cursor.execute(
-            "create unique index ledger_one_refund_per_order on ledger (ref_id)"
-            " where ref_type = 'refund' and ref_id is not null"
         )
         cursor.execute(
             "create table orders (id text primary key, profile_id text not null,"
@@ -136,7 +126,9 @@ def money_tables():
         )
     yield
     with connection.cursor() as cursor:
-        for table in ("order_items", "orders", "ledger", "wallets", "profiles"):
+        cursor.execute("drop trigger if exists ledger_immutable")
+        cursor.execute("drop trigger if exists ledger_immutable_delete")
+        for table in ("order_items", "orders", "profiles"):
             cursor.execute(f"drop table {table}")
 
 
@@ -150,16 +142,18 @@ def _profile(cursor, pid, name, birth_date=None, birth_time=None, birth_place=No
 
 def _wallet(pid, balance=0):
     from django.db import connection
+    from django.utils import timezone
 
     with connection.cursor() as cursor:
         cursor.execute(
-            "insert into wallets (profile_id, balance_paise) values (%s, %s)",
-            [str(pid), balance],
+            "insert into wallets (profile_id, balance_paise, created_at)"
+            " values (%s, %s, %s)",
+            [str(pid), balance, timezone.now()],
         )
 
 
 def _fund(pid, amount):
-    gateway.insert_ledger(pid, amount, "Added money", ref_type="adjustment")
+    wallet_services.insert_ledger(pid, amount, "Added money", ref_type="adjustment")
 
 
 def _counts(seeker_id):
@@ -968,6 +962,16 @@ class TestDeclineReverses:
         from django.db import connection
 
         with connection.cursor() as cursor:
+            # Prod's schema cascades (003: on delete cascade), so deleting
+            # the wallet takes its ledger rows with it — the honest way to
+            # make the account wallet-less. The cascade is a storage-layer
+            # action below prod's refuse_mutation trigger, so the fixture's
+            # SQLite stand-in for that trigger must step aside first.
+            cursor.execute("drop trigger if exists ledger_immutable")
+            cursor.execute("drop trigger if exists ledger_immutable_delete")
+            cursor.execute(
+                "delete from ledger where wallet_id = %s", [str(SEEKER)]
+            )
             cursor.execute("delete from wallets where profile_id = %s", [str(SEEKER)])
         with pytest.raises(ValueError, match="no seeker wallet"):
             services.booking_reverse(body["booking_id"], "declined")

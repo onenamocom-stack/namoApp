@@ -23,8 +23,9 @@ Deliberately NOT owned here (raw-SQL gateway, the astro/content pattern):
 
 Append-only (rule 2): prod refuses UPDATE/DELETE on both ledgers by trigger
 (003/012 refuse_mutation). EarningsLedger replicates that refusal in the model
-layer so the invariant is executable in this module's tests; `ledger` keeps
-its prod trigger and gets its ORM guard when module 8 claims it.
+layer so the invariant is executable in this module's tests; module 8 claimed
+`ledger` and gives it the same ORM guard — and this module's money paths now
+go through apps.wallet.services (the moved gateway), same SQL, same results.
 """
 
 import uuid

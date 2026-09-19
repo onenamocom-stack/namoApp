@@ -59,6 +59,7 @@ LOCAL_APPS = [
     "apps.content",
     "apps.consultants",
     "apps.chat",
+    "apps.wallet",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -135,6 +136,12 @@ MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.e
 ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
+
+# --- Razorpay (module 8; rule 7 — server-side only, never a response body)
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
+RAZORPAY_BASE_URL = os.environ.get("RAZORPAY_BASE_URL", "https://api.razorpay.com")
 
 API_VERSION = os.environ.get("API_VERSION", "dev")
 
