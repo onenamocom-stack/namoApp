@@ -42,6 +42,7 @@ from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
+from apps.profiles import services as profile_services
 from apps.reactions.models import Reaction
 
 from . import gateway
@@ -68,10 +69,12 @@ class DuplicateReview(Exception):
 
 # Cross-table UUID joins between Django-managed tables (content, reviews,
 # reactions — Django UUIDFields, stored dashless on SQLite) and the raw
-# gateway tables (profiles, consultants, bookings — native uuid in Postgres).
-# replace(cast(...)) normalises both sides to dashless text so the join reads
-# identically on Postgres and SQLite; on Postgres the cast of a uuid column
-# is exactly its text form, on SQLite of a char(32) it is a no-op.
+# gateway tables (consultants, bookings — module 6's; native uuid in
+# Postgres). replace(cast(...)) normalises both sides to dashless text so
+# the join reads identically on Postgres and SQLite; on Postgres the cast
+# of a uuid column is exactly its text form, on SQLite of a char(32) it is
+# a no-op. profiles left this list in module 9 — the profile module owns
+# the table and its reads are ORM subqueries (name_subquery).
 def _xid(left, right):
     return (
         f"replace(cast({left} as text), '-', '')"
@@ -97,11 +100,7 @@ def public_content():
         .annotate(_blocked=blocked)
         .filter(_blocked=0)
         .annotate(
-            author_name=RawSQL(
-                f"select p.name from profiles p where {_xid('p.id', 'content.author_id')}",
-                [],
-                output_field=models.TextField(),
-            ),
+            author_name=profile_services.name_subquery("author_id"),
             # 025: (cs.profile_id is not null) over a LEFT JOIN consultants
             # ON profile_id = author_id AND status = 'approved'.
             _approved=RawSQL(

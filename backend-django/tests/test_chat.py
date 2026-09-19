@@ -117,16 +117,18 @@ def stranger_token(sign_hs256, hs256_mode):
 
 @pytest.fixture
 def money_tables():
-    """The raw tables module 7's gateway touches but modules 8/9 own —
+    """The raw tables module 7's gateway touches but module 8 owns —
     test_consultants' fixture verbatim, minus wallets/ledger: module 8's
-    models now own those (real tables, real 013 refund index), and the
-    fixture attaches only prod's refuse_mutation triggers to the ledger."""
+    models now own those (real tables, real 013 refund index), and minus
+    profiles: module 9's model owns that too (real table, the fixture just
+    guarantees an empty one). Only prod's refuse_mutation triggers are
+    attached to the ledger."""
     from django.db import connection
 
+    from apps.profiles.models import Profile
+
+    Profile.objects.all().delete()
     with connection.cursor() as cursor:
-        cursor.execute(
-            "create table profiles (id text primary key, name text)"
-        )
         cursor.execute(
             "create trigger ledger_immutable before update on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
@@ -152,14 +154,17 @@ def money_tables():
     with connection.cursor() as cursor:
         cursor.execute("drop trigger if exists ledger_immutable")
         cursor.execute("drop trigger if exists ledger_immutable_delete")
-        for table in ("order_items", "orders", "profiles"):
+        for table in ("order_items", "orders"):
             cursor.execute(f"drop table {table}")
 
 
 def _profile(cursor, pid, name):
-    cursor.execute(
-        "insert into profiles (id, name) values (%s, %s)", [str(pid), name]
-    )
+    """A profiles row through module 9's model (the `cursor` arg is kept so
+    the call sites need no edit — it is simply not used). `phone` is the row
+    uuid: unique, never read by these tests."""
+    from apps.profiles.models import Profile
+
+    Profile.objects.create(id=pid, phone=str(pid), name=name)
 
 
 @pytest.fixture

@@ -189,36 +189,15 @@ def moon_sign(chart_payload):
 
 
 def get_birth_details(user_id):
-    """The caller's own birth row from `profiles`, read with the service
-    role's eyes (raw SQL: Django does not own the profiles table yet — the
-    profile module does, and this gateway is removed when it lands).
+    """The caller's own birth row — the profile module (9) owns the table
+    now, and this is the seam astro always read it through: same six
+    columns, same None-when-absent answer, same rule that a query ERROR
+    propagates so the view never conflates a failed read with an absent row
+    (that conflation once sent a working consultant to a signup form —
+    index.ts carries the same warning)."""
+    from apps.profiles import services as profile_services
 
-    Returns a dict of the six birth columns, or None when there is no row.
-    A query ERROR propagates: the view must not conflate a failed read with
-    an absent row (that conflation once sent a working consultant to a
-    signup form — index.ts carries the same warning).
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            select birth_date, birth_time, birth_time_known, birth_lat, birth_lon, birth_zone
-              from profiles
-             where id = %s
-            """,
-            [str(user_id)],
-        )
-        row = cursor.fetchone()
-    if row is None:
-        return None
-    birth_date, birth_time, birth_time_known, birth_lat, birth_lon, birth_zone = row
-    return {
-        "birth_date": str(birth_date) if birth_date is not None else None,
-        "birth_time": str(birth_time) if birth_time is not None else None,
-        "birth_time_known": bool(birth_time_known),
-        "birth_lat": float(birth_lat) if birth_lat is not None else None,
-        "birth_lon": float(birth_lon) if birth_lon is not None else None,
-        "birth_zone": birth_zone or None,
-    }
+    return profile_services.get_birth_details(user_id)
 
 
 # ── the memo ─────────────────────────────────────────────────────────────────

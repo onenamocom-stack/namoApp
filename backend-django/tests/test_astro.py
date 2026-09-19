@@ -35,6 +35,7 @@ import requests
 from django.db import connection
 from django.test import Client
 
+from apps.astro import services
 from apps.astro.models import AstroCache
 from apps.astro.providers import (
     AstroProvider,
@@ -42,7 +43,8 @@ from apps.astro.providers import (
     MockProvider,
     UpstreamError,
 )
-from apps.astro import services
+from apps.profiles import services as profile_services
+from apps.profiles.models import Profile
 
 from .conftest import TEST_USER, make_claims
 
@@ -117,41 +119,30 @@ def provider(monkeypatch):
 
 @pytest.fixture
 def profiles_table():
-    """The real profiles table exists in Postgres; tests on SQLite make a
-    scratch one with the six birth columns the astro gateway reads. The
-    profile module owns the real table — this fixture is its stand-in."""
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            create table profiles (
-              id               text primary key,
-              birth_date       text,
-              birth_time       text,
-              birth_time_known integer not null default 0,
-              birth_lat        real,
-              birth_lon        real,
-              birth_zone       text
-            )
-            """
-        )
-    try:
-        yield
-    finally:
-        with connection.cursor() as cursor:
-            cursor.execute("drop table profiles")
+    """`profiles` is a real Django table now — module 9 (the profile module)
+    owns it, and astro reads the caller's own birth row through
+    apps.profiles.services. The fixture keeps its name (every astro test
+    asks for it) and its contract — a profiles table scoped to this test —
+    but now that means an empty real table."""
+    Profile.objects.all().delete()
+    yield
 
 
 def insert_profile(user_id=TEST_USER, **overrides):
     row = dict(BIRTH, **overrides)
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "insert into profiles values (%s, %s, %s, %s, %s, %s, %s)",
-            [
-                str(user_id), row["birth_date"], row["birth_time"],
-                1 if row["birth_time_known"] else 0,
-                row["birth_lat"], row["birth_lon"], row["birth_zone"],
-            ],
-        )
+    Profile.objects.update_or_create(
+        id=user_id,
+        defaults=dict(
+            phone=f"+{str(user_id).replace('-', '')}",  # unique per uuid; never read here
+            name="Chart Person",
+            birth_date=row["birth_date"],
+            birth_time=row["birth_time"],
+            birth_time_known=row["birth_time_known"],
+            birth_lat=row["birth_lat"],
+            birth_lon=row["birth_lon"],
+            birth_zone=row["birth_zone"],
+        ),
+    )
 
 
 @pytest.fixture
@@ -442,10 +433,7 @@ class TestChart:
                                                      profiles_table, frozen_utcnow):
         insert_profile()
         api_client.get("/v1/astro/chart/", **auth(user_token))
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "update profiles set birth_time = '15:45:00' where id = %s", [TEST_USER]
-            )
+        Profile.objects.filter(pk=TEST_USER).update(birth_time="15:45:00")
         response = api_client.get("/v1/astro/chart/", **auth(user_token))
         assert response.status_code == 200
         assert provider.calls["chart"] == 2  # new digest, new key, one more upstream call
@@ -467,8 +455,15 @@ class TestChart:
         assert response.json()["reason"] == "no_birth"
 
     def test_profile_read_failure_is_500_unavailable(self, api_client, provider,
-                                                     user_token, frozen_utcnow):
-        # no profiles table at all: a FAILED read must not read as an absent row
+                                                     user_token, profiles_table,
+                                                     frozen_utcnow, monkeypatch):
+        # The table is always there now (module 9 owns it), so a FAILED read
+        # is simulated at the seam: the profiles read raising must not read
+        # as an absent row.
+        def boom(user_id):
+            raise RuntimeError("database gone")
+
+        monkeypatch.setattr(profile_services, "get_birth_details", boom)
         response = api_client.get("/v1/astro/chart/", **auth(user_token))
         assert response.status_code == 500
         assert response.json()["reason"] == "unavailable"
@@ -540,12 +535,11 @@ class TestHoroscope:
             )
             sub = f"00000000-0000-4000-8000-{index:012d}"
             token = sign_hs256(claims=make_claims(sub=sub))
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "insert or replace into profiles values (%s, %s, %s, %s, %s, %s, %s)",
-                    [sub, birth["birth_date"], birth["birth_time"], 1,
-                     birth["birth_lat"], birth["birth_lon"], birth["birth_zone"]],
-                )
+            insert_profile(
+                user_id=sub,
+                birth_date=birth["birth_date"],
+                birth_time=birth["birth_time"],
+            )
             response = api_client.get("/v1/astro/horoscope/", **auth(token))
             assert response.status_code == 200, response.content
             rashis.add(response.json()["rashi"])

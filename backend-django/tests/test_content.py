@@ -68,22 +68,24 @@ def admin_token(sign_hs256, hs256_mode):
 
 @pytest.fixture
 def content_tables():
-    """The raw tables module 5's gateway reads. `profiles` is still unowned
-    (the profile module), so on SQLite tests stand it up by hand
-    (test_astro.py's pattern). `consultants` and `bookings` became real
-    Django tables with module 6 — the roster below writes them through the
-    consultants app's models instead of CREATE TABLE."""
-    from django.db import connection
+    """`profiles` is a REAL Django table now (module 9 owns it — the profile
+    module the raw stand-in always deferred to), so the fixture only
+    guarantees an empty one, module 6's precedent for consultants/bookings.
+    The roster below writes profiles through the model instead of CREATE
+    TABLE."""
+    from apps.profiles.models import Profile
 
-    with connection.cursor() as cursor:
-        cursor.execute("create table profiles (id text primary key, name text)")
+    Profile.objects.all().delete()
     yield
-    with connection.cursor() as cursor:
-        cursor.execute("drop table profiles")
 
 
 def _profile(cursor, pid, name):
-    cursor.execute("insert into profiles values (%s, %s)", [str(pid), name])
+    """A profiles row through module 9's model (the `cursor` arg is kept so
+    the call sites need no edit — it is simply not used). `phone` is the row
+    uuid: unique, never read by these tests."""
+    from apps.profiles.models import Profile
+
+    Profile.objects.create(id=pid, phone=str(pid), name=name)
 
 
 def _consultant(pid, status):

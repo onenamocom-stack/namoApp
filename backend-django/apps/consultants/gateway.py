@@ -1,7 +1,9 @@
 """Raw-SQL gateway to the tables module 6 rules stand on but do not own.
 
-  profiles        — the profile module (9); read for names and birth details
-                    exactly as the 007/010 views join them
+  profiles        — READS RE-POINTED to apps.profiles.services in module 9
+                    (the profile module owns the table; `profile_name` below
+                    is the delegating seam the booking/chat labels and the
+                    010 view join read through)
   orders,
   order_items     — 012's order layer; the booking transaction writes them
                     here exactly as 012's function does, inside the same
@@ -20,6 +22,8 @@ import uuid
 from django.db import connection
 from django.utils import timezone
 
+from apps.profiles import services as profile_services
+
 
 def _xid(left, right):
     """Format-agnostic UUID comparison across Django UUIDFields (dashless on
@@ -30,14 +34,14 @@ def _xid(left, right):
     )
 
 
-# ── profiles (profile module) ────────────────────────────────────────────────
+# ── profiles (module 9 owns the table; this is the delegating seam) ──────────
 
 
 def profile_name(profile_id):
-    with connection.cursor() as cursor:
-        cursor.execute("select name from profiles where id = %s", [str(profile_id)])
-        row = cursor.fetchone()
-    return row[0] if row else None
+    """A profile's name for the booking/chat labels and the 010 view join —
+    read through the profile module now, same answer as the raw
+    `select name from profiles` it replaces."""
+    return profile_services.profile_name(profile_id)
 
 
 # ── orders / order_items (012's order layer) ─────────────────────────────────

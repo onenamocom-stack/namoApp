@@ -9,10 +9,10 @@ arrives. Read `docs/02-TRD.md` first for the current trust boundary and
 Status: **Phase 0 and Phase 1 done (19 Sep 2026).** `backend-django/` holds
 the skeleton described in §7 below — see HANDOFF.md §10 for exactly what
 exists. Modules 2 (reactions), 3 (astro), 4 (bhakti), 5 (content), 6
-(consultants) and 7 (chat) are built with their cutovers staged, not
-deployed — HANDOFF.md §10a–§10f. Phases 8–10 have not started;
-nothing in this document is true of the running system until its phase says
-it is done.
+(consultants), 7 (chat), 8 (wallet) and 9 (profile) are built with their
+cutovers staged, not deployed — HANDOFF.md §10a–§10h. Phases 8–10 have not
+started; nothing in this document is true of the running system until its
+phase says it is done.
 
 ---
 
@@ -187,7 +187,7 @@ green, and one walked route per affected screen.
 | 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) — **API built, cutover staged (needs deploy)** |
 | 7 | Chat (`chat.js`) | Metered billing; sweeper moves to Celery; highest correctness bar — every SQL check in 014 ports here — **API built, cutover staged (needs deploy)** |
 | 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover — **API built, cutover staged (needs freeze + deploy)** |
-| 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 |
+| 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 — **API built, cutover staged (needs deploy)** |
 | 10 | Shop, Academy, Notifications, remaining `store.jsx` reads | Whatever the client still reads from Supabase directly |
 | — | Auth | **Stays on Supabase Auth.** Revisit only if a requirement (SSO, email, deletion flows) forces it |
 

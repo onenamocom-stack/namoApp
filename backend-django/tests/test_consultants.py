@@ -91,20 +91,21 @@ def pro_token(sign_hs256, hs256_mode):
 
 @pytest.fixture
 def money_tables():
-    """The raw tables module 6's gateway touches but module 8/9 own.
-    wallets/ledger are REAL tables now — module 8's models create them,
-    carrying 013's ledger_one_refund_per_order index — so the fixture only
-    stands up the tables that stay raw (profiles, orders, order_items) and
-    attaches the one prod behaviour SQLite can still prove: 003's
-    refuse_mutation trigger on the ledger (the wallet module's ORM guard
-    covers the ORM side; the raw side is what 012's check asserts against)."""
+    """The raw tables module 6's gateway touches but module 8 owns.
+    wallets/ledger are REAL tables — module 8's models create them,
+    carrying 013's ledger_one_refund_per_order index — and `profiles` is a
+    REAL table too since module 9 (the profile module), so the fixture only
+    stands up the tables that stay raw (orders, order_items), guarantees an
+    empty profiles, and attaches the one prod behaviour SQLite can still
+    prove: 003's refuse_mutation trigger on the ledger (the wallet module's
+    ORM guard covers the ORM side; the raw side is what 012's check
+    asserts against)."""
     from django.db import connection
 
+    from apps.profiles.models import Profile
+
+    Profile.objects.all().delete()
     with connection.cursor() as cursor:
-        cursor.execute(
-            "create table profiles (id text primary key, name text,"
-            " birth_date text, birth_time text, birth_place text)"
-        )
         cursor.execute(
             "create trigger ledger_immutable before update on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
@@ -128,15 +129,23 @@ def money_tables():
     with connection.cursor() as cursor:
         cursor.execute("drop trigger if exists ledger_immutable")
         cursor.execute("drop trigger if exists ledger_immutable_delete")
-        for table in ("order_items", "orders", "profiles"):
+        for table in ("order_items", "orders"):
             cursor.execute(f"drop table {table}")
 
 
 def _profile(cursor, pid, name, birth_date=None, birth_time=None, birth_place=None):
-    cursor.execute(
-        "insert into profiles (id, name, birth_date, birth_time, birth_place)"
-        " values (%s, %s, %s, %s, %s)",
-        [str(pid), name, birth_date, birth_time, birth_place],
+    """A profiles row through module 9's model (the `cursor` arg is kept so
+    the call sites need no edit — it is simply not used). `phone` is the row
+    uuid: unique, never read by these tests."""
+    from apps.profiles.models import Profile
+
+    Profile.objects.create(
+        id=pid,
+        phone=str(pid),
+        name=name,
+        birth_date=birth_date,
+        birth_time=birth_time,
+        birth_place=birth_place,
     )
 
 
@@ -227,8 +236,8 @@ def roster(money_tables, catalogue):
     from django.db import connection
 
     with connection.cursor() as cursor:
-        _profile(cursor, SEEKER, "Tara Verma", "1994-03-12", "07:40", "Jaipur")
-        _profile(cursor, SECOND_SEEKER, "Arjun Nair", "1990-11-02", "14:05", "Pune")
+        _profile(cursor, SEEKER, "Tara Verma", "1994-03-12", "07:40:00", "Jaipur")
+        _profile(cursor, SECOND_SEEKER, "Arjun Nair", "1990-11-02", "14:05:00", "Pune")
         _profile(cursor, PRO, "Ritu Kashyap")
         _profile(cursor, PENDING_PRO, "Wannabe Pro")
     _wallet(SEEKER)
@@ -998,7 +1007,7 @@ class TestBookingsView:
         assert row["id"] == bid
         assert row["seeker_name"] == "Tara Verma"
         assert row["birth_date"] == "1994-03-12"  # the 010 view's deliberate carry
-        assert row["birth_time"] == "07:40"
+        assert row["birth_time"] == "07:40:00"  # a real `time` column, as PostgREST renders it
         assert row["birth_place"] == "Jaipur"
         assert row["consultant_name"] == "Ritu Kashyap"
         assert row["status"] == "pending"

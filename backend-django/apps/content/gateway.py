@@ -1,17 +1,20 @@
-"""Raw-SQL gateway to the tables Django does not own yet.
+"""Raw-SQL gateway to the tables Django does not own.
 
 Module 5's rules live on top of tables that belong to other modules:
-`profiles` (the profile module — still a raw table), `consultants` and
-`bookings` (module 6 made those real Django tables; this gateway keeps
-reading them through SQL, no ORM ownership of someone else's models, with
-the replace(cast(...)) UUID normalisation the cross-boundary joins need on
-SQLite — HANDOFF §10d). A query ERROR here propagates on purpose: the views
-must not conflate a failed read with an absent row (the astro gateway
-carries the same warning, from an incident where that conflation sent a
-working consultant to a signup form).
+`profiles` (READS RE-POINTED to apps.profiles.services in module 9 — the
+profile module owns the table and this file keeps only the delegating
+seams), `consultants` and `bookings` (module 6 made those real Django
+tables; this gateway keeps reading them through SQL, no ORM ownership of
+someone else's models, with the replace(cast(...)) UUID normalisation the
+cross-boundary joins need on SQLite — HANDOFF §10d). A query ERROR here
+propagates on purpose: the views must not conflate a failed read with an
+absent row (the astro gateway carries the same warning, from an incident
+where that conflation sent a working consultant to a signup form).
 """
 
 from django.db import connection
+
+from apps.profiles import services as profile_services
 
 
 def _xid(left, right):
@@ -42,26 +45,14 @@ def profile_name(profile_id):
     `profiles` is own-row-only in the source schema; a name may leave this
     module only through the public projections (content_public's author_name,
     reviews_public's reviewer_name) exactly as the 020/025 views grant.
-    """
-    with connection.cursor() as cursor:
-        cursor.execute("select name from profiles where id = %s", [str(profile_id)])
-        row = cursor.fetchone()
-    return row[0] if row else None
+    Delegates to the profile module (9), which owns the table."""
+    return profile_services.profile_name(profile_id)
 
 
 def profile_names(profile_ids):
-    """Bulk read for shaping lists without an N+1: {uuid_str: name}."""
-    ids = [str(p) for p in profile_ids]
-    if not ids:
-        return {}
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "select id, name from profiles where id in ({})".format(
-                ", ".join(["%s"] * len(ids))
-            ),
-            ids,
-        )
-        return {str(pk): name for pk, name in cursor.fetchall()}
+    """Bulk read for shaping lists without an N+1: {uuid_str: name}.
+    Delegates to the profile module (9)."""
+    return profile_services.profile_names(profile_ids)
 
 
 def consultant_status(profile_id):

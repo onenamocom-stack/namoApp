@@ -46,11 +46,12 @@ from datetime import datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
-from django.db import IntegrityError, models, transaction
+from django.db import IntegrityError, transaction
 from django.db.models import F
-from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
+
+from apps.profiles import services as profile_services
 
 from . import gateway
 from .models import (
@@ -234,12 +235,11 @@ def list_price_bands():
 # ── the public projections (007's view / 010's view) ─────────────────────────
 
 
-def _name_expr(column):
-    return RawSQL(
-        f"select p.name from profiles p where {gateway._xid('p.id', column)}",
-        [],
-        output_field=models.TextField(),
-    )
+def _name_expr(outer_field):
+    """The 007/010 name join as an ORM subquery — module 9 owns profiles,
+    so the join is all-Django and the raw _xid dance is gone at this
+    boundary (profiles.services.name_subquery)."""
+    return profile_services.name_subquery(outer_field)
 
 
 def public_consultants():
@@ -249,7 +249,7 @@ def public_consultants():
     safe columns plus the name."""
     return (
         Consultant.objects.filter(status=ConsultantStatus.APPROVED)
-        .annotate(name=_name_expr("consultants.profile_id"))
+        .annotate(name=_name_expr("profile_id"))
         .order_by(F("rating_avg_cache").desc(nulls_last=True), "-created_at")
     )
 
@@ -597,27 +597,11 @@ def _booking_view_qs():
     without them, and a booking is the seeker asking for one. Scoped to the
     caller by the views; no phone, no email (010, verbatim)."""
     return Booking.objects.annotate(
-        seeker_name=_name_expr("bookings.seeker_id"),
-        birth_date=RawSQL(
-            f"select p.birth_date from profiles p where {gateway._xid('p.id', 'bookings.seeker_id')}",
-            [],
-            output_field=models.TextField(),
-        ),
-        birth_time=RawSQL(
-            f"select p.birth_time from profiles p where {gateway._xid('p.id', 'bookings.seeker_id')}",
-            [],
-            output_field=models.TextField(),
-        ),
-        birth_place=RawSQL(
-            f"select p.birth_place from profiles p where {gateway._xid('p.id', 'bookings.seeker_id')}",
-            [],
-            output_field=models.TextField(),
-        ),
-        consultant_name=RawSQL(
-            f"select p.name from profiles p where {gateway._xid('p.id', 'bookings.consultant_id')}",
-            [],
-            output_field=models.TextField(),
-        ),
+        seeker_name=_name_expr("seeker_id"),
+        birth_date=profile_services.birth_subquery("seeker_id", "birth_date"),
+        birth_time=profile_services.birth_subquery("seeker_id", "birth_time"),
+        birth_place=profile_services.birth_subquery("seeker_id", "birth_place"),
+        consultant_name=_name_expr("consultant_id"),
     )
 
 

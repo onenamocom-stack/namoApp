@@ -60,12 +60,12 @@ to pytest with zero clock jitter.
 
 from django.db import IntegrityError, connection, models, transaction
 from django.db.models import Q
-from django.db.models.expressions import RawSQL
 from django.utils import timezone
 
 from apps.consultants import gateway
 from apps.consultants.models import EarningsLedger, FEE_BPS
 from apps.consultants.services import fee_paise
+from apps.profiles import services as profile_services
 from apps.wallet import services as wallet_services
 
 from .models import Message, Session, Thread
@@ -578,12 +578,10 @@ def mark_read(actor_id, thread_id, now=None):
     return {"ok": True}
 
 
-def _name_expr(column):
-    return RawSQL(
-        f"select p.name from profiles p where {gateway._xid('p.id', column)}",
-        [],
-        output_field=models.TextField(),
-    )
+def _name_expr(outer_field):
+    """The threads_view name join as an ORM subquery — module 9 owns
+    profiles, so the join is all-Django (profiles.services.name_subquery)."""
+    return profile_services.name_subquery(outer_field)
 
 
 def list_threads(actor_id):
@@ -598,8 +596,8 @@ def list_threads(actor_id):
     )
     threads = list(
         base.annotate(
-            seeker_name=_name_expr("threads.seeker_id"),
-            consultant_name=_name_expr("threads.consultant_id"),
+            seeker_name=_name_expr("seeker_id"),
+            consultant_name=_name_expr("consultant_id"),
         ).order_by(
             models.F("last_message_at").desc(nulls_last=True), "-created_at"
         )

@@ -2555,6 +2555,130 @@ the real wallet tables; triggers kept; one test's wallet-delete emulates
 settings), `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md`
 (§6 row 8, §7 step 13).
 
+## 10h. Module 9 — profile + avatar, the last write surface — 19 Sep 2026
+
+The profile module (step 9 of `docs/07-DJANGO-MIGRATION.md` §6 — the
+identity spine AND the last write surface: user profiles and avatar
+uploads) is built in `backend-django/` and **staged, not deployed** —
+Supabase still serves production; the client flip sits in
+`backend-django/cutovers/profiles.clientlib.js` awaiting the deploy
+order. Full suite **450 green** (410 + 40 new).
+
+**Ownership.** `apps/profiles/` maps 1:1 onto `profiles`
+(`backend/schema/001_profiles.sql`, the column grant and all, plus
+`002_profiles_email.sql`'s nullable/not-unique contact column with its
+named CHECK `profiles_email_shape` carried into the model, plus
+`027_profile_avatars.sql`'s `avatar_url`) — exact table/constraint names
+for the fake-in (`migrate --fake-initial` at cutover; `handle_new_user`
+STAYS a prod trigger — `services.ensure_profile` is the same insert as
+code, for the window before it fires and for fresh databases, and never
+double-writes what the trigger does). `id` is the Supabase auth user id,
+a bare UUIDField, no local FK — identity stays in Supabase Auth (docs/07
+§1). THE gateway moment the earlier modules deferred to: astro's birth
+read, content's author/reviewer names, consultants' `_name_expr` and the
+010 bookings_view birth/name joins, chat's threads_view name joins — all
+re-pointed to `apps.profiles.services` (`get_birth_details`,
+`profile_name`/`profile_names`, `name_subquery`/`birth_subquery`). All
+four suites re-run green on the re-pointed seams with their raw
+`profiles` scratch-table fixtures replaced by the real model (module 6's
+precedent); the `_xid` dashless-UUID dance is gone at every boundary
+that was profiles-to-X (both sides are Django tables now, so the joins
+are ORM subqueries). One test-visible correction came with a real `time`
+column: the bookings_view's `birth_time` now renders `07:40:00`, which
+is what Postgres/PostgREST always returned — the old `07:40` was a
+text-scratch-table artifact.
+
+**The rules as code.** `profiles_select_own` / `profiles_update_own`
+become `/v1/profiles/me/` — identity forced from the JWT, no id in the
+URL at all (rule 3), the row shape byte-compatible with PostgREST's
+`select('*')` so store.jsx's readers need no translation. The 001/002
+column grant is the serializer's allow-list: name, email and the eight
+birth columns; `admin`, `phone`, `legacy_id`, `id`, `created_at` are
+dropped from any body, even the caller's own row, and 002's email shape
+is checked at the door (a 400 the reveal screen can show) AND at the
+storage layer (the named CHECK, executable on SQLite — Django registers
+the regexp function). `avatar_url` is deliberately NOT grant-writable in
+the PATCH even though 027 re-issued the grant: the Django path routes
+every avatar write through the asset-validated endpoint, which makes
+027's documented quiet-failure trap (update reports success, changes
+nothing) structurally unreachable. Birth details stay private: the astro
+module reads the CALLER'S OWN row server-side (unchanged invariant, now
+through the profile module), and the only other carry — the seeker's
+birth details to the consultant ON the booking — is 010's bookings_view,
+unchanged and still no phone, no email. The public read
+(`GET /v1/profiles/<id>/`) exposes `{id, name, avatar_url}` — and only
+for a profile the existing public surfaces already show (live content per
+`authors_public`, 025; an approved practice per `consultants_public`,
+007) — anything else is a 404 so ids do not leak existence. `avatar_url`
+rides the public shape as 027's documented follow-up. There is no admin
+shape: 001's policies give an admin nothing on this table.
+
+**Avatars (027 onto the media spine).** The upload is a `media_assets`
+row (kind image, owner the caller) through the module-1 presign flow —
+bytes straight to R2, Django never carries them. `POST
+/v1/profiles/me/avatar/ {asset_id}` points the caller's row at the READY
+asset: someone else's asset is a 404 (ids don't leak existence, the
+media-app precedent), a non-image or unconfirmed asset is a shaped
+refusal, and the stored URL is the asset's public URL plus a `?v=`
+cache-bust — byte-compatible with what avatar.js writes today. The fixed
+`<uid>/avatar` bucket path and its upsert go away: replacement is a
+pointer change, never a bucket delete, and no file is orphaned.
+
+**Endpoints under `/v1/profiles/`**: `me/` (GET full self — 404 so
+store.jsx's null-means-not-loaded stays honest; PATCH the onboarding
+write — creates the row when the trigger hasn't fired, partial-updates,
+idempotent, Idempotency-Key replayable), `me/avatar/`, `<id>/` (public
+projection, AllowAny like the views' anon grants).
+
+**Tests.** 40 pytest-django tests: the RLS matrix as endpoints (self vs
+stranger vs anonymous; identity forced from the JWT; birth-details
+privacy — the public shape's key set is exactly `{id, name, avatar_url}`
+and nothing else exists); the column-grant matrix (non-writable columns
+dropped, `admin` never self-granted, avatar_url not PATCH-writable); the
+onboarding write shape key for key with Computing.jsx (including the
+unknown-birth-time pair NULL + false); 002's CHECK at the door and the
+storage layer (named `profiles_email_shape`, case-insensitive like `~*`);
+the avatar flow end to end including confirming someone else's asset
+(404, not 403) and unconfirmed/non-image refusals; `handle_new_user`
+parity (`ensure_profile`, the 'there' fallback, one row under a racing
+double-create); and the races — two threads' first writes collapse to one
+row (unique primary key, loser reads winner), Idempotency-Key replay,
+double avatar set. One harness fact worth keeping: DRF's APIClient lets
+`credentials()` OVERRIDE per-request Authorization headers
+(`kwargs.update(self._credentials)`), so tests that act as two users
+need a client per user.
+
+**Deliberate deviations from prod, small and documented.** (1)
+`avatar_url` set only through the avatar endpoint, not the column grant
+(above — a strictness change over silent RLS, the module-6 precedent).
+(2) The avatar size cap is the media gate's 10 MB, not the old bucket's
+25 MB; the refusal sentence names the real limit. (3) The public
+projection includes `avatar_url` (027's documented follow-up) and gates
+on the 025/007 visibility predicates, which no single old view expressed
+in one place. (4) `birth_time` renders `HH:MM:SS` everywhere now (the
+old `07:40` was a scratch-table artifact; Postgres always sent seconds).
+(5) Email-shape refusals answer the repo's standard envelope with the
+field named in `errors`, not a driver CHECK message — Computing.jsx's
+`setSaveError(error.message)` path is unchanged because the client sends
+only calendar-validated shapes today.
+
+Files changed: `backend-django/apps/profiles/` (new — models, services,
+views, urls, fake-in migration), `backend-django/tests/test_profiles.py`
+(new), `backend-django/cutovers/profiles.clientlib.js` (new — the staged
+profile slice + avatar.js drop-in + the same-commit notes for the rest of
+the store split), `backend-django/apps/astro/services.py` (birth read
+re-pointed), `backend-django/apps/content/gateway.py` +
+`backend-django/apps/content/services.py` (name reads re-pointed;
+author_name join is an ORM subquery), `backend-django/apps/consultants/
+gateway.py` + `backend-django/apps/consultants/services.py` and
+`backend-django/apps/chat/services.py` (name/birth joins re-pointed),
+`backend-django/tests/test_astro.py` + `test_content.py` +
+`test_consultants.py` + `test_chat.py` (fixtures write the real profiles
+table through the model), `backend-django/config/` (app + route
+registration), `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md`
+(§6 row 9, status). Nothing in `src/`, `backend/`, or docs 01–06 was
+touched.
+
 ## 11. UX direction — one look, three bets — 19 Sep 2026
 
 `mocks/ux-directions/` holds eleven artboards on a design canvas
