@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django.conf import settings
+
 from apps.core.views import refusal_body
 
 from .models import MediaAsset
@@ -50,9 +52,34 @@ def presign(request):
             "asset_id": str(asset.id),
             "upload_url": signed["upload_url"],
             "headers": signed["headers"],
+            # The public playback URL the content row stores on media_url:
+            # 022's bucket is public-read, and so is this — the row pointing
+            # at the file is already readable by anon through content_public,
+            # so a signed URL would buy a round trip per card and buy nothing.
+            "public_url": f"{settings.MEDIA_PUBLIC_BASE_URL.rstrip('/')}/{asset.bucket_key}",
         },
         status=201,
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def confirm(request, asset_id):
+    """POST /v1/media/<id>/confirm/ — the client flips the row to ready after
+    its PUT to the presigned URL lands. Owner-scoped like the status poll (a
+    stranger gets 404, not 403). Idempotent: confirming a ready asset is a
+    200 no-op, so a retrying client is harmless."""
+    asset = MediaAsset.objects.filter(pk=asset_id, owner=str(request.user.pk)).first()
+    if asset is None:
+        return Response(
+            refusal_body("not_found", "That upload does not exist."),
+            status=404,
+        )
+    confirmed = asset.status != MediaAsset.Status.READY
+    if confirmed:
+        asset.status = MediaAsset.Status.READY
+        asset.save(update_fields=["status"])
+    return Response({**MediaAssetSerializer(asset).data, "confirmed": confirmed})
 
 
 @api_view(["GET"])

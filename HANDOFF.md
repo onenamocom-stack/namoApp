@@ -2080,3 +2080,113 @@ urls, fake-in migration), `backend-django/tests/test_bhakti.py` (new),
 `backend-django/cutovers/bhakti.clientlib.js` (new — the staged client flip),
 `backend-django/config/` (app + route registration), `HANDOFF.md` (this
 section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+
+## 10d. Module 5 — content — 19 Sep 2026
+
+The content module (step 5 of `docs/07-DJANGO-MIGRATION.md` §6 — the largest:
+feed, posts, reels, articles, reviews, publication, media wiring) is built in
+`backend-django/` and **staged, not deployed** — Supabase still serves
+production; the client flip sits in `backend-django/cutovers/
+content.clientlib.js` awaiting the deploy order. `apps/content/` maps 1:1 onto
+`content`, `reviews` and `feed_pins` (`backend/schema/020_content_reviews.sql`
+as amended by `025_seekers_publish.sql`, which renamed `consultant_id` to
+`author_id` and repointed the key at `profiles`): the kind/status vocabularies,
+`view_count >= 0`, unique nullable `booking_id`, unique `legacy_id`, the
+partial indexes, all constraint names matching Postgres for the fake-in
+migration. `author_id`/`seeker_id`/`consultant_id` are bare UUIDFields — the
+FKs to `profiles`/`consultants` are deferred to those modules exactly like the
+reactions module deferred `actor_id`.
+
+**The views are the access control, so the views are the code.** The client
+reads only through `content_public`, `reviews_public`,
+`profile_follow_counts` and `authors_public`; Django does not own those SQL
+views, so `services.public_content()` is a queryset that replicates the 025
+`content_public` definition exactly — `status='live'` plus the NOT EXISTS that
+keeps a blocked consultant's posts out of the feed without making approval a
+gate on ordinary people — with the four computed columns (author_name,
+author_is_consultant, like_count, save_count) as subselect annotations. Counts
+stay COUNT(*) queries, not columns (§1.3): exact by construction, nothing to
+drift. `profiles`, `consultants` and `bookings` are read through a raw-SQL
+gateway (apps/content/gateway.py), the same pattern astro uses for birth
+details — replaced when the profile/consultants/bookings modules land. One
+SQLite test artifact is worth knowing: Django stores UUIDFields dashless there
+while Postgres compares native uuids, so the cross joins normalise both sides
+with `replace(cast(...))` — format-agnostic on both backends.
+
+**Publication** is the 025 insert policy plus the draft state: author is
+forced from the JWT (the body cannot carry an identity — the 025 check's
+"publish as somebody else" refusal is now structural), `published_at` is the
+server's clock, `view_count` and `legacy_id` are never client-settable. Anyone
+signed in publishes `post`/`article`; `clip` (and `live_session`) require an
+APPROVED consultants row — the claim is not consulted, the table is — and the
+403 carries the sentence the interface already shows: "Only a consultant can
+post a reel". Admins publish anything. Drafts are invisible to everyone but
+the author (`GET` of a draft is a 404, so ids do not leak existence);
+`POST /v1/content/<id>/publish/` moves own draft -> live; removal is
+`status='removed'`, owner-scoped with admin excepted, never a DELETE. Two
+deliberate strictness changes over the old silent RLS behaviour: removing
+someone else's post is a 403 rather than a silent no-op, and a blocked
+consultant's post/article INSERT is still accepted (policy parity — 025 only
+gates the kind and the feed) but invisible everywhere public; their reels are
+refused outright. `seed_content`/`seed_review` are the service-role
+`backend/seed/content.mjs` replacements — idempotent upserts on `legacy_id`/
+`booking_id`, reachable from no URL.
+
+**Reviews** are the anti-fraud gate exactly: the booking must be the caller's
+own and `completed`, naming the same consultant, and `booking_id` unique makes
+one booking buy one review (a racing duplicate is a 409 carrying the old
+23505 sentence "You have already reviewed this session"; a gate failure is a
+403 carrying "You can only review a session you have completed" — both
+byte-identical to what src/lib/content.js already toasts). `verified` derives
+from `booking_id is not null`; seeded reviews carry no fabricated booking, so
+they are visible but visibly unverified. The rating caches recompute from the
+live reviews in the SAME transaction as every review write, under a
+`FOR UPDATE` lock on the consultants row — the 020 trigger's arithmetic,
+`round(avg::numeric, 1)` with Postgres's half-away-from-zero rounding, never
+an increment. Metered chat still does not create a reviewable booking: the
+gate names `bookings`, sessions are a different table, and that gap is carried
+over untouched (docs/05 §5.4's open decision).
+
+**Media** rides the Phase 1 presign flow. Two additive changes to
+`apps/media/`: the presign response now includes `public_url` (the playback
+URL stored on `content.media_url` — 022's public-read decision survives on
+R2: the row pointing at the file is already public through the feed, so a
+signed URL would buy a round trip per card and nothing else), and a new
+`POST /v1/media/<id>/confirm/` flips the row processing -> ready, owner-scoped
+(stranger gets 404) and idempotent. The client uploads straight to the bucket
+and Django never carries bytes. The staged `uploadMedia` keeps its contract —
+return the public URL — with presign -> PUT -> confirm underneath.
+
+**Realtime caveat.** `src/lib/content.js` never subscribed to a
+`supabase.channel`: the feed, reels and articles are fetch-on-mount, and 015's
+publication covers `messages`/`sessions` only. Nothing realtime is lost when
+this module cuts over and polling/refresh stays as-is. The chat screens DO
+subscribe (`store.jsx`/`lib/chat.js`) — those keep working only against
+Supabase and are module 7's cutover problem; a channels layer is a later
+phase, not part of this one.
+
+Endpoints under `/v1/content/`: `feed/` (kinds/limit/after keyset cursor),
+`by-author/`, `<id>/` (post detail), `publish/`, `<id>/publish/`,
+`<id>/remove/`, `reviews/` (GET anonymous per the views' grant; POST
+authenticated through the gate), `reviews/reviewable/`, `follow-counts/`,
+`authors/<id>/`. Feed ordering is `-published_at NULLS LAST, -id` — the same
+order the client's PostgREST query asked for.
+
+54 new pytest-django tests port both check files (020 points 1-6 and 025
+points 1-7: draft/blocked leaks both directions, counts from zero, one like
+one row, the four-case review gate, verified derivation, the rating cache
+reproducing its source through a removal, strangers reading counts but not
+actors), the publication permission matrix (seeker/consultant/pending/blocked/
+admin, body-spoofed identity, client-set published_at and view_count), the
+draft -> live -> removed lifecycle, keyset pagination exactness across pages,
+thread-race tests for both the duplicate-booking race and the cache under
+concurrent reviews, the reel-post presign -> confirm -> publish flow, and the
+seed services' idempotency. Full suite 236 green.
+
+Files changed: `backend-django/apps/content/` (new — models, gateway,
+services, views, urls, fake-in migration), `backend-django/tests/
+test_content.py` (new), `backend-django/cutovers/content.clientlib.js` (new —
+the staged client flip), `backend-django/apps/media/` (presign `public_url`,
+confirm endpoint), `backend-django/config/` (app + route registration),
+`HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
