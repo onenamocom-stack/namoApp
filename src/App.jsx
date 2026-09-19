@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
+import { isPro } from './side.js'
 import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
@@ -121,6 +122,10 @@ function PlainLayout() {
  * preview a public page — the second is now a real page, and previewing your
  * own is the point of it. The third cross-link, "Switch to seeking" → `/home`,
  * is NOT exempt: that one is genuinely asking for the seeker app.
+ *
+ * In the consultant build (`side.js`) none of the seeker logic below runs at
+ * all: any non-`/pro` path goes straight to `/pro/studio`, and the gate takes
+ * over from there.
  */
 function SessionGate() {
   const { session, sessionReady, consultant, consultantLoading, consultantError } = useStore()
@@ -134,6 +139,11 @@ function SessionGate() {
     // segment-boundary check, not startsWith('/pro') — that swallowed the
     // seeker's own profile route into the consultant exemption.
     const onPro = pathname === '/pro' || pathname.startsWith('/pro/')
+
+    if (isPro && !onPro) {
+      navigate('/pro/studio', { replace: true })
+      return
+    }
 
     if (onPro) {
       if (pathname === '/pro/apply') return
@@ -199,72 +209,101 @@ function CartFab() {
 function Frame() {
   const { toast } = useStore()
 
+  useEffect(() => {
+    document.title = isPro ? 'Namo — Consultant' : 'Namo'
+  }, [])
+
   return (
     <div className="flex min-h-[100dvh] w-full justify-center bg-ink">
       <div className="relative flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden bg-bg text-t1">
         <SessionGate />
         <Routes>
-          <Route path="/" element={<Navigate to="/onboarding" replace />} />
+          <Route
+            path="/"
+            element={<Navigate to={isPro ? '/pro/studio' : '/onboarding'} replace />}
+          />
 
           <Route element={<PlainLayout />}>
-            <Route path="/onboarding" element={<Intro />} />
-            <Route path="/onboarding/side" element={<AskSide />} />
-            <Route path="/onboarding/name" element={<AskName />} />
-            <Route path="/onboarding/date" element={<AskDate />} />
-            <Route path="/onboarding/time" element={<AskTime />} />
-            <Route path="/onboarding/place" element={<AskPlace />} />
-            <Route path="/onboarding/phone" element={<AskPhone />} />
-            <Route path="/onboarding/verify" element={<VerifyOtp />} />
-            <Route path="/onboarding/computing" element={<Computing />} />
+            {/* The seeker's screens. Absent from the consultant build —
+                a consultant who needs the seeker app follows a link out to
+                the deployed seeker site. */}
+            {!isPro && (
+              <>
+                <Route path="/onboarding" element={<Intro />} />
+                <Route path="/onboarding/side" element={<AskSide />} />
+                <Route path="/onboarding/name" element={<AskName />} />
+                <Route path="/onboarding/date" element={<AskDate />} />
+                <Route path="/onboarding/time" element={<AskTime />} />
+                <Route path="/onboarding/place" element={<AskPlace />} />
+                <Route path="/onboarding/phone" element={<AskPhone />} />
+                <Route path="/onboarding/verify" element={<VerifyOtp />} />
+                <Route path="/onboarding/computing" element={<Computing />} />
 
-            {/* The consultant application. Plain layout, because there is no
-                practice to put a nav bar around yet — and it is the one /pro
-                route the gate does not redirect away from. */}
-            <Route path="/pro/apply" element={<ProApply />} />
+                {/* The consultant application. Plain layout, because there is no
+                    practice to put a nav bar around yet — and it is the one /pro
+                    route the gate does not redirect away from. */}
+                <Route path="/pro/apply" element={<ProApply />} />
 
-            {/* Profile carries its tab in the URL so it stays deep-linkable. */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/:tab" element={<Profile />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/horoscope" element={<Horoscope />} />
-            <Route path="/ask" element={<Ask />} />
-            <Route path="/chart" element={<Chart />} />
-            <Route path="/chart/:id" element={<Placement />} />
-            <Route path="/people" element={<People />} />
-            <Route path="/people/invite" element={<Invite />} />
-            <Route path="/people/:id" element={<Synastry />} />
-            <Route path="/read/:id" element={<Article />} />
-            {/* A person who posts. Deliberately not /consult/:id — that screen
-                sells a practitioner, and publishing a photo does not make
-                anybody bookable. */}
-            <Route path="/u/:id" element={<UserProfile />} />
-            <Route path="/reels/:id" element={<ReelViewer />} />
-            <Route path="/consult/:id" element={<ConsultantProfile />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/premium" element={<Premium />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/tarot" element={<Tarot />} />
+                {/* Profile carries its tab in the URL so it stays deep-linkable. */}
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:tab" element={<Profile />} />
+                <Route path="/wallet" element={<Wallet />} />
+                <Route path="/horoscope" element={<Horoscope />} />
+                <Route path="/ask" element={<Ask />} />
+                <Route path="/chart" element={<Chart />} />
+                <Route path="/chart/:id" element={<Placement />} />
+                <Route path="/people" element={<People />} />
+                <Route path="/people/invite" element={<Invite />} />
+                <Route path="/people/:id" element={<Synastry />} />
+                <Route path="/read/:id" element={<Article />} />
+                {/* A person who posts. Deliberately not /consult/:id — that screen
+                    sells a practitioner, and publishing a photo does not make
+                    anybody bookable. */}
+                <Route path="/u/:id" element={<UserProfile />} />
+                <Route path="/reels/:id" element={<ReelViewer />} />
+                <Route path="/consult/:id" element={<ConsultantProfile />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/premium" element={<Premium />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/tarot" element={<Tarot />} />
 
-            {/* The shrine is full screen and off the tab bar as of 9 Sep 2026.
-                It reached its own layout by being the one screen that does not
-                scroll — a nav bar under a fixed-height shrine cost it 56px it
-                could not spare. Home's Darshan tab is how you get here. */}
-            <Route path="/darshan" element={<Pooja />} />
+                {/* The shrine is full screen and off the tab bar as of 9 Sep 2026.
+                    It reached its own layout by being the one screen that does not
+                    scroll — a nav bar under a fixed-height shrine cost it 56px it
+                    could not spare. Home's Darshan tab is how you get here. */}
+                <Route path="/darshan" element={<Pooja />} />
+              </>
+            )}
+
+            {/* Routes the consultant build also carries: ProConsult opens
+                /chart?name=… for a booking, and ProProfile previews its own
+                public page at /consult/:id. The apply screen signs a new
+                consultant in, so it is here instead of the seeker block. */}
+            {isPro && (
+              <>
+                <Route path="/pro/apply" element={<ProApply />} />
+                <Route path="/chart" element={<Chart />} />
+                <Route path="/consult/:id" element={<ConsultantProfile />} />
+              </>
+            )}
           </Route>
 
-          {/* The five destinations. */}
-          <Route element={<TabLayout />}>
-            {/* Home carries its tab in the URL, same as Profile — a tab worth
-                switching to is worth linking to, and Back should undo the switch.
-                Without the `:tab` route, `/home/today` falls through the catch-all
-                and bounces straight back to the feed. */}
-            <Route path="/home" element={<Home />} />
-            <Route path="/home/:tab" element={<Home />} />
-            <Route path="/consult" element={<Consult />} />
-            <Route path="/bhakti" element={<Bhakti />} />
-            <Route path="/academy" element={<Academy />} />
-            <Route path="/shop" element={<Shop />} />
-          </Route>
+          {/* The five destinations. Seeker only — the consultant's nav is
+              PRO_TABS inside ProLayout. */}
+          {!isPro && (
+            <Route element={<TabLayout />}>
+              {/* Home carries its tab in the URL, same as Profile — a tab worth
+                  switching to is worth linking to, and Back should undo the switch.
+                  Without the `:tab` route, `/home/today` falls through the catch-all
+                  and bounces straight back to the feed. */}
+              <Route path="/home" element={<Home />} />
+              <Route path="/home/:tab" element={<Home />} />
+              <Route path="/consult" element={<Consult />} />
+              <Route path="/bhakti" element={<Bhakti />} />
+              <Route path="/academy" element={<Academy />} />
+              <Route path="/shop" element={<Shop />} />
+            </Route>
+          )}
 
           <Route element={<ProLayout />}>
             <Route path="/pro/earnings" element={<ProEarnings />} />
@@ -283,13 +322,19 @@ function Frame() {
               here. */}
           <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />
 
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route
+            path="*"
+            element={<Navigate to={isPro ? '/pro/studio' : '/home'} replace />}
+          />
         </Routes>
 
-        {/* Global overlays — above every screen, inside the phone frame. */}
-        <ChatPanel />
-        <CartSheet />
-        <CartFab />
+        {/* Global overlays — above every screen, inside the phone frame.
+            The ask drawer, cart sheet and cart button are seeker-only; a
+            consultant build never opens them, and they self-gate on store
+            state nothing on that side sets. */}
+        {!isPro && <ChatPanel />}
+        {!isPro && <CartSheet />}
+        {!isPro && <CartFab />}
         <Toast message={toast} />
       </div>
     </div>

@@ -37,3 +37,11 @@ supabase/
 # video and images do not belong in git history.
 backend/seed/content/media/*
 !backend/seed/content/media/.gitkeep
+
+# Consultant build output (`npm run build:pro`)
+dist-pro
+
+# Leftovers from the archived Django/Flutter attempt — not part of this repo
+Makefile
+docker-compose.yml
+archive/

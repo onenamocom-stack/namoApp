@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:pro": "vite --mode pro",
     "build": "vite build",
+    "build:pro": "vite build --mode pro",
     "preview": "vite preview",
+    "preview:pro": "vite preview --mode pro --outDir dist-pro",
     "lint": "eslint ."
   },
   "dependencies": {

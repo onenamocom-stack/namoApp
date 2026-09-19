@@ -1884,3 +1884,38 @@ undefined identifier inside JSX compiles cleanly and throws at runtime. It has
 shipped a blank screen twice. `npm run lint` catches that identifier and the
 stale cross-module import beside it; it does not catch a screen that renders
 the wrong thing. Walk the routes.
+
+## 9. Two build targets — 19 Sep 2026
+
+One codebase, two apps. The seeker app is the default build; the consultant
+app is `npm run build:pro` (or `npm run dev:pro`), selected by the Vite mode
+and read once in `src/side.js`. The side decides three things in
+`src/App.jsx`: which route table mounts, where `/` and the catch-all point,
+and whether the seeker overlays (ChatPanel, CartSheet, CartFab) mount at
+all. Everything else — store, Supabase client, components — is shared and
+untouched.
+
+- **The seeker build is unchanged.** `npm run build` produces the same app
+  production serves, `/pro/*` routes included. The deploy workflow was not
+  touched.
+- **The consultant build carries** `/pro/apply` (it signs a new consultant
+  in, so it sits outside the session gate), `/pro/earnings`, `/pro/studio`,
+  `/pro/consult`, `/pro/profile`, plus the two seeker screens the pro side
+  links out to — `/chart` (ProConsult opens it for a booking) and
+  `/consult/:id` (ProProfile previews its own public page). Onboarding,
+  tabs, wallet, shop: absent. A signed-out visitor still lands on
+  `/pro/apply` through the same gate.
+- **Not done, deliberately:** no deployment for the pro build. `dist-pro/`
+  is gitignored and has no workflow — where the consultant app lives is a
+  hosting decision, not a code one.
+
+Files changed: `src/side.js` (new), `src/App.jsx`, `vite.config.js` (outDir
+by mode), `package.json` (dev:pro / build:pro / preview:pro),
+`.gitignore` (dist-pro). Checked with `npm run lint` (0 errors; the three
+remaining warnings predate this) and both builds — the pro bundle
+tree-shakes the seeker onboarding out, and the seeker bundle carries no
+pro-only branch.
+
+Same day: `docs/07-DJANGO-MIGRATION.md` added — the Django migration and
+scale plan (plan only; nothing started). `CLAUDE.md` and `README.md` doc
+tables now list it.

@@ -1,10 +1,14 @@
 # Namo (aether-mono)
 
 Astrology marketplace for India. Vite · React 18 · Tailwind · HashRouter.
-Two sides in one codebase: seeker (`/home`, `/pooja`, `/consult`, `/shop`,
-`/academy`) and consultant (`/pro/*`). An admin console is planned and unbuilt.
+Two apps, one codebase: the seeker app (default build) and the consultant
+app (`--mode pro`; see `src/side.js` and HANDOFF §9). An admin console is
+planned and unbuilt.
 
-**No backend yet** — every value comes from `src/data/mock.js`.
+**Backend: Supabase.** Schema in `backend/schema`, edge functions in
+`backend/functions`; two projects (prod/dev), rules in
+`backend/INSTRUCTIONS.md` §3. The screens read real data — `src/data/mock.js`
+is the prototype's graveyard, not the source of truth.
 
 ## Map
 
@@ -15,7 +19,7 @@ src/            the app. Do not reorganise — App.jsx routing and the
   screens/      seeker screens, one file each, default export, no props
   pro/          consultant screens
   data/         mock.js + bhaktamar.js. All content lives here
-docs/           the six planning documents, numbered to read in order
+docs/           the seven planning documents, numbered to read in order
 backend/        INSTRUCTIONS.md — the eight rules every phase obeys
 tools/          Python art pipeline for the deity murtis
 public/         cards/ (48 tarot faces) · deities/ (26 murtis)
@@ -36,6 +40,7 @@ documents.**
 | Tokens, components, affordances, imagery, accessibility, voice | `docs/04-UI-UX.md` |
 | **Any table or column**, constraints, indexes, RLS policies, seed plan | `docs/05-BACKEND-SCHEMA.md` |
 | Phases, done-conditions, gates, risks | `docs/06-IMPLEMENTATION.md` |
+| Django migration + scale plan | `docs/07-DJANGO-MIGRATION.md` |
 | An engineering rule or convention | `backend/INSTRUCTIONS.md` |
 | **Anything built, blocked, deferred or discovered** | `HANDOFF.md` |
 
