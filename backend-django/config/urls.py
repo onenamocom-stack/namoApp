@@ -4,4 +4,5 @@ urlpatterns = [
     path("v1/", include("apps.core.urls")),
     path("v1/media/", include("apps.media.urls")),
     path("v1/reactions/", include("apps.reactions.urls")),
+    path("v1/astro/", include("apps.astro.urls")),
 ]

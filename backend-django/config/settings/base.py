@@ -50,7 +50,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 THIRD_PARTY_APPS = ["rest_framework"]
-LOCAL_APPS = ["apps.core", "apps.media", "apps.reactions"]
+LOCAL_APPS = ["apps.core", "apps.media", "apps.reactions", "apps.astro"]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
@@ -110,6 +110,14 @@ R2_BUCKET = os.environ.get("R2_BUCKET", "")
 # "r2" in prod, "local" in dev (fake URLs, nothing leaves the machine)
 MEDIA_PROVIDER = os.environ.get("MEDIA_PROVIDER", "local")
 MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.example.com")
+
+# --- Astro provider (docs/07 §6 step 3; the upstream key is server-side only,
+# rule 7 — it never appears in a response body) ---
+# "freeastroapi" in prod (needs FREE_ASTRO_API_KEY); "mock" elsewhere — a
+# deterministic provider with no network and no quota spend.
+ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
+FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
+ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 
 API_VERSION = os.environ.get("API_VERSION", "dev")
 

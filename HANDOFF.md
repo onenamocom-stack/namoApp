@@ -2014,3 +2014,35 @@ views, urls, fake-in migration), `backend-django/tests/test_reactions.py`
 (new), `backend-django/cutovers/reactions.clientlib.js` (new — the staged
 client flip), `backend-django/config/` (app + route registration),
 `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+## 10b. Module 3 — astro — 19 Sep 2026
+
+The astro module (step 3 of `docs/07-DJANGO-MIGRATION.md` §6) is built in
+`backend-django/` and **staged, not deployed** — the `astro` Edge Function
+still serves production; the client flip sits in
+`backend-django/cutovers/astro.clientlib.js` awaiting the deploy order. The
+edge function's four ops are now an `AstroProvider` interface
+(`apps/astro/providers.py`): `FreeAstroApiProvider` (real, `FREE_ASTRO_API_KEY`
+from env, `ASTRO_PROVIDER=freeastroapi`) and `MockProvider` (deterministic,
+no network — dev/tests; its Moon uses a truncated lunar theory so the
+canonical-birth check passes end-to-end). `apps/astro/services.py` replicates
+the function exactly: same cache keys (`panchang:<date>`,
+`chart:<id>:<birth digest>`, `canon-chart:<rashi>`, `rashifal:<rashi>:<date>`),
+same no-TTL cache-aside against `astro_cache` (single-flight via a cache lock:
+two simultaneous misses cost one upstream call; the unique key collapses
+writers, catch-IntegrityError-read-winner), same Ujjain panchang anchor,
+twelve canonical births, yesterday/today/tomorrow IST clamp, and refusal
+parity (400/401/409/500/502 with the function's reason strings; the upstream
+key or URL never reaches a response body). Endpoints under `/v1/astro/`
+(geo + panchang anonymous, chart + horoscope authenticated; birth details
+read from the caller's own `profiles` row via a raw-SQL gateway that the
+profile module replaces). The 019 check is ported to pytest, including the
+service-role-only invariant re-expressed as code: only the service layer
+touches `astro_cache` and no endpoint exposes a raw row. 42 new tests; full
+suite 147 green.
+
+Files changed: `backend-django/apps/astro/` (new — models, providers,
+services, views, urls, fake-in migration), `backend-django/tests/test_astro.py`
+(new), `backend-django/cutovers/astro.clientlib.js` (new — the staged client
+flip), `backend-django/config/` (app, route, provider settings), `HANDOFF.md`
+(this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).

@@ -8,9 +8,10 @@ arrives. Read `docs/02-TRD.md` first for the current trust boundary and
 
 Status: **Phase 0 and Phase 1 done (19 Sep 2026).** `backend-django/` holds
 the skeleton described in §7 below — see HANDOFF.md §10 for exactly what
-exists. Module 2 (reactions) is built with its cutover staged, not deployed —
-HANDOFF.md §10a. Phases 3–10 have not started; nothing in this document is
-true of the running system until its phase says it is done.
+exists. Modules 2 (reactions) and 3 (astro) are built with their cutovers
+staged, not deployed — HANDOFF.md §10a/§10b. Phases 4–10 have not started;
+nothing in this document is true of the running system until its phase says
+it is done.
 
 ---
 
@@ -179,7 +180,7 @@ green, and one walked route per affected screen.
 | 0 | Freeze + backup + staging API | Everything below stands on it |
 | 1 | Django skeleton: project, auth (JWT verify vs Supabase JWKS), permissions, outbox, media presign, observability | No business logic; every later module lands on it |
 | 2 | Reactions (`reactions.js`) | Smallest write surface; proves the cutover mechanics end to end — **API built, cutover staged (needs deploy)** |
-| 3 | Astro (`astro.js`) | Read-mostly, provider-shaped, zero money; Redis cache lands here |
+| 3 | Astro (`astro.js`) | Read-mostly, provider-shaped, zero money; Redis cache lands here — **API built, cutover staged (needs deploy)** |
 | 4 | Bhakti (`bhakti.js`) | Self-contained content + one session write |
 | 5 | Content (`content.js`) + R2 media | The feed, posts, reels on R2; largest read surface, cache-aside earns its keep |
 | 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) |
