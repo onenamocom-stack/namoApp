@@ -21,6 +21,8 @@ src/            the app. Do not reorganise — App.jsx routing and the
   data/         mock.js + bhaktamar.js. All content lives here
 docs/           the seven planning documents, numbered to read in order
 backend/        INSTRUCTIONS.md — the eight rules every phase obeys
+backend-django/ the Django API skeleton (docs/07 Phase 1). Nothing deployed;
+                tests: DJANGO_SETTINGS_MODULE=config.settings.test pytest -q
 tools/          Python art pipeline for the deity murtis
 public/         cards/ (48 tarot faces) · deities/ (26 murtis)
 HANDOFF.md      what is actually true right now. Read this first

@@ -1,0 +1,25 @@
+# Where background work lives
+
+Phase 1 ships no Celery (it is not a pinned dependency). Anything that must
+eventually happen because a write happened goes through the outbox table
+(`apps.core.models.OutboxEvent`, written in the same transaction as the
+write) and is dispatched by:
+
+    python manage.py dispatch_outbox
+
+run on a scheduler (cron / host timer). `apps.core.services.dispatch_batch`
+is the single implementation of claiming (FOR UPDATE SKIP LOCKED + optimistic
+attempts claim) and retry/backoff.
+
+## When Celery lands
+
+Add `celery` to requirements, create `config/celery.py` with the standard
+Django integration, and register ONE task per queue concern, each a thin
+wrapper:
+
+    @shared_task
+    def dispatch_outbox_batch():
+        dispatch_batch()
+
+Never reimplement claiming inside a task — the dispatcher above is the only
+claiming logic, so the management command and the workers stay interchangeable.

@@ -6,8 +6,10 @@ production — and for the seams that make the system scale when volume
 arrives. Read `docs/02-TRD.md` first for the current trust boundary and
 `HANDOFF.md` for what is live.
 
-Status: **plan, not started.** Nothing in this document is true of the
-running system until a phase below says it is done.
+Status: **Phase 0 and Phase 1 done (19 Sep 2026).** `backend-django/` holds
+the skeleton described in §7 below — see HANDOFF.md §10 for exactly what
+exists. Phases 2–10 have not started; nothing in this document is true of
+the running system until its phase says it is done.
 
 ---
 
@@ -194,7 +196,7 @@ the module at a time.
 
 ## 7. Steps, concretely
 
-**Phase 0 — protect what exists (a day, before any code)**
+**Phase 0 — protect what exists (done 19 Sep 2026)**
 1. Full backup: `pg_dump` of the production project (Supabase dashboard
    backup + a manual dump stored outside Supabase), git tag `pre-django`
    on this repo, and a written rollback note in HANDOFF.
@@ -204,19 +206,30 @@ the module at a time.
 3. Read-only mirror of the production schema into a scratch database;
    this is what `inspectdb` runs against in phase 1.
 
-**Phase 1 — skeleton that later modules land on (no business logic)**
+The git tag `pre-django` is in place. The backup and staging-host items are
+still open — they gate the first deployment, not the code.
+
+**Phase 1 — skeleton that later modules land on (done 19 Sep 2026; HANDOFF §10)**
 4. `backend-django/` in this repo: Django + DRF, settings split
-   (base/local/prod), twelve-factor env.
+   (base/local/prod — plus test), twelve-factor env. **Shipped.**
 5. Auth: JWT verification against Supabase's JWKS endpoint; a
    `request.profile` filled from the `profiles` table; permission classes
    per role (seeker / consultant / admin) that mirror what the module's
    RLS policies enforce today — the policy text in
    `docs/05-BACKEND-SCHEMA.md` is the specification.
+   **JWT verification shipped** (JWKS RS256 with HS256 legacy fallback,
+   claims-only user). `request.profile` and the DB-backed consultant
+   check (`ConsultantExists`) are deliberately deferred to the module
+   phases — there is no `profiles`/`consultants` table in Django yet;
+   permissions are claims-based, which is all phase 1 endpoints need.
 6. Cross-cutting: request id + structured logs, health endpoint, keyset
    pagination helper, idempotency-key middleware, rate limiting, outbox
-   table + dispatcher, R2 presign endpoint, `media_assets`.
+   table + dispatcher, R2 presign endpoint, `media_assets`. **All shipped**
+   (outbox dispatched by management command until Celery lands).
 7. CI: lint, Django checks, pytest with a coverage floor on services;
-   deploy to staging on merge.
+   deploy to staging on merge. **Checks + pytest shipped** as
+   `.github/workflows/api.yml`; no coverage-floor enforcement and no
+   staging deploy yet — both wait for the staging host (phase 0 item 2).
 
 **Phases 2–10 — one module at a time, always the same five moves**
 8. Port the module's SQL check files to pytest against the real schema.

@@ -41,7 +41,15 @@ backend/seed/content/media/*
 # Consultant build output (`npm run build:pro`)
 dist-pro
 
-# Leftovers from the archived Django/Flutter attempt — not part of this repo
-Makefile
-docker-compose.yml
-archive/
+# The Django API (backend-django/) keeps its own compose file; the root one is
+# a leftover from the archived Django/Flutter attempt.
+/Makefile
+/docker-compose.yml
+/archive/
+
+# Python: the phase-1 venv and stray databases stay out of git.
+.venv/
+__pycache__/
+*.pyc
+backend-django/.venv/
+backend-django/db.sqlite3

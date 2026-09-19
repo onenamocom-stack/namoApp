@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 10 Sep 2026.
+Updated 19 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -1919,3 +1919,65 @@ pro-only branch.
 Same day: `docs/07-DJANGO-MIGRATION.md` added — the Django migration and
 scale plan (plan only; nothing started). `CLAUDE.md` and `README.md` doc
 tables now list it.
+
+## 10. Phase 1 — the Django skeleton — 19 Sep 2026
+
+`backend-django/` exists: the Django + DRF API that `docs/07-DJANGO-MIGRATION.md`
+phases 2–10 land on. Nothing is deployed; the Supabase backend in `backend/`
+still serves every module. The git tag `pre-django` marks the tree before this.
+
+What exists, all cross-cutting, no business logic:
+
+- **Project/config**: settings split base/local/test/prod, twelve-factor env,
+  15-line `postgres://` parser (dj-database-url deliberately not a dep), SQLite
+  fallback, DRF defaults (CursorPagination 20, JSON only, throttles), JSON
+  logging with per-request ids, CORS from env.
+- **Auth**: Supabase JWT verification. `SUPABASE_URL` set → RS256 against the
+  JWKS endpoint (fetched, cached by kid, 1h TTL, thread-safe, one forced
+  refetch on unknown kid); `SUPABASE_JWT_SECRET` set → HS256 fallback for
+  legacy projects. RS256 is verified in pure Python (no `cryptography` dep);
+  ES256 needs `PyJWT[crypto]` added at deploy time. Valid token →
+  `request.user` is a lightweight claims object; else 401
+  `{"ok": false, "reason": "unauthenticated", "message": ...}` — the refusal
+  envelope `docs/02-TRD.md` §6 already defines, not a new vocabulary. 403s use
+  reason `"forbidden"`, 429 `"throttled"`, 400 `"invalid"`.
+- **Permissions**: `IsSeeker` (any signed-in user), `IsConsultant`,
+  `IsAdmin` from JWT role claims (top level or `app_metadata`), plus the
+  documented-but-unwired `ConsultantExists` DB hook for phase 6.
+- **Idempotency**: `Idempotency-Key` on POST/PATCH/DELETE; the stored response
+  replays without re-executing; only 2xx is stored; the (key, user) unique
+  index backstops races; an in-flight marker answers 409 `request_in_flight`
+  rather than lie. Unauthenticated requests pass through untouched.
+- **Outbox**: `outbox_events` + `enqueue_outbox()` (transaction-bound,
+  optional dedupe key, delay) + `manage.py dispatch_outbox` — claims with
+  `FOR UPDATE SKIP LOCKED` plus an optimistic attempts-claim so exactly-once
+  holds on any backend; per-item failures back off (1min → 1h cap, 10 attempts
+  then dead-letter) without blocking the batch. No Celery yet — `tasks/README`
+  says where the wrapper goes.
+- **Media**: `media_assets` (UUID pk, kind/status check constraints, owner as
+  auth-user uuid text — no business FKs) + presigned PUT (`POST
+  /v1/media/presign/`, size/mime gated: reel 100MB video/*, image 10MB
+  image/*, audio 25MB audio/*) via R2 (boto3) or a fake local provider,
+  selected by `MEDIA_PROVIDER`; `GET /v1/media/<id>/` is owner-scoped (a
+  stranger gets 404, not 403, so ids don't leak existence).
+- **Endpoints**: `GET /v1/health/` (AllowAny, version from env), `GET /v1/me/`
+  (echoes verified claims — proves the JWT path end to end).
+- **Tests**: 82 pytest-django tests on SQLite, including a generated RSA
+  keypair (pure Python) whose signatures openssl independently verifies, the
+  full accept/401 matrix, permission 200/403 matrix, replay/race idempotency,
+  two overlapping outbox dispatchers, and boto3 fully mocked. `manage.py
+  check` clean. CI: `.github/workflows/api.yml` runs checks + pytest on
+  changes under `backend-django/`.
+
+Deliberately not built (later phases own these): `request.profile` from the
+`profiles` table (phase 2+ adds it where the seam lands), any business module,
+Celery, Redis client (the cache seam is env-shaped already), ES256 without
+`cryptography`, Django ownership of the existing 27 SQL migrations (phase 2's
+`inspectdb` baseline).
+
+Files changed: `backend-django/` (new — project, apps/core, apps/media,
+tests), `.github/workflows/api.yml` (new), `.gitignore` (venv/python entries;
+root `Makefile`/`docker-compose.yml`/`archive/` patterns anchored so
+`backend-django/docker-compose.yml` is tracked), `docs/07-DJANGO-MIGRATION.md`
+(phase 0/1 status), `CLAUDE.md` (map). Nothing in `src/`, `backend/`,
+docs 01–06, or the deploy workflow was touched.
