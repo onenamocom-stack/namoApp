@@ -6,13 +6,17 @@ production — and for the seams that make the system scale when volume
 arrives. Read `docs/02-TRD.md` first for the current trust boundary and
 `HANDOFF.md` for what is live.
 
-Status: **Phase 0 and Phase 1 done (19 Sep 2026).** `backend-django/` holds
-the skeleton described in §7 below — see HANDOFF.md §10 for exactly what
-exists. Modules 2 (reactions), 3 (astro), 4 (bhakti), 5 (content), 6
-(consultants), 7 (chat), 8 (wallet) and 9 (profile) are built with their
-cutovers staged, not deployed — HANDOFF.md §10a–§10h. Phases 8–10 have not
-started; nothing in this document is true of the running system until its
-phase says it is done.
+Status: **all modules built and staged (19 Sep 2026); cutover pending
+deploys.** `backend-django/` holds the skeleton (phase 1) and all nine
+business modules — reactions, astro, bhakti, content, consultants, chat,
+wallet, profile — each with its client flip staged in
+`backend-django/cutovers/` and its SQL checks ported to pytest (450 tests
+green). Module 10 was the audit + integration pass: every remaining `src/`
+call site maps to a staged cutover or is marked "stays on Supabase
+(Auth)"; nothing was left to build, and
+`backend-django/cutovers/RUNBOOK.md` is the ordered, four-deploy cutover
+sequence (HANDOFF §10–§10i). Nothing in this document is true of the
+running system until its deploy happens.
 
 ---
 
@@ -180,15 +184,15 @@ green, and one walked route per affected screen.
 |---|---|---|
 | 0 | Freeze + backup + staging API | Everything below stands on it |
 | 1 | Django skeleton: project, auth (JWT verify vs Supabase JWKS), permissions, outbox, media presign, observability | No business logic; every later module lands on it |
-| 2 | Reactions (`reactions.js`) | Smallest write surface; proves the cutover mechanics end to end — **API built, cutover staged (needs deploy)** |
-| 3 | Astro (`astro.js`) | Read-mostly, provider-shaped, zero money; Redis cache lands here — **API built, cutover staged (needs deploy)** |
-| 4 | Bhakti (`bhakti.js`) | Self-contained content + one session write — **API built, cutover staged (needs deploy)** |
-| 5 | Content (`content.js`) + R2 media | The feed, posts, reels on R2; largest read surface, cache-aside earns its keep — **API built, cutover staged (needs deploy)** |
-| 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) — **API built, cutover staged (needs deploy)** |
-| 7 | Chat (`chat.js`) | Metered billing; sweeper moves to Celery; highest correctness bar — every SQL check in 014 ports here — **API built, cutover staged (needs deploy)** |
-| 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover — **API built, cutover staged (needs freeze + deploy)** |
-| 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 — **API built, cutover staged (needs deploy)** |
-| 10 | Shop, Academy, Notifications, remaining `store.jsx` reads | Whatever the client still reads from Supabase directly |
+| 2 | Reactions (`reactions.js`) | Smallest write surface; proves the cutover mechanics end to end — **built, staged; deploy 2 of the runbook** |
+| 3 | Astro (`astro.js`) | Read-mostly, provider-shaped, zero money; Redis cache lands here — **built, staged; deploy 2 of the runbook** |
+| 4 | Bhakti (`bhakti.js`) | Self-contained content + one session write — **built, staged; deploy 2 of the runbook** (the "one session write" turned out not to exist — HANDOFF §10c) |
+| 5 | Content (`content.js`) + R2 media | The feed, posts, reels on R2; largest read surface, cache-aside earns its keep — **built, staged; deploy 2 of the runbook** |
+| 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) — **built, staged; deploy 2 of the runbook** |
+| 7 | Chat (`chat.js`) | Metered billing; sweeper moves to Celery; highest correctness bar — every SQL check in 014 ports here — **built, staged; deploy 3 of the runbook (sweeper scheduler first)** |
+| 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover — **built, staged; deploy 4 of the runbook (freeze + webhook switch)** |
+| 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 — **built, staged; deploy 4 of the runbook (same freeze window as wallet)** |
+| 10 | Shop, Academy, Notifications, remaining `store.jsx` reads | **Done — audit closed it (HANDOFF §10i, 19 Sep 2026):** Shop/Academy/Notifications and the mock screens are static (Shop's only data path is `useMyChart` via `astro.js`, module 3); every remaining `store.jsx` read sits inside the wallet/profile/consultant staged cutovers; session/OTP stays on Supabase Auth. Nothing to build; the runbook is `backend-django/cutovers/RUNBOOK.md` |
 | — | Auth | **Stays on Supabase Auth.** Revisit only if a requirement (SSO, email, deletion flows) forces it |
 
 Wallet-and-payments (step 8) gets a **feature freeze and a cutover window**:
@@ -236,13 +240,25 @@ still open — they gate the first deployment, not the code.
 
 **Phases 2–10 — one module at a time, always the same five moves**
 8. Port the module's SQL check files to pytest against the real schema.
+   **Done for all nine modules** (HANDOFF §10a–§10h; 450 tests green).
 9. Build the Django app (models from the hand-tightened baseline,
-   services, endpoints) until the pytest port is green.
+   services, endpoints) until the pytest port is green. **Done for all
+   nine.**
 10. Rewrite the lib file's internals to REST. Deploy the API, then the
-    client, in one release. Walk the routes.
+    client, in one release. Walk the routes. **Staged for all nine** —
+    the client flips sit in `backend-django/cutovers/`; the deploy order,
+    grouped into four production deploys, is
+    `backend-django/cutovers/RUNBOOK.md`.
 11. Revoke the module's RLS policies in a follow-up migration — only
-    after the client release has been quiet in production.
-12. Onward. Never two modules mid-flight at once.
+    after the client release has been quiet in production. **Pending —
+    the per-group revocation SQL is written into the runbook**, one quiet
+    week behind each deploy.
+12. Onward. Never two modules mid-flight at once. The runbook keeps the
+    invariant that actually protects production — a cutover is atomic per
+    lib file and one system serves a module at a time — while batching the
+    five independent leaf modules (reactions, astro, bhakti, content,
+    consultants) into one deploy; money-bearing modules (chat, wallet)
+    still each get their own, in dependency order.
 
 **Phase 11 — the edges**
 13. Razorpay order/webhook edge functions → Django services (same
@@ -251,11 +267,17 @@ still open — they gate the first deployment, not the code.
     `/v1/wallet/` endpoints incl. the signature-only webhook, and the
     `reconcile_payments` management command; staged, not deployed. What
     remains here is only the retirement half: after the module-8 cutover
-    window is quiet, undeploy the two edge functions.
+    window is quiet, undeploy the two edge functions (runbook deploy 4).
 14. Astro provider edge function → provider interface behind Django
-    (mock adapter kept for dev).
+    (mock adapter kept for dev). **Done as part of module 3 (HANDOFF
+    §10b)** — `apps/astro/providers.py` (`FreeAstroApiProvider` +
+    `MockProvider`); the `astro` edge function's undeployment is runbook
+    deploy 2.
 15. What is left on Supabase is: Auth, and the database. That is the
-    steady state until a requirement says otherwise.
+    steady state until a requirement says otherwise. **Unchanged — that
+    is also the runbook's final state**, plus the triggers Django
+    deliberately leaves in force (`handle_new_user`, the phase-2 balance
+    trigger, 016's `touch_thread`).
 
 ## 8. Hosting, answered
 

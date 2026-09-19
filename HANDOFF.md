@@ -2679,6 +2679,79 @@ registration), `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md`
 (§6 row 9, status). Nothing in `src/`, `backend/`, or docs 01–06 was
 touched.
 
+## 10i. Module 10 — the audit, cutover verification, and the runbook — 19 Sep 2026
+
+The final module is **integration, not code**: an exhaustive audit of every
+Supabase/lib call site in `src/`, a mechanical verification of all nine
+staged cutovers against the current client, and the runbook that executes
+the cutover in four production deploys. **Nothing new was built — the audit
+found zero uncovered call sites, so the suite stays 450 green and no
+endpoints, tests or client patches were added.** Shop, Academy and
+Notifications confirmed static (Shop's only data dependency is `useMyChart`
+from `lib/astro.js`, which flips with module 3); People, Synastry, Pooja,
+Tarot, Ask, Invite, Premium and Reports read `data/mock.js` only.
+
+**The audit, call site by call site:**
+
+| Call site | Disposition |
+|---|---|
+| `src/lib/reactions.js` (3 exports) | Module 2 — `cutovers/reactions.clientlib.js` |
+| `src/lib/astro.js` (13 exports, incl. `callAstro` for AskPlace geo) | Module 3 — `cutovers/astro.clientlib.js` |
+| `src/lib/bhakti.js` (5 exports) | Module 4 — `cutovers/bhakti.clientlib.js` |
+| `src/lib/content.js` (12 exports) | Module 5 — `cutovers/content.clientlib.js` |
+| `src/lib/consultants.js` (14 exports) | Module 6 — `cutovers/consultants.clientlib.js` (+`myConsultant`, `applyAsConsultant`, `listPriceBands` for the same-commit edits) |
+| store.jsx `refreshConsultant` (raw `consultants` read) | Module 6 — `myConsultant()` (cutover header, same commit) |
+| ProApply.jsx (`price_bands` read, `consultants` + `consultant_services` writes) | Module 6 — `listPriceBands()` + `applyAsConsultant()` (same commit) |
+| `src/lib/chat.js` (13 exports) | Module 7 — `cutovers/chat.clientlib.js` (subscriptions become pollers) |
+| store.jsx wallet slice (`refreshWallet`, `spend`, `topup`, `toLedgerRow`, `formatLedgerDate`) | Module 8 — `cutovers/wallet.clientlib.js` |
+| store.jsx profile slice (`refreshProfile`) + Computing.jsx profiles write | Module 9 — `cutovers/profiles.clientlib.js` (`createProfileApi.refreshProfile` / `saveProfile`; write keys verified byte-identical to Computing's update block) |
+| `src/lib/avatar.js` (`uploadAvatar`) | Module 9 — drop-in at the bottom of `profiles.clientlib.js` |
+| store.jsx session (`getSession`, `onAuthStateChange`), AskPhone/VerifyOtp OTP | **Stay on Supabase Auth — permanently** (docs/07 §1); the access token is the Django credential |
+| Shop/Academy/Notifications/People/Synastry and the mock screens | Static — nothing to build, noted as-is |
+
+**Cutover verification (mechanical, not eyeballed):** a script listed the
+export surface of every `src/lib/*.js` next to its staged cutover —
+reactions 3/3, astro 13/13, bhakti 5/5, content 12/12, chat 13/13 exact;
+consultants 14/14 plus the three documented additions. The wallet cutover's
+`toLedgerRow` and `formatLedgerDate` are character-identical to store.jsx's
+copies, and its `refreshWallet`/`spend`/`topup` semantics match the store
+blocks they replace (guards, refusal sentences, 8×1.5s balance poll). **No
+drift anywhere** — `src/` is unchanged since the modules were staged.
+
+**The runbook** (`backend-django/cutovers/RUNBOOK.md`) — four deploys:
+1. **API bootstrap**: deploy the API, `migrate --fake-initial` (fakes the
+   nine business apps against the existing tables, applies `outbox_events`/
+   `media_assets` for real — they don't exist in production), start
+   `dispatch_outbox`. No client change, no freeze.
+2. **Batch A** — reactions, astro, bhakti, content, consultants in one
+   client commit (five lib flips + the module-6 `store.jsx`/ProApply
+   edits). RLS revocation for the group after its quiet week; the `astro`
+   edge function retires.
+3. **Chat**: `sweep_sessions` on a 1-minute scheduler FIRST, unschedule the
+   pg_cron `session-sweep` job, verify a clean cycle, then flip the lib.
+   RLS revocation after the quiet week.
+4. **Wallet + profile in ONE freeze window and one client commit** (both
+   halves rewrite store.jsx; the wallet checkout prefill reads profile
+   state): freeze → Razorpay dashboard webhook switch to
+   `/v1/wallet/webhook/razorpay/` → test-mode payment end to end → flip →
+   `reconcile_payments` → quiet week → retire the two Razorpay edge
+   functions and revoke the money/profile RLS.
+
+Every step carries verification curls, and rollback per step (a cutover is
+atomic per lib file; revocations wait for the quiet week precisely so there
+is nothing left to roll back). The final state: Supabase keeps Auth,
+Postgres and the triggers Django deliberately leaves in force
+(`handle_new_user`, the phase-2 balance trigger, `touch_thread`).
+
+Open before deploy 1 (docs/07 phase 0, still open): a fresh production
+backup verified by restore, and the production API host decision. The
+staging-host item gates the staging rehearsal, not this code.
+
+Files changed: `backend-django/cutovers/RUNBOOK.md` (new),
+`HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md` (§6 row 10 and
+status header, §7 phases marked). Nothing in `src/`, `backend/`, or
+docs 01–06 was touched.
+
 ## 11. UX direction — one look, three bets — 19 Sep 2026
 
 `mocks/ux-directions/` holds eleven artboards on a design canvas
