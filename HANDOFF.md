@@ -2300,36 +2300,178 @@ IDs for the now-real tables), `backend-django/tests/test_content.py`
 `SILENCED_SYSTEM_CHECKS` for the 30-char SQLite assumption), `HANDOFF.md`
 (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
 
-## 11. UX directions — a mock, not a decision — 19 Sep 2026
+## 10f. Module 7 — chat, the meter — 19 Sep 2026
 
-`mocks/ux-directions/` holds three competing answers to "what is the first
-screen for", as ten artboards on a design canvas
-(https://claude.ai/artifact/9bsWweaVCQmrn2JYVFFeLe). **Nothing in `src/` was
+The metered-chat module (step 7 of `docs/07-DJANGO-MIGRATION.md` §6 — the
+highest correctness bar in the migration) is built in `backend-django/` and
+**staged, not deployed** — Supabase still serves production; the client
+flip sits in `backend-django/cutovers/chat.clientlib.js` awaiting the
+deploy order. Full suite **354 green** (295 + 59 new).
+
+**Ownership.** `apps/chat/` maps 1:1 onto `sessions`, `threads`, `messages`
+(014, accept re-written by 017 and 018): the frozen `rate_paise`, the
+partial unique indexes `sessions_one_live_per_consultant` (THE live-session
+conflict check) and `sessions_one_open_request` (018's one-ask-per-pair),
+`sessions_live_idx` (the sweeper's whole query cost), the 016 preview
+columns, index/constraint names matching Postgres for the fake-in
+migration. `profiles`, `wallets`, `ledger`, `orders`, `order_items` stay
+raw-gateway tables (modules 8/9 own them) — the metering writes go through
+`apps.consultants.gateway` exactly as module 6 established, plus one new
+`set_order_total` (014's settle restates the order at the charged amount).
+`consultants`/`consultant_services`/`earnings_ledger` are module 6's; chat
+reads the first two and appends `EarningsLedger` rows with module 6's own
+`fee_paise` (Postgres half-away-from-zero). 016's `touch_thread` trigger
+and the phase-2 balance trigger stay live in prod and are emulated on
+SQLite, the gateway precedent.
+
+**The meter, replicated statement for statement** (014 as amended by 017
+and 018 — read `apps/chat/services.py`'s header before touching anything):
+hold-and-settle, two ledger rows per session; accept takes the session ROW
+LOCK first (018 fix 1), locks the wallet, holds EVERY minute the balance
+buys — `balance // rate`, integer floor, no cap (017) — opens order + one
+line, upserts the thread (one per pair, forever), stamps
+`started_at/expires_at/heartbeat_at`, debits the whole hold. End is
+idempotent with a conditional UPDATE as the CAS (a racing second settle —
+a pressed End against a sweep tick — matches zero rows and writes
+nothing), clamps the stop to `expires_at`, bills
+`max(1, ceil(seconds/60))` in exact integer microsecond arithmetic —
+never floats — clamped to `hold // rate`, refunds the unused minutes with
+`ref_type='refund'` (one per order, 013's index is the backstop), restates
+the order, and writes earnings at the END (gross − 1800bps fee = net),
+each book naming the other party's person. The sweeper settles anything
+past `expires_at` or silent for the 60s grace
+(`coalesce(heartbeat_at, started_at)`), expires unanswered requests after
+15 minutes, claims FOR UPDATE SKIP LOCKED, and counts only what it
+actually settled so two overlapping runs sum to one settle per session.
+018's other three fixes are in: one open request per pair is the index
+(asking twice returns the waiting request), a mode `sessions` cannot store
+is a refusal not a crash, and only the sweeper's reason lands in the
+ledger note. The live-session gate on messages is exactly the policy: a
+write is accepted only into a thread with a live, UNEXPIRED session, only
+as a participant, with the boundary decided by the server's `expires_at`
+to the second.
+
+**Endpoints under `/v1/chat/`**: `sessions/request/` (no rate in the body,
+rule 3), `sessions/` (either side, newest 50 — the consultant's queue is
+this list client-filtered, as today), `sessions/<id>/accept|end|heartbeat/`
+(200 + the server's own `{ok, reason}`, byte-parity with the PostgREST
+RPC contract), `threads/` (the `threads_view` shape: names, unread,
+`live_session_id`, NULLs last), `threads/<id>/messages/` (participant-only;
+`?after=<message id>` keyset paging — no gaps or duplicates while new rows
+land), `threads/<id>/messages/send/` (the one write; the inserted row
+comes back for the sender's immediate render), `threads/<id>/read/`.
+Permission matrix: participant-only everywhere (a stranger's transcript
+read is a 403, module 6's documented strictness over silent RLS); the
+seeker/consultant scoping IS the sessions policy; admin appears at no URL.
+
+**The staged client flip replaces subscriptions with polling — the one
+behavioural change, spelled out.** `cutovers/chat.clientlib.js` keeps
+every export of `src/lib/chat.js`, so `ChatPanel`, `ConsultantProfile` and
+`ProConsult` are untouched; but `subscribeToThread` /
+`subscribeToMySessions` / `subscribeToRequests` are now pollers returning
+the same unsubscribe functions: messages poll on a keyset cursor every 3s,
+the session lists every 5s firing only on change. This is the plan's
+stated M1 transport — REST is the source of truth (docs/07 §6 step 7), and
+Realtime/Channels push delivery is a later phase, not part of this
+cutover. What production loses for that window: message latency up to ~3s
+instead of push, and the consultant's request queue refreshed on a 5s beat
+instead of instantly. What it keeps: every metering guarantee above,
+because the meter has never lived in the transport. `heartbeat` cadence is
+unchanged and screen-driven; a failed heartbeat still answers
+`{unreachable: true}` so the room never tears its meter down mid-session.
+Cutover order matters more here than for any earlier module: deploy the
+API, run `sweep_sessions` on a 1-minute scheduler BEFORE the client flips
+(an un-swept hold is the silent failure 014 exists to kill), then flip the
+lib.
+
+**Tests.** 59 pytest-django tests port all of `014_metered_chat_check.sql`
+— assertions 1–11 verbatim (asking moves nothing; the uncapped hold is
+every affordable minute with the wallet moved by exactly the hold; the
+second-seeker accept refused by name; the live-session gate; ten minutes
+bills ten with the ledger replaying to the balance; earnings gross−fee=net;
+a second end settles once; the ended transcript is read-only but still
+readable; the accept-time short-balance refusal writes nothing; the
+sweeper settles an abandoned session for exactly its minutes; a stranger
+sees none of it) — plus the round-up boundary vectors built from the SQL's
+exact rule (0/59/60/61/119/120/121s, the hold clamp, the fee's
+half-away-from-zero at 40.5), the grace boundary at exactly 60s, the
+15-minute request boundary, the heartbeat's zero-at-expiry shape, the
+right-side-only unread clear, 016's 120-character preview, keyset-cursor
+exactness under concurrent inserts, the endpoint shapes key-for-key with
+the client, and six thread-race proofs (two concurrent first messages land
+once each in one total order; six concurrent accepts — 018's own proof —
+one hold, the wallet moved by exactly that hold; racing duplicate asks make
+one request; End racing the sweeper settles once; two concurrent sweepers
+do not double-charge; sends at the exact `expires_at` instant are refused
+one second before they are accepted). Every service takes an injectable
+`now`, so the check's time-faking discipline — move `started_at`, never
+wait — holds with zero clock jitter.
+
+**Known deviations from prod, deliberate and small.** (1) The settle's
+state change is a conditional UPDATE (CAS) rather than `session_end`'s
+read-then-write under `FOR UPDATE` — 018 fix 1's own shape applied where
+the settle lives; the lock is still taken, the row still serialises, and a
+racing second settle is a reported `already_ended`, never a second write.
+(2) Prod's `btrim(body) <> ''` check cannot be expressed portably as an
+ORM check constraint, so the model carries `body <> ''` and the service
+layer enforces the trim before any write — the refusal happens either way.
+(3) `sessions.thread_id`'s FK constraint name differs cosmetically from
+014's `sessions_thread_fkey`; `--fake-initial` does not check constraint
+names. (4) Sweep counts what it actually settled rather than every
+candidate seen — on Postgres SKIP LOCKED the difference never materialises;
+on SQLite it makes two overlapping runs report one settle between them.
+(5) The pollers keep polling in a background tab the way Realtime did; if
+that ever matters, visibility-aware polling is a client-side tweak inside
+the staged lib, no API change.
+
+Files changed: `backend-django/apps/chat/` (new — models, services, views,
+urls, the `sweep_sessions` management command, fake-in migration),
+`backend-django/tests/test_chat.py` (new), `backend-django/cutovers/
+chat.clientlib.js` (new — the staged client flip), `backend-django/apps/
+consultants/gateway.py` (`set_order_total` for the settle), `backend-django/
+config/` (app + route registration), `HANDOFF.md` (this section),
+`docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+## 11. UX direction — one look, three bets — 19 Sep 2026
+
+`mocks/ux-directions/` holds eleven artboards on a design canvas
+(https://claude.ai/artifact/9bsWweaVCQmrn2JYVFFeLe, flat copy at
+https://claude.ai/artifact/HRj3VxyHyBE7cktFysKBxR). **Nothing in `src/` was
 touched and nothing is wired to the backend.** The folder does not build and
 must not be imported from.
 
-Each direction carries its OWN art direction, chosen so the three are
-telling apart at a glance rather than three greys: **A** is a vermillion-on-black
-poster (zero radius, Inter Tight + Playfair italic), **B** is a mahogany and
-brass almanac (Cormorant Garamond + Crimson Pro + Cinzel, arch-top cards, drop
-caps, Roman numeral houses), **C** is a cream and terracotta daylight shrine
-(Fraunces + Karla). None of them is `src/index.css` — the shipped token set is
-untouched, and adopting any of these is a separate decision from adopting its
-UX spine.
+**The look is settled and uniform.** An earlier pass gave each of the three
+bets its own art direction — that is reversed. C's theme is now every screen's
+theme: paper `#FFFFFB`, cream `#FFF1DC`, peach `#FFD2A6`, orange `#FF8500`,
+ink `#3D405B`, plus burnt orange `#A85400` for orange text. Fraunces for
+headings and numbers, Karla for everything else.
 
-- **A · The Question.** Home is a text field. You type the question; the app
-  returns three people who answer that question, online, in your language. The
-  roster of 84 is demoted to a link. Breaks below roughly forty approved
-  consultants, because "three are online in Hindi" stops being true.
+**Orange is fill and flame only.** White on `#FF8500` is 2.4:1 and ink on it
+4.1:1, so nothing readable sits on it: orange carries the arch band, the lamp,
+the streak pips, the online dots and the metered-chat bar, and every button is
+ink with paper text at 10:1. `C0-Palette.dc.html` is the token sheet.
+
+What is still open is the spine, and because the screens now look identical the
+comparison is only about structure:
+
+- **A · The Question.** Home is a text field; three people who answer that
+  question come back, online, in the asked-for language, and the roster of 84
+  becomes a link. Breaks below roughly forty approved consultants.
 - **B · The Chart.** Home is today's transits against the signed-in person's own
-  placements — which is the first use onboarding's birth details have ever had
-  (`01-PRD.md` §3 still records them as collected and unused). Every reading ends
-  in a handoff, and the astrologer opens the chat already holding the chart. Only
-  as good as the `astro` Edge Function is, daily, for everybody.
-- **C · The Ritual.** Home is `/darshan`. A free daily lamp against a stated
-  intention with a date on it; when the date gets close the app says so, once,
-  and offers a person. Needs no new capability — the 26 murtis, the aarti and
-  Bhaktamar are already built.
+  placements — the first use onboarding's birth details have ever had
+  (`01-PRD.md` §3 still records them as collected and unused). Only as good as
+  the `astro` Edge Function is, daily, for everybody.
+- **C · The Ritual — chosen.** Home is `/darshan`: a free daily lamp against a
+  stated intention with a date on it, and when the date nears the app says so
+  once and offers a person. Needs no new capability — the 26 murtis, the aarti
+  and Bhaktamar are already built.
 
-Nothing is chosen. When one is, it changes `03-APP-FLOW.md` (routes and the
-money path) and `01-PRD.md` §3, and this section is rewritten to say which won.
+**B3 is worth keeping whichever spine wins**: the astrologer opens a paid chat
+already holding the chart, the transit and the question, with a visible list of
+what was shared and what was withheld. Nobody in the market does that.
+
+None of this is `src/index.css`. The shipped token set is untouched, and
+adopting this palette is a separate decision from adopting C's spine. When
+either is taken it changes `03-APP-FLOW.md` (routes and the money path),
+`04-UI-UX.md` (tokens) and `01-PRD.md` §3, and this section is rewritten to say
+what shipped.

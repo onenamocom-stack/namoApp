@@ -53,3 +53,4 @@ __pycache__/
 *.pyc
 backend-django/.venv/
 backend-django/db.sqlite3
+mocks/

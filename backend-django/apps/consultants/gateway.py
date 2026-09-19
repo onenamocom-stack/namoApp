@@ -119,3 +119,15 @@ def set_order_refunded(order_id):
         cursor.execute(
             "update orders set status = 'refunded' where id = %s", [str(order_id)]
         )
+
+
+def set_order_total(order_id, total_paise):
+    """014's settle step: the order opened at the hold is restated at what
+    was actually charged (`update orders set total_paise = ...` in
+    session_end). Used by the chat module (7); the orders table stays the
+    wallet module's (8)."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "update orders set total_paise = %s where id = %s",
+            [total_paise, str(order_id)],
+        )
