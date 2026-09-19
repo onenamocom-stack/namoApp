@@ -2,13 +2,54 @@ import json
 import logging
 import uuid
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse
+from django.utils.cache import patch_vary_headers
 from django.utils.deprecation import MiddlewareMixin
 
 from .models import IdempotencyKey
 
 logger = logging.getLogger("apps.core.middleware")
+
+
+class CorsMiddleware(MiddlewareMixin):
+    """Hand-rolled CORS (django-cors-headers is deliberately not a dep).
+
+    Exact-origin echo against settings.CORS_ALLOWED_ORIGINS: a listed Origin
+    gets its own value back (never '*', so the allowlist actually restricts),
+    plus 'Origin' on Vary so caches don't serve one origin's response to
+    another. Preflight (OPTIONS + Access-Control-Request-Method) short-circuits
+    with an empty 200 before any view or auth runs. Non-listed or missing
+    Origin passes through untouched — no CORS headers at all.
+    """
+
+    ALLOW_HEADERS = "Authorization, Content-Type, Idempotency-Key, X-Request-Id"
+    ALLOW_METHODS = "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+    MAX_AGE = "600"
+
+    def process_request(self, request):
+        request._cors_origin = None
+        origin = request.headers.get("Origin")
+        if origin and origin in settings.CORS_ALLOWED_ORIGINS:
+            request._cors_origin = origin
+        if (
+            request._cors_origin
+            and request.method == "OPTIONS"
+            and request.headers.get("Access-Control-Request-Method")
+        ):
+            return HttpResponse(status=200)
+
+    def process_response(self, request, response):
+        origin = getattr(request, "_cors_origin", None)
+        if not origin:
+            return response
+        response["Access-Control-Allow-Origin"] = origin
+        patch_vary_headers(response, ["Origin"])
+        response["Access-Control-Allow-Headers"] = self.ALLOW_HEADERS
+        response["Access-Control-Allow-Methods"] = self.ALLOW_METHODS
+        response["Access-Control-Max-Age"] = self.MAX_AGE
+        return response
 
 
 class RequestIdMiddleware(MiddlewareMixin):

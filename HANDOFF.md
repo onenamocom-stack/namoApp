@@ -1931,7 +1931,8 @@ What exists, all cross-cutting, no business logic:
 - **Project/config**: settings split base/local/test/prod, twelve-factor env,
   15-line `postgres://` parser (dj-database-url deliberately not a dep), SQLite
   fallback, DRF defaults (CursorPagination 20, JSON only, throttles), JSON
-  logging with per-request ids, CORS from env.
+  logging with per-request ids, CORS from env (hand-rolled echo-middleware in
+  apps/core/middleware.py — no django-cors-headers dep — answers preflights).
 - **Auth**: Supabase JWT verification. `SUPABASE_URL` set → RS256 against the
   JWKS endpoint (fetched, cached by kid, 1h TTL, thread-safe, one forced
   refetch on unknown kid); `SUPABASE_JWT_SECRET` set → HS256 fallback for

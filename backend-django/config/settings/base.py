@@ -54,6 +54,7 @@ LOCAL_APPS = ["apps.core", "apps.media", "apps.reactions", "apps.astro"]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    "apps.core.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
     "apps.core.middleware.RequestIdMiddleware",
