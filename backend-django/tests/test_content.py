@@ -17,8 +17,9 @@ The RLS-equivalent matrix (020/025 policies):
                                transaction as every review write
   moderation                -> moves status; no client path
 
-profiles/consultants/bookings are raw tables the gateway owns reads of (they
-belong to later modules); tests stand them up the way test_astro.py does.
+profiles is the profile module's raw table (still stood up by hand);
+consultants and bookings are real tables now that module 6 owns them —
+the roster writes them through the consultants app's models.
 """
 
 import json
@@ -67,25 +68,17 @@ def admin_token(sign_hs256, hs256_mode):
 
 @pytest.fixture
 def content_tables():
-    """The raw tables module 5's gateway reads. In Postgres these belong to
-    other modules; on SQLite tests stand them up by hand (test_astro.py's
-    pattern)."""
+    """The raw tables module 5's gateway reads. `profiles` is still unowned
+    (the profile module), so on SQLite tests stand it up by hand
+    (test_astro.py's pattern). `consultants` and `bookings` became real
+    Django tables with module 6 — the roster below writes them through the
+    consultants app's models instead of CREATE TABLE."""
     from django.db import connection
 
     with connection.cursor() as cursor:
         cursor.execute("create table profiles (id text primary key, name text)")
-        cursor.execute(
-            "create table consultants (profile_id text primary key, status text,"
-            " rating_avg_cache real, rating_count_cache integer not null default 0)"
-        )
-        cursor.execute(
-            "create table bookings (id text primary key, seeker_id text,"
-            " consultant_id text, status text, starts_at text)"
-        )
     yield
     with connection.cursor() as cursor:
-        cursor.execute("drop table bookings")
-        cursor.execute("drop table consultants")
         cursor.execute("drop table profiles")
 
 
@@ -93,18 +86,30 @@ def _profile(cursor, pid, name):
     cursor.execute("insert into profiles values (%s, %s)", [str(pid), name])
 
 
-def _consultant(cursor, pid, status):
-    cursor.execute(
-        "insert into consultants (profile_id, status) values (%s, %s)", [str(pid), status]
+def _consultant(pid, status):
+    from apps.consultants.models import Consultant
+
+    return Consultant.objects.create(
+        profile_id=pid, category="Astrologer", status=status
     )
 
 
-def _booking(cursor, bid, seeker_id, consultant_id, status, starts_at=None):
+def _flat(value):
+    """Django stores UUIDFields dashless on SQLite — raw inserts into its
+    tables must too, or the FK checks at commit refuse them (HANDOFF §10d)."""
+    return str(value).replace("-", "")
+
+
+def _booking(cursor, bid, seeker_id, consultant_id, status, service_id, starts_at=None):
+    # bookings is a real table now (module 6): the NOT NULL frozen copies are
+    # part of the insert, exactly as 008 shapes them.
     cursor.execute(
-        "insert into bookings (id, seeker_id, consultant_id, status, starts_at)"
-        " values (%s, %s, %s, %s, %s)",
-        [str(bid), str(seeker_id), str(consultant_id), status,
-         (starts_at or timezone.now()).isoformat()],
+        "insert into bookings (id, seeker_id, consultant_id, service_id, starts_at,"
+        " duration_mins, amount_paise, mode, status, created_at)"
+        " values (%s, %s, %s, %s, %s, 20, 1000, 'call', %s, %s)",
+        [_flat(bid), _flat(seeker_id), _flat(consultant_id), _flat(service_id),
+         (starts_at or timezone.now()).isoformat(), status,
+         timezone.now().isoformat()],
     )
 
 
@@ -114,6 +119,8 @@ def roster(content_tables):
     check's cast."""
     from django.db import connection
 
+    from apps.consultants.models import ConsultantService, PriceBand
+
     with connection.cursor() as cursor:
         _profile(cursor, SEEKER, "Tara Verma")
         _profile(cursor, SECOND_SEEKER, "Arjun Nair")
@@ -121,10 +128,30 @@ def roster(content_tables):
         _profile(cursor, APPROVED, "Pro Consultant")
         _profile(cursor, PENDING, "Wannabe Consultant")
         _profile(cursor, BLOCKED, "Gone Consultant")
-        _consultant(cursor, APPROVED, "approved")
-        _consultant(cursor, PENDING, "pending")
-        _consultant(cursor, BLOCKED, "blocked")
+    _consultant(APPROVED, "approved")
+    _consultant(PENDING, "pending")
+    _consultant(BLOCKED, "blocked")
+    band = PriceBand.objects.create(
+        tier=9, billing="fixed", duration_mins=20, price_paise=1000, sort=90
+    )
+    ConsultantService.objects.create(
+        consultant_id=APPROVED, band_id=band.id, mode="call", billing="fixed",
+        duration_mins=20, price_paise=1000,
+    )
     return content_tables
+
+
+def _service_id():
+    from apps.consultants.models import ConsultantService
+
+    return ConsultantService.objects.get().id
+
+
+def _xid(left, right):
+    return (
+        f"replace(cast({left} as text), '-', '')"
+        f" = replace(cast({right} as text), '-', '')"
+    )
 
 
 def _set_consultant_status(pid, status):
@@ -132,7 +159,8 @@ def _set_consultant_status(pid, status):
 
     with connection.cursor() as cursor:
         cursor.execute(
-            "update consultants set status = %s where profile_id = %s", [status, str(pid)]
+            f"update consultants set status = %s where {_xid('profile_id', '%s')}",
+            [status, str(pid)],
         )
 
 
@@ -140,9 +168,13 @@ def _rating_cache(pid):
     from django.db import connection
 
     with connection.cursor() as cursor:
+        # cast: the real column is DecimalField (stored as text on SQLite);
+        # the assertions compare floats, Postgres compares numeric. The
+        # where-clause normalises UUID text the way the gateways do — the
+        # real tables store UUIDFields dashless on SQLite (HANDOFF §10d).
         cursor.execute(
-            "select rating_avg_cache, rating_count_cache from consultants"
-            " where profile_id = %s",
+            f"select cast(rating_avg_cache as real), rating_count_cache"
+            f" from consultants where {_xid('profile_id', '%s')}",
             [str(pid)],
         )
         return cursor.fetchone()
@@ -153,7 +185,8 @@ def _complete_booking(seeker_id, consultant_id, **kwargs):
     from django.db import connection
 
     with connection.cursor() as cursor:
-        _booking(cursor, bid, seeker_id, consultant_id, "completed", **kwargs)
+        _booking(cursor, bid, seeker_id, consultant_id, "completed",
+                 service_id=_service_id(), **kwargs)
     return bid
 
 
@@ -491,7 +524,7 @@ class TestReviewGate:
         from django.db import connection
 
         with connection.cursor() as cursor:
-            _booking(cursor, bid, SEEKER, APPROVED, status)
+            _booking(cursor, bid, SEEKER, APPROVED, status, service_id=_service_id())
         response = api_client.post(
             "/v1/content/reviews/",
             data={"booking_id": str(bid), "consultant_id": APPROVED, "rating": 5},
@@ -586,8 +619,9 @@ class TestReviewGate:
         from django.db import connection
 
         with connection.cursor() as cursor:
-            _booking(cursor, pending, SEEKER, APPROVED, "pending")
-            _booking(cursor, uuid.uuid4(), SECOND_SEEKER, APPROVED, "completed")
+            _booking(cursor, pending, SEEKER, APPROVED, "pending", service_id=_service_id())
+            _booking(cursor, uuid.uuid4(), SECOND_SEEKER, APPROVED, "completed",
+                     service_id=_service_id())
 
         rows = api_client.get("/v1/content/reviews/reviewable/", **auth(seeker_token)).json()
         assert [r["id"] for r in rows] == [str(new), str(old)]  # starts_at desc

@@ -7,4 +7,5 @@ urlpatterns = [
     path("v1/astro/", include("apps.astro.urls")),
     path("v1/bhakti/", include("apps.bhakti.urls")),
     path("v1/content/", include("apps.content.urls")),
+    path("v1/consultants/", include("apps.consultants.urls")),
 ]

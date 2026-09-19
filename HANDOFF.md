@@ -2190,3 +2190,146 @@ test_content.py` (new), `backend-django/cutovers/content.clientlib.js` (new —
 the staged client flip), `backend-django/apps/media/` (presign `public_url`,
 confirm endpoint), `backend-django/config/` (app + route registration),
 `HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+
+## 10e. Module 6 — consultants — 19 Sep 2026
+
+The consultants module (step 6 of `docs/07-DJANGO-MIGRATION.md` §6 — the
+first real-money touch) is built in `backend-django/` and **staged, not
+deployed** — Supabase still serves production; the client flip sits in
+`backend-django/cutovers/consultants.clientlib.js` awaiting the deploy order.
+
+**Ownership.** `apps/consultants/` maps 1:1 onto `price_bands`,
+`consultants`, `consultant_services`, `consultant_availability`,
+`consultant_time_off` (`007`, prices corrected by `011`), `bookings`
+(`008`, order_id layer from `012`) and `earnings_ledger` (`012`): all seven
+weekday rows per consultant, the frozen booking copies, the partial unique
+index `bookings_slot_claim` (THE conflict check), the
+`earnings_ledger_nets` check, index names matching Postgres for the fake-in
+migration (one 64-char unique key deliberately carries Postgres's own
+63-byte truncation). `languages`/`credentials` are `text[]` via a small
+custom field (psycopg binds a list on Postgres; JSON text on SQLite).
+`profiles`, `wallets`, `ledger`, `orders`, `order_items` stay raw-gateway
+tables — the profile module (9) and wallet module (8) own them; prod's
+phase-2 triggers (balance-follows-ledger, refuse_mutation) remain in force
+until that cutover, and the gateway emulates the balance carry on SQLite,
+documented at the site. `EarningsLedger` replicates the append-only trigger
+in the model layer (save/delete on an existing row refuse), so rule 2 is
+executable in this module's tests; `ledger` keeps its prod trigger and gets
+its ORM guard with module 8.
+
+**The booking transaction** replicates `012` as amended by `013` statement
+for statement: the client sends `{consultantId, serviceId, startsAt}` and no
+price (rule 3); the order is lock wallet → check balance against the LOCKED
+number → open the order → CLAIM THE SLOT (the insert that can raise; the
+loser never reaches the debit, and the whole block unwinds) → debit the
+seeker's ledger → credit the consultant's book, gross − 1800bps fee = net,
+each party's book naming the other (013 fix 4). 013's other fixes are in:
+zero-price refused by name, short-balance on its own branch. The reversing
+credit is `booking_reverse` exactly: both books get a NEW row, the original
+debit stands, the order flips 'refunded', and idempotency is 013's unique
+index `ledger_one_refund_per_order` — the insert IS the check, a retry is a
+no-op, and two concurrent reversals credit once. `decide` is the conditional
+UPDATE pending → confirmed | declined (008's policy edge, no read-then-write;
+018 fix 1's shape), with the decline's reversal in the same transaction,
+exactly as 012's trigger does it. 009's subtraction — availability minus
+time off minus slots claimed at pending, horizon 14 days, times IST — lives
+in one `open_slots()` that `book_session` itself consults; a second
+implementation of that subtraction is the phase-4 bug the SQL file exists
+to kill. The 011 arithmetic (20-minute price restored, 15/30 to the nearest
+₹10, per-minute to the nearest ₹1, Postgres half-away-from-zero rounding)
+is `derive_band_price`, used by the idempotent `seed_price_bands` service.
+
+**Endpoints under `/v1/consultants/`**: `` (list, shaped rows + services,
+rating desc NULLS LAST), `price-bands/`, `apply/` (the whole application in
+one transaction — row lands 'pending' plus the tier's services priced by
+copying the band rows; 009 assertions 8 and 9 are structural), `me/` (the
+caller's own row, pending included — the bare-gateway read store.jsx's
+refreshConsultant does until the profile module; profiles-table ownership is
+unchanged), `<id>/`, `<id>/services/`, `<id>/slots/?date=`, `<id>/
+availability/` + `availability/set/` (one cell, one INSERT or DELETE),
+`<id>/bookings/` (the queue, carrying the seeker's name and birth details
+per 010), `bookings/` (create; Idempotency-Key middleware + the unique
+index), `bookings/mine/`, `bookings/<id>/decide/`, `<id>/earnings/`.
+Permission matrix: listings/slots/bands anonymous; unapproved consultant is
+a 404, not a 403 (invisible, not forbidden); availability read approved-or-
+own (else empty, RLS parity), write own-only; bookings read caller-scoped
+each side; decide is the booking's consultant's pending edge only; earnings
+owner-only; approval exists at no URL. Two documented strictness changes
+over silent RLS: another consultant's queue/earnings is a 403 rather than an
+empty list, and deciding a resolved booking is a 403 rather than a silent
+no-op.
+
+**Tests.** 59 new pytest-django tests port both check files — 009
+assertions 1–7 (one slots source on all seven weekdays, pending claim,
+decline frees, time off, approval gating both directions, both horizon
+ends), 012 assertions 1–10 (one booking one transaction, gross−fee=net
+row-level and table-wide, the refusal matrix with byte-exact sentences and
+nothing-written counts, decline restores by a NEW row with the original
+debit untouched, double reversal credits once, append-only both books,
+per-minute refused by name) and the RLS matrix as endpoint tests — plus
+three thread-race tests (two seekers one slot → exactly one holds and the
+loser leaves no order, no booking, no debit; two concurrent reversals → one
+credit; two concurrent decides → one winner) and the 011 rounding vectors.
+Full suite **295 green**.
+
+Two deliberate suite changes came with owning the tables: test_content's
+fixtures now write `consultants`/`bookings` through this module's models
+(raw CREATE TABLE would collide with the real tables), and the content
+gateway's single-row lookups gained the `replace(cast(...))` UUID
+normalisation (Django stores UUIDFields dashless on SQLite) plus canonical
+dashed IDs on return. `models.E034` is silenced in base settings — SQLite
+reports no identifier limit so Django assumes 30 chars, while the index
+names production carries are up to 34.
+
+**Out of scope, on purpose.** 014–018 are the metered-chat module (step 7):
+sessions, presence and realtime publication stay on Supabase until then;
+017/018's shared shapes (per-minute services, the mode vocabulary) are
+modelled here and their money paths land with chat. The admin reversal for
+"never turned up"/platform failure is a service-layer function reachable
+from no URL, exactly as 012 grants it.
+
+Files changed: `backend-django/apps/consultants/` (new — models, fields,
+gateway, services, views, urls, fake-in migration), `backend-django/tests/
+test_consultants.py` (new), `backend-django/cutovers/
+consultants.clientlib.js` (new — the staged client flip, plus the
+same-commit notes for store.jsx refreshConsultant and ProApply),
+`backend-django/apps/content/gateway.py` (UUID normalisation + canonical
+IDs for the now-real tables), `backend-django/tests/test_content.py`
+(real-table fixtures), `backend-django/config/` (app + route registration,
+`SILENCED_SYSTEM_CHECKS` for the 30-char SQLite assumption), `HANDOFF.md`
+(this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
+
+## 11. UX directions — a mock, not a decision — 19 Sep 2026
+
+`mocks/ux-directions/` holds three competing answers to "what is the first
+screen for", as ten artboards on a design canvas
+(https://claude.ai/artifact/9bsWweaVCQmrn2JYVFFeLe). **Nothing in `src/` was
+touched and nothing is wired to the backend.** The folder does not build and
+must not be imported from.
+
+Each direction carries its OWN art direction, chosen so the three are
+telling apart at a glance rather than three greys: **A** is a vermillion-on-black
+poster (zero radius, Inter Tight + Playfair italic), **B** is a mahogany and
+brass almanac (Cormorant Garamond + Crimson Pro + Cinzel, arch-top cards, drop
+caps, Roman numeral houses), **C** is a cream and terracotta daylight shrine
+(Fraunces + Karla). None of them is `src/index.css` — the shipped token set is
+untouched, and adopting any of these is a separate decision from adopting its
+UX spine.
+
+- **A · The Question.** Home is a text field. You type the question; the app
+  returns three people who answer that question, online, in your language. The
+  roster of 84 is demoted to a link. Breaks below roughly forty approved
+  consultants, because "three are online in Hindi" stops being true.
+- **B · The Chart.** Home is today's transits against the signed-in person's own
+  placements — which is the first use onboarding's birth details have ever had
+  (`01-PRD.md` §3 still records them as collected and unused). Every reading ends
+  in a handoff, and the astrologer opens the chat already holding the chart. Only
+  as good as the `astro` Edge Function is, daily, for everybody.
+- **C · The Ritual.** Home is `/darshan`. A free daily lamp against a stated
+  intention with a date on it; when the date gets close the app says so, once,
+  and offers a person. Needs no new capability — the 26 murtis, the aarti and
+  Bhaktamar are already built.
+
+Nothing is chosen. When one is, it changes `03-APP-FLOW.md` (routes and the
+money path) and `01-PRD.md` §3, and this section is rewritten to say which won.

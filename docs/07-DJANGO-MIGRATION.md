@@ -183,7 +183,7 @@ green, and one walked route per affected screen.
 | 3 | Astro (`astro.js`) | Read-mostly, provider-shaped, zero money; Redis cache lands here — **API built, cutover staged (needs deploy)** |
 | 4 | Bhakti (`bhakti.js`) | Self-contained content + one session write — **API built, cutover staged (needs deploy)** |
 | 5 | Content (`content.js`) + R2 media | The feed, posts, reels on R2; largest read surface, cache-aside earns its keep — **API built, cutover staged (needs deploy)** |
-| 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) |
+| 6 | Consultants (`consultants.js`) | Listings, slots, bookings; first real money touch (booking holds) — **API built, cutover staged (needs deploy)** |
 | 7 | Chat (`chat.js`) | Metered billing; sweeper moves to Celery; highest correctness bar — every SQL check in 014 ports here |
 | 8 | Wallet + payments (`store.jsx` split) | The ledger, Razorpay order/webhook functions become Django services behind the same client contract; freeze window for cutover |
 | 9 | Profile + avatar (`store.jsx` split, `avatar.js`) | Last write surface; storage moves to R2 |

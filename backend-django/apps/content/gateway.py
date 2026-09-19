@@ -1,18 +1,39 @@
 """Raw-SQL gateway to the tables Django does not own yet.
 
-Module 5's rules live on top of three tables that belong to later modules:
-`profiles` (the profile module), `consultants` (the consultants module) and
-`bookings` (the bookings module). Exactly as apps/astro reads birth details
-through a raw-SQL gateway that the profile module replaces, this module reads
-names, consultant statuses and booking rows through SQL — no Django models for
-tables other modules will claim, and no ORM ownership of someone else's schema.
-
-A query ERROR here propagates on purpose: the views must not conflate a failed
-read with an absent row (the astro gateway carries the same warning, from an
-incident where that conflation sent a working consultant to a signup form).
+Module 5's rules live on top of tables that belong to other modules:
+`profiles` (the profile module — still a raw table), `consultants` and
+`bookings` (module 6 made those real Django tables; this gateway keeps
+reading them through SQL, no ORM ownership of someone else's models, with
+the replace(cast(...)) UUID normalisation the cross-boundary joins need on
+SQLite — HANDOFF §10d). A query ERROR here propagates on purpose: the views
+must not conflate a failed read with an absent row (the astro gateway
+carries the same warning, from an incident where that conflation sent a
+working consultant to a signup form).
 """
 
 from django.db import connection
+
+
+def _xid(left, right):
+    """Format-agnostic UUID comparison: Django tables store UUIDFields
+    dashless on SQLite while Postgres compares native uuids (HANDOFF §10d);
+    normalising both sides reads identically on both backends. Needed since
+    module 6 made `consultants` and `bookings` real Django tables — this
+    gateway's lookups cross the ORM/raw boundary."""
+    return (
+        f"replace(cast({left} as text), '-', '')"
+        f" = replace(cast({right} as text), '-', '')"
+    )
+
+
+def _canon(value):
+    """Canonical dashed UUID text. Raw reads of Django-managed UUIDFields
+    come back dashless on SQLite; services compare against str(uuid) from
+    the request/JWT, so the gateway returns one canonical form."""
+    import uuid
+
+    text = str(value)
+    return text if "-" in text else str(uuid.UUID(text))
 
 
 def profile_name(profile_id):
@@ -47,7 +68,8 @@ def consultant_status(profile_id):
     """'pending' | 'approved' | 'blocked', or None when not a consultant."""
     with connection.cursor() as cursor:
         cursor.execute(
-            "select status from consultants where profile_id = %s", [str(profile_id)]
+            f"select status from consultants where {_xid('profile_id', '%s')}",
+            [str(profile_id)],
         )
         row = cursor.fetchone()
     return row[0] if row else None
@@ -74,14 +96,14 @@ def write_rating_cache(consultant_id, avg, count):
     with connection.cursor() as cursor:
         if connection.vendor == "postgresql":
             cursor.execute(
-                "select 1 from consultants where profile_id = %s for update",
+                f"select 1 from consultants where {_xid('profile_id', '%s')} for update",
                 [str(consultant_id)],
             )
             if cursor.fetchone() is None:
                 return False
         cursor.execute(
             "update consultants set rating_avg_cache = %s, rating_count_cache = %s"
-            " where profile_id = %s",
+            f" where {_xid('profile_id', '%s')}",
             [avg, count, str(consultant_id)],
         )
         return cursor.rowcount > 0
@@ -91,7 +113,8 @@ def booking_for_review(booking_id):
     """The booking a review claims, as the 020 insert policy reads it."""
     with connection.cursor() as cursor:
         cursor.execute(
-            "select id, seeker_id, consultant_id, status from bookings where id = %s",
+            f"select id, seeker_id, consultant_id, status from bookings"
+            f" where {_xid('id', '%s')}",
             [str(booking_id)],
         )
         row = cursor.fetchone()
@@ -99,9 +122,9 @@ def booking_for_review(booking_id):
         return None
     booking_id, seeker_id, consultant_id, status = row
     return {
-        "id": str(booking_id),
-        "seeker_id": str(seeker_id),
-        "consultant_id": str(consultant_id),
+        "id": _canon(booking_id),
+        "seeker_id": _canon(seeker_id),
+        "consultant_id": _canon(consultant_id),
         "status": status,
     }
 
@@ -111,10 +134,10 @@ def reviewable_bookings(seeker_id):
     positive half, in the order the client renders (starts_at desc)."""
     with connection.cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             select b.id, b.consultant_id, b.starts_at
               from bookings b
-             where b.seeker_id = %s
+             where {_xid('b.seeker_id', '%s')}
                and b.status = 'completed'
                and not exists (select 1 from reviews r
                                 where replace(cast(r.booking_id as text), '-', '')
@@ -124,7 +147,7 @@ def reviewable_bookings(seeker_id):
             [str(seeker_id)],
         )
         return [
-            {"id": str(bid), "consultant_id": str(cid), "starts_at": starts_at}
+            {"id": _canon(bid), "consultant_id": _canon(cid), "starts_at": starts_at}
             for bid, cid, starts_at in cursor.fetchall()
         ]
 
@@ -132,12 +155,12 @@ def reviewable_bookings(seeker_id):
 def update_booking_status(booking_id, status):
     """Test/admin seam for moving a booking (e.g. pending -> completed).
 
-    Bookings belong to the bookings module; nothing in this module's URL
-    surface calls this — it exists so the review gate's lifecycle can be
+    Bookings belong to module 6 now (they became a real table there); this
+    raw seam is unchanged — it exists so the review gate's lifecycle can be
     exercised exactly as the 020 check exercises it with SQL updates.
     """
     with connection.cursor() as cursor:
         cursor.execute(
-            "update bookings set status = %s where id = %s",
+            f"update bookings set status = %s where {_xid('id', '%s')}",
             [status, str(booking_id)],
         )

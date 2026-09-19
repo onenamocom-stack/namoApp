@@ -50,7 +50,15 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 THIRD_PARTY_APPS = ["rest_framework"]
-LOCAL_APPS = ["apps.core", "apps.media", "apps.reactions", "apps.astro", "apps.bhakti", "apps.content"]
+LOCAL_APPS = [
+    "apps.core",
+    "apps.media",
+    "apps.reactions",
+    "apps.astro",
+    "apps.bhakti",
+    "apps.content",
+    "apps.consultants",
+]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
@@ -94,6 +102,13 @@ USE_I18N = False
 USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Index names mirror what Postgres already carries (fake-in parity, module
+# 6: consultant_time_off_consultant_idx is 34 chars). SQLite reports no
+# identifier limit, so Django's models.E034 check assumes 30 and fires on
+# perfectly valid names — silenced for every backend; Postgres enforces the
+# real 63-byte limit at migration time.
+SILENCED_SYSTEM_CHECKS = ["models.E034"]
 
 # --- Supabase auth (docs/07 §7 step 5; backend/INSTRUCTIONS.md rule 7) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
