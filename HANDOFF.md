@@ -1981,3 +1981,36 @@ root `Makefile`/`docker-compose.yml`/`archive/` patterns anchored so
 `backend-django/docker-compose.yml` is tracked), `docs/07-DJANGO-MIGRATION.md`
 (phase 0/1 status), `CLAUDE.md` (map). Nothing in `src/`, `backend/`,
 docs 01–06, or the deploy workflow was touched.
+
+## 10a. Module 2 — reactions — 19 Sep 2026
+
+The reactions module (step 2 of `docs/07-DJANGO-MIGRATION.md` §6) is built
+in `backend-django/` and **staged, not deployed** — Supabase still serves
+production; the client flip sits in `backend-django/cutovers/
+reactions.clientlib.js` awaiting the deploy order. `apps/reactions/` maps 1:1
+onto the existing `reactions` table (`backend/schema/020_content_reviews.sql`
+as amended by `025`, which added `'profile'` to `target_type`): uuid id,
+`actor_id`, `target_type`, `target_id`, `kind`, `created_at`, the unique
+4-tuple, and `reactions_target_idx`. Its migration is generated against that
+schema and designed to be faked in at cutover (`migrate --fake-initial`) — it
+creates nothing new on the real DB; `actor_id`'s FK to `profiles` is deferred
+to the profile module, exactly like the phase 1 no-business-FK decision.
+Endpoints under `/v1/reactions/`: `GET` (own rows only — the `reactions_own`
+policy), `POST` (`{target_type, target_id, kind}`; actor forced from the JWT;
+double-react is one row, answered `created: false` + 200), `DELETE`
+(owner-scoped; someone else's row is 403, off-when-off is a 200 no-op), and
+`GET /v1/reactions/counts/` (anonymous aggregates — the count views' grant;
+counts stay `COUNT(*)` queries, there is no counter column to drift). Client
+contract unchanged: `fetchMine` still returns `kind:target_id` strings,
+`setReaction` still returns false for unpersistable keys and signed-out
+visitors, refusals still carry `{ok, reason, message}`. 23 new pytest-django
+tests port the reactions halves of the 020/025 SQL checks (unique double-react,
+counts exact and starting honest, stranger reads zero rows but public counts,
+profile-follow counts) plus idempotency-key replay and two thread-race tests;
+full suite 105 green.
+
+Files changed: `backend-django/apps/reactions/` (new — models, services,
+views, urls, fake-in migration), `backend-django/tests/test_reactions.py`
+(new), `backend-django/cutovers/reactions.clientlib.js` (new — the staged
+client flip), `backend-django/config/` (app + route registration),
+`HANDOFF.md` (this section), `docs/07-DJANGO-MIGRATION.md` (§6 status).
