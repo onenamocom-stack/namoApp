@@ -2799,3 +2799,32 @@ adopting this palette is a separate decision from adopting C's spine. When
 either is taken it changes `03-APP-FLOW.md` (routes and the money path),
 `04-UI-UX.md` (tokens) and `01-PRD.md` §3, and this section is rewritten to say
 what shipped.
+
+## 11. Live verification on namo-dev — 20 Sep 2026
+
+All eight Django modules exercised over HTTP against real Postgres + R2
+(HANDOFF §10's stack): profiles, reactions, astro, bhakti, content,
+consultants, chat, wallet — PASS end to end (two ES256 JWTs, mock astro,
+R2 media PUTs real). Two bugs surfaced that 453 SQLite-green tests could
+not see, both fixed and re-verified live:
+
+- **chat sweeper**: `select_for_update` outside a transaction — SQLite
+  ignores it, Postgres crashes; expired sessions would never settle and
+  holds would leak in production. Wrapped in `transaction.atomic()`
+  (`apps/chat/services.py`); sweeper now runs clean and expired the
+  stranded session it had left behind.
+- **booking decline flag**: on Postgres the `bookings_decline_reverses`
+  trigger reverses inside the status UPDATE; the app's explicit reversal
+  then hits the unique index and reported `reversed:false` while the
+  money HAD moved. The flag now answers "is the seeker refunded" via a
+  dashless-safe refund-row lookup (`apps/consultants/services.py`);
+  retry/race test expectations updated to the truthful semantics.
+
+Also recorded (not failures): topup/webhook return 500 "Payments are not
+configured yet." while Razorpay has no dev keys; `media.example.com` is
+the placeholder public base until a bucket domain exists; mock astro's
+`degree: 32.47` ascendant is a mock artifact.
+
+Files changed: `apps/chat/services.py`, `apps/consultants/services.py`,
+`tests/test_consultants.py`. Live evidence: booking 48c93f93 decline →
+`reversed:true`, balance 95500 → 28500 → 95500.

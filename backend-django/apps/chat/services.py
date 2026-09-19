@@ -452,16 +452,21 @@ def sweep_sessions(now=None):
         .order_by("id")
     )
     settled = 0
-    for session in candidates:
-        reason = "time ran out" if session.expires_at <= now else "connection lost"
-        result = end_session(None, session.id, reason=reason, now=now)
-        # Count what THIS run actually settled. A concurrent sweeper (or a
-        # pressed End) that got there first is reported already_ended — on
-        # Postgres SKIP LOCKED hides its rows entirely, on SQLite the file
-        # lock serialises after the snapshot; either way the sum across
-        # overlapping runs is one settle per session.
-        if not result.get("already_ended"):
-            settled += 1
+    # select_for_update needs an explicit transaction on Postgres — SQLite
+    # silently ignores it, so the unit suite never exercised this. Without
+    # the atomic block the sweeper crashes on the first live candidate and
+    # expired sessions are never settled (holds leak).
+    with transaction.atomic():
+        for session in candidates:
+            reason = "time ran out" if session.expires_at <= now else "connection lost"
+            result = end_session(None, session.id, reason=reason, now=now)
+            # Count what THIS run actually settled. A concurrent sweeper (or a
+            # pressed End) that got there first is reported already_ended — on
+            # Postgres SKIP LOCKED hides its rows entirely, on SQLite the file
+            # lock serialises after the snapshot; either way the sum across
+            # overlapping runs is one settle per session.
+            if not result.get("already_ended"):
+                settled += 1
     expired_requests = Session.objects.filter(
         status=Session.Status.REQUESTED,
         requested_at__lt=now - timezone.timedelta(seconds=UNANSWERED),

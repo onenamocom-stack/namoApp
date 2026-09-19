@@ -46,7 +46,7 @@ from datetime import datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -499,6 +499,20 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
 # ── the reversing credit (012/013) ───────────────────────────────────────────
 
 
+def _refund_row_exists(order_id):
+    """Dashless-safe refund lookup: SQLite stores raw-inserted UUIDs without
+    dashes, Postgres's uuid type normalises the cast — replace() makes the
+    same SQL true on both."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "select 1 from ledger where ref_type = 'refund' and "
+            "replace(cast(ref_id as text), '-', '') = "
+            "replace(cast(%s as text), '-', '') limit 1",
+            [str(order_id)],
+        )
+        return cursor.fetchone() is not None
+
+
 def booking_reverse(booking_id, reason):
     """One movement with three reasons (01-PRD §5.4): the consultant
     declines, the consultant never turns up, a platform failure. Nothing is
@@ -546,10 +560,13 @@ def booking_reverse(booking_id, reason):
                 )
             gateway.set_order_refunded(booking.order_id)
     except IntegrityError:
-        # 23505 on ledger_one_refund_per_order — already reversed. The
-        # ordinary case on a retry, not an error; the block (including the
-        # earnings row) has already unwound.
-        return {"ok": True, "reversed": False}
+        # 23505 on ledger_one_refund_per_order — the refund row already
+        # exists. Two legitimate writers: an app-level retry of this call
+        # (the block above unwound), or — on Postgres — the
+        # bookings_decline_reverses trigger having already reversed inside
+        # the status UPDATE itself. Either way the seeker IS refunded, so
+        # report what is true rather than what this call wrote.
+        return {"ok": True, "reversed": _refund_row_exists(booking.order_id)}
     return {"ok": True, "reversed": True, "amount_paise": booking.amount_paise}
 
 

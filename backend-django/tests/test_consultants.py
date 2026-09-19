@@ -929,7 +929,10 @@ class TestDeclineReverses:
                          "amount_paise": Booking.objects.get(pk=body["booking_id"]).amount_paise}
         before = _counts(SEEKER)
         second = services.booking_reverse(body["booking_id"], "declined")
-        assert second == {"ok": True, "reversed": False}
+        # The flag answers "is the seeker refunded", not "did THIS call move
+        # the money" — on Postgres the decline trigger can be the writer (F2,
+        # found in live verification), so an existing refund row reports True.
+        assert second == {"ok": True, "reversed": True}
         assert _counts(SEEKER) == before
         assert EarningsLedger.objects.filter(booking_id=body["booking_id"]).count() == 2
 
@@ -1166,7 +1169,10 @@ class TestBookingRace:
         for t in threads:
             t.join(timeout=30)
         assert all(not t.is_alive() for t in threads)
-        assert sorted(r["reversed"] for r in results) == [False, True]
+        assert sorted(r["reversed"] for r in results) == [True, True]
+        # Exactly one credit (asserted below via _counts); both callers now
+        # truthfully report the refund exists — the winner wrote it, the
+        # loser found it.
 
         from django.db import connection
 
