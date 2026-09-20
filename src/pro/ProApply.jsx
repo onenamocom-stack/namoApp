@@ -5,7 +5,7 @@ import { Kicker, PopCard } from '../components/Pop.jsx'
 import Plate from '../components/Plate.jsx'
 import { categories } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
-import { supabase } from '../lib/supabase.js'
+import { applyAsConsultant, listPriceBands } from '../lib/consultants.js'
 import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
 
 /**
@@ -46,7 +46,6 @@ export default function ProApply() {
         <CouldNotCheck onRetry={() => refreshConsultant(session.user.id)} />
       ) : (
         <Application
-          profileId={session.user.id}
           onDone={() => refreshConsultant(session.user.id)}
           toast={showToast}
         />
@@ -132,7 +131,10 @@ function UnderReview({ status }) {
 
 /* ── The application ─────────────────────────────────────────────────────── */
 
-function Application({ profileId, onDone, toast }) {
+/* No `profileId` prop any more: the application used to send it as the row's
+   primary key, and the JWT is the identity now. The caller stopped passing
+   it in the same commit. */
+function Application({ onDone, toast }) {
   const [bands, setBands] = useState([])
   const [form, setForm] = useState({
     category: categories[0],
@@ -147,15 +149,11 @@ function Application({ profileId, onDone, toast }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase
-      .from('price_bands')
-      .select('*')
-      .eq('active', true)
-      .order('tier')
-      .then(({ data, error: err }) => {
-        if (err) return setError(err.message)
-        setBands(data ?? [])
-      })
+    /* The active-only filter and the tier sort moved to the server with the
+       endpoint; this reads whatever `listPriceBands()` returns. */
+    listPriceBands()
+      .then((data) => setBands(data ?? []))
+      .catch((err) => setError(err.message))
   }, [])
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -171,50 +169,35 @@ function Application({ profileId, onDone, toast }) {
 
     const list = (s) => s.split(',').map((x) => x.trim()).filter(Boolean)
 
-    /* No `status` in this insert, and there could not be one: the column grant
-       does not include it (007_consultants.sql). The row lands 'pending' by
-       default and only the database GUI moves it — approval is not something
-       the applicant participates in. */
-    const { data: row, error: cErr } = await supabase
-      .from('consultants')
-      .insert({
-        /* Sent explicitly, and it has to be: the table's primary key has no
-           default, and the write policy is `profile_id = auth.uid()`. Omitting
-           it made the check compare null to the caller and the row was refused
-           with "new row violates row-level security policy" — which reads like
-           a permissions bug and is really a missing field. It is not a
-           client-supplied identity in the rule-3 sense either: the policy is
-           what decides whose row this is, and a lie here is a refusal. */
-        profile_id: profileId,
+    /* Two writes became one call, and that is the point of the move rather
+       than tidiness: the consultants row and its service rows now land in a
+       single server transaction (INSTRUCTIONS.md rule 5). Under PostgREST a
+       failure on the second insert left an applicant with a practice and no
+       prices, and nothing rolled the first one back.
+
+       `profile_id` is gone from the body. It had to be sent explicitly when
+       the write policy was `profile_id = auth.uid()`; the JWT is the
+       identity now, and a client-supplied one would be rule 3's bug.
+
+       `status` is still absent and still cannot be here — the row lands
+       'pending' server-side. Approval is not something the applicant
+       participates in. The tier goes up as a name and the server copies
+       that band's prices itself, so the browser never sends a price. */
+    try {
+      await applyAsConsultant({
         category: form.category,
         specialization: form.specialization.trim(),
         languages: list(form.languages),
-        experience_yrs: parseInt(form.experience, 10) || null,
+        experienceYrs: parseInt(form.experience, 10) || null,
         bio: form.bio.trim(),
         credentials: list(form.credentials),
+        tier: form.tier,
       })
-      .select()
-      .single()
-
-    if (cErr) {
-      setError(cErr.message)
+    } catch (err) {
+      setError(err.message)
       setSaving(false)
       return
     }
-
-    const mine = bands.filter((b) => b.tier === form.tier)
-    const { error: sErr } = await supabase.from('consultant_services').insert(
-      mine.map((b, n) => ({
-        consultant_id: row.profile_id,
-        band_id: b.id,
-        mode: 'call',
-        billing: b.billing,
-        duration_mins: b.duration_mins,
-        price_paise: b.price_paise,
-        sort: n * 10,
-      })),
-    )
-    if (sErr) setError(sErr.message)
 
     setSaving(false)
     toast('Application sent. We will read it.')

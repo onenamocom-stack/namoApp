@@ -1,49 +1,37 @@
+/**
+ * CUTOVER — module 2 (reactions): replace src/lib/reactions.js with this
+ * file, set VITE_DJANGO_API_URL, deploy API then client.
+ *
+ * A drop-in rewrite of src/lib/reactions.js with the identical exported
+ * surface and semantics — parseKey, fetchMine, setReaction — against the
+ * Django API instead of Supabase PostgREST:
+ *
+ *   GET    {API}/reactions/                 -> own rows (what fetchMine reads)
+ *   POST   {API}/reactions/                 -> toggle on, idempotent by the
+ *                                              (actor, target, kind) unique key
+ *   DELETE {API}/reactions/                 -> toggle off, owner-scoped
+ *   GET    {API}/reactions/counts/?...      -> public aggregates
+ *
+ * Auth is unchanged: the JWT is still Supabase-issued, read off the existing
+ * supabase-js session. Identity stays in Supabase Auth (docs/07 §1).
+ *
+ * Behaviour parity notes:
+ *   - setReaction(key, on) still returns false for keys this table cannot
+ *     hold (mock IDs, preferences) and for signed-out visitors; those stay
+ *     local flags exactly as before.
+ *   - Doubling a reaction on is the same row server-side — the API answers
+ *     200/201 both times, so there is nothing to swallow the way the old
+ *     client's 23505 was. Real failures (network, 4xx) still throw, and
+ *     store.jsx's optimistic rollback catches them exactly as it does today.
+ *   - Refusals arrive in the app's {ok, reason, message} envelope; we throw
+ *     the human-readable `message` so the store's console.error line and
+ *     rollback read the same as they did under Supabase errors.
+ */
+
 import { supabase } from './supabase.js'
 
-/**
- * `follow` / `save` / `like`, moved out of a browser `Set` and into rows that
- * survive a reload and a different device.
- *
- * A fourth kind, `remind` → `live_session`, was dropped on 9 Sep 2026 with
- * live video: `LiveRoom.jsx` was its only writer. `020`'s target_type check
- * still permits `live_session` and cannot be edited (forward-only), so phase
- * 11 gets the row type back for free when it needs it.
- *
- * ── WHY THIS FILE DOES NOT REPLACE `flags` ──────────────────────────────────
- * The store keeps one flat Set of namespaced strings — `follow:a1`, `save:po2`,
- * `like:r3` — and `docs/05-BACKEND-SCHEMA.md` §5.1 notes it maps one-to-one
- * onto the `reactions` table. It does, for those four kinds. It is NOT the
- * whole Set:
- *
- *   setting:croppedDeityImage   a preference, not a reaction
- *   event:<id>                  phase 10's academy
- *   tarot:*                     §5.6's `tarot_pulls`, a rolling window
- *   save:day-<key>              a saved READING, which is derived and has no
- *                               table to point at
- *
- * So this file answers one question — "is this key a persistable reaction?" —
- * and the store routes on the answer. Everything else stays in the Set exactly
- * as it was, and the twenty-odd `toggleFlag` call sites do not change at all.
- *
- * ── AND WHY THE TARGET HAS TO LOOK LIKE A UUID ──────────────────────────────
- * `reactions.target_id` is a uuid column. Real consultants and real content
- * have UUIDs; the mock rows that are still on screen have `a1` and `po2`. A
- * reaction against a mock row cannot be stored and must not throw — it stays a
- * local flag, and it starts persisting by itself the moment that screen is
- * reading real rows. That is the seam this phase is crossing, and it is meant
- * to be crossable one screen at a time rather than all at once.
- */
+const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example.com/v1
 
-/**
- * The namespace decides the `target_type`, and `follow` vs `followp` is the one
- * distinction worth spelling out.
- *
- * Following a CONSULTANT is following a practitioner you might book. Following
- * a PERSON is following someone whose photos you like. `025` keeps them as
- * separate `target_type` values so a follower count can answer either question
- * later without unpicking rows — and the key namespace has to carry the
- * difference, because a UUID alone cannot say which kind of thing it names.
- */
 const KINDS = {
   follow: 'consultant',
   followp: 'profile',
@@ -55,7 +43,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * `'follow:9f2c…'` → `{ kind, targetType, targetId }`, or null when the key is
- * not a reaction this table can hold.
+ * not a reaction this table can hold. Byte-identical to the Supabase version —
+ * every toggleFlag call site keeps working untouched.
  */
 export function parseKey(key) {
   const at = key.indexOf(':')
@@ -69,55 +58,58 @@ export function parseKey(key) {
   return { kind, targetType, targetId }
 }
 
+/** The Supabase access token off the existing session; null when signed out. */
+async function accessToken() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? null
+}
+
+async function api(path, { method = 'GET', body, token } = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    // { ok, reason, message } envelope — throw the message, like the old
+    // `throw error` did with supabase-js.
+    throw new Error(data?.message || `Request failed (${response.status})`)
+  }
+  return data
+}
+
 /** Every reaction this user has, as the store's namespaced strings. */
 export async function fetchMine() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const token = await accessToken()
+  if (!token) return []
 
-  const { data, error } = await supabase
-    .from('reactions')
-    .select('kind, target_id')
-    .eq('actor_id', user.id)
-  if (error) throw error
-
-  return (data ?? []).map((r) => `${r.kind}:${r.target_id}`)
+  const rows = await api('/reactions/', { token })
+  return (rows ?? []).map((r) => `${r.kind}:${r.target_id}`)
 }
 
 /**
- * Write one reaction on or off.
- *
- * `on` is passed in rather than read back, because the store has already
- * flipped its own copy and this call is catching up. Toggling on twice is the
- * same row — the unique constraint says so — so no read is needed first.
+ * Write one reaction on or off. Same contract as before: `on` is passed in
+ * (the store already flipped its own copy), returns true when the row caught
+ * up, false when the key is not persistable or nobody is signed in. Throws on
+ * real failures so the store rolls its optimistic Set back.
  */
 export async function setReaction(key, on) {
   const parsed = parseKey(key)
   if (!parsed) return false
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
+  const token = await accessToken()
+  if (!token) return false
 
   const { kind, targetType, targetId } = parsed
 
-  if (on) {
-    const { error } = await supabase.from('reactions').insert({
-      actor_id: user.id,
-      target_type: targetType,
-      target_id: targetId,
-      kind,
-    })
-    // 23505 is the same reaction arriving twice, which is the desired state
-    // already being true. Not an error worth showing anybody.
-    if (error && error.code !== '23505') throw error
-  } else {
-    const { error } = await supabase
-      .from('reactions')
-      .delete()
-      .eq('actor_id', user.id)
-      .eq('target_type', targetType)
-      .eq('target_id', targetId)
-      .eq('kind', kind)
-    if (error) throw error
-  }
+  await api('/reactions/', {
+    method: on ? 'POST' : 'DELETE',
+    body: { target_type: targetType, target_id: targetId, kind },
+    token,
+  })
   return true
 }
