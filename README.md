@@ -26,12 +26,17 @@ npm run build:pro    # consultant → dist-pro/
 
 | App | Repo | URL |
 |---|---|---|
-| **Seeker** (this repo) | `onenamocom-stack/namoApp` | https://1namo.com/#/home |
+| **Seeker** (this repo) | `onenamocom-stack/namoApp` | https://onenamocom-stack.github.io/namoApp/ |
 | **Consultant** | [`onenamocom-stack/namo-pro`](https://github.com/onenamocom-stack/namo-pro) | https://onenamocom-stack.github.io/namo-pro/ |
 
-Pushing to `main` of this repo deploys the seeker app automatically. The
-consultant app deploys from the namo-pro repo's workflow, which builds this
-repo's `--mode pro` target — see its README.
+Pushing to `main` of this repo deploys the seeker app to the test URL
+automatically. The consultant app deploys from the namo-pro repo's
+workflow, which builds this repo's `--mode pro` target — see its README.
+
+1namo.com still serves the previous deployment from the original repo
+(`atharvborse2004-ops/aether-mono`). The domain moves here only after the
+new deployments are walked and approved — the CNAME swap is the last step
+of the production window, not the first.
 
 ## Stack
 

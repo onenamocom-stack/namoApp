@@ -43,6 +43,9 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Served from a project page (…github.io/namoApp/), not a domain
+          # apex — assets must be referenced under /namoApp/.
+          DEPLOY_BASE: /namoApp/
       # The build carries a CNAME file for 1namo.com, which is still served
       # from the original repo (atharvborse2004-ops/aether-mono). Publishing
       # the CNAME here too would collide with that site, so this deployment
