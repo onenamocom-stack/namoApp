@@ -24,8 +24,8 @@ const BANNERS = [
     cta: 'See gemstones',
     cat: 'Gemstones',
     art: 'orbit',
-    from: '#5b2bc4',
-    to: '#9d5cf0',
+    from: '#7c2d12',
+    to: '#c2410c',
   },
   {
     id: 'bn-rudraksha',
@@ -35,8 +35,8 @@ const BANNERS = [
     cta: 'See rudraksha',
     cat: 'Rudraksha',
     art: 'contour',
-    from: '#0f4c38',
-    to: '#2f8f66',
+    from: '#6b3410',
+    to: '#a85400',
   },
   {
     id: 'bn-remedies',
@@ -46,8 +46,8 @@ const BANNERS = [
     cta: 'See remedies',
     cat: 'Remedies',
     art: 'halftone',
-    from: '#8a4a10',
-    to: '#d99a3c',
+    from: '#8a3a00',
+    to: '#b45309',
   },
 ]
 
@@ -60,10 +60,10 @@ const BANNERS = [
  */
 /** One gradient and one line per category, for the banner above its grid. */
 const CAT_GRADIENT = {
-  Gemstones: 'linear-gradient(135deg, #5b2bc4 0%, #9d5cf0 100%)',
-  Maalas: 'linear-gradient(135deg, #0f4c38 0%, #2f8f66 100%)',
-  Rudraksha: 'linear-gradient(135deg, #6b3410 0%, #b5722c 100%)',
-  Remedies: 'linear-gradient(135deg, #8a2d3d 0%, #cf5f72 100%)',
+  Gemstones: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 100%)',
+  Maalas: 'linear-gradient(135deg, #6b3410 0%, #a85400 100%)',
+  Rudraksha: 'linear-gradient(135deg, #5c2c0d 0%, #9a4a05 100%)',
+  Remedies: 'linear-gradient(135deg, #8a3a00 0%, #b45309 100%)',
 }
 
 const CAT_LINE = {

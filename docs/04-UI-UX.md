@@ -15,9 +15,16 @@ the code.
 
 ## 1. What this looks like
 
-A warm off-white canvas, white cards, near-black ink, one gold accent, and
+A near-white page, cream cards, navy ink, one orange accent, and
 **skeuomorphic surfaces lit from directly above.** Rounded, physical, tactile —
 buttons that depress, switches that stay down, wells that recess.
+
+**Repalette, 20 Sep 2026.** This replaces the warm off-white canvas with white
+cards, near-black ink and a gold accent. Only the hues moved: the light
+source, the elevation model, the radius scale, the type scale and the
+pressed-state mechanic are all unchanged, which is why the change is a token
+edit and not a redesign. Cards are now *warmer* than the page, inverting the
+old model where white cards floated on a warm ground.
 
 ---
 
@@ -31,47 +38,67 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 
 | Token | Value | Role |
 |---|---|---|
-| `--bg` | `#f1efec` | Page canvas. Also the browser theme colour |
-| `--surface` | `#ffffff` | Card |
-| `--surface-2` | `#f7f5f2` | A block inside a card — inputs, inner tiles |
-| `--stroke` | `rgba(15,14,14,0.07)` | Hairline on a raised surface |
-| `--rule` | `#e4e0da` | Divider on the page itself |
-| `--ink` | `#0e0e10` | Tab bar, primary button |
-| `--ink-2` | `#1a1a1d` | A block sitting on ink |
-| `--ink-lit` | `#232327` | The lit top of an ink gradient |
+| Token | Value | Role |
+|---|---|---|
+| `--bg` | `#fffffb` | Page. Also the browser theme colour |
+| `--surface` | `#fff1dc` | Card — cream, one step warmer than the page |
+| `--surface-2` | `#ffd2a6` | A block inside a card — wells, inactive tracks |
+| `--stroke` | `rgba(61,64,91,0.1)` | Hairline on a raised surface |
+| `--rule` | `#e8dcc4` | Divider on the page itself |
+| `--ink` | `#3d405b` | Tab bar, primary button |
+| `--ink-2` | `#4a4e6e` | A block sitting on ink |
+| `--ink-lit` | `#585c80` | The lit top of an ink gradient |
 | `--hi` | `rgba(255,255,255,0.9)` | Specular highlight, light surface |
-| `--hi-ink` | `rgba(255,255,255,0.12)` | Specular highlight, dark surface |
-| `--lo` | `rgba(14,14,16,0.1)` | Shade under a lip |
+| `--hi-ink` | `rgba(255,255,255,0.14)` | Specular highlight, dark surface |
+| `--lo` | `rgba(61,64,91,0.1)` | Shade under a lip |
 | `--live` | `#cf3a25` | Live badge, liked heart, unread dot |
 | `--ok` | `#0b8b50` | Online dot |
+
+**The three ink steps must stay in this lightness order.** `--ink-lit` is the
+top of a raised gradient and `--ink-2` the bottom of a pressed one, so both sit
+above `--ink`. Swapping either inverts the light source on every ink surface at
+once, which §3 is the whole of.
 
 **Text ladder**, with the contrast ratio *and the surface it was measured
 against*:
 
-| Token | Value | On canvas | Use |
+| Token | Value | On the page | Use |
 |---|---|---|---|
-| `--text` | `#0f0e0e` | 17.2:1 | Headings |
-| `--text-2` | `#4e4a46` | 8.1:1 | Body |
-| `--text-3` | `#6b665f` | 5.1:1 | The readable floor |
-| `--text-4` | `#a5a09a` | 2.6:1 | **Non-text only** — ticks, rules, spokes, placeholders |
+| `--text` | `#3d405b` | 10.1:1 | Headings |
+| `--text-2` | `#5a5d75` | 6.4:1 | Body |
+| `--text-3` | `#6e7189` | 4.8:1 | The readable floor |
+| `--text-4` | `#a9abbd` | 2.4:1 | **Non-text only** — ticks, rules, spokes, placeholders |
 
-**Gold**, which is the only accent and appears on two surfaces:
+**Orange**, which is the only accent and appears on two surfaces. The token
+names stay `--gold*`: they are read by 62 text call sites, 12 fills and three
+rules in `index.css`, and the name has meant "the one voltage" since the first
+build.
 
 | Token | Value | Note |
 |---|---|---|
-| `--gold` | `#8f6210` | Text and borders. **4.7:1 on canvas, 5.4:1 on a card** |
-| `--gold-fill` | `#d29a2b` | **Backgrounds only.** Ink on it is 7.7:1 |
-| `--gold-dim` | `#6f4a0c` | |
-| `--gold-wash` | `rgba(210,154,43,0.18)` | |
+| `--gold` | `#a85400` | Text and borders. **5.3:1 on the page, 4.9:1 on a card** |
+| `--gold-fill` | `#ff8500` | **Backgrounds only.** See the rule below |
+| `--gold-dim` | `#8a4500` | |
+| `--gold-wash` | `rgba(255,133,0,0.18)` | |
+
+**Nothing readable sits on `--gold-fill`, at any size.** White on `#ff8500` is
+2.4:1 and `--ink` on it is 4.13:1 — the second clears large text and fails the
+11px caps a button actually carries. `.pop-btn-gold` therefore labels itself
+`#2a2d42` (5.6:1 on the fill), which is also its border colour, so the face
+stays one material. This is why the two-token split is load-bearing rather
+than tidy: pointing `--gold` at the fill value would drop 62 readable strings
+below AA in one line, and no build step checks contrast.
 
 Two rules that survive from the old design doc and still hold:
 
 1. **Greys are derived against the actual canvas, never arithmetically
    inverted.** The same hex does not hold the same ratio on two backgrounds, and
    flipping a dark set would have quietly dropped body text below AA.
-2. **A contrast number must name its surface.** `--gold` once carried the note
-   "4.9:1 on canvas". That was its ratio against a white *card*; on the canvas it
-   was 4.29:1, under AA — and gold text appears on both.
+2. **A contrast number must name its surface.** Under the gold palette
+   `--gold` carried the note "4.9:1 on canvas". That was its ratio against a
+   white *card*; on the canvas it was 4.29:1, under AA — and the accent
+   appeared as text on both. The values are dead and the lesson is why the
+   orange table above quotes two surfaces rather than one.
 
 ### 2.2 Type
 
@@ -119,17 +146,20 @@ segmented controls fully round.
 
 ### 2.5 Elevation
 
-Every shadow is tuned to the **ink**, `rgba(15,14,14,…)`, never pure black — a
-`#000` blur on a warm canvas goes muddy.
+Every shadow is tuned to the **ink**, `rgba(61,64,91,…)`, never pure black.
+**Shadow hue follows the ink token**, which is what made this survive the
+repalette unchanged in reasoning: a `#000` blur went muddy on the old warm
+canvas, and a warm-black blur would go muddy on this cool page for the same
+reason.
 
 | Name | Value |
 |---|---|
-| `sm` | `0 1px 2px rgba(15,14,14,.04), 0 3px 8px -5px rgba(15,14,14,.12)` |
-| default | `0 1px 2px rgba(15,14,14,.04), 0 6px 16px -8px rgba(15,14,14,.10)` |
-| `lg` | `0 2px 4px rgba(15,14,14,.04), 0 16px 32px -12px rgba(15,14,14,.16)` |
-| `xl` | `0 4px 8px rgba(15,14,14,.05), 0 28px 48px -16px rgba(15,14,14,.22)` |
-| `nav` | `0 -2px 6px rgba(15,14,14,.06), 0 -12px 28px -12px rgba(15,14,14,.22)` — casts **upward** |
-| `gold` | `0 1px 2px rgba(111,74,12,.22), 0 8px 18px -8px rgba(111,74,12,.52)` |
+| `sm` | `0 1px 2px rgba(61,64,91,.04), 0 3px 8px -5px rgba(61,64,91,.12)` |
+| default | `0 1px 2px rgba(61,64,91,.04), 0 6px 16px -8px rgba(61,64,91,.10)` |
+| `lg` | `0 2px 4px rgba(61,64,91,.04), 0 16px 32px -12px rgba(61,64,91,.16)` |
+| `xl` | `0 4px 8px rgba(61,64,91,.05), 0 28px 48px -16px rgba(61,64,91,.22)` |
+| `nav` | `0 -2px 6px rgba(61,64,91,.06), 0 -12px 28px -12px rgba(61,64,91,.22)` — casts **upward** |
+| `gold` | `0 1px 2px rgba(194,100,0,.22), 0 8px 18px -8px rgba(194,100,0,.52)` |
 
 ### 2.6 Motion
 
@@ -174,7 +204,7 @@ Three consequences worth stating outright:
 2. **A press is a change in light direction, never a change in colour.** Nothing
    darkens on tap; the gradient inverts.
 3. **Grey comes from the gradient, not from lightening the token.** A flat
-   mid-grey reads as paint. `#0e0e10` graded up to `#232327` reads as dark
+   mid-grey reads as paint. `#3d405b` graded up to `#585c80` reads as dark
    material with light falling on it.
 
 Spheres are the one exception to the angle: circular tile faces use a 145°
@@ -476,7 +506,7 @@ Nine that have already cost time.
 3. ~~**Tailwind's opacity modifier silently does nothing on this palette.**~~
    **Fixed, 7 Sep 2026.** It used to emit nothing: the modifier rewrites a
    colour into `rgb(<channels> / <alpha>)`, which needs the token to be
-   channels, and every token here holds a whole colour like `#8f6210`. The
+   channels, and every token here holds a whole colour like `#a85400`. The
    result was invalid and the utility was dropped from the stylesheet without
    an error. Every translucent surface had to be an inline literal `rgba()`.
 
@@ -530,7 +560,7 @@ The system is a light reading of CRED's NeoPOP. What was taken:
 - **The text opacity ladder** — one ink, stepped by opacity, rather than a set of
   grey tokens. Shipped here at .95 / .74 / .60 / .45.
 - **CAPS as the signature** for every label, tag, kicker and button string.
-- **One voltage per screen**, spent on gold.
+- **One voltage per screen** — spent on gold until 20 Sep 2026, on orange since.
 - **Press travel of ~0.12s**, with the press as a physical event.
 
 What was explicitly rejected:

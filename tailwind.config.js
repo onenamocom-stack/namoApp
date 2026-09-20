@@ -16,7 +16,7 @@
  * They are wrapped in `alpha()` below, and that wrapper is the whole reason
  * `bg-gold/10` works here. Tailwind's opacity modifier rewrites a colour into
  * `rgb(<channels> / <alpha>)`, which needs the token to BE channels — a token
- * holding `#8f6210` produces `rgb(#8f6210 / 0.1)`, invalid, and the utility is
+ * holding `#a85400` produces `rgb(#a85400 / 0.1)`, invalid, and the utility is
  * dropped from the stylesheet silently. Every translucent class in this app
  * used to emit nothing and had to be written as a literal inline `rgba()`.
  * `color-mix()` takes a whole colour rather than channels, so the hex tokens
@@ -74,18 +74,20 @@ export default {
       '3xl': '28px',
       full: '9999px',
     },
-    // Tuned to the ink, not to pure black — a #000 blur on a warm canvas goes
-    // grey and muddy, which is what makes most light UIs look unfinished.
+    // Tuned to the ink, not to pure black. The reason survives the repalette
+    // and only the hue moves: the ink is navy now, so a warm-black blur is
+    // what would go muddy on this near-white page, exactly as a #000 blur did
+    // on the warm canvas before it. Shadow hue follows the ink token.
     boxShadow: {
       none: 'none',
-      sm: '0 1px 2px rgba(15,14,14,0.04), 0 3px 8px -5px rgba(15,14,14,0.12)',
-      DEFAULT: '0 1px 2px rgba(15,14,14,0.04), 0 6px 16px -8px rgba(15,14,14,0.10)',
-      md: '0 1px 2px rgba(15,14,14,0.04), 0 6px 16px -8px rgba(15,14,14,0.10)',
-      lg: '0 2px 4px rgba(15,14,14,0.04), 0 16px 32px -12px rgba(15,14,14,0.16)',
-      xl: '0 4px 8px rgba(15,14,14,0.05), 0 28px 48px -16px rgba(15,14,14,0.22)',
+      sm: '0 1px 2px rgba(61,64,91,0.04), 0 3px 8px -5px rgba(61,64,91,0.12)',
+      DEFAULT: '0 1px 2px rgba(61,64,91,0.04), 0 6px 16px -8px rgba(61,64,91,0.10)',
+      md: '0 1px 2px rgba(61,64,91,0.04), 0 6px 16px -8px rgba(61,64,91,0.10)',
+      lg: '0 2px 4px rgba(61,64,91,0.04), 0 16px 32px -12px rgba(61,64,91,0.16)',
+      xl: '0 4px 8px rgba(61,64,91,0.05), 0 28px 48px -16px rgba(61,64,91,0.22)',
       // Cast upward — the bottom bar throws its shadow onto the content above.
-      nav: '0 -2px 6px rgba(15,14,14,0.06), 0 -12px 28px -12px rgba(15,14,14,0.22)',
-      gold: '0 1px 2px rgba(111,74,12,0.22), 0 8px 18px -8px rgba(111,74,12,0.52)',
+      nav: '0 -2px 6px rgba(61,64,91,0.06), 0 -12px 28px -12px rgba(61,64,91,0.22)',
+      gold: '0 1px 2px rgba(194,100,0,0.22), 0 8px 18px -8px rgba(194,100,0,0.52)',
     },
     extend: {
       fontFamily: {
