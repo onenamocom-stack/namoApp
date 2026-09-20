@@ -2957,3 +2957,90 @@ the primary action, bright orange is the one voltage.
   every surface in the app.
 - `docs/04-UI-UX.md` §1, §2.1, §2.5, §3 and the appendix are rewritten to the
   new values in the same commit. No other document names a colour.
+
+## 14. Data migration, the API on Cloud Run, and deploy 2 rehearsed — 20 Sep 2026
+
+Three things landed today. Only the first is live to anybody.
+
+### The old dev database is now the new one
+
+`mrjsatelbuiypodeulcx` -> `usgzgrdxlzgnehtbebzo`, run from
+`~/namo-migration/` (outside git; it reads two gitignored env files).
+**34 of 34 non-empty tables match, the ledger replays to the stored
+balances exactly (743400 paise, 0 mismatched), and nothing points at a
+profile that does not exist.**
+
+Four things broke on the way and each is a fact about the schemas rather
+than about the copy:
+
+- **14 tables existed only on the old database** — Shop, Academy,
+  shipping, admin — and **none of them is in `backend/schema/`.** They were
+  created straight onto that database. Their DDL came out of it with
+  `pg_dump`, along with 11 functions the RLS policies on them call.
+- **`--disable-triggers` needs superuser**, which Supabase does not grant.
+  `session_replication_role = replica` does the same job from a session and
+  is what the copy actually used — which matters more than convenience:
+  the target's `ledger_applies_to_balance` trigger adds every ledger row to
+  `wallets.balance_paise`, so copying balances AND ledger rows with triggers
+  live would have counted the money twice.
+- **`order_items` refused `'shipping'`** — the target's CHECK is the older,
+  narrower one and 6 rows use that value. Nineteen other CHECK constraints
+  differ only in Django's varchar spelling and allow the same values.
+- **`bookings.rescheduled_to` is `rescheduled_to_id` on the target**, fixed
+  in the dump before it reached the database.
+
+Two gaps in the Django schema, found by the copy and worth fixing properly:
+**`payments.order_id` and `orders.expires_at` do not exist on the target**
+(added by hand here, so which order a payment settled is not lost), and
+**`profiles` has no FK to `auth.users`** where the source does.
+
+**Logins: 2 of 15.** All 15 profiles moved — 6 of the 8 consultants and 48
+of the 52 content rows belong to the other 13, so leaving them out would
+have emptied the feed. Only the two real accounts got `auth.users` and
+`auth.identities` rows. No service-role key was needed: `auth` is a schema
+like any other over a direct connection. `confirmed_at` is generated and
+has to be left out of the column list.
+
+### The API is on Cloud Run
+
+`https://namo-api-499026166575.asia-south1.run.app` — RUNBOOK deploy 1.
+Health 200, `/v1/me/` 401, `/v1/bhakti/assets/` 200 against the migrated
+data. `backend-django/Dockerfile` and gunicorn are new; neither existed.
+
+**No client points at it.** That is deploy 1's definition of done.
+
+### Deploy 2 rehearsed on localhost, and it found two real bugs
+
+Not deployed. The five leaf libs were swapped in on `cutover/deploy2-test`
+and driven through a browser against the live API.
+
+- **`X-Cutover-Module`** in `consultants.clientlib.js` and
+  `chat.clientlib.js` forces a CORS preflight the API refuses — its
+  allowlist is Authorization, Content-Type, Idempotency-Key, X-Request-Id.
+  Every browser call failed while curl saw 200, because curl does not
+  preflight. **This would have broken the real deploy 2 and deploy 3.**
+- **`VITE_DJANGO_API_URL` needs the `/v1` suffix.** Without it every path
+  404s, and `listConsultants` turns that into an empty list rather than an
+  error — an outage that looks like an empty marketplace.
+
+Verified through the real lib functions: 8 consultants, 24 bands, 52
+content rows, 22 bhakti assets, services and slots per consultant.
+
+**Nothing behind a session was tested, and nothing can be:** Twilio has no
+Messaging product on this account, so OTP delivery fails for every number
+(§12). Wallet, bookings and chat stay unexercised until that or test-OTP
+numbers are configured on `usgzgrdxlzgnehtbebzo`.
+
+### Still open
+
+- **Five credentials remain unrotated** and are now in more places: two
+  GitHub PATs (one plaintext in `.git/config`), the Supabase service-role
+  key, the namo-dev database password, and the R2 token — the last two also
+  sit in Cloud Run's environment now.
+- **The 50 media files are on R2** (202 MB, keys in Django's own
+  `{kind}s/{owner}/{uuid}/{name}` shape) **but `content.media_url` still
+  points at the old project's storage.** `MEDIA_PUBLIC_BASE_URL` is unset,
+  and writing a URL before there is a public bucket domain would write 50
+  rows of 404. Mapping is in `~/namo-migration/media-map.json`.
+- `pro.1namo.com` needs a CNAME at GoDaddy before the consultant app gets
+  a real address.
