@@ -11,7 +11,7 @@ export default function AskName() {
   const navigate = useNavigate()
   const { setBirthField } = useStore()
   const [name, setName] = useState('')
-  /* `?next=pro` is the consultant branch of AskSide. It skips the four birth
+  /* `?next=pro` is the consultant build's branch (its Verify-your-number button). It skips the four birth
      questions — a consultant is not here for a reading — and rejoins at the
      phone step, which is the same account either way. */
   const pro = useSearchParams()[0].get('next') === 'pro'

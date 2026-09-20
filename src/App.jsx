@@ -11,7 +11,6 @@ import Reports from './screens/Reports.jsx'
 
 import Intro from './screens/onboarding/Intro.jsx'
 import AskName from './screens/onboarding/AskName.jsx'
-import AskSide from './screens/onboarding/AskSide.jsx'
 import AskDate from './screens/onboarding/AskDate.jsx'
 import AskTime from './screens/onboarding/AskTime.jsx'
 import AskPlace from './screens/onboarding/AskPlace.jsx'
@@ -141,8 +140,18 @@ function SessionGate() {
     const onPro = pathname === '/pro' || pathname.startsWith('/pro/')
 
     if (isPro && !onPro) {
-      navigate('/pro/studio', { replace: true })
-      return
+      // The consultant build shares the seeker's name/phone/verify steps
+      // for sign-up and sign-in (ProApply sends new consultants through
+      // them with ?next=pro). Those three stay reachable; every other
+      // non-/pro path goes to the studio, where the gate takes over.
+      const authStep =
+        pathname.startsWith('/onboarding/name') ||
+        pathname.startsWith('/onboarding/phone') ||
+        pathname.startsWith('/onboarding/verify')
+      if (!authStep) {
+        navigate('/pro/studio', { replace: true })
+        return
+      }
     }
 
     if (onPro) {
@@ -230,7 +239,6 @@ function Frame() {
             {!isPro && (
               <>
                 <Route path="/onboarding" element={<Intro />} />
-                <Route path="/onboarding/side" element={<AskSide />} />
                 <Route path="/onboarding/name" element={<AskName />} />
                 <Route path="/onboarding/date" element={<AskDate />} />
                 <Route path="/onboarding/time" element={<AskTime />} />
@@ -238,11 +246,6 @@ function Frame() {
                 <Route path="/onboarding/phone" element={<AskPhone />} />
                 <Route path="/onboarding/verify" element={<VerifyOtp />} />
                 <Route path="/onboarding/computing" element={<Computing />} />
-
-                {/* The consultant application. Plain layout, because there is no
-                    practice to put a nav bar around yet — and it is the one /pro
-                    route the gate does not redirect away from. */}
-                <Route path="/pro/apply" element={<ProApply />} />
 
                 {/* Profile carries its tab in the URL so it stays deep-linkable. */}
                 <Route path="/profile" element={<Profile />} />
@@ -275,13 +278,18 @@ function Frame() {
               </>
             )}
 
-            {/* Routes the consultant build also carries: ProConsult opens
-                /chart?name=… for a booking, and ProProfile previews its own
-                public page at /consult/:id. The apply screen signs a new
-                consultant in, so it is here instead of the seeker block. */}
+            {/* Routes the consultant build also carries: ProApply signs a new
+                consultant in, so it needs the three auth steps of the
+                onboarding chain (`?next=pro` skips the birth steps and lands
+                back on /pro/apply). ProConsult opens /chart?name=… for a
+                booking, and ProProfile previews its own public page at
+                /consult/:id. */}
             {isPro && (
               <>
                 <Route path="/pro/apply" element={<ProApply />} />
+                <Route path="/onboarding/name" element={<AskName />} />
+                <Route path="/onboarding/phone" element={<AskPhone />} />
+                <Route path="/onboarding/verify" element={<VerifyOtp />} />
                 <Route path="/chart" element={<Chart />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
               </>
@@ -305,22 +313,27 @@ function Frame() {
             </Route>
           )}
 
-          <Route element={<ProLayout />}>
-            <Route path="/pro/earnings" element={<ProEarnings />} />
-            <Route path="/pro/studio" element={<ProStudio />} />
-            <Route path="/pro/consult" element={<ProConsult />} />
-            {/* Profile carries its tab in the URL too, same reason as the
-                seeker's — Earnings needs to stay deep-linkable now that it
-                is a segment rather than a route. */}
-            <Route path="/pro/profile" element={<ProProfile />} />
-            <Route path="/pro/profile/:tab" element={<ProProfile />} />
-          </Route>
+          {/* The consultant's five destinations — consultant build only. In
+              the seeker build there is nothing at /pro: the catch-all below
+              sends those paths home. */}
+          {isPro && (
+            <Route element={<ProLayout />}>
+              <Route path="/pro/earnings" element={<ProEarnings />} />
+              <Route path="/pro/studio" element={<ProStudio />} />
+              <Route path="/pro/consult" element={<ProConsult />} />
+              {/* Profile carries its tab in the URL too, same reason as the
+                  seeker's — Earnings needs to stay deep-linkable now that it
+                  is a segment rather than a route. */}
+              <Route path="/pro/profile" element={<ProProfile />} />
+              <Route path="/pro/profile/:tab" element={<ProProfile />} />
+            </Route>
+          )}
 
           {/* Must sit above the global catch-all. Without it a mistyped pro
-              path falls through to `*` and teleports the consultant into the
-              seeker app with no error — the most confusing failure available
-              here. */}
-          <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />
+              path falls through to `*` and lands in the wrong app with no
+              error — the most confusing failure available here. Consultant
+              build only; the seeker build's catch-all covers /pro itself. */}
+          {isPro && <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />}
 
           <Route
             path="*"

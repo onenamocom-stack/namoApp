@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Button, Stub } from '../../components/Primitives.jsx'
 import Plate from '../../components/Plate.jsx'
 
@@ -19,10 +20,15 @@ export default function Intro() {
       <Plate seed="intro-plate" variant="orbit" className="my-12 h-52 w-full animate-fade-slow" />
 
       <div className="mt-auto">
-        <p className="label mb-6">Two ways in. Pick yours.</p>
-        <Button to="/onboarding/side" variant="solid">
+        <Button to="/onboarding/name" variant="solid">
           Begin
         </Button>
+        <Link
+          to="/onboarding/phone?mode=signin"
+          className="mt-6 block text-center text-meta text-t3 underline hover:text-t1"
+        >
+          Already have an account? Sign in
+        </Link>
         <p className="mt-6 text-center text-micro uppercase tracking-caps text-t3">
           Takes about a minute
         </p>

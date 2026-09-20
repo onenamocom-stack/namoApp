@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase.js'
  * an account. India-only for now, like the rest of onboarding — the +91 is
  * fixed rather than a country picker nobody needs yet.
  *
- * `?mode=signin` is the other door in, from AskSide's "Sign in instead"
+ * `?mode=signin` is the other door in, from the intro's sign-in link
  * links. A returning person has nothing to draft — the account and the birth
  * record already exist — so this mode asks for the phone alone and refuses
  * to mint a new account for a number nobody has verified before

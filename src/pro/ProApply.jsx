@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { Button, Label, Section } from '../components/Primitives.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
 import Plate from '../components/Plate.jsx'
 import { categories } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
 import { supabase } from '../lib/supabase.js'
+
+/* The seeker app is a separate deployment; in this build `/home` does not
+   exist. Update at the domain migration, when both live under 1namo.com. */
+const SEEKER_URL = 'https://onenamocom-stack.github.io/namoApp/'
 
 /**
  * The front door to the consultant side, and the thing that did not exist
@@ -101,9 +105,9 @@ function SignUp() {
       <Button to="/onboarding/name?next=pro" variant="solid" className="mt-10">
         Verify your number
       </Button>
-      <Link to="/home" className="mx-auto mt-6 block text-meta text-t3 underline hover:text-t1">
+      <a href={SEEKER_URL} className="mx-auto mt-6 block text-meta text-t3 underline hover:text-t1">
         I am looking for a reading instead
-      </Link>
+      </a>
     </>
   )
 }
@@ -122,9 +126,9 @@ function UnderReview({ status }) {
           ? 'You are not visible to seekers and cannot take bookings. Reply to the email we sent if you think this is wrong.'
           : 'Until it clears you are invisible to seekers, unbookable, and earning nothing. That is deliberate — nobody should be able to book a practice nobody has read.'}
       </p>
-      <Link to="/home" className="mx-auto mt-10 block text-meta text-t3 underline hover:text-t1">
+      <a href={SEEKER_URL} className="mx-auto mt-10 block text-meta text-t3 underline hover:text-t1">
         Go to the seeker app
-      </Link>
+      </a>
     </>
   )
 }

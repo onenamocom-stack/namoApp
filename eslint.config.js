@@ -22,6 +22,13 @@ import importX from 'eslint-plugin-import-x'
  */
 export default [
   {
+    // Not source: the Django venv (and anything else that ever lands next to
+    // code without being code) must never reach the rules below. A red lint
+    // means the app is broken — third-party bundles crying wolf is how a
+    // linter gets deleted.
+    ignores: ['backend-django/**', '**/dist*/**', 'archive/**'],
+  },
+  {
     files: ['src/**/*.{js,jsx}', 'tools/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
