@@ -43,6 +43,13 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # The build carries a CNAME file for 1namo.com, which is still served
+      # from the original repo (atharvborse2004-ops/aether-mono). Publishing
+      # the CNAME here too would collide with that site, so this deployment
+      # serves only from the github.io hostname. The domain itself moves to
+      # this repo at the production window — see HANDOFF and
+      # docs/07-DJANGO-MIGRATION.md.
+      - run: rm -f dist/CNAME
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
