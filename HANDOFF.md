@@ -3122,11 +3122,30 @@ messages now arrive on a 3s poll and sessions on a 5s one (docs/07 §6
 step 7 — push delivery is a later phase). A consultant sees a request up
 to five seconds late.
 
-**`sweep_sessions` has no scheduler, and the database has no pg_cron** —
-so nothing ends an abandoned chat session. That was already true before
-this deploy, which is why it did not block it, but chat is live now and it
-needs a Cloud Run Job on a 1-minute trigger. `dispatch_outbox` is
-unscheduled for the same reason.
+**The sweepers are running again — pg_cron, not Cloud Run.** Nothing was
+ending an abandoned chat session, and the reason was narrower than it
+looked: `session_sweep()` came across with the migration and works, but
+**extensions do not copy with the data**, so the clock that called it
+every minute was never installed on the new database. Restoring it was
+three lines, not a new piece of infrastructure:
+
+```sql
+create extension pg_cron;
+select cron.schedule('session-sweep',     '* * * * *', 'select public.session_sweep()');
+select cron.schedule('shop-order-expire', '* * * * *', 'select public.shop_order_expire()');
+```
+
+Both were called by hand first (0 rows affected — nothing was stuck) and
+`cron.job_run_details` now shows both succeeding every minute.
+
+**There were two jobs on the old database, not one.** `shop_order_expire`
+is the other, and it had been dead just as long — Shop orders were never
+expiring. It is scheduled again too.
+
+Django's `sweep_sessions` and `dispatch_outbox` management commands stay
+unscheduled. `sweep_sessions` is the eventual replacement for the SQL one
+and must not run alongside it; `dispatch_outbox` has an empty table until
+deploy 4 puts payment events in it, and needs a scheduler before that.
 
 **The pro app's workflow was not updated.** It lives in
 `onenamocom-stack/namo-pro`, builds this repo with `--mode pro`, and is
