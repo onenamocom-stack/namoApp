@@ -1,21 +1,51 @@
+/**
+ * CUTOVER — module 3 (astro): replace src/lib/astro.js with this file, set
+ * VITE_DJANGO_API_URL, deploy the API (ASTRO_PROVIDER=freeastroapi,
+ * FREE_ASTRO_API_KEY set) then the client.
+ *
+ * A drop-in rewrite of src/lib/astro.js with the identical exported surface
+ * and semantics — callAstro, clearAstroCache, useAstro, useMyChart,
+ * signLine, istDate, longDate, signOf, degreeLabel, placementsFrom,
+ * housesFrom, readingFrom, panchangFrom — against the Django API instead of
+ * the `astro` Edge Function:
+ *
+ *   GET {API}/astro/chart/?date=       -> { ok, data, time_known, date, cached }
+ *   GET {API}/astro/horoscope/?date=   -> { ok, data, time_known, date, rashi, cached }
+ *   GET {API}/astro/panchang/?date=    -> { ok, data, date, city, cached }
+ *   GET {API}/astro/geo/?q=            -> { ok, results }
+ *
+ * Auth is unchanged: the JWT is still Supabase-issued, read off the existing
+ * supabase-js session (docs/07 §1). geo and panchang are anonymous, exactly
+ * as the edge function answered the anon key; chart and horoscope send the
+ * token, and a missing session now fails as a refusal rather than a call.
+ *
+ * Behaviour parity notes:
+ *   - The server memoises in astro_cache with the same keys and no TTL, and
+ *     the localStorage/inFlight caches below are byte-identical to the old
+ *     file — refusals are never cached, the stamp is the IST day, the user
+ *     id is in the key, panchang is keyed for everybody.
+ *   - The edge function's refusal codes arrive here as the Django envelope's
+ *     `reason` ('no_birth', 'unavailable', 'upstream', 'invalid'); the 401
+ *     'unauthenticated' maps back to 'signed_out'. This file restores the
+ *     { ok, code, reason } shape the screens branch on.
+ *   - The upstream key stays server-side (INSTRUCTIONS.md rule 7) — nothing
+ *     here touches freeastroapi.com.
+ */
+
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 
 /**
  * Everything computed rather than stored, in one file.
  *
- * Four ops, all of them the `astro` Edge Function and none of them
- * freeastroapi.com directly — the key is a secret and the browser never holds
- * it (`backend/INSTRUCTIONS.md` rule 7). Nothing here sends a birth date, a
- * time, a place or a pair of coordinates: the server reads those from the
- * caller's own row. `geo` sends a search string and `panchang`/`horoscope` send
- * a date, and that is the whole of what the client decides.
+ * Four ops against the Django API, none of them freeastroapi.com directly.
+ * Nothing here sends a birth date, a time, a place or a pair of coordinates:
+ * the server reads those from the caller's own row. `geo` sends a search
+ * string and `panchang`/`horoscope` send a date, and that is the whole of
+ * what the client decides.
  *
  * **A refusal is not a failure.** Every response carries a `code` and the
- * screens branch on it, because this project has already sent a working
- * consultant to a signup form by treating a failed read as an absent row. Here
- * the same mistake would tell somebody with a perfectly good birth record that
- * they never entered one:
+ * screens branch on it:
  *
  *   `no_birth`     no birth details on the row      → send them to add some
  *   `signed_out`   nobody is signed in              → send them to sign in
@@ -25,7 +55,7 @@ import { supabase } from './supabase.js'
  * The last two are the ones that must never render as the first two.
  */
 
-/** The generic refusal, for when the function could not be reached at all —
+/** The generic refusal, for when the API could not be reached at all —
  *  no response means no `code`, and inventing one would be a guess about
  *  whose fault it is. */
 const UNREACHABLE = {
@@ -34,63 +64,77 @@ const UNREACHABLE = {
   reason: 'Could not reach the chart service. Check your connection and try again.',
 }
 
+/** The Django API's base, e.g. https://api.example.com/v1 */
+const API_BASE = import.meta.env.VITE_DJANGO_API_URL
+
+/** The Supabase access token off the existing session; null when signed out. */
+async function accessToken() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? null
+}
+
+/* Each op's URL and how its params ride. `geo` goes through its own path on
+ * every keystroke and is never cached by cachedAstro. */
+const OP_PATH = {
+  chart: '/astro/chart/',
+  horoscope: '/astro/horoscope/',
+  panchang: '/astro/panchang/',
+  geo: '/astro/geo/',
+}
+
 /**
- * One call. Always resolves — never throws and never returns null, so a caller
- * cannot forget a branch and render an empty screen.
+ * One call. Always resolves — never throws and never returns null, so a
+ * caller cannot forget a branch and render an empty screen.
  *
- * `functions.invoke` treats any non-2xx as an error and leaves `data` null, so
- * the server's own words arrive on `error.context` and have to be read back off
- * it. Skipping that step is what turns a precise refusal into "something went
- * wrong".
+ * The Django API answers the repo's { ok, reason, message } envelope for
+ * refusals; this maps it back onto the { ok, code, reason } shape every
+ * screen branches on, with the edge function's exact code strings.
  */
 export async function callAstro(op, params = {}) {
-  const { data, error } = await supabase.functions.invoke('astro', { body: { op, ...params } })
+  const token = await accessToken()
+  const query = new URLSearchParams()
+  if (params.date) query.set('date', params.date)
+  if (params.q) query.set('q', params.q)
+  const suffix = query.size ? `?${query.toString()}` : ''
 
-  if (error) {
-    if (error.context && typeof error.context.json === 'function') {
-      try {
-        const refusal = await error.context.json()
-        if (refusal?.reason) return refusal
-      } catch {
-        // The body was not JSON. Fall through to the generic refusal rather
-        // than showing a parse error to somebody looking at their chart.
-      }
-    }
-    console.error('[astro] %s failed:', op, error.message)
+  let response
+  try {
+    response = await fetch(`${API_BASE}${OP_PATH[op]}${suffix}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch {
     return UNREACHABLE
   }
 
-  return data ?? UNREACHABLE
+  let body = null
+  try {
+    body = await response.json()
+  } catch {
+    return UNREACHABLE
+  }
+
+  if (!response.ok || body?.ok === false) {
+    // 401 'unauthenticated' is the edge function's 'signed_out'; every other
+    // refusal reason already IS the code the screens branch on.
+    const code = response.status === 401 ? 'signed_out' : (body?.reason ?? 'unavailable')
+    return { ok: false, code, reason: body?.message ?? UNREACHABLE.reason }
+  }
+
+  return body ?? UNREACHABLE
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    The client's own cache.
 
-   The SERVER already memoises every derivation, so a second call is cheap for
-   our API quota — but it is not free for the person holding the phone. Every
-   mount was a network round trip, and `/home` alone mounts the reading card
-   and the panchang card, then opening the horoscope overlay asks for the same
-   reading a third time. Three requests, one answer, on a phone on Indian
-   mobile data.
+   The SERVER already memoises every derivation, so a second call is cheap —
+   but it is not free for the person holding the phone. Two mechanisms:
 
-   Two mechanisms, because they solve two different problems:
-
-   - `inFlight` de-duplicates CONCURRENT callers. Two components mounting in
-     the same tick share one promise instead of racing two identical requests.
-   - `localStorage` de-duplicates callers SEPARATED IN TIME — a reload, a new
-     tab, coming back this evening.
+   - `inFlight` de-duplicates CONCURRENT callers.
+   - `localStorage` de-duplicates callers SEPARATED IN TIME.
 
    localStorage rather than sessionStorage, deliberately: sessionStorage dies
-   with the tab, so every new tab would refetch a chart that cannot have
-   changed. The cost of the stronger store is that entries outlive a sign-out,
-   which is why THE USER ID IS IN THE KEY — a second person on the same phone
-   gets different keys and cannot read the first one's chart. Supabase already
-   keeps the session itself in localStorage, so this stores nothing in a place
-   the app was not already using.
-
-   Refusals are NEVER cached. `no_birth` stops being true the moment somebody
-   adds their birth details, and `upstream` stops being true when the service
-   comes back; caching either would make a temporary answer permanent.
+   with the tab. The cost is that entries outlive a sign-out, which is why
+   THE USER ID IS IN THE KEY. Refusals are NEVER cached.
    ══════════════════════════════════════════════════════════════════════════ */
 
 const inFlight = new Map()
@@ -99,28 +143,11 @@ const inFlight = new Map()
  *  all. Everything else is a function of the IST day and dies with it. */
 const cacheStamp = (op) => (op === 'chart' ? 'never' : istDate())
 
-/* THE PANCHANG CARRIES NO USER, because since 4 Sep it is not a function of
-   one — it is computed at Ujjain for everybody. Keying it per person meant
-   /home (which passes the signed-in id) and /horoscope (which passes none)
-   wrote two entries for one answer, and a signed-out reader then refetched what
-   the signed-in one already had. Everything else stays per user: the chart is a
-   birth, and the reading is chosen by a rashi read off that birth. */
+/* THE PANCHANG CARRIES NO USER: it is computed at Ujjain for everybody. */
 const PER_USER = (op) => op !== 'panchang'
 
-/* THE DATE IS RESOLVED, NEVER LEFT AS THE WORD "today". Screens disagree about
-   how to ask for the current day: /home sends no date at all and lets the
-   server default it, while /horoscope sends an explicit one because its tabs
-   need yesterday and tomorrow too. Keying those literally wrote
-   `...:today` and `...:2026-09-07` for one answer, so opening the second
-   screen refetched what the first already had. The server resolves both to one
-   row so it never cost quota — it cost a round trip on a phone, every time,
-   which is the whole reason this cache exists. */
-/* A CHART CARRIES NO DATE AT ALL, for the same reason its stamp is `never`: it
-   is a function of a birth. Resolving the day into its key instead would miss
-   at every midnight and refetch a chart that cannot have changed — which is
-   the exact cost this cache exists to remove, reintroduced one line above
-   where it is described. It also means a caller passing a date to `chart`
-   cannot split the entry. */
+/* THE DATE IS RESOLVED, NEVER LEFT AS THE WORD "today"; a chart carries no
+ * date at all. The server clamps to the same three days either way. */
 const keyDate = (op, date) => (op === 'chart' ? 'birth' : (date ?? istDate()))
 
 const cacheKey = (op, date, who) =>
@@ -133,8 +160,6 @@ function readCache(op, date, who) {
     const entry = JSON.parse(raw)
     return entry?.stamp === cacheStamp(op) ? entry.value : null
   } catch {
-    // Private mode, a full quota, or a half-written entry. A cache that cannot
-    // be read is a miss, never an error the person sees.
     return null
   }
 }
@@ -154,8 +179,7 @@ function writeCache(op, date, who, value) {
  * `callAstro` with the two caches in front of it.
  *
  * Not folded into `callAstro` itself, because `geo` goes through that one on
- * every keystroke and must never be cached — a search for "Var" is not an
- * answer to "Varanasi".
+ * every keystroke and must never be cached.
  */
 function cachedAstro(op, { date, who }) {
   const hit = readCache(op, date, who)
@@ -190,13 +214,9 @@ export function clearAstroCache() {
 }
 
 /**
- * The hook every screen uses.
- *
- * `ready` gates the call on the session being *resolved*, not on it existing —
- * firing before then asks for a chart as nobody and gets a refusal that is
- * true for a tenth of a second and wrong afterwards. `who` is in the
- * dependencies so signing in as somebody else refetches rather than leaving
- * the previous person's chart on screen.
+ * The hook every screen uses. Same contract as before: `ready` gates the
+ * call on the session being resolved; `who` is in the dependencies so
+ * signing in as somebody else refetches.
  *
  * Returns four things and expects all four to be handled:
  * `loading`, `payload` (what the API computed), `timeKnown`, `refusal`.
@@ -212,9 +232,6 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
       return undefined
     }
 
-    /* Aborted by flag rather than by AbortController: `functions.invoke` owns
-       its own request. The flag is only here so a response for yesterday
-       cannot land after the one for today and replace it. */
     let live = true
     setState((s) => ({ ...s, loading: true }))
 
@@ -226,15 +243,7 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
               loading: false,
               payload: res.data,
               timeKnown: res.time_known !== false,
-              // Only the panchang carries this: the city its almanac was
-              // computed at. Every screen showing that almanac has to name it,
-              // because a sunrise from a place you have never been is wrong
-              // without looking wrong.
               city: res.city ?? null,
-              // Only the horoscope carries this: the rashi its reading is for.
-              // The reading is chosen by sign, not computed from the reader's
-              // own birth, and a screen that shows it without naming the sign
-              // is presenting a rashifal as a personal chart.
               rashi: res.rashi ?? null,
               refusal: null,
             }
@@ -253,16 +262,10 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
 /**
  * The three lines every screen wants in a header: sun, moon, rising.
  *
- * A separate hook rather than three more fields on `useProfileFields()`,
- * because that hook is called on screens with no interest in a chart and
- * putting a fetch inside it would spend a request on all of them. This is
- * called by the four that print the signs, and the fourth costs nothing — the
- * server cached the first.
- *
  * `rising` is **null when the birth time is unknown**, never a substituted
- * value. The ascendant moves a whole sign every two hours; the caller decides
- * what to say about that, and giving it a dash to print would take the decision
- * away.
+ * value. `rashi` is the MOON sign — janma rashi, the bucket a daily reading
+ * is chosen by — same value as `moon`, named differently because the screens
+ * mean different things by them.
  */
 export function useMyChart({ ready = true, who = null } = {}) {
   const chart = useAstro('chart', { ready, who })
@@ -274,20 +277,6 @@ export function useMyChart({ ready = true, who = null } = {}) {
     sun: chart.payload ? signOf(chart.payload, 'Sun') : null,
     moon: chart.payload ? signOf(chart.payload, 'Moon') : null,
     rising: chart.timeKnown ? (chart.payload?.ascendant?.sign ?? null) : null,
-    /* RASHI IS THE MOON SIGN, not the sun sign. In Indian usage "rashi" on its
-       own means janma rashi — where the Moon stood at birth — and it is what
-       every rashifal in the country is keyed on. Western daily horoscopes key
-       on the Sun, which is why the same person is told two different signs by
-       two different apps.
-
-       It comes off the natal chart, so it is a function of the birth and never
-       changes, and the chart is cached with no expiry. It also survives an
-       unknown birth time: the Moon moves about half a degree an hour, so it is
-       in the right sign whatever the hour — unlike the ascendant, which is not.
-
-       Same value as `moon` deliberately. The two names are here because the
-       screens mean different things by them: `moon` is one placement among
-       nine on a chart, `rashi` is the bucket a daily reading is chosen by. */
     rashi: chart.payload ? signOf(chart.payload, 'Moon') : null,
   }
 }
@@ -300,13 +289,8 @@ export function signLine({ sun, moon, rising }) {
 
 /**
  * Yesterday, today or tomorrow as `YYYY-MM-DD` **in IST**, which is the only
- * calendar this product has (docs/02-TRD.md §10).
- *
- * Not `new Date().toISOString()`: a browser in London reading a date off UTC
- * gets yesterday's for the five and a half hours after Indian midnight, and a
- * reading labelled with the wrong day is the exact class of bug the mock had.
- * IST has no DST, so the shift is a constant and this is all of the arithmetic.
- * The server independently clamps to the same three days.
+ * calendar this product has (docs/02-TRD.md §10). The server independently
+ * clamps to the same three days.
  */
 export function istDate(offsetDays = 0) {
   const ist = new Date(Date.now() + 5.5 * 3_600_000)
@@ -315,8 +299,7 @@ export function istDate(offsetDays = 0) {
 }
 
 /** "Wednesday, 2 September 2026" from an ISO date, without dragging in a date
- *  library for one line. Parsed as UTC and formatted as UTC so the string never
- *  shifts a day under the reader's own zone. */
+ *  library for one line. */
 export function longDate(iso) {
   if (!iso) return ''
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
@@ -325,9 +308,9 @@ export function longDate(iso) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Shapes. The API returns more than any screen needs; these turn its response
-   into the shape the components were already written against, in one place,
-   so a field rename upstream is one edit rather than nine.
+   Shapes — byte-identical to the Supabase version: the API returns more than
+   any screen needs, and these turn its response into the shape the components
+   were written against.
    ══════════════════════════════════════════════════════════════════════════ */
 
 /** Two letters per planet, as the chart diagram draws them. */
@@ -336,27 +319,19 @@ const ABBREV = {
   Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke',
 }
 
-/** Glyphs, for the placement table. Rahu and Ketu have no astronomical glyph
- *  in common use, so they carry their nodal ones. */
+/** Glyphs, for the placement table. Rahu and Ketu carry their nodal ones. */
 const GLYPH = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃',
   Venus: '♀', Saturn: '♄', Rahu: '☊', Ketu: '☋',
 }
 
-/** One planet's sign out of a chart, or an em dash. Used wherever a screen
- *  wants a single position in a sentence — the sun on Shop, the three lines on
- *  the reveal — so none of them reach into `payload.planets` themselves.
- *
- *  There is no `signOf(chart, 'Rising')`: the ascendant is not a planet, it
- *  lives on `chart.ascendant`, and it is absent when the birth time is
- *  unknown. Every caller has to decide what to say in that case, and giving
- *  them a function that quietly returns a dash would take the decision away. */
+/** One planet's sign out of a chart, or an em dash. There is no
+ *  `signOf(chart, 'Rising')`: the ascendant is not a planet. */
 export function signOf(chart, name) {
   return chart?.planets?.find((p) => p.name === name)?.sign ?? '—'
 }
 
-/** `22.2361` → `22° 14′`. Degrees within the sign, never absolute — the sign
- *  is already named beside it, and 214° means nothing to a reader. */
+/** `22.2361` → `22° 14′`. Degrees within the sign, never absolute. */
 export function degreeLabel(degreeInSign) {
   const d = Math.floor(degreeInSign)
   const m = Math.floor((degreeInSign - d) * 60)
@@ -364,10 +339,8 @@ export function degreeLabel(degreeInSign) {
 }
 
 /**
- * The placement rows. The ascendant leads, because it is the thing the rest is
- * measured from — and it is dropped entirely when the birth time is unknown,
- * since it moves a whole sign every two hours and a rising sign computed from
- * a guess is precise fiction.
+ * The placement rows. The ascendant leads; it is dropped entirely when the
+ * birth time is unknown, since it moves a whole sign every two hours.
  */
 export function placementsFrom(chart, timeKnown = true) {
   if (!chart) return []
@@ -406,14 +379,9 @@ export function placementsFrom(chart, timeKnown = true) {
 }
 
 /**
- * Twelve houses, each with the planets standing in it. Whole Sign, so one
- * house is one sign with no split and no interception — which is what the
- * diagram this feeds has always assumed.
- *
- * Returns `null` when the birth time is unknown. That is deliberate and the
- * callers check for it: an empty array would draw twelve empty boxes, which
- * reads as a chart with nothing in it rather than as a question nobody
- * answered.
+ * Twelve houses, each with the planets standing in it. Whole Sign. Returns
+ * `null` when the birth time is unknown — an empty array would draw twelve
+ * empty boxes, which reads as a chart with nothing in it.
  */
 export function housesFrom(chart, timeKnown = true) {
   if (!chart || !timeKnown) return null
@@ -432,31 +400,9 @@ export function housesFrom(chart, timeKnown = true) {
 }
 
 /**
- * The daily reading — reduced, on 9 Sep 2026, to the fields that are actually
- * true for the person reading them.
- *
- * WHY IT IS SO SHORT NOW. Since 7 Sep the reading is one of twelve chosen by
- * rashi and computed from a canonical birth, not the reader's. The intent was
- * that only the dasha came from that invented person. Reading a live payload
- * showed otherwise, and the list is long: `profile` asserts a `lagna.sign` and
- * a `moon.nakshatra`/`pada` that belong to the canonical person; every entry in
- * `influences` is `active_dasha_lord_gochar_peak` or `dasha_gochar_alignment`;
- * and `scores` and `sections` are weighted by those influences, so "Career
- * 94/100 — support comes through Jupiter activates the dasha stack" is a
- * statement about nobody at all. `theme.headline`, `narrative.summary`,
- * `narrative.opportunity` and the whole `remedy` block go the same way —
- * `remedy.basis.dominant_dasha_lord` says so in the payload itself.
- *
- * What survives is what is a function of the DAY AND THE PLACE rather than of a
- * birth: the panchang windows, and the panchang mood sentence. Those are true
- * for every reader of every sign, which is a weaker claim than the screen used
- * to make and the first one it can actually support.
- *
- * This is the same rule the old comment here already applied to mood, lucky
- * colour and lucky number — fields nothing honestly computes are deleted rather
- * than invented. The only change is recognising that a field computed for the
- * WRONG PERSON is in exactly that category. docs/02-TRD.md §8 carries the
- * field-by-field table and the reason the endpoint is now on notice.
+ * The daily reading — the fields that are actually true for the person
+ * reading them: the panchang windows and the panchang mood sentence, both a
+ * function of the day at the anchor city rather than of any birth.
  */
 export function readingFrom(horoscope, label, context) {
   if (!horoscope) return null
@@ -467,29 +413,12 @@ export function readingFrom(horoscope, label, context) {
     label,
     context,
     date: horoscope.meta?.target_date ?? null,
-
-    /* The panchang's own reading of the day — nakshatra, tithi and yoga, in a
-       sentence. A function of the date at Ujjain, so it is the same sentence
-       for everybody and it is true for all of them. */
     dayMood: horoscope.narrative?.best_use ?? '',
-
-    /* Abhijit, Rahu Kalam, Yamaganda, Gulika. Clock windows for the day at the
-       anchor city, and the one part of this payload that was never about a
-       birth at all. */
     windows: [t.abhijit, t.rahu_kalam, t.yamaganda, t.gulika].filter(Boolean),
-
-    /* NO PANCHANG BLOCK HERE, deliberately, and it used to be. The personal
-       endpoint returns its own almanac computed at the birth place, while the
-       shared `panchang` op is computed at Ujjain for everybody. Rendering both
-       would put two tithis on two screens for the same day and let them
-       disagree at a transition — the mock's week-apart calendar bug. The
-       screens read the shared almanac. One source. */
   }
 }
 
-/** The almanac card. `ends_at` runs past 24:00 on purpose — a tithi ending at
- *  "28:26" ends at half past four the next morning, and that is how a panchang
- *  is read. Left verbatim. */
+/** The almanac card. `ends_at` runs past 24:00 on purpose — left verbatim. */
 export function panchangFrom(p) {
   if (!p) return null
   return {

@@ -27,13 +27,23 @@ jobs:
       # A missing secret is substituted as an empty string, so without this the
       # build stays green and Pages serves a white screen. Fail here instead,
       # where the reason is on the log line.
-      - name: Verify Supabase env is present
+      - name: Verify build env is present
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DJANGO_API_URL: ${{ secrets.VITE_DJANGO_API_URL }}
         run: |
           test -n "$VITE_SUPABASE_URL" || { echo "::error::VITE_SUPABASE_URL secret is missing or empty"; exit 1; }
           test -n "$VITE_SUPABASE_ANON_KEY" || { echo "::error::VITE_SUPABASE_ANON_KEY secret is missing or empty"; exit 1; }
+          # The cutover libs read this. Empty means every API path resolves
+          # against the page origin and 404s, and listConsultants turns that
+          # into an empty list rather than an error — an outage that looks
+          # like an empty marketplace. The /v1 suffix is part of the value.
+          test -n "$VITE_DJANGO_API_URL" || { echo "::error::VITE_DJANGO_API_URL secret is missing or empty"; exit 1; }
+          case "$VITE_DJANGO_API_URL" in
+            */v1) : ;;
+            *) echo "::error::VITE_DJANGO_API_URL must end in /v1 (got: $VITE_DJANGO_API_URL)"; exit 1 ;;
+          esac
       # Vite inlines VITE_* at build time. Without these the bundle calls
       # createClient(undefined, undefined), which throws on load — a white
       # screen, not a degraded app. The anon key is meant to ship (rule 7 in
@@ -43,6 +53,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DJANGO_API_URL: ${{ secrets.VITE_DJANGO_API_URL }}
           # Served from the APEX domain (https://1namo.com/), not a project
           # page, so assets are referenced from the root.
           #

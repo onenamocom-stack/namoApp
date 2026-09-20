@@ -11,7 +11,7 @@ import { useLocation } from 'react-router-dom'
 import { pro, user } from './data/mock.js'
 import { translate } from './data/i18n.js'
 import { supabase } from './lib/supabase.js'
-import { bookSession as book } from './lib/consultants.js'
+import { bookSession as book, myConsultant } from './lib/consultants.js'
 import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 
@@ -154,23 +154,28 @@ export function AppProvider({ children }) {
       return setConsultant(null)
     }
     setConsultantLoading(true)
-    /* Filtered by id, unlike the wallet reads a few lines down. `consultants`
-       is not an own-row-only table — `consultants_select_approved` makes every
-       approved practice readable by everybody, which is the whole point of it.
-       An unfiltered `maybeSingle()` here returned every approved consultant
-       and failed with "multiple rows", so a real consultant was shown the
-       application form for a practice they already had.
+    /* `myConsultant()` answers what the `.from('consultants')` read used to,
+       and the filtering it needed is now the server's: the JWT is the
+       identity, so there is no `.eq('profile_id', userId)` left to get
+       wrong. That filter was load-bearing under PostgREST — `consultants`
+       is not an own-row-only table, `consultants_select_approved` makes
+       every approved practice readable by everybody, and an unfiltered read
+       here once returned all of them and failed with "multiple rows",
+       showing a real consultant the application form for a practice they
+       already had.
 
-       `maybeSingle` because not being a consultant is the common case, not an
-       error. */
-    const { data, error } = await supabase
-      .from('consultants')
-      .select('*')
-      .eq('profile_id', userId)
-      .maybeSingle()
-    if (error) console.error('[consultant] load failed:', error.message)
-    setConsultantError(Boolean(error))
-    setConsultant(data ?? null)
+       Null for "not a consultant" survives: it is the common case, not an
+       error, and `/me/` returns the pending row too. `userId` stays in the
+       signature because the caller still gates on it. */
+    try {
+      const data = await myConsultant()
+      setConsultantError(false)
+      setConsultant(data ?? null)
+    } catch (err) {
+      console.error('[consultant] load failed:', err.message)
+      setConsultantError(true)
+      setConsultant(null)
+    }
     setConsultantLoading(false)
   }, [])
 

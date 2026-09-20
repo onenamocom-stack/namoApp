@@ -78,7 +78,13 @@ async function api(path, { method = 'GET', body, token, idempotencyKey } = {}) {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-Cutover-Module': 'consultants',
+      /* No 'X-Cutover-Module' here. It used to ride along as a marker and
+         the server never read it — but a non-simple request header forces a
+         CORS preflight, and the API's Access-Control-Allow-Headers lists
+         only Authorization, Content-Type, Idempotency-Key and X-Request-Id.
+         The preflight was refused and every call from a browser failed with
+         ERR_FAILED while curl, which does not preflight, saw 200. Tracing
+         already has X-Request-Id. */
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },

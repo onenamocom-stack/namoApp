@@ -1,16 +1,37 @@
-import { supabase } from './supabase.js'
-
 /**
- * Bhakti's read path. One table, `bhakti_assets` (024), read straight rather
- * than through a view — there is nothing to aggregate and nothing to hide, so
- * a view would only be a second name for the same rows.
+ * CUTOVER — module 4 (bhakti): replace src/lib/bhakti.js with this file, set
+ * VITE_DJANGO_API_URL, deploy the API then the client.
  *
- * Writes are not here because there are none. The table has a select policy
- * and no other, so RLS denies every insert from the browser by default; rows
- * arrive from a service-role script and, later, the phase 13 admin console.
- * If you find yourself adding `publish()` to this file, the thing you actually
- * need is that console — `02-TRD.md` §7 is why it cannot be a flag on a user.
+ * A drop-in rewrite of src/lib/bhakti.js with the identical exported surface
+ * and semantics — fetchAssets, download, shareFile, composeStatus, saveBlob —
+ * against the Django API instead of Supabase PostgREST:
+ *
+ *   GET {API}/bhakti/assets/   -> every active row, ordered kind then sort
+ *
+ * Auth is unchanged and, exactly as under RLS, unneeded: the
+ * `bhakti_assets_public_read` policy answered anon, and so does the endpoint.
+ * No token is sent for the library — the files themselves are public in the
+ * bucket, and a session requirement would only stop the marketing screenshot
+ * (024's own reasoning).
+ *
+ * Behaviour parity notes:
+ *   - toAsset is byte-identical, including the BASE_URL prefixing for
+ *     site-relative media paths — the server returns media_url untouched, so
+ *     rows seeded from art in `public/` keep working under a sub-path deploy
+ *     and absolute bucket URLs pass through as before.
+ *   - fetchAssets still throws on failure (now after a console.error line in
+ *     the same shape), so screens/Bhakti.jsx's catch keeps rendering its
+ *     "Could not reach the library" state.
+ *   - There are still no client writes, by design: 024 grants no write policy
+ *     and the Django API exposes no write endpoint. Rows arrive from the
+ *     service-layer seed (the backend/seed/bhakti.mjs replacement), later the
+ *     phase 13 admin console.
+ *   - download / shareFile / composeStatus / saveBlob are untouched: they are
+ *     browser APIs, not backend calls.
  */
+
+/** The Django API's base, e.g. https://api.example.com/v1 */
+const API_BASE = import.meta.env.VITE_DJANGO_API_URL
 
 /** A row as the screen wants it. Prices stay paise until `rupees()`. */
 function toAsset(row) {
@@ -46,17 +67,21 @@ function toAsset(row) {
  * panchang cache exists to avoid elsewhere.
  */
 export async function fetchAssets() {
-  const { data, error } = await supabase
-    .from('bhakti_assets')
-    .select('*')
-    .order('kind', { ascending: true })
-    .order('sort', { ascending: true })
-
-  if (error) {
-    console.error('[bhakti] load failed:', error.message)
-    throw error
+  let response
+  try {
+    response = await fetch(`${API_BASE}/bhakti/assets/`)
+  } catch (err) {
+    console.error('[bhakti] load failed:', err?.message)
+    throw err
   }
-  return (data ?? []).map(toAsset)
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    console.error('[bhakti] load failed:', body?.message ?? response.status)
+    throw new Error(body?.message ?? 'Could not reach the library')
+  }
+
+  return (await response.json()).map(toAsset)
 }
 
 /**

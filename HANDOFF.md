@@ -2846,9 +2846,9 @@ Scrubbed from all history with git-filter-repo and `.env` is gitignored
 now — but the values sat in pushed history, so ROTATE the Supabase
 service-role key, the namo-dev DB password, and the R2 token. Today.
 
-Also: the Twilio account has no Messaging product enabled (API 20404 on
-Messages/Services) — Verify-only. Real SMS needs Messaging enabled in the
-console, or the MSG91 switch, at the production window.
+Also: phone sign-in did not work, and the reason recorded here first —
+"the Twilio account has no Messaging product, Verify-only" — was wrong.
+See §15; it is fixed and real OTP now arrives.
 
 ## 13. The repalette — white/orange on `ux/white-orange` — 20 Sep 2026
 
@@ -2957,3 +2957,140 @@ the primary action, bright orange is the one voltage.
   every surface in the app.
 - `docs/04-UI-UX.md` §1, §2.1, §2.5, §3 and the appendix are rewritten to the
   new values in the same commit. No other document names a colour.
+
+## 14. Data migration, the API on Cloud Run, and deploy 2 rehearsed — 20 Sep 2026
+
+Three things landed today. Only the first is live to anybody.
+
+### The old dev database is now the new one
+
+`mrjsatelbuiypodeulcx` -> `usgzgrdxlzgnehtbebzo`, run from
+`~/namo-migration/` (outside git; it reads two gitignored env files).
+**34 of 34 non-empty tables match, the ledger replays to the stored
+balances exactly (743400 paise, 0 mismatched), and nothing points at a
+profile that does not exist.**
+
+Four things broke on the way and each is a fact about the schemas rather
+than about the copy:
+
+- **14 tables existed only on the old database** — Shop, Academy,
+  shipping, admin — and **none of them is in `backend/schema/`.** They were
+  created straight onto that database. Their DDL came out of it with
+  `pg_dump`, along with 11 functions the RLS policies on them call.
+- **`--disable-triggers` needs superuser**, which Supabase does not grant.
+  `session_replication_role = replica` does the same job from a session and
+  is what the copy actually used — which matters more than convenience:
+  the target's `ledger_applies_to_balance` trigger adds every ledger row to
+  `wallets.balance_paise`, so copying balances AND ledger rows with triggers
+  live would have counted the money twice.
+- **`order_items` refused `'shipping'`** — the target's CHECK is the older,
+  narrower one and 6 rows use that value. Nineteen other CHECK constraints
+  differ only in Django's varchar spelling and allow the same values.
+- **`bookings.rescheduled_to` is `rescheduled_to_id` on the target**, fixed
+  in the dump before it reached the database.
+
+Two gaps in the Django schema, found by the copy and worth fixing properly:
+**`payments.order_id` and `orders.expires_at` do not exist on the target**
+(added by hand here, so which order a payment settled is not lost), and
+**`profiles` has no FK to `auth.users`** where the source does.
+
+**Logins: 2 of 15.** All 15 profiles moved — 6 of the 8 consultants and 48
+of the 52 content rows belong to the other 13, so leaving them out would
+have emptied the feed. Only the two real accounts got `auth.users` and
+`auth.identities` rows. No service-role key was needed: `auth` is a schema
+like any other over a direct connection. `confirmed_at` is generated and
+has to be left out of the column list.
+
+### The API is on Cloud Run
+
+`https://namo-api-499026166575.asia-south1.run.app` — RUNBOOK deploy 1.
+Health 200, `/v1/me/` 401, `/v1/bhakti/assets/` 200 against the migrated
+data. `backend-django/Dockerfile` and gunicorn are new; neither existed.
+
+**No client points at it.** That is deploy 1's definition of done.
+
+### Deploy 2 rehearsed on localhost, and it found two real bugs
+
+Not deployed. The five leaf libs were swapped in on `cutover/deploy2-test`
+and driven through a browser against the live API.
+
+- **`X-Cutover-Module`** in `consultants.clientlib.js` and
+  `chat.clientlib.js` forces a CORS preflight the API refuses — its
+  allowlist is Authorization, Content-Type, Idempotency-Key, X-Request-Id.
+  Every browser call failed while curl saw 200, because curl does not
+  preflight. **This would have broken the real deploy 2 and deploy 3.**
+- **`VITE_DJANGO_API_URL` needs the `/v1` suffix.** Without it every path
+  404s, and `listConsultants` turns that into an empty list rather than an
+  error — an outage that looks like an empty marketplace.
+
+Verified through the real lib functions: 8 consultants, 24 bands, 52
+content rows, 22 bhakti assets, services and slots per consultant.
+
+**Nothing behind a session was tested, and nothing can be:** Twilio has no
+Messaging product on this account, so OTP delivery fails for every number
+(§12). Wallet, bookings and chat stay unexercised until that or test-OTP
+numbers are configured on `usgzgrdxlzgnehtbebzo`.
+
+### Still open
+
+- **Five credentials remain unrotated** and are now in more places: two
+  GitHub PATs (one plaintext in `.git/config`), the Supabase service-role
+  key, the namo-dev database password, and the R2 token — the last two also
+  sit in Cloud Run's environment now.
+- ~~Media still points at the old project's storage.~~ **Done 21 Sep.**
+  The `namo-media` bucket's R2.dev public URL is on, all 50
+  `content.media_url` rows were rewritten to it in one transaction, and the
+  API serves them — the feed's 50 media rows all resolve to
+  `pub-3af0d667…r2.dev` and return 206 with the right content type.
+  `MEDIA_PUBLIC_BASE_URL` is set on Cloud Run (revision 00003). The R2.dev
+  domain is rate-limited and meant for development; swap in
+  `media.1namo.com` as a Custom Domain before real traffic — one env var and
+  one UPDATE. The old Supabase storage bucket is now unreferenced but has
+  **not** been deleted.
+- `pro.1namo.com` needs a CNAME at GoDaddy before the consultant app gets
+  a real address.
+
+## 15. Phone sign-in works, and what was actually broken — 21 Sep 2026
+
+Real SMS OTP now reaches an Indian handset and the signed-in screens have
+been walked against the API for the first time. §12's diagnosis was wrong
+in a way worth keeping: the account was never Verify-only.
+
+**Two separate faults, stacked.**
+
+1. **Supabase held a placeholder Messaging Service SID.** Every failed send
+   in Twilio's log carries `from: MG00000000000000000000000000000000` —
+   thirty-two zeros. That is what produced 21701, "the Messaging Service
+   does not exist", and what 20404 surfaced as at the Supabase edge. The
+   real service was on the account the whole time:
+   `MG7644aa4b2f7a29b58c138f2d467d9720`, named "NAMO SMS".
+2. **That real service had no sender attached.** The one earlier attempt
+   that used the correct SID — 20 Aug — failed 21704 for exactly this.
+   Fixing the SID alone would have moved the error, not removed it. The
+   account's number `+1 717 584 9736` is now attached to it.
+
+The account is **Full and active** with balance, not a trial. And a US long
+code **does** deliver to India here — `+918447284861` came back `delivered`
+with no DLT registration in the path. Do not read that as a guarantee at
+volume; read it as: the MSG91 decision is not forced today.
+
+**Signed-in screens, walked with a real session** (user
+`153e3eba-5719-4be1-bd7a-54e422dfb69b`, a first-time sign-up):
+
+| Route | |
+|---|---|
+| `me/`, `profiles/me/` | 200 — `handle_new_user` fired, profile exists |
+| `wallet/` | 200, `wallet_exists: true`, balance 0 |
+| `wallet/ledger/`, `reactions/`, `chat/threads/`, `chat/sessions/` | 200, empty — correct for a new account |
+| `consultants/bookings/mine/`, `content/reviews/reviewable/` | 200, empty |
+| `astro/panchang/` | 200 |
+| `consultants/me/` | 404 — the documented "no practice" state, not a fault |
+
+Two 404s that looked like bugs were wrong paths of mine: bookings live at
+`consultants/bookings/mine/`, reactions at `reactions/`. **`orders/` and
+`notifications/` have no Django app at all** — still Supabase, still
+unmigrated, and not in any cutover yet.
+
+**The Twilio auth token is now in more places too.** The rotate list is six:
+two GitHub PATs, the Supabase service-role key, the namo-dev DB password,
+the R2 token, and Twilio.
