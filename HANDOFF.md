@@ -2846,9 +2846,9 @@ Scrubbed from all history with git-filter-repo and `.env` is gitignored
 now — but the values sat in pushed history, so ROTATE the Supabase
 service-role key, the namo-dev DB password, and the R2 token. Today.
 
-Also: the Twilio account has no Messaging product enabled (API 20404 on
-Messages/Services) — Verify-only. Real SMS needs Messaging enabled in the
-console, or the MSG91 switch, at the production window.
+Also: phone sign-in did not work, and the reason recorded here first —
+"the Twilio account has no Messaging product, Verify-only" — was wrong.
+See §15; it is fixed and real OTP now arrives.
 
 ## 13. The repalette — white/orange on `ux/white-orange` — 20 Sep 2026
 
@@ -3044,3 +3044,48 @@ numbers are configured on `usgzgrdxlzgnehtbebzo`.
   rows of 404. Mapping is in `~/namo-migration/media-map.json`.
 - `pro.1namo.com` needs a CNAME at GoDaddy before the consultant app gets
   a real address.
+
+## 15. Phone sign-in works, and what was actually broken — 21 Sep 2026
+
+Real SMS OTP now reaches an Indian handset and the signed-in screens have
+been walked against the API for the first time. §12's diagnosis was wrong
+in a way worth keeping: the account was never Verify-only.
+
+**Two separate faults, stacked.**
+
+1. **Supabase held a placeholder Messaging Service SID.** Every failed send
+   in Twilio's log carries `from: MG00000000000000000000000000000000` —
+   thirty-two zeros. That is what produced 21701, "the Messaging Service
+   does not exist", and what 20404 surfaced as at the Supabase edge. The
+   real service was on the account the whole time:
+   `MG7644aa4b2f7a29b58c138f2d467d9720`, named "NAMO SMS".
+2. **That real service had no sender attached.** The one earlier attempt
+   that used the correct SID — 20 Aug — failed 21704 for exactly this.
+   Fixing the SID alone would have moved the error, not removed it. The
+   account's number `+1 717 584 9736` is now attached to it.
+
+The account is **Full and active** with balance, not a trial. And a US long
+code **does** deliver to India here — `+918447284861` came back `delivered`
+with no DLT registration in the path. Do not read that as a guarantee at
+volume; read it as: the MSG91 decision is not forced today.
+
+**Signed-in screens, walked with a real session** (user
+`153e3eba-5719-4be1-bd7a-54e422dfb69b`, a first-time sign-up):
+
+| Route | |
+|---|---|
+| `me/`, `profiles/me/` | 200 — `handle_new_user` fired, profile exists |
+| `wallet/` | 200, `wallet_exists: true`, balance 0 |
+| `wallet/ledger/`, `reactions/`, `chat/threads/`, `chat/sessions/` | 200, empty — correct for a new account |
+| `consultants/bookings/mine/`, `content/reviews/reviewable/` | 200, empty |
+| `astro/panchang/` | 200 |
+| `consultants/me/` | 404 — the documented "no practice" state, not a fault |
+
+Two 404s that looked like bugs were wrong paths of mine: bookings live at
+`consultants/bookings/mine/`, reactions at `reactions/`. **`orders/` and
+`notifications/` have no Django app at all** — still Supabase, still
+unmigrated, and not in any cutover yet.
+
+**The Twilio auth token is now in more places too.** The rotate list is six:
+two GitHub PATs, the Supabase service-role key, the namo-dev DB password,
+the R2 token, and Twilio.
