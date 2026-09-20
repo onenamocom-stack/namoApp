@@ -3037,11 +3037,16 @@ numbers are configured on `usgzgrdxlzgnehtbebzo`.
   GitHub PATs (one plaintext in `.git/config`), the Supabase service-role
   key, the namo-dev database password, and the R2 token — the last two also
   sit in Cloud Run's environment now.
-- **The 50 media files are on R2** (202 MB, keys in Django's own
-  `{kind}s/{owner}/{uuid}/{name}` shape) **but `content.media_url` still
-  points at the old project's storage.** `MEDIA_PUBLIC_BASE_URL` is unset,
-  and writing a URL before there is a public bucket domain would write 50
-  rows of 404. Mapping is in `~/namo-migration/media-map.json`.
+- ~~Media still points at the old project's storage.~~ **Done 21 Sep.**
+  The `namo-media` bucket's R2.dev public URL is on, all 50
+  `content.media_url` rows were rewritten to it in one transaction, and the
+  API serves them — the feed's 50 media rows all resolve to
+  `pub-3af0d667…r2.dev` and return 206 with the right content type.
+  `MEDIA_PUBLIC_BASE_URL` is set on Cloud Run (revision 00003). The R2.dev
+  domain is rate-limited and meant for development; swap in
+  `media.1namo.com` as a Custom Domain before real traffic — one env var and
+  one UPDATE. The old Supabase storage bucket is now unreferenced but has
+  **not** been deleted.
 - `pro.1namo.com` needs a CNAME at GoDaddy before the consultant app gets
   a real address.
 
