@@ -6,10 +6,7 @@ import Plate from '../components/Plate.jsx'
 import { categories } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
 import { supabase } from '../lib/supabase.js'
-
-/* The seeker app is a separate deployment; in this build `/home` does not
-   exist. Update at the domain migration, when both live under 1namo.com. */
-const SEEKER_URL = 'https://onenamocom-stack.github.io/namoApp/'
+import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
 
 /**
  * The front door to the consultant side, and the thing that did not exist

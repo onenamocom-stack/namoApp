@@ -86,7 +86,7 @@ export function Button({ to, href, onClick, variant = 'default', className = '',
  * Affordance 2 — navigates. The trailing arrow is drawn by CSS so no row can
  * ship without it, and every row in the app therefore looks identical.
  */
-export function Row({ to, onClick, title, meta, note, className = '' }) {
+export function Row({ to, href, onClick, title, meta, note, className = '' }) {
   const inner = (
     <>
       <span className="min-w-0">
@@ -102,6 +102,15 @@ export function Row({ to, onClick, title, meta, note, className = '' }) {
       <Link to={to} className={`act-row ${className}`}>
         {inner}
       </Link>
+    )
+  }
+  if (href) {
+    // Cross-app link — the other build's route does not exist here, so this
+    // is an absolute URL (see lib/urls.js), never a router Link.
+    return (
+      <a href={href} className={`act-row ${className}`}>
+        {inner}
+      </a>
     )
   }
   return (

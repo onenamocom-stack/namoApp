@@ -8,6 +8,7 @@ import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName, Search } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants, listMyBookings } from '../lib/consultants.js'
+import { PRO_APP_URL } from '../lib/urls.js'
 import { leaveReview, reviewableBookings } from '../lib/content.js'
 
 /**
@@ -659,7 +660,9 @@ function NobodyYet() {
           We approve one at a time and read every application. Until somebody clears that, there
           is nothing here to book.
         </p>
-        <PopButton variant="gold" className="mt-5" to="/pro/apply">
+        {/* The consultant app is a separate deployment — an absolute link,
+            not a route this build carries. */}
+        <PopButton variant="gold" className="mt-5" href={PRO_APP_URL}>
           Apply to take sessions
         </PopButton>
         <p className="mt-3 caps-sm t-faint">For astrologers, tarot readers and coaches</p>
