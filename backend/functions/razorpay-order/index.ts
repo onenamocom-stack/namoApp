@@ -22,13 +22,21 @@ const MAX_PAISE = 10_000_000 // ₹1,00,000
 // value, and it must be set per Supabase project (dev and production both).
 // Falls back to the production domain if the secret is unset.
 const PAGES_ORIGIN = Deno.env.get('PAGES_ORIGIN') ?? 'https://1namo.com'
+/* Additional origins the same build legitimately serves from — see the
+ * matching block in the astro function. Comma-separated, set per project. */
+const EXTRA_ORIGINS = (Deno.env.get('EXTRA_ORIGINS') ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 /** Explicit list, never a wildcard (docs/02-TRD.md §11). The dev server picks
  *  a free port each run, so localhost is matched by shape rather than listed. */
 function cors(origin: string | null) {
   const allowed =
     origin &&
-    (origin === PAGES_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin))
+    (origin === PAGES_ORIGIN ||
+      EXTRA_ORIGINS.includes(origin) ||
+      /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin))
   return {
     'Access-Control-Allow-Origin': allowed ? origin : PAGES_ORIGIN,
     // `apikey` and `x-client-info` are not optional: supabase-js sends both on

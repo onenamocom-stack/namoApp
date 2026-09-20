@@ -95,13 +95,25 @@ const moonSign = (chart: any): string | null =>
   chart?.planets?.find((p: any) => p.name === 'Moon')?.sign ?? null
 
 const PAGES_ORIGIN = Deno.env.get('PAGES_ORIGIN') ?? 'https://1namo.com'
+/* The same codebase now ships a second deployment (the github.io project
+ * pages under test, and eventually pro.1namo.com). One origin per project
+ * is not a rule, so EXTRA_ORIGINS carries the rest — comma-separated, set
+ * per project like PAGES_ORIGIN. Until the new deployments are walked, the
+ * test origins are not in this list and the function answers them with
+ * 1namo.com's ACAO header, which the browser quite correctly refuses. */
+const EXTRA_ORIGINS = (Deno.env.get('EXTRA_ORIGINS') ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 /** Explicit list, never a wildcard (docs/02-TRD.md §11). The dev server picks a
  *  free port each run, so localhost is matched by shape rather than listed. */
 function cors(origin: string | null) {
   const allowed =
     origin &&
-    (origin === PAGES_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin))
+    (origin === PAGES_ORIGIN ||
+      EXTRA_ORIGINS.includes(origin) ||
+      /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin))
   return {
     'Access-Control-Allow-Origin': allowed ? origin : PAGES_ORIGIN,
     // All four, and none of them optional: supabase-js sends `apikey` and
