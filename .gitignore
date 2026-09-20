@@ -54,3 +54,8 @@ __pycache__/
 backend-django/.venv/
 backend-django/db.sqlite3
 mocks/
+
+# Secrets — never commit
+.env
+.env.local
+**/.env
