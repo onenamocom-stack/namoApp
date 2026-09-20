@@ -8,7 +8,9 @@ remedial products and courses.
 Two apps, one codebase — the seeker app (default build) and the consultant
 app (`/pro/*`, built separately with `--mode pro`), with an admin console
 planned. The backend is Supabase: schema in `backend/schema`, server
-functions in `backend/functions`, per `docs/02-TRD.md`.
+functions in `backend/functions`, per `docs/02-TRD.md`. A Django API is
+being layered in module by module under `backend-django/` — see
+[docs/07-DJANGO-MIGRATION.md](docs/07-DJANGO-MIGRATION.md).
 
 ## Run it
 
@@ -17,11 +19,19 @@ npm install
 npm run dev          # seeker app — or: npm run dev -- --port 5260
 npm run dev:pro      # consultant app
 npm run build        # seeker → dist/ (what production deploys)
-npm run build:pro    # consultant → dist-pro/ (no deployment wired yet)
+npm run build:pro    # consultant → dist-pro/
 ```
 
-**Live (seeker):** https://1namo.com/#/home
-Pushing to `main` deploys the seeker app automatically.
+## The two deployments
+
+| App | Repo | URL |
+|---|---|---|
+| **Seeker** (this repo) | `onenamocom-stack/namoApp` | https://1namo.com/#/home |
+| **Consultant** | [`onenamocom-stack/namo-pro`](https://github.com/onenamocom-stack/namo-pro) | https://onenamocom-stack.github.io/namo-pro/ |
+
+Pushing to `main` of this repo deploys the seeker app automatically. The
+consultant app deploys from the namo-pro repo's workflow, which builds this
+repo's `--mode pro` target — see its README.
 
 ## Stack
 
