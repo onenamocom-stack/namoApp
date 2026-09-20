@@ -43,16 +43,24 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          # Served from a project page (…github.io/namoApp/), not a domain
-          # apex — assets must be referenced under /namoApp/.
-          DEPLOY_BASE: /namoApp/
-      # The build carries a CNAME file for 1namo.com, which is still served
-      # from the original repo (atharvborse2004-ops/aether-mono). Publishing
-      # the CNAME here too would collide with that site, so this deployment
-      # serves only from the github.io hostname. The domain itself moves to
-      # this repo at the production window — see HANDOFF and
-      # docs/07-DJANGO-MIGRATION.md.
-      - run: rm -f dist/CNAME
+          # Served from the APEX domain (https://1namo.com/), not a project
+          # page, so assets are referenced from the root.
+          #
+          # This value and the CNAME step below move together and must never
+          # disagree. `/namoApp/` with a CNAME published serves an apex site
+          # whose every asset 404s — a white screen, and the exact failure
+          # commit 5dd46ce fixed in the other direction. If the domain is ever
+          # handed back to another repo, set this to /namoApp/ and restore the
+          # `rm -f dist/CNAME` step in the same commit.
+          DEPLOY_BASE: /
+      # The CNAME is PUBLISHED now — this repo owns 1namo.com.
+      #
+      # It used to be stripped here, because the domain was still claimed by
+      # atharvborse2004-ops/aether-mono and GitHub refuses the same custom
+      # domain on two Pages sites. That claim has to be released on the old
+      # repo BEFORE this runs, or the deploy publishes a CNAME the platform
+      # will not honour and the apex serves the old site anyway.
+      - run: test -f dist/CNAME && cat dist/CNAME
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
