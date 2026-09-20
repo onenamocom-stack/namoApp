@@ -3094,3 +3094,45 @@ unmigrated, and not in any cutover yet.
 **The Twilio auth token is now in more places too.** The rotate list is six:
 two GitHub PATs, the Supabase service-role key, the namo-dev DB password,
 the R2 token, and Twilio.
+
+## 16. Deploys 2 and 3 are live — six modules on the Django API — 21 Sep 2026
+
+`545ff44..b9bfe9b` on main. **1namo.com now reads reactions, astro,
+bhakti, content, consultants and chat from Cloud Run**, and the live
+bundle was checked rather than assumed:
+
+- `usgzgrdxlzgnehtbebzo.supabase.co` — the seeker app moved here from
+  `talqzgolttfgdzcoaqno`, a **third** project nobody had written down. It
+  held 49 content rows, 22 bhakti assets, **0 profiles and 0 bookings** —
+  seed data, no users, nothing lost. The pro app was already on the new
+  project; only the seeker's two secrets were stale.
+- `https://namo-api-…run.app/v1` — with the suffix. `deploy.yml` now fails
+  the build when the secret is missing or does not end in `/v1`, because
+  that exact omission is invisible at runtime: it reads as an empty
+  marketplace, not as an outage.
+- Media resolves to `pub-3af0d667….r2.dev`.
+
+Exercised from the live origin, so CORS is real and not curl's blind spot:
+feed, consultants (8), price bands (24), bhakti assets (22), panchang and
+reaction counts all 200.
+
+**Chat trades Realtime for polling.** The subscribe* functions keep their
+signatures and still return an unsubscribe, so no screen changed, but
+messages now arrive on a 3s poll and sessions on a 5s one (docs/07 §6
+step 7 — push delivery is a later phase). A consultant sees a request up
+to five seconds late.
+
+**`sweep_sessions` has no scheduler, and the database has no pg_cron** —
+so nothing ends an abandoned chat session. That was already true before
+this deploy, which is why it did not block it, but chat is live now and it
+needs a Cloud Run Job on a 1-minute trigger. `dispatch_outbox` is
+unscheduled for the same reason.
+
+**The pro app's workflow was not updated.** It lives in
+`onenamocom-stack/namo-pro`, builds this repo with `--mode pro`, and is
+`workflow_dispatch` only — so it still serves a pre-cutover bundle. Its
+`deploy.yml` needs the same `VITE_DJANGO_API_URL` env line before anyone
+runs it, or the consultant app ships with an empty API URL.
+
+Deploy 4 — wallet, payments, profile — is untouched and still needs
+Razorpay keys.
