@@ -2828,3 +2828,24 @@ the placeholder public base until a bucket domain exists; mock astro's
 Files changed: `apps/chat/services.py`, `apps/consultants/services.py`,
 `tests/test_consultants.py`. Live evidence: booking 48c93f93 decline →
 `reversed:true`, balance 95500 → 28500 → 95500.
+
+## 12. Both apps hosted from the new account — 20 Sep 2026
+
+The codebase now deploys as two sites from `onenamocom-stack`:
+**seeker** at https://onenamocom-stack.github.io/namoApp/ (this repo, the
+existing `deploy.yml`, pointed at the production Supabase project) and
+**consultant** at https://onenamocom-stack.github.io/namo-pro/ (a deploy
+shell that checks this repo out with a PAT and builds `--mode pro`).
+1namo.com itself still serves from the original repo
+(atharvborse2004-ops/aether-mono); both new builds strip the CNAME, and
+the domain moves at the production window — never before.
+
+Housekeeping with a sting: `backend-django/.env` was committed to git
+twice (service-role key, DB password, R2 secret) before anyone noticed.
+Scrubbed from all history with git-filter-repo and `.env` is gitignored
+now — but the values sat in pushed history, so ROTATE the Supabase
+service-role key, the namo-dev DB password, and the R2 token. Today.
+
+Also: the Twilio account has no Messaging product enabled (API 20404 on
+Messages/Services) — Verify-only. Real SMS needs Messaging enabled in the
+console, or the MSG91 switch, at the production window.
