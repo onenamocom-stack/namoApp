@@ -85,8 +85,8 @@ const BANNERS = [
     note: 'Every expert screened and credential-checked. No exceptions.',
     cta: 'See astrologers',
     art: 'orbit',
-    from: '#4338ca',
-    to: '#818cf8',
+    from: '#7c2d12',
+    to: '#c2410c',
   },
   {
     id: 'bn-first',
@@ -95,8 +95,8 @@ const BANNERS = [
     note: `${SESSION.promise}, any astrologer online.`,
     cta: 'Claim offer',
     art: 'halftone',
-    from: '#14532d',
-    to: '#4d9463',
+    from: '#6b3410',
+    to: '#a85400',
   },
   {
     id: 'bn-refer',
@@ -105,8 +105,8 @@ const BANNERS = [
     note: 'They get a discount. You get credit toward your next call.',
     cta: 'Refer now',
     art: 'contour',
-    from: '#92660f',
-    to: '#d29a2b',
+    from: '#8a3a00',
+    to: '#b45309',
   },
 ]
 

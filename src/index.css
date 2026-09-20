@@ -3,35 +3,54 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TOKENS — CRED light canvas, skeuomorphic surfaces
+   TOKENS — white/orange, skeuomorphic surfaces
 
-   The reference is CRED's current home: a warm neutral page, white cards
-   floating on it with soft elevation, generous corner radii, one dark bar at
-   the bottom, and colour arriving only through promo banners.
+   Repalette, 20 Sep 2026. The warm grey canvas with a gold voltage is gone;
+   the values are the five the team picked (docs/04-UI-UX.md §2.1). What did
+   NOT change is the physics — one light source directly above, depth from a
+   soft shadow and a radius, selection as a pressed state rather than a tint.
+   Only the hues moved, so every rule below this block reads the same tokens
+   it always did.
 
-   Two rules carry it:
-     1. The page is never white and the ink is never pure black. #f1efec and
-        #0f0e0e each hold the faintest warm cast — a true #fff/#000 pairing is
-        what makes a light UI look like a default stylesheet.
+   Three rules carry it:
+     1. The page is near-white and the ink is navy, and neither is a pure
+        value. #fffffb holds a faint warm cast and #3d405b is a blue-grey — a
+        true #fff/#000 pairing is what makes a light UI look like a default
+        stylesheet.
      2. Depth is a soft shadow plus a radius, not a border. Borders are the
         fallback for surfaces that sit ON another surface, where a shadow has
-        nothing to cast onto.
+        nothing to cast onto. Shadow hue follows the ink: navy now, because a
+        warm-black blur on a cool page goes muddy exactly as #000 did on the
+        warm canvas.
+     3. THE VOLTAGE IS TWO TOKENS AND THEY ARE NOT INTERCHANGEABLE. `--gold`
+        is the readable burnt value; `--gold-fill` is #ff8500 and carries no
+        text at any size. The split is explained where the tokens are set.
+
+   Cards are warmer than the page here, which inverts the old model (white
+   cards on a warm ground). Promo-banner gradients are still the one place
+   colour beyond these tokens is allowed, and they are still declared in the
+   screens rather than here.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg: #f1efec; /* page — warm neutral, the canvas cards sit on   */
-  --surface: #ffffff; /* card                                           */
-  --surface-2: #f7f5f2; /* a block inside a card: inputs, inner tiles      */
-  --stroke: rgba(15, 14, 14, 0.07); /* hairline on a raised surface     */
-  --rule: #e4e0da; /* divider on the page itself                     */
+  /* The page is the lightest surface and cards are WARMER than it, which is
+     the inverse of the old canvas — there, cards were white and floated on a
+     warm grey. Here the ground is near-white and a card is cream, so a card
+     reads as paper laid on paper rather than as a panel lit from in front. */
+  --bg: #fffffb; /* page — near-white with the faintest warm cast   */
+  --surface: #ffeddd; /* card — cream, one step warmer than the page    */
+  --surface-2: #ffd2a6; /* a block inside a card: wells, inactive tracks   */
+  --stroke: rgba(61, 64, 91, 0.1); /* hairline on a raised surface      */
+  --rule: #e8dcc4; /* divider on the page itself                     */
 
-  /* Ink. The base is near-black; the GREY comes from the gradient every ink
-     surface is filled with, not from lightening the token. A flat mid-grey
-     reads as paint — a near-black graded up to #2a2a2d at its lit edge reads
-     as a dark material with light falling on it. */
-  --ink: #0e0e10;
-  --ink-2: #1a1a1d; /* one step up, for a block sitting on the ink   */
-  --ink-lit: #232327; /* the top of an ink gradient, where light lands */
+  /* Ink is navy, not near-black, and the GREY still comes from the gradient
+     every ink surface is filled with rather than from lightening the token.
+     The three steps must stay in this lightness order: `--ink-lit` is the top
+     of a raised gradient and `--ink-2` the bottom of a pressed one, so both
+     sit ABOVE `--ink`. Flipping either inverts the light source. */
+  --ink: #3d405b;
+  --ink-2: #4a4e6e; /* one step up, for a block sitting on the ink   */
+  --ink-lit: #585c80; /* the top of an ink gradient, where light lands */
 
   /* Skeuomorphic light. One source, directly above, for the whole app: a
      raised surface takes a hairline of it on the TOP edge and drops its
@@ -39,33 +58,43 @@
      bottom. Every rule below is one of those two, and mixing them is what
      makes soft-UI look muddy rather than physical. */
   --hi: rgba(255, 255, 255, 0.9); /* highlight on a light surface  */
-  --hi-ink: rgba(255, 255, 255, 0.12); /* highlight on a dark one  */
-  --lo: rgba(14, 14, 16, 0.1); /* the shade under a lip            */
+  --hi-ink: rgba(255, 255, 255, 0.14); /* highlight on a dark one  */
+  --lo: rgba(61, 64, 91, 0.1); /* the shade under a lip            */
 
-  --text: #0f0e0e; /* 17.2:1 on the canvas                           */
-  --text-2: #4e4a46; /*  8.1:1 — body                                  */
-  --text-3: #6b665f; /*  5.1:1 — the floor for anything readable       */
-  --text-4: #a5a09a; /*  2.6:1 — NON-TEXT ONLY: ticks, rules, spokes   */
+  /* The ladder is navy now, so every ratio below was re-measured against the
+     new page (#fffffb) rather than carried over. */
+  --text: #3d405b; /* 10.1:1 on the page                             */
+  --text-2: #5a5d75; /*  6.4:1 — body                                  */
+  --text-3: #6e7189; /*  4.8:1 — the floor for anything readable       */
+  --text-4: #a9abbd; /*  2.4:1 — NON-TEXT ONLY: ticks, rules, spokes   */
 
-  /* The single voltage. Gold keeps the astrology identity, but a light canvas
-     needs two of it: one dark enough to read as text, one bright enough to
-     read as a fill. Using the bright one for text is the classic light-theme
-     contrast failure. */
-  /* Gold, not yellow. #e3a63c sat close to amber; pulling the hue warmer and
-     dropping the lightness a step reads as metal rather than highlighter.
+  /* The single voltage, now orange rather than gold. The two-token split is
+     the load-bearing part and it survives the change of hue: one value dark
+     enough to read as text, one bright enough to read as a fill. Using the
+     bright one for text is the classic light-theme contrast failure.
 
-     Deepening --gold also fixed a contrast bug it did not set out to: the old
-     #97670f was annotated "4.9:1", which was its ratio against a white CARD.
-     Against the canvas it was 4.29:1 — under AA — and gold text appears on
-     both. Measure the tighter surface, and say which one you measured. */
-  --gold: #8f6210; /* text/borders — 4.7:1 on canvas, 5.4:1 on a card */
-  --gold-fill: #d29a2b; /* backgrounds only — ink on it is 7.7:1        */
-  --gold-dim: #6f4a0c;
-  --gold-wash: rgba(210, 154, 43, 0.18);
+     THE TOKEN NAMES ARE KEPT. `--gold` and `--gold-fill` are read by 62 text
+     call sites, 12 fills and three rules in this file; renaming them to
+     `--orange` would be a rename of every one of those for no behavioural
+     gain, and the name has meant "the one voltage" since the first build.
 
-  /* Status, darkened for a light background. */
+     Why the split matters more here than it did for gold. Gold's fill value
+     could *almost* carry text; orange's cannot come close. #ff8500 is 2.4:1
+     against this page — worse than the grey that is fenced to ticks and
+     rules — so pointing `--gold` at it would drop 62 readable strings below
+     AA in one line, silently, because contrast is not a thing a build
+     checks. `--gold` is therefore the burnt value and nothing else. */
+  --gold: #a85400; /* text/borders — 5.3:1 on the page, 4.9:1 on a card */
+  --gold-fill: #ff8500; /* backgrounds only — NEVER text of any size      */
+  --gold-dim: #8a4500;
+  --gold-wash: rgba(255, 133, 0, 0.18);
+
+  /* Status, darkened for a light background. Both sit in the warm family on
+     purpose — saffron is the identity here and a green dot beside an orange
+     accent was the last colour in the app that belonged to no palette.
+     `--ok` is a DOT, never text: at 3.2:1 it would fail as a label. */
   --live: #cf3a25;
-  --ok: #0b8b50;
+  --ok: #e06c00;
 
   --sp: 8px;
 }
@@ -196,16 +225,16 @@
   /* The hierarchy ladder. On a light canvas these are ink at four opacities —
      the same mechanic as the dark build, inverted. */
   .t-heading {
-    color: rgba(15, 14, 14, 0.95);
+    color: rgba(61, 64, 91,0.95);
   }
   .t-sub {
-    color: rgba(15, 14, 14, 0.74);
+    color: rgba(61, 64, 91,0.74);
   }
   .t-body {
-    color: rgba(15, 14, 14, 0.6);
+    color: rgba(61, 64, 91,0.6);
   }
   .t-faint {
-    color: rgba(15, 14, 14, 0.45);
+    color: rgba(61, 64, 91,0.45);
   }
   .gold {
     color: var(--gold);
@@ -257,8 +286,8 @@
     background: linear-gradient(180deg, #ffffff 0%, #f8f6f3 100%);
     border: 1px solid var(--stroke);
     border-radius: 20px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
-      0 6px 16px -8px rgba(15, 14, 14, 0.12);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
+      0 6px 16px -8px rgba(61, 64, 91,0.12);
   }
 
   /* One tile per screen — the object the screen is actually about. */
@@ -266,8 +295,8 @@
     background: linear-gradient(180deg, #ffffff 0%, #f6f4f0 100%);
     border: 1px solid var(--stroke);
     border-radius: 24px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(15, 14, 14, 0.05),
-      0 16px 32px -12px rgba(15, 14, 14, 0.18);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(61, 64, 91,0.05),
+      0 16px 32px -12px rgba(61, 64, 91,0.18);
   }
 
   /* Cards that navigate somewhere lift on hover and settle on press. The
@@ -277,14 +306,14 @@
   }
   .pop-tap:hover {
     transform: translateY(-3px);
-    box-shadow: inset 0 1px 0 var(--hi), 0 4px 8px rgba(15, 14, 14, 0.06),
-      0 20px 36px -14px rgba(15, 14, 14, 0.22);
+    box-shadow: inset 0 1px 0 var(--hi), 0 4px 8px rgba(61, 64, 91,0.06),
+      0 20px 36px -14px rgba(61, 64, 91,0.22);
   }
   /* Pressed, the card sits INTO the page: the highlight moves off the top
      edge and a shade appears there instead. */
   .pop-tap:active {
     transform: translateY(1px) scale(0.995);
-    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.1), 0 1px 2px rgba(15, 14, 14, 0.05);
+    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.1), 0 1px 2px rgba(61, 64, 91,0.05);
   }
 
   /* A well. The inverse of a card — shaded at the top, lit along the bottom
@@ -293,7 +322,7 @@
   .pop-inset {
     background: linear-gradient(180deg, #efece8 0%, #f7f5f2 100%);
     border-radius: 14px;
-    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.07), inset 0 -1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.07), inset 0 -1px 0 rgba(255, 255, 255, 0.85);
   }
 
   /* ── Buttons ──────────────────────────────────────────────────────────────
@@ -304,28 +333,36 @@
   .pop-btn {
     @apply inline-flex items-center justify-center whitespace-nowrap text-center;
     padding: calc(var(--sp) * 1.5) calc(var(--sp) * 2.5);
-    border: 1px solid #08080a;
+    border: 1px solid #7c3a00;
     border-radius: 12px;
-    /* Lit at the top, near-black at the bottom. This gradient is the whole
-       reason the ink reads as grey without the token being grey. */
-    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 2px rgba(15, 14, 14, 0.14),
-      0 6px 14px -6px rgba(15, 14, 14, 0.32);
+    /* THE PRIMARY BUTTON IS SAFFRON, not ink — 20 Sep 2026.
+       C0's token sheet says "buttons are ink", and that was measured on the
+       BRIGHT orange: white on #ff8500 is 2.4:1 and unusable. A deeper saffron
+       is a different answer. White on #c25010 is 5.38:1 and on #9a4a00 is
+       6.1:1, so both ends of this gradient clear AA for the 11px caps the
+       button carries — which is the size the ink rule was protecting.
+       Lit at the top, deep at the bottom, same one light source as before. */
+    background: linear-gradient(180deg, #c25010 0%, #9a4a00 100%);
+    color: rgba(255, 255, 255, 0.96);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 2px rgba(61, 64, 91,0.14),
+      0 6px 14px -6px rgba(61, 64, 91,0.32);
     transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.12s ease,
       filter 0.12s ease;
   }
   .pop-btn:hover {
     filter: brightness(1.15);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 2px 4px rgba(15, 14, 14, 0.14),
-      0 10px 20px -8px rgba(15, 14, 14, 0.36);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 2px 4px rgba(61, 64, 91,0.14),
+      0 10px 20px -8px rgba(61, 64, 91,0.36);
   }
   /* Pressed. The gradient flips, the top highlight is replaced by a shade,
      and the drop shadow collapses — the face is now below the surface it was
      sitting on. Nothing here is a colour change; it is all light direction. */
   .pop-btn:active {
     transform: translateY(1px);
-    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    /* The flip: deep at the top, lit at the bottom. Same saffron pair as the
+       rest state, read the other way round — a press is a change in light
+       direction and never a change in colour (§3). */
+    background: linear-gradient(180deg, #9a4a00 0%, #b04f08 100%);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
   }
 
@@ -335,12 +372,16 @@
     font-size: 10px;
   }
 
+  /* The one voltage as a button. Its label is dark navy rather than the ink
+     token: ink on #ff8500 is 4.13:1, which clears large text and fails the
+     11px caps this button actually carries. #2a2d42 is 5.6:1 on the same
+     fill and is the border colour beside it, so the face stays one material. */
   .pop-btn-gold {
-    background: linear-gradient(180deg, #e8b64a 0%, #c68c1c 100%);
-    border-color: #96690c;
-    color: #1a1204;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 2px rgba(111, 74, 12, 0.26),
-      0 8px 18px -8px rgba(111, 74, 12, 0.52);
+    background: linear-gradient(180deg, #ffa340 0%, #ff8500 100%);
+    border-color: #c26400;
+    color: #2a2d42;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 2px rgba(194, 100, 0,0.26),
+      0 8px 18px -8px rgba(194, 100, 0,0.52);
   }
   .pop-btn-gold:hover {
     filter: brightness(1.07);
@@ -354,18 +395,18 @@
      that is a choice rather than a commitment. */
   .pop-btn-ghost {
     background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
-    border-color: rgba(15, 14, 14, 0.12);
+    border-color: rgba(61, 64, 91,0.12);
     color: var(--text);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
-      0 4px 10px -6px rgba(15, 14, 14, 0.12);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
+      0 4px 10px -6px rgba(61, 64, 91,0.12);
   }
   .pop-btn-ghost:hover {
     filter: none;
-    border-color: rgba(15, 14, 14, 0.2);
+    border-color: rgba(61, 64, 91,0.2);
   }
   .pop-btn-ghost:active {
     background: linear-gradient(180deg, #eae6e1 0%, #f6f4f1 100%);
-    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
   }
 
   /* Disabled sits flush with the page — no gradient, no lip, nothing to press. */
@@ -402,8 +443,8 @@
     border-bottom: 1px solid var(--rule);
     border-bottom-left-radius: 18px;
     border-bottom-right-radius: 18px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(15, 14, 14, 0.04),
-      0 8px 20px -14px rgba(15, 14, 14, 0.16);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(61, 64, 91,0.04),
+      0 8px 20px -14px rgba(61, 64, 91,0.16);
   }
 
   /* ── Glass ────────────────────────────────────────────────────────────────
@@ -455,7 +496,7 @@
     padding-bottom: env(safe-area-inset-bottom);
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
-    box-shadow: 0 -2px 6px rgba(15, 14, 14, 0.06), 0 -12px 28px -12px rgba(15, 14, 14, 0.22);
+    box-shadow: 0 -2px 6px rgba(61, 64, 91,0.06), 0 -12px 28px -12px rgba(61, 64, 91,0.22);
   }
 
   /* ── The bar material ─────────────────────────────────────────────────────
@@ -471,11 +512,16 @@
 
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .navbar {
-      /* 0.9, not 0.72. The bars have to read as near-black slabs first and
+      /* 0.9, not 0.72. The bar has to read as a solid ink slab first and
          glass second — at 0.72 a bar with nothing dark behind it composites
          to mid-grey, which is exactly the wash this was fixing. The frosting
-         is still there; it is just no longer the loudest thing about it. */
-      background-color: rgba(14, 14, 16, 0.9);
+         is still there; it is just no longer the loudest thing about it.
+
+         This is `--ink` written out, because a translucent colour cannot be
+         `var(--ink)` without a colour function. It was the ONE value the
+         repalette missed, and it showed: the tab bar stayed near-black under
+         a navy app. If `--ink` moves again, move this with it. */
+      background-color: rgba(61, 64, 91, 0.9);
       background-image: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.06) 0%,
@@ -497,7 +543,7 @@
     filter: drop-shadow(0 1px 0.5px rgba(0, 0, 0, 0.75));
   }
   .topbar svg {
-    filter: drop-shadow(0 1px 1px rgba(15, 14, 14, 0.16));
+    filter: drop-shadow(0 1px 1px rgba(61, 64, 91,0.16));
   }
 
   /* A knob is a pill with no text in it. It needs no colours of its own —
@@ -525,8 +571,8 @@
     border-radius: 9999px;
     border: 1px solid var(--stroke);
     background: linear-gradient(180deg, #ffffff 0%, #f5f2ef 100%);
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 6px rgba(15, 14, 14, 0.06),
-      0 12px 24px -10px rgba(15, 14, 14, 0.22);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 6px rgba(61, 64, 91,0.06),
+      0 12px 24px -10px rgba(61, 64, 91,0.22);
   }
   .subnav-item {
     @apply flex flex-1 flex-col items-center justify-center gap-1 caps-sm;
@@ -539,7 +585,7 @@
   .subnav-item[aria-selected='true'] {
     background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
     color: rgba(255, 255, 255, 0.95);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 3px rgba(15, 14, 14, 0.3);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 3px rgba(61, 64, 91,0.3);
   }
 
   /* ── Pills ────────────────────────────────────────────────────────────────
@@ -550,22 +596,22 @@
     @apply inline-flex flex-none items-center gap-2 whitespace-nowrap;
     padding: calc(var(--sp) * 1.25) calc(var(--sp) * 2);
     border-radius: 9999px;
-    border: 1px solid rgba(15, 14, 14, 0.1);
+    border: 1px solid rgba(61, 64, 91,0.1);
     background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
     color: var(--text-2);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
-      0 3px 8px -5px rgba(15, 14, 14, 0.14);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
+      0 3px 8px -5px rgba(61, 64, 91,0.14);
     transition: transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.16s ease,
       background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   }
   .pill:hover {
     transform: translateY(-1px);
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(15, 14, 14, 0.06),
-      0 8px 16px -8px rgba(15, 14, 14, 0.2);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(61, 64, 91,0.06),
+      0 8px 16px -8px rgba(61, 64, 91,0.2);
   }
   .pill:active {
     transform: translateY(1px);
-    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.14);
+    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.14);
   }
   /* Selected reads as ink, not as a tint — a tinted pill on a warm canvas is
      too close to the unselected one to survive a glance. */
@@ -573,7 +619,7 @@
   .pill[aria-pressed='true'],
   .pill[data-active='true'] {
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
-    border-color: #08080a;
+    border-color: #2a2d42;
     color: rgba(255, 255, 255, 0.95);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.07);
   }
@@ -609,7 +655,7 @@
     position: relative;
     overflow: hidden;
     border-radius: 20px;
-    box-shadow: 0 2px 6px rgba(15, 14, 14, 0.1), 0 14px 30px -14px rgba(15, 14, 14, 0.4);
+    box-shadow: 0 2px 6px rgba(61, 64, 91,0.1), 0 14px 30px -14px rgba(61, 64, 91,0.4);
     transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease;
   }
   .banner:active {
@@ -640,26 +686,26 @@
     border-radius: 9999px;
     /* 145deg, not 180 — a sphere catches light off-axis, a slab does not. */
     background: linear-gradient(145deg, #ffffff 0%, #eeebe6 100%);
-    border: 1px solid rgba(15, 14, 14, 0.08);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(15, 14, 14, 0.05),
-      0 6px 14px -8px rgba(15, 14, 14, 0.18);
+    border: 1px solid rgba(61, 64, 91,0.08);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
+      0 6px 14px -8px rgba(61, 64, 91,0.18);
     transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.18s ease;
   }
   .tile:hover .tile-face {
     transform: translateY(-3px);
-    box-shadow: 0 3px 6px rgba(15, 14, 14, 0.05), 0 14px 24px -10px rgba(15, 14, 14, 0.24);
+    box-shadow: 0 3px 6px rgba(61, 64, 91,0.05), 0 14px 24px -10px rgba(61, 64, 91,0.24);
   }
   .tile:active .tile-face {
     transform: translateY(1px) scale(0.96);
     background: linear-gradient(145deg, #eae7e2 0%, #f7f5f2 100%);
-    box-shadow: inset 0 2px 5px rgba(15, 14, 14, 0.14);
+    box-shadow: inset 0 2px 5px rgba(61, 64, 91,0.14);
   }
 
   /* Selected tile. Pressed in, the same grammar as a selected pill — the
      circle stays a circle, it just stops being raised. */
   .tile-face-on {
     background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
-    border-color: #08080a;
+    border-color: #2a2d42;
     color: rgba(255, 255, 255, 0.95);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
   }
@@ -732,7 +778,7 @@
     padding: 4px;
     border-radius: 9999px;
     background: linear-gradient(180deg, #e9e6e1 0%, #f4f2ee 100%);
-    box-shadow: inset 0 2px 4px rgba(15, 14, 14, 0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
   }
   .seg-item {
     @apply flex-1 text-center caps-sm;
@@ -746,8 +792,8 @@
   .seg-item[data-active='true'] {
     background: linear-gradient(180deg, #ffffff 0%, #f6f4f1 100%);
     color: var(--text);
-    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(15, 14, 14, 0.08),
-      0 3px 8px -4px rgba(15, 14, 14, 0.2);
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(61, 64, 91,0.08),
+      0 3px 8px -4px rgba(61, 64, 91,0.2);
   }
 
   /* ── Imagery ──────────────────────────────────────────────────────────────
@@ -774,7 +820,7 @@
     @apply relative overflow-hidden;
     background: linear-gradient(180deg, #e4e0da 0%, #edeae5 100%);
     border-radius: 16px;
-    box-shadow: inset 0 2px 5px rgba(15, 14, 14, 0.11), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 2px 5px rgba(61, 64, 91,0.11), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
   }
 
   /* Greyscale belongs to the ARTWORK, not the container — while the filter sat
@@ -790,7 +836,7 @@
     flex: 1;
     border-radius: 9999px;
     background: #e2ded8;
-    box-shadow: inset 0 1px 2px rgba(15, 14, 14, 0.16);
+    box-shadow: inset 0 1px 2px rgba(61, 64, 91,0.16);
     transition: background 0.3s ease;
   }
   .tick-on {

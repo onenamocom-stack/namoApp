@@ -146,8 +146,32 @@ export function TabHeader({ action = null }) {
 
   return (
     <header className="topbar flex items-center gap-2 px-4 py-2">
+      {/* The mark is the PNG used as a MASK rather than drawn as an image, so
+          its colour is `--ink` and it repalettes with everything else. The
+          file is pure #000 on alpha, and pure black beside navy type broke
+          the first rule in index.css — the ink is never pure black. Painting
+          a second PNG would have put the brand colour somewhere no token can
+          reach it; this way the mark follows the token forever.
+
+          Not the accent, deliberately: orange is one voltage per screen, and
+          a mark that appears on every screen would spend it everywhere and
+          therefore signal nothing. The Link carries the accessible name, so
+          the span is decorative. */}
       <Link to={me.homeTo} aria-label="Namo" className="transition-opacity hover:opacity-70">
-        <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="Namo" className="h-5 w-auto" />
+        <span
+          aria-hidden="true"
+          className="block h-5 w-[90px] bg-ink"
+          style={{
+            WebkitMaskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
+            maskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'left center',
+            maskPosition: 'left center',
+          }}
+        />
       </Link>
 
       <span className="flex-1" />

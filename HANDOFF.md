@@ -2756,7 +2756,7 @@ docs 01–06 was touched.
 
 The Django-owned tables landed on the fresh namo-dev (`usgzgrdxlzgnehtbebzo`) without the Supabase-side objects the 27 SQL migrations build around them, so the DB-level parity pass applied every non-table object from `backend/schema/` to namo-dev in dependency order, idempotently (each source file's objects in their own transaction, `create or replace` / `drop if exists` / guarded inserts added where the source lacked them): all 7 triggers (`on_auth_user_created` on `auth.users` → `handle_new_user` with the 003 wallet row, `ledger_immutable` + `ledger_applies_to_balance` with `refuse_mutation`/`apply_ledger_to_balance`, `earnings_ledger_immutable`, `bookings_decline_reverses`/`reverse_on_decline`, 016's `messages_touch_thread`, 020's `reviews_rating_cache`), all 8 views (`consultants_public`, `bookings_view`, `threads_view`, `content_public` in its 025 author_id form, `consultant_follower_counts`, `reviews_public`, `profile_follow_counts`, `authors_public`), all 17 functions (final 005/013/018 versions of `wallet_debit`, `book_session`, `booking_reverse`, `session_request`/`accept`/`end`/`sweep`, plus `payment_capture`, `consultant_open_slots`, `session_heartbeat`, `touch_thread`, `refresh_rating_cache`, `reviews_touch_rating_cache`, `handle_new_user`), every RLS policy (36), the column grants/revokes, the `supabase_realtime` publication for `messages` + `sessions`, the 007→011 `price_bands` catalogue seed (24 rows, 011-corrected prices), and the table/column comments. Deliberately skipped: the `content-media` and `bhakti-media` storage buckets and their `storage.objects` policies (media goes through Django/R2), the pg_cron extension + `session-sweep` schedule (Django's `sweep_sessions` command owns the tick), and all `*_check.sql` files (tests, not migrations). Two deviations worth knowing: `orders`/`order_items` did not exist at all — no Django migration creates them and the apps write them through a raw-SQL gateway — so they were created per 012 verbatim (they are not Django-owned), and Django ships every table default Python-side, so the column defaults the SQL DDL declares (uuid ids, `now()` timestamps, `wallets.balance_paise 0`, `profiles.birth_time_known/admin false`, status/kind defaults) were added as metadata-only `set default` — without them `handle_new_user` and the client-insert policies cannot function; both are invisible to the ORM and `manage.py migrate --check` still reports nothing pending. Verified on namo-dev: a rolled-back signup insert fired `handle_new_user` (profile + wallet created), a hand-typed ledger credit/debit moved `wallets.balance_paise` 0 → 124000 → 100000 via the trigger, and `refuse_mutation` refused the UPDATE; a full idempotent re-run of the whole set is clean. Known cosmetic divergences Django owns (not "fixed", flagged for awareness): `consultant_availability` carries a surrogate bigint `id` pk alongside the composite unique, `wallets` gained a `created_at`, and several `text` columns are `varchar` — none affect the SQL objects. Files changed: `HANDOFF.md` (this section) only; the apply scripts lived in `/tmp/namodev_parity/` and were not committed.
 
-## 11. UX direction — one look, three bets — 19 Sep 2026
+## 11a. UX direction — one look, three bets — 19 Sep 2026
 
 `mocks/ux-directions/` holds eleven artboards on a design canvas
 (https://claude.ai/artifact/9bsWweaVCQmrn2JYVFFeLe, flat copy at
@@ -2849,3 +2849,111 @@ service-role key, the namo-dev DB password, and the R2 token. Today.
 Also: the Twilio account has no Messaging product enabled (API 20404 on
 Messages/Services) — Verify-only. Real SMS needs Messaging enabled in the
 console, or the MSG91 switch, at the production window.
+
+## 13. The repalette — white/orange on `ux/white-orange` — 20 Sep 2026
+
+The palette the team picked (HANDOFF §11a) is applied to the running app on
+the branch `ux/white-orange`. **Not merged, not deployed** — it exists to be
+walked before anybody decides.
+
+Every value resolves through the `:root` tokens, which is what the design
+system was built for, so the change is `src/index.css` plus
+`tailwind.config.js` and nothing else. `npm run lint` is 0 errors / 3 warnings
+(the documented baseline) and the build is green.
+
+| Was | Now | |
+|---|---|---|
+| `--bg` `#f1efec` | `#fffffb` | page |
+| `--surface` `#ffffff` | `#fff1dc` | card — **cards are now warmer than the page**, inverting the old model |
+| `--surface-2` `#f7f5f2` | `#ffd2a6` | wells |
+| `--ink` `#0e0e10` | `#3d405b` | with `--ink-2` `#4a4e6e` and `--ink-lit` `#585c80` |
+| `--text` ladder | `#3d405b` / `#5a5d75` / `#6e7189` / `#a9abbd` | 10.1 / 6.4 / 4.8 / 2.4:1, re-measured against the new page |
+| `--gold` `#8f6210` | `#a85400` | **text**, 5.3:1 |
+| `--gold-fill` `#d29a2b` | `#ff8500` | **fill only** |
+| shadows `rgba(15,14,14,…)` | `rgba(61,64,91,…)` | 49 in `index.css`, 6 in the Tailwind scale |
+
+**The one thing that made this not a find-and-replace.** Gold had two roles —
+`--gold` readable as text at 4.7:1, `--gold-fill` as a background. Orange only
+has the second: `#ff8500` is 2.4:1 against the page, worse than the grey that
+is fenced to ticks and rules. There are **62 `.gold` text call sites**, 12
+fills and three rules in `index.css`. Pointing `--gold` at `#ff8500` would have
+dropped all 62 below AA in one line, silently, because nothing in the build
+checks contrast. `--gold` is therefore the burnt value `#a85400` and the token
+names are kept — renaming to `--orange*` would touch every one of those call
+sites for no behavioural gain.
+
+`.pop-btn-gold` labels itself `#2a2d42` rather than `--ink`: ink on `#ff8500`
+is 4.13:1, which clears large text and fails the 11px caps the button carries.
+
+### Second pass — every colour is saffron now, 20 Sep 2026
+
+Asked for on review: no colour outside the palette anywhere, and more orange,
+because saffron carries meaning in Sanatan Dharm rather than being decoration.
+Three changes, all on the same branch:
+
+- **Ten gradients repainted into the saffron family.** Six promo banners
+  (`Consult.jsx` indigo/green/gold, `Shop.jsx` purple/green/amber) and four
+  category headers (`Shop.jsx` `CAT_GRADIENT`: purple, green, brown, rose).
+  They now run `#7c2d12 → #c2410c`, `#6b3410 → #a85400`, `#8a3a00 → #b45309`
+  and `#5c2c0d → #9a4a05`, varying by depth rather than by hue.
+
+  **This also fixed a contrast bug that predates the repalette.** Banner copy
+  is white over the gradient, so the LIGHT end of each pair is what has to
+  carry it — and the old indigo ended at `#818cf8`, where white is 2.98:1,
+  under AA for the 13px note and the 11px kicker. Every new light end is at
+  or below `#b45309`, which is 5.0:1 or better.
+- **`--ok` `#0b8b50` → `#e06c00`.** The online dot was the last thing in the
+  app belonging to no palette. It is a DOT and never text: at 3.2:1 it would
+  fail as a label, which is why the token comment now says so.
+- **`--surface` `#fff1dc` → `#ffeddd`**, a hue shift from 36° to 28° — the
+  cream read yellow beside the orange. One line, and the one value here that
+  deviates from the hexes the team sent.
+
+`--live` `#cf3a25` is kept. It is already in the warm family and it is the
+only way a live badge is told apart from an online dot.
+
+### Third pass — the two misses, and the button — 20 Sep 2026
+
+Found by looking at the running app rather than at the diff, which is the
+point `04-UI-UX.md` §11.1 keeps making.
+
+- **The tab bar was still near-black.** Its frosted fill is
+  `rgba(14, 14, 16, 0.9)` written out inside the `@supports` block, because a
+  translucent colour cannot be `var(--ink)` without a colour function. It was
+  the one value in the app that does not read a token, so the repalette missed
+  it and the app's largest ink surface stayed the old colour under a navy
+  everything-else. Now `rgba(61, 64, 91, 0.9)`, with a comment saying to move
+  it whenever `--ink` moves.
+- **`index.html`'s `theme-color` was still `#f1efec`**, so a phone painted its
+  browser chrome the old canvas colour. Now `#fffffb`.
+- **The wordmark was pure `#000000`** — sampled, not guessed: 10,698 opaque
+  pixels, every one of them black. That broke the first rule in `index.css`
+  ("the ink is never pure black") and left one pure-black object beside navy
+  type. `public/namo-logo.png` is now used as a **mask** rather than drawn as
+  an image, filled with `bg-ink`, so the mark repalettes with the token
+  instead of needing a second PNG. The `<Link>` already carried
+  `aria-label="Namo"`, so the masked span is `aria-hidden`.
+
+  **It is not the accent, and that was the decision.** Orange is one voltage
+  per screen; the mark is on every screen, so an orange logo would spend the
+  voltage everywhere and therefore signal nothing.
+
+**And the primary button is saffron, which reverses C0's "buttons are ink".**
+That rule was measured on the BRIGHT orange — white on `#ff8500` is 2.4:1 and
+unusable, which is still true and still why `--gold-fill` carries no text. A
+deeper saffron is a different answer: `.pop-btn` is now
+`#c25010 → #9a4a00`, where white is 5.38:1 at the lit end and 6.1:1 at the
+deep end. Both clear AA for the 11px caps the button carries, which is the
+size the ink rule existed to protect.
+
+`.pop-btn-gold` stays the bright variant (`#ffa340 → #ff8500`, `#2a2d42`
+label), so the two button looks are still distinguishable: deep saffron is
+the primary action, bright orange is the one voltage.
+
+**Not done, and each is a decision rather than an oversight:**
+
+- **Nobody has walked it in a browser.** Lint and a green build prove the class
+  of error `04-UI-UX.md` §11.1 is about, and nothing else. This branch changes
+  every surface in the app.
+- `docs/04-UI-UX.md` §1, §2.1, §2.5, §3 and the appendix are rewritten to the
+  new values in the same commit. No other document names a colour.
