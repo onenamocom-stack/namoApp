@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
 import { supabase } from '../../lib/supabase.js'
+import { PRO_APP_URL } from '../../lib/urls.js'
 
 export default function VerifyOtp() {
   const navigate = useNavigate()
@@ -34,7 +35,14 @@ export default function VerifyOtp() {
       return
     }
 
-    navigate(pro ? '/pro/apply' : '/onboarding/computing')
+    // `next=pro` lands in the consultant app — a separate deployment, not a
+    // route this build carries. A seeker bookmarked through an old pro link
+    // still ends up in the right place.
+    if (pro) {
+      window.location.href = PRO_APP_URL
+      return
+    }
+    navigate('/onboarding/computing')
   }
 
   const resend = async () => {
