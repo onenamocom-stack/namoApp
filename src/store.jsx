@@ -14,6 +14,8 @@ import { supabase } from './lib/supabase.js'
 import { bookSession as book, myConsultant } from './lib/consultants.js'
 import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
+import { createWalletApi } from './lib/wallet.js'
+import { createProfileApi } from './lib/profile.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -128,6 +130,14 @@ export function AppProvider({ children }) {
     setBalanceState(next)
   }, [])
 
+  /* Same reason as balanceRef, for the two values the wallet api reads across
+     an await: the checkout prefill and the id it re-reads the wallet with.
+     Passing `profile` and `session` into the api by value would freeze them
+     at whatever was mounted when it was built, and a person who signed in
+     after that would check out with an empty name. */
+  const profileRef = useRef(null)
+  const sessionRef = useRef(null)
+
   /* The signed-in user's `consultants` row, or null. Phase 4: consultant-ness
      is the existence of this row — there is no role column and no persisted
      flag, for the same reason `isPro` is derived from the URL. `null` means
@@ -179,43 +189,80 @@ export function AppProvider({ children }) {
     setConsultantLoading(false)
   }, [])
 
-  const refreshProfile = useCallback(async (userId) => {
-    if (!userId) return setProfile(null)
-    setProfileLoading(true)
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    // A failed load is not the same as "no profile", but both end up null here
-    // and every screen then falls back to seed identity — a signed-in person
-    // shown the mock user's name and birth data. Nothing surfaces that yet
-    // (phase 1 has no error UI), so at minimum make it diagnosable.
-    if (error) console.error('[profile] load failed:', error.message)
-    setProfile(data ?? null)
-    setProfileLoading(false)
+  /* The api owns the read and the state it lands in; the store owns the
+     "is anybody signed in" guard and the shape every screen consumes.
+     The warning that outlived the move: a failed load and "no profile" are
+     still both null here, and every screen then falls back to seed identity
+     — a signed-in person shown the mock user's name and birth data. Phase 1
+     has no error UI for it; the api logs so it stays diagnosable. */
+  const profileApi = useMemo(
+    () => createProfileApi({ setProfile, setProfileLoading }),
+    [],
+  )
+  const refreshProfile = useCallback(
+    (userId) => profileApi.refreshProfile(userId),
+    [profileApi],
+  )
+  /* Onboarding's reveal screen writes the birth details through this. It
+     throws Error(server message) on a refusal, which is what Computing.jsx's
+     existing setSaveError(error.message) path already renders. */
+  const saveProfile = useCallback(
+    (fields) => profileApi.saveProfile(fields),
+    [profileApi],
+  )
+
+  /* Declared here rather than beside the rest of the UI state, and the
+     reason is the wallet api below: it toasts the refusal sentences the
+     server gives, so it has to be built after `showToast` exists. A const
+     read before its initializer is a ReferenceError at render, which makes
+     the whole provider throw and the app mount as a blank page — a green
+     build and a clean lint say nothing about it. */
+  const [toast, setToast] = useState(null)
+  const timer = useRef(null)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const showToast = useCallback((message) => {
+    setToast(message)
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setToast(null), 2400)
   }, [])
 
-  /* Both reads are scoped by RLS to the caller's own rows, so neither carries
-     a user id in its filter — asking for someone else's wallet returns an
-     empty result rather than a refusal (docs/05-BACKEND-SCHEMA.md §7). */
-  const refreshWallet = useCallback(async (userId) => {
-    if (!userId) {
-      setBalance(null)
-      setLedger([])
-      return
-    }
-    const [wallet, rows] = await Promise.all([
-      supabase.from('wallets').select('balance_paise').single(),
-      supabase.from('ledger').select('*').order('created_at', { ascending: false }).limit(50),
-    ])
-    /* Two reads, applied independently. Bailing on the wallet error also threw
-       away a ledger that had loaded fine, and left `balance` at null with
-       nothing to bring it back — the wallet then shows an em dash for the life
-       of the tab and every Buy button stays disabled, because `canAfford`
-       compares against null. Apply what arrived, and let the caller retry. */
-    if (wallet.error) console.error('[wallet] load failed:', wallet.error.message)
-    else setBalance(wallet.data.balance_paise)
+  /* Neither read carries a user id: it was RLS that scoped them to the
+     caller's own rows before, and it is the JWT that does it now. The
+     two-reads-apply-independently rule moved into the api with them —
+     bailing on a failed balance also threw away a ledger that had loaded
+     fine, and left `balance` at null with nothing to bring it back, which
+     disables every Buy button for the life of the tab.
 
-    if (rows.error) console.error('[ledger] load failed:', rows.error.message)
-    else setLedger(rows.data.map(toLedgerRow))
-  }, [])
+     `prefill` and `getUserId` are passed as getters rather than values so
+     the api reads the current profile and session on each call; capturing
+     them would freeze the checkout prefill at whatever was mounted first. */
+  const walletApi = useMemo(
+    () =>
+      createWalletApi({
+        showToast,
+        setBalance,
+        setLedger,
+        balanceRef,
+        prefill: () => ({
+          name: profileRef.current?.name ?? '',
+          email: profileRef.current?.email ?? '',
+          contact: sessionRef.current?.user?.phone ?? '',
+        }),
+        getUserId: () => sessionRef.current?.user?.id ?? null,
+      }),
+    [showToast, setBalance],
+  )
+  const refreshWallet = useCallback(
+    (userId) => walletApi.refreshWallet(userId),
+    [walletApi],
+  )
+
+  useEffect(() => {
+    profileRef.current = profile
+  }, [profile])
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
 
   useEffect(() => {
     let active = true
@@ -268,8 +315,6 @@ export function AppProvider({ children }) {
   }, [refreshProfile, refreshWallet, refreshConsultant])
 
   const [questionsLeft, setQuestionsLeft] = useState(5)
-  const [toast, setToast] = useState(null)
-  const timer = useRef(null)
 
   /* Language. A value, not a boolean, so it cannot live on `flags` — this is
      the first slice that genuinely needed one. Not persisted, like everything
@@ -374,14 +419,6 @@ export function AppProvider({ children }) {
     }
   }, [session])
 
-  useEffect(() => () => clearTimeout(timer.current), [])
-
-  const showToast = useCallback((message) => {
-    setToast(message)
-    clearTimeout(timer.current)
-    timer.current = setTimeout(() => setToast(null), 2400)
-  }, [])
-
   const setBirthField = useCallback(
     (field, value) => setBirth((b) => ({ ...b, [field]: value })),
     [],
@@ -456,36 +493,24 @@ export function AppProvider({ children }) {
       spendingRef.current = true
       setSpending(true)
       try {
-        const { data, error } = await supabase.rpc('wallet_debit', {
-          p_amount_paise: Math.round(amount * 100),
-          p_kind: label,
-        })
-        if (error) {
-          console.error('[wallet] debit failed:', error.message)
-          showToast('Could not reach the wallet. Try again.')
-          return false
-        }
-        if (!data?.ok) {
-          showToast(data?.reason ?? 'Could not take that payment.')
-          // A refusal can carry the real balance — take it, in case the number
-          // on screen was the thing that was wrong.
-          if (typeof data?.balance_paise === 'number') setBalance(data.balance_paise)
-          return false
-        }
-        setBalance(data.balance_paise)
-        // Awaited, and inside the guard. The row's id and timestamp only exist
-        // on the server, so this read is needed — but two unawaited reads from
-        // two quick purchases have no ordering, and the older response landing
-        // second repaints a balance one purchase too high. Holding the guard
-        // until it settles is what makes the sequence safe.
-        await refreshWallet(session?.user?.id)
-        return true
+        /* The server still decides, and this still never compares against
+           `balance` — that number is a read of a cache and a
+           devtools-editable one. The refusal comes from the same row lock
+           it always did; the api toasts the sentence the server gave and
+           takes the balance a refusal carries, in case the number on
+           screen was the thing that was wrong.
+
+           The post-debit read stays awaited and inside the guard: two
+           unawaited reads from two quick purchases have no ordering, and
+           the older response landing second repaints a balance one
+           purchase too high. */
+        return await walletApi.spend(amount, label)
       } finally {
         spendingRef.current = false
         setSpending(false)
       }
     },
-    [showToast, refreshWallet, session],
+    [walletApi, showToast],
   )
 
   /**
@@ -543,78 +568,22 @@ export function AppProvider({ children }) {
       toppingUpRef.current = true
       setToppingUp(true)
       try {
-        const { data, error } = await supabase.functions.invoke('razorpay-order', {
-          body: { amount_paise: amountPaise },
-        })
-        /* invoke() throws its own error on a non-2xx, so the refusal string the
-           function wrote is inside the response body, not in `error.message`.
-           Dig it out — the server's job is to give a reason the interface can
-           show, and dropping it here wastes that. */
-        if (error) {
-          console.error('[topup] order failed:', error.message)
-          let reason = null
-          try {
-            reason = (await error.context.json()).reason
-          } catch {
-            /* Nothing readable came back — the network, not a refusal. */
-          }
-          showToast(reason ?? 'Could not start that payment. Try again.')
-          return false
-        }
+        /* Still true, and the reason this is not `spend`'s mirror: nothing
+           here credits anything. It opens an order, hands the browser to
+           Razorpay's checkout and stops. The wallet moves when the webhook
+           reaches the server and the signature verifies — the only path a
+           rupee has into `ledger`.
 
-        try {
-          await loadCheckout()
-        } catch (err) {
-          console.error('[topup] checkout script:', err.message)
-          showToast('Could not load checkout. Check your connection.')
-          return false
-        }
-
-        const paid = await new Promise((resolve) => {
-          const rzp = new window.Razorpay({
-            key: data.key_id,
-            order_id: data.order_id,
-            amount: data.amount_paise,
-            currency: 'INR',
-            name: 'Namo',
-            description: 'Wallet top-up',
-            prefill: {
-              name: profile?.name ?? '',
-              email: profile?.email ?? '',
-              contact: session?.user?.phone ?? '',
-            },
-            theme: { color: '#1a1a1a' },
-            handler: () => resolve(true),
-            modal: { ondismiss: () => resolve(false) },
-          })
-          /* A card declined at the bank is not a dismissal and not a success —
-             without this the promise never settles and the button stays dead. */
-          rzp.on('payment.failed', () => resolve(false))
-          rzp.open()
-        })
-
-        if (!paid) return false
-
-        showToast('Payment received. Adding it to your wallet.')
-        /* The webhook is a separate request on a separate connection and it
-           may land after this line. Poll rather than guess a delay: stop the
-           moment the balance moves, give up after about twelve seconds and
-           leave the money where it is — it is in `ledger` either way, and a
-           reload will show it. */
-        const before = balanceRef.current
-        for (let i = 0; i < 8; i++) {
-          await new Promise((r) => setTimeout(r, 1500))
-          await refreshWallet(session?.user?.id)
-          if (balanceRef.current !== before) return true
-        }
-        showToast('Payment is still settling. Pull down in a moment.')
-        return true
+           So the api cannot await the balance. It polls, and says so on
+           screen rather than freezing a spinner over a number it does not
+           control. */
+        return await walletApi.topup(amountPaise)
       } finally {
         toppingUpRef.current = false
         setToppingUp(false)
       }
     },
-    [showToast, refreshWallet, session, profile],
+    [walletApi],
   )
 
   const openChat = useCallback((tab = 'ai') => {
@@ -686,6 +655,7 @@ export function AppProvider({ children }) {
       profile,
       profileLoading,
       refreshProfile,
+      saveProfile,
       consultant,
       consultantLoading,
       consultantError,
@@ -734,6 +704,7 @@ export function AppProvider({ children }) {
       profile,
       profileLoading,
       refreshProfile,
+      saveProfile,
       consultant,
       consultantLoading,
       consultantError,
@@ -780,31 +751,6 @@ export function useStore() {
 }
 
 /**
- * Razorpay's checkout script, fetched the first time somebody adds money and
- * never again. Not in `index.html`: a third-party script on every route, for a
- * sheet most sessions never open, is a tax on every other screen.
- */
-let checkoutLoad = null
-function loadCheckout() {
-  if (window.Razorpay) return Promise.resolve()
-  if (!checkoutLoad) {
-    checkoutLoad = new Promise((resolve, reject) => {
-      const el = document.createElement('script')
-      el.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      el.onload = resolve
-      el.onerror = () => {
-        // Cleared, so a second attempt actually retries rather than awaiting
-        // the promise that already rejected.
-        checkoutLoad = null
-        reject(new Error('checkout script failed to load'))
-      }
-      document.head.appendChild(el)
-    })
-  }
-  return checkoutLoad
-}
-
-/**
  * Paise to a rupee string. The only place in the app where money becomes
  * text, which is what keeps the division from spreading — every other layer
  * holds integers (backend/INSTRUCTIONS.md rule 1).
@@ -820,32 +766,6 @@ export function rupees(paise) {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   })
-}
-
-/**
- * A `ledger` row in the shape the wallet and profile screens already read.
- * `amountPaise` rather than `amount` on purpose: the old field held rupees,
- * and a row carrying the same name with a hundred-fold different value is the
- * bug this rename exists to make impossible.
- */
-function toLedgerRow(row) {
-  return {
-    id: row.id,
-    label: row.kind,
-    kind: row.delta_paise > 0 ? 'credit' : 'debit',
-    amountPaise: Math.abs(row.delta_paise),
-    date: formatLedgerDate(row.created_at),
-    method: row.ref_type === 'payment' ? 'UPI' : 'Wallet',
-  }
-}
-
-function formatLedgerDate(iso) {
-  const at = new Date(iso)
-  const mins = Math.round((Date.now() - at) / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins}m ago`
-  if (mins < 1440) return `${Math.round(mins / 60)}h ago`
-  return at.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 
 const MONTHS = [

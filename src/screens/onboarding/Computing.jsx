@@ -4,7 +4,6 @@ import { loadingLines, user } from '../../data/mock.js'
 import { ChartNorth } from '../../components/ChartSquare.jsx'
 import { Button, Field, Stub } from '../../components/Primitives.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
-import { supabase } from '../../lib/supabase.js'
 import { housesFrom, signOf, useAstro } from '../../lib/astro.js'
 
 /** '14/11/1996' -> '1996-11-14'. The onboarding Slot fields are already
@@ -38,7 +37,7 @@ function to24Hour(hhmmAmpm) {
  * so this is an UPDATE, not an insert.
  */
 export default function Computing() {
-  const { birth, session, profile, profileLoading, refreshProfile } = useStore()
+  const { birth, session, profile, profileLoading, refreshProfile, saveProfile } = useStore()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [saveError, setSaveError] = useState('')
@@ -116,41 +115,41 @@ export default function Computing() {
 
     written.current = true
 
-    supabase
-      .from('profiles')
-      .update({
-        name: birth.name,
-        email: (birth.email ?? '').trim() || null,
-        birth_date: toIsoDate(birth.date),
-        // NULL rather than midnight when nobody knows it. The column exists so
-        // the two are distinguishable (05-BACKEND-SCHEMA.md §4.1), and this was
-        // hardcoded `true` until phase 7 — which is why four production
-        // accounts are marked certain about a minute somebody estimated.
-        birth_time: birth.timeKnown === false ? null : to24Hour(birth.time),
-        birth_time_known: birth.timeKnown !== false,
-        birth_place: birth.place,
-        birth_lat: birth.lat,
-        birth_lon: birth.lon,
-        // The birth place's zone, carried from AskPlace. Hardcoding this was
-        // survivable only while the place list was four Indian cities; with
-        // worldwide search it would store India's zone against a London birth
-        // and shift every cusp with no error raised anywhere.
-        birth_zone: birth.zone,
-      })
-      .eq('id', session.user.id)
-      .then(({ error }) => {
-        // Never swallow this. A failed write here still lands on the reveal,
-        // which looks identical to a real one — the account then exists with
-        // no birth details and nothing on screen ever said so.
-        if (error) {
-          written.current = false
-          setSaveError(error.message)
-          return undefined
-        }
+    /* No `.eq('id', ...)` any more: the JWT is the identity and the client
+       never sends one (backend/INSTRUCTIONS.md rule 3). Same keys, same
+       shape — the server's allow-list is this exact set and nothing else. */
+    saveProfile({
+      name: birth.name,
+      email: (birth.email ?? '').trim() || null,
+      birth_date: toIsoDate(birth.date),
+      // NULL rather than midnight when nobody knows it. The column exists so
+      // the two are distinguishable (05-BACKEND-SCHEMA.md §4.1), and this was
+      // hardcoded `true` until phase 7 — which is why four production
+      // accounts are marked certain about a minute somebody estimated.
+      birth_time: birth.timeKnown === false ? null : to24Hour(birth.time),
+      birth_time_known: birth.timeKnown !== false,
+      birth_place: birth.place,
+      birth_lat: birth.lat,
+      birth_lon: birth.lon,
+      // The birth place's zone, carried from AskPlace. Hardcoding this was
+      // survivable only while the place list was four Indian cities; with
+      // worldwide search it would store India's zone against a London birth
+      // and shift every cusp with no error raised anywhere.
+      birth_zone: birth.zone,
+    })
+      .then(() => {
         clearBirthDraft()
         return refreshProfile(session.user.id)
       })
-  }, [session, birth, draftComplete, profile, profileLoading, refreshProfile, attempt])
+      // Never swallow this. A failed write here still lands on the reveal,
+      // which looks identical to a real one — the account then exists with
+      // no birth details and nothing on screen ever said so. A refusal
+      // arrives as a thrown Error carrying the server's own sentence.
+      .catch((error) => {
+        written.current = false
+        setSaveError(error.message)
+      })
+  }, [session, birth, draftComplete, profile, profileLoading, refreshProfile, saveProfile, attempt])
 
   if (saveError) {
     return (
