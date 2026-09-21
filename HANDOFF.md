@@ -3155,3 +3155,30 @@ runs it, or the consultant app ships with an empty API URL.
 
 Deploy 4 — wallet, payments, profile — is untouched and still needs
 Razorpay keys.
+
+## 17. Razorpay is connected — orders work, the webhook does not — 21 Sep 2026
+
+The Abzzo account's **test-mode** key pair is on Cloud Run (revision
+00004), borrowed until Namo has its own. Verified by making a real order
+rather than by reading config: `POST /v1/wallet/topup/order/` for ₹100
+returned `order_Tede5NVdsEE6mb` from Razorpay, and the matching `payments`
+row landed with `provider=razorpay`, `status=created`, 10000 paise, against
+the right profile.
+
+**The webhook is deliberately not configured, and that is the whole gap.**
+`RAZORPAY_WEBHOOK_SECRET` in the Abzzo env is the literal string
+`placeholder_…`, so it was not copied. The endpoint fails closed, which
+was checked: no secret answers 500 "Not configured", a bad signature
+answers 401, and neither path credits anything. **An order can be created
+and paid today and no wallet will move**, because crediting only happens
+on a verified webhook.
+
+Three things are needed before the money path is real, and only the first
+two are Namo's to do: a webhook on the Razorpay dashboard pointed at
+`…/v1/wallet/webhook/razorpay/` for `payment.captured` and
+`payment.failed`, its secret (chosen there, then set here), and a
+test-mode payment walked end to end.
+
+**One account serves two products while this lasts.** Abzzo's payments and
+Namo's share a dashboard and a ledger over there. Harmless in test mode;
+it must not follow us into live keys.
