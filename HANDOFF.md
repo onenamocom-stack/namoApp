@@ -3156,29 +3156,47 @@ runs it, or the consultant app ships with an empty API URL.
 Deploy 4 — wallet, payments, profile — is untouched and still needs
 Razorpay keys.
 
-## 17. Razorpay is connected — orders work, the webhook does not — 21 Sep 2026
+## 17. Razorpay is connected and the money path works — 21 Sep 2026
 
-The Abzzo account's **test-mode** key pair is on Cloud Run (revision
-00004), borrowed until Namo has its own. Verified by making a real order
-rather than by reading config: `POST /v1/wallet/topup/order/` for ₹100
-returned `order_Tede5NVdsEE6mb` from Razorpay, and the matching `payments`
-row landed with `provider=razorpay`, `status=created`, 10000 paise, against
-the right profile.
+Namo has its own Razorpay account; the Abzzo keys borrowed earlier were a
+different merchant, and that mismatch is worth recording because it is
+invisible until a payment goes missing: **orders were being created on one
+account while the webhook sat on another**, so no event could ever arrive.
+Caught by comparing the key id on Cloud Run against the one in the
+dashboard, not by any failure.
 
-**The webhook is deliberately not configured, and that is the whole gap.**
-`RAZORPAY_WEBHOOK_SECRET` in the Abzzo env is the literal string
-`placeholder_…`, so it was not copied. The endpoint fails closed, which
-was checked: no secret answers 500 "Not configured", a bad signature
-answers 401, and neither path credits anything. **An order can be created
-and paid today and no wallet will move**, because crediting only happens
-on a verified webhook.
+The account's test keys were regenerated (the secret is shown once), and
+`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` are
+on Cloud Run, revision 00005. The webhook is registered **in test mode** —
+Razorpay keeps test and live webhook lists apart, and a live-mode entry
+would never have fired for a `rzp_test_` order. The old Supabase edge
+function's webhook was deleted.
 
-Three things are needed before the money path is real, and only the first
-two are Namo's to do: a webhook on the Razorpay dashboard pointed at
-`…/v1/wallet/webhook/razorpay/` for `payment.captured` and
-`payment.failed`, its secret (chosen there, then set here), and a
-test-mode payment walked end to end.
+**Walked, not assumed.** An order for ₹100 (`order_TedyTa59SZ07j9`), then
+a `payment.captured` signed with the webhook secret:
 
-**One account serves two products while this lasts.** Abzzo's payments and
-Namo's share a dashboard and a ledger over there. Harmless in test mode;
-it must not follow us into live keys.
+| | |
+|---|---|
+| correct signature | 200, `duplicate: false`, wallet 0 → 10000 paise |
+| tampered signature | 401, nothing written |
+| same event replayed | 200, `duplicate: true`, no second credit |
+
+The ledger row reads "Added money", `ref_type: payment`. **All 17 wallets
+still replay exactly from their ledgers — 0 mismatched** — and the system
+holds 753400 paise, the migrated 743400 plus this credit.
+
+**The capture was synthetic.** The signature and every code path are real,
+but Razorpay did not deliver it — a browser checkout with a test card is
+the one step left, and it is the only thing that proves delivery rather
+than handling. The `pay_SYNTHETIC_…` payment row and its 10000 paise are
+test data on the dev database; delete them when that stops being useful.
+
+Razorpay's MCP server is configured for this project
+(`https://mcp.razorpay.com/mcp`, Basic auth). The key secret sits in
+`~/.claude.json` in plaintext, which is how the integration is documented
+— treat it as a credential on disk.
+
+**The client is still on Supabase for wallet, payments and profile.**
+Everything above is the API and the database. Deploy 4 — the one client
+commit that moves `store.jsx`, `wallet.js`, `profile.js` and
+`avatar.js` — has not been made.
