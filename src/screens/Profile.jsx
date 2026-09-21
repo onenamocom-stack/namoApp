@@ -152,7 +152,7 @@ function AvatarPicker() {
 /* ── Overview ────────────────────────────────────────────────────────────── */
 
 function Overview() {
-  const { showToast, questionsLeft, cartCount, lang, setLang, t, session, sessionReady } =
+  const { showToast, cartCount, lang, setLang, t, session, sessionReady } =
     useStore()
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
@@ -220,7 +220,10 @@ function Overview() {
           <Row to="/reports" title="Reports" note="Long-form readings, written once" />
           <Row to="/premium" title="Premium" note="Eros, packs and more questions" />
           <Row to="/academy" title="Academy" note="Courses, events and downloads" />
-          <Row to="/ask" title="Ask the Stars" meta={`${questionsLeft} left`} />
+          {/* No count here any more. The number is the server's (ai_quota)
+              and this row would have to fetch it; a stale client counter
+              beside a screen that knows better is worse than no number. */}
+          <Row to="/ask" title="Ask the Stars" />
           <Row to="/shop" title="Shop" meta={`${cartCount} in cart`} />
         </div>
       </section>

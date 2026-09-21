@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { askSuggestions, notifications } from '../data/mock.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
@@ -14,14 +15,9 @@ import {
   subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
+import { clock as aiClock } from '../lib/ai.js'
+import useAskAi from './useAskAi.js'
 
-/** Canned AI replies. Blunt, chart-citing, never reassuring for its own sake. */
-const AI_REPLIES = [
-  'Your 10th house lord is strong through September. The chart supports the move. It does not promise you will like it.',
-  'Venus in your 7th softens the next three weeks. Use them for the repair conversation, not for a new person.',
-  'Saturn in the 12th means you are auditing yourself in private and calling the result a personality. It is not.',
-  'The chart says timing, not permission. You already know the answer and are shopping for a second opinion.',
-]
 
 /**
  * Right-side chat panel.
@@ -35,7 +31,7 @@ const AI_REPLIES = [
  * session window. All three are mock flows; nothing leaves the browser.
  */
 export default function ChatPanel() {
-  const { isPro, chatOpen, setChatOpen, chatTab, setChatTab, questionsLeft, spendQuestion } =
+  const { isPro, chatOpen, setChatOpen, chatTab, setChatTab } =
     useStore()
 
   if (!chatOpen) return null
@@ -99,7 +95,7 @@ export default function ChatPanel() {
 
         {chatTab === 'live' && <LiveConsultant isPro={isPro} />}
         {chatTab === 'ai' && (
-          <AskAi questionsLeft={questionsLeft} spendQuestion={spendQuestion} />
+          <AskAi />
         )}
         {chatTab === 'alerts' && <Alerts />}
       </aside>
@@ -426,80 +422,101 @@ function initialsOf(name) {
 
 /* ── Ask AI ──────────────────────────────────────────────────────────────── */
 
-function AskAi({ questionsLeft, spendQuestion }) {
-  const [messages, setMessages] = useState([
-    {
-      id: 'a0',
-      from: 'them',
-      /* This used to open by naming your moon sign, which was true of the seed
-         person and of nobody else. Harmless while every chart in the app was
-         the same one; a contradiction the moment phase 7 made the rest real —
-         four screens saying Libra and this panel saying Pisces. The greeting
-         does not name a placement until phase 8 wires it to something that
-         actually reads the chart. */
-      text: 'Ask about your chart. A real question gets a better answer than a general one.',
-      time: '09:02',
-    },
-  ])
-  const [draft, setDraft] = useState('')
-  const [thinking, setThinking] = useState(false)
+/**
+ * Namo AI, against the real model.
+ *
+ * Everything that costs anything is the server's answer, not this
+ * component's: how many questions are still free, what a minute costs,
+ * whether a clock is running and how much of it is left. The panel renders
+ * what it is told. The previous build kept `questionsLeft` in React state,
+ * which meant a page reload handed out five more — that number is gone from
+ * the client entirely, and `free_left` from the server replaces it.
+ *
+ * THE LADDER
+ *   five free on arrival, once per account
+ *   then one free message a day, from the NEXT day
+ *   then a metered session at the server's rate, ended by the seeker or by
+ *   the wallet running out
+ *
+ * THE CLOCK IS VISIBLE ON PURPOSE. Per-minute billing is the loudest
+ * complaint against every app in this category — "the timer never stops"
+ * while you think and type. It still runs while you think here; what it
+ * does not do is run where you cannot see it.
+ */
+function AskAi() {
+  const {
+    messages, draft, setDraft, send, thinking, loading,
+    freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+  } = useAskAi()
   const endRef = useRef(null)
-  const replyRef = useRef(0)
-
-  const locked = questionsLeft === 0
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [messages, thinking])
 
-  const send = (text) => {
-    const q = (text ?? draft).trim()
-    if (!q || locked || thinking) return
-    setMessages((m) => [...m, { id: `u${m.length}`, from: 'me', text: q, time: 'now' }])
-    setDraft('')
-    spendQuestion()
-    setThinking(true)
-    setTimeout(() => {
-      const reply = AI_REPLIES[replyRef.current % AI_REPLIES.length]
-      replyRef.current += 1
-      setMessages((m) => [...m, { id: `a${m.length}`, from: 'them', text: reply, time: 'now' }])
-      setThinking(false)
-    }, 900)
-  }
-
   return (
     <>
       <div className="flex flex-none items-center justify-between gap-3 border-b border-rule px-4 py-3">
         <p className="caps-sm t-body">Namo AI · reads your chart</p>
-        <span className={`caps-sm tnum ${locked ? 'text-live' : 'gold'}`}>
-          {locked ? 'None left' : `${questionsLeft} free`}
-        </span>
+        {live ? (
+          /* The meter, where the quota used to be. It counts down, and End
+             is one tap away from it rather than buried in a menu. */
+          <span className="flex items-center gap-2">
+            <span className="caps-sm tnum text-live">{aiClock(live.secondsLeft)}</span>
+            <button type="button" onClick={stopMeter} className="caps-sm gold underline">
+              End
+            </button>
+          </span>
+        ) : (
+          <span className={`caps-sm tnum ${freeLeft === 0 ? 'text-live' : 'gold'}`}>
+            {loading ? '—' : freeLeft === 0 ? 'None left' : `${freeLeft} free`}
+          </span>
+        )}
       </div>
 
       <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {messages.map((m) => (
-          <Bubble key={m.id} mine={m.from === 'me'} text={m.text} time={m.time} />
-        ))}
-
-        {thinking && (
-          <p className="animate-breathe caps-sm t-faint">Reading your chart</p>
+        {loading ? (
+          <p className="animate-breathe caps-sm t-faint">Opening</p>
+        ) : messages.length === 0 ? (
+          <Bubble
+            mine={false}
+            text="Ask about your chart. A real question gets a better answer than a general one."
+          />
+        ) : (
+          messages.map((m) => <Bubble key={m.id} mine={m.role === 'user'} text={m.text} />)
         )}
 
-        {locked && (
+        {thinking && <p className="animate-breathe caps-sm t-faint">Reading your chart</p>}
+
+        {needsMeter && (
           <div className="pop-card p-4 text-center">
-            <p className="caps t-heading">Out of questions</p>
+            <p className="caps t-heading">Out of free questions</p>
             <p className="mt-2 text-meta t-body">
-              You have used your five. The chart has not changed in the last ten minutes.
+              One free message arrives tomorrow. Until then a session runs at{' '}
+              {ratePaise ? `₹${rupees(ratePaise)}` : '—'} a minute, charged from your wallet.
+              Unused minutes come back.
             </p>
-            <PopButton size="sm" to="/wallet" variant="gold" className="mt-4">
-              Buy a pack
+            <PopButton
+              size="sm"
+              variant="gold"
+              className="mt-4"
+              onClick={startMeter}
+              disabled={starting}
+            >
+              {starting ? 'Starting…' : 'Start a session'}
             </PopButton>
+            <p className="mt-3 text-micro t-faint">
+              A consultant reads the same chart and argues back.{' '}
+              <Link to="/consult" className="underline">
+                See astrologers
+              </Link>
+            </p>
           </div>
         )}
         <div ref={endRef} />
       </div>
 
-      {!locked && (
+      {!needsMeter && (
         <div className="no-scrollbar flex flex-none gap-2 overflow-x-auto border-t border-rule px-4 py-3">
           {askSuggestions.map((s) => (
             <button
@@ -518,8 +535,8 @@ function AskAi({ questionsLeft, spendQuestion }) {
         value={draft}
         onChange={setDraft}
         onSend={() => send()}
-        disabled={locked}
-        placeholder={locked ? 'Buy a pack to keep asking' : 'Ask about your chart'}
+        disabled={needsMeter || thinking}
+        placeholder={needsMeter ? 'Start a session to keep asking' : 'Ask about your chart'}
       />
     </>
   )

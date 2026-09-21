@@ -1,109 +1,95 @@
-import { useEffect, useRef, useState } from 'react'
-import { askConversation, askSuggestions, questionPacks } from '../data/mock.js'
-import { Sheet, TopBar } from '../components/Chrome.jsx'
-import { Button, Field, Section, Stub } from '../components/Primitives.jsx'
-import { rupees, useStore } from '../store.jsx'
+import { useEffect, useRef } from 'react'
+import { askSuggestions } from '../data/mock.js'
+import { TopBar } from '../components/Chrome.jsx'
+import { Button, Section } from '../components/Primitives.jsx'
+import useAskAi from '../components/useAskAi.js'
+import { clock } from '../lib/ai.js'
+import { rupees } from '../store.jsx'
 
-/** Canned replies. Blunt, chart-citing, never reassuring for its own sake. */
-const REPLIES = [
-  'Your 10th house lord is strong through September. The chart supports the move. It does not promise you will like it.',
-  'Venus in your 7th softens the next three weeks. Use them for the repair conversation, not for a new person.',
-  'Saturn in the 12th means you are auditing yourself in private and calling the result a personality. It is not.',
-  'The chart says timing, not permission. You already know the answer and are shopping for a second opinion.',
-]
-
+/**
+ * Namo AI as a full screen — the reading column, not the chat bubble.
+ *
+ * Shares every number with the panel through `useAskAi`: the quota, the
+ * meter, the clock and the send path are one implementation, because two
+ * copies of the money would be two places for it to drift. What differs is
+ * only how it is drawn.
+ *
+ * The question packs are gone. They granted questions while displaying a
+ * price and were replaced (21 Sep 2026) by five free on arrival, one a day
+ * after that, and a metered session at the server's rate — docs/01-PRD.md
+ * §4.4. Nothing here prices anything: `ratePaise` is the server's.
+ */
 export default function Ask() {
-  const { questionsLeft, spendQuestion, addQuestions, showToast, spend, spending, balance } =
-    useStore()
-  const [messages, setMessages] = useState(askConversation)
-  const [draft, setDraft] = useState('')
-  const [thinking, setThinking] = useState(false)
-  const [sheet, setSheet] = useState(false)
+  const {
+    messages, draft, setDraft, send, thinking, loading,
+    freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+  } = useAskAi()
   const endRef = useRef(null)
-  const replyRef = useRef(0)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [messages, thinking])
 
-  const locked = questionsLeft === 0
-
-  /* Packs granted questions for free while displaying a price, and the sheet
-     printed a hardcoded wallet figure underneath it. `spend` is a promise —
-     without the await a refused payment still grants the questions. */
-  const buyPack = async (p) => {
-    if (await spend(p.price, `${p.questions} questions`)) {
-      addQuestions(p.questions)
-      setSheet(false)
-    }
-  }
-
-  const send = (text) => {
-    const q = (text ?? draft).trim()
-    if (!q || locked || thinking) return
-
-    setMessages((m) => [...m, { id: `u${m.length}`, role: 'user', text: q, time: 'now' }])
-    setDraft('')
-    spendQuestion()
-    setThinking(true)
-
-    setTimeout(() => {
-      const reply = REPLIES[replyRef.current % REPLIES.length]
-      replyRef.current += 1
-      setMessages((m) => [...m, { id: `a${m.length}`, role: 'ai', text: reply, time: 'now' }])
-      setThinking(false)
-    }, 900)
-  }
-
   return (
     <>
-      {/* A tab, so no back arrow. The quota lives in the right slot where the
-          reference app puts its "5 free left" pill. */}
+      {/* A tab, so no back arrow. The right slot carries the quota — or, once
+          a session is running, the clock, because a per-minute meter the
+          seeker cannot see is the complaint every app in this category
+          already has. */}
       <TopBar
         title="Ask AI"
         sub="Reads your chart"
         right={
-          <span
-            className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${
-              locked ? 'text-t1' : 'text-t2'
-            }`}
-          >
-            {locked ? 'None' : `${questionsLeft} free`}
-          </span>
+          live ? (
+            <span className="flex items-center gap-2 whitespace-nowrap">
+              <span className="text-micro uppercase tracking-label tnum text-live">
+                {clock(live.secondsLeft)}
+              </span>
+              <button
+                type="button"
+                onClick={stopMeter}
+                className="text-micro uppercase tracking-label underline gold"
+              >
+                End
+              </button>
+            </span>
+          ) : (
+            <span
+              className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${
+                freeLeft === 0 ? 'text-t1' : 'text-t2'
+              }`}
+            >
+              {loading ? '—' : freeLeft === 0 ? 'None' : `${freeLeft} free`}
+            </span>
+          )
         }
       />
 
       <div className="section-tight">
         {messages.map((m) => (
           <div key={m.id} className="border-b border-rule py-5 last:border-b-0">
-            <p className="label text-left mb-2">{m.role === 'ai' ? 'Namo' : 'You'}</p>
-            <p className={`text-read ${m.role === 'ai' ? 'text-t1' : 'text-t2'}`}>{m.text}</p>
+            <p className="label text-left mb-2">{m.role === 'model' ? 'Namo' : 'You'}</p>
+            <p className={`text-read ${m.role === 'model' ? 'text-t1' : 'text-t2'}`}>{m.text}</p>
           </div>
         ))}
 
-        {thinking && (
+        {(loading || thinking) && (
           <div className="animate-breathe py-5">
-            <p className="label text-left">Reading your chart</p>
+            <p className="label text-left">{loading ? 'Opening' : 'Reading your chart'}</p>
           </div>
         )}
         <div ref={endRef} />
       </div>
 
-      {locked ? (
-        <Section label="Out of questions" last>
+      {needsMeter ? (
+        <Section label="Out of free questions" last>
           <p className="horoscope">
-            You have used your five. The chart has not changed in the last ten minutes, but you can
-            buy more anyway.
+            One free message arrives tomorrow. Until then a session runs at{' '}
+            {ratePaise ? `₹${rupees(ratePaise)}` : '—'} a minute, charged from your wallet while
+            it is open. Unused minutes come back when you end it.
           </p>
-          <Button className="mt-10" variant="solid" onClick={() => setSheet(true)}>
-            Get more questions
-          </Button>
-          <Button
-            className="mt-3"
-            variant="quiet"
-            onClick={() => showToast('We will tell you when they reset')}
-          >
-            Remind me when they reset
+          <Button className="mt-10" variant="solid" onClick={startMeter} disabled={starting}>
+            {starting ? 'Starting…' : 'Start a session'}
           </Button>
           <Button to="/consult" variant="quiet" className="mt-3">
             Or ask a person instead
@@ -115,11 +101,7 @@ export default function Ask() {
             <ul>
               {askSuggestions.map((s) => (
                 <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => send(s.text)}
-                    className="act-row"
-                  >
+                  <button type="button" onClick={() => send(s.text)} className="act-row">
                     <span className="min-w-0">
                       <span className="block text-body text-t1">{s.text}</span>
                       <span className="mt-1 block text-micro uppercase tracking-caps text-t3">
@@ -147,41 +129,13 @@ export default function Ask() {
               onClick={() => send()}
               disabled={!draft.trim() || thinking}
             >
-              Send · uses one
+              {live ? 'Send' : 'Send · uses one'}
             </Button>
-            <Stub className="my-8" />
-            <p className="text-center text-meta text-t3">
-              Answers are generated for this prototype. They cite your placements because the copy
-              says so, not because anything was computed.
-            </p>
           </Section>
         </>
       )}
 
       <div className="h-8" />
-
-      <Sheet open={sheet} onClose={() => setSheet(false)} title="Question packs">
-        {questionPacks.map((p) => (
-          <div key={p.id} className="border-b border-rule py-5">
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="text-lead font-light">{p.questions} questions</span>
-              <span className="text-body text-t1 tnum">₹{p.price}</span>
-            </div>
-            {p.tag && <p className="mt-1 text-micro uppercase tracking-caps text-t3">{p.tag}</p>}
-            <Button
-              className="mt-4"
-              disabled={spending}
-              onClick={() => buyPack(p)}
-            >
-              {spending ? 'Paying…' : 'Add'}
-            </Button>
-          </div>
-        ))}
-        <Field k="Wallet" v={balance === null ? '—' : `₹${rupees(balance)}`} />
-        <p className="mt-6 text-center text-meta text-t3">
-          The wallet is charged. Questions themselves are still canned copy.
-        </p>
-      </Sheet>
     </>
   )
 }

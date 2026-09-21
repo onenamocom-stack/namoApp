@@ -314,7 +314,6 @@ export function AppProvider({ children }) {
     }
   }, [refreshProfile, refreshWallet, refreshConsultant])
 
-  const [questionsLeft, setQuestionsLeft] = useState(5)
 
   /* Language. A value, not a boolean, so it cannot live on `flags` — this is
      the first slice that genuinely needed one. Not persisted, like everything
@@ -454,15 +453,11 @@ export function AppProvider({ children }) {
   const cartCount = cart.reduce((n, l) => n + l.qty, 0)
   const cartTotal = cart.reduce((n, l) => n + l.price * l.qty, 0)
 
-  const spendQuestion = useCallback(() => setQuestionsLeft((n) => Math.max(0, n - 1)), [])
-
-  const addQuestions = useCallback(
-    (n) => {
-      setQuestionsLeft((q) => q + n)
-      showToast(`${n} questions added`)
-    },
-    [showToast],
-  )
+  /* The free-question counter used to live here, as React state seeded at
+     five. That made "five free" a number the browser owned — a reload
+     handed out five more, and there was no server anywhere that disagreed.
+     It is `ai_quota` now, and useAskAi reads it from /v1/ai/. Nothing in
+     the client counts questions any more, which is the point. */
 
   /**
    * Spend against the wallet. Same name and same single home as before, and
@@ -671,9 +666,6 @@ export function AppProvider({ children }) {
       cartOpen,
       setCartOpen,
       buyNow,
-      questionsLeft,
-      spendQuestion,
-      addQuestions,
       hasFlag,
       toggleFlag,
       balance,
@@ -719,9 +711,6 @@ export function AppProvider({ children }) {
       clearCart,
       cartOpen,
       buyNow,
-      questionsLeft,
-      spendQuestion,
-      addQuestions,
       hasFlag,
       toggleFlag,
       balance,

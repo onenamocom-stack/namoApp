@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.chat",
     "apps.wallet",
     "apps.profiles",
+    "apps.ai",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -137,6 +138,21 @@ MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.e
 ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
+
+# --- Namo AI (rule 7: the model key is server-side only, and it is money)
+# "gemini" in prod (needs GEMINI_API_KEY); "mock" elsewhere — deterministic,
+# offline, no quota spent. Same shape as ASTRO_PROVIDER above.
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "mock")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com")
+AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
+# The ceiling on one answer. The prompt asks for three to six sentences;
+# this is what makes a runaway answer a truncation rather than a bill.
+AI_MAX_OUTPUT_TOKENS = int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "400"))
+# ₹9 a minute (docs/01-PRD.md §4.4). An env var rather than a constant
+# because it is a price, and a price change must not need a deploy.
+AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
 
 # --- Razorpay (module 8; rule 7 — server-side only, never a response body)
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
