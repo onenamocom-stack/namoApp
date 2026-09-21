@@ -3246,3 +3246,36 @@ steps around it are not done: no `reconcile_payments` run, the two
 Supabase edge functions (`razorpay-order`, `razorpay-webhook`) are still
 deployed, and no RLS grant has been revoked anywhere. Those are the
 retirement half, and they wait until the client has been quiet.
+
+## 19. The JavaScript backend is commented out, not deleted — 21 Sep 2026
+
+Four files, every line prefixed with `// ` under a header saying what
+replaced them:
+
+| | Replaced by |
+|---|---|
+| `backend/functions/astro/index.ts` | `apps/astro/` |
+| `backend/functions/razorpay-order/index.ts` | `POST /v1/wallet/topup/order/` |
+| `backend/functions/razorpay-webhook/index.ts` | `POST /v1/wallet/webhook/razorpay/` |
+| `backend/tools/reconcile-payments.mjs` | `manage.py reconcile_payments` |
+
+**This turned nothing off.** The three Edge Functions may still be deployed
+on Supabase and still answering; `supabase functions delete` is what stops
+them, and that is the retirement step that waits for the quiet period.
+Nothing calls them either way. The commenting is a marker, and a deliberate
+trap-avoidance note sits in each header: **do not redeploy from these
+files**, because a deploy would now ship an empty function.
+
+**Left alone on purpose, and not covered by "comment out the JS":**
+
+- `backend/schema/**` — SQL, not JavaScript, and the live database. Django
+  runs on these tables; the triggers in them are still in force.
+- `backend/INSTRUCTIONS.md` — the eight rules. Django obeys them.
+- `backend/seed/*.mjs` and the two remaining tools
+  (`astro-usage.mjs`, `verify-canonical-births.mjs`) — developer scripts
+  against the database, not the serving backend. Nothing in Django
+  replaces them, so commenting them would remove working tools and
+  replace them with nothing. Say the word if they should go too.
+
+The plan is to delete `backend/functions/` outright after a few quiet
+days. Git history holds every original.
