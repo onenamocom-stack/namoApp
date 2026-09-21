@@ -3200,3 +3200,45 @@ Razorpay's MCP server is configured for this project
 Everything above is the API and the database. Deploy 4 — the one client
 commit that moves `store.jsx`, `wallet.js`, `profile.js` and
 `avatar.js` — has not been made.
+
+## 18. Deploy 4 — the cutover is complete — 21 Sep 2026
+
+wallet, payments and profile moved in one commit (`8e8862e`), which
+finishes the store split. **The app now makes no PostgREST call at all:
+no `.from()`, no `.rpc()`, no `functions.invoke()`. Every remaining
+`supabase` reference is `auth.*`** — `getSession`, `onAuthStateChange`,
+`signInWithOtp`, `verifyOtp` — in `store.jsx`, `AskPhone.jsx`,
+`VerifyOtp.jsx`, and the three libs that read the access token. That is
+exactly what docs/07 §1 said would stay.
+
+`store.jsx` keeps its state, its `spendingRef`/`toppingUpRef` guards and
+every export; only the internals changed. `Computing.jsx`'s onboarding
+write is `saveProfile()` now — same keys, no `.eq('id', …)`.
+
+**Two bugs got through lint and build, and the browser found both.** They
+are worth keeping because they are the same lesson twice:
+
+- **`showToast` was read before its initializer.** The wallet api is built
+  in a `useMemo` that toasts the server's refusal sentences, and a `const`
+  in its temporal dead zone throws at render — the provider died and the
+  app mounted as a **blank page**. Lint clean, build green, zero console
+  output until the page was actually opened.
+- **The three new libs prepended `/v1`** to a `VITE_DJANGO_API_URL` that
+  already carries it. Every call went to `/v1/v1/…` and 404'd, and the
+  wallet showed an em dash and an empty statement rather than an error —
+  the same silent shape as deploy 2's missing suffix, from the opposite
+  mistake.
+
+`prefill` became a function rather than an object in the same pass: the
+api is built once, so a person who signs in afterwards would have reached
+Razorpay's checkout with whatever name and phone were mounted before them.
+
+Walked signed in on dev: the wallet renders ₹100 and the "Added money ·
+UPI · +₹100" row the webhook credit wrote, profile renders, and no
+request doubles its prefix.
+
+**Not deployed.** This is committed on main but the runbook's deploy-4
+steps around it are not done: no `reconcile_payments` run, the two
+Supabase edge functions (`razorpay-order`, `razorpay-webhook`) are still
+deployed, and no RLS grant has been revoked anywhere. Those are the
+retirement half, and they wait until the client has been quiet.
