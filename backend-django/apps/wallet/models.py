@@ -195,6 +195,9 @@ class Payment(models.Model):
     )
     raw = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # The shop or Academy order a payment was opened FOR (028); null for a
+    # plain top-up. payment_capture settles it in the same transaction.
+    order_id = models.UUIDField(null=True, blank=True)
 
     Status = PaymentStatus
 

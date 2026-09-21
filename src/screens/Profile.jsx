@@ -225,6 +225,7 @@ function Overview() {
               beside a screen that knows better is worse than no number. */}
           <Row to="/ask" title="Ask the Stars" />
           <Row to="/shop" title="Shop" meta={`${cartCount} in cart`} />
+          <Row to="/orders" title="Your orders" note="Parcels, and where they are" />
         </div>
       </section>
 

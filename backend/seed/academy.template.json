@@ -1,0 +1,60 @@
+{
+  "courses": [
+    {
+      "slug": "placeholder-birth-chart",
+      "title": "Placeholder course — reading a birth chart",
+      "tutor": "Placeholder tutor",
+      "level": "Beginner",
+      "summary": "Dev placeholder. Replace with the partner's real course.",
+      "price_rupees": 2499,
+      "lessons": [
+        { "title": "What a chart is", "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ", "minutes": 12 },
+        { "title": "The twelve houses", "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ", "minutes": 18 }
+      ],
+      "materials": [{ "title": "House reference sheet", "file": "placeholder-houses.pdf" }]
+    },
+    {
+      "slug": "placeholder-tarot",
+      "title": "Placeholder course — tarot as a thinking tool",
+      "tutor": "Placeholder tutor",
+      "level": "Beginner",
+      "price_rupees": 1999,
+      "lessons": [{ "title": "One card, one question", "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ", "minutes": 20 }]
+    }
+  ],
+  "events": [
+    {
+      "slug": "placeholder-free-clinic",
+      "title": "Placeholder free clinic",
+      "host": "Placeholder host",
+      "kind": "Webinar",
+      "starts_at": "2026-10-04T19:00:00+05:30",
+      "minutes": 60,
+      "seats": 40,
+      "price_rupees": 0,
+      "join_url": "https://meet.google.com/placeholder-free"
+    },
+    {
+      "slug": "placeholder-last-seat",
+      "title": "Placeholder seminar — one seat",
+      "host": "Placeholder host",
+      "kind": "Seminar",
+      "starts_at": "2026-10-11T11:00:00+05:30",
+      "minutes": 120,
+      "seats": 1,
+      "price_rupees": 499,
+      "join_url": "https://meet.google.com/placeholder-seat"
+    },
+    {
+      "slug": "placeholder-paid-webinar",
+      "title": "Placeholder paid webinar",
+      "host": "Placeholder host",
+      "kind": "Webinar",
+      "starts_at": "2026-10-18T18:30:00+05:30",
+      "minutes": 90,
+      "seats": 60,
+      "price_rupees": 1499,
+      "join_url": "https://meet.google.com/placeholder-paid"
+    }
+  ]
+}

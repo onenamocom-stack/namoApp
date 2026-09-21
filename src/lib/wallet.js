@@ -199,43 +199,38 @@ export function createWalletApi({
     return true
   }
 
-  /* store.jsx's topup — the one money path that does not end inside the tap
-     that started it: the credit arrives via the webhook on a different
-     connection, so this polls the balance for about twelve seconds and
-     then says the payment is settling. NOTHING here credits anything. */
-  async function topup(amountPaise) {
+  /* Open a Razorpay order and hand the browser to its checkout. Shared by the
+     top-up and the shop/Academy (phase 10), which differ only in the body: an
+     amount, or `{ order_id }` — a pending order whose total the SERVER reads.
+     Returns { paid, reason }; `reason` is set only when there is something to
+     tell the person, and a dismissal is silent. */
+  async function openCheckout(body, description) {
     const token = await tokenFn()
-    const order = await call('/topup/order/', {
-      method: 'POST',
-      token,
-      body: { amount_paise: amountPaise },
-    })
+    const order = await call('/topup/order/', { method: 'POST', token, body })
     if (order.status !== 200 || !order.body?.ok) {
-      console.error('[topup] order failed:', order.status)
+      console.error('[razorpay] order failed:', order.status)
       /* The refusal sentence is the server's own (the band, sign-in,
          provider down) — the server's job is a reason the interface can
          show, and dropping it here wastes that. */
-      showToast(order.body?.reason ?? 'Could not start that payment. Try again.')
-      return false
+      return { paid: false, reason: order.body?.reason ?? 'Could not start that payment. Try again.' }
     }
-    const { order_id, key_id } = order.body
+    const { order_id, key_id, amount_paise } = order.body
 
     try {
       await loadCheckout()
     } catch (err) {
-      console.error('[topup] checkout script:', err.message)
-      showToast('Could not load checkout. Check your connection.')
-      return false
+      console.error('[razorpay] checkout script:', err.message)
+      return { paid: false, reason: 'Could not load checkout. Check your connection.' }
     }
 
     const paid = await new Promise((resolve) => {
       const rzp = new window.Razorpay({
         key: key_id,
         order_id,
-        amount: amountPaise,
+        amount: amount_paise,
         currency: 'INR',
         name: 'Namo',
-        description: 'Wallet top-up',
+        description,
         prefill: prefill(),
         theme: { color: '#1a1a1a' },
         handler: () => resolve(true),
@@ -246,7 +241,16 @@ export function createWalletApi({
       rzp.on('payment.failed', () => resolve(false))
       rzp.open()
     })
+    return { paid, reason: null }
+  }
 
+  /* store.jsx's topup — the one money path that does not end inside the tap
+     that started it: the credit arrives via the webhook on a different
+     connection, so this polls the balance for about twelve seconds and
+     then says the payment is settling. NOTHING here credits anything. */
+  async function topup(amountPaise) {
+    const { paid, reason } = await openCheckout({ amount_paise: amountPaise }, 'Wallet top-up')
+    if (reason) showToast(reason)
     if (!paid) return false
 
     showToast('Payment received. Adding it to your wallet.')
@@ -264,7 +268,11 @@ export function createWalletApi({
     return true
   }
 
-  return { refreshWallet, spend, topup }
+  /* A shop or Academy order: the store watches the order turn 'paid', not
+     the balance — payment_capture credits and settles in one transaction. */
+  const payOrder = (orderId, description) => openCheckout({ order_id: orderId }, description)
+
+  return { refreshWallet, spend, topup, payOrder }
 }
 
 /* Razorpay's checkout script, fetched the first time somebody adds money and

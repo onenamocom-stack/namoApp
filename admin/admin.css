@@ -1,0 +1,73 @@
+/* The admin console's own styles. Deliberately not the phone app's design
+   system (docs/02-TRD.md §7): a desktop tool for scanning many rows. */
+
+:root {
+  --ink: #1a1a1a;
+  --muted: #6b6b6b;
+  --line: #e2e0dc;
+  --bg: #f6f5f3;
+  --card: #fff;
+  --accent: #1a1a1a;
+  --danger: #b42318;
+  --ok: #067647;
+  --warn: #b54708;
+  font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px 24px 64px; }
+h1 { font-size: 20px; margin: 0; }
+h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+ul { margin: 0; padding-left: 18px; }
+.muted { color: var(--muted); }
+.error { color: var(--danger); margin: 8px 0 0; }
+.notice { background: #fff4d6; border: 1px solid #f3d27a; padding: 8px 12px; border-radius: 8px; }
+.spacer { flex: 1; }
+
+/* Which database you are about to change, impossible to miss. */
+.env { display: flex; gap: 12px; align-items: center; padding: 10px 24px; color: #fff; flex-wrap: wrap; }
+.env-dev { background: #33415c; }
+.env-prod { background: var(--danger); }
+.env .badge { font-weight: 700; letter-spacing: .04em; }
+.env .muted { color: rgba(255, 255, 255, .75); font-size: 12px; }
+
+button, input {
+  font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--card);
+}
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+button.danger-outline { color: var(--danger); border-color: var(--danger); }
+button.link { border: 0; padding: 0; background: none; color: #175cd3; text-transform: none; letter-spacing: 0; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.signin { max-width: 360px; margin: 48px auto; display: grid; gap: 12px; }
+.signin label { display: grid; gap: 4px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input { flex: 1; }
+
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 8px 0 12px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tabs .count { opacity: .7; margin-left: 4px; }
+
+.orders { display: grid; gap: 12px; }
+.order.fresh { border-color: #f3d27a; box-shadow: 0 0 0 3px #fff4d6; }
+.order-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.order-body { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .order-body { grid-template-columns: 1fr; } }
+.address { margin: 0; font: inherit; white-space: pre-wrap; }
+.actions form { display: grid; gap: 6px; margin-bottom: 8px; }
+.actions .check { display: flex; gap: 6px; align-items: center; }
+.new { background: #f3d27a; border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 700; }
+
+.status { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #eee; }
+.s-toship { background: #fff4d6; color: var(--warn); }
+.s-shipped { background: #e0eaff; color: #175cd3; }
+.s-delivered { background: #dcfae6; color: var(--ok); }
+.s-awaiting, .s-closed { background: #f0efed; color: var(--muted); }

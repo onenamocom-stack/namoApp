@@ -723,6 +723,34 @@ admin calling it by hand.
 were the whole call. The meter is phase 11, where a session with join and leave
 timestamps exists to meter against.
 
+**Courses and events (phase 10b, `031_academy.sql`)** ride the shop's money
+path rather than a second one. `courses` → `course_lessons` (the video link),
+`course_materials` (a PDF in the private `course-materials` bucket);
+`academy_events` → `academy_event_links` (the join URL); and `enrolments`, one
+row per person per thing, with `order_id` null when it was free.
+
+- **The gate is one function**, `academy_enrolled(type, id)`: an `active`
+  enrolment of the caller's. Lessons, materials, join links and the storage
+  objects all use it in their SELECT policy, so a person who has not paid reads
+  an empty list. `course_outline` (titles and lengths, no link) is an owner-run
+  view anyone may read.
+- **`academy_enrol(item_type, item_id, pay)`** — no price. Locks the event row
+  (the seat claim, backed by `check (seats_left between 0 and seats)`), writes a
+  `pending` order with one frozen line and a `pending` enrolment, and for the
+  wallet calls `shop_order_settle` in the same transaction. A ₹0 item writes an
+  `active` enrolment and nothing else. Your own abandoned card checkout for the
+  same thing is released first.
+- **`shop_order_settle` / `_release` / `_refund` are generalised, not copied.**
+  Settle also activates enrolments; release also returns seats; refund also
+  refunds an Academy order, returns a seat while the event is on, and marks the
+  enrolment `refunded`. So `payment_capture`, the owner's cancel and the
+  sweeper cover the Academy unchanged.
+- **`enrolments_one_live`** — a partial unique index on (person, type, id) where
+  `pending` or `active` — is what refuses enrolling twice.
+- **`admin_event_cancel`** cancels the event, refunds every paid enrolment,
+  cancels free ones, releases open card checkouts, and writes one
+  `admin_actions` row — one transaction.
+
 ### 4.8 Payments
 
 ```sql
@@ -1164,7 +1192,7 @@ login.
 
 | # | Capability | Schema cost |
 |---|---|---|
-| 1 | Academy CMS + consultant rank | `courses` / `academy_events` / `downloads` + `consultants.rank_score_cache`. Formula in `01-PRD.md` |
+| 1 | Academy CMS + consultant rank | **Academy built (phase 10b, `031`):** `courses`, `course_lessons`, `course_materials`, `academy_events`, `academy_event_links`, `enrolments`. Authoring is the importer, not a screen; the console lists enrolments, refunds one, and cancels an event (finance tier, audited). Rank is still `consultants.rank_score_cache`, formula in `01-PRD.md` |
 | 2 | Deity images & tarot | `deities` · `deity_images` · `tarot_decks` · `tarot_cards` + a storage bucket. **Reverses "static ships as JSON"** — recorded, not silent |
 | 3 | Marketplace | `products` · `product_images` · stock · `orders`. All already required |
 | 4 | Reschedule | `bookings.rescheduled_to` — **one column, in v1** |

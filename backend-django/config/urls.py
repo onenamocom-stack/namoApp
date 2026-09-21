@@ -1,5 +1,7 @@
 from django.urls import include, path
 
+from apps.shop.urls import academy_urls, admin_urls, shop_urls
+
 urlpatterns = [
     path("v1/", include("apps.core.urls")),
     path("v1/media/", include("apps.media.urls")),
@@ -12,4 +14,7 @@ urlpatterns = [
     path("v1/wallet/", include("apps.wallet.urls")),
     path("v1/profiles/", include("apps.profiles.urls")),
     path("v1/ai/", include("apps.ai.urls")),
+    path("v1/shop/", include(shop_urls)),
+    path("v1/academy/", include(academy_urls)),
+    path("v1/admin/", include(admin_urls)),
 ]

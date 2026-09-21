@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed } from '../lib/content.js'
+import { useAcademy } from '../lib/academy.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
-import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
+import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Acts, Segmented } from '../components/Primitives.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
+import { useCatalogue } from '../lib/shop.js'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
 /**
@@ -19,18 +20,6 @@ import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
  */
 export function authorHref(c) {
   return c.isConsultant ? `/consult/${c.authorId}` : `/u/${c.authorId}`
-}
-
-/**
- * What is still hand-ordered in `mock.js`, and why each one is.
- *
- * `course` / `product` belong to phase 10. Posts, reels and articles are gone
- * from here because they are a query now, and the live room went with live
- * video on 9 Sep 2026.
- */
-const SOURCES = {
-  course: courses,
-  product: products,
 }
 
 /** `content.kind` in the database → which card renders it. */
@@ -52,9 +41,8 @@ const TABS = [
  * by hoisting two cards to the top of the stream and hoping they were seen
  * before the scroll buried them.
  *
- * The stream itself is unchanged and still mixes formats: reels, notes,
- * articles, courses, products, with `kind` on each record picking the card and
- * `refId` resolving into the existing collections, so nothing is duplicated.
+ * The stream still mixes formats: reels, notes and articles from `content`,
+ * then one course and one product card, each reading its own table.
  *
  * Tabs live in the URL (`/home/:tab`) rather than in state, for the same
  * reason Profile's do: a tab worth switching to is worth linking to, and the
@@ -98,26 +86,11 @@ export default function Home() {
     }
   }, [])
 
-  const real = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
-
-  /* What is left of the hand-ordered mock: courses and products.
-     They sit AFTER the real content rather than interleaved, because
-     interleaving would need a rank to interleave on and there is no ranking
-     yet. When phase 10 makes these queries too, this list goes away and
-     the sort above is already the right one. */
-  const stillMock = feed
-    .filter((f) => SOURCES[f.kind])
-    .map((f) => {
-      const found = SOURCES[f.kind]?.find((x) => x.id === f.refId)
-      return found ? { ...f, data: found } : null
-    })
-    .filter(Boolean)
-
-  /* No longer hoisted into the stream. The reading and the panchang were
-     spliced in at positions 1 and 4 so they would be seen before the scroll
-     buried them; they have their own tab now, which is what that splice was
-     approximating. */
-  const items = [...real, ...stillMock]
+  /* The reading and the panchang are no longer hoisted into the stream; they
+     have their own tab. The course and product cards sit AFTER the content
+     rather than interleaved, because interleaving needs a rank and there is
+     no ranking. Both are queries since phase 10 — nothing here is mock. */
+  const items = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
 
   if (!known) return <Navigate to="/home" replace />
   if (tab === 'darshan') return null // the effect above is already leaving
@@ -163,14 +136,12 @@ export default function Home() {
                     return <ReelCard key={item.id} reel={item.data} />
                   case 'article':
                     return <ArticleCard key={item.id} read={item.data} />
-                  case 'course':
-                    return <CourseCard key={item.id} course={item.data} />
-                  case 'product':
-                    return <ProductCard key={item.id} product={item.data} />
                   default:
                     return null
                 }
               })}
+              <CourseCard />
+              <ProductCard />
             </div>
 
             <div className="px-5 py-10 text-center">
@@ -512,11 +483,19 @@ function ArticleCard({ read: b }) {
   )
 }
 
-function CourseCard({ course: c }) {
+/** One of your courses, or the first on sale, or nothing. It was a mock row
+ *  in `feed` until phase 10b. */
+function CourseCard() {
+  const { session } = useStore()
+  const { courses, enrolled } = useAcademy(session)
+  const mine = courses.find((x) => enrolled.has(`course:${x.id}`))
+  const c = mine ?? courses[0]
+  if (!c) return null
+
   return (
     <article className="pop-card p-4">
       <Kicker action="Academy" to="/academy">
-        Continue learning
+        {mine ? 'Continue learning' : 'From the Academy'}
       </Kicker>
       <div className="pop-inset mt-4 p-4">
         <div className="flex items-start gap-3">
@@ -524,30 +503,26 @@ function CourseCard({ course: c }) {
           <div className="min-w-0 flex-1">
             <p className="text-body t-heading">{c.title}</p>
             <p className="mt-1 caps-sm t-faint tnum">
-              {c.tutor} · {c.lessons} lessons
+              {c.tutor} · {c.outline.length} lesson{c.outline.length === 1 ? '' : 's'}
             </p>
           </div>
         </div>
-        {c.progress > 0 && (
-          <div className="mt-4">
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className="caps-sm t-faint">Progress</span>
-              <span className="caps-sm gold tnum">{c.progress}%</span>
-            </div>
-            <PopBar value={c.progress} />
-          </div>
-        )}
         <PopButton size="sm" to="/academy" variant="gold" className="mt-4">
-          {c.progress > 0 ? 'Resume' : 'Start course'}
+          {mine ? 'Watch' : c.pricePaise === 0 ? 'Start course' : `See course · ₹${rupees(c.pricePaise)}`}
         </PopButton>
       </div>
     </article>
   )
 }
 
-function ProductCard({ product: p }) {
+/** The first featured product still on the shelf, or nothing. It was a mock
+ *  row in `feed` until phase 10. */
+function ProductCard() {
   const { addToCart } = useStore()
-  const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
+  const { products } = useCatalogue()
+  const p = products.find((x) => x.featured && !x.soldOut)
+  if (!p) return null
+  const off = p.mrpPaise ? Math.round((1 - p.pricePaise / p.mrpPaise) * 100) : null
 
   return (
     <article className="pop-card p-4">
@@ -555,12 +530,16 @@ function ProductCard({ product: p }) {
         For your chart
       </Kicker>
       <div className="pop-inset mt-4 flex gap-4 p-3">
-        <Plate seed={p.id} className="h-24 w-24 flex-none" />
+        <Plate seed={p.id} className="h-24 w-24 flex-none">
+          {p.imageUrl && (
+                <img src={p.imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+        </Plate>
         <div className="flex min-w-0 flex-1 flex-col">
           <p className="text-body t-heading">{p.name}</p>
           <p className="mt-1 text-meta t-faint">{p.subtitle}</p>
           <p className="mt-2 flex items-baseline gap-2 tnum">
-            <span className="text-lead gold">₹{p.price.toLocaleString('en-IN')}</span>
+            <span className="text-lead gold">₹{rupees(p.pricePaise)}</span>
             {off > 0 && <span className="caps-sm t-faint">{off}% off</span>}
           </p>
           <PopButton onClick={() => addToCart(p)} full={false} className="mt-auto self-start px-4">

@@ -247,6 +247,23 @@ payouts and refunds; Superadmin manages admins. Every action of every tier write
 an audit row. That is legal record, not a feature, and it is the only reason a
 blocked consultant's appeal can be answered.
 
+**How that is built, decided 15 Sep 2026 with the first slice (shop orders):**
+
+- **The "server-side application" is the `admin` Edge Function.** It is the
+  only thing holding the service role on a person's behalf. The console in
+  `admin/` is a static front end that holds only the public URL and anon key,
+  so nothing elevated ships to a browser and there is no server to host.
+- **Admin login reuses phone OTP** (closing the §12 question). An admin is an
+  existing profile plus an active row in `admin_users`; the function checks it
+  on every request.
+- **A fifth tier, `fulfilment`**, between Support and Finance: marks orders
+  shipped and delivered, cannot refund. Packing parcels should not carry the
+  power to pay money back. Tiers are a ladder — each includes those below.
+- **The audit row is written by the same SQL function as the action**, in one
+  transaction (`030_admin_shop.sql`). `admin_actions` is append-only by trigger.
+- **The console runs on localhost** (`npm run admin:dev` / `admin:prod`) and
+  the function's CORS allows only localhost. Hosting it is a later decision.
+
 This does not contradict §5's "role is not stored". That rule governs routing
 inside the seeker/consultant SPA. **Admin is a different application with a
 different login**, and the two rules are not in conflict.
@@ -671,4 +688,4 @@ origin. Allowed origins are an explicit list, not a wildcard.
 | ~~Chat window semantics~~ | **Answered 1 Sep: neither. Chat is a per-minute live session — `01-PRD.md` §5.1** |
 | Refund and cancellation policy | The booking function |
 | Charge at booking or at session start | The booking function. Recommending at booking |
-| Whether the admin console needs its own auth provider or reuses phone OTP | Phase 4 |
+| ~~Whether the admin console needs its own auth provider or reuses phone OTP~~ | **Answered 15 Sep: reuses phone OTP — §7** |

@@ -13,6 +13,13 @@ import { translate } from './data/i18n.js'
 import { supabase } from './lib/supabase.js'
 import { bookSession as book, myConsultant } from './lib/consultants.js'
 import { clearAstroCache } from './lib/astro.js'
+import {
+  cancelOrder,
+  checkout as shopCheckout,
+  orderStatus,
+  refreshCatalogue,
+} from './lib/shop.js'
+import { enrol as academyEnrol } from './lib/academy.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 import { createWalletApi } from './lib/wallet.js'
 import { createProfileApi } from './lib/profile.js'
@@ -343,7 +350,7 @@ export function AppProvider({ children }) {
   /**
    * One flat set of boolean flags for every "sticky" toggle in the app:
    * `follow:<id>`, `save:<id>`, `like:<id>`, plus
-   * `setting:croppedDeityImage`, `event:<id>` and the tarot
+   * `setting:croppedDeityImage` and the tarot
    * pull keys. A screen that toggles a flag and then navigates away finds it
    * still set on the way back.
    *
@@ -423,19 +430,31 @@ export function AppProvider({ children }) {
     [],
   )
 
-  /** Add a line, or bump its quantity if the product is already in the cart. */
+  /** Add a product from `lib/shop.js`, or bump its quantity. Products only
+   *  since phase 10 — a line is an id and a quantity to the server, and the
+   *  name and price ride along for display. The cap mirrors checkout's
+   *  (10, and what is on the shelf) so the refusal arrives before checkout. */
   const addToCart = useCallback(
     (product, silent = false) => {
+      const cap = Math.min(10, product.stock)
+      const inCart = cart.find((l) => l.id === product.id)?.qty ?? 0
+      if (inCart >= cap) {
+        showToast(cap === 0 ? `${product.name} is sold out` : `Only ${cap} of ${product.name} for now`)
+        return
+      }
       setCart((c) => {
         const at = c.findIndex((l) => l.id === product.id)
-        if (at === -1) return [...c, { ...product, qty: 1 }]
+        if (at === -1) {
+          const { id, name, pricePaise, stock, imageUrl } = product
+          return [...c, { id, name, pricePaise, stock, imageUrl, qty: 1 }]
+        }
         const copy = [...c]
         copy[at] = { ...copy[at], qty: copy[at].qty + 1 }
         return copy
       })
       if (!silent) showToast(`${product.name} — added`)
     },
-    [showToast],
+    [cart, showToast],
   )
 
   const removeFromCart = useCallback((id) => setCart((c) => c.filter((l) => l.id !== id)), [])
@@ -443,7 +462,9 @@ export function AppProvider({ children }) {
   const setQty = useCallback(
     (id, qty) =>
       setCart((c) =>
-        qty <= 0 ? c.filter((l) => l.id !== id) : c.map((l) => (l.id === id ? { ...l, qty } : l)),
+        qty <= 0
+          ? c.filter((l) => l.id !== id)
+          : c.map((l) => (l.id === id ? { ...l, qty: Math.min(qty, 10, l.stock) } : l)),
       ),
     [],
   )
@@ -451,7 +472,8 @@ export function AppProvider({ children }) {
   const clearCart = useCallback(() => setCart([]), [])
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0)
-  const cartTotal = cart.reduce((n, l) => n + l.price * l.qty, 0)
+  // Display only. The server prices the order from its own rows.
+  const cartTotalPaise = cart.reduce((n, l) => n + l.pricePaise * l.qty, 0)
 
   /* The free-question counter used to live here, as React state seeded at
      five. That made "five free" a number the browser owned — a reload
@@ -586,7 +608,110 @@ export function AppProvider({ children }) {
     setChatOpen(true)
   }, [])
 
-  /** Buy now — charge the wallet directly and skip the cart entirely.
+  /**
+   * Place the cart as a shop order (phase 10). One call to `shop_checkout`
+   * with ids, quantities, an address and a quote — never a price.
+   *
+   * `wallet` settles inside that call. `razorpay` gets a pending order with
+   * its stock held, opens checkout for it, and lets the webhook settle it;
+   * this function only watches the order turn `paid`. A dismissed checkout
+   * cancels the order so the stock goes straight back rather than waiting
+   * out the sweeper.
+   *
+   * Returns `{ ok, reason?, orderId?, settling? }` and toasts nothing: the
+   * cart sheet decides what to show.
+   */
+  const placeOrder = useCallback(
+    async (addressId, quoteId, pay) => {
+      if (spendingRef.current) return { ok: false, reason: 'One payment at a time.' }
+      spendingRef.current = true
+      setSpending(true)
+      const uid = session?.user?.id
+      try {
+        const res = await shopCheckout(cart, addressId, quoteId, pay)
+        if (!res?.ok) {
+          await refreshWallet(uid)
+          return { ok: false, reason: res?.reason ?? 'Could not place that order.' }
+        }
+        refreshCatalogue()
+
+        if (pay === 'wallet') {
+          await refreshWallet(uid)
+          return { ok: true, orderId: res.order_id }
+        }
+
+        const { paid, reason } = await walletApi.payOrder(res.order_id, 'Shop order')
+        if (!paid) {
+          await cancelOrder(res.order_id)
+          refreshCatalogue()
+          return { ok: false, reason: reason ?? 'Payment cancelled. Nothing was charged.' }
+        }
+
+        // The webhook settles on its own connection. Watch for it, as topup does.
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 1500))
+          if ((await orderStatus(res.order_id)) === 'paid') {
+            await refreshWallet(uid)
+            return { ok: true, orderId: res.order_id }
+          }
+        }
+        await refreshWallet(uid)
+        return { ok: true, orderId: res.order_id, settling: true }
+      } finally {
+        spendingRef.current = false
+        setSpending(false)
+      }
+    },
+    [cart, refreshWallet, session, walletApi],
+  )
+
+  /**
+   * Enrol in a course or event (phase 10b). Same shape as `placeOrder`, minus
+   * the cart: one `academy_enrol` call with ids, then — for a card — Razorpay
+   * for the order the server priced, a cancel on dismissal, and a watch for
+   * the webhook's settle. A free event comes back active from the first call.
+   */
+  const enrolIn = useCallback(
+    async (itemType, itemId, pay) => {
+      if (spendingRef.current) return { ok: false, reason: 'One payment at a time.' }
+      spendingRef.current = true
+      setSpending(true)
+      const uid = session?.user?.id
+      try {
+        const res = await academyEnrol(itemType, itemId, pay)
+        if (!res?.ok) {
+          await refreshWallet(uid)
+          return { ok: false, reason: res?.reason ?? 'Could not enrol.' }
+        }
+        if (res.status === 'active') {
+          await refreshWallet(uid)
+          return { ok: true }
+        }
+
+        const { paid, reason } = await walletApi.payOrder(res.order_id, 'Academy')
+        if (!paid) {
+          await cancelOrder(res.order_id)
+          return { ok: false, reason: reason ?? 'Payment cancelled. Nothing was charged.' }
+        }
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 1500))
+          if ((await orderStatus(res.order_id)) === 'paid') {
+            await refreshWallet(uid)
+            return { ok: true }
+          }
+        }
+        await refreshWallet(uid)
+        return { ok: true, settling: true }
+      } finally {
+        spendingRef.current = false
+        setSpending(false)
+      }
+    },
+    [refreshWallet, session, walletApi],
+  )
+
+  /** Buy now — charge the wallet directly and skip the cart entirely. Reports
+   *  only since phase 10; products go through the cart and `placeOrder`.
    *  Async, because `spend` is. Callers must await it too. */
   const buyNow = useCallback(
     async (product) => {
@@ -658,13 +783,15 @@ export function AppProvider({ children }) {
       refreshWallet,
       cart,
       cartCount,
-      cartTotal,
+      cartTotalPaise,
       addToCart,
       removeFromCart,
       setQty,
       clearCart,
       cartOpen,
       setCartOpen,
+      placeOrder,
+      enrolIn,
       buyNow,
       hasFlag,
       toggleFlag,
@@ -704,12 +831,14 @@ export function AppProvider({ children }) {
       refreshWallet,
       cart,
       cartCount,
-      cartTotal,
+      cartTotalPaise,
       addToCart,
       removeFromCart,
       setQty,
       clearCart,
       cartOpen,
+      placeOrder,
+      enrolIn,
       buyNow,
       hasFlag,
       toggleFlag,

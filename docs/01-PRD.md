@@ -89,7 +89,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Shop — categories, cart, checkout | UI | **Charges the wallet for real** |
 | Reports | UI | **Charges the wallet for real** |
 | Premium tiers | UI | Shows a price, grants nothing |
-| Academy — courses, events, downloads | UI | Enrol toasts. Course links go to YouTube *search* URLs |
+| Academy — courses, events, downloads | **Real on branch `phase-10b-academy`** (dev) | Enrolment charges the wallet or a card; lessons, join links and PDFs readable only when enrolled. §4.7 |
 | Wallet — balance and ledger | **Real** | Server-owned. Debits only — top-up waits for payments |
 | Payments | **None** | Payment-method tags are decorative |
 | People / synastry | UI | Fixed |
@@ -206,18 +206,65 @@ Physical remedial goods: gemstones, maalas, rudraksha, remedies.
 **₹640 to ₹26,400**, with strike-through MRPs from ₹1,200 to ₹24,000 driving a
 computed discount badge. Two products are sold out.
 
-Physical goods bring stock, shipping, returns and courier tracking — none of
-which the current UI has. This is the most operationally expensive line and it is
-sequenced late.
+Physical goods bring stock, shipping, returns and courier tracking. This is the
+most operationally expensive line and it is sequenced late.
+
+**Decided 14 Sep 2026** (built in `028_shop.sql`):
+
+- **Prices include GST.** Each product carries its rate in basis points so an
+  invoice can split it out. The rates themselves are not set yet — every
+  product reads 0 until a CA names them, and so does delivery.
+- **Delivery is priced per pincode, by Shiprocket**, pickup from Ghaziabad
+  (201011). Until a Shiprocket account exists delivery is **free** (a flat
+  ₹0, set as a function secret); connecting Shiprocket is two secrets, not
+  code.
+- **Paid orders are worked from the admin console** (`admin/`), not a chat
+  alert: a To-ship queue with the address, then Mark shipped (courier +
+  tracking number), Mark delivered, and Refund for the Finance tier. It
+  refreshes every 30 seconds. A Telegram alert was built and removed the same
+  week (15 Sep) in favour of this.
+- **Refunds are done in the admin console**, to the wallet, with a reason.
+- **Pay from the wallet, or by card/UPI through Razorpay.** A card payment is a
+  top-up spent the instant it lands, so there is one money path, and a payment
+  that arrives after its order expired stays in the wallet.
+- **No cash on delivery.** Return-to-origin on a ₹15,000 stone is the loss COD
+  invites.
+- **A card checkout holds stock for 30 minutes**, then it goes back on the
+  shelf.
+- **Refunds go to the wallet.** The returns *policy* — window, condition, who pays return shipping — is not
+  decided and is not on `refunds.html` yet.
 
 ### 4.7 Academy
 
-Courses ₹1,999 · ₹2,499 · ₹3,499 · ₹4,299.
-Events ₹0 · ₹499 · ₹1,499 — **₹0 is how free is expressed**, and one event is
-sold out by seats rather than by a flag.
+The mock's prices — courses ₹1,999 · ₹2,499 · ₹3,499 · ₹4,299, events ₹0 ·
+₹499 · ₹1,499 — were placeholders and are gone with the mock. **Real prices
+arrive with the partner's content** and live on the rows the importer loads.
+**₹0 is how free is expressed**, and a full event is full by seats, not by a
+flag.
 
-Consultant-uploaded course material — PDFs and video links, free or paid — is a
-requested capability with **no upload path in the app today**.
+Decided 16 Sep 2026, before phase 10b was built:
+
+- **A course is ordered lessons, each a video LINK** (unlisted YouTube or
+  Vimeo), readable only by someone enrolled. **No progress tracking.** The known
+  ceiling: an enrolled person can share a link. A private bucket with signed
+  video URLs was rejected because video does not fit the free tier's storage.
+- **PDF materials are gated by enrolment** in a private bucket, served by
+  short-lived signed URL. They are the Downloads tab.
+- **An event is a Meet/Zoom link**, readable only by someone enrolled. Live
+  video is phase 11 and not used.
+- **Admin authors everything** through `backend/seed/academy.mjs`. Consultants do
+  not create courses and **nobody earns commission on the Academy** yet.
+- **Pay from the wallet, or by card/UPI**, the shop's path exactly (§4.6).
+- **No self-serve refunds.** Lesson links are revealed on enrolment, so a refund
+  window is a free course. Admin refunds with a reason, to the wallet, and access
+  is removed.
+- **Cancelling an event refunds every paid seat** to the wallet in one action,
+  and frees the free ones.
+- **Launch content is the partner's**, supplied as links. No invented tutors; an
+  empty Academy says so.
+
+Consultant-uploaded course material remains a requested capability with no
+upload path.
 
 ### 4.8 Wallet
 

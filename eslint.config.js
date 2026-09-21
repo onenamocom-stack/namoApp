@@ -29,7 +29,7 @@ export default [
     ignores: ['backend-django/**', '**/dist*/**', 'archive/**'],
   },
   {
-    files: ['src/**/*.{js,jsx}', 'tools/**/*.mjs'],
+    files: ['src/**/*.{js,jsx}', 'admin/**/*.{js,jsx}', 'tools/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
