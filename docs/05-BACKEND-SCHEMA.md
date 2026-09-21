@@ -1390,3 +1390,52 @@ money.
 | **Consultant ranking formula** | `rank_score_cache` | `01-PRD.md` |
 | **Free tarot pull window** | `tarot_pulls` | Leaning rolling seven days from `pulled_at` |
 | **Bhaktamar card provenance** | `tarot_cards` seed | 48 faces with no attribution recorded |
+
+## Namo AI — `ai_sessions`, `ai_messages`, `ai_quota` (21 Sep 2026)
+
+Three tables, created by `apps/ai/migrations/0001_initial.py`. The first
+tables in this product that are Django migrations rather than numbered SQL
+in `backend/schema/` — the cutover is done and Django owns the schema now.
+
+**`ai_quota`** — one row per person, `profile_id` the primary key.
+
+| | |
+|---|---|
+| `welcome_used` | 0-5. The arrival allowance, never refilled |
+| `last_free_on` | An **IST date**. Stamped by every free message, welcome ones included |
+
+Stamping the day on a welcome message is the rule, not bookkeeping: it is
+what makes the daily allowance start the day *after* the five run out.
+Without it the daily branch fires the moment the fifth is spent and a new
+account gets six on day one.
+
+**`ai_sessions`** — the meter. Same money shape as `sessions` (014): hold at
+start, settle at end, refund the unused minutes. Deliberately not the same
+table: `sessions.consultant_id` is a non-null FK, and widening it so the AI
+could share the rows would put a null case in every consultant query
+forever. `expires_at` caps the spend — the clock never runs past what was
+held, so an abandoned tab is bounded by arithmetic rather than by a sweeper
+arriving in time.
+
+Indexes: `(profile_id, -started_at)` for the caller's own, and
+`(status, expires_at)` for the sweeper's read.
+
+**`ai_messages`** — the transcript. `session_id` is **nullable**: a free
+message belongs to nobody's clock but is the same conversation, and the
+model must see it. `tokens_in`/`tokens_out` are the provider's own counts,
+shown to no one — they are how "is this priced sanely" stops being a guess.
+
+Retention is **30 days**, swept nightly by `flush_ai_messages`. That is a
+privacy answer before a storage one: these are the most personal sentences
+in the product.
+
+**No RLS policies.** These tables are never reached by PostgREST — the
+client has no Supabase path to them and the API scopes every read by the
+JWT. The absence of a policy is the rule, as it is for `bhakti_assets`
+writes.
+
+**Ledger shape.** A hold writes `ref_type='order'` against an order carrying
+one `order_items` row of `item_type='session'` titled `Namo AI · chat`.
+`ledger.ref_type` is a closed CHECK with no AI member, and 013's
+one-refund-per-order index is what makes a settle racing the sweeper credit
+once — both are reasons to go through the order layer rather than around it.

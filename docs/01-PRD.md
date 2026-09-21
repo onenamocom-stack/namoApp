@@ -83,7 +83,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Booking a session | UI | Shows a price, **charges nothing**, books nothing |
 | Chat with a consultant | UI | Canned replies after 900 ms |
 | Voice / video call | **None** | Every call button toasts "prototype only" |
-| Ask AI | UI | Canned replies; free-question counter |
+| Namo AI | **Built** | Gemini Flash behind the API; quota and meter server-side; chart-grounded |
 | Tarot — 5 decks, 48 painted Bhaktamar faces | UI | **Charges the wallet for real** |
 | Pooja — animated mandir, 7 deities, 26 murtis | UI | E-puja only. Nothing books a pandit, nothing is charged |
 | Shop — categories, cart, checkout | UI | **Charges the wallet for real** |
@@ -161,11 +161,40 @@ numbers are a placeholder multiplied at load time:
 | Transits | ₹599 | ₹1,797 |
 | Remedial | ₹449 | ₹1,347 |
 
-### 4.4 Question packs — Ask AI
+### 4.4 Namo AI
 
-6 questions ₹199 · 12 questions ₹349 · 20 questions ₹499.
-Five free questions on arrival. **Packs currently grant questions without
-charging.**
+An astrologer that reads the seeker's own chart, answers only about
+astrology, and refuses to be a general assistant. Five to six sentences,
+citing placements, and never a guarantee — the chart is timing, not
+permission. It gives no medical, legal or financial instruction and makes
+no prediction about death, disease or pregnancy.
+
+**The ladder, decided 21 Sep 2026:**
+
+| | |
+|---|---|
+| On arrival | **5 free messages**, once per account, never refilled |
+| From the next day | **1 free message a day** (IST calendar) |
+| After that | **₹9 a minute**, metered, charged from the wallet |
+
+The daily message begins the day **after** the welcome five are spent — a
+new account gets five on its first day, not six.
+
+A session holds what the wallet can pay, floored to whole minutes, and
+**refunds every unused minute** when it ends. It ends when the seeker ends
+it, or when the held minutes run out. **The clock is on screen the whole
+time.** Per-minute billing is the loudest complaint in this category —
+thinking and typing are billable and the timer is usually hidden — and
+showing it is the least this can do about that.
+
+**The question packs are gone.** 6/₹199, 12/₹349 and 20/₹499 granted
+questions without charging and priced a counter the browser owned. The
+metered session replaces them.
+
+> **Open contradiction:** §4.5 Premium still merchandises a 12-question
+> pack (`questionPacks` in `src/data/mock.js`, surfaced on the Premium
+> screen) for a product that no longer counts questions. Premium was left
+> alone rather than quietly rewritten — it needs a decision, not a patch.
 
 ### 4.5 Premium tiers
 

@@ -143,7 +143,7 @@ signature.
 | Booking status change | A decline writes a **reversing** ledger entry, never edits the debit |
 | Slot availability | A three-way subtraction (rule − time off − bookings) that all three callers must compute identically |
 | Chart computation | Calls the ephemeris service |
-| Ask AI | The model key cannot reach a browser, and the quota is money |
+| Namo AI | The model key cannot reach a browser, the quota is money, and the free-question count is a number the browser must not own |
 
 Everything else — reading your own bookings, your own ledger, your own threads,
 the public consultant list — is a policy, not a function.
@@ -271,7 +271,7 @@ bulk actions. See `04-UI-UX.md`.
 | Payments in | **Razorpay** (Cashfree equivalent) | Stripe is awkward for domestic UPI, and UPI is most of the volume |
 | Payouts | RazorpayX / Cashfree Payouts | Paying out is a different product from taking in, with its own KYC gate |
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
-| Ask AI | Claude, behind a server proxy | The key cannot ship to a browser and the quota is money |
+| Namo AI | **Gemini Flash**, behind the API — *reversed from Claude, 21 Sep 2026* | The key cannot ship to a browser and the quota is money. Gemini won on cost at this shape: short answers over structured chart data, ~₹0.02 a question against ~₹0.06. `AI_PROVIDER` selects it, so the reversal costs one env var, not a rewrite |
 | Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
 | Place search | **`freeastroapi.com`** geo endpoint — *replaced Open-Meteo, 2 Sep 2026* | Same tier, commercially licensed, returns the IANA zone. Open-Meteo's free geocoder was non-commercial and sat on the signup path |
 

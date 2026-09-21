@@ -744,3 +744,30 @@ next rather than showing an empty list.
 | `/people/:id` showed the **mock user's initial under the label "You"** — a signed-in Rahul saw Atharv's `A` | **Fixed** — `Synastry.jsx` reads `useProfileFields()`. Found by auditing identity reads, not by the browser walk, which is still owed |
 | Sun, moon and rising are the mock's for every account, on four screens — `Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx` and via `useProfileFields()` | Open by design — they need the ephemeris service. **Phase 7 must change all four**, not just the hook |
 | Two Bhaktamar cards carry incomplete verses | Flagged in data; needs a verified source |
+
+## Namo AI — the Ask AI tab and `/ask` (21 Sep 2026)
+
+Two surfaces, one state machine. `useAskAi` holds it; the panel draws chat
+bubbles and `/ask` draws a reading column, and neither owns a number.
+
+| State | What the seeker sees |
+|---|---|
+| loading | "Opening" |
+| free left | the count in the header slot; the composer is open |
+| out of free, no clock | "Out of free questions" — when the next free one arrives, the rate, and **Start a session**; beside it, a link to a consultant |
+| clock running | the header slot becomes **m:ss counting down**, with **End** next to it; the composer is open |
+| clock ended | a toast naming the refund; the header returns to the free count |
+
+**The clock is the point.** It replaces the quota in the same header slot
+rather than appearing somewhere new, so the thing being spent is always in
+the place the seeker already looks.
+
+A refused question goes **back into the composer**, not into the
+transcript: it was never asked, and leaving it on screen above a refusal
+reads as answered-badly.
+
+A tab reopened mid-session finds its own meter — the live session comes
+back with the transcript from `GET /v1/ai/`, so it never starts a second
+one.
+
+Every refusal sentence is the server's. There are none in the client.

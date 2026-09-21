@@ -3279,3 +3279,60 @@ files**, because a deploy would now ship an empty function.
 
 The plan is to delete `backend/functions/` outright after a few quiet
 days. Git history holds every original.
+
+## 20. Namo AI is built — and the free counter finally exists — 21 Sep 2026
+
+`96513ca`. The Ask AI tab answered from a four-element array of canned
+replies behind a 900ms fake delay. It asks a model now, on the server, with
+the seeker's own chart as grounding.
+
+**The counter moved to the server, and that was the real hole.** "Five free
+questions" was React state seeded at five: a page reload handed out five
+more, and no server anywhere disagreed. It is `ai_quota` now, and nothing
+in the client counts questions.
+
+The ladder is five free on arrival, then one a day **from the next day**,
+then ₹9 a minute. The first cut granted the daily message the instant the
+welcome five ran out — a new account got six on day one. A test caught it
+and now holds the rule.
+
+**Per-minute was chosen against the recommendation, and the reasoning is
+worth keeping.** The research said: Astrotalk and its imitators bill
+₹15-40/min prepaid; per-minute is the loudest complaint in their reviews
+("the timer never stops" — thinking and typing are billable); and the
+AI-only apps mostly do not meter at all. At ₹0.02 a question the two models
+earn the same money. It was chosen anyway, so three things here answer the
+complaint rather than paper over it: the hold is capped at what the wallet
+can pay so an abandoned tab cannot overspend, unused minutes are always
+refunded, and **the clock is on screen with End beside it.**
+
+**Walked on the live API and in the browser.** Five free then refused; ₹100
+held 11 minutes leaving ₹1 (a part-minute is neither held nor sold); a paid
+question answered; the clock counted 9:59 → 9:55 on screen; End charged one
+minute and returned the rest. **17 of 17 wallets still replay from their
+ledgers.**
+
+**Three Cloud Run Jobs on Cloud Scheduler** — `sweep_ai_sessions` and
+`dispatch_outbox` every minute, `flush_ai_messages` nightly at 03:00 IST.
+The AI sweeper is the money one: without it an abandoned session's held
+minutes never come back. The scheduler URIs were silently mangled on
+creation — `gcloud scheduler jobs create --uri` ate the `:r` of `:run`,
+leaving `.../jobs/namo-sweep-aiun`, which Cloud Scheduler reported as
+`code=5` (NOT_FOUND) and which reads exactly like a permissions problem.
+**Use `--uri=` with an equals sign.**
+
+### What this still needs
+
+- **`GEMINI_API_KEY`.** `AI_PROVIDER` is `mock` on Cloud Run, so the
+  answers in production right now are the four deterministic ones. Set the
+  key and `AI_PROVIDER=gemini` and it is live — no deploy, one env update.
+- **The prompt has never met the real model.** Every refusal rule in
+  `apps/ai/prompt.py` — no medical or legal instruction, no death or
+  pregnancy prediction, no guarantees, astrology only — is untested against
+  Gemini. That is the first thing to probe when the key lands.
+- **Premium still sells a 12-question pack** (`questionPacks` in
+  `src/data/mock.js`) for a product that no longer counts questions. Left
+  alone rather than quietly rewritten; docs/01-PRD.md §4.4 records it as an
+  open contradiction.
+- **`/v1/ai/` has no rate limit of its own** beyond the quota. A free
+  message a day is a weak lever against someone scripting accounts.
