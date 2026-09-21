@@ -3643,10 +3643,15 @@ is only a savepoint. Never run a caller's query without it.
 
 **Not verified, and each item is needed before merge:**
 
-1. **The new project has the phase 10 objects.** §14 copied the DDL of the 14
-   tables and "11 functions" with `pg_dump`. Run this in
-   `usgzgrdxlzgnehtbebzo`'s SQL editor. Old dev answers 11 / 14 / 14 / 1 / 2 /
-   3 / 1 / 1 / 11:
+1. ~~**The new project has the phase 10 objects.**~~ **Checked 21 Sep, and
+   fixed.** Every function, policy, grant, the `shop-order-expire` job,
+   `payments.order_id` and the audit trigger were there, and
+   `shop_order_settle` is 031's version. **One thing was missing: the
+   `course_outline` view.** §14's `pg_dump` copied tables and functions, not
+   views. It was re-created from 031's own statement, with its grant. The
+   first check is below, kept for the next copy. It errors on the first
+   missing object rather than listing them all. Old dev answers
+   11 / 14 / 14 / 1 / 2 / 3 / 1 / 1 / 11:
 
    ```sql
    select 'phase 10 functions' as what, count(*)::int as n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
