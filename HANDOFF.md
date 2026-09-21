@@ -3147,11 +3147,15 @@ unscheduled. `sweep_sessions` is the eventual replacement for the SQL one
 and must not run alongside it; `dispatch_outbox` has an empty table until
 deploy 4 puts payment events in it, and needs a scheduler before that.
 
-**The pro app's workflow was not updated.** It lives in
-`onenamocom-stack/namo-pro`, builds this repo with `--mode pro`, and is
-`workflow_dispatch` only — so it still serves a pre-cutover bundle. Its
-`deploy.yml` needs the same `VITE_DJANGO_API_URL` env line before anyone
-runs it, or the consultant app ships with an empty API URL.
+~~The pro app's workflow was not updated.~~ **Done 21 Sep** — and the
+guard earned itself on the first run. `onenamocom-stack/namo-pro` got the
+same `VITE_DJANGO_API_URL` line, and its build **failed** on
+`Verify build env is present`: the secret had been set there without the
+`/v1` suffix. The consultant app stayed on its old bundle instead of
+shipping with a broken API URL, which is what the check exists for.
+Secret corrected, rebuilt, and verified: bundle `index-SPa-K_D9.js`,
+pointing at `usgzgrdxlzgnehtbebzo` and `…run.app/v1`, no doubled prefix,
+`/pro/apply` rendering.
 
 Deploy 4 — wallet, payments, profile — is untouched and still needs
 Razorpay keys.
