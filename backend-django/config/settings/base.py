@@ -144,7 +144,10 @@ ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 # offline, no quota spent. Same shape as ASTRO_PROVIDER above.
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "mock")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+# gemini-2.0-flash was the first guess and does not exist on this key —
+# the models list has no 2.0 at all. 2.5-flash is the cheapest stable
+# one that serves generateContent.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com")
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 # The ceiling on one answer. The prompt asks for three to six sentences;
