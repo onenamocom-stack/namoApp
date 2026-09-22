@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ask, endSession, fetchState, startSession, ticker } from '../lib/ai.js'
 import { useStore } from '../store.jsx'
+import { track } from '../lib/analytics.js'
 
 export default function useAskAi() {
   const { showToast, refreshWallet, session } = useStore()
@@ -125,7 +126,11 @@ export default function useAskAi() {
     setStarting(true)
     try {
       const result = await startSession()
-      if (!result.ok) return showToast(result.reason)
+      if (!result.ok) {
+        track('ai_session_refused', { reason_kind: 'server' })
+        return showToast(result.reason)
+      }
+      track('ai_session_start', { minutes_held: result.minutes_held })
       watch(result.session_id, result.seconds_left)
       refreshWallet(session?.user?.id)
     } catch (err) {
@@ -173,6 +178,10 @@ export default function useAskAi() {
         }
         setMessages((m) => [...m, { id: result.id, role: 'model', text: result.text }])
         setFreeLeft(result.free_left)
+        /* Whether it was free or paid, and whether it was about somebody
+           else — three flags, no question text. What people ASK is theirs;
+           how often the feature is used is ours to know. */
+        track('ai_question', { paid: Boolean(live), about_other: Boolean(subject) })
       } catch (err) {
         setMessages((m) => m.filter((x) => x.id !== asked.id))
         setDraft(question)
@@ -181,13 +190,14 @@ export default function useAskAi() {
         setThinking(false)
       }
     },
-    [draft, thinking, showToast, subject],
+    [draft, thinking, showToast, subject, live],
   )
 
   /* Switching subject mid-conversation. The transcript stays — it is the
      same conversation, and the model is told whose chart each question is
      about every time rather than once. */
   const askAbout = useCallback((next) => {
+    track('ai_subject_chosen', { about_other: Boolean(next) })
     setSubject(next)
     setWho(next ? 'other' : 'self')
     setAsking(false)

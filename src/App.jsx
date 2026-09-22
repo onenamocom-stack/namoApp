@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
 import { isPro } from './side.js'
+import { startAnalytics } from './lib/analytics.js'
 import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
@@ -355,6 +356,14 @@ function Frame() {
 }
 
 export default function App() {
+  /* Page views, from one place. HashRouter means every route change is a
+     `hashchange`, so the listener catches every screen without a hook in
+     each of them — and without anything in a screen being able to forget.
+
+     Outside the provider on purpose: analytics must not be able to delay
+     or break the app's own mount, and nothing here reads store state. */
+  useEffect(startAnalytics, [])
+
   return (
     <AppProvider>
       <Frame />

@@ -35,9 +35,20 @@ COPY . .
 # Run with placeholder settings: collectstatic only needs STATIC_ROOT, and
 # making the build depend on the real database or the real secrets would
 # mean a build that cannot run without production.
-RUN DJANGO_SETTINGS_MODULE=config.settings.base \
-    DJANGO_SECRET_KEY=build-only DJANGO_ALLOWED_HOSTS='*' \
+# PROD settings, not base: the manifest storage lives in prod, and
+# collecting under base wrote no manifest at all — every console page then
+# 500'd at runtime on `admin/css/base.css`, because the manifest backend
+# refuses any file it has not seen collected. Collect with the settings
+# that will serve.
+#
+# Placeholders for the secrets prod insists on. collectstatic touches no
+# database; a build that needed the real one would be a build that cannot
+# run without production.
+RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
+    DJANGO_SECRET_KEY=build-only-not-a-real-key \
+    DJANGO_ALLOWED_HOSTS='*' \
     SUPABASE_URL=https://build.invalid \
+    DATABASE_URL=postgresql://build:build@localhost/build \
     python manage.py collectstatic --noinput --clear
 
 # Two workers, not one: a single worker makes a slow upstream (the astro

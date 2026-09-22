@@ -54,6 +54,17 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
 
+    # Without these two the queue does not appear in the menu AT ALL.
+    # Django falls back to its own model permissions, which a console
+    # operator has none of — they are staff by way of `admin_users`, not
+    # by way of auth_permission. The approval queue was invisible on the
+    # first deploy for exactly this reason.
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
     def _set_status(self, request, queryset, status, verb):
         """One place, so approve/block/unblock cannot drift apart. The audit
         row names the consultant and what it was before — an appeal needs
@@ -139,6 +150,14 @@ class AdminActionAdmin(dj.ModelAdmin):
     search_fields = ("action", "target_type")
     date_hierarchy = "created_at"
     list_per_page = 100
+
+    # Every tier can read the trail. An audit log only a superadmin can see
+    # is one the people it protects cannot check.
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT, Tier.FINANCE)
 
     def has_add_permission(self, request):
         return False

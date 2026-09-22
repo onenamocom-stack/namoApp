@@ -1,0 +1,80 @@
+{% extends "admin/base_site.html" %}
+{% comment %}
+  The analytics dashboard. Plain tables on purpose: a chart library would
+  be a build step and a CDN dependency on a page four people read, and the
+  numbers below are ones you compare rather than watch.
+{% endcomment %}
+{% block content %}
+<style>
+  .grid { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px 18px; min-width: 150px; }
+  .card b { display: block; font-size: 26px; font-weight: 600; line-height: 1.2; }
+  .card span { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .cols { display: flex; flex-wrap: wrap; gap: 26px; }
+  .cols > div { flex: 1 1 340px; }
+  table.a { width: 100%; border-collapse: collapse; }
+  table.a th, table.a td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  table.a td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .range a { margin-right: 12px; }
+  .range b { margin-right: 12px; }
+</style>
+
+<p class="range">
+  {% for r in ranges %}
+    {% if r == days %}<b>{{ r }}d</b>{% else %}<a href="?days={{ r }}">{{ r }}d</a>{% endif %}
+  {% endfor %}
+</p>
+
+<div class="grid">
+  <div class="card"><b>{{ traffic.visits }}</b><span>Visits</span></div>
+  <div class="card"><b>{{ traffic.signed_in }}</b><span>Signed in</span></div>
+  <div class="card"><b>{{ traffic.events }}</b><span>Events</span></div>
+  <div class="card"><b>{{ money.signups }}</b><span>New accounts</span></div>
+  <div class="card"><b>{{ money.orders }}</b><span>Paid orders</span></div>
+  <div class="card"><b>{{ money.gross }}</b><span>Paid orders, gross</span></div>
+  <div class="card"><b>{{ money.topped_up }}</b><span>Wallet top-ups</span></div>
+</div>
+
+<div class="cols">
+  <div>
+    <h2>Where they went</h2>
+    <table class="a">
+      <tr><th>Path</th><th class="n">Views</th><th class="n">Visits</th></tr>
+      {% for row in paths %}
+        <tr><td>{{ row.path|default:"—" }}</td><td class="n">{{ row.views }}</td><td class="n">{{ row.visits }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3">Nothing recorded yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div>
+    <h2>What they used</h2>
+    <table class="a">
+      <tr><th>Event</th><th class="n">Times</th><th class="n">People</th></tr>
+      {% for row in features %}
+        <tr><td>{{ row.name }}</td><td class="n">{{ row.times }}</td><td class="n">{{ row.people }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3">Nothing recorded yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div>
+    <h2>How they arrived</h2>
+    <table class="a">
+      <tr><th>Source</th><th class="n">People</th></tr>
+      {% for source, people in acquisition.by_source.items %}
+        <tr><td>{{ source }}</td><td class="n">{{ people }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">Nothing recorded yet.</td></tr>
+      {% endfor %}
+      <tr><td><b>Total</b></td><td class="n"><b>{{ acquisition.total }}</b></td></tr>
+    </table>
+    <p style="color:#666;font-size:12px">
+      First touch, never overwritten. Somebody invited in March who buys in
+      September still counts as a referral.
+    </p>
+  </div>
+</div>
+{% endblock %}

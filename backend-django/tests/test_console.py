@@ -85,6 +85,34 @@ class TestWhoGetsIn:
 
 
 @pytest.mark.django_db
+class TestTheMenu:
+    """Every page an operator needs must be REACHABLE, not merely
+    registered. Django falls back to its own model permissions when a
+    ModelAdmin does not override `has_module_permission`, and a console
+    operator has none of those — they are staff by way of `admin_users`,
+    not by way of `auth_permission`. The approval queue and the audit trail
+    were both invisible on the first deploy for exactly this reason, while
+    every test passed.
+    """
+
+    @pytest.mark.parametrize("url_name", [
+        "namo:consultants_consultant_changelist",
+        "namo:console_adminaction_changelist",
+        "namo:shop_product_changelist",
+        "namo:content_content_changelist",
+    ])
+    def test_a_support_operator_can_open_the_pages_they_need(self, url_name):
+        client, _ = _admin(Tier.SUPPORT)
+        assert client.get(reverse(url_name)).status_code == 200, url_name
+
+    def test_the_index_lists_the_approval_queue(self):
+        client, _ = _admin(Tier.SUPPORT)
+        body = client.get(CONSOLE).content.decode()
+        assert "consultant" in body.lower()
+        assert "adminaction" in body.lower()
+
+
+@pytest.mark.django_db
 class TestApproval:
     def test_support_can_approve_and_it_is_audited(self):
         client, admin_id = _admin(Tier.SUPPORT)
