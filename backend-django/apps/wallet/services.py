@@ -98,7 +98,7 @@ import logging
 import uuid
 
 from django.conf import settings
-from django.db import IntegrityError, connection, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
 
 from .models import Payment, PaymentStatus, RefType
 from .razorpay import RazorpayClient, RazorpayError, signature_hex, signatures_match
@@ -125,6 +125,8 @@ REFUSAL_BAND = "Add between ₹100 and ₹1,00,000."
 REFUSAL_NOT_CONFIGURED = "Payments are not configured yet."
 REFUSAL_PROVIDER = "Could not reach the payment provider. Try again."
 REFUSAL_RECORD = "Could not start that payment. Try again."
+REFUSAL_ORDER_NOT_YOURS = "That order is not yours."
+REFUSAL_ORDER_EXPIRED = "That order has expired. Place it again."
 
 # The webhook's answers are plain text, like the edge function's.
 WEBHOOK_NOT_CONFIGURED = "Not configured."
@@ -328,7 +330,20 @@ def list_ledger(profile_id, after=None, limit=50):
 # ── Razorpay order creation (razorpay-order/index.ts) ────────────────────────
 
 
-def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
+def pending_order(order_id):
+    """(profile_id, status, total_paise, still_held) for one order, or None.
+    A shop or Academy order is held for 30 minutes (028/031); past that the
+    sweeper puts its stock or seat back, so it is not paid for."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "select profile_id, status, total_paise,"
+            "       coalesce(expires_at > now(), false) from orders where id = %s",
+            [str(order_id)],
+        )
+        return cursor.fetchone()
+
+
+def create_topup_order(profile_id, amount_paise=None, client=None, key_id=None, order_id=None):
     """Opens a Razorpay order so the browser can start checkout. This
     function does NOT credit anything: it writes the 'created' row, the
     only record tying a Razorpay order id to one of our profiles.
@@ -341,8 +356,21 @@ def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
 
     The band below is the PRD's, enforced here because the browser's copy
     of it is a convenience. Amount in paise, both directions (rule 1).
+
+    Phase 10: `order_id` instead of an amount pays for a pending shop or
+    Academy order. The amount is the ORDER's, read here — the client says
+    only which order — and the top-up band does not apply: a ₹640 camphor
+    set is not a top-up. The 'created' row carries the order id, which is
+    what lets payment_capture settle it.
     """
-    if (
+    if order_id is not None:
+        order = pending_order(order_id)
+        if order is None or str(uuid.UUID(str(order[0]))) != str(uuid.UUID(str(profile_id))):
+            raise Refusal(404, REFUSAL_ORDER_NOT_YOURS)
+        if order[1] != "pending" or not order[3]:
+            raise Refusal(409, REFUSAL_ORDER_EXPIRED)
+        amount_paise = order[2]
+    elif (
         not isinstance(amount_paise, int)
         or isinstance(amount_paise, bool)
         or amount_paise < MIN_PAISE
@@ -367,9 +395,10 @@ def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
         key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
     )
     try:
-        order = client.create_order(
-            amount_paise, notes={"profile_id": str(profile_id)}
-        )
+        notes = {"profile_id": str(profile_id)}
+        if order_id is not None:
+            notes["shop_order_id"] = str(order_id)
+        order = client.create_order(amount_paise, notes=notes)
     except RazorpayError as exc:
         logger.error("[order] razorpay refused: %s", exc.status)
         raise Refusal(502, REFUSAL_PROVIDER) from None
@@ -379,6 +408,7 @@ def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
             provider_order_id=order["id"],
             amount_paise=amount_paise,
             status=PaymentStatus.CREATED,
+            order_id=order_id,
         )
     except Exception:
         # Fail before checkout opens rather than after: a payment whose
@@ -439,7 +469,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         raise CaptureFailed(f"payment {payment_id} has no positive amount")
     with connection.cursor() as cursor:
         cursor.execute(
-            "select profile_id, amount_paise from payments"
+            "select profile_id, amount_paise, order_id from payments"
             " where provider_order_id = %s and status = 'created'"
             " order by created_at desc limit 1",
             [str(order_id)],
@@ -447,7 +477,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         created = cursor.fetchone()
     if created is None:
         raise CaptureFailed(f"no order {order_id} on this system")
-    profile_id, order_amount = created
+    profile_id, order_amount, shop_order = created
     # Canonical dashed form whatever the backend stored (Django keeps
     # UUIDFields dashless on SQLite) — the value is returned to the
     # webhook log and feeds the ORM payment row.
@@ -467,7 +497,9 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                 amount_paise=amount_paise,
                 status=status,
                 raw=raw,
+                order_id=shop_order,
             )
+            settle = None
             if status == PaymentStatus.CAPTURED:
                 # The balance is not touched here. The after-insert
                 # trigger on `ledger` moves it (003), emulated by
@@ -479,6 +511,8 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                     "Added money",
                     ref_type=RefType.PAYMENT,
                 )
+                if shop_order is not None:
+                    settle = settle_order(shop_order)
     except IntegrityError:
         # A retried delivery: provider_payment_id or provider_event_id
         # already exists. The ordinary case, not an error — everything
@@ -488,7 +522,27 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         "ok": True,
         "duplicate": False,
         "profile_id": str(profile_id),
+        "shop_order": str(shop_order) if shop_order is not None else None,
+        "settle": settle,
     }
+
+
+def settle_order(order_id):
+    """028's tail of payment_capture: the money just landed, so spend it on
+    the order it was opened for — inside the capture's transaction, through
+    the one settle the shop, the Academy and wallet checkout all share
+    (shop_order_settle). Any failure but a short balance rolls the credit
+    back with it, the webhook answers 500 and Razorpay retries the whole
+    delivery. A short balance, or an order the sweeper already released,
+    leaves the money in the wallet: the safe half."""
+    try:
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute("select public.shop_order_settle(%s)", [str(order_id)])
+            return cursor.fetchone()[0]
+    except DatabaseError as exc:
+        if getattr(exc.__cause__, "sqlstate", None) == "WB001":
+            return {"ok": True, "settled": False, "status": "short"}
+        raise
 
 
 def handle_webhook(raw_body: bytes, signature: str, event_id):

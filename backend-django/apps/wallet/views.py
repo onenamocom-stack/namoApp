@@ -55,11 +55,18 @@ class SpendInput(serializers.Serializer):
 
 
 class TopupInput(serializers.Serializer):
-    """{amount_paise} only — the person chooses what to PAY; what gets
-    CREDITED is what Razorpay later reports captured, from the signature-
-    verified webhook (rule 3)."""
+    """{amount_paise} — the person chooses what to PAY; what gets CREDITED
+    is what Razorpay later reports captured, from the signature-verified
+    webhook (rule 3). Or {order_id} (phase 10): pay for a pending shop or
+    Academy order, whose amount the server reads."""
 
-    amount_paise = serializers.IntegerField()
+    amount_paise = serializers.IntegerField(required=False)
+    order_id = serializers.UUIDField(required=False)
+
+    def validate(self, attrs):
+        if ("amount_paise" in attrs) == ("order_id" in attrs):
+            raise serializers.ValidationError("Send amount_paise or order_id.")
+        return attrs
 
 
 class LedgerQuery(serializers.Serializer):
@@ -130,7 +137,9 @@ def topup_order(request):
     serializer.is_valid(raise_exception=True)
     try:
         result = services.create_topup_order(
-            request.user.pk, serializer.validated_data["amount_paise"]
+            request.user.pk,
+            serializer.validated_data.get("amount_paise"),
+            order_id=serializer.validated_data.get("order_id"),
         )
     except services.Refusal as refusal:
         return Response({"ok": False, "reason": refusal.reason},

@@ -725,33 +725,6 @@ export const questionPacks = [
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SHOP
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/** What sits inside each shop category, revealed once one is chosen. */
-export const shopSubcategories = {
-  Gemstones: ['Blue Sapphire', 'Yellow Sapphire', 'Emerald', 'Ruby', 'Pearl'],
-  Maalas: ['Sphatik', 'Tulsi', 'Sandalwood', 'Lotus seed'],
-  Rudraksha: ['1 Mukhi', '5 Mukhi', '7 Mukhi', 'Gauri Shankar'],
-  Remedies: ['Yantras', 'Ritual kits', 'Oils', 'Camphor & loban'],
-}
-
-export const shopCategories = ['Gemstones', 'Maalas', 'Rudraksha', 'Remedies']
-
-export const products = [
-  { id: 'sh1', name: 'Natural Blue Sapphire', subtitle: '3.2 ct · Certified Neelam', price: 18500, mrp: 24000, category: 'Gemstones', recommendedBy: 'Ritu Kashyap' },
-  { id: 'sh2', name: 'Yellow Sapphire Ring', subtitle: '5.1 ct · Panchdhatu setting', price: 26400, mrp: null, category: 'Gemstones', recommendedBy: null },
-  { id: 'sh3', name: 'Rudraksha 5 Mukhi Mala', subtitle: '108 beads · Nepali origin', price: 2400, mrp: 3200, category: 'Rudraksha', recommendedBy: 'Yogesh Pandit' },
-  { id: 'sh4', name: 'Sphatik Crystal Maala', subtitle: '108 beads · Hand-knotted', price: 1650, mrp: null, category: 'Maalas', recommendedBy: null },
-  { id: 'sh5', name: 'Tulsi Maala', subtitle: '108 beads · Vrindavan wood', price: 890, mrp: 1200, category: 'Maalas', recommendedBy: 'Dev Malhotra' },
-  { id: 'sh6', name: '1 Mukhi Rudraksha', subtitle: 'Lab certified · Java', price: 7200, mrp: null, category: 'Rudraksha', recommendedBy: null, soldOut: true },
-  { id: 'sh7', name: 'Shani Shanti Kit', subtitle: 'Oil, cloth & mantra card', price: 1150, mrp: 1500, category: 'Remedies', recommendedBy: 'Ritu Kashyap' },
-  { id: 'sh8', name: 'Copper Yantra — Shree', subtitle: '3×3 in · Energised', price: 2100, mrp: null, category: 'Remedies', recommendedBy: null },
-  { id: 'sh9', name: 'Emerald (Panna)', subtitle: '2.8 ct · Zambian', price: 15900, mrp: 19500, category: 'Gemstones', recommendedBy: 'Meher Bano', soldOut: true },
-  { id: 'sh10', name: 'Camphor & Loban Set', subtitle: 'Weekly cleansing ritual', price: 640, mrp: null, category: 'Remedies', recommendedBy: null },
-]
-
-/* ══════════════════════════════════════════════════════════════════════════
    ME
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -782,107 +755,6 @@ export const loadingLines = [
    ══════════════════════════════════════════════════════════════════════════ */
 
 export const topUpAmounts = [500, 1000, 2000, 5000]
-
-/* ══════════════════════════════════════════════════════════════════════════
-   ACADEMY — courses, live events and saved downloads.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-export const courses = [
-  {
-    id: 'c1',
-    title: 'Reading a birth chart from scratch',
-    tutor: 'Ritu Kashyap',
-    initials: 'RK',
-    lessons: 12,
-    duration: '4h 20m',
-    level: 'Beginner',
-    price: 2499,
-    progress: 35,
-    url: 'https://www.youtube.com/results?search_query=birth+chart+basics',
-  },
-  {
-    id: 'c2',
-    title: 'Dashas and timing: when, not whether',
-    tutor: 'Dev Malhotra',
-    initials: 'DM',
-    lessons: 9,
-    duration: '3h 05m',
-    level: 'Intermediate',
-    price: 3499,
-    progress: 0,
-    url: 'https://www.youtube.com/results?search_query=vimshottari+dasha',
-  },
-  {
-    id: 'c3',
-    title: 'Tarot as a thinking tool',
-    tutor: 'Meher Bano',
-    initials: 'MB',
-    lessons: 8,
-    duration: '2h 40m',
-    level: 'Beginner',
-    price: 1999,
-    progress: 72,
-    url: 'https://www.youtube.com/results?search_query=tarot+for+beginners',
-  },
-  {
-    id: 'c4',
-    title: 'Synastry: charts against each other',
-    tutor: 'Simran Kaur',
-    initials: 'SK',
-    lessons: 10,
-    duration: '3h 30m',
-    level: 'Advanced',
-    price: 4299,
-    progress: 0,
-    url: 'https://www.youtube.com/results?search_query=synastry+astrology',
-  },
-]
-
-export const academyEvents = [
-  {
-    id: 'e1',
-    title: 'Saturn return, live clinic',
-    host: 'Ritu Kashyap',
-    initials: 'RK',
-    date: 'Thu, 7 Aug',
-    time: '19:00',
-    seats: 40,
-    taken: 31,
-    price: 0,
-    kind: 'Webinar',
-  },
-  {
-    id: 'e2',
-    title: 'Chart-reading intensive, weekend one',
-    host: 'Dev Malhotra',
-    initials: 'DM',
-    date: 'Sat, 9 Aug',
-    time: '11:00',
-    seats: 25,
-    taken: 25,
-    price: 1499,
-    kind: 'Seminar',
-  },
-  {
-    id: 'e3',
-    title: 'Grief and the 8th house',
-    host: 'Dr. Nandita Rao',
-    initials: 'NR',
-    date: 'Tue, 12 Aug',
-    time: '18:30',
-    seats: 60,
-    taken: 12,
-    price: 499,
-    kind: 'Webinar',
-  },
-]
-
-export const downloads = [
-  { id: 'd1', title: 'Birth chart basics — lesson 1', kind: 'Video', size: '182 MB', saved: '2 days ago', course: 'Reading a birth chart' },
-  { id: 'd2', title: 'Dasha reference tables', kind: 'PDF', size: '1.4 MB', saved: '5 days ago', course: 'Dashas and timing' },
-  { id: 'd3', title: 'Tarot spreads worksheet', kind: 'PDF', size: '820 KB', saved: '1 week ago', course: 'Tarot as a thinking tool' },
-  { id: 'd4', title: 'Saturn return clinic — recording', kind: 'Video', size: '410 MB', saved: '2 weeks ago', course: 'Live event' },
-]
 
 /* ══════════════════════════════════════════════════════════════════════════
    CHAT — consultant threads for the side panel. The AI tab reuses
@@ -948,29 +820,6 @@ export const consultantReplies = [
   'That reads like a 7th house question, not a 10th house one.',
   'Do not decide before Thursday. The window opens then.',
   'Say the plain version to them. You have been editing it for a week.',
-]
-
-/* ══════════════════════════════════════════════════════════════════════════
-   HOME FEED — what is left of it.
-
-   This was 14 hand-ordered rows mixing posts, reels, articles, live rooms,
-   courses and products. Since phase 9 the first three are a QUERY over the
-   `content` table and are gone from here; `05-BACKEND-SCHEMA.md` §5.3 has the
-   reasoning, which is that a feed table is a ranking system and there is no
-   ranking. The live room went with live video on 9 Sep 2026.
-
-   What stays is the part no table holds yet: one course and one product
-   (phase 10). Both go the same way this half did.
-
-   `reading` stays too, and it is NOT a content row — `refId: 'today'` points at
-   a key of `days`, not an ID, and Home.jsx hoists the reading and panchang
-   cards in the component rather than ordering them here. Seeding it would be
-   inventing content that does not exist.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-export const feed = [
-  { id: 'f8', kind: 'course', refId: 'c1' },
-  { id: 'f12', kind: 'product', refId: 'sh1' },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════

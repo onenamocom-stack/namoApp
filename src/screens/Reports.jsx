@@ -1,5 +1,5 @@
 import { reports } from '../data/mock.js'
-import { BarAction, TopBar } from '../components/Chrome.jsx'
+import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -11,28 +11,14 @@ import { rupees, useStore } from '../store.jsx'
  * converts into and the thing a profile owner comes back for.
  */
 export default function Reports() {
-  const { showToast, addToCart, buyNow, spending, balance, cartCount, setCartOpen } = useStore()
+  const { showToast, buyNow, spending, balance } = useStore()
 
   return (
     <>
-      {/* Add to cart used to be a one-way door on this screen: the sheet is
-          mounted globally but Shop held the only opener, so a report added
-          here could only be paid for by walking to Shop. */}
-      <TopBar
-        title="Reports"
-        back
-        backTo="/profile"
-        sub={`${reports.length} available`}
-        right={
-          <BarAction
-            onClick={() => setCartOpen(true)}
-            badge={cartCount || null}
-            label={`Cart, ${cartCount} items`}
-          >
-            Cart
-          </BarAction>
-        }
-      />
+      {/* No cart here since phase 10: the cart ships parcels, and a report
+          is not one. Buy now stays on the wallet path until reports can be
+          generated (HANDOFF §6, the vendor's two a month). */}
+      <TopBar title="Reports" back backTo="/profile" sub={`${reports.length} available`} />
 
       <section className="border-b border-rule px-5 py-6">
         <p className="font-display text-title leading-tight t-heading">
@@ -88,9 +74,6 @@ export default function Reports() {
                     <p className="flex-1 text-lead gold tnum">
                       ₹{r.price.toLocaleString('en-IN')}
                     </p>
-                    <PopButton size="sm" full={false} onClick={() => addToCart(r)}>
-                      Add to cart
-                    </PopButton>
                     <PopButton
                       size="sm"
                       full={false}

@@ -61,18 +61,30 @@ def get_provider():
     raise RuntimeError(f"unknown MEDIA_PROVIDER {provider!r}")
 
 
+def _r2_client():
+    return boto3.client(
+        "s3",
+        endpoint_url=settings.R2_ENDPOINT,
+        aws_access_key_id=settings.R2_ACCESS_KEY,
+        aws_secret_access_key=settings.R2_SECRET_KEY,
+        config=BotoConfig(signature_version="s3v4"),
+        region_name="auto",
+    )
+
+
+def presign_get(bucket, key, expires_in):
+    """A time-limited read of one object in a PRIVATE bucket (Academy PDFs).
+    The caller decides who may have it; this only signs."""
+    return _r2_client().generate_presigned_url(
+        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=expires_in
+    )
+
+
 class R2Provider:
     """Cloudflare R2, S3-compatible. Presigned PUT, 15-minute expiry."""
 
     def presign_put(self, bucket_key, mime, size_bytes):
-        client = boto3.client(
-            "s3",
-            endpoint_url=settings.R2_ENDPOINT,
-            aws_access_key_id=settings.R2_ACCESS_KEY,
-            aws_secret_access_key=settings.R2_SECRET_KEY,
-            config=BotoConfig(signature_version="s3v4"),
-            region_name="auto",
-        )
+        client = _r2_client()
         upload_url = client.generate_presigned_url(
             "put_object",
             Params={
@@ -100,15 +112,7 @@ class R2Provider:
         trips and a JavaScript build to save a few megabytes of egress
         nobody will notice.
         """
-        client = boto3.client(
-            "s3",
-            endpoint_url=settings.R2_ENDPOINT,
-            aws_access_key_id=settings.R2_ACCESS_KEY,
-            aws_secret_access_key=settings.R2_SECRET_KEY,
-            config=BotoConfig(signature_version="s3v4"),
-            region_name="auto",
-        )
-        client.put_object(
+        _r2_client().put_object(
             Bucket=settings.R2_BUCKET, Key=bucket_key, Body=data, ContentType=mime
         )
         return public_url(bucket_key)

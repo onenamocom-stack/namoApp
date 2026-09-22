@@ -16,7 +16,14 @@ Updated 19 Sep 2026.
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
 | **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **024–027 are all on production (13 Sep)** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
+| **8 · Ask AI** | **Built 21 Sep on the Django API** — server-side quota, ₹9/min meter; `AI_PROVIDER` is still `mock` in production — §20 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
+| **10a · shop** | **Backend on BOTH projects, front end not merged** (branch `phase-10-shop`). `028`–`030` and `shop-quote`, `razorpay-order`, `admin` are live on production; delivery free; the admin console signs in there. All three done-conditions pass on dev, including a contended race. **Six items left to close — §10a-shop checklist.** Being moved onto the Django API on branch `phase-10` (§24) |
+| **10b · Academy** | **Built and walked on dev, branch `phase-10b-academy` (from `phase-10-shop`).** `031` on dev only, admin function v2 on dev. All four done-conditions pass on dev, including a contended seat race. **Not on production; blocked on the partner's content links** — §10b-academy. Moving onto the Django API with 10a on branch `phase-10` (§24) |
+| **11 · live video** | **Not started. Blocked** on the SDK choice (100ms or Agora, §4). Builds on phase 6's meter |
+| **12 · payouts and KYC** | **Not started. Gated**: KYC before the first rupee leaves, and a CA before any code. Earnings accrue in `earnings_ledger` meanwhile |
+| **13 · admin console** | **First slice built, 15–16 Sep, on both projects**: shop orders (ship, deliver, refund) with tiers and an audit trail — §10a-shop. **Replaced 22 Sep by the Django console, §22.** Everything else in `06-IMPLEMENTATION.md`'s payoff order is still by SQL: consultant approval, moderation, search, the rest |
+| **14 · anti-fluking** | **Not started.** Needs real session volume to mean anything |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
 approved by hand — the entire approval flow until phase 13. They have **no
@@ -29,7 +36,12 @@ reversed: the FEED is to be seeded from them until real consultants publish, the
 MARKETPLACE is not. `backend/seed/content.mjs` approves them for authorship and
 then deletes their availability, deactivates their per-minute services and
 clears their fabricated credentials — so they can post and cannot be booked,
-chatted or believed. Nothing has been seeded yet on either project.
+chatted or believed. **Seeded on both projects, 16 Sep**: 48 of the partner's
+reels (a curated 16 from each of three Drive folders, ~195 MB, no captions),
+spread over a1–a6. Verified on production from outside with the anon key: 48
+clips visible, videos serve, zero open slots on all six for the next week. The
+other ~2,450 reels sit in the partner's zips; the free tier's 1 GB storage is
+why they are not loaded.
 
 **Content is loaded from the BACKEND, not typed into the studio, and that is a
 decision rather than a shortcut** (9 Sep). It holds for real consultants as much
@@ -97,6 +109,8 @@ touched, in the **dev** SQL editor.
 | `012_bookings_transaction_check.sql` | bookings: the transaction, the refusals, the reversing credit, both books append-only, the new policies |
 | `014_metered_chat_check.sql` | chat: the hold, the round-up, the cutoff, the sweeper, and the live-session gate on messages |
 | `019_astro_cache_check.sql` | charts: the cache table's shape, RLS on, and **zero policies** — service role only |
+| `028_shop_check.sql` | the shop: stock, quotes, card settle, sweeper, cancel, refund |
+| `031_academy_check.sql` | the Academy: money once, the enrolment gate on lessons/PDFs/links, last seat, frozen price, free, card settle, sweeper, refund, event cancel |
 | `020_content_reviews_check.sql` | content and reviews: draft and blocked-consultant leaks, counts starting at zero, **the review anti-fraud gate**, `verified` derived, the rating cache reproducing its source, and a stranger reading counts but not who is behind them |
 
 **Passing looks like a failure:** `ERROR: PHASE 2 CHECKS PASSED`, and the same
@@ -1694,6 +1708,202 @@ production BEFORE the merge.** `main` deploys on push, so a front end querying
 `content_public` against a database without it would have shown an empty feed
 and empty Work and Reviews tabs on every consultant — no crash, just quietly
 wrong.
+
+---
+
+## 10a-shop. Phase 10 — the shop, built on dev (Supabase era, 14–16 Sep)
+
+Branch `phase-10-shop`, 14 Sep. Decisions are in `01-PRD.md` §4.6.
+
+**Deploying a function from Windows**: the CLI wants
+`supabase/functions/<name>/index.ts` under the working directory, and the
+functions live in `backend/functions/`. Copy them into a temp dir with that
+shape and deploy from there — run from the repo root, it fails with
+"Entrypoint path does not exist" and deploys nothing.
+
+| | |
+|---|---|
+| `backend/schema/028_shop.sql` | `shop_categories`, `shop_subcategories`, `products`, `shipping_addresses`, `shipping_quotes`, `shipments`; `orders.expires_at`, `payments.order_id`, `'shipping'` as an order line; `shop_checkout`, `shop_order_settle`, `shop_order_release`, `shop_order_cancel`, `shop_order_expire` (pg_cron `shop-order-expire`, every minute), `shop_order_refund`; and a **replaced `payment_capture`**. **Dev only** |
+| `backend/schema/028_shop_check.sql` | Twelve assertions, passes on dev |
+| `backend/seed/shop_dev.sql` | The ten mock products, **placeholder** stock 5 / 100 g / GST 0. Dev only, run |
+| `backend/functions/shop-quote` | New. Shiprocket if its secrets are set, else `SHIPPING_FLAT_PAISE`, else refuses. **Dev only**; dev has `SHIPPING_FLAT_PAISE=8000` |
+| `backend/functions/razorpay-order` | Now also takes `{ order_id }` and charges that order's total. **Dev only** |
+| Front end | `src/lib/shop.js`; `CartSheet` is cart → address → delivery → pay; Shop and Home's product card read the catalogue; `/orders`; the cart is products only and Reports lost Add to cart. `products`, `shopCategories`, `shopSubcategories` deleted from `mock.js` |
+
+**One money path.** `shop_order_settle` is the only thing that takes money for
+an order. Wallet checkout calls it inside `shop_checkout`. A card checkout
+leaves the order `pending` with its stock held for 30 minutes, and the webhook's
+`payment_capture` credits the wallet and calls the same settle in the same
+transaction. A payment that arrives after the sweeper released the order stays
+in the wallet — checked in assertion 8.
+
+**All three done-conditions pass on dev.** An order reserves stock (1, 7); a
+sold-out product is refused and writes nothing (3); an old line keeps its price
+and title after the catalogue changes (4).
+
+**The contended race passes too, 15 Sep** — `backend/tools/shop-race.mjs`.
+Both test accounts, six checkouts, one unit, and a third connection holding
+the product row lock across the fire time so the race could not be sequential
+in disguise. All six were sent within 2 ms, all six waited ~3.1 s on the lock,
+and all six returned within 3 ms of each other: **one paid, five refused "Not
+enough stock"**. In SQL afterwards: stock 0, one order line, the five losers'
+quotes unspent, the winner's wallet down exactly ₹180, the other untouched,
+both ledgers replaying. The check was re-run after `029` with its trigger live
+and still passes.
+
+**Somebody placed an order through the UI on dev** on 14 Sep, 18:11 UTC — a
+Rudraksha mala by wallet, paid, shipment `ready`. That is the first sign the
+screens work; it is not the full walk below.
+
+**Verified over HTTP as well as in SQL**, signed in as `+919999900001`: the
+catalogue reads, an address saves under RLS, `shop-quote` returns ₹80, wallet
+checkout moves the wallet by exactly the total, a client write to `products`
+is refused, `razorpay-order` given `{ order_id, amount_paise: 100 }` charged the
+order's ₹1,360 and ignored the 100, a cancelled order cannot be paid, and a
+plain top-up still opens. The ledger replays to the balance afterwards, and
+`shop-order-expire` was seen firing on its own.
+
+**`029_shop_images_alerts.sql`** — on BOTH projects (production 15 Sep,
+verified from outside: the bucket answers `NoSuchKey`, not `Bucket not
+found`). Adds the public `product-images` bucket (5 MB, jpg/png/webp, no client
+writes). Its Telegram trigger never fired anywhere and **`030` drops it**.
+
+**Paid orders are worked in the admin console, 15 Sep** — phase 13's first
+slice, built to `02-TRD.md` §7:
+
+| | |
+|---|---|
+| `backend/schema/030_admin_shop.sql` | `admin_users` (tiers support < fulfilment < finance < superadmin), `admin_actions` (append-only), `admin_shipment_update` and `admin_order_refund`, each writing its audit row in the same transaction. Drops the Telegram trigger. **Both projects** |
+| `backend/functions/admin` | The only elevated path. Session → active `admin_users` row → tier → SQL function. CORS: localhost only. **Both projects** (production deployed 16 Sep with the CLI) |
+| `admin/` | Separate Vite app, own CSS, own env files (`admin/.env.dev.local`, `admin/.env.prod.local`, both gitignored). `npm run admin:dev` / `npm run admin:prod`, port 5270. Red banner on production. Tabs To ship / Shipped / Delivered / Awaiting payment / Cancelled; Mark shipped needs a tracking number; Refund needs a reason and confirms the amount; polls every 30 s and flags new orders |
+
+Dev test account 1 (`+919999900001`) is a **superadmin on dev**. Tested over
+HTTP on dev: a non-admin and a signed-out caller are refused; a support-tier
+account reads but cannot ship or refund; deliver-before-ship, ship without a
+tracking number, a bad id and a second ship are refused; ship → deliver →
+refund each wrote exactly one `admin_actions` row; the refund credited ₹180
+once and a second refund was refused; both ledgers replay. **The console's
+screens have not been looked at** — same browser block as below.
+
+**`backend/seed/catalogue.mjs`** loads the real catalogue from a CSV shaped like
+`catalogue.template.csv`, uploads photos into `product-images`, upserts on
+`sku`, and never overwrites stock unless `--update-stock`. Validation and the
+`--ref` guard were exercised with bad rows; **the write path has not run** — it
+needs the service-role key. Front end renders `image_url` wherever it drew a
+`Plate`.
+
+**Production state, verified from outside 14 Sep:** `028` tables, columns and
+grants present, catalogue empty, `shop-quote` 404, live bundle is the old
+shop. Decided for production: delivery FREE (`SHIPPING_FLAT_PAISE=0`) until
+Shiprocket.
+
+### Closing 10a — the checklist (16 Sep)
+
+Production's backend is complete for the shop. What stands between here and
+**Done and closed**:
+
+| # | What | Who | When |
+|---|---|---|---|
+| 1 | **Walk dev in a browser** — `localhost:5260`, `9999900001` / `123456`: `/shop` with filters, add to cart, checkout with a new address, pay from wallet, a card checkout dismissed (the order must cancel), `/orders`, Home's product card, `/reports` without its cart. Then `npm run admin:dev` and ship → deliver → refund one order | Founder | Now |
+| 2 | **Real catalogue** — the partner fills `backend/seed/catalogue.template.csv` (name, category, price, MRP, stock, weight g, GST %, photo filename) plus a photos folder. Check it, `catalogue.mjs --dry-run`, then import to production | Partner, then import | 2–3 days |
+| 3 | **Partner as admin** — same `admin_users` insert with tier `'fulfilment'`; they must have signed up on 1namo.com first. Their using the console from their own machine means **hosting it**, which is not decided | Founder | When they start |
+| 4 | **Returns policy** text on `refunds.html` — window, condition, who pays return shipping. Razorpay's review reads these pages | Founder / partner | Before launch |
+| 5 | **Merge `phase-10-shop` to `main`** — this is what makes the new shop live. Only after #2, or the live shop reads "0 items" | Founder's go | After #2 |
+| 6 | **One ₹1 live payment** through the shop once Razorpay clears, then `reconcile-payments.mjs`, then see it in the admin console as To ship | Founder | When Razorpay clears |
+
+After #6, 10a is Done and closed.
+
+**Not blocking the close, logged:**
+
+- **GST rates** — go in with the catalogue (#2); nobody has decided them.
+- **Shiprocket** — account, API user, then `SHIPROCKET_EMAIL` /
+  `SHIPROCKET_PASSWORD` as function secrets. The rate call is **untested**.
+  Creating the Shiprocket shipment and a tracking webhook into `shipments` are
+  not built; until then courier and tracking are typed into the admin console.
+- **GST invoices** — nothing generates one.
+- **Stock and catalogue edits** — only by re-importing the CSV; the admin
+  console has no product screen.
+- **Hosting the admin console** — localhost only, CORS says so.
+
+---
+
+## 10b-academy. Phase 10b — the Academy, built on dev (Supabase era, 16–17 Sep)
+
+Branch `phase-10b-academy`, taken from `phase-10-shop` (not merged to `main`
+yet), 16–17 Sep. Decisions are in `01-PRD.md` §4.7; design in
+`05-BACKEND-SCHEMA.md` §4.7.
+
+| | |
+|---|---|
+| `backend/schema/031_academy.sql` | `courses`, `course_lessons`, `course_materials`, `academy_events`, `academy_event_links`, `enrolments`, `course_outline` view, private `course-materials` bucket + storage policy; `academy_enrolled`, `academy_enrol`, `admin_event_cancel`; **replaces** `shop_order_settle`, `shop_order_release`, `shop_order_refund`, `admin_order_refund` with generalised versions. **Dev only** |
+| `backend/schema/031_academy_check.sql` | Eleven sections, passes on dev (one run, 17 Sep). `028_shop_check.sql` re-run afterwards and still passes |
+| `backend/seed/academy.mjs` + `academy.template.json` | JSON manifest importer, upsert on slug; lessons replaced each run, seats moved by the delta, never cancels. **Write path run on dev** with the template (placeholder names, one generated PDF), twice — second run idempotent |
+| `backend/tools/academy-race.mjs` | The contended seat race |
+| `backend/functions/admin` | `academy.list` (support), `academy.refund`, `academy.cancel_event` (finance). **v2 on dev only**; production is still v1 |
+| `admin/App.jsx` | Shop orders / Academy switch; events with cancel, enrolments with refund |
+| Front end | `src/lib/academy.js`, `enrolIn` in the store (placeOrder's shape), `Academy.jsx` and Home's course card on real rows; `courses`, `academyEvents`, `downloads` and the last `feed` row deleted from `mock.js`; `event:` flag gone |
+
+**One money path, still.** No second settle. `academy_enrol` makes a pending
+order and calls `shop_order_settle` for the wallet; a card leaves it for
+`payment_capture`. `razorpay-order` needed no change — it already charged any
+pending order by id.
+
+**All four done-conditions pass on dev:**
+
+1. **Money once, content gated by the database.** Check sections 0, 1, 8. Over
+   HTTP as the two test accounts: enrolling moved the wallet exactly ₹2,499, a
+   second enrol said "You are already enrolled." and moved nothing; the
+   enrolled account read 2 lesson links, 1 material and fetched its signed PDF
+   (200); the other read 0, 0 and was refused the signed URL; anon got
+   `42501`; the bucket's public URL is 400 for everyone; a client insert into
+   `enrolments` is `42501`; a body carrying `p_price_paise` is not a callable
+   signature.
+2. **Last seat under contention**, 16 Sep. First run proved less than it looked:
+   account 2 had ₹300 for a ₹499 seat, so only one person could ever win. Funded
+   and re-run on a fresh one-seat event: six enrols sent within 1 ms, all waited
+   ~3.2 s on the third connection's lock, **one active, five "That one is
+   full"**. In SQL: `seats_left` 0, one enrolment, one order line, one debit,
+   both ledgers replay.
+3. **Frozen price.** Check section 4.
+4. **Cancel refunds once.** Check section 9; over HTTP a cancel refunded the one
+   paid seat, a second cancel was refused, the join link vanished for the
+   refunded account; one `academy.cancel_event` audit row.
+
+**Walked in a browser, 17 Sep** — headless Chrome driven over DevTools (the
+gstack browse binary is blocked by Windows Application Control on this
+machine), 400 px wide, `localhost:5261` on dev:
+- account 2: Courses → Enrol → pay from wallet: ₹2,300 → ₹301, card becomes
+  *Enrolled*, *Your courses* shows the lesson and *Watch*.
+- Events: *Join free* → *Join* with the Meet link; a ₹499 seat with ₹301 toasts
+  "Not enough balance"; *Pay by card or UPI* opened Razorpay at ₹499 with the
+  order `pending`, seat held, wallet untouched; *Yes, exit* cancelled the order
+  and the seat came back.
+- Downloads empty for account 2; Home shows *Continue learning*.
+- account 1: Downloads lists the PDF, *Open* opens the signed URL.
+- admin console (`admin:dev`): Academy tab renders; refunded a ₹1,999 enrolment
+  (wallet back, one audit row, every dev wallet replays); cancelled the free
+  clinic (1 free seat freed).
+
+Two bugs the walk found, fixed: "1 LESSONS" / "1 SEATS LEFT".
+
+**Not walked:** a card payment actually captured through Razorpay (no test card
+path on dev; check section 6 covers `payment_capture` settling an Academy
+order, same as the shop). The `ponytail:` deadlock note in `admin_event_cancel`
+(cancel racing the sweeper on one order) is untested by design — Postgres aborts
+one side whole.
+
+**Dev data left behind:** placeholder courses/events from the template, a
+cancelled `race-last-seat-2` event, and two `Dev test funding` credits on the
+test accounts (₹2,000 and ₹5,000).
+
+### Closing 10b — the checklist
+
+| # | What | Who |
+|---|---|---|
+| 1 | **Content links** — courses (title, tutor, level, price, lessons as links + minutes), any PDFs, events (date with offset, seats, price, join link) into `academy.template.json`'s shape | Partner / founder |
+| 2 | **Production, in order**: `031_academy.sql` in the SQL editor → `031_academy_check.sql` → deploy `admin` with the CLI → `academy.mjs --dry-run` then import. Before the merge, as with 025 | Founder, steps from the agent |
+| 3 | **Merge `phase-10b-academy`** — it contains `phase-10-shop`, so it is 10a's merge too; do not merge before 10a's own checklist says so | Founder's go |
+| 4 | Re-check: a real enrolment on 1namo.com once Razorpay clears | Founder |
 
 ---
 
@@ -3530,3 +3740,169 @@ second is the real one:
 Nothing else in stage 5 is blocked: the client, the retry-on-401, the
 AWB and tracking paths and the console actions are all built and tested.
 They are waiting on one address.
+
+## 24. Phase 10 moves onto the Django API — branch `phase-10`, 21–22 Sep 2026
+
+**Not merged, not deployed.** Everything below is on the `phase-10` branch.
+
+**The customer half of phase 10.** §22's console is the operator half. It came
+the same day from the other side, and `main` was merged into this branch on 22
+Sep. Both live in one `apps/shop`: §22's `models.py` and `admin.py` read the
+shop tables through Django models behind the console login, and this
+section's `services.py`, `views.py` and `urls.py` are what the phone app
+calls.
+
+**Where phase 10 was.** The shop (10a), the Academy (10b) and the admin
+console's first slice were built 14–17 Sep on `phase-10-shop` and
+`phase-10b-academy` in the old repo (`atharvborse2004-ops/aether-mono`) and
+never pushed. This repo started from the old `main`, so none of that code came
+across. That is why §10i's audit called Shop and Academy "static", and why §14
+found 14 tables with no file in `backend/schema/`: those files are 028–031, and
+they are in this repo now. §10a-shop and §10b-academy are those branches'
+own sections, merged in unchanged.
+
+**The decision: Django runs the SQL. It does not port it.** Modules 2–9
+rewrote their SQL as Python. `apps/shop/` rewrites nothing:
+
+- `shop_checkout`, `academy_enrol`, the settle/release/refund family and the
+  RLS gates stay in 028/030/031, the SQL whose contended races §10a-shop and
+  §10b-academy proved.
+- `as_caller(uid)` in `apps/shop/services.py` does what PostgREST did on every
+  request: one transaction, `set local role authenticated` (or `anon` when
+  signed out), and the caller's claims in `request.jwt.claims`. So
+  `auth.uid()`, every policy and every grant decide exactly what they decided
+  before.
+- Only what was service-role before runs as the owner: the quote insert and
+  the webhook's settle.
+
+It was chosen 21 Sep because it is less code and because it keeps those race
+proofs true.
+
+**The trap, stated once: the transaction is the gate.** `SET LOCAL` outside a
+transaction does nothing except log a warning, and the next statement runs as
+the owner, past every policy. `as_caller` opens the transaction itself. It also
+resets the role on the way out, because inside an outer transaction the block
+is only a savepoint. Never run a caller's query without it.
+
+| Was | Now |
+|---|---|
+| catalogue reads (`products`, categories) | `GET /v1/shop/catalogue/` (anon) |
+| `shipping_addresses` read/insert | `GET/POST /v1/shop/addresses/` |
+| `shop-quote` Edge Function | `POST /v1/shop/quote/`. **Flat rate only**: `SHIPPING_FLAT_PAISE` (unset refuses). The Shiprocket branch, which never ran, is not ported |
+| `rpc('shop_checkout')` / `rpc('shop_order_cancel')` | `POST /v1/shop/checkout/`, `POST /v1/shop/orders/<id>/cancel/` |
+| `orders.status`, shipments + lines | `GET /v1/shop/orders/<id>/`, `GET /v1/shop/orders/` |
+| courses, `course_outline`, events, own enrolments | `GET /v1/academy/` |
+| `course_lessons`, `academy_event_links`, `course_materials` | `GET /v1/academy/courses/<id>/lessons/`, `event-links/`, `materials/` (RLS-gated, as the caller) |
+| `storage.createSignedUrl('course-materials')` | `POST /v1/academy/materials/url/`: the row readable as the caller IS the enrolment check, then a 10-minute presigned GET on `R2_PRIVATE_BUCKET` |
+| `rpc('academy_enrol')` | `POST /v1/academy/enrol/` |
+| `admin` Edge Function | **§22's console**, not an endpoint (see the next paragraph) |
+| `razorpay-order` given `{order_id}` | `POST /v1/wallet/topup/order/` given `{order_id}` |
+| 028's `payment_capture` settling the order | `apps.wallet.services.settle_order`, inside the capture's transaction |
+
+**No admin action is reachable from /v1.** This branch first carried the old
+`admin` Edge Function's actions as `POST /v1/admin/`, along with the `admin/`
+Vite app, behind a Supabase JWT. §22 deliberately put admin behind a separate
+login that a phone-app session cannot become. Both were removed in the merge,
+and `test_no_admin_action_is_reachable_from_v1` keeps them out. **This leaves
+two gaps in the console:** refunding a paid shop order, and the Academy
+actions (refund an enrolment, cancel an event). The SQL functions exist
+(`admin_order_refund`, `admin_event_cancel`, which write their own audit
+row), so each gap is one console action. Until they are added, refunds are
+done by SQL.
+
+**Payments.**
+
+- The top-up endpoint takes `{amount_paise}` or `{order_id}`, never both.
+- For an order, the amount is read from the order, which must be the caller's
+  own, `pending` and still held. Otherwise it refuses with 404 "That order is
+  not yours." or 409 "That order has expired. Place it again." The top-up band
+  does not apply.
+- The `created` row records `payments.order_id`. On capture, `shop_order_settle`
+  runs in the same transaction as the credit. A short balance, or an order the
+  sweeper already released, leaves the money in the wallet. Any other failure
+  rolls the credit back, and Razorpay retries.
+- `payments.order_id` is now in Django's model. Migration `wallet 0002` runs
+  `add column if not exists` on Postgres, so it is a no-op on the live database
+  (§14 added the column by hand) and needs no faking.
+
+**Client.**
+
+- `src/lib/shop.js` and `src/lib/academy.js` call the API. Every export and its
+  return shape are unchanged, so no screen changed.
+- `store.jsx`'s `placeOrder` and `enrolIn` pay through `walletApi.payOrder`, the
+  top-up's checkout split out in `lib/wallet.js`.
+- No PostgREST call is left in `src/`.
+- The `shop-quote` and `admin` Edge Functions are commented out under §19's
+  header.
+
+**Verified, 21 Sep.**
+
+- 46 new tests in `tests/test_shop.py`, 518 green in total. The one failure is
+  `test_no_cache_route`, which fails only on Python 3.14 (Django 5.1's 404
+  template copy). CI and the image run 3.13.
+- `npm run lint` is clean. The seeker, pro and admin builds are green.
+- **Every statement `services.py` runs was probed on real Postgres,** on the
+  OLD dev project `mrjsatelbuiypodeulcx`, the only one this machine's Supabase
+  MCP reaches. It ran as the two test accounts in one transaction, rolled back:
+  - signed out: 4 categories and 10 active products
+  - account 1: 2 lessons in its course; account 2: 0
+  - account 2 read 0 of account 1's orders
+  - wallet checkout at ₹2,300 against ₹18,500 answered "Not enough balance"
+  - card checkout left the order `pending` with stock 5 → 4; cancel put it back to 5
+  - after the reset, `current_user` is `postgres` again and `auth.uid()` is null
+
+**Not verified, and each item is needed before merge:**
+
+1. ~~**The new project has the phase 10 objects.**~~ **Checked 21 Sep, and
+   fixed.** Every function, policy, grant, the `shop-order-expire` job,
+   `payments.order_id` and the audit trigger were there, and
+   `shop_order_settle` is 031's version. **One thing was missing: the
+   `course_outline` view.** §14's `pg_dump` copied tables and functions, not
+   views. It was re-created from 031's own statement, with its grant. The
+   first check is below, kept for the next copy. It errors on the first
+   missing object rather than listing them all. Old dev answers
+   11 / 14 / 14 / 1 / 2 / 3 / 1 / 1 / 11:
+
+   ```sql
+   select 'phase 10 functions' as what, count(*)::int as n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+    where ns.nspname = 'public' and p.proname in ('shop_checkout','shop_order_settle','shop_order_release','shop_order_cancel','shop_order_expire','shop_order_refund','academy_enrol','academy_enrolled','admin_shipment_update','admin_order_refund','admin_event_cancel')
+   union all select 'phase 10 tables with RLS on', count(*)::int from pg_class where relnamespace = 'public'::regnamespace and relrowsecurity and relname in ('shop_categories','shop_subcategories','products','shipping_addresses','shipping_quotes','shipments','admin_users','admin_actions','courses','course_lessons','course_materials','academy_events','academy_event_links','enrolments')
+   union all select 'phase 10 policies', count(*)::int from pg_policies where schemaname = 'public' and tablename in ('shop_categories','shop_subcategories','products','shipping_addresses','shipping_quotes','shipments','admin_users','admin_actions','courses','course_lessons','course_materials','academy_events','academy_event_links','enrolments')
+   union all select 'course_outline view', count(*)::int from pg_views where schemaname = 'public' and viewname = 'course_outline'
+   union all select 'authenticated may run checkout + enrol', (has_function_privilege('authenticated', 'public.shop_checkout(jsonb,uuid,uuid,text)', 'execute')::int + has_function_privilege('authenticated', 'public.academy_enrol(text,uuid,text)', 'execute')::int)
+   union all select 'anon may read the catalogue', (has_table_privilege('anon', 'public.products', 'select')::int + has_table_privilege('anon', 'public.courses', 'select')::int + has_table_privilege('anon', 'public.course_outline', 'select')::int)
+   union all select 'payments.order_id column', count(*)::int from information_schema.columns where table_schema = 'public' and table_name = 'payments' and column_name = 'order_id'
+   union all select 'shop-order-expire cron job', count(*)::int from cron.job where jobname = 'shop-order-expire'
+   union all select 'products', count(*)::int from products;
+   ```
+
+2. **Placeholder products.** Old dev holds 11 placeholder products (stock 5,
+   GST 0), and the new project is a copy of old dev. If the last line of the
+   query above is not 0, merging puts them on 1namo.com. §10a-shop checklist #5
+   already said so: merge only after the real catalogue.
+3. **Deploy the API** with `SHIPPING_FLAT_PAISE=0`. `CORS_ALLOWED_ORIGINS`
+   already allows `http://localhost:5260` for a local walk. `wallet 0002` is a
+   no-op on the live database, where the column already exists.
+4. **Walk it**: §10a-shop checklist #1 and §10b-academy's walk, now through the
+   API, with the orders seen in §22's console. It has not been walked in a browser. A card payment captured by
+   Razorpay itself, not a synthetic webhook, is still the one step nothing has
+   shown.
+5. **Retire the functions**: `supabase functions delete shop-quote admin` on
+   every project that has them. The old production project
+   `talqzgolttfgdzcoaqno` got both on 16 Sep.
+
+**Gaps carried, deliberately:**
+
+- **Delivery rates are flat.** §22 built Shiprocket for pushing parcels
+  (`apps/shop/shiprocket.py`), not for quoting. The quote could ask it for
+  rates once the account has a pickup address (§23).
+- **Academy PDFs** live in `R2_PRIVATE_BUCKET`, a private bucket that does not
+  exist yet. Never use `R2_BUCKET`: its `r2.dev` URL makes every object public.
+  `backend/seed/academy.mjs` still uploads to Supabase Storage, so until it is
+  changed, upload PDFs to R2 by hand at their `storage_path`.
+- **Product photos**: §22's console uploads them to R2 (`put_bytes`), which
+  makes `backend/seed/catalogue.mjs` and its Supabase `product-images` upload
+  unnecessary for a small catalogue. Typing products into the console is the
+  path.
+- **`orders`/`order_items` are still not Django-owned** (§10j). The shop reads
+  and writes them only through the SQL functions.

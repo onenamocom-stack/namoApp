@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
-import { products, shopCategories, shopSubcategories } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
 import { useMyChart } from '../lib/astro.js'
+import { useCatalogue } from '../lib/shop.js'
 
 /**
  * The three promo banners at the top of the shop.
@@ -74,8 +74,8 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, spending, setCartOpen, showToast, session, sessionReady } =
-    useStore()
+  const { cartCount, addToCart, setCartOpen, session, sessionReady } = useStore()
+  const { status, categories, products } = useCatalogue()
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
@@ -101,19 +101,24 @@ export default function Shop() {
     if (el) el.scrollTo({ left: i * step(el), behavior: 'smooth' })
   }
 
-  const filters = ['All', ...shopCategories]
+  /* Buy skips nothing any more: a parcel needs an address and a delivery
+     price, so Buy is Add plus the checkout sheet. */
+  const buy = (p) => {
+    addToCart(p, true)
+    setCartOpen(true)
+  }
+
+  const filters = ['All', ...categories.map((c) => c.name)]
   const q = query.trim().toLowerCase()
   const list = products.filter((p) => {
     const inCat = cat === 'All' || p.category === cat
-    // Products carry no subcategory field; matching on the name is the cheap
-    // honest join for mock data, and it fails open rather than showing zero.
-    const inSub = !sub || `${p.name} ${p.subtitle}`.toLowerCase().includes(sub.toLowerCase())
+    const inSub = !sub || p.subcategory === sub
     const inQuery = !q || [p.name, p.subtitle, p.category].some((f) => f.toLowerCase().includes(q))
     return inCat && inSub && inQuery
   })
 
   // The chart-matched pick leads the page when no filter is narrowing things.
-  const hero = cat === 'All' && !q ? list.find((p) => p.recommendedBy) : null
+  const hero = cat === 'All' && !q ? list.find((p) => p.featured && !p.soldOut) : null
   const rest = hero ? list.filter((p) => p.id !== hero.id) : list
 
   return (
@@ -229,7 +234,7 @@ export default function Shop() {
           </section>
 
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
-            {(shopSubcategories[cat] || []).map((sc) => (
+            {(categories.find((c) => c.name === cat)?.subcategories ?? []).map((sc) => (
               <button
                 key={sc}
                 type="button"
@@ -250,6 +255,9 @@ export default function Shop() {
           <Kicker>Matched to your chart</Kicker>
           <PopCard raised tap className="mt-3 overflow-hidden">
             <Plate seed={hero.id} className="aspect-[16/10] w-full">
+              {hero.imageUrl && (
+                <img src={hero.imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              )}
               <span className="absolute left-3 top-3">
                 <PopTag tone="gold">{hero.category}</PopTag>
               </span>
@@ -268,18 +276,12 @@ export default function Shop() {
 
               <div className="mt-5 flex items-center gap-2">
                 <p className="flex-1 text-title gold tnum">
-                  ₹{hero.price.toLocaleString('en-IN')}
+                  ₹{rupees(hero.pricePaise)}
                 </p>
                 <PopButton size="sm" full={false} onClick={() => addToCart(hero)}>
                   Add to cart
                 </PopButton>
-                <PopButton
-                  size="sm"
-                  full={false}
-                  variant="gold"
-                  disabled={spending}
-                  onClick={() => buyNow(hero)}
-                >
+                <PopButton size="sm" full={false} variant="gold" onClick={() => buy(hero)}>
                   Buy now
                 </PopButton>
               </div>
@@ -290,20 +292,31 @@ export default function Shop() {
 
       {/* ── Grid ──────────────────────────────────────────────────────── */}
       <section className="px-4 py-4">
-        <Kicker>{`${rest.length} ${rest.length === 1 ? 'item' : 'items'}`}</Kicker>
+        <Kicker>
+          {status === 'ready' ? `${rest.length} ${rest.length === 1 ? 'item' : 'items'}` : 'Shop'}
+        </Kicker>
 
-        {rest.length === 0 ? (
+        {status === 'loading' ? (
+          <p className="py-12 text-center text-meta t-faint">Loading the shop…</p>
+        ) : status === 'error' ? (
+          <p className="py-12 text-center text-meta t-faint">
+            Could not reach the shop. Check your connection and come back.
+          </p>
+        ) : rest.length === 0 ? (
           <p className="py-12 text-center text-meta t-faint">
             Nothing matches that. Clear the search, or drop the subcategory.
           </p>
         ) : (
           <ul className="mt-3 grid grid-cols-2 gap-3">
             {rest.map((p) => {
-              const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
+              const off = p.mrpPaise ? Math.round((1 - p.pricePaise / p.mrpPaise) * 100) : null
               return (
                 <li key={p.id}>
                   <PopCard tap className="flex h-full flex-col overflow-hidden">
                     <Plate seed={p.id} className="aspect-square w-full">
+                      {p.imageUrl && (
+                <img src={p.imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              )}
                       {off > 0 && !p.soldOut && (
                         <span className="caps-sm absolute left-2 top-2 rounded-full bg-gold-fill px-2 py-1 text-ink shadow-sm tnum">
                           {off}% off
@@ -323,17 +336,11 @@ export default function Shop() {
                       <p className="mt-1 text-meta t-faint">{p.subtitle}</p>
 
                       <p className="mt-2 flex items-baseline gap-2 tnum">
-                        <span className="text-body gold">₹{p.price.toLocaleString('en-IN')}</span>
-                        {p.mrp && (
-                          <span className="caps-sm t-faint line-through">
-                            ₹{p.mrp.toLocaleString('en-IN')}
-                          </span>
+                        <span className="text-body gold">₹{rupees(p.pricePaise)}</span>
+                        {p.mrpPaise && (
+                          <span className="caps-sm t-faint line-through">₹{rupees(p.mrpPaise)}</span>
                         )}
                       </p>
-
-                      {p.recommendedBy && (
-                        <p className="mt-2 caps-sm t-faint">Named by {p.recommendedBy}</p>
-                      )}
 
                       {/* Two actions per listing, both compact. A sold-out
                           product keeps the row so the grid stays even, but
@@ -353,8 +360,7 @@ export default function Shop() {
                             size="sm"
                             variant="gold"
                             full={false}
-                            disabled={spending}
-                            onClick={() => buyNow(p)}
+                            onClick={() => buy(p)}
                             className="flex-1"
                           >
                             Buy

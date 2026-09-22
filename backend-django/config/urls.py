@@ -15,6 +15,8 @@ without the phone app noticing.
 from django.conf import settings
 from django.urls import include, path
 
+from apps.shop.urls import academy_urls, shop_urls
+
 urlpatterns = []
 
 if settings.PUBLIC_API_ENABLED:
@@ -31,6 +33,8 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/profiles/", include("apps.profiles.urls")),
         path("v1/ai/", include("apps.ai.urls")),
         path("v1/events/", include("apps.analytics.urls")),
+        path("v1/shop/", include(shop_urls)),
+        path("v1/academy/", include(academy_urls)),
     ]
 
 if settings.ADMIN_ENABLED:

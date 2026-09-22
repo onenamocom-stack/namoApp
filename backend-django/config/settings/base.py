@@ -162,6 +162,17 @@ R2_BUCKET = os.environ.get("R2_BUCKET", "")
 # "r2" in prod, "local" in dev (fake URLs, nothing leaves the machine)
 MEDIA_PROVIDER = os.environ.get("MEDIA_PROVIDER", "local")
 MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.example.com")
+# Academy PDFs (phase 10b): a PRIVATE bucket, read only through ten-minute
+# signed links. Never R2_BUCKET — that one is public through its r2.dev URL.
+# Unset, downloads refuse with a sentence rather than fail.
+R2_PRIVATE_BUCKET = os.environ.get("R2_PRIVATE_BUCKET", "")
+
+# --- Shop delivery (phase 10) ---
+# The delivery charge until Shiprocket, in paise. Unset REFUSES to quote: a
+# defaulted delivery price is a charge nobody decided. Production decided
+# free (0) on 14 Sep.
+_flat = os.environ.get("SHIPPING_FLAT_PAISE", "")
+SHIPPING_FLAT_PAISE = int(_flat) if _flat.isdigit() else None
 
 # --- Astro provider (docs/07 §6 step 3; the upstream key is server-side only,
 # rule 7 — it never appears in a response body) ---

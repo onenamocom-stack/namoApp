@@ -354,6 +354,21 @@ followers, not 84,200.
 
 ## Phase 10 — Shop and Academy orders
 
+**Split 16 Sep 2026 into 10a (shop) and 10b (Academy)**, so the shop can close
+without waiting on courses. The done-conditions below are 10a's. State is
+`HANDOFF.md` §10a-shop and §10b-academy, and §24 for the move onto the Django API.
+
+**10b done when:**
+1. Enrolling moves money exactly once, and an enrolled person can open the
+   content while a non-enrolled person cannot — tested against the database's
+   policies, not the UI.
+2. The last seat of an event cannot be taken by two people at once, proven
+   under real contention.
+3. An old enrolment keeps the price it was bought at after the catalogue price
+   changes.
+4. Cancelling an event refunds every paid enrolment exactly once, and access
+   goes with it.
+
 **Build** — `products` with stock, `courses`, `academy_events`, `enrolments`,
 fulfilment and shipping.
 
@@ -418,6 +433,12 @@ ranking (1) → deity and tarot upload (2) → reviews audit (7) → reschedule 
 
 **Done when:** every capability writes an audit row, a support-tier account
 cannot block anyone, and no admin path depends on RLS.
+
+**First slice built 15 Sep 2026, pulled forward by the shop:** shop orders —
+list, ship, deliver, refund — in `admin/`, through the `admin` Edge Function,
+with `admin_users` and `admin_actions` (`030_admin_shop.sql`). The monorepo
+move to `app/` is still not done; `admin/` sits beside `src/`. Consultant
+approval, the top of the payoff order above, is still by SQL.
 
 **Watch:** capability 2 lets a non-developer upload deity art, which **reverses
 the "static content ships as JSON" position** — recorded as a deliberate

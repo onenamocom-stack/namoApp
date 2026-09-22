@@ -329,9 +329,22 @@ products keep their row with both controls dead.
 ### `/academy`
 Courses / Events / Downloads.
 
-Course *Resume* and *Watch* are external links to **YouTube search URLs** — the
-only outbound links in the app. *Enrol* toasts. Events show a seat-fill bar and
-toggle a flag; full events refuse. Downloads toast; nothing is stored.
+Real rows since phase 10b (`031`).
+
+- **Courses.** *Enrol* opens two pay buttons in the card — wallet or card/UPI;
+  signed out it toasts. Enrolled courses move into *Your courses* with each
+  lesson's *Watch* link, which opens the video in a new tab. Nobody else can
+  read those links; the list is empty to them by policy, not by hiding.
+- **Events.** Date, host, a seat-fill bar and seats left. *Join free* is one tap;
+  a paid one opens the same two pay buttons. Enrolled, the button becomes *Join*
+  (the Meet/Zoom link). *Sold out* and *Started* are disabled. A cancelled
+  event stays visible with a note that paid seats were refunded.
+- **Downloads.** PDFs from your courses; *Open* makes a ten-minute signed URL.
+  Signed out it asks you to sign in.
+
+A dismissed card checkout cancels the order and gives the seat back. Home's
+course card reads the same query: *Continue learning* on a course you own,
+else the first on sale, else nothing.
 
 ### `/tarot`
 A guided pull, as a three-state machine rather than one laid-out screen:
