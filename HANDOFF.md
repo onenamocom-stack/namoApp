@@ -3382,9 +3382,18 @@ but it is the no-chart branch leaking into a case that has one.
 - **`AI_PROVIDER=gemini` has not been walked end to end through the API**,
   only the prompt directly against Gemini. The session refresh token was
   spent, and a new OTP is needed for a signed-in pass.
-- **Cost is ~₹0.10 a question**, not the ~₹0.02 quoted when the per-minute
-  decision was made. The margin on ₹9/min is still enormous; the earlier
-  number was wrong and the record should say so.
+- ~~Cost is ~₹0.10 a question.~~ **Measured 22 Sep: ₹0.029.** Spend moved
+  ₹1.01 → ₹1.30 across exactly 10 calls. Both earlier figures were
+  estimates and both were wrong — ₹0.02 was optimistic, ₹0.10 was the
+  thinking-budget bug. Three paise is the real number: a new account's five
+  free messages cost ₹0.15, and ₹500 of prepay is roughly 17,000 questions.
+  Against ₹9 a minute there is no optimisation worth doing yet.
+
+  Token shape per call: ~763 in, ~52 out, and the input climbs ~65 a turn
+  as history accumulates — 664, 728, 795, 863 across four questions. It
+  plateaus near 1,400 at the 20-message cap. Input is roughly an eighth the
+  price of output, which is why carrying the conversation is affordable and
+  the answer length is what to watch.
 - **The free tier is not available.** A fresh project (`namo-ai-free-58824`)
   was created and Google denies it Gemini access outright — 403 "your
   project has been denied access", 404 on every other model. The paid key
