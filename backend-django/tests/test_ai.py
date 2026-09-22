@@ -400,6 +400,38 @@ class TestProvider:
         services.ask(SEEKER, "new")
         assert seen["n"] <= services.HISTORY_LIMIT
 
+    def test_the_real_chart_shape_reaches_the_model(self, monkeypatch):
+        """The shape apps/astro actually returns, not a hand-made one.
+
+        This is the test the 500 earned. `user_chart` answers the memo's
+        (payload, cached) tuple, `_chart_for` returned it whole, and
+        chart_block called .get() on a tuple — every question 500'd the
+        moment a profile had birth details. Every test before this ran on
+        an account with none, so the bug could not show.
+        """
+        from apps.ai.prompt import chart_block
+
+        real = {
+            "houses": [{"sign": "Virgo", "house": 1}],
+            "planets": [
+                {"name": "Sun", "sign": "Cancer", "house": 11},
+                {"name": "Saturn", "sign": "Pisces", "house": 7},
+            ],
+            # An OBJECT, not a string — which is what the API returns.
+            "ascendant": {
+                "sign": "Virgo", "degree": 153.93,
+                "nakshatra": {"lord": "Sun", "name": "Uttara Phalguni", "pada": 3},
+            },
+        }
+        block = chart_block(real)
+        assert "Ascendant: Virgo (Uttara Phalguni)" in block
+        assert "Saturn: Pisces, house 7" in block
+        assert "{" not in block, "a raw dict repr reached the prompt"
+
+        # And the tuple itself must not blow up: it degrades to the
+        # no-chart branch rather than raising.
+        assert "not available" in chart_block((real, True))
+
     def test_a_missing_chart_is_stated_not_invented(self, monkeypatch):
         seen = {}
 

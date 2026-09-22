@@ -338,7 +338,13 @@ def _chart_for(profile_id):
         birth = astro_services.get_birth_details(profile_id)
         if not birth or not birth.get("birth_date"):
             return None
-        return astro_services.user_chart(profile_id, birth)
+        # (payload, cached) — the memo's shape, the same one apps/astro's
+        # view unpacks. Taking the tuple whole was a 500 the moment a
+        # profile actually had birth details: every test until then ran on
+        # an account with none, so _chart_for returned None and the bug
+        # could not show.
+        payload, _cached = astro_services.user_chart(profile_id, birth)
+        return payload
     except Exception as exc:  # noqa: BLE001 — never fail a question on this
         logger.warning("[ai] chart unavailable: %s", type(exc).__name__)
         return None

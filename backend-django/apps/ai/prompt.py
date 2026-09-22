@@ -75,6 +75,13 @@ def chart_block(chart):
     if not chart:
         return no_chart_notice()
 
+    if not isinstance(chart, dict):
+        # Defensive, and earned: the chart arrived as the memo's
+        # (payload, cached) tuple once and every question 500'd. A prompt
+        # that cannot be built is not worth an exception — say the chart is
+        # missing, which is a branch the model already handles.
+        return no_chart_notice()
+
     lines = ["CHART (Vedic, sidereal, Lahiri):"]
     for key, label in (
         ("ascendant", "Ascendant"),
@@ -83,8 +90,19 @@ def chart_block(chart):
         ("nakshatra", "Nakshatra"),
     ):
         value = chart.get(key)
-        if value:
-            lines.append(f"  {label}: {value}")
+        if not value:
+            continue
+        # The chart API returns the ascendant as an object
+        # ({sign, degree, nakshatra}), not a string. Printed raw it reaches
+        # the model as a Python dict repr — readable enough that nothing
+        # broke, and wrong enough to fix.
+        if isinstance(value, dict):
+            sign = value.get("sign")
+            nak = (value.get("nakshatra") or {}).get("name")
+            value = f"{sign}{f' ({nak})' if nak else ''}" if sign else None
+            if not value:
+                continue
+        lines.append(f"  {label}: {value}")
 
     placements = chart.get("planets") or chart.get("placements") or []
     if placements:
