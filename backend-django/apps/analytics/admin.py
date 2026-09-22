@@ -6,6 +6,8 @@ used, how many sales, and how many arrived by referral rather than on their
 own.
 """
 
+import json
+
 from django.contrib import admin as dj
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -13,7 +15,7 @@ from django.urls import path
 from apps.console.models import Tier
 from apps.console.site import at_least, site
 
-from . import services
+from . import periods, services
 from .models import Attribution, Event
 
 
@@ -56,18 +58,26 @@ class EventAdmin(ReadOnly, dj.ModelAdmin):
         ] + super().get_urls()
 
     def dashboard(self, request):
-        days = int(request.GET.get("days") or 7)
-        days = min(max(days, 1), 90)
+        window = periods.resolve(request.GET.get("period"))
         context = {
             **site.each_context(request),
-            "title": f"Last {days} days",
-            "days": days,
-            "ranges": (1, 7, 30, 90),
-            "traffic": services.traffic(days),
-            "money": services.money(days),
-            "acquisition": services.acquisition(days),
-            "paths": services.top_paths(days),
-            "features": services.top_features(days),
+            "title": window["label"],
+            "window": window,
+            "choices": periods.CHOICES,
+            "cards": services.headline(window),
+            # Serialised here rather than in the template: Django's
+            # `json_script` is the only safe way to get data into a <script>
+            # tag, and building JSON out of template filters is how the
+            # first cut of this page rendered "₹True".
+            "charts": json.dumps({
+                "revenue": services.revenue_series(window),
+                "traffic": services.traffic_series(window),
+                "signups": services.signup_series(window),
+                "mix": services.revenue_mix(window),
+                "acquisition": services.acquisition_mix(window),
+            }),
+            "paths": services.paths_in(window),
+            "features": services.features_in(window),
         }
         return TemplateResponse(request, "console/dashboard.html", context)
 

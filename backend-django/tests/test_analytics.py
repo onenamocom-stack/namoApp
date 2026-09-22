@@ -158,3 +158,98 @@ class TestDashboardQueries:
         assert services.rupees(498_650) == "₹4,986.50"
         assert services.rupees(0) == "₹0"
         assert services.money(days=1)["gross"].startswith("₹")
+
+
+# ── the dashboard's periods and comparisons ─────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPeriods:
+    """Calendar windows, not rolling ones.
+
+    "How did this month go" is not "the last 30 days": on the 3rd a rolling
+    window is mostly last month, and comparing two rolling windows compares
+    two things that overlap.
+    """
+
+    def test_this_month_compares_against_last_month(self):
+        from apps.analytics import periods
+
+        window = periods.resolve("this_month")
+        assert window["start"].day == 1
+        assert window["previous_end"] == window["start"]
+        # The previous window is a whole month, ending where this one begins.
+        assert window["previous_start"].day == 1
+        assert window["grain"] == "day"
+
+    def test_a_year_is_bucketed_by_month_not_by_day(self):
+        """365 bars is 365 columns nobody can read."""
+        from apps.analytics import periods
+
+        assert periods.resolve("this_year")["grain"] == "month"
+        assert periods.resolve("last_year")["grain"] == "month"
+
+    def test_last_year_compares_against_the_year_before(self):
+        from apps.analytics import periods
+
+        window = periods.resolve("last_year")
+        assert window["end"].year == window["start"].year + 1
+        assert window["previous_start"].year == window["start"].year - 1
+
+    def test_a_running_period_says_so(self):
+        from apps.analytics import periods
+
+        assert periods.resolve("this_month")["in_progress"] is True
+        assert periods.resolve("last_month")["in_progress"] is False
+
+    def test_zero_to_something_is_not_infinity_percent(self):
+        """It is a first, and the card says so rather than rendering a
+        number that means nothing."""
+        from apps.analytics.periods import change
+
+        assert change(10, 0) is None
+        assert change(10, None) is None
+        assert change(150, 100) == 50.0
+        assert change(50, 100) == -50.0
+
+
+@pytest.mark.django_db
+class TestSeries:
+    def test_empty_buckets_are_filled_not_skipped(self):
+        """A chart that skips days with no sales draws a line through the
+        gap and makes a quiet week look like a busy one."""
+        from apps.analytics import periods
+
+        window = periods.resolve("last_7")
+        series = services.revenue_series(window)
+        assert len(series["labels"]) == 7
+        assert len(series["values"]) == 7
+
+    def test_revenue_is_charted_in_rupees_not_paise(self):
+        """Paise put five zeroes on every axis label."""
+        from apps.analytics import periods
+
+        Event.objects.all().delete()
+        window = periods.resolve("this_month")
+        series = services.revenue_series(window)
+        assert all(v < 10_000_000 for v in series["values"])
+
+    def test_traffic_carries_both_views_and_visits(self):
+        """The gap between them is whether people go deeper or bounce,
+        which neither line says alone."""
+        from apps.analytics import periods
+
+        visit = uuid.uuid4()
+        Event.objects.create(name="page_view", path="/home", visit_id=visit)
+        Event.objects.create(name="page_view", path="/shop", visit_id=visit)
+        series = services.traffic_series(periods.resolve("this_month"))
+        assert sum(series["views"]) == 2
+        assert sum(series["visits"]) == 1
+
+    def test_the_headline_carries_its_comparison(self):
+        from apps.analytics import periods
+
+        cards = services.headline(periods.resolve("this_month"))
+        for key in ("revenue", "orders", "signups", "visits", "views", "ai_questions"):
+            assert set(cards[key]) >= {"now", "before", "change"}, key
+        assert cards["revenue"]["now_text"].startswith("₹")
