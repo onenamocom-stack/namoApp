@@ -144,15 +144,20 @@ ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 # offline, no quota spent. Same shape as ASTRO_PROVIDER above.
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "mock")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-# gemini-2.0-flash was the first guess and does not exist on this key —
-# the models list has no 2.0 at all. 2.5-flash is the cheapest stable
-# one that serves generateContent.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# The model name took three tries and the lesson is worth the comment:
+# 2.0-flash does not exist on this key at all, and 2.5-flash IS in the
+# models listing but answers 404 "no longer available to new users" when
+# actually called. A listing is not an entitlement — call the thing.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com")
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 # The ceiling on one answer. The prompt asks for three to six sentences;
 # this is what makes a runaway answer a truncation rather than a bill.
-AI_MAX_OUTPUT_TOKENS = int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "400"))
+AI_MAX_OUTPUT_TOKENS = int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "500"))
+# Gemini 3.x thinking tokens are drawn from the output budget and billed
+# at the output rate. Zero for this product: the chart arrives structured
+# and the answer is a few sentences of it. Raise it only with a reason.
+AI_THINKING_BUDGET = int(os.environ.get("AI_THINKING_BUDGET", "0"))
 # ₹9 a minute (docs/01-PRD.md §4.4). An env var rather than a constant
 # because it is a price, and a price change must not need a deploy.
 AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))

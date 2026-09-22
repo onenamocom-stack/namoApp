@@ -55,6 +55,15 @@ class GeminiProvider(Provider):
                 # than a bill.
                 "maxOutputTokens": settings.AI_MAX_OUTPUT_TOKENS,
                 "temperature": 0.7,
+                # Gemini 3.x reasons before it answers, and those thinking
+                # tokens come out of maxOutputTokens AND bill at the output
+                # rate. Left on, a 400-token ceiling was spending 385 on
+                # thinking and 11 on the answer: every reply came back
+                # mid-sentence with finishReason MAX_TOKENS, and cost about
+                # five times what it should. Nothing here needs deliberation
+                # — the chart arrives structured and the answer is six
+                # sentences of it.
+                "thinkingConfig": {"thinkingBudget": settings.AI_THINKING_BUDGET},
             },
             # Astrology talks about marriage, death and illness in ways a
             # general safety filter reads as harm. The prompt refuses those
