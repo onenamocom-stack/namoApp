@@ -105,6 +105,22 @@ class TestTheMenu:
         client, _ = _admin(Tier.SUPPORT)
         assert client.get(reverse(url_name)).status_code == 200, url_name
 
+    def test_the_dashboard_is_linked_from_the_front_page(self):
+        """It was built and then left reachable only by typing its URL,
+        which is the same as not existing. Django's index lists MODELS and
+        the dashboard is not one, so nothing was going to link it on its
+        own."""
+        client, _ = _admin(Tier.SUPPORT)
+        body = client.get(CONSOLE).content.decode()
+        assert reverse("namo:analytics_dashboard") in body
+
+    def test_the_front_page_links_the_jobs_somebody_opens_it_for(self):
+        client, _ = _admin(Tier.FULFILMENT)
+        body = client.get(CONSOLE).content.decode()
+        for fragment in ("Waiting for approval", "Parcels to send",
+                         "Reels and posts", "Audit trail"):
+            assert fragment in body, fragment
+
     def test_the_index_lists_the_approval_queue(self):
         client, _ = _admin(Tier.SUPPORT)
         body = client.get(CONSOLE).content.decode()
