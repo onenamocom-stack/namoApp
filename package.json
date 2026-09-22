@@ -10,9 +10,7 @@
     "build:pro": "vite build --mode pro",
     "preview": "vite preview",
     "preview:pro": "vite preview --mode pro --outDir dist-pro",
-    "lint": "eslint .",
-    "admin:dev": "vite --config admin/vite.config.js --mode dev",
-    "admin:prod": "vite --config admin/vite.config.js --mode prod"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

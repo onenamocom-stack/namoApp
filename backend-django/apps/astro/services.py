@@ -314,6 +314,23 @@ def _chart(cache_key, body):
     return payload, cached
 
 
+def subject_chart(birth):
+    """A chart for birth details the caller TYPED — somebody else's.
+
+    Not `user_chart`: that keys the cache by the profile it belongs to, and
+    this chart belongs to no profile. The key is the birth digest alone, so
+    two seekers asking about the same person share one upstream call and no
+    account id is attached to the row.
+
+    NOTHING IS STORED but the chart. The name, the date, the place stay in
+    the request — a third party never agreed to be in this database, and
+    the only way not to hold their details is not to write them (21 Sep
+    decision; docs/01-PRD.md §4.4). `astro_cache` holds the computed
+    positions under a hash, which is derived data and not a birth record.
+    """
+    return _chart(f"chart:subject:{birth_digest(birth)}", birth_body(birth))
+
+
 def user_chart(user_id, birth):
     """The caller's natal chart — a pure function of their birth, cached
     with no date in the key because a natal chart never changes."""

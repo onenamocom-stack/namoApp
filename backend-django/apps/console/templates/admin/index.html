@@ -1,0 +1,56 @@
+{% extends "admin/index.html" %}
+{% comment %}
+  The console's front door.
+
+  The dashboard was built and then left with no link to it — reachable
+  only by typing its URL, which is the same as not existing. Django's
+  index lists MODELS, and the dashboard is not one, so nothing was ever
+  going to put it there on its own.
+
+  It goes at the top because it is the page somebody opens the console to
+  look at. The model list below is what they use when something needs
+  doing.
+{% endcomment %}
+
+{% block content %}
+<style>
+  .front { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 26px; }
+  .front a { flex:1 1 210px; border:1px solid #ddd; border-radius:10px;
+    padding:16px 18px; text-decoration:none; color:inherit; }
+  .front a:hover { border-color:#ff8500; }
+  .front a b { display:block; font-size:16px; margin-bottom:4px; }
+  .front a span { color:#666; font-size:12.5px; line-height:1.45; }
+  .front a.lead { flex:1 1 100%; border-color:#ff8500; background:#fff7ee; }
+</style>
+
+<div class="front">
+  <a class="lead" href="{% url 'namo:analytics_dashboard' %}">
+    <b>Dashboard →</b>
+    <span>Sales, viewership and where people came from. This month against
+      last, this year against last year, with charts.</span>
+  </a>
+  <a href="{% url 'namo:consultants_consultant_changelist' %}?status__exact=pending">
+    <b>Waiting for approval</b>
+    <span>Astrologers who have applied. Until approved they are invisible
+      and cannot earn.</span>
+  </a>
+  <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready">
+    <b>Parcels to send</b>
+    <span>Paid and packed, waiting for a courier and an AWB.</span>
+  </a>
+  <a href="{% url 'namo:shop_product_changelist' %}">
+    <b>Shop</b>
+    <span>Products, prices, stock and coupons.</span>
+  </a>
+  <a href="{% url 'namo:content_content_changelist' %}">
+    <b>Reels and posts</b>
+    <span>Upload a video, publish it to the feed, take one down.</span>
+  </a>
+  <a href="{% url 'namo:console_adminaction_changelist' %}">
+    <b>Audit trail</b>
+    <span>Every action by every admin, and what it changed.</span>
+  </a>
+</div>
+
+{{ block.super }}
+{% endblock %}

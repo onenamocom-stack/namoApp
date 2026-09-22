@@ -1,7 +1,7 @@
-"""Phase 10 endpoints — /v1/shop, /v1/academy and /v1/admin.
+"""Phase 10 endpoints — /v1/shop and /v1/academy, the seeker half.
 
-Call for call with what src/lib/shop.js, src/lib/academy.js and admin/App.jsx
-did against Supabase before the move:
+Call for call with what src/lib/shop.js and src/lib/academy.js did against
+Supabase before the move:
 
   shop.js     catalogue reads            -> GET  /v1/shop/catalogue/
               shipping_addresses r/w     -> GET/POST /v1/shop/addresses/
@@ -16,7 +16,9 @@ did against Supabase before the move:
               course_materials           -> GET  /v1/academy/materials/
               storage.createSignedUrl    -> POST /v1/academy/materials/url/
               rpc('academy_enrol')       -> POST /v1/academy/enrol/
-  admin       functions.invoke('admin')  -> POST /v1/admin/
+
+The old `admin` Edge Function has no endpoint here: the console replaced it
+(HANDOFF §22), behind its own login.
 
 The SQL functions' own jsonb is the 200 body, so every refusal sentence
 reaches the screen byte for byte, the way /v1/wallet/spend/ does it.
@@ -183,13 +185,3 @@ def material_url(request):
 def enrol(request):
     data = _valid(EnrolInput, request)
     return Response(services.enrol(request.user.pk, data["item_type"], data["item_id"], data["pay"]))
-
-
-# ── Admin ────────────────────────────────────────────────────────────────────
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def admin(request):
-    status, body = services.admin(request.user.pk, request.data)
-    return Response(body, status=status)

@@ -8,7 +8,7 @@
    COMMENTING THIS OUT DID NOT TURN IT OFF. If this is an Edge Function it
    may still be deployed and still answering; `supabase functions delete`
    is what stops it. Nothing calls it — the client makes no PostgREST or
-   functions.invoke() call at all (HANDOFF §18, §21).
+   functions.invoke() call at all (HANDOFF §18, §24).
 
    Do NOT redeploy from this file. Every line below is commented, so a
    deploy would ship an empty function. To restore, strip the leading

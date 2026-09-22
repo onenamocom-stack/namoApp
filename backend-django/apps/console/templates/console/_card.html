@@ -1,0 +1,21 @@
+{% comment %}
+  One figure, and what it was last time. A number on its own tells you
+  almost nothing — ₹4,986 is a good month or a catastrophe depending
+  entirely on what the month before was.
+{% endcomment %}
+<div class="card">
+  <div class="k">{{ k }}</div>
+  <div class="v">{{ v }}</div>
+  <div class="d">
+    {% if c is None %}
+      {# Zero to anything is not "infinity percent". It is a first. #}
+      <span class="flat">{% if was %}was {{ was }}{% else %}first time{% endif %}</span>
+    {% elif c > 0 %}
+      <span class="up">▲ {{ c }}%</span> <span class="flat">was {{ was }}</span>
+    {% elif c < 0 %}
+      <span class="down">▼ {{ c }}%</span> <span class="flat">was {{ was }}</span>
+    {% else %}
+      <span class="flat">no change · was {{ was }}</span>
+    {% endif %}
+  </div>
+</div>

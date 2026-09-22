@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ask, endSession, fetchState, startSession, ticker } from '../lib/ai.js'
 import { useStore } from '../store.jsx'
+import { track } from '../lib/analytics.js'
 
 export default function useAskAi() {
   const { showToast, refreshWallet, session } = useStore()
@@ -28,7 +29,17 @@ export default function useAskAi() {
   const [ratePaise, setRatePaise] = useState(null)
   const [live, setLive] = useState(null) // { id, secondsLeft }
   const [starting, setStarting] = useState(false)
+  /* Whose chart the conversation is about. null is the seeker's own.
+     Held HERE and nowhere else — the server computes a chart from it and
+     writes none of it down, so a reload loses it, deliberately. */
+  const [subject, setSubject] = useState(null)
+  /* null = not chosen yet, 'self' | 'other'. The choice is asked once per
+     conversation rather than on every open: a question is a thought, and
+     a modal in front of every one of them is a tax on thinking. */
+  const [who, setWho] = useState(null)
+  const [asking, setAsking] = useState(false) // the form is open
   const stopRef = useRef(null)
+  const liveRef = useRef(null)
 
   /* The clock. `ticker` counts down locally for smoothness and takes the
      server's seconds_left as truth on every heartbeat; when the server says
@@ -39,8 +50,12 @@ export default function useAskAi() {
       stopRef.current?.()
       stopRef.current = ticker(sessionId, {
         seconds,
-        onTick: (secondsLeft) => setLive({ id: sessionId, secondsLeft }),
+        onTick: (secondsLeft) => {
+          liveRef.current = sessionId
+          setLive({ id: sessionId, secondsLeft })
+        },
         onEnd: () => {
+          liveRef.current = null
           setLive(null)
           refreshWallet(session?.user?.id)
           showToast('Session ended. Unused minutes are back in your wallet.')
@@ -49,6 +64,35 @@ export default function useAskAi() {
     },
     [refreshWallet, session, showToast],
   )
+
+  /* Leaving settles the meter. A closed tab, a locked phone or a back press
+     is the commonest way a session ends, and waiting for the sweeper would
+     hold the seeker's money for up to a minute after they stopped using it.
+
+     `fetch(..., {keepalive: true})` rather than sendBeacon: a beacon cannot
+     carry an Authorization header, and the alternative — the token in the
+     query string — writes it into every access log between here and the
+     server. keepalive survives unload and keeps the header.
+
+     Fire-and-forget by design. The sweeper stays the backstop for what this
+     cannot reach (a killed browser, no network), and the settle is
+     idempotent, so arriving twice costs nothing. */
+  useEffect(() => {
+    const settle = () => {
+      const id = liveRef.current
+      if (!id) return
+      liveRef.current = null
+      endSession(id, { keepalive: true }).catch(() => {})
+    }
+    const onHide = () => document.visibilityState === 'hidden' && settle()
+    window.addEventListener('pagehide', settle)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('pagehide', settle)
+      document.removeEventListener('visibilitychange', onHide)
+      settle()
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -82,7 +126,11 @@ export default function useAskAi() {
     setStarting(true)
     try {
       const result = await startSession()
-      if (!result.ok) return showToast(result.reason)
+      if (!result.ok) {
+        track('ai_session_refused', { reason_kind: 'server' })
+        return showToast(result.reason)
+      }
+      track('ai_session_start', { minutes_held: result.minutes_held })
       watch(result.session_id, result.seconds_left)
       refreshWallet(session?.user?.id)
     } catch (err) {
@@ -116,7 +164,7 @@ export default function useAskAi() {
       setDraft('')
       setThinking(true)
       try {
-        const result = await ask(question)
+        const result = await ask(question, subject)
         if (!result.ok) {
           /* The question goes back in the box rather than staying in the
              transcript: it was not asked, and leaving it on screen above a
@@ -130,6 +178,10 @@ export default function useAskAi() {
         }
         setMessages((m) => [...m, { id: result.id, role: 'model', text: result.text }])
         setFreeLeft(result.free_left)
+        /* Whether it was free or paid, and whether it was about somebody
+           else — three flags, no question text. What people ASK is theirs;
+           how often the feature is used is ours to know. */
+        track('ai_question', { paid: Boolean(live), about_other: Boolean(subject) })
       } catch (err) {
         setMessages((m) => m.filter((x) => x.id !== asked.id))
         setDraft(question)
@@ -138,10 +190,26 @@ export default function useAskAi() {
         setThinking(false)
       }
     },
-    [draft, thinking, showToast],
+    [draft, thinking, showToast, subject, live],
   )
 
+  /* Switching subject mid-conversation. The transcript stays — it is the
+     same conversation, and the model is told whose chart each question is
+     about every time rather than once. */
+  const askAbout = useCallback((next) => {
+    track('ai_subject_chosen', { about_other: Boolean(next) })
+    setSubject(next)
+    setWho(next ? 'other' : 'self')
+    setAsking(false)
+  }, [])
+
   return {
+    who,
+    setWho,
+    subject,
+    asking,
+    setAsking,
+    askAbout,
     messages,
     draft,
     setDraft,

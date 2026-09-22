@@ -218,3 +218,34 @@ A document describing intent as though it were state is worse than no document,
 because it gets trusted. This repo has already paid for that lesson twice: a
 design doc describing a build that had been replaced several redesigns earlier,
 and a handoff listing a chat fix as done while the panel threw on first open.
+
+## 9. Money and the AI are verified against a live backend
+
+Lint and build prove almost nothing here — there is no type checker, and
+the unit suite runs against SQLite. **Any change touching payments, the
+wallet or Namo AI is not finished until it has been walked against a
+running deployment.**
+
+```
+cd backend-django
+set -a; . ~/namo-migration.env; set +a
+.venv/bin/python tools/smoke.py
+```
+
+Sixteen checks: the `/v1` prefix, health, an unauthenticated 401, balance
+and ledger, a test-mode order, the webhook refusing an unsigned body, the
+AI quota ladder, the meter starting and refunding, that the answer is not
+the mock provider's canned reply, and that **every wallet still replays
+from its ledger**. It sends no money — the order is unpaid and the session
+is ended immediately.
+
+**The rule comes from three bugs that each passed everything else:**
+
+| | What it looked like |
+|---|---|
+| `/v1/v1/…` | Every call 404'd, and `listConsultants` turned that into an empty list — an empty marketplace, not an error |
+| `X-Cutover-Module` | A header the server never read forced a CORS preflight it refuses. Browsers failed; curl, which does not preflight, saw 200 |
+| The chart tuple | `user_chart()` answers `(payload, cached)` and the AI passed the pair whole — every question 500'd the moment a profile had birth details |
+
+All three passed `npm run lint`, `npm run build` and the full pytest run.
+None survives `smoke.py`.

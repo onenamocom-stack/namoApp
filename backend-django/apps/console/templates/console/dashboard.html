@@ -1,0 +1,157 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% comment %}
+  Chart.js is VENDORED into this repo's static files, not pulled from a
+  CDN. The console is an internal tool that must keep working when a CDN
+  is blocked, slow, or has moved the file — and a script tag pointing at
+  somebody else's server is a script tag they can change.
+{% endcomment %}
+
+{% block extrahead %}{{ block.super }}
+<script src="{% static 'console/chart.umd.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+  .periods { margin: 0 0 18px; }
+  .periods a, .periods b { display:inline-block; margin-right:10px; padding:5px 12px;
+    border:1px solid #ccc; border-radius:999px; text-decoration:none; font-size:13px; }
+  .periods b { background:#2a2d42; color:#fff; border-color:#2a2d42; }
+  .note { color:#a85400; font-size:12px; margin:-8px 0 16px; }
+  .cards { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:26px; }
+  .card { border:1px solid #ddd; border-radius:10px; padding:14px 18px; min-width:168px; flex:1 1 168px; }
+  .card .v { font-size:25px; font-weight:600; line-height:1.15; }
+  .card .k { color:#666; font-size:11px; text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+  .card .d { font-size:12px; margin-top:5px; }
+  .up { color:#1a7f37; } .down { color:#cf3a25; } .flat { color:#888; }
+  .charts { display:flex; flex-wrap:wrap; gap:22px; margin-bottom:26px; }
+  .chart { flex:1 1 440px; border:1px solid #eee; border-radius:10px; padding:14px 16px; min-width:0; }
+  .chart.half { flex:1 1 300px; }
+  .chart h2 { font-size:14px; margin:0 0 10px; }
+  .chart .wrap { position:relative; height:250px; }
+  .cols { display:flex; flex-wrap:wrap; gap:26px; }
+  .cols > div { flex:1 1 340px; }
+  table.a { width:100%; border-collapse:collapse; }
+  table.a th, table.a td { text-align:left; padding:6px 8px; border-bottom:1px solid #eee; font-size:13px; }
+  table.a td.n { text-align:right; font-variant-numeric:tabular-nums; }
+</style>
+
+<p class="periods">
+  {% for key, label in choices %}
+    {% if key == window.key %}<b>{{ label }}</b>{% else %}<a href="?period={{ key }}">{{ label }}</a>{% endif %}
+  {% endfor %}
+</p>
+
+{% if window.in_progress %}
+  {# Said out loud. A month three days old compared against a whole
+     previous month reads as a collapse every 1st, and somebody panics. #}
+  <p class="note">This period is still running — the comparison is against a complete one.</p>
+{% endif %}
+
+<div class="cards">
+  {% include "console/_card.html" with k="Revenue" v=cards.revenue.now_text was=cards.revenue.before_text c=cards.revenue.change %}
+  {% include "console/_card.html" with k="Paid orders" v=cards.orders.now was=cards.orders.before c=cards.orders.change %}
+  {% include "console/_card.html" with k="Wallet top-ups" v=cards.topups.now_text was=cards.topups.before_text c=cards.topups.change %}
+  {% include "console/_card.html" with k="New accounts" v=cards.signups.now was=cards.signups.before c=cards.signups.change %}
+  {% include "console/_card.html" with k="Visits" v=cards.visits.now was=cards.visits.before c=cards.visits.change %}
+  {% include "console/_card.html" with k="Page views" v=cards.views.now was=cards.views.before c=cards.views.change %}
+  {% include "console/_card.html" with k="AI questions" v=cards.ai_questions.now was=cards.ai_questions.before c=cards.ai_questions.change %}
+</div>
+
+<div class="charts">
+  <div class="chart"><h2>Revenue</h2><div class="wrap"><canvas id="c-revenue"></canvas></div></div>
+  <div class="chart"><h2>Viewership</h2><div class="wrap"><canvas id="c-traffic"></canvas></div></div>
+</div>
+
+<div class="charts">
+  <div class="chart half"><h2>What the money was for</h2><div class="wrap"><canvas id="c-mix"></canvas></div></div>
+  <div class="chart half"><h2>How they arrived</h2><div class="wrap"><canvas id="c-acq"></canvas></div></div>
+  <div class="chart half"><h2>New accounts</h2><div class="wrap"><canvas id="c-signups"></canvas></div></div>
+</div>
+
+<div class="cols">
+  <div>
+    <h2>Where they went</h2>
+    <table class="a">
+      <tr><th>Path</th><th class="n">Views</th><th class="n">Visits</th></tr>
+      {% for row in paths %}
+        <tr><td>{{ row.path|default:"—" }}</td><td class="n">{{ row.views }}</td><td class="n">{{ row.visits }}</td></tr>
+      {% empty %}<tr><td colspan="3">Nothing in this period.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div>
+    <h2>What they used</h2>
+    <table class="a">
+      <tr><th>Event</th><th class="n">Times</th><th class="n">People</th></tr>
+      {% for row in features %}
+        <tr><td>{{ row.name }}</td><td class="n">{{ row.times }}</td><td class="n">{{ row.people }}</td></tr>
+      {% empty %}<tr><td colspan="3">Nothing in this period.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+{{ charts|json_script:"chart-data" }}
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById('chart-data').textContent);
+  const INK = '#3d405b', GOLD = '#ff8500', DIM = '#a9abbd';
+  /* The palette is the product's own (src/index.css), so a screenshot of
+     this page does not look like it came from a different company. */
+  const PIE = ['#ff8500', '#3d405b', '#e8a87c', '#6e7189', '#c25010', '#a9abbd', '#8a4500'];
+
+  const base = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+              x: { grid: { display: false } } },
+  };
+
+  new Chart(document.getElementById('c-revenue'), {
+    type: 'bar',
+    data: { labels: data.revenue.labels,
+            datasets: [{ label: 'Revenue (₹)', data: data.revenue.values,
+                         backgroundColor: GOLD, borderRadius: 3 }] },
+    options: { ...base, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => '₹' + c.parsed.y.toLocaleString('en-IN') } } } },
+  });
+
+  new Chart(document.getElementById('c-traffic'), {
+    type: 'line',
+    data: { labels: data.traffic.labels, datasets: [
+      { label: 'Page views', data: data.traffic.views, borderColor: INK,
+        backgroundColor: 'rgba(61,64,91,.08)', fill: true, tension: .3, pointRadius: 2 },
+      { label: 'Visits', data: data.traffic.visits, borderColor: GOLD,
+        tension: .3, pointRadius: 2 },
+    ] },
+    options: { ...base, plugins: { legend: { display: true, position: 'bottom' } } },
+  });
+
+  new Chart(document.getElementById('c-signups'), {
+    type: 'bar',
+    data: { labels: data.signups.labels,
+            datasets: [{ data: data.signups.values, backgroundColor: INK, borderRadius: 3 }] },
+    options: base,
+  });
+
+  const donut = (id, series, empty) => {
+    const el = document.getElementById(id);
+    if (!series.labels.length) {
+      /* An empty pie chart is a grey circle that looks broken. Say there
+         is nothing instead. */
+      el.closest('.wrap').innerHTML =
+        '<p style="color:#888;font-size:13px;padding-top:90px;text-align:center">' + empty + '</p>';
+      return;
+    }
+    new Chart(el, {
+      type: 'doughnut',
+      data: { labels: series.labels,
+              datasets: [{ data: series.values, backgroundColor: PIE, borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false,
+                 plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } },
+    });
+  };
+  donut('c-mix', data.mix, 'No paid orders in this period.');
+  donut('c-acq', data.acquisition, 'No attribution recorded yet.');
+})();
+</script>
+{% endblock %}

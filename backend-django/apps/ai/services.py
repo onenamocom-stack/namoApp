@@ -22,7 +22,7 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from apps.chat.services import _billable_minutes, _minutes_held
+from apps.chat.services import _billable_paise, _minutes_held
 from apps.consultants import gateway
 from apps.wallet import services as wallet_services
 
@@ -50,8 +50,20 @@ REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
 # each question asked.
 HISTORY_LIMIT = 20
 
-WELCOME_FREE = 5  # once per account, never refilled
-DAILY_FREE = 1  # one a day after those
+def _welcome_free():
+    """Once per account, never refilled. A setting rather than a constant so
+    it can be raised for a testing window and put back with one env var —
+    the alternative was a flag that skips the quota entirely, and a flag
+    like that is exactly the kind of thing that gets left on."""
+    from django.conf import settings
+
+    return settings.AI_WELCOME_FREE
+
+
+def _daily_free():
+    from django.conf import settings
+
+    return settings.AI_DAILY_FREE
 
 
 def _ist_today():
@@ -67,14 +79,14 @@ def quota_state(profile_id):
     """What is free right now, without spending anything. The panel reads
     this to decide whether to show a question box or a Start button."""
     row = Quota.objects.filter(profile_id=profile_id).first()
-    welcome_left = WELCOME_FREE - (row.welcome_used if row else 0)
+    welcome_left = _welcome_free() - (row.welcome_used if row else 0)
     if welcome_left > 0:
         return {"free_left": welcome_left, "kind": "welcome"}
-    # Every free message stamps the day, the welcome ones included, so this
-    # reads false on the day the fifth was spent — "one a day FROM THE NEXT
-    # DAY", which is what was asked for.
-    used_today = bool(row and row.last_free_on == _ist_today())
-    return {"free_left": 0 if used_today else DAILY_FREE, "kind": "daily"}
+    # Every free message stamps the day, the welcome ones included, so a
+    # fresh account has none left on the day its fifth was spent — "one a
+    # day FROM THE NEXT DAY", which is what was asked for.
+    used_today = row.daily_used if (row and row.last_free_on == _ist_today()) else 0
+    return {"free_left": max(0, _daily_free() - used_today), "kind": "daily"}
 
 
 def _take_free(profile_id):
@@ -95,20 +107,27 @@ def _take_free(profile_id):
 
     today = _ist_today()
 
-    if row.welcome_used < WELCOME_FREE:
+    if row.welcome_used < _welcome_free():
         # The day is stamped here too, and that is not bookkeeping — it is
         # the rule. The daily allowance starts the day AFTER, so somebody
         # who burns the welcome five on a Monday gets their next free
-        # message on Tuesday, not six on Monday. Without this stamp the
-        # daily branch fires the moment the fifth is spent.
+        # message on Tuesday, not six on Monday. The stamp fills the day's
+        # allowance so the daily branch below cannot also fire.
         row.welcome_used += 1
         row.last_free_on = today
-        row.save(update_fields=("welcome_used", "last_free_on"))
+        row.daily_used = _daily_free()
+        row.save(update_fields=("welcome_used", "last_free_on", "daily_used"))
         return True
 
     if row.last_free_on != today:
         row.last_free_on = today
-        row.save(update_fields=("last_free_on",))
+        row.daily_used = 1
+        row.save(update_fields=("last_free_on", "daily_used"))
+        return True
+
+    if row.daily_used < _daily_free():
+        row.daily_used += 1
+        row.save(update_fields=("daily_used",))
         return True
 
     return False
@@ -218,10 +237,9 @@ def end_session(profile_id, session_id, reason=None, now=None):
         return {"ok": True, "already_ended": True, "charged_paise": session.charged_paise}
 
     stop = min(now, session.expires_at)
-    minutes = _billable_minutes(
+    charged = _billable_paise(
         session.started_at, stop, session.hold_paise, session.rate_paise
     )
-    charged = minutes * session.rate_paise
     refund = session.hold_paise - charged
 
     # The UPDATE is the claim. Whoever's update returns 1 owns the settle,
@@ -252,7 +270,7 @@ def end_session(profile_id, session_id, reason=None, now=None):
         gateway.set_order_total(session.order_id, charged)
 
     return {"ok": True, "charged_paise": charged, "refund_paise": refund,
-            "minutes": minutes}
+            "seconds_billed": charged * 60 // session.rate_paise}
 
 
 def heartbeat(profile_id, session_id, now=None):
@@ -319,19 +337,47 @@ def _chart_for(profile_id):
         birth = astro_services.get_birth_details(profile_id)
         if not birth or not birth.get("birth_date"):
             return None
-        return astro_services.user_chart(profile_id, birth)
+        # (payload, cached) — the memo's shape, the same one apps/astro's
+        # view unpacks. Taking the tuple whole was a 500 the moment a
+        # profile actually had birth details: every test until then ran on
+        # an account with none, so _chart_for returned None and the bug
+        # could not show.
+        payload, _cached = astro_services.user_chart(profile_id, birth)
+        return payload
     except Exception as exc:  # noqa: BLE001 — never fail a question on this
         logger.warning("[ai] chart unavailable: %s", type(exc).__name__)
         return None
 
 
-def ask(profile_id, question):
+def _subject_chart(subject):
+    """A chart for somebody the seeker typed in. Same failure rule as the
+    caller's own chart: a chart we cannot compute becomes the prompt's
+    "not available" branch, never a 500 and never invented placements."""
+    try:
+        from apps.astro import services as astro_services
+
+        payload, _cached = astro_services.subject_chart(subject)
+        return payload
+    except Exception as exc:  # noqa: BLE001 — never fail a question on this
+        logger.warning("[ai] subject chart unavailable: %s", type(exc).__name__)
+        return None
+
+
+def ask(profile_id, question, subject=None):
     """One question, one answer.
 
     Free first: the welcome five, then one a day. Only when neither is left
     does this need a running session, and the session is the seeker's to
     start — this never starts one on their behalf, because a question typed
     into a box is not consent to begin spending.
+
+    `subject` is somebody else's birth details, typed by the seeker, for a
+    question about that person rather than themselves. It is used and
+    dropped: the chart is computed, the prompt is built, and **nothing about
+    that person is written down** — not the name, not the date, not the
+    place. They never agreed to be in this database. The consequence is
+    deliberate and visible: reopen the app and the chart is gone, because
+    the client holds it for the life of the conversation and nowhere else.
     """
     question = (question or "").strip()
     if not question:
@@ -356,6 +402,8 @@ def ask(profile_id, question):
 
         # Written before the call, so a question that costs money is never
         # lost to a provider timeout — the seeker can see what they asked.
+        # The QUESTION is the seeker's own words and is theirs to keep; the
+        # subject's birth details are not in it and are never stored.
         Message.objects.create(
             profile_id=profile_id, session=session, role=Message.Role.USER,
             body=question, created_at=now,
@@ -365,8 +413,13 @@ def ask(profile_id, question):
         {"role": m.role, "body": m.body} for m in history_for(profile_id)[:-1]
     ]
 
+    if subject:
+        block = chart_block(_subject_chart(subject), subject_name=subject.get("name"))
+    else:
+        block = chart_block(_chart_for(profile_id))
+
     try:
-        answer = providers.ask(history, question, chart_block(_chart_for(profile_id)))
+        answer = providers.ask(history, question, block)
     except providers.UpstreamError as exc:
         logger.error("[ai] upstream: %s", exc)
         # The free message is NOT given back. It was spent on a question the

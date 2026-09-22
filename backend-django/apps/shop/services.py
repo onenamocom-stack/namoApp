@@ -1,4 +1,4 @@
-"""Phase 10 — the shop, the Academy and the admin console on the Django API.
+"""Phase 10 — the shop and the Academy on the Django API: the seeker half.
 
 Unlike modules 2-9, nothing here re-implements a rule in Python. The money
 and access logic stays in the SQL it was written and race-tested in
@@ -6,9 +6,13 @@ and access logic stays in the SQL it was written and race-tested in
 settle/release/refund family, the RLS gates on lessons, links and PDFs), and
 Django does what PostgREST did for the browser: it runs each statement AS THE
 CALLER. `as_caller` is that seam. Everything a seeker reaches goes through
-it; only what was service-role before — writing a delivery quote and the
-admin actions — runs as the owner. (The webhook's settle lives in
-apps.wallet.services.)
+it; only what was service-role before — writing a delivery quote — runs as
+the owner. (The webhook's settle lives in apps.wallet.services.)
+
+The operator half is the console: models.py and admin.py beside this file
+(HANDOFF §22) read the same tables through Django models, behind their own
+login. No admin action is reachable from /v1. That separation is the
+console's design, and this file keeps it.
 
 Postgres only: none of these tables or functions exist on SQLite, so the
 pytest suite mocks this module at its DB edges. The SQL itself is covered by
@@ -73,14 +77,6 @@ def _rows(cursor):
 def _scalar(cursor):
     row = cursor.fetchone()
     return row[0] if row else None
-
-
-def _owner_scalar(sql, params):
-    """One statement as the owner, in its own transaction — the service-role
-    calls (030/031's admin functions are granted to nobody else)."""
-    with transaction.atomic(), connection.cursor() as cursor:
-        cursor.execute(sql, params)
-        return _scalar(cursor)
 
 
 # ── Catalogue ────────────────────────────────────────────────────────────────
@@ -336,157 +332,3 @@ def enrol(uid, item_type, item_id, pay):
     with as_caller(uid) as cursor:
         cursor.execute("select public.academy_enrol(%s, %s, %s)", [item_type, item_id, pay])
         return _scalar(cursor)
-
-
-# ── Admin console (the `admin` Edge Function) ────────────────────────────────
-# The only elevated path. Every request proves who it is (the JWT), that it
-# is an active `admin_users` row, and that its tier allows the action — only
-# then does anything run, as the owner, through a SQL function that writes
-# its `admin_actions` row in the same transaction (030/031).
-
-TIERS = ("support", "fulfilment", "finance", "superadmin")
-
-# The least tier each action needs. A tier includes everything below it.
-NEEDS = {
-    "whoami": "support",
-    "shop.orders": "support",
-    "shop.ship": "fulfilment",
-    "shop.deliver": "fulfilment",
-    "shop.refund": "finance",
-    "academy.list": "support",
-    "academy.refund": "finance",
-    "academy.cancel_event": "finance",
-}
-
-# Which id each writing action must carry.
-TARGET = {
-    "shop.ship": "order_id",
-    "shop.deliver": "order_id",
-    "shop.refund": "order_id",
-    "academy.refund": "order_id",
-    "academy.cancel_event": "event_id",
-}
-
-
-def admin_row(uid):
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "select u.tier, u.active, p.name from admin_users u"
-            "  left join profiles p on p.id = u.profile_id"
-            " where u.profile_id = %s",
-            [str(uid)],
-        )
-        row = cursor.fetchone()
-    return None if row is None else {"tier": row[0], "active": row[1], "name": row[2]}
-
-
-def _is_uuid(value):
-    try:
-        uuid.UUID(str(value))
-        return True
-    except ValueError:
-        return False
-
-
-def _shop_orders():
-    # Newest-touched 300 (weeks of orders at launch volume), shown newest
-    # first by order date. The shape is what the edge function returned.
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "select s.status, s.courier, s.awb, s.shipping_paise, s.address, s.weight_grams,"
-            "       s.shipped_at, s.delivered_at,"
-            "       json_build_object("
-            "         'id', o.id, 'status', o.status, 'total_paise', o.total_paise,"
-            "         'created_at', o.created_at, 'expires_at', o.expires_at,"
-            "         'profile_id', o.profile_id,"
-            "         'profiles', json_build_object('name', p.name, 'phone', p.phone),"
-            "         'order_items', coalesce((select json_agg(json_build_object("
-            "             'id', i.id, 'item_type', i.item_type, 'title', i.title, 'qty', i.qty,"
-            "             'unit_price_paise', i.unit_price_paise, 'tax_rate_bps', i.tax_rate_bps)"
-            "             order by i.id) from order_items i where i.order_id = o.id), '[]')"
-            "       ) as \"order\""
-            "  from (select * from shipments order by updated_at desc limit 300) s"
-            "  join orders o on o.id = s.order_id"
-            "  left join profiles p on p.id = o.profile_id"
-            " order by o.created_at desc"
-        )
-        return _rows(cursor)
-
-
-def _academy_list():
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "select id, title, host, kind, starts_at, seats, seats_left, price_paise, status, active"
-            "  from academy_events order by starts_at desc limit 100"
-        )
-        events = _rows(cursor)
-        cursor.execute("select id, title, tutor, price_paise, active from courses order by sort")
-        courses = _rows(cursor)
-        cursor.execute(
-            "select e.id, e.item_type, e.item_id, e.status, e.created_at,"
-            "       json_build_object('name', p.name, 'phone', p.phone) as profiles,"
-            "       case when o.id is null then null else json_build_object("
-            "         'id', o.id, 'status', o.status, 'total_paise', o.total_paise) end as orders"
-            "  from enrolments e"
-            "  left join profiles p on p.id = e.profile_id"
-            "  left join orders o on o.id = e.order_id"
-            " order by e.created_at desc limit 300"
-        )
-        return {"events": events, "courses": courses, "enrolments": _rows(cursor)}
-
-
-def admin(uid, body):
-    """Returns (status, body) — the edge function's answers, sentence for
-    sentence, so the console's handling does not change."""
-    me = admin_row(uid)
-    # The same answer for "not an admin" and "deactivated": neither is told
-    # anything about the console.
-    if not me or not me["active"]:
-        return 403, {"ok": False, "reason": "This account is not an admin."}
-
-    body = body if isinstance(body, dict) else {}
-    action = str(body.get("action", ""))
-    needs = NEEDS.get(action)
-    if needs is None:
-        return 400, {"ok": False, "reason": f"Unknown action {action}."}
-    if TIERS.index(me["tier"]) < TIERS.index(needs):
-        return 403, {"ok": False, "reason": f"Your tier ({me['tier']}) cannot do that."}
-
-    field = TARGET.get(action)
-    if field and not _is_uuid(body.get(field, "")):
-        kind = "an order" if field == "order_id" else "an event"
-        return 400, {"ok": False, "reason": f"That is not {kind} id."}
-    target = str(body.get(field)) if field else None
-
-    if action == "whoami":
-        return 200, {"ok": True, "tier": me["tier"], "name": me["name"]}
-    if action == "shop.orders":
-        return 200, {"ok": True, "orders": _shop_orders()}
-    if action == "academy.list":
-        return 200, {"ok": True, **_academy_list()}
-    if action in ("shop.ship", "shop.deliver"):
-        return 200, _owner_scalar(
-            "select public.admin_shipment_update(%s, %s, %s, %s, %s)",
-            [
-                str(uid),
-                target,
-                "shipped" if action == "shop.ship" else "delivered",
-                body.get("courier"),
-                body.get("awb"),
-            ],
-        )
-    if action in ("shop.refund", "academy.refund"):
-        # 031 taught this one to refund an Academy order and remove access.
-        return 200, _owner_scalar(
-            "select public.admin_order_refund(%s, %s, %s, %s)",
-            [
-                str(uid),
-                target,
-                body.get("reason"),
-                action == "shop.refund" and body.get("restock") is True,
-            ],
-        )
-    # academy.cancel_event
-    return 200, _owner_scalar(
-        "select public.admin_event_cancel(%s, %s, %s)", [str(uid), target, body.get("reason")]
-    )

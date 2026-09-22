@@ -38,10 +38,13 @@ async function accessToken() {
   return session?.access_token ?? null
 }
 
-async function api(path, { method = 'GET', body } = {}) {
+async function api(path, { method = 'GET', body, keepalive = false } = {}) {
   const token = await accessToken()
   const response = await fetch(`${API}/ai${path}`, {
     method,
+    /* Set only on the way out of the page: it lets the request outlive the
+       document, which is what makes the settle-on-leave land. */
+    ...(keepalive ? { keepalive: true } : {}),
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -66,8 +69,15 @@ export function fetchState() {
 
 /** One question. Resolves to {ok:true, text, free_left} or {ok:false,
  *  reason, needs_session?} — a refusal is an answer, not an exception. */
-export function ask(question) {
-  return api('/ask/', { method: 'POST', body: { question } })
+/** `subject` is somebody else's birth details, typed by the seeker. It is
+ *  sent with EVERY question about that person rather than once, because the
+ *  server stores none of it — the conversation here is the only place it
+ *  lives, and a reload is meant to lose it. */
+export function ask(question, subject = null) {
+  return api('/ask/', {
+    method: 'POST',
+    body: subject ? { question, subject } : { question },
+  })
 }
 
 export function startSession() {
@@ -78,8 +88,8 @@ export function heartbeat(sessionId) {
   return api(`/session/${sessionId}/heartbeat/`, { method: 'POST' })
 }
 
-export function endSession(sessionId) {
-  return api(`/session/${sessionId}/end/`, { method: 'POST' })
+export function endSession(sessionId, { keepalive = false } = {}) {
+  return api(`/session/${sessionId}/end/`, { method: 'POST', keepalive })
 }
 
 /**

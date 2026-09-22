@@ -65,15 +65,42 @@ def no_chart_notice():
     )
 
 
-def chart_block(chart):
+def subject_header(name):
+    """Whose chart this is, when it is not the person asking.
+
+    Stated before the placements and stated plainly, because the failure
+    mode is the model answering "your Saturn" about somebody else's — which
+    reads as an answer about the seeker and is wrong in the way a person
+    cannot catch.
+    """
+    who = (name or "").strip() or "this person"
+    return (
+        f"WHOSE CHART THIS IS: {who}'s, NOT the person you are talking to.\n"
+        f"Say \"{who}'s\" and never \"your\" about these placements. The person "
+        f"asking is enquiring on {who}'s behalf."
+    )
+
+
+def chart_block(chart, subject_name=None):
     """The chart, flattened to something a model reads without guessing.
 
     Only what the provider actually returned. Nothing is defaulted and
     nothing is computed here — a plausible-looking wrong placement is worse
     than an absent one, because the person cannot tell.
     """
+    # Built first: every branch below returns it, including the ones that
+    # have no chart to show. Whose chart is missing is worth saying.
+    header = subject_header(subject_name) + "\n\n" if subject_name else ""
+
     if not chart:
-        return no_chart_notice()
+        return header + no_chart_notice()
+
+    if not isinstance(chart, dict):
+        # Defensive, and earned: the chart arrived as the memo's
+        # (payload, cached) tuple once and every question 500'd. A prompt
+        # that cannot be built is not worth an exception — say the chart is
+        # missing, which is a branch the model already handles.
+        return header + no_chart_notice()
 
     lines = ["CHART (Vedic, sidereal, Lahiri):"]
     for key, label in (
@@ -83,8 +110,19 @@ def chart_block(chart):
         ("nakshatra", "Nakshatra"),
     ):
         value = chart.get(key)
-        if value:
-            lines.append(f"  {label}: {value}")
+        if not value:
+            continue
+        # The chart API returns the ascendant as an object
+        # ({sign, degree, nakshatra}), not a string. Printed raw it reaches
+        # the model as a Python dict repr — readable enough that nothing
+        # broke, and wrong enough to fix.
+        if isinstance(value, dict):
+            sign = value.get("sign")
+            nak = (value.get("nakshatra") or {}).get("name")
+            value = f"{sign}{f' ({nak})' if nak else ''}" if sign else None
+            if not value:
+                continue
+        lines.append(f"  {label}: {value}")
 
     placements = chart.get("planets") or chart.get("placements") or []
     if placements:
@@ -105,4 +143,4 @@ def chart_block(chart):
     if dasha:
         lines.append(f"  Current dasha: {dasha}")
 
-    return "\n".join(lines)
+    return header + "\n".join(lines)

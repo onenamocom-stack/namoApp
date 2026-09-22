@@ -73,6 +73,13 @@ def money_tables(db):
     from django.db import connection
 
     with connection.cursor() as cursor:
+        # `orders` and `order_items` used to be stood up by hand here: they
+        # are written by raw SQL from the consultants gateway and had no
+        # Django model, so SQLite had no table unless a fixture made one.
+        # apps/shop gave them models (stage 2 of the console), so the test
+        # database creates them from migrations now and creating them again
+        # is "table orders already exists". The triggers below are still
+        # ours — they emulate prod's refuse_mutation, which no model has.
         cursor.execute(
             "create trigger ledger_immutable before update on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
@@ -81,23 +88,10 @@ def money_tables(db):
             "create trigger ledger_immutable_delete before delete on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
         )
-        cursor.execute(
-            "create table orders (id text primary key, profile_id text not null,"
-            " status text not null default 'paid', total_paise integer not null,"
-            " created_at text)"
-        )
-        cursor.execute(
-            "create table order_items (id text primary key, order_id text not null,"
-            " item_type text not null, item_id text not null, title text not null,"
-            " qty smallint not null default 1, unit_price_paise integer not null,"
-            " tax_rate_bps smallint not null default 0)"
-        )
     yield
     with connection.cursor() as cursor:
         cursor.execute("drop trigger if exists ledger_immutable")
         cursor.execute("drop trigger if exists ledger_immutable_delete")
-        for table in ("order_items", "orders"):
-            cursor.execute(f"drop table {table}")
 
 
 @pytest.fixture(autouse=True)
@@ -162,6 +156,37 @@ class TestQuota:
         day[0] = day[0] + timezone.timedelta(days=1)
         assert services.ask(SEEKER, "day after")["ok"]
 
+    def test_the_shipped_defaults_are_five_and_one(self, settings):
+        """The allowances are env vars so a testing window can raise them.
+        This pins what production ships with, so raising one for a day and
+        forgetting to put it back fails here rather than in the bill."""
+        from django.conf import settings as live
+
+        assert live.AI_WELCOME_FREE == 5
+        assert live.AI_DAILY_FREE == 1
+
+    def test_a_raised_daily_allowance_actually_grants_more(self, settings, monkeypatch):
+        """What the testing window needs: more than one a day, without a
+        flag that skips the quota entirely."""
+        day = [services._ist_today()]
+        monkeypatch.setattr(services, "_ist_today", lambda: day[0])
+        for _ in range(5):
+            services.ask(SEEKER, "q")
+
+        day[0] = day[0] + timezone.timedelta(days=1)
+        settings.AI_DAILY_FREE = 3
+        assert services.quota_state(SEEKER)["free_left"] == 3
+        for i in range(3):
+            assert services.ask(SEEKER, f"raised {i}")["ok"]
+        assert services.ask(SEEKER, "fourth")["ok"] is False
+
+        # And putting it back is one value, with no leftover credit.
+        day[0] = day[0] + timezone.timedelta(days=1)
+        settings.AI_DAILY_FREE = 1
+        assert services.quota_state(SEEKER)["free_left"] == 1
+        assert services.ask(SEEKER, "next day")["ok"]
+        assert services.ask(SEEKER, "and again")["ok"] is False
+
     def test_quota_state_reports_what_is_left_without_spending(self):
         assert services.quota_state(SEEKER) == {"free_left": 5, "kind": "welcome"}
         services.ask(SEEKER, "q")
@@ -201,22 +226,23 @@ class TestMeter:
         assert result["balance_paise"] == 500
         assert _balance(SEEKER) == 500  # nothing taken
 
-    def test_unused_minutes_come_back(self):
+    def test_unused_time_comes_back(self):
         _wallet(SEEKER)
         _fund(SEEKER, 9_000)  # ten minutes
         start = timezone.now()
         session = services.start_session(SEEKER, now=start)
         assert _balance(SEEKER) == 0  # all ten minutes held
 
-        # Two and a half minutes in: three billed, seven refunded.
+        # 150s is exactly five 30-second blocks: ₹22.50 billed, the rest back.
         stop = start + timezone.timedelta(seconds=150)
         end = services.end_session(SEEKER, session["session_id"], now=stop)
-        assert end["minutes"] == 3
-        assert end["charged_paise"] == 2_700
-        assert end["refund_paise"] == 6_300
-        assert _balance(SEEKER) == 6_300
+        assert end["charged_paise"] == 2_250
+        assert end["refund_paise"] == 9_000 - 2_250
+        assert _balance(SEEKER) == 6_750
 
-    def test_a_part_minute_is_a_minute(self):
+    def test_the_smallest_charge_is_one_block(self):
+        """One second still costs something — but half of what it used to.
+        A part-block is a block; the floor is thirty seconds, not sixty."""
         _wallet(SEEKER)
         _fund(SEEKER, 9_000)
         start = timezone.now()
@@ -224,8 +250,8 @@ class TestMeter:
         end = services.end_session(
             SEEKER, session["session_id"], now=start + timezone.timedelta(seconds=1)
         )
-        assert end["minutes"] == 1
-        assert end["charged_paise"] == RATE
+        assert end["charged_paise"] == RATE // 2
+        assert end["seconds_billed"] == 30
 
     def test_an_abandoned_session_is_swept_and_cannot_overspend(self):
         _wallet(SEEKER)
@@ -240,6 +266,8 @@ class TestMeter:
         session = Session.objects.get(profile_id=SEEKER)
         assert session.status == Session.Status.ENDED
         assert session.charged_paise == 1_800  # the two it bought, not sixty
+        # The hold is still the ceiling under block billing: blocks accrue
+        # past the expiry, the clamp is what stops them.
         assert _balance(SEEKER) == 0
 
     def test_only_one_live_session_at_a_time(self):
@@ -369,6 +397,38 @@ class TestProvider:
         services.ask(SEEKER, "new")
         assert seen["n"] <= services.HISTORY_LIMIT
 
+    def test_the_real_chart_shape_reaches_the_model(self, monkeypatch):
+        """The shape apps/astro actually returns, not a hand-made one.
+
+        This is the test the 500 earned. `user_chart` answers the memo's
+        (payload, cached) tuple, `_chart_for` returned it whole, and
+        chart_block called .get() on a tuple — every question 500'd the
+        moment a profile had birth details. Every test before this ran on
+        an account with none, so the bug could not show.
+        """
+        from apps.ai.prompt import chart_block
+
+        real = {
+            "houses": [{"sign": "Virgo", "house": 1}],
+            "planets": [
+                {"name": "Sun", "sign": "Cancer", "house": 11},
+                {"name": "Saturn", "sign": "Pisces", "house": 7},
+            ],
+            # An OBJECT, not a string — which is what the API returns.
+            "ascendant": {
+                "sign": "Virgo", "degree": 153.93,
+                "nakshatra": {"lord": "Sun", "name": "Uttara Phalguni", "pada": 3},
+            },
+        }
+        block = chart_block(real)
+        assert "Ascendant: Virgo (Uttara Phalguni)" in block
+        assert "Saturn: Pisces, house 7" in block
+        assert "{" not in block, "a raw dict repr reached the prompt"
+
+        # And the tuple itself must not blow up: it degrades to the
+        # no-chart branch rather than raising.
+        assert "not available" in chart_block((real, True))
+
     def test_a_missing_chart_is_stated_not_invented(self, monkeypatch):
         seen = {}
 
@@ -386,3 +446,92 @@ class TestProvider:
         rows = services.transcript(SEEKER)
         assert [r["role"] for r in rows] == ["user", "model", "user", "model"]
         assert rows[0]["text"] == "first"
+
+
+# ── somebody else's chart ────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+class TestSubject:
+    """Asking about a third party (22 Sep 2026).
+
+    The rule that matters most here is not astrological, it is that **the
+    third party never agreed to be in this database**. They are used for
+    one answer and dropped: no row, no column, no cache entry that names
+    them. These tests are the enforcement.
+    """
+
+    SUBJECT = {
+        "name": "Amma",
+        "birth_date": "1965-03-02",
+        "birth_time": "14:20:00",
+        "birth_time_known": True,
+        "birth_place": "Jaipur, India",
+        "birth_lat": "26.912400",
+        "birth_lon": "75.787300",
+        "birth_zone": "Asia/Kolkata",
+    }
+
+    def test_nothing_about_the_subject_is_ever_written(self, monkeypatch):
+        monkeypatch.setattr(
+            services, "_subject_chart",
+            lambda s: {"ascendant": {"sign": "Leo"}, "planets": []},
+        )
+        result = services.ask(SEEKER, "How is Amma's year looking?", subject=self.SUBJECT)
+        assert result["ok"]
+
+        # Every stored string, from every row this could have touched.
+        stored = " ".join(
+            str(v)
+            for m in Message.objects.values("body")
+            for v in m.values()
+        )
+        for secret in ("1965-03-02", "14:20", "Jaipur", "26.912", "75.787"):
+            assert secret not in stored, f"{secret} was written down"
+
+        # The seeker's own words are theirs and DO survive — including the
+        # name, because they typed it into their own question.
+        assert "Amma" in stored
+
+    def test_the_prompt_says_whose_chart_it_is(self, monkeypatch):
+        seen = {}
+
+        def capture(history, question, chart):
+            seen["chart"] = chart
+            return {"text": "ok", "tokens_in": None, "tokens_out": None}
+
+        monkeypatch.setattr(providers, "ask", capture)
+        monkeypatch.setattr(
+            services, "_subject_chart",
+            lambda s: {"ascendant": {"sign": "Leo"}, "planets": [
+                {"name": "Saturn", "sign": "Aries", "house": 9}]},
+        )
+        services.ask(SEEKER, "How is her year?", subject=self.SUBJECT)
+        block = seen["chart"]
+        assert "Amma's, NOT the person you are talking to" in block
+        assert "Saturn: Aries, house 9" in block
+
+    def test_a_subject_question_spends_the_same_quota(self, monkeypatch):
+        monkeypatch.setattr(services, "_subject_chart", lambda s: None)
+        before = services.quota_state(SEEKER)["free_left"]
+        services.ask(SEEKER, "About Amma", subject=self.SUBJECT)
+        assert services.quota_state(SEEKER)["free_left"] == before - 1
+
+    def test_an_uncomputable_subject_chart_is_stated_not_invented(self, monkeypatch):
+        seen = {}
+
+        def capture(history, question, chart):
+            seen["chart"] = chart
+            return {"text": "ok", "tokens_in": None, "tokens_out": None}
+
+        def boom(body):
+            raise RuntimeError("upstream down")
+
+        monkeypatch.setattr(providers, "ask", capture)
+        monkeypatch.setattr(
+            "apps.astro.services.subject_chart", boom, raising=False
+        )
+        result = services.ask(SEEKER, "About Amma", subject=self.SUBJECT)
+        assert result["ok"]  # the question still gets an answer
+        assert "not available" in seen["chart"]
+        assert "Amma" in seen["chart"]  # and it still knows whose it was

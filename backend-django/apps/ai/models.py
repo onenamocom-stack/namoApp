@@ -93,6 +93,12 @@ class Quota(models.Model):
     profile_id = models.UUIDField(primary_key=True)
     welcome_used = models.IntegerField(default=0)
     last_free_on = models.DateField(null=True, blank=True)
+    # How many free messages were taken ON `last_free_on`. A date stamp alone
+    # could only ever express "one a day"; this makes the daily allowance a
+    # number, which is what let it be raised for testing without a flag that
+    # bypasses billing — and what will let it be three a day if that ever
+    # becomes the product.
+    daily_used = models.IntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

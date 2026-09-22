@@ -20,7 +20,3 @@ academy_urls = [
     path("materials/url/", views.material_url, name="academy-material-url"),
     path("enrol/", views.enrol, name="academy-enrol"),
 ]
-
-admin_urls = [
-    path("", views.admin, name="admin"),
-]

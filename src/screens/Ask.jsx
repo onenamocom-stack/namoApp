@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { Button, Section } from '../components/Primitives.jsx'
 import useAskAi from '../components/useAskAi.js'
+import SubjectForm from '../components/SubjectForm.jsx'
 import { clock } from '../lib/ai.js'
 import { rupees } from '../store.jsx'
 
@@ -23,6 +25,7 @@ export default function Ask() {
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+    who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
 
@@ -65,6 +68,21 @@ export default function Ask() {
         }
       />
 
+      {/* Said once, pinned, and never repeated per message — a warning on
+          every bubble is a warning nobody reads. It names the real limit
+          rather than only the legal one: a chart is not a life, and the
+          model does not know one. The link is the honest next step and
+          the business's, which is why it sits inside the sentence rather
+          than under a separate heading. */}
+      <p className="border-b border-rule px-5 py-3 text-micro t-faint">
+        An AI expert reads your chart here. It might be wrong, and it does not know your
+        life. For anything that matters,{' '}
+        <Link to="/consult" className="underline hover:text-t1">
+          ask our pros
+        </Link>
+        .
+      </p>
+
       <div className="section-tight">
         {messages.map((m) => (
           <div key={m.id} className="border-b border-rule py-5 last:border-b-0">
@@ -72,6 +90,46 @@ export default function Ask() {
             <p className={`text-read ${m.role === 'model' ? 'text-t1' : 'text-t2'}`}>{m.text}</p>
           </div>
         ))}
+
+        {/* Asked once, before the first question. A chart answers about one
+            person, and which person is the thing the model cannot guess —
+            "will I get the job" and "will she get the job" are the same
+            sentence to it if nobody says whose chart is loaded. */}
+        {who === null && messages.length === 0 && !loading && (
+          <div className="pop-card p-4 text-center">
+            <p className="caps t-heading">Who is this about?</p>
+            <p className="mt-2 text-meta t-body">
+              A chart reads one person. Say whose.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => askAbout(null)} className="pop-btn flex-1 caps-sm">
+                Myself
+              </button>
+              <button type="button" onClick={() => setAsking(true)} className="pill flex-1 caps-sm justify-center">
+                Someone else
+              </button>
+            </div>
+          </div>
+        )}
+
+        {asking && <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />}
+
+        {/* Whose chart is loaded, and the way out of it. Shown while a
+            subject is set because the alternative is a seeker forgetting
+            and reading an answer about their mother as one about them. */}
+        {subject && !asking && (
+          <p className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2 text-micro t-sub">
+            <span>Reading {subject.name}&apos;s chart</span>
+            <span className="flex gap-3">
+              <button type="button" onClick={() => setAsking(true)} className="underline">
+                someone else
+              </button>
+              <button type="button" onClick={() => askAbout(null)} className="underline">
+                back to mine
+              </button>
+            </span>
+          </p>
+        )}
 
         {(loading || thinking) && (
           <div className="animate-breathe py-5">
@@ -127,7 +185,7 @@ export default function Ask() {
               className="mt-5"
               variant="solid"
               onClick={() => send()}
-              disabled={!draft.trim() || thinking}
+              disabled={!draft.trim() || thinking || (who === null && messages.length === 0)}
             >
               {live ? 'Send' : 'Send · uses one'}
             </Button>

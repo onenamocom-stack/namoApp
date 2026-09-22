@@ -1,12 +1,13 @@
-"""Phase 10 — shop, Academy and admin console on the Django API.
+"""Phase 10 — the shop and the Academy on the Django API (the seeker half).
 
 What runs here is everything that is Python: the cart merge, the quote's
 arithmetic and refusals, who the caller is (always the JWT, never the body),
-the admin tier ladder, and the wallet's pay-for-an-order path. What does NOT
+that no admin action is reachable from /v1, and the wallet's pay-for-an-order
+path. What does NOT
 run here is the SQL those endpoints call as the caller — shop_checkout,
 academy_enrol, the settle/release/refund family and the RLS gates exist only
 on Postgres. Those are 028_shop_check.sql and 031_academy_check.sql, run in
-the SQL editor, plus the role-switch probe recorded in HANDOFF §21.
+the SQL editor, plus the role-switch probe recorded in HANDOFF §24.
 """
 
 import contextlib
@@ -126,12 +127,17 @@ class TestEndpoints:
         [("get", "/v1/shop/addresses/"), ("post", "/v1/shop/quote/"),
          ("post", "/v1/shop/checkout/"), ("get", "/v1/shop/orders/"),
          ("get", f"/v1/shop/orders/{ORDER}/"), ("post", f"/v1/shop/orders/{ORDER}/cancel/"),
-         ("get", "/v1/academy/materials/"), ("post", "/v1/academy/enrol/"),
-         ("post", "/v1/admin/")],
+         ("get", "/v1/academy/materials/"), ("post", "/v1/academy/enrol/")],
     )
     def test_signed_out_is_401(self, api_client, method, path):
         response = getattr(api_client, method)(path, {}, format="json")
         assert response.status_code == 401
+
+    def test_no_admin_action_is_reachable_from_v1(self, authed_client):
+        # The console is the only admin surface, behind its own login (§22).
+        # The old `admin` Edge Function's actions must not come back here.
+        response = authed_client.post("/v1/admin/", {"action": "whoami"}, format="json")
+        assert response.status_code == 404
 
     def test_catalogue_and_academy_read_signed_out(self, api_client, monkeypatch):
         seen = []
@@ -187,76 +193,6 @@ class TestEndpoints:
             format="json",
         )
         assert calls == [(TEST_USER, "event", uuid.UUID(ORDER), "wallet")]
-
-
-# ── Admin: the tier ladder is the gate ───────────────────────────────────────
-
-
-@pytest.fixture
-def admin_db(monkeypatch):
-    """The admin row and the owner-run SQL function, stubbed."""
-    state = {"row": {"tier": "support", "active": True, "name": "Asha"}}
-    calls = []
-    monkeypatch.setattr(services, "admin_row", lambda uid: state["row"])
-    monkeypatch.setattr(
-        services, "_owner_scalar", lambda sql, params: calls.append((sql, params)) or {"ok": True}
-    )
-    monkeypatch.setattr(services, "_shop_orders", lambda: [])
-    return state, calls
-
-
-class TestAdmin:
-    def test_not_an_admin_and_deactivated_read_the_same(self, admin_db):
-        state, _ = admin_db
-        state["row"] = None
-        assert services.admin(TEST_USER, {"action": "whoami"}) == (
-            403, {"ok": False, "reason": "This account is not an admin."})
-        state["row"] = {"tier": "superadmin", "active": False, "name": None}
-        assert services.admin(TEST_USER, {"action": "whoami"})[0] == 403
-
-    def test_unknown_action(self, admin_db):
-        assert services.admin(TEST_USER, {"action": "shop.delete"}) == (
-            400, {"ok": False, "reason": "Unknown action shop.delete."})
-
-    def test_support_reads_but_cannot_ship(self, admin_db):
-        _, calls = admin_db
-        assert services.admin(TEST_USER, {"action": "shop.orders"}) == (200, {"ok": True, "orders": []})
-        status, body = services.admin(TEST_USER, {"action": "shop.ship", "order_id": ORDER, "awb": "X"})
-        assert (status, body["reason"]) == (403, "Your tier (support) cannot do that.")
-        assert calls == []
-
-    def test_fulfilment_ships_but_cannot_refund(self, admin_db):
-        state, calls = admin_db
-        state["row"]["tier"] = "fulfilment"
-        status, _ = services.admin(
-            TEST_USER, {"action": "shop.ship", "order_id": ORDER, "courier": "DTDC", "awb": "A1"})
-        assert status == 200
-        assert calls == [("select public.admin_shipment_update(%s, %s, %s, %s, %s)",
-                          [TEST_USER, ORDER, "shipped", "DTDC", "A1"])]
-        assert services.admin(TEST_USER, {"action": "shop.refund", "order_id": ORDER})[0] == 403
-
-    def test_a_bad_id_never_reaches_sql(self, admin_db):
-        state, calls = admin_db
-        state["row"]["tier"] = "superadmin"
-        assert services.admin(TEST_USER, {"action": "shop.deliver", "order_id": "1; drop"}) == (
-            400, {"ok": False, "reason": "That is not an order id."})
-        assert services.admin(TEST_USER, {"action": "academy.cancel_event"}) == (
-            400, {"ok": False, "reason": "That is not an event id."})
-        assert calls == []
-
-    def test_restock_is_the_shops_question_only(self, admin_db):
-        state, calls = admin_db
-        state["row"]["tier"] = "finance"
-        services.admin(TEST_USER, {"action": "shop.refund", "order_id": ORDER, "reason": "r", "restock": True})
-        services.admin(TEST_USER, {"action": "academy.refund", "order_id": ORDER, "reason": "r", "restock": True})
-        assert [params[3] for _, params in calls] == [True, False]
-
-    def test_the_audit_names_the_verified_caller(self, admin_db):
-        state, calls = admin_db
-        state["row"]["tier"] = "finance"
-        services.admin(TEST_USER, {"action": "academy.cancel_event", "event_id": ORDER,
-                                   "reason": "Host unwell", "admin": OTHER_USER})
-        assert calls == [("select public.admin_event_cancel(%s, %s, %s)", [TEST_USER, ORDER, "Host unwell"])]
 
 
 # ── Paying for an order by card (the wallet side) ────────────────────────────

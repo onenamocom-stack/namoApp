@@ -356,7 +356,7 @@ followers, not 84,200.
 
 **Split 16 Sep 2026 into 10a (shop) and 10b (Academy)**, so the shop can close
 without waiting on courses. The done-conditions below are 10a's. State is
-`HANDOFF.md` §10a-shop and §10b-academy, and §21 for the move onto the Django API.
+`HANDOFF.md` §10a-shop and §10b-academy, and §24 for the move onto the Django API.
 
 **10b done when:**
 1. Enrolling moves money exactly once, and an enrolled person can open the
