@@ -551,21 +551,39 @@ class TestSettle:
         assert _counts(SEEKER)["ledger"] == led0  # no more rows
 
     def test_round_up_boundaries(self, pro_user):
-        # Constructed from the SQL's exact rule — greatest(1, ceil(s/60)),
-        # clamped to the hold — not from intuition. Every boundary where a
-        # naive implementation slips: 60s is ONE minute, 61s is two.
-        cases = [(0, 1), (1, 1), (59, 1), (60, 1), (61, 2), (119, 2),
-                 (120, 2), (121, 3), (3599, 60), (3600, 60), (3601, 61)]
-        for seconds, expected in cases:
+        """Thirty-second blocks, rounded up, minimum one (22 Sep 2026).
+
+        014 charged whole minutes and a part-minute was a minute. The
+        granularity is half that now for both meters; the rate is still
+        quoted per minute. Constructed from the rule — greatest(1,
+        ceil(s/30)) blocks, each worth half a minute — not from intuition,
+        and every boundary a naive implementation slips on is here: 30s is
+        ONE block, 31s is two, 60s is still two.
+        """
+        half = RATE // 2
+        # (elapsed seconds, blocks of 30s)
+        cases = [(0, 1), (1, 1), (29, 1), (30, 1), (31, 2), (59, 2),
+                 (60, 2), (61, 3), (89, 3), (90, 3), (91, 4), (3599, 120)]
+        for seconds, blocks in cases:
             Session.objects.all().delete()
-            session, _ = _live_session(pro_user, minutes=20, fund=RATE * 20)
+            session, _ = _live_session(pro_user, minutes=90, fund=RATE * 90)
             t0 = _t0()
             _stamp(session, started_at=t0 - timedelta(seconds=seconds),
                    expires_at=t0 + 1000 * MIN)
             result = services.end_session(SEEKER, session.id, now=t0)
-            assert result["minutes"] == expected, f"{seconds}s -> {expected}"
-            assert result["charged_paise"] == expected * RATE
-            assert result["refunded_paise"] == session.hold_paise - expected * RATE
+            assert result["charged_paise"] == blocks * half, f"{seconds}s"
+            assert result["refunded_paise"] == session.hold_paise - blocks * half
+
+    def test_a_minute_twenty_costs_thirteen_fifty_not_eighteen(self, pro_user):
+        """The worked example the change was specified from: at ₹9 a minute
+        a 1:20 session was ₹18 under whole minutes and is ₹13.50 now."""
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        t0 = _t0()
+        _stamp(session, started_at=t0 - timedelta(seconds=80),
+               expires_at=t0 + 100 * MIN)
+        result = services.end_session(SEEKER, session.id, now=t0)
+        # 80s -> three 30s blocks -> one and a half minutes.
+        assert result["charged_paise"] == RATE + RATE // 2
 
     def test_bill_clamps_to_what_was_held(self, pro_user):
         # The hold is the ceiling: overstay the bought minutes and the bill

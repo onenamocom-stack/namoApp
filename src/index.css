@@ -592,6 +592,14 @@
      The filter row, the category chips, the "explore" row. Fully rounded,
      white on the canvas, and they carry the same soft lift as a card. */
 
+  /* The one-line input this app already draws everywhere by hand — a rule
+     under the text, no box. Named here because SubjectForm needed six of
+     them and six copies of the same utility string is how they drift. */
+  .field-line {
+    @apply w-full border-b border-rule bg-transparent pb-2 text-body text-t1
+           outline-none transition-colors placeholder:text-t4 focus:border-t1;
+  }
+
   .pill {
     @apply inline-flex flex-none items-center gap-2 whitespace-nowrap;
     padding: calc(var(--sp) * 1.25) calc(var(--sp) * 2);

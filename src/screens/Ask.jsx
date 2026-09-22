@@ -4,6 +4,7 @@ import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { Button, Section } from '../components/Primitives.jsx'
 import useAskAi from '../components/useAskAi.js'
+import SubjectForm from '../components/SubjectForm.jsx'
 import { clock } from '../lib/ai.js'
 import { rupees } from '../store.jsx'
 
@@ -24,6 +25,7 @@ export default function Ask() {
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+    who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
 
@@ -89,6 +91,46 @@ export default function Ask() {
           </div>
         ))}
 
+        {/* Asked once, before the first question. A chart answers about one
+            person, and which person is the thing the model cannot guess —
+            "will I get the job" and "will she get the job" are the same
+            sentence to it if nobody says whose chart is loaded. */}
+        {who === null && messages.length === 0 && !loading && (
+          <div className="pop-card p-4 text-center">
+            <p className="caps t-heading">Who is this about?</p>
+            <p className="mt-2 text-meta t-body">
+              A chart reads one person. Say whose.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => askAbout(null)} className="pop-btn flex-1 caps-sm">
+                Myself
+              </button>
+              <button type="button" onClick={() => setAsking(true)} className="pill flex-1 caps-sm justify-center">
+                Someone else
+              </button>
+            </div>
+          </div>
+        )}
+
+        {asking && <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />}
+
+        {/* Whose chart is loaded, and the way out of it. Shown while a
+            subject is set because the alternative is a seeker forgetting
+            and reading an answer about their mother as one about them. */}
+        {subject && !asking && (
+          <p className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2 text-micro t-sub">
+            <span>Reading {subject.name}&apos;s chart</span>
+            <span className="flex gap-3">
+              <button type="button" onClick={() => setAsking(true)} className="underline">
+                someone else
+              </button>
+              <button type="button" onClick={() => askAbout(null)} className="underline">
+                back to mine
+              </button>
+            </span>
+          </p>
+        )}
+
         {(loading || thinking) && (
           <div className="animate-breathe py-5">
             <p className="label text-left">{loading ? 'Opening' : 'Reading your chart'}</p>
@@ -143,7 +185,7 @@ export default function Ask() {
               className="mt-5"
               variant="solid"
               onClick={() => send()}
-              disabled={!draft.trim() || thinking}
+              disabled={!draft.trim() || thinking || (who === null && messages.length === 0)}
             >
               {live ? 'Send' : 'Send · uses one'}
             </Button>

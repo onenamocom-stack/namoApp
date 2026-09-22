@@ -110,18 +110,44 @@ def _minutes_held(balance_paise, rate_paise):
     return balance_paise // rate_paise
 
 
+# The billing block, in seconds. 014 charged whole minutes — a part-minute
+# was a minute — and 22 Sep 2026 cut it to thirty seconds for both meters,
+# the consultant's and the AI's. The rate is still quoted per minute; only
+# the granularity changed, so a 1:20 session went from ₹18 to ₹13.50 at
+# ₹9/min. One number, one place, because two meters must not drift.
+BILLING_BLOCK_SECONDS = 30
+
+
+def _billable_paise(started_at, stop, hold_paise, rate_paise):
+    """What the session actually costs, integer-exact and never a float.
+
+    Round UP to the next thirty-second block, minimum one block, clamped to
+    what the hold bought. `stop` is min(now, expires_at), so a tab left open
+    overnight is charged for the time it bought and not a second more.
+
+    The paise are computed from seconds rather than from a halved rate:
+    `rate_paise` is a per-MINUTE price and need not be even, and halving an
+    odd one would invent or lose a paisa on every settle. Integer division
+    at the end drops any fraction of a paisa, which rounds in the seeker's
+    favour — the only direction a rounding error is allowed to go.
+    """
+    delta = stop - started_at
+    total_us = (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
+    block_us = BILLING_BLOCK_SECONDS * 1_000_000
+    blocks = (total_us + block_us - 1) // block_us  # ceil, exact
+    blocks = max(1, blocks)
+    charged = (blocks * BILLING_BLOCK_SECONDS * rate_paise) // 60
+    return min(charged, hold_paise)
+
+
 def _billable_minutes(started_at, stop, hold_paise, rate_paise):
-    """The round-up rule, integer-exact (014): ceil((stop - started)/60),
-    minimum one minute — "per minute" means a part-minute is a minute —
-    clamped to what the hold bought (`hold / rate` floors the same way).
-    stop is min(now, expires_at): a tab left open overnight is charged for
-    the minutes it bought and not one more. Microsecond arithmetic, never
-    floats: ceil over whole microseconds."""
+    """Kept for the labels only — "3 min chat" on an earnings row. The money
+    comes from `_billable_paise`; these two must never both be used to
+    compute a charge."""
     delta = stop - started_at
     total_us = (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
     minute_us = 60 * 1_000_000
-    minutes = (total_us + minute_us - 1) // minute_us  # ceil, exact
-    minutes = max(1, minutes)
+    minutes = max(1, (total_us + minute_us - 1) // minute_us)
     return min(minutes, hold_paise // rate_paise)
 
 
@@ -346,10 +372,13 @@ def end_session(actor_id, session_id, reason=None, now=None):
 
         note = reason if actor_id is None else "ended"
         stop = min(now, session.expires_at)
+        charged = _billable_paise(
+            session.started_at, stop, session.hold_paise, session.rate_paise
+        )
+        # Label only — what the earnings row says, not what anybody pays.
         minutes = _billable_minutes(
             session.started_at, stop, session.hold_paise, session.rate_paise
         )
-        charged = minutes * session.rate_paise
         refund = session.hold_paise - charged
 
         claimed = Session.objects.filter(
