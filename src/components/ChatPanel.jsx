@@ -474,6 +474,21 @@ function AskAi() {
         )}
       </div>
 
+      {/* Said once, pinned, and never repeated per message — a warning on
+          every bubble is a warning nobody reads. It names the real limit
+          rather than only the legal one: a chart is not a life, and the
+          model does not know one. The link is the honest next step and
+          the business's, which is why it sits inside the sentence rather
+          than under a separate heading. */}
+      <p className="flex-none border-b border-rule px-4 py-2.5 text-micro t-faint">
+        An AI expert reads your chart here. It might be wrong, and it does not know your
+        life. For anything that matters,{' '}
+        <Link to="/consult" className="underline hover:text-t1">
+          ask our pros
+        </Link>
+        .
+      </p>
+
       <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {loading ? (
           <p className="animate-breathe caps-sm t-faint">Opening</p>

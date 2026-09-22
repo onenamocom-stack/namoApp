@@ -191,6 +191,18 @@ showing it is the least this can do about that.
 questions without charging and priced a counter the browser owned. The
 metered session replaces them.
 
+**The disclaimer is pinned, not repeated.** Under the header on both
+surfaces, always visible, never per message — a warning on every bubble is
+a warning nobody reads:
+
+> An AI expert reads your chart here. It might be wrong, and it does not
+> know your life. For anything that matters, **ask our pros**.
+
+It names the real limit rather than only the legal one — a chart is not a
+life, and the model does not know one — and "ask our pros" links to
+`/consult`, so the honest next step and the business's are the same
+sentence.
+
 > **Open contradiction:** §4.5 Premium still merchandises a 12-question
 > pack (`questionPacks` in `src/data/mock.js`, surfaced on the Premium
 > screen) for a product that no longer counts questions. Premium was left
