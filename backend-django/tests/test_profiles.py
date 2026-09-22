@@ -290,6 +290,21 @@ class TestOnboardingWrite:
         # the row is untouched — a refused shape writes nothing
         assert str(Profile.objects.get(pk=TEST_USER).birth_date) == "1994-03-12"
 
+    def test_geocoder_precision_is_rounded_not_refused(self, authed_client, clean_profiles):
+        # The place search returns up to eight decimals (Pune comes back as
+        # 18.52322222) and the column holds six. Refusing that reads as
+        # "Check the highlighted fields" against a birthplace picked from our
+        # own search, with no way for the person to fix it — so it rounds.
+        full_profile()
+        response = authed_client.patch(
+            ME, {"birth_lat": 18.52322222, "birth_lon": 73.87586111}, format="json"
+        )
+        assert response.status_code == 200, response.content
+        assert response.json()["birth_lat"] == 18.523222
+        assert response.json()["birth_lon"] == 73.875861
+        row = Profile.objects.get(pk=TEST_USER)
+        assert str(row.birth_lat) == "18.523222"
+
     def test_out_of_range_coordinates_are_400(self, authed_client, clean_profiles):
         full_profile()
         response = authed_client.patch(

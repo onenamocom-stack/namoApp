@@ -18,6 +18,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.fields import CoordinateField
+
 from . import services
 
 
@@ -42,8 +44,8 @@ class SubjectInput(serializers.Serializer):
     birth_time = serializers.TimeField(required=False, allow_null=True)
     birth_time_known = serializers.BooleanField(default=True)
     birth_place = serializers.CharField(max_length=160)
-    birth_lat = serializers.DecimalField(max_digits=9, decimal_places=6)
-    birth_lon = serializers.DecimalField(max_digits=9, decimal_places=6)
+    birth_lat = CoordinateField(90)
+    birth_lon = CoordinateField(180)
     birth_zone = serializers.CharField(max_length=64, required=False, allow_blank=True)
 
     def validate(self, data):

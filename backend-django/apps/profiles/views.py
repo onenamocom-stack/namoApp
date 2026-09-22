@@ -41,6 +41,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.fields import CoordinateField
 from apps.core.views import refusal_body
 
 from . import services
@@ -63,12 +64,10 @@ class OnboardingInput(serializers.Serializer):
     birth_time = serializers.TimeField(required=False, allow_null=True)
     birth_time_known = serializers.BooleanField(required=False)
     birth_place = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    birth_lat = serializers.DecimalField(
-        max_digits=9, decimal_places=6, required=False, allow_null=True
-    )
-    birth_lon = serializers.DecimalField(
-        max_digits=9, decimal_places=6, required=False, allow_null=True
-    )
+    # Rounded, not refused: the geocoder returns more decimals than the
+    # column holds, and refusing them is an unfixable signup (core/fields).
+    birth_lat = CoordinateField(90, required=False, allow_null=True)
+    birth_lon = CoordinateField(180, required=False, allow_null=True)
     birth_zone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
