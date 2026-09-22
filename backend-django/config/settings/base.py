@@ -70,9 +70,13 @@ LOCAL_APPS = [
     "apps.ai",
     "apps.shop",
     "apps.analytics",
-    "apps.console",
 ]
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+# apps.console comes FIRST, before django.contrib.admin, and that order is
+# load-bearing: APP_DIRS resolves templates in INSTALLED_APPS order, so an
+# app registered after contrib.admin can never override admin/base_site.html
+# or admin/index.html. Shadowing them from further down the list fails
+# silently — the page simply does not change, with no error anywhere.
+INSTALLED_APPS = ["apps.console"] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "apps.core.middleware.CorsMiddleware",

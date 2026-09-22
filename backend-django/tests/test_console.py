@@ -114,6 +114,22 @@ class TestTheMenu:
         body = client.get(CONSOLE).content.decode()
         assert reverse("namo:analytics_dashboard") in body
 
+    @pytest.mark.parametrize("page", [
+        "namo:shop_product_changelist",
+        "namo:content_content_changelist",
+        "namo:console_adminaction_changelist",
+        "namo:analytics_dashboard",
+    ])
+    def test_the_nav_is_on_every_page_not_just_the_front_one(self, page):
+        """The tiles fixed the first click and not the second: from inside
+        a product list there was no way to reach the dashboard except by
+        going Home first. Django's admin has breadcrumbs, which go UP, and
+        no lateral navigation at all."""
+        client, _ = _admin(Tier.SUPERADMIN)
+        body = client.get(reverse(page)).content.decode()
+        assert "console-nav" in body, page
+        assert reverse("namo:analytics_dashboard") in body, page
+
     def test_the_front_page_links_the_jobs_somebody_opens_it_for(self):
         client, _ = _admin(Tier.FULFILMENT)
         body = client.get(CONSOLE).content.decode()

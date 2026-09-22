@@ -35,11 +35,11 @@ class NamoAdminSite(AdminSite):
     # Never "/admin/": a default path is a default attack surface, and this
     # one is worth not advertising.
     site_url = None
-    # Named explicitly rather than by shadowing `admin/index.html` in a
-    # templates directory: APP_DIRS resolves in INSTALLED_APPS order, and
-    # `django.contrib.admin` is registered before this app, so the override
-    # silently lost and the front page never changed.
-    index_template = "console/index.html"
+    # No index_template here any more: apps.console is registered before
+    # django.contrib.admin now (config/settings/base.py), so the plain
+    # `admin/index.html` override wins on its own — and the same ordering
+    # is what lets `admin/base_site.html` put the nav on EVERY page rather
+    # than only the two we wrote.
 
     def has_permission(self, request):
         """Django's `is_staff` is not the gate — an ACTIVE row in
