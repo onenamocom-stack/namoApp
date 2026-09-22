@@ -3401,3 +3401,94 @@ but it is the no-chart branch leaking into a case that has one.
   exists** and should be deleted.
 - **Two keys are now in the chat** — the paid Gemini key and the free-tier
   one. The rotate list is eight.
+
+## 22. The admin console — all five stages — 22 Sep 2026
+
+**https://namo-console-499026166575.asia-south1.run.app/console/**
+
+Built overnight, in the order chosen: approval, shop, reels, analytics,
+Shiprocket. 546 tests.
+
+### The TRD's admin decision was reversed, deliberately
+
+docs/02-TRD.md §7 asked for a **separate application holding the
+service-role key**. That was written against Supabase, where reading across
+every user meant bypassing RLS and a leaked admin JWT would have read every
+wallet in the system. **Neither half survives the Django cutover**: there is
+no RLS in this path and no admin JWT to leak.
+
+The goal it protected — a compromised seeker session must not reach the
+console — is met better here. The console takes a **session cookie against
+`auth_user`**; the phone app carries a **Supabase JWT**. One is not
+convertible into the other, and `tests/test_console.py` asserts it.
+
+What survives is the **runtime** separation. One image, two Cloud Run
+services, verified live in both directions:
+
+| | `/console/` | `/v1/health/` |
+|---|---|---|
+| `namo-api` | **404** | 200 |
+| `namo-console` | login | **404** |
+
+### What was already there
+
+`admin_users` and `admin_actions` came across in the migration **with
+rows** — the Supabase build had an admin, and the trail still carries its
+history (`shop.shipped`, `academy.refund`). Nine shop tables likewise, with
+11 products and 27 orders. Nothing here invented a schema. Two things are
+new: `admin_users.operator_user_id` (an admin is a profile; Django logs
+them in against `auth_user`) and the `coupons` table, because nothing like
+it existed.
+
+**A discrepancy, recorded not reconciled:** docs/01-PRD.md §6 names the
+third tier *Moderator*; the database says `fulfilment` and has a CHECK and
+rows. The database won.
+
+### Three bugs that only opening it found
+
+- **The approval queue and the audit trail were invisible.** Django falls
+  back to its own model permissions when a ModelAdmin does not override
+  `has_module_permission`, and a console operator has none — they are staff
+  by way of `admin_users`, not `auth_permission`. Every test passed and the
+  one thing stage 1 exists for could not be reached. There is a menu test
+  now.
+- **`collectstatic` ran under base settings**, where the manifest storage
+  is not configured, so no manifest was written and every console page
+  500'd on `admin/css/base.css`.
+- **The dashboard rendered `₹True`** — a chain of template filters that
+  composes wrong and fails silently. Money is formatted in Python now.
+
+### Decisions taken while you were asleep
+
+- **Prices are typed in rupees.** Asking an operator to type `185000` for a
+  gemstone is a factor-of-ten mistake waiting to become a real order.
+- **Nothing in the shop deletes, at any tier.** An order item points at a
+  product by id. `active=False` takes it off the shop and keeps the history.
+- **Orders are read-only, superadmin included.** The total is what the
+  wallet was debited; a second editable copy is a second source of truth.
+  Refunds go through the wallet's reversing entry.
+- **Analytics collects no IP and no user agent**, and there is a test that
+  the columns do not *exist* — not that we leave them empty. Paths have
+  their ids stripped on both sides.
+- **Attribution is first touch, never overwritten.** "How many came by
+  referral" is a first-touch question.
+- **Shiprocket pushes are a button, never automatic.** The account is
+  Abzzo's: labels carry their pickup address, and a courier collecting a
+  real box from the wrong company because a payment fired at 3am cannot be
+  undone with an UPDATE.
+
+### Open, and yours to decide
+
+- **PRD §6 leaves blocking policy unresolved**: a blocked consultant with
+  confirmed bookings and a pending balance. The console blocks — the
+  alternative was no way to stop a bad actor — but **touches no money and
+  cancels no bookings**. That call must not be made by a side effect.
+- **The console is `--allow-unauthenticated`.** The login is the gate, but
+  an IP allowlist in front of it costs nothing and the split exists to make
+  that possible.
+- Your login: `p8447284861`, password shown once in the session log.
+  **Change it.**
+- `AI_DAILY_FREE` is still **500** on the API, from the testing window.
+- The rotate list is **nine**: two GitHub PATs, the Supabase service-role
+  key, the namo-dev DB password, the R2 token, Twilio, the paid Gemini key,
+  the free-tier Gemini key, and now Shiprocket.

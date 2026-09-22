@@ -20,6 +20,9 @@ from django.utils.safestring import mark_safe
 from apps.console.audit import AuditedAdmin, record
 from apps.console.models import Tier
 from apps.console.site import at_least, site
+from django.utils import timezone
+
+from . import shiprocket
 
 from .models import (
     Coupon, Order, OrderItem, Product, Shipment, ShippingAddress,
@@ -396,6 +399,97 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return at_least(request, Tier.FULFILMENT)
+
+    actions = ("push_to_shiprocket", "assign_awb", "refresh_tracking")
+
+    @dj.action(description="Push to Shiprocket")
+    def push_to_shiprocket(self, request, queryset):
+        """Deliberately a button, not a webhook. These are Abzzo's
+        credentials for now: the label carries their pickup address, and a
+        courier collecting a real box from the wrong company because a
+        payment fired at 3am is not undoable with a database update."""
+        if not at_least(request, Tier.FULFILMENT):
+            return self.message_user(request, "Not your tier.", messages.ERROR)
+        if not shiprocket.is_configured():
+            return self.message_user(
+                request, "Shiprocket credentials are not set.", messages.ERROR
+            )
+        pushed = 0
+        for shipment in queryset:
+            if shipment.provider_order_id:
+                self.message_user(
+                    request, f"{shipment.order_id} is already on Shiprocket.",
+                    messages.WARNING,
+                )
+                continue
+            try:
+                provider_id = shiprocket.push(shipment)
+            except shiprocket.ShiprocketError as exc:
+                self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
+                continue
+            Shipment.objects.filter(pk=shipment.pk).update(
+                provider_order_id=provider_id,
+                status=Shipment.Status.READY,
+                updated_at=timezone.now(),
+            )
+            record(request, "shipment.pushed", "shipment", target_id=shipment.order_id,
+                   provider_order_id=provider_id, pincode=shipment.pincode)
+            pushed += 1
+        if pushed:
+            self.message_user(request, f"{pushed} pushed to Shiprocket.")
+
+    @dj.action(description="Assign AWB — pick a courier")
+    def assign_awb(self, request, queryset):
+        if not at_least(request, Tier.FULFILMENT):
+            return self.message_user(request, "Not your tier.", messages.ERROR)
+        done = 0
+        for shipment in queryset:
+            if not shipment.provider_order_id:
+                self.message_user(
+                    request, f"{shipment.order_id}: push it to Shiprocket first.",
+                    messages.WARNING,
+                )
+                continue
+            try:
+                result = shiprocket.assign_awb(shipment.provider_order_id)
+            except shiprocket.ShiprocketError as exc:
+                self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
+                continue
+            Shipment.objects.filter(pk=shipment.pk).update(
+                awb=result["awb"], courier=result["courier"],
+                status=Shipment.Status.SHIPPED,
+                shipped_at=shipment.shipped_at or timezone.now(),
+                updated_at=timezone.now(),
+            )
+            record(request, "shipment.awb", "shipment", target_id=shipment.order_id,
+                   awb=result["awb"], courier=result["courier"])
+            done += 1
+        if done:
+            self.message_user(request, f"{done} on their way.")
+
+    @dj.action(description="Refresh tracking")
+    def refresh_tracking(self, request, queryset):
+        """Read-only against Shiprocket, and it only ever moves a shipment
+        FORWARD to delivered. A tracking blip must not walk a parcel
+        backwards out of a status somebody already acted on."""
+        for shipment in queryset.exclude(awb=None).exclude(awb=""):
+            try:
+                state = shiprocket.track(shipment.awb)
+            except shiprocket.ShiprocketError as exc:
+                self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
+                continue
+            if "deliver" in (state["status"] or "").lower():
+                Shipment.objects.filter(pk=shipment.pk).update(
+                    status=Shipment.Status.DELIVERED,
+                    delivered_at=shipment.delivered_at or timezone.now(),
+                    updated_at=timezone.now(),
+                )
+                record(request, "shipment.delivered", "shipment",
+                       target_id=shipment.order_id, courier_says=state["status"])
+            else:
+                self.message_user(
+                    request, f"{shipment.order_id}: {state['status'] or 'no update'}"
+                )
 
     def save_model(self, request, obj, form, change):
         from django.utils import timezone

@@ -167,6 +167,16 @@ ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 
+# --- Shiprocket (stage 5) -------------------------------------------------
+# Abzzo's account, borrowed exactly as Razorpay's was. Namo's parcels show
+# up in their dashboard and the labels carry their pickup address, which is
+# why nothing pushes automatically — see apps/shop/shiprocket.py.
+SHIPROCKET_EMAIL = os.environ.get("SHIPROCKET_EMAIL", "")
+SHIPROCKET_PASSWORD = os.environ.get("SHIPROCKET_PASSWORD", "")
+# The named pickup address on that account. Wrong here means a courier at
+# the wrong door.
+SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "Primary")
+
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
 # One image, two Cloud Run services. The public API serves no console URL
 # and the console serves no /v1, so a hole in one is not a door into the
