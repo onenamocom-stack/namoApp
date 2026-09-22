@@ -140,8 +140,12 @@ export async function callAstro(op, params = {}) {
 const inFlight = new Map()
 
 /** A chart is a function of a birth and nothing else, so it has no expiry at
- *  all. Everything else is a function of the IST day and dies with it. */
-const cacheStamp = (op) => (op === 'chart' ? 'never' : istDate())
+ *  all. Everything else is a function of the IST day and dies with it.
+ *
+ *  The chart's stamp is a generation, not a date: change it and every phone
+ *  refetches. 'provider-1' retired the charts the API computed on the mock
+ *  provider from 21 to 22 Sep 2026 (HANDOFF, "The astro API ran on the mock"). */
+const cacheStamp = (op) => (op === 'chart' ? 'provider-1' : istDate())
 
 /* THE PANCHANG CARRIES NO USER: it is computed at Ujjain for everybody. */
 const PER_USER = (op) => op !== 'panchang'

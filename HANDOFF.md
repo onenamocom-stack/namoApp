@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 19 Sep 2026.
+Updated 22 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -3530,3 +3530,45 @@ second is the real one:
 Nothing else in stage 5 is blocked: the client, the retry-on-401, the
 AWB and tracking paths and the console actions are all built and tested.
 They are waiting on one address.
+
+## 24. The astro API ran on the mock provider for a day — 22 Sep 2026
+
+**From the 21 Sep cutover (§16) until revision 00018 (22 Sep), `namo-api` served
+every astro answer from `MockProvider`.** `ASTRO_PROVIDER` was `mock` and
+`FREE_ASTRO_API_KEY` was empty on Cloud Run. The real key had lived in the
+Supabase function secrets, which the CLI returns only as a digest, so it
+never reached the new environment. Nothing refused, because the mock is
+built to answer everything. §23's smoke check passed on the mock for the
+same reason.
+
+What it cost:
+
+- **Charts, the panchang and the daily reading were invented.** Namo AI
+  read those charts, so its answers in that window rest on them. The
+  transcripts stand; nothing corrects them.
+- **Signup with a searched birthplace could not finish.** The mock geo
+  search returns no `timezone`, and `Computing.jsx` refuses a draft without
+  one and sends the person back to re-answer. Only the four preset cities
+  (Pune, Mumbai, Bengaluru, Delhi) went through. This is also why **no
+  profile holds mock coordinates**: checked on `usgzgrdxlzgnehtbebzo`,
+  `birth_lat is not null and birth_zone is null` returns 0 rows.
+
+What fixed it:
+
+- `ASTRO_PROVIDER=freeastroapi` and the key set on `namo-api`, revision
+  00018. Checked from outside: `/v1/astro/geo/?q=Ujjain` answers Madhya
+  Pradesh, 23.18, 75.78, `Asia/Kolkata`. The mock put it in "Maharashtra"
+  at 25.39, 72.30.
+- `delete from astro_cache` on the production database. The key carries the
+  inputs but not the provider, so the mock's rows would have been served
+  forever. The panchang refetched real afterwards: sunrise 06:15:16,
+  Bhadrapada, Rahu Kaal 15:21–16:52.
+- The browser chart cache's stamp went from `'never'` to `'provider-1'` in
+  `src/lib/astro.js`, so every phone refetches its chart once.
+
+**The key is in plain text in a chat transcript** (a screenshot of the
+update command). It joins the rotate list — ten now.
+
+**Open:** `tools/smoke.py` cannot tell the mock from the vendor. One
+assertion closes it: Ujjain's geo result must say Madhya Pradesh, a state
+the mock never returns.
