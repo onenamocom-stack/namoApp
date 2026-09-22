@@ -50,8 +50,20 @@ REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
 # each question asked.
 HISTORY_LIMIT = 20
 
-WELCOME_FREE = 5  # once per account, never refilled
-DAILY_FREE = 1  # one a day after those
+def _welcome_free():
+    """Once per account, never refilled. A setting rather than a constant so
+    it can be raised for a testing window and put back with one env var —
+    the alternative was a flag that skips the quota entirely, and a flag
+    like that is exactly the kind of thing that gets left on."""
+    from django.conf import settings
+
+    return settings.AI_WELCOME_FREE
+
+
+def _daily_free():
+    from django.conf import settings
+
+    return settings.AI_DAILY_FREE
 
 
 def _ist_today():
@@ -67,14 +79,14 @@ def quota_state(profile_id):
     """What is free right now, without spending anything. The panel reads
     this to decide whether to show a question box or a Start button."""
     row = Quota.objects.filter(profile_id=profile_id).first()
-    welcome_left = WELCOME_FREE - (row.welcome_used if row else 0)
+    welcome_left = _welcome_free() - (row.welcome_used if row else 0)
     if welcome_left > 0:
         return {"free_left": welcome_left, "kind": "welcome"}
-    # Every free message stamps the day, the welcome ones included, so this
-    # reads false on the day the fifth was spent — "one a day FROM THE NEXT
-    # DAY", which is what was asked for.
-    used_today = bool(row and row.last_free_on == _ist_today())
-    return {"free_left": 0 if used_today else DAILY_FREE, "kind": "daily"}
+    # Every free message stamps the day, the welcome ones included, so a
+    # fresh account has none left on the day its fifth was spent — "one a
+    # day FROM THE NEXT DAY", which is what was asked for.
+    used_today = row.daily_used if (row and row.last_free_on == _ist_today()) else 0
+    return {"free_left": max(0, _daily_free() - used_today), "kind": "daily"}
 
 
 def _take_free(profile_id):
@@ -95,20 +107,27 @@ def _take_free(profile_id):
 
     today = _ist_today()
 
-    if row.welcome_used < WELCOME_FREE:
+    if row.welcome_used < _welcome_free():
         # The day is stamped here too, and that is not bookkeeping — it is
         # the rule. The daily allowance starts the day AFTER, so somebody
         # who burns the welcome five on a Monday gets their next free
-        # message on Tuesday, not six on Monday. Without this stamp the
-        # daily branch fires the moment the fifth is spent.
+        # message on Tuesday, not six on Monday. The stamp fills the day's
+        # allowance so the daily branch below cannot also fire.
         row.welcome_used += 1
         row.last_free_on = today
-        row.save(update_fields=("welcome_used", "last_free_on"))
+        row.daily_used = _daily_free()
+        row.save(update_fields=("welcome_used", "last_free_on", "daily_used"))
         return True
 
     if row.last_free_on != today:
         row.last_free_on = today
-        row.save(update_fields=("last_free_on",))
+        row.daily_used = 1
+        row.save(update_fields=("last_free_on", "daily_used"))
+        return True
+
+    if row.daily_used < _daily_free():
+        row.daily_used += 1
+        row.save(update_fields=("daily_used",))
         return True
 
     return False

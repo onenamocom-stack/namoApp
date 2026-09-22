@@ -161,6 +161,12 @@ AI_THINKING_BUDGET = int(os.environ.get("AI_THINKING_BUDGET", "0"))
 # ₹9 a minute (docs/01-PRD.md §4.4). An env var rather than a constant
 # because it is a price, and a price change must not need a deploy.
 AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
+# The free allowances (docs/01-PRD.md §4.4): five on arrival, then one a day
+# from the next day. Env vars rather than constants so a testing window can
+# raise them and put them back without a deploy — and deliberately NOT a
+# "skip the quota" flag, which is the kind of switch that gets left on.
+AI_WELCOME_FREE = int(os.environ.get("AI_WELCOME_FREE", "5"))
+AI_DAILY_FREE = int(os.environ.get("AI_DAILY_FREE", "1"))
 
 # --- Razorpay (module 8; rule 7 — server-side only, never a response body)
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")

@@ -162,6 +162,37 @@ class TestQuota:
         day[0] = day[0] + timezone.timedelta(days=1)
         assert services.ask(SEEKER, "day after")["ok"]
 
+    def test_the_shipped_defaults_are_five_and_one(self, settings):
+        """The allowances are env vars so a testing window can raise them.
+        This pins what production ships with, so raising one for a day and
+        forgetting to put it back fails here rather than in the bill."""
+        from django.conf import settings as live
+
+        assert live.AI_WELCOME_FREE == 5
+        assert live.AI_DAILY_FREE == 1
+
+    def test_a_raised_daily_allowance_actually_grants_more(self, settings, monkeypatch):
+        """What the testing window needs: more than one a day, without a
+        flag that skips the quota entirely."""
+        day = [services._ist_today()]
+        monkeypatch.setattr(services, "_ist_today", lambda: day[0])
+        for _ in range(5):
+            services.ask(SEEKER, "q")
+
+        day[0] = day[0] + timezone.timedelta(days=1)
+        settings.AI_DAILY_FREE = 3
+        assert services.quota_state(SEEKER)["free_left"] == 3
+        for i in range(3):
+            assert services.ask(SEEKER, f"raised {i}")["ok"]
+        assert services.ask(SEEKER, "fourth")["ok"] is False
+
+        # And putting it back is one value, with no leftover credit.
+        day[0] = day[0] + timezone.timedelta(days=1)
+        settings.AI_DAILY_FREE = 1
+        assert services.quota_state(SEEKER)["free_left"] == 1
+        assert services.ask(SEEKER, "next day")["ok"]
+        assert services.ask(SEEKER, "and again")["ok"] is False
+
     def test_quota_state_reports_what_is_left_without_spending(self):
         assert services.quota_state(SEEKER) == {"free_left": 5, "kind": "welcome"}
         services.ask(SEEKER, "q")
