@@ -178,7 +178,9 @@ ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 SHIPROCKET_EMAIL = os.environ.get("SHIPROCKET_EMAIL", "")
 SHIPROCKET_PASSWORD = os.environ.get("SHIPROCKET_PASSWORD", "")
 # The named pickup address on that account. Wrong here means a courier at
-# the wrong door.
+# the wrong door — and as of 22 Sep the borrowed account has NO pickup
+# address at all (`shipping_address: null`), so "Primary" names nothing
+# and every push is refused by their validation. See HANDOFF §23.
 SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "Primary")
 
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------

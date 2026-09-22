@@ -3492,3 +3492,41 @@ rows. The database won.
 - The rotate list is **nine**: two GitHub PATs, the Supabase service-role
   key, the namo-dev DB password, the R2 token, Twilio, the paid Gemini key,
   the free-tier Gemini key, and now Shiprocket.
+
+## 23. Everything is deployed — and Shiprocket cannot yet dispatch — 22 Sep 2026
+
+**Deployed, and checked rather than assumed.** Working tree clean, nothing
+unpushed, and all four surfaces answering: `1namo.com` 200, the pro app
+200, `namo-api` health 200 (revision 00016, serving `/v1/events/`), and the
+console 302 to its login (revision 00012, dashboard present). The live
+smoke check passes all sixteen (`tools/smoke.py`).
+
+**Shiprocket is written, tested and configured — and cannot send a parcel
+today.** The credentials are real: a login against their API returns a
+token for company 8212396, "AK International". What that account does
+**not** have is a pickup address:
+
+```
+GET /settings/company/pickup  ->  {"shipping_address": null, "recent_addresses": []}
+```
+
+`SHIPROCKET_PICKUP` is set to `"Primary"`, which was a guess and names
+nothing. Every push would be refused by their validation. The console
+action reports the refusal and writes nothing, so the failure is visible
+rather than silent — but it is a failure.
+
+**This is the borrowed-account problem arriving, exactly where it was
+expected to.** Abzzo's Shiprocket account is configured for Abzzo's
+warehouse, and it has no pickup address at all. Two ways out, and the
+second is the real one:
+
+1. Add a pickup address on that account and set `SHIPROCKET_PICKUP` to its
+   name. Namo's parcels then leave from Abzzo's address under Abzzo's
+   branding, which was already the accepted trade for testing.
+2. **Namo's own Shiprocket account**, with its own KYC and its own pickup
+   address. Needed before a real customer is ever shipped to, for the same
+   reason Razorpay's live keys will be.
+
+Nothing else in stage 5 is blocked: the client, the retry-on-401, the
+AWB and tracking paths and the console actions are all built and tested.
+They are waiting on one address.
