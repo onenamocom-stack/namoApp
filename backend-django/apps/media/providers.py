@@ -89,12 +89,51 @@ class R2Provider:
         }
 
 
+    def put_bytes(self, bucket_key, data, mime):
+        """Upload server-side, for the console.
+
+        The seeker path presigns and the bytes go browser→R2 without
+        touching Django — that is right for phones on Indian mobile data
+        and for a file nobody has vetted. The console is the other case: a
+        handful of uploads a week, by a named operator, already inside a
+        session. A presign dance in an admin form would be three round
+        trips and a JavaScript build to save a few megabytes of egress
+        nobody will notice.
+        """
+        client = boto3.client(
+            "s3",
+            endpoint_url=settings.R2_ENDPOINT,
+            aws_access_key_id=settings.R2_ACCESS_KEY,
+            aws_secret_access_key=settings.R2_SECRET_KEY,
+            config=BotoConfig(signature_version="s3v4"),
+            region_name="auto",
+        )
+        client.put_object(
+            Bucket=settings.R2_BUCKET, Key=bucket_key, Body=data, ContentType=mime
+        )
+        return public_url(bucket_key)
+
+
 class LocalProvider:
     """Dev stand-in: the URL is fabricated, the row is real. Lets the whole
     upload→confirm flow run without R2 credentials."""
+
+    def put_bytes(self, bucket_key, data, mime):
+        return public_url(bucket_key)
 
     def presign_put(self, bucket_key, mime, size_bytes):
         return {
             "upload_url": f"{settings.MEDIA_PUBLIC_BASE_URL}/local-upload/{bucket_key}",
             "headers": {"Content-Type": mime, "Content-Length": str(size_bytes)},
         }
+
+
+def public_url(bucket_key):
+    """Where a stored object is readable from.
+
+    One function because the base URL has moved once already (the R2.dev
+    development domain today, `media.1namo.com` when there is one) and a
+    second place that joins these two strings is a second place to update.
+    """
+    base = (settings.MEDIA_PUBLIC_BASE_URL or "").rstrip("/")
+    return f"{base}/{bucket_key}"

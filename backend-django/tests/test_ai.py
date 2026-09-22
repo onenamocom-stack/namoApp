@@ -73,6 +73,13 @@ def money_tables(db):
     from django.db import connection
 
     with connection.cursor() as cursor:
+        # `orders` and `order_items` used to be stood up by hand here: they
+        # are written by raw SQL from the consultants gateway and had no
+        # Django model, so SQLite had no table unless a fixture made one.
+        # apps/shop gave them models (stage 2 of the console), so the test
+        # database creates them from migrations now and creating them again
+        # is "table orders already exists". The triggers below are still
+        # ours — they emulate prod's refuse_mutation, which no model has.
         cursor.execute(
             "create trigger ledger_immutable before update on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
@@ -81,23 +88,10 @@ def money_tables(db):
             "create trigger ledger_immutable_delete before delete on ledger"
             " for each row begin select raise(abort, 'refuse_mutation'); end"
         )
-        cursor.execute(
-            "create table orders (id text primary key, profile_id text not null,"
-            " status text not null default 'paid', total_paise integer not null,"
-            " created_at text)"
-        )
-        cursor.execute(
-            "create table order_items (id text primary key, order_id text not null,"
-            " item_type text not null, item_id text not null, title text not null,"
-            " qty smallint not null default 1, unit_price_paise integer not null,"
-            " tax_rate_bps smallint not null default 0)"
-        )
     yield
     with connection.cursor() as cursor:
         cursor.execute("drop trigger if exists ledger_immutable")
         cursor.execute("drop trigger if exists ledger_immutable_delete")
-        for table in ("order_items", "orders"):
-            cursor.execute(f"drop table {table}")
 
 
 @pytest.fixture(autouse=True)
