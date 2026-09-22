@@ -27,9 +27,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# The API serves JSON. The only static files are Django admin's, which this
-# deployment does not expose — so there is no collectstatic step and no
-# whitenoise dependency. Add both in the same commit as an admin route.
+# The console's static files, collected at BUILD time so the container
+# starts with them and the ephemeral filesystem never matters. The comment
+# this replaces said to add collectstatic and whitenoise "in the same
+# commit as an admin route" — this is that commit.
+#
+# Run with placeholder settings: collectstatic only needs STATIC_ROOT, and
+# making the build depend on the real database or the real secrets would
+# mean a build that cannot run without production.
+RUN DJANGO_SETTINGS_MODULE=config.settings.base \
+    DJANGO_SECRET_KEY=build-only DJANGO_ALLOWED_HOSTS='*' \
+    SUPABASE_URL=https://build.invalid \
+    python manage.py collectstatic --noinput --clear
 
 # Two workers, not one: a single worker makes a slow upstream (the astro
 # provider, Razorpay) block health checks. Threads on top because the work

@@ -47,6 +47,12 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 DJANGO_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
+    # The console needs these three; the public API does not touch them.
+    # They ship in both images and are simply unrouted when ADMIN_ENABLED
+    # is off — one image, two services (docs/02-TRD.md §7, revised).
+    "django.contrib.admin",
+    "django.contrib.sessions",
+    "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
 THIRD_PARTY_APPS = ["rest_framework"]
@@ -62,19 +68,39 @@ LOCAL_APPS = [
     "apps.wallet",
     "apps.profiles",
     "apps.ai",
+    "apps.console",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "apps.core.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Serves the console's CSS. The API has no static files at all; this
+    # costs it one no-op middleware and saves a second image.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
     "apps.core.middleware.RequestIdMiddleware",
     "apps.core.middleware.IdempotencyMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
-TEMPLATES = []
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
@@ -138,6 +164,25 @@ MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.e
 ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
+
+# --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
+# One image, two Cloud Run services. The public API serves no console URL
+# and the console serves no /v1, so a hole in one is not a door into the
+# other and the console can sit behind an IP allowlist on its own.
+ADMIN_ENABLED = os.environ.get("ADMIN_ENABLED", "1") == "1"
+PUBLIC_API_ENABLED = os.environ.get("PUBLIC_API_ENABLED", "1") == "1"
+# Not "admin/": a default path is a default attack surface.
+ADMIN_PATH = os.environ.get("ADMIN_PATH", "console/")
+
+STATIC_URL = "static/"
+STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(BASE_DIR, "staticfiles"))
+# The console keeps a session cookie; the API does not issue one. Both
+# settings are harmless on the API and load-bearing on the console.
+SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "1") == "1"
+CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
 
 # --- Namo AI (rule 7: the model key is server-side only, and it is money)
 # "gemini" in prod (needs GEMINI_API_KEY); "mock" elsewhere — deterministic,
