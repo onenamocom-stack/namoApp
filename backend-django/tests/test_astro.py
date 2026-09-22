@@ -12,8 +12,10 @@ and the behaviour of backend/functions/astro/index.ts it replaces.
        a raw row, and there is no cache route at all
 
 Edge-function behaviour replicated (asserted here):
-  - cache keys: panchang:<date>, chart:<id>:<digest>, canon-chart:<rashi>,
-    rashifal:<rashi>:<date>; the digest changes with any birth column
+  - cache keys: panchang:<date>, chart:<id>:<digest>,
+    horoscope:<id>:<digest>:<date>, match:<digest>:<digest>,
+    muhurat:<purpose>:<lat>:<lng>:<zone>:<month> (and muhurat-me:<id>:…);
+    the digest changes with any birth column
   - no TTL: a row written for a key is served for that key forever; the
     date clamp (yesterday/today/tomorrow, IST) is the only freshness rule
   - auth: geo + panchang anonymous (the anon key passed verify_jwt there),
@@ -38,6 +40,7 @@ from django.test import Client
 from apps.astro import services
 from apps.astro.models import AstroCache
 from apps.astro.providers import (
+    SIGNS,
     AstroProvider,
     FreeAstroApiProvider,
     MockProvider,
@@ -67,7 +70,10 @@ class CountingProvider(MockProvider):
     calls a flow actually cost."""
 
     def __init__(self):
-        self.calls = {"chart": 0, "panchang": 0, "daily_horoscope": 0, "geo_search": 0}
+        self.calls = {
+            "chart": 0, "panchang": 0, "daily_horoscope": 0, "geo_search": 0,
+            "match": 0, "muhurat": 0, "muhurat_personal": 0,
+        }
         self._lock = threading.Lock()
 
     def _count(self, name):
@@ -90,6 +96,18 @@ class CountingProvider(MockProvider):
         self._count("geo_search")
         return super().geo_search(query)
 
+    def match(self, body):
+        self._count("match")
+        return super().match(body)
+
+    def muhurat(self, body):
+        self._count("muhurat")
+        return super().muhurat(body)
+
+    def muhurat_personal(self, body):
+        self._count("muhurat_personal")
+        return super().muhurat_personal(body)
+
 
 class FailingProvider(MockProvider):
     """Every upstream call refuses — the provider-failure path."""
@@ -104,6 +122,15 @@ class FailingProvider(MockProvider):
         raise UpstreamError("refused")
 
     def geo_search(self, query):
+        raise UpstreamError("refused")
+
+    def match(self, body):
+        raise UpstreamError("refused")
+
+    def muhurat(self, body):
+        raise UpstreamError("refused")
+
+    def muhurat_personal(self, body):
         raise UpstreamError("refused")
 
 
@@ -194,24 +221,63 @@ class TestProviderInterface:
             services.birth_body(other)
         )
 
-    def test_mock_canonical_births_land_in_their_rashis(self):
-        # The service refuses when a canonical chart's Moon is not in its
-        # rashi; the mock must not trip that check for any of the twelve.
-        provider = MockProvider()
-        for rashi, birth in services.CANONICAL_BIRTHS.items():
-            payload = provider.chart({**birth, **services.CANONICAL_PLACE, **services.RECKONING})
-            assert services.moon_sign(payload) == rashi, rashi
-
     def test_mock_panchang_and_horoscope_shapes(self):
         provider = MockProvider()
         p = provider.panchang({**services.date_parts("2026-09-19"), "lat": 23.1765,
                                "lng": 75.7885, "tz_str": "Asia/Kolkata", **services.RECKONING})
         assert p["weekday"]["name"] and p["tithi"]["name"] and p["nakshatra"]["name"]
         assert p["sunrise"] and p["sunset"] and p["rahu_kalam"]["start"]
-        assert p["request_time_panchang"]["moon_sign"]["name"] in services.CANONICAL_BIRTHS
-        h = provider.daily_horoscope({"target_date": "2026-09-19"})
+        assert p["request_time_panchang"]["moon_sign"]["name"] in SIGNS
+        h = provider.daily_horoscope(
+            {**services.birth_body(BIRTH), "target_date": "2026-09-19"}
+        )
         assert h["meta"]["target_date"] == "2026-09-19"
         assert h["narrative"]["best_use"] and h["timing"]["rahu_kalam"]["end"]
+        # the fields the full reading renders, all present (docs/02-TRD.md §8)
+        assert h["theme"]["headline"] and h["narrative"]["summary"]
+        assert 0 <= h["scores"]["overall"]["score"] <= 100
+        assert len(h["sections"]) == 6 and h["remedy"]["simple_action"]
+
+    def test_mock_reading_is_the_reader_s_own(self):
+        # Two births, two readings — the whole point of the 22 Sep reversal.
+        provider = MockProvider()
+        mine = provider.daily_horoscope(
+            {**services.birth_body(BIRTH), "target_date": "2026-09-19"}
+        )
+        theirs = provider.daily_horoscope(
+            {**services.birth_body(dict(BIRTH, birth_date="1988-01-02")),
+             "target_date": "2026-09-19"}
+        )
+        assert mine != theirs
+
+    def test_mock_match_and_muhurat_shapes(self):
+        provider = MockProvider()
+        m = provider.match({
+            "person1": services.birth_body(BIRTH),
+            "person2": services.birth_body(dict(BIRTH, birth_date="1988-01-02")),
+        })
+        assert [k["id"] for k in m["ashtakoota"]["kootas"]] == [
+            "varna", "vashya", "tara", "yoni", "graha_maitri", "gana", "bhakoot", "nadi",
+        ]
+        assert sum(k["max_score"] for k in m["ashtakoota"]["kootas"]) == 36
+        assert 0 <= m["summary"]["total_score"] <= 36
+        assert m["summary"]["minimum_traditional_threshold"] == 18
+        assert set(m["doshas"]) == {"manglik", "nadi", "bhakoot"}
+
+        body = {"purpose": "namkaran", "start_date": "2026-10-01",
+                "end_date": "2026-10-31", "lat": 18.5, "lng": 73.9, "limit": 20}
+        public = provider.muhurat(body)
+        assert public["best_moment"] is None  # public search promotes nothing
+        for window in public["best_windows"]:
+            assert window["date"].startswith("2026-10")
+            assert window["start"] < window["end"]
+        personal = provider.muhurat_personal({**body, "subject": services.birth_body(BIRTH)})
+        # A personal search either promotes a moment or says why it did not,
+        # and the screen renders whichever it gets.
+        assert personal["selection_explanation"]["headline"]
+        assert (personal["best_moment"] is None) == (
+            personal["selection_explanation"]["decision"] == "no_best_moment"
+        )
 
     def test_real_provider_never_leaks_key_or_url_on_failure(self, monkeypatch):
         # requests exceptions embed the URL in their message; the provider
@@ -495,69 +561,54 @@ class TestChart:
 
 @pytest.mark.django_db
 class TestHoroscope:
-    def test_reading_carries_its_rashi(self, api_client, provider, user_token,
-                                       profiles_table, frozen_utcnow):
+    def test_the_reading_is_computed_from_the_readers_own_birth(
+        self, api_client, provider, user_token, profiles_table, frozen_utcnow
+    ):
         insert_profile()
         chart_response = api_client.get("/v1/astro/chart/", **auth(user_token))
-        chart_data = chart_response.json()["data"]
-        expected_rashi = services.moon_sign(chart_data)
+        expected_rashi = services.moon_sign(chart_response.json()["data"])
 
         response = api_client.get("/v1/astro/horoscope/", **auth(user_token))
         assert response.status_code == 200
         body = response.json()
         assert body["ok"] is True
-        assert body["rashi"] == expected_rashi  # named on the response, as the function did
+        assert body["rashi"] == expected_rashi  # off their own chart, as before
         assert body["date"] == "2026-09-19"
         assert body["data"]["meta"]["target_date"] == "2026-09-19"
-        assert body["data"]["narrative"]["best_use"]
-        assert body["data"]["timing"]["rahu_kalam"]["start"]
+        # the fields that came back on 22 Sep, now that the birth is theirs
+        assert body["data"]["theme"]["headline"]
+        assert body["data"]["scores"]["overall"]["score"] >= 0
+        assert body["data"]["sections"]
 
+        # the key carries the reader and the day — not a rashi, and no
+        # canonical chart was fetched for anybody
         keys = set(AstroCache.objects.values_list("key", flat=True))
-        assert f"rashifal:{expected_rashi}:2026-09-19" in keys
-        assert f"canon-chart:{expected_rashi}" in keys
-        # two chart fetches total: the reader's and their rashi's canonical
-        # one — the reader's chart was the memoised pick, not a recompute
-        assert provider.calls["chart"] == 2
+        assert f"horoscope:{TEST_USER}:{services.birth_digest(BIRTH)}:2026-09-19" in keys
+        assert not [k for k in keys if k.startswith(("canon-chart:", "rashifal:"))]
+        assert provider.calls["chart"] == 1  # the reader's own, memoised
 
-    def test_readers_share_canonical_and_rashifal_rows(self, api_client, provider,
-                                                       sign_hs256, hs256_mode,
-                                                       profiles_table,
-                                                       frozen_utcnow):
-        # Twelve distinct births produce at most twelve rashis; whatever the
-        # mock's moons pick, the canonical charts and day-rows are shared —
-        # one row per rashi per day, not one per reader.
-        rashis = set()
-        for index in range(12):
-            birth = dict(
-                BIRTH,
-                birth_date=f"199{index % 10}-0{(index % 8) + 1}-{(index % 27) + 1:02d}",
-                birth_time=f"{index:02d}:{(index * 5) % 60:02d}:00",
-            )
+    def test_two_readers_get_two_readings(self, api_client, provider, sign_hs256,
+                                          hs256_mode, profiles_table, frozen_utcnow):
+        # The cost of the reversal, stated as a test: readings no longer
+        # collapse onto twelve rows a day. One reader, one row, one call.
+        readings = []
+        for index in range(2):
             sub = f"00000000-0000-4000-8000-{index:012d}"
             token = sign_hs256(claims=make_claims(sub=sub))
-            insert_profile(
-                user_id=sub,
-                birth_date=birth["birth_date"],
-                birth_time=birth["birth_time"],
-            )
+            insert_profile(user_id=sub, birth_date=f"199{index}-04-17")
             response = api_client.get("/v1/astro/horoscope/", **auth(token))
             assert response.status_code == 200, response.content
-            rashis.add(response.json()["rashi"])
+            readings.append(response.json()["data"])
 
-        keys = list(AstroCache.objects.values_list("key", flat=True))
-        rashifal_rows = [k for k in keys if k.startswith("rashifal:")]
-        canon_rows = [k for k in keys if k.startswith("canon-chart:")]
-        assert len(rashifal_rows) == len(rashis)       # one reading row per rashi, shared
-        assert len(canon_rows) == len(rashis)          # each canonical chart fetched once
-        assert all(k.endswith(":2026-09-19") for k in rashifal_rows)
+        assert readings[0] != readings[1]
+        rows = [k for k in AstroCache.objects.values_list("key", flat=True)
+                if k.startswith("horoscope:")]
+        assert len(rows) == 2
+        assert all(k.endswith(":2026-09-19") for k in rows)
+        assert provider.calls["daily_horoscope"] == 2
 
-        calls_after_first_round = dict(provider.calls)
-        repeat = api_client.get("/v1/astro/horoscope/", **auth(token))
-        assert repeat.status_code == 200
-        assert provider.calls == calls_after_first_round  # every read was a cache hit
-
-    def test_second_call_hits_the_rashifal_row(self, api_client, provider, user_token,
-                                               profiles_table, frozen_utcnow):
+    def test_second_call_hits_the_stored_reading(self, api_client, provider, user_token,
+                                                 profiles_table, frozen_utcnow):
         insert_profile()
         api_client.get("/v1/astro/horoscope/", **auth(user_token))
         calls_after_first = dict(provider.calls)
@@ -565,23 +616,18 @@ class TestHoroscope:
         assert second.json()["cached"] is True
         assert provider.calls == calls_after_first  # nothing upstream at all
 
-    def test_canonical_moon_mismatch_is_a_refusal(self, api_client, provider, user_token,
-                                                  profiles_table, frozen_utcnow):
+    def test_corrected_birth_details_get_a_new_reading(self, api_client, provider,
+                                                       user_token, profiles_table,
+                                                       frozen_utcnow):
         insert_profile()
-        # A drifted canonical birth would hand every reader of one rashi the
-        # neighbour's reading, forever, silently — poison every canon row with
-        # a Moon one sign off and whichever rashi the reader's chart picks
-        # must refuse, not guess.
-        from apps.astro.providers import SIGNS
-
-        for index, rashi in enumerate(services.CANONICAL_BIRTHS):
-            wrong_sign = SIGNS[(SIGNS.index(rashi) + 1) % 12]
-            AstroCache.objects.create(
-                key=f"canon-chart:{rashi}", payload={"planets": [{"name": "Moon", "sign": wrong_sign}]}
-            )
-        response = api_client.get("/v1/astro/horoscope/", **auth(user_token))
-        assert response.status_code == 502
-        assert response.json()["reason"] == "upstream"
+        first = api_client.get("/v1/astro/horoscope/", **auth(user_token))
+        Profile.objects.filter(pk=TEST_USER).update(birth_time="15:45:00")
+        second = api_client.get("/v1/astro/horoscope/", **auth(user_token))
+        assert second.status_code == 200
+        # the digest is in the key, so a corrected birth cannot be served
+        # yesterday's answer
+        assert second.json()["data"] != first.json()["data"]
+        assert provider.calls["daily_horoscope"] == 2
 
     def test_auth_and_birth_matrix(self, api_client, provider, sign_hs256, hs256_mode,
                                    profiles_table, frozen_utcnow):
@@ -595,6 +641,251 @@ class TestHoroscope:
         assert response.json()["reason"] == "no_birth"
         assert provider.calls["chart"] == 0
         # and the refusal bodies carry no birth-derived data
+        assert_no_secret_leak(response.content.decode())
+
+
+OTHER = {
+    "name": "Amma",
+    "birth_date": "1992-08-03",
+    "birth_time": "09:15:00",
+    "birth_time_known": True,
+    "birth_place": "Pune, Maharashtra, India",
+    # Six decimals, the column's precision. The geocoder's eight round to
+    # this at the door — apps/core/fields.py, covered in test_profiles.
+    "birth_lat": "18.523222",
+    "birth_lon": "73.875861",
+    "birth_zone": "Asia/Kolkata",
+}
+
+
+def as_birth(subject):
+    """The subject dict as services.match stores it — what subject_birth
+    produces, for building the expected cache key in a test."""
+    return {k: v for k, v in subject.items() if k != "name"}
+
+
+@pytest.mark.django_db
+class TestMatch:
+    """Ashtakoota: the caller or a typed person against a typed person, and
+    nothing typed is ever written down."""
+
+    def test_me_against_a_typed_person(self, api_client, provider, user_token,
+                                       profiles_table, frozen_utcnow):
+        insert_profile()
+        response = api_client.post(
+            "/v1/astro/match/", {"person2": OTHER},
+            content_type="application/json", **auth(user_token),
+        )
+        assert response.status_code == 200, response.content
+        body = response.json()
+        assert body["ok"] is True and body["cached"] is False
+        assert body["data"]["summary"]["max_score"] == 36
+        assert len(body["data"]["ashtakoota"]["kootas"]) == 8
+        assert body["time_known"] == {"person1": True, "person2": True}
+        assert body["names"] == {"person1": None, "person2": "Amma"}
+        assert provider.calls["match"] == 1
+
+    def test_two_typed_people_need_no_birth_row(self, api_client, provider, user_token,
+                                                profiles_table, frozen_utcnow):
+        # A parent matching two other people: the caller's own row is never
+        # read, so an empty profile is not a refusal here.
+        response = api_client.post(
+            "/v1/astro/match/",
+            {"person1": dict(OTHER, name="Ravi"), "person2": OTHER},
+            content_type="application/json", **auth(user_token),
+        )
+        assert response.status_code == 200, response.content
+        assert response.json()["names"] == {"person1": "Ravi", "person2": "Amma"}
+
+    def test_no_birth_row_refuses_the_me_slot(self, api_client, provider, user_token,
+                                              profiles_table, frozen_utcnow):
+        response = api_client.post(
+            "/v1/astro/match/", {"person2": OTHER},
+            content_type="application/json", **auth(user_token),
+        )
+        assert response.status_code == 409
+        assert response.json()["reason"] == "no_birth"
+        assert provider.calls["match"] == 0
+
+    def test_nothing_about_the_typed_person_is_stored(self, api_client, provider,
+                                                      user_token, profiles_table,
+                                                      frozen_utcnow):
+        insert_profile()
+        api_client.post(
+            "/v1/astro/match/", {"person2": OTHER},
+            content_type="application/json", **auth(user_token),
+        )
+        # no profile row for them, and the cache key is two hashes: no name,
+        # no date, no place, no account id (docs/01-PRD.md §4.4)
+        assert Profile.objects.count() == 1
+        key = AstroCache.objects.get(key__startswith="match:").key
+        assert key == (
+            f"match:{services.birth_digest(BIRTH)}:"
+            f"{services.birth_digest(as_birth(OTHER))}"
+        )
+        assert "Amma" not in key and "1992" not in key and str(TEST_USER) not in key
+
+    def test_the_order_is_part_of_the_answer(self, api_client, provider, user_token,
+                                             profiles_table, frozen_utcnow):
+        # Ashtakoota is not symmetric — Tara and Vashya read differently from
+        # each side — so the reversed pair is a different key, not a hit.
+        first = dict(OTHER, name="Ravi", birth_date="1989-01-23")
+        second = OTHER
+        for pair in ((first, second), (second, first)):
+            response = api_client.post(
+                "/v1/astro/match/", {"person1": pair[0], "person2": pair[1]},
+                content_type="application/json", **auth(user_token),
+            )
+            assert response.status_code == 200, response.content
+        assert provider.calls["match"] == 2
+        assert AstroCache.objects.filter(key__startswith="match:").count() == 2
+
+    def test_second_identical_match_is_a_cache_hit(self, api_client, provider, user_token,
+                                                   profiles_table, frozen_utcnow):
+        insert_profile()
+        body = {"person2": OTHER}
+        first = api_client.post("/v1/astro/match/", body,
+                                content_type="application/json", **auth(user_token))
+        second = api_client.post("/v1/astro/match/", body,
+                                 content_type="application/json", **auth(user_token))
+        assert second.json()["cached"] is True
+        assert second.json()["data"] == first.json()["data"]
+        assert provider.calls["match"] == 1
+
+    def test_unknown_birth_time_is_reported_per_person(self, api_client, provider,
+                                                       user_token, profiles_table,
+                                                       frozen_utcnow):
+        # The Moon crosses a nakshatra in about a day, and the kootas are read
+        # off it, so a substituted noon has to be visible on the answer.
+        insert_profile()
+        response = api_client.post(
+            "/v1/astro/match/",
+            {"person2": dict(OTHER, birth_time=None, birth_time_known=False)},
+            content_type="application/json", **auth(user_token),
+        )
+        assert response.status_code == 200, response.content
+        assert response.json()["time_known"] == {"person1": True, "person2": False}
+
+    def test_refusals(self, api_client, provider, user_token, profiles_table,
+                      frozen_utcnow):
+        insert_profile()
+        # anonymous
+        assert api_client.post("/v1/astro/match/", {"person2": OTHER},
+                               content_type="application/json").status_code == 401
+        # no second person
+        missing = api_client.post("/v1/astro/match/", {},
+                                  content_type="application/json", **auth(user_token))
+        assert missing.status_code == 400 and missing.json()["reason"] == "invalid"
+        # "I know the time" with no time given
+        no_time = api_client.post(
+            "/v1/astro/match/", {"person2": dict(OTHER, birth_time=None)},
+            content_type="application/json", **auth(user_token),
+        )
+        assert no_time.status_code == 400
+        assert provider.calls["match"] == 0
+        assert AstroCache.objects.count() == 0
+
+    def test_upstream_failure_is_clean(self, api_client, monkeypatch, user_token,
+                                       profiles_table, frozen_utcnow):
+        monkeypatch.setattr(services, "get_provider", FailingProvider)
+        insert_profile()
+        response = api_client.post("/v1/astro/match/", {"person2": OTHER},
+                                   content_type="application/json", **auth(user_token))
+        assert response.status_code == 502
+        assert response.json()["reason"] == "upstream"
+        assert_no_secret_leak(response.content.decode())
+
+
+@pytest.mark.django_db
+class TestMuhurat:
+    """A purpose, a month and a place — shared by everybody in the same cell,
+    unless it is judged against the caller's own chart."""
+
+    URL = "/v1/astro/muhurat/?purpose=griha_pravesh&lat=18.5232&lng=73.8758"
+
+    def test_public_search_is_shared_and_keyed_by_place_and_month(
+        self, api_client, provider, user_token, profiles_table, frozen_utcnow
+    ):
+        response = api_client.get(self.URL, **auth(user_token))
+        assert response.status_code == 200, response.content
+        body = response.json()
+        assert body["ok"] is True and body["personal"] is False
+        assert body["month"] == "2026-09" and body["purpose"] == "griha_pravesh"
+        assert body["time_known"] is None
+        for window in body["data"]["best_windows"]:
+            assert window["date"].startswith("2026-09")
+        # rounded to one decimal, about 11 km, so a city shares one row
+        assert AstroCache.objects.get().key == "muhurat:griha_pravesh:18.5:73.9:Asia/Kolkata:2026-09"
+
+    def test_a_neighbour_shares_the_row(self, api_client, provider, user_token,
+                                        profiles_table, frozen_utcnow):
+        api_client.get(self.URL, **auth(user_token))
+        # 4 km away: the same cell, the same sunrise to within seconds
+        api_client.get(
+            "/v1/astro/muhurat/?purpose=griha_pravesh&lat=18.4987&lng=73.9012",
+            **auth(user_token),
+        )
+        assert provider.calls["muhurat"] == 1
+        assert AstroCache.objects.count() == 1
+
+    def test_a_different_month_or_purpose_is_a_different_row(
+        self, api_client, provider, user_token, profiles_table, frozen_utcnow
+    ):
+        api_client.get(self.URL, **auth(user_token))
+        api_client.get(f"{self.URL}&month=2026-10", **auth(user_token))
+        api_client.get(self.URL.replace("griha_pravesh", "namkaran"), **auth(user_token))
+        assert provider.calls["muhurat"] == 3
+        assert AstroCache.objects.count() == 3
+
+    def test_mine_uses_the_callers_chart_and_is_theirs_alone(
+        self, api_client, provider, user_token, profiles_table, frozen_utcnow
+    ):
+        insert_profile()
+        response = api_client.get(f"{self.URL}&mine=1", **auth(user_token))
+        assert response.status_code == 200, response.content
+        body = response.json()
+        assert body["personal"] is True and body["time_known"] is True
+        assert body["data"]["selection_explanation"]["headline"]
+        assert provider.calls["muhurat_personal"] == 1
+        assert provider.calls["muhurat"] == 0
+        key = AstroCache.objects.get().key
+        assert key.startswith(f"muhurat-me:{TEST_USER}:{services.birth_digest(BIRTH)}:")
+        # and a second person's personal search does not read it
+        api_client.get(self.URL, **auth(user_token))
+        assert AstroCache.objects.count() == 2
+
+    def test_mine_without_a_birth_row_is_409(self, api_client, provider, user_token,
+                                             profiles_table, frozen_utcnow):
+        response = api_client.get(f"{self.URL}&mine=1", **auth(user_token))
+        assert response.status_code == 409
+        assert response.json()["reason"] == "no_birth"
+        assert provider.calls["muhurat_personal"] == 0
+
+    def test_refusals_before_any_upstream(self, api_client, provider, user_token,
+                                          profiles_table, frozen_utcnow):
+        cases = [
+            ("/v1/astro/muhurat/?lat=18.5&lng=73.9", "Say what the muhurat is for."),
+            ("/v1/astro/muhurat/?purpose=wedding&lat=18.5&lng=73.9",
+             "Say what the muhurat is for."),
+            (f"{self.URL}&month=2027-04", "That month is outside what we compute."),
+            (f"{self.URL}&month=2026-08", "That month is outside what we compute."),
+            ("/v1/astro/muhurat/?purpose=namkaran", "Pick a place."),
+            ("/v1/astro/muhurat/?purpose=namkaran&lat=99&lng=73.9", "Pick a place."),
+        ]
+        for url, message in cases:
+            response = api_client.get(url, **auth(user_token))
+            assert response.status_code == 400, url
+            assert response.json()["message"] == message, url
+        assert api_client.get(self.URL).status_code == 401  # anonymous
+        assert provider.calls["muhurat"] == 0
+        assert AstroCache.objects.count() == 0
+
+    def test_upstream_failure_is_clean(self, api_client, monkeypatch, user_token,
+                                       profiles_table, frozen_utcnow):
+        monkeypatch.setattr(services, "get_provider", FailingProvider)
+        response = api_client.get(self.URL, **auth(user_token))
+        assert response.status_code == 502
+        assert response.json()["reason"] == "upstream"
         assert_no_secret_leak(response.content.decode())
 
 
@@ -614,8 +905,11 @@ class TestServiceRoleOnly:
         for url in ("/v1/astro/panchang/", "/v1/astro/chart/", "/v1/astro/horoscope/"):
             response = api_client.get(url, **auth(user_token))
             text = response.content.decode()
-            assert '"key"' not in text
+            # The row's own columns, not any field named "key" — the reading
+            # has six sections and each carries one.
             assert "fetched_at" not in text
+            for cache_key in AstroCache.objects.values_list("key", flat=True):
+                assert cache_key not in text
 
 
 @pytest.mark.django_db(transaction=True)

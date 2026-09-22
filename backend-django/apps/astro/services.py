@@ -5,14 +5,20 @@ astro_cache table with the same cache-key construction.
 What is replicated from the edge function, call for call:
 
 - RECKONING (ayanamsha/house_system/node_type) merged into every outbound
-  body; the panchang computed at the Ujjain anchor for everybody; the twelve
-  canonical births (backend/functions/astro/canonical.json) driving the
-  per-rashi horoscope.
-- Cache keys: `panchang:<date>`, `chart:<user id>:<birth digest>`,
-  `canon-chart:<rashi>`, `rashifal:<rashi>:<date>`. The digest is SHA-256
-  over the same six birth columns joined the way the function joined them.
-  (docs/05 §4.10's key table still shows the pre-7-Sep per-person horoscope
-  key; the function is ground truth and so is this.)
+  body; the panchang computed at the Ujjain anchor for everybody.
+- Cache keys: `panchang:<date>`, `chart:<user id>:<birth digest>`. The
+  digest is SHA-256 over the same six birth columns joined the way the
+  function joined them.
+
+What is new since the function (22 Sep 2026):
+
+- The daily reading is computed from the reader's OWN birth again, under
+  `horoscope:<user id>:<birth digest>:<date>` (docs/05 §4.10). This replaces
+  the twelve canonical births of 7 Sep, whose readings described nobody
+  (docs/02-TRD.md §8).
+- Matching (`match:<digest>:<digest>`) and muhurat
+  (`muhurat:<purpose>:<lat>:<lng>:<zone>:<month>`, and `muhurat-me:` with the
+  user and their digest in front when it is judged against their chart).
 - No TTL, no invalidation: the key carries every input, so a change of any
   input misses on its own. The date clamp (yesterday/today/tomorrow only)
   is the only freshness boundary, exactly as in the function.
@@ -26,6 +32,7 @@ only this module's service layer reads or writes it, and endpoints return
 computed payloads, never raw rows.
 """
 
+import calendar
 import hashlib
 import logging
 import time
@@ -37,7 +44,7 @@ from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from .models import AstroCache
-from .providers import FreeAstroApiProvider, MockProvider, UpstreamError
+from .providers import FreeAstroApiProvider, MockProvider
 
 logger = logging.getLogger("apps.astro")
 
@@ -49,31 +56,15 @@ RECKONING = {"ayanamsha": "lahiri", "house_system": "whole_sign", "node_type": "
 # upstream request a day for the entire user base.
 PANCHANG_ANCHOR = {"lat": 23.1765, "lng": 75.7885, "zone": "Asia/Kolkata", "city": "Ujjain"}
 
-# THE TWELVE CANONICAL BIRTHS, one per rashi (backend/functions/astro/
-# canonical.json — ported, not copied under a different shape, so the Django
-# service and the verifier read the same table). Twelve readings a day
-# answer everybody; the reader's own chart only picks which one.
-CANONICAL_PLACE = {"lat": 23.1765, "lng": 75.7885, "tz_str": "Asia/Kolkata"}
-CANONICAL_BIRTHS = {
-    "Aries":       {"year": 1995, "month": 6, "day": 23, "hour": 10, "minute": 40},
-    "Taurus":      {"year": 1995, "month": 6, "day": 25, "hour": 23, "minute": 30},
-    "Gemini":      {"year": 1995, "month": 6, "day": 28, "hour": 12, "minute": 10},
-    "Cancer":      {"year": 1995, "month": 6, "day": 3,  "hour": 18, "minute": 10},
-    "Leo":         {"year": 1995, "month": 6, "day": 6,  "hour": 3,  "minute": 50},
-    "Virgo":       {"year": 1995, "month": 6, "day": 8,  "hour": 10, "minute": 20},
-    "Libra":       {"year": 1995, "month": 6, "day": 10, "hour": 13, "minute": 10},
-    "Scorpio":     {"year": 1995, "month": 6, "day": 12, "hour": 13, "minute": 20},
-    "Sagittarius": {"year": 1995, "month": 6, "day": 14, "hour": 12, "minute": 30},
-    "Capricorn":   {"year": 1995, "month": 6, "day": 16, "hour": 12, "minute": 50},
-    "Aquarius":    {"year": 1995, "month": 6, "day": 18, "hour": 16, "minute": 10},
-    "Pisces":      {"year": 1995, "month": 6, "day": 20, "hour": 23, "minute": 40},
-}
+# The vendor's six muhurat purposes. Anything else is refused before a call.
+PURPOSES = (
+    "general_work", "vehicle_purchase", "property_purchase",
+    "griha_pravesh", "namkaran", "mundan",
+)
 
-
-class UpstreamUnavailable(UpstreamError):
-    """The provider refused or could not be reached. Views turn this into the
-    edge function's 502 'upstream' refusal; the message here is for logs
-    only and never reaches a response body."""
+# How many months ahead a muhurat can be searched: this one and the next two.
+# The same idea as the date clamp — only what a screen asks for is worth quota.
+MUHURAT_MONTHS_AHEAD = 2
 
 
 class ProviderNotConfigured(Exception):
@@ -116,6 +107,28 @@ def allowed_date(value):
     if isinstance(value, str) and value in around:
         return value
     return None
+
+
+def allowed_month(value):
+    """`YYYY-MM` for this IST month or one of the next two; absent means this
+    month. Anything else is None (the view's 400)."""
+    today = date.fromisoformat(ist_today())
+    months = []
+    year, month = today.year, today.month
+    for _ in range(MUHURAT_MONTHS_AHEAD + 1):
+        months.append(f"{year:04d}-{month:02d}")
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    if value in (None, ""):
+        return months[0]
+    return value if value in months else None
+
+
+def month_range(month_string):
+    """The first and last day of a `YYYY-MM`, as the vendor's inclusive
+    start_date/end_date. A whole month at most 31 days, inside its limit."""
+    year, month = (int(part) for part in month_string.split("-"))
+    last = calendar.monthrange(year, month)[1]
+    return f"{month_string}-01", f"{month_string}-{last:02d}"
 
 
 def date_parts(date_string):
@@ -339,37 +352,83 @@ def user_chart(user_id, birth):
 
 
 def horoscope(user_id, birth, date_string):
-    """The daily reading: the caller's chart picks a rashi, the canonical
-    chart for that rashi is fetched once ever, and the reading for the day
-    is one of twelve rows. rashi travels with the response because a sign
-    reading that does not say which sign it is for reads as a personal one.
+    """The daily reading, computed from the caller's own birth.
+
+    Everything in it — the headline, the scores, the dasha, the transits — is
+    theirs. It used to come from one of twelve canonical births, which made
+    it cheap and made most of it true of nobody; this reverses that, at one
+    upstream call per reader per day (docs/02-TRD.md §8 has the cost).
+
+    The timing windows are computed at the BIRTH place, not at Ujjain. The
+    screen names the place for that reason.
+
+    rashi still travels with the response, off the reader's chart, which is
+    cached forever and which the screens fetch anyway for their header.
     """
     chart_payload, _ = user_chart(user_id, birth)
-    rashi = moon_sign(chart_payload)
-
-    # The Moon is the whole of the key. A chart with no Moon, or a rashi the
-    # canonical table does not know, must NOT silently fall through to one
-    # arbitrary rashi's reading — that is a refusal.
-    if not rashi or rashi not in CANONICAL_BIRTHS:
-        logger.error("astro: no usable moon sign on chart for %s: %s", user_id, rashi)
-        raise UpstreamUnavailable("no usable moon sign")
-
-    canonical_body = {**CANONICAL_BIRTHS[rashi], **CANONICAL_PLACE, **RECKONING}
-    canon, _ = _chart(f"canon-chart:{rashi}", canonical_body)
-    if moon_sign(canon) != rashi:
-        # The canonical table says what it means: a drifted birth would hand
-        # every reader of one rashi the neighbouring one's reading, forever.
-        logger.error("astro: canonical birth is wrong: %s moon is %s", rashi, moon_sign(canon))
-        raise UpstreamUnavailable("canonical birth mismatch")
-
-    reading_body = {
-        **canonical_body,
+    body = {
+        **birth_body(birth),
         "target_date": date_string,
         "include_evidence": False,
         "include_raw_facts": False,
     }
     payload, cached = memo(
-        f"rashifal:{rashi}:{date_string}",
-        lambda: get_provider().daily_horoscope(reading_body),
+        f"horoscope:{user_id}:{birth_digest(birth)}:{date_string}",
+        lambda: get_provider().daily_horoscope(body),
     )
-    return payload, rashi, cached
+    return payload, moon_sign(chart_payload), cached
+
+
+def match(first, second):
+    """Ashtakoota for two births, in that order — the order is part of the
+    key because the kootas are not symmetric (Tara and Vashya read
+    differently from each side).
+
+    Either birth may be typed by the caller, so, as with `subject_chart`,
+    the key is the two digests and nothing else: no account id, no name, no
+    date. Only the computed result is stored.
+    """
+    body = {"person1": birth_body(first), "person2": birth_body(second)}
+    return memo(
+        f"match:{birth_digest(first)}:{birth_digest(second)}",
+        lambda: get_provider().match(body),
+    )
+
+
+def muhurat_place(lat, lng):
+    """Coordinates rounded to one decimal, about 11 km. Sunrise moves about
+    two seconds across that, and everyone in the same cell shares one row.
+    The ROUNDED values go upstream too, so the payload is a function of its
+    key and nothing else."""
+    return round(float(lat), 1), round(float(lng), 1)
+
+
+def muhurat(purpose, month_string, lat, lng, zone, user_id=None, birth=None):
+    """A purpose's windows for a whole month at a place. Always the whole
+    month, so the key does not change every day; the screen drops windows
+    that have already passed.
+
+    With a birth, the vendor judges the same windows against that chart and
+    may pick one best moment. That result is the caller's alone, so the key
+    carries their id and their birth digest.
+    """
+    lat, lng = muhurat_place(lat, lng)
+    start_date, end_date = month_range(month_string)
+    body = {
+        "purpose": purpose,
+        "start_date": start_date,
+        "end_date": end_date,
+        "lat": lat,
+        "lng": lng,
+        "tz_str": zone,
+        "ayanamsha": RECKONING["ayanamsha"],
+        "limit": 20,
+    }
+    place_key = f"{purpose}:{lat:.1f}:{lng:.1f}:{zone}:{month_string}"
+    if birth is None:
+        return memo(f"muhurat:{place_key}", lambda: get_provider().muhurat(body))
+    body["subject"] = birth_body(birth)
+    return memo(
+        f"muhurat-me:{user_id}:{birth_digest(birth)}:{place_key}",
+        lambda: get_provider().muhurat_personal(body),
+    )

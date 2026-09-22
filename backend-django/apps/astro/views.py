@@ -1,4 +1,5 @@
-"""The astro endpoints — the `astro` Edge Function's four ops as REST.
+"""The astro endpoints — the `astro` Edge Function's four ops as REST,
+plus matching and muhurat (22 Sep 2026), which the function never had.
 
 Response shapes mirror the function's JSON bodies (ok/data/time_known/date/
 city/rashi/cached), and refusals use the repo's standard envelope with the
@@ -24,6 +25,7 @@ from apps.core.views import refusal_body
 
 from . import services
 from .providers import UpstreamError
+from .serializers import MatchInput, subject_birth
 
 logger = logging.getLogger("apps.astro")
 
@@ -146,4 +148,98 @@ def horoscope(request):
     return Response({
         "ok": True, "data": payload, "time_known": services.time_known(birth),
         "date": date_string, "rashi": rashi, "cached": cached,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def match(request):
+    """Ashtakoota for two births — POST, because birth details do not belong
+    in a URL or an access log.
+
+    `person1` absent means the caller, read from their own row. Either side
+    may be typed, and typed details are used and dropped: only the computed
+    match is stored, under a hash (services.match).
+    """
+    form = MatchInput(data=request.data)
+    form.is_valid(raise_exception=True)
+
+    typed_first = form.validated_data.get("person1")
+    if typed_first:
+        first = subject_birth(typed_first)
+    else:
+        first, refusal = _birth_or_refusal(request)
+        if refusal is not None:
+            return refusal
+    second = subject_birth(form.validated_data["person2"])
+
+    try:
+        payload, cached = services.match(first, second)
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "match")
+    return Response({
+        "ok": True, "data": payload, "cached": cached,
+        # Both, separately: the kootas are read off each Moon, and the Moon
+        # moves about a nakshatra a day. A guessed noon can put one person
+        # in the wrong nakshatra, and the screen has to be able to say so.
+        "time_known": {
+            "person1": services.time_known(first),
+            "person2": services.time_known(second),
+        },
+        "names": {
+            "person1": typed_first["name"] if typed_first else None,
+            "person2": form.validated_data["person2"]["name"],
+        },
+    })
+
+
+def _coordinate(value, limit):
+    """A query-string coordinate, or None when it is missing or not one."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if -limit <= number <= limit else None
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def muhurat(request):
+    """Auspicious windows for a purpose, a month and a place.
+
+    `mine=1` judges the same windows against the caller's own chart, which
+    is the one thing here that is theirs alone. Everything else is shared:
+    the place rounds to about 11 km, so a city reuses one row all month.
+    """
+    purpose = (request.query_params.get("purpose") or "").strip()
+    if purpose not in services.PURPOSES:
+        return _refusal(400, "invalid", "Say what the muhurat is for.")
+
+    month = services.allowed_month(request.query_params.get("month"))
+    if month is None:
+        return _refusal(400, "invalid", "That month is outside what we compute.")
+
+    lat = _coordinate(request.query_params.get("lat"), 90)
+    lng = _coordinate(request.query_params.get("lng"), 180)
+    if lat is None or lng is None:
+        return _refusal(400, "invalid", "Pick a place.")
+    zone = (request.query_params.get("zone") or "Asia/Kolkata").strip()
+
+    mine = request.query_params.get("mine") in ("1", "true")
+    birth = None
+    if mine:
+        birth, refusal = _birth_or_refusal(request)
+        if refusal is not None:
+            return refusal
+
+    try:
+        payload, cached = services.muhurat(
+            purpose, month, lat, lng, zone, user_id=request.user.pk, birth=birth,
+        )
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "muhurat")
+    return Response({
+        "ok": True, "data": payload, "purpose": purpose, "month": month,
+        "personal": bool(birth), "cached": cached,
+        "time_known": services.time_known(birth) if birth else None,
     })
