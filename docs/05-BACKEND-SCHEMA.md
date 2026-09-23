@@ -891,8 +891,23 @@ not also true of a cached panchang.
 | Derivation | Key |
 |---|---|
 | Chart | `chart:<profile_id>:<digest of the six birth columns>` |
+| Chart of somebody typed | `chart:subject:<digest>` — no profile id, see below |
 | Panchang | `panchang:<date>` — **no place at all**, see below |
 | Horoscope | `horoscope:<profile_id>:<digest>:<date>` |
+| Match | `match:<digest>:<digest>` — the order is part of the question |
+| Muhurat | `muhurat:<purpose>:<lat>:<lng>:<zone>:<YYYY-MM>` — coordinates to one decimal |
+| Muhurat, for one chart | `muhurat-me:<profile_id>:<digest>:<purpose>:<lat>:<lng>:<YYYY-MM>` |
+
+**Two of those keys deliberately carry no profile id.** A subject chart and a
+match may be computed from birth details the caller TYPED about somebody who
+never signed up. The details stay in the request; what is stored is the
+computed answer under a hash of them, which is derived data and not a birth
+record (`01-PRD.md` §4.4). A name or a date in the key would be that record.
+
+**The muhurat keys round the place to one decimal**, about 11 km, and the
+rounded coordinates are what go upstream — so the payload stays a pure function
+of its key, and a city shares one row a month. The month is always a whole
+calendar month, so the key does not change daily.
 
 **The panchang key carries no place, as of 4 Sep 2026.** It was the reader's
 birth place to six decimals, then rounded to about 11 km, and is now a single

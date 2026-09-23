@@ -54,6 +54,7 @@ export const strings = {
   'tool.ai': { en: 'Namo AI', hi: 'नमो AI' },
   'tool.tarot': { en: 'Tarot', hi: 'टैरो' },
   'tool.match': { en: 'Matching', hi: 'मिलान' },
+  'tool.muhurat': { en: 'Muhurat', hi: 'मुहूर्त' },
 
   // ── Mandir ───────────────────────────────────────────────────────────────
   'puja.tag': { en: 'e-puja', hi: 'ई-पूजा' },

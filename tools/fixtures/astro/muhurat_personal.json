@@ -1,0 +1,1846 @@
+{
+ "acceptable_moments": [],
+ "avoid_moments": [],
+ "best_moment": null,
+ "best_windows": [
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [],
+    "combined_scoring": {
+     "combined_score": 79,
+     "personal_score": 55,
+     "personal_weight": 0.35,
+     "public_score": 92,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 502.67
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Gemini",
+       "sample_time": "2026-10-29T22:11:05.251934+05:30",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sample_time": "2026-10-30T00:00:00+05:30",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sample_time": "2026-10-30T02:00:00+05:30",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sample_time": "2026-10-30T04:00:00+05:30",
+       "sign_id": 6
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Mrigashirsha"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": false,
+      "overlaps": [],
+      "score_delta": 0,
+      "status": "clear"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 6,
+      "score_delta": 15,
+      "status": "favorable"
+     },
+     "event_moon": {
+      "nakshatra": "Mrigashirsha",
+      "nakshatra_id": 5,
+      "sign": "Gemini",
+      "sign_id": 3
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 3,
+      "score_delta": -20,
+      "status": "caution",
+      "tara_index": 12,
+      "value": "Vipat"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Panchami"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Thursday"
+    }
+   },
+   "date": "2026-10-29",
+   "duration_minutes": 502.67,
+   "end": "2026-10-30T06:33:45.371569+05:30",
+   "end_time": "30:33:45",
+   "personal_score": 55,
+   "public_score": 92,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Panchami Tithi",
+    "Mrigashirsha Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 79,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Panchami Tithi",
+    "Mrigashirsha Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-29T22:11:05.251934+05:30",
+   "start_time": "22:11:05",
+   "warnings": [
+    "Personal natal factors are mixed for this window."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-01T15:23:38.851050+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-01T13:53:49.279775+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 75,
+     "personal_score": 80,
+     "personal_weight": 0.35,
+     "public_score": 94,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 1440.51
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Virgo",
+       "sample_time": "2026-10-01T06:25:07.423400+05:30",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sample_time": "2026-10-01T10:00:00+05:30",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-01T13:00:00+05:30",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-01T18:00:00+05:30",
+       "sign_id": 12
+      },
+      {
+       "name": "Gemini",
+       "sample_time": "2026-10-01T23:00:00+05:30",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sample_time": "2026-10-02T02:00:00+05:30",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sample_time": "2026-10-02T04:00:00+05:30",
+       "sign_id": 5
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Bhadrapada"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Rohini / Mrigashirsha"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Rahu Kaal"
+      ],
+      "score_delta": 14,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 5,
+      "score_delta": 5,
+      "status": "neutral"
+     },
+     "event_moon": {
+      "nakshatra": "Rohini",
+      "nakshatra_id": 4,
+      "sign": "Taurus",
+      "sign_id": 2
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 2,
+      "score_delta": 15,
+      "status": "favorable",
+      "tara_index": 11,
+      "value": "Sampat"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Panchami / Shashti"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Thursday"
+    }
+   },
+   "date": "2026-10-01",
+   "duration_minutes": 1440.51,
+   "end": "2026-10-02T06:25:38.165401+05:30",
+   "end_time": "30:25:38",
+   "personal_score": 80,
+   "public_score": 94,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Panchami / Shashti Tithi",
+    "Rohini / Mrigashirsha Nakshatra",
+    "Bhadrapada lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 75,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Panchami / Shashti Tithi",
+    "Rohini / Mrigashirsha Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-01T06:25:07.423400+05:30",
+   "start_time": "06:25:07",
+   "warnings": [
+    "Overlaps Rahu Kaal."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-06T02:09:28.059641+05:30",
+      "name": "Bhadra",
+      "start": "2026-10-05T15:01:01.854769+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-05T09:24:07.426692+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-05T07:54:48.806467+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 67,
+     "personal_score": 90,
+     "personal_weight": 0.35,
+     "public_score": 94,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 1004.32
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Virgo",
+       "sample_time": "2026-10-05T06:25:56.186242+05:30",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sample_time": "2026-10-05T10:00:00+05:30",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-05T12:00:00+05:30",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-05T18:00:00+05:30",
+       "sign_id": 12
+      },
+      {
+       "name": "Gemini",
+       "sample_time": "2026-10-05T23:00:00+05:30",
+       "sign_id": 3
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Bhadrapada"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Pushya"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Bhadra",
+       "Rahu Kaal"
+      ],
+      "score_delta": 26,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 7,
+      "score_delta": 15,
+      "status": "favorable"
+     },
+     "event_moon": {
+      "nakshatra": "Pushya",
+      "nakshatra_id": 8,
+      "sign": "Cancer",
+      "sign_id": 4
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 6,
+      "score_delta": 15,
+      "status": "favorable",
+      "tara_index": 15,
+      "value": "Sadhana"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Dashami"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Monday"
+    }
+   },
+   "date": "2026-10-05",
+   "duration_minutes": 1004.32,
+   "end": "2026-10-05T23:10:15.473979+05:30",
+   "end_time": "23:10:15",
+   "personal_score": 90,
+   "public_score": 94,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Dashami Tithi",
+    "Pushya Nakshatra",
+    "Bhadrapada lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 67,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Dashami Tithi",
+    "Pushya Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-05T06:25:56.186242+05:30",
+   "start_time": "06:25:56",
+   "warnings": [
+    "Overlaps Bhadra.",
+    "Overlaps Rahu Kaal."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-11T18:15:14.608247+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-11T16:46:41.970643+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 63,
+     "personal_score": 45,
+     "personal_weight": 0.35,
+     "public_score": 94,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 904.97
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Virgo",
+       "sample_time": "2026-10-11T06:27:19.507415+05:30",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sample_time": "2026-10-11T10:00:00+05:30",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-11T12:00:00+05:30",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-11T17:00:00+05:30",
+       "sign_id": 12
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Chitra"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Rahu Kaal"
+      ],
+      "score_delta": 14,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 9,
+      "score_delta": 5,
+      "status": "neutral"
+     },
+     "event_moon": {
+      "nakshatra": "Chitra",
+      "nakshatra_id": 14,
+      "sign": "Virgo",
+      "sign_id": 6
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 3,
+      "score_delta": -20,
+      "status": "caution",
+      "tara_index": 21,
+      "value": "Vipat"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Pratipada"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Sunday"
+    }
+   },
+   "date": "2026-10-11",
+   "duration_minutes": 904.97,
+   "end": "2026-10-11T21:32:17.581420+05:30",
+   "end_time": "21:32:17",
+   "personal_score": 45,
+   "public_score": 94,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Pratipada Tithi",
+    "Chitra Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 63,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Pratipada Tithi",
+    "Chitra Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-11T06:27:19.507415+05:30",
+   "start_time": "06:27:19",
+   "warnings": [
+    "Overlaps Rahu Kaal.",
+    "Personal natal factors are mixed for this window."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-29T01:08:33.232957+05:30",
+      "name": "Bhadra",
+      "start": "2026-10-28T14:38:43.472049+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-28T13:44:33.488521+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-28T12:18:05.427620+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 62,
+     "personal_score": 80,
+     "personal_weight": 0.35,
+     "public_score": 93,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 701.28
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-28T16:00:00+05:30",
+       "sign_id": 12
+      },
+      {
+       "name": "Gemini",
+       "sample_time": "2026-10-28T22:00:00+05:30",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sample_time": "2026-10-29T00:00:00+05:30",
+       "sign_id": 4
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Rohini"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Bhadra",
+       "Rahu Kaal"
+      ],
+      "score_delta": 26,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 5,
+      "score_delta": 5,
+      "status": "neutral"
+     },
+     "event_moon": {
+      "nakshatra": "Rohini",
+      "nakshatra_id": 4,
+      "sign": "Taurus",
+      "sign_id": 2
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 2,
+      "score_delta": 15,
+      "status": "favorable",
+      "tara_index": 11,
+      "value": "Sampat"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Tritiya"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Wednesday"
+    }
+   },
+   "date": "2026-10-28",
+   "duration_minutes": 701.28,
+   "end": "2026-10-29T01:07:59.420496+05:30",
+   "end_time": "25:07:59",
+   "personal_score": 80,
+   "public_score": 93,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Tritiya Tithi",
+    "Rohini Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 62,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Tritiya Tithi",
+    "Rohini Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-28T13:26:42.779257+05:30",
+   "start_time": "13:26:42",
+   "warnings": [
+    "Overlaps Bhadra.",
+    "Overlaps Rahu Kaal."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-22T14:49:55.564044+05:30",
+      "name": "Bhadra",
+      "start": "2026-10-22T02:37:47.211446+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-25T19:22:19.291790+05:30",
+      "name": "Panchak",
+      "start": "2026-10-21T07:00:31.927487+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-22T15:13:08.973636+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-22T13:45:58.236885+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 58,
+     "personal_score": 80,
+     "personal_weight": 0.35,
+     "public_score": 92,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 498.84
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Scorpio",
+       "sample_time": "2026-10-22T09:00:00+05:30",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-22T11:00:00+05:30",
+       "sign_id": 9
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Satabisha"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Bhadra",
+       "Panchak",
+       "Rahu Kaal"
+      ],
+      "score_delta": 30,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 2,
+      "score_delta": 5,
+      "status": "neutral"
+     },
+     "event_moon": {
+      "nakshatra": "Satabisha",
+      "nakshatra_id": 24,
+      "sign": "Aquarius",
+      "sign_id": 11
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 4,
+      "score_delta": 15,
+      "status": "favorable",
+      "tara_index": 4,
+      "value": "Kshema"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Ekadashi"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Thursday"
+    }
+   },
+   "date": "2026-10-22",
+   "duration_minutes": 498.84,
+   "end": "2026-10-22T14:49:20.750174+05:30",
+   "end_time": "14:49:20",
+   "personal_score": 80,
+   "public_score": 92,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Ekadashi Tithi",
+    "Satabisha Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 58,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Ekadashi Tithi",
+    "Satabisha Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-22T06:30:30.553130+05:30",
+   "start_time": "06:30:30",
+   "warnings": [
+    "Overlaps Bhadra.",
+    "Overlaps Panchak.",
+    "Overlaps Rahu Kaal."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-25T19:22:19.291790+05:30",
+      "name": "Panchak",
+      "start": "2026-10-21T07:00:31.927487+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-21T13:46:14.939442+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-21T12:18:56.931346+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 58,
+     "personal_score": 55,
+     "personal_weight": 0.35,
+     "public_score": 94,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 1440.64
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Scorpio",
+       "sample_time": "2026-10-21T09:00:00+05:30",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-21T11:00:00+05:30",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-21T17:00:00+05:30",
+       "sign_id": 12
+      },
+      {
+       "name": "Gemini",
+       "sample_time": "2026-10-21T22:00:00+05:30",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sample_time": "2026-10-22T00:00:00+05:30",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sample_time": "2026-10-22T03:00:00+05:30",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sample_time": "2026-10-22T05:00:00+05:30",
+       "sign_id": 6
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Dhanishta / Satabisha"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Panchak",
+       "Rahu Kaal"
+      ],
+      "score_delta": 22,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 1,
+      "score_delta": 15,
+      "status": "favorable"
+     },
+     "event_moon": {
+      "nakshatra": "Dhanishta",
+      "nakshatra_id": 23,
+      "sign": "Capricorn",
+      "sign_id": 10
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 3,
+      "score_delta": -20,
+      "status": "caution",
+      "tara_index": 3,
+      "value": "Vipat"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Dashami / Ekadashi"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Wednesday"
+    }
+   },
+   "date": "2026-10-21",
+   "duration_minutes": 1440.64,
+   "end": "2026-10-22T06:30:49.553130+05:30",
+   "end_time": "30:30:49",
+   "personal_score": 55,
+   "public_score": 94,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Dashami / Ekadashi Tithi",
+    "Dhanishta / Satabisha Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 58,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Dashami / Ekadashi Tithi",
+    "Dhanishta / Satabisha Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-21T06:30:10.898962+05:30",
+   "start_time": "06:30:10",
+   "warnings": [
+    "Overlaps Panchak.",
+    "Overlaps Rahu Kaal.",
+    "Personal natal factors are mixed for this window."
+   ]
+  },
+  {
+   "best_moment": null,
+   "criteria": {
+    "avoid_periods": [
+     {
+      "end": "2026-10-25T22:54:14.695818+05:30",
+      "name": "Bhadra",
+      "start": "2026-10-25T11:57:56.864023+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-25T19:22:19.291790+05:30",
+      "name": "Panchak",
+      "start": "2026-10-21T07:00:31.927487+05:30",
+      "status": "warning_overlap"
+     },
+     {
+      "end": "2026-10-25T18:05:39.981637+05:30",
+      "name": "Rahu Kaal",
+      "start": "2026-10-25T16:38:50.798259+05:30",
+      "status": "warning_overlap"
+     }
+    ],
+    "combined_scoring": {
+     "combined_score": 48,
+     "personal_score": 55,
+     "personal_weight": 0.35,
+     "public_score": 91,
+     "public_weight": 0.65
+    },
+    "duration": {
+     "minimum_minutes": 240,
+     "status": "meets_minimum",
+     "value_minutes": 446.0
+    },
+    "lagna": {
+     "allowed_signs": [
+      {
+       "name": "Gemini",
+       "sign_id": 3
+      },
+      {
+       "name": "Cancer",
+       "sign_id": 4
+      },
+      {
+       "name": "Leo",
+       "sign_id": 5
+      },
+      {
+       "name": "Virgo",
+       "sign_id": 6
+      },
+      {
+       "name": "Scorpio",
+       "sign_id": 8
+      },
+      {
+       "name": "Sagittarius",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sign_id": 12
+      }
+     ],
+     "matched_signs": [
+      {
+       "name": "Sagittarius",
+       "sample_time": "2026-10-25T11:57:04.050797+05:30",
+       "sign_id": 9
+      },
+      {
+       "name": "Pisces",
+       "sample_time": "2026-10-25T17:00:00+05:30",
+       "sign_id": 12
+      }
+     ],
+     "status": "overlaps_favorable_lagna"
+    },
+    "lunar_month": {
+     "status": "not_restricted",
+     "value": "Ashwin"
+    },
+    "nakshatra": {
+     "status": "favorable",
+     "value": "Revati"
+    },
+    "personalized": {
+     "avoid_period_policy": {
+      "has_overlap": true,
+      "overlaps": [
+       "Bhadra",
+       "Panchak",
+       "Rahu Kaal"
+      ],
+      "score_delta": 30,
+      "status": "penalized_warning_overlap"
+     },
+     "chandra_bala": {
+      "moon_from_natal": 3,
+      "score_delta": 15,
+      "status": "favorable"
+     },
+     "event_moon": {
+      "nakshatra": "Revati",
+      "nakshatra_id": 27,
+      "sign": "Pisces",
+      "sign_id": 12
+     },
+     "natal_moon": {
+      "ascendant_sign": "Cancer",
+      "ascendant_sign_id": 4,
+      "moon_nakshatra": "Uttara Ashadha",
+      "moon_nakshatra_id": 21,
+      "moon_sign": "Capricorn",
+      "moon_sign_id": 10
+     },
+     "natal_vehicle_factors": {
+      "fourth_house": {
+       "lord": "Venus",
+       "lord_house": 6,
+       "sign": "Libra",
+       "sign_id": 7,
+       "status": "caution"
+      },
+      "score_delta": -10,
+      "venus": {
+       "house": 6,
+       "sign": "Sagittarius",
+       "sign_id": 9,
+       "status": "caution"
+      }
+     },
+     "tara_bala": {
+      "cycle_index": 7,
+      "score_delta": -20,
+      "status": "caution",
+      "tara_index": 7,
+      "value": "Naidhana"
+     }
+    },
+    "publication_window": {
+     "max_start_hour": 25,
+     "status": "within_calibrated_start_range"
+    },
+    "purpose": {
+     "label": "Vehicle Purchase Muhurat",
+     "status": "selected",
+     "value": "vehicle_purchase"
+    },
+    "tithi": {
+     "status": "favorable",
+     "value": "Poornima"
+    },
+    "weekday": {
+     "status": "favorable",
+     "value": "Sunday"
+    }
+   },
+   "date": "2026-10-25",
+   "duration_minutes": 446.0,
+   "end": "2026-10-25T19:23:04.291790+05:30",
+   "end_time": "19:23:04",
+   "personal_score": 55,
+   "public_score": 91,
+   "quality": "auspicious",
+   "reasons": [
+    "Vehicle Purchase Muhurat",
+    "Poornima Tithi",
+    "Revati Nakshatra",
+    "Ashwin lunar month",
+    "Auspicious Lagna"
+   ],
+   "score": 48,
+   "source_periods": [
+    "Vehicle Purchase Muhurat",
+    "Poornima Tithi",
+    "Revati Nakshatra",
+    "Auspicious Lagna"
+   ],
+   "start": "2026-10-25T11:57:04.050797+05:30",
+   "start_time": "11:57:04",
+   "warnings": [
+    "Overlaps Bhadra.",
+    "Overlaps Panchak.",
+    "Overlaps Rahu Kaal.",
+    "Personal natal factors are mixed for this window."
+   ]
+  }
+ ],
+ "metadata": {
+  "ayanamsha": "lahiri",
+  "calculation_basis": "strict_vehicle_purchase_electional_best_moment",
+  "calculation_notes": [
+   "Purpose-specific searches use calibrated tithi and nakshatra intersections for the requested activity.",
+   "Vehicle Purchase also requires overlap with an auspicious Lagna sample.",
+   "Adhik Maas is excluded for these ceremony searches.",
+   "Rahu Kaal, Bhadra, and Panchak overlaps are returned as warnings to preserve AstroSage-style full windows.",
+   "Vehicle Purchase omits short fragments below the calibrated publication-duration threshold.",
+   "Personalized Vehicle Purchase search selects exact event moments using whole-sign event charts, Tara Bala, Chandra Bala, Lagna, fourth-house, Venus, Rahu Kaal, Bhadra, and Panchak checks."
+  ],
+  "endpoint_version": "v2",
+  "personalization_basis": "tara_bala_chandra_bala_vehicle_fourth_house_venus",
+  "public_candidate_count": 8,
+  "ruleset_version": "freeastro_muhurat_search_v2",
+  "sampling_interval_minutes": 5,
+  "scan_months_requested": null,
+  "scanned_months": null,
+  "scanned_ranges": null,
+  "search_mode": null,
+  "strict_rejection_policy": true,
+  "strict_selection_status": "no_strict_moment_found",
+  "strictness": null,
+  "subject": {
+   "ascendant_sign": "Cancer",
+   "ascendant_sign_id": 4,
+   "moon_nakshatra": "Uttara Ashadha",
+   "moon_nakshatra_id": 21,
+   "moon_sign": "Capricorn",
+   "moon_sign_id": 10
+  },
+  "timezone_used": "Asia/Kolkata"
+ },
+ "no_compromise_moment": null,
+ "purpose": "vehicle_purchase",
+ "range": {
+  "day_count": 31,
+  "end_date": "2026-10-31",
+  "start_date": "2026-10-01"
+ },
+ "rejected_windows": [
+  {
+   "date": "2026-10-29",
+   "end": "2026-10-30T06:33:45.371569+05:30",
+   "reason_codes": [
+    "bad_tara_bala",
+    "eighth_house_malefic",
+    "lagna_not_allowed",
+    "moon_from_lagna_dusthana",
+    "moon_from_natal_dusthana",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "bad_tara_bala",
+     "message": "Tara Bala is Vipat."
+    },
+    {
+     "code": "moon_from_natal_dusthana",
+     "message": "Event Moon is 6 from natal Moon."
+    },
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    },
+    {
+     "code": "moon_from_lagna_dusthana",
+     "message": "Event Moon is in house 12 from event Lagna."
+    },
+    {
+     "code": "eighth_house_malefic",
+     "message": "The event eighth house contains Rahu."
+    },
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Libra is not allowed for Vehicle Purchase."
+    }
+   ],
+   "score": 79,
+   "start": "2026-10-29T22:11:05.251934+05:30"
+  },
+  {
+   "date": "2026-10-01",
+   "end": "2026-10-02T06:25:38.165401+05:30",
+   "reason_codes": [
+    "bad_tara_bala",
+    "eighth_house_malefic",
+    "event_weak_vehicle_factors",
+    "lagna_not_allowed",
+    "moon_from_lagna_dusthana",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    },
+    {
+     "code": "moon_from_lagna_dusthana",
+     "message": "Event Moon is in house 8 from event Lagna."
+    },
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Libra is not allowed for Vehicle Purchase."
+    },
+    {
+     "code": "eighth_house_malefic",
+     "message": "The event eighth house contains Mars."
+    },
+    {
+     "code": "event_weak_vehicle_factors",
+     "message": "Event fourth-lord and Venus are both in difficult houses."
+    },
+    {
+     "code": "bad_tara_bala",
+     "message": "Tara Bala is Vipat."
+    }
+   ],
+   "score": 75,
+   "start": "2026-10-01T06:25:07.423400+05:30"
+  },
+  {
+   "date": "2026-10-05",
+   "end": "2026-10-05T23:10:15.473979+05:30",
+   "reason_codes": [
+    "eighth_house_malefic",
+    "lagna_not_allowed",
+    "moon_from_lagna_dusthana",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    },
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Libra is not allowed for Vehicle Purchase."
+    },
+    {
+     "code": "moon_from_lagna_dusthana",
+     "message": "Event Moon is in house 8 from event Lagna."
+    },
+    {
+     "code": "eighth_house_malefic",
+     "message": "The event eighth house contains Mars."
+    }
+   ],
+   "score": 67,
+   "start": "2026-10-05T06:25:56.186242+05:30"
+  },
+  {
+   "date": "2026-10-11",
+   "end": "2026-10-11T21:32:17.581420+05:30",
+   "reason_codes": [
+    "bad_tara_bala",
+    "eighth_house_malefic",
+    "event_weak_vehicle_factors",
+    "lagna_not_allowed",
+    "moon_from_lagna_dusthana",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "bad_tara_bala",
+     "message": "Tara Bala is Vipat."
+    },
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    },
+    {
+     "code": "moon_from_lagna_dusthana",
+     "message": "Event Moon is in house 12 from event Lagna."
+    },
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Libra is not allowed for Vehicle Purchase."
+    },
+    {
+     "code": "eighth_house_malefic",
+     "message": "The event eighth house contains Mars."
+    },
+    {
+     "code": "event_weak_vehicle_factors",
+     "message": "Event fourth-lord and Venus are both in difficult houses."
+    }
+   ],
+   "score": 63,
+   "start": "2026-10-11T06:27:19.507415+05:30"
+  },
+  {
+   "date": "2026-10-28",
+   "end": "2026-10-29T01:07:59.420496+05:30",
+   "reason_codes": [
+    "eighth_house_malefic",
+    "lagna_not_allowed",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Capricorn is not allowed for Vehicle Purchase."
+    },
+    {
+     "code": "eighth_house_malefic",
+     "message": "The event eighth house contains Ketu."
+    },
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    }
+   ],
+   "score": 62,
+   "start": "2026-10-28T13:26:42.779257+05:30"
+  },
+  {
+   "date": "2026-10-22",
+   "end": "2026-10-22T14:49:20.750174+05:30",
+   "reason_codes": [
+    "only_avoid_period_overlap"
+   ],
+   "reasons": [
+    {
+     "code": "only_avoid_period_overlap",
+     "message": "The candidate window is fully removed by Rahu Kaal, Bhadra, or Panchak."
+    }
+   ],
+   "score": 58,
+   "start": "2026-10-22T06:30:30.553130+05:30"
+  },
+  {
+   "date": "2026-10-21",
+   "end": "2026-10-22T06:30:49.553130+05:30",
+   "reason_codes": [
+    "bad_tara_bala",
+    "lagna_not_allowed",
+    "weak_vehicle_natal_factors"
+   ],
+   "reasons": [
+    {
+     "code": "bad_tara_bala",
+     "message": "Tara Bala is Vipat."
+    },
+    {
+     "code": "lagna_not_allowed",
+     "message": "Event Lagna Libra is not allowed for Vehicle Purchase."
+    },
+    {
+     "code": "weak_vehicle_natal_factors",
+     "message": "Natal fourth-lord and Venus indicators are both in difficult houses."
+    }
+   ],
+   "score": 58,
+   "start": "2026-10-21T06:30:10.898962+05:30"
+  },
+  {
+   "date": "2026-10-25",
+   "end": "2026-10-25T19:23:04.291790+05:30",
+   "reason_codes": [
+    "only_avoid_period_overlap"
+   ],
+   "reasons": [
+    {
+     "code": "only_avoid_period_overlap",
+     "message": "The candidate window is fully removed by Rahu Kaal, Bhadra, or Panchak."
+    }
+   ],
+   "score": 48,
+   "start": "2026-10-25T11:57:04.050797+05:30"
+  }
+ ],
+ "selection_explanation": {
+  "acceptable_alternative_count": 0,
+  "decision": "no_best_moment",
+  "headline": "No strict Vehicle Purchase moment survived this search.",
+  "rejected_window_count": 8,
+  "selection_status": "no_strict_moment_found",
+  "strictness": null,
+  "summary": "The endpoint kept public windows available for audit, but did not promote a best moment because strict personalized rules blocked the sampled candidates.",
+  "top_rejection_codes": [
+   {
+    "code": "lagna_not_allowed",
+    "count": 6
+   },
+   {
+    "code": "weak_vehicle_natal_factors",
+    "count": 6
+   },
+   {
+    "code": "eighth_house_malefic",
+    "count": 5
+   },
+   {
+    "code": "bad_tara_bala",
+    "count": 4
+   },
+   {
+    "code": "moon_from_lagna_dusthana",
+    "count": 4
+   },
+   {
+    "code": "event_weak_vehicle_factors",
+    "count": 2
+   },
+   {
+    "code": "only_avoid_period_overlap",
+    "count": 2
+   },
+   {
+    "code": "moon_from_natal_dusthana",
+    "count": 1
+   }
+  ]
+ }
+}

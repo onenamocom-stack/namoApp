@@ -36,99 +36,13 @@ export const user = {
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PEOPLE — friend list → synastry breakdown → invite.
-   ══════════════════════════════════════════════════════════════════════════ */
+   PEOPLE — deleted 22 Sep 2026, along with `/people` and `/people/:id`.
 
-export const people = [
-  {
-    id: 'p1',
-    name: 'Kabir',
-    initials: 'K',
-    sun: 'Capricorn',
-    moon: 'Virgo',
-    rising: 'Scorpio',
-    since: 'Since Mar 2025',
-    verdict: 'Blunt in the same direction.',
-    score: 78,
-    axes: [
-      { key: 'Ease', value: 82, note: 'Neither of you needs the small talk.' },
-      { key: 'Friction', value: 64, note: 'You both wait for the other to concede first.' },
-      { key: 'Attraction', value: 71, note: 'Sun trine Sun. Steady, not electric.' },
-      { key: 'Endurance', value: 88, note: 'Saturn contacts. This one outlasts things.' },
-    ],
-    aspects: [
-      { title: 'Your Saturn on their Sun', line: 'You are the reality check. They asked for it once and regret it monthly.' },
-      { title: 'Their Mercury square your Moon', line: 'They explain. You wanted to be sat with. Say that out loud.' },
-    ],
-    advice: 'Stop testing whether they will leave. They have answered.',
-  },
-  {
-    id: 'p2',
-    name: 'Rhea',
-    initials: 'R',
-    sun: 'Gemini',
-    moon: 'Aries',
-    rising: 'Sagittarius',
-    since: 'Since Nov 2024',
-    verdict: 'Fun, and expensive.',
-    score: 62,
-    axes: [
-      { key: 'Ease', value: 74, note: 'Nothing is ever awkward for long.' },
-      { key: 'Friction', value: 81, note: 'Three plans, none confirmed. Every time.' },
-      { key: 'Attraction', value: 86, note: 'Mars contacts. Loud and immediate.' },
-      { key: 'Endurance', value: 38, note: 'Nothing in the chart asks either of you to stay.' },
-    ],
-    aspects: [
-      { title: 'Their Mars opposite your Venus', line: 'You want to be chosen. They want to be moving. Both are true.' },
-      { title: 'Your Moon square their Sun', line: 'They read your quiet as a mood. It is a recovery.' },
-    ],
-    advice: 'Enjoy it in short formats. Do not co-sign anything.',
-  },
-  {
-    id: 'p3',
-    name: 'Ishaan',
-    initials: 'I',
-    sun: 'Taurus',
-    moon: 'Pisces',
-    rising: 'Cancer',
-    since: 'Since Jan 2026',
-    verdict: 'Slower than you. That is the point.',
-    score: 84,
-    axes: [
-      { key: 'Ease', value: 90, note: 'Moon trine Moon. You recover the same way.' },
-      { key: 'Friction', value: 32, note: 'Almost none, which you will misread as boredom.' },
-      { key: 'Attraction', value: 66, note: 'Warm rather than urgent.' },
-      { key: 'Endurance', value: 85, note: 'Fixed signs. Neither of you exits cleanly.' },
-    ],
-    aspects: [
-      { title: 'Their Venus trine your Moon', line: 'They are kind to you without being asked. Notice it before it stops.' },
-      { title: 'Your Mars square their Saturn', line: 'You push, they brace. Neither of you is wrong. Change the pace.' },
-    ],
-    advice: 'You are waiting for a spark that this one produces as heat instead.',
-  },
-  {
-    id: 'p4',
-    name: 'Priya',
-    initials: 'P',
-    sun: 'Leo',
-    moon: 'Aquarius',
-    rising: 'Virgo',
-    since: 'Since Aug 2023',
-    verdict: 'You perform for each other.',
-    score: 55,
-    axes: [
-      { key: 'Ease', value: 48, note: 'Both of you are managing the impression.' },
-      { key: 'Friction', value: 70, note: 'Two people who need the last word.' },
-      { key: 'Attraction', value: 74, note: 'Rising conjunct Sun. You look good together.' },
-      { key: 'Endurance', value: 52, note: 'Held up by history rather than fit.' },
-    ],
-    aspects: [
-      { title: 'Their Moon opposite your Sun', line: 'They need distance to feel close. Do not chase into it.' },
-      { title: 'Your Mercury square their Mercury', line: 'You are having two different arguments at the same volume.' },
-    ],
-    advice: 'Have one unimpressive conversation and see what is left.',
-  },
-]
+   A friend list with fabricated sun/moon/rising, a compatibility score and
+   four authored axes per pair. `/match` replaced it with Ashtakoota against
+   a birth the seeker types, and that flow keeps nobody on file — so there
+   is no list to seed and nothing here worth keeping.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════════════════
    NOTIFICATIONS — one or two sentences. Aphoristic. This is the thing people

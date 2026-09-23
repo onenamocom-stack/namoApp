@@ -1,0 +1,1936 @@
+{
+ "dasha": {
+  "active_periods": [
+   {
+    "end": "2033-11-15",
+    "level": "Mahadasha",
+    "lord": "Venus",
+    "path": [
+     "Venus"
+    ],
+    "progress_fraction": 0.642574,
+    "remaining_days": 2611,
+    "start": "2013-11-15"
+   },
+   {
+    "end": "2029-11-15",
+    "level": "Antardasha",
+    "lord": "Saturn",
+    "path": [
+     "Venus",
+     "Saturn"
+    ],
+    "progress_fraction": 0.00605,
+    "remaining_days": 1150,
+    "start": "2026-09-15"
+   },
+   {
+    "end": "2027-03-17",
+    "level": "Pratyantardasha",
+    "lord": "Saturn",
+    "path": [
+     "Venus",
+     "Saturn",
+     "Saturn"
+    ],
+    "progress_fraction": 0.038251,
+    "remaining_days": 176,
+    "start": "2026-09-15"
+   }
+  ],
+  "dominant_period": {
+   "level": "Mahadasha",
+   "lord": "Venus",
+   "path": [
+    "Venus"
+   ],
+   "remaining_days": 2611
+  },
+  "interpretation_context": "Daily events are filtered through the Venus / Saturn / Saturn Vimshottari sequence.",
+  "moon_nakshatra": {
+   "id": 21,
+   "lord": "Sun",
+   "name": "Uttara Ashadha",
+   "pada": 3
+  },
+  "reference_date": "2026-09-22"
+ },
+ "influences": {
+  "all_ranked": [
+   {
+    "category": "chart_pattern",
+    "evidence_ref": "daily_fact_01",
+    "fact_id": "daily_fact_01",
+    "id": "daily_fact_01",
+    "kind": "active_dasha_lord_gochar_peak",
+    "polarity": "supportive",
+    "rank": 1,
+    "reference_point": null,
+    "relation_key": "gochar_timeline__active_dasha_peak__jupiter__2026-09-21",
+    "summary": "Jupiter brings the current dasha stack into sharper focus today.",
+    "title": "Jupiter activates the dasha stack",
+    "transit_planet": "jupiter"
+   },
+   {
+    "category": "chart_pattern",
+    "evidence_ref": "daily_fact_02",
+    "fact_id": "daily_fact_02",
+    "id": "daily_fact_02",
+    "kind": "dasha_gochar_alignment",
+    "polarity": "supportive",
+    "rank": 2,
+    "reference_point": "saturn",
+    "relation_key": "gochar_timeline__dasha_gochar_alignment__gochar__active_dasha_lord__jupiter__conjunction__antardasha__saturn",
+    "summary": "Jupiter ties daily events to the active Saturn dasha theme.",
+    "title": "Jupiter contacts the active Saturn dasha theme",
+    "transit_planet": "jupiter"
+   },
+   {
+    "category": "emotions",
+    "evidence_ref": "daily_fact_03",
+    "fact_id": "daily_fact_03",
+    "id": "daily_fact_03",
+    "kind": "moon_state_window",
+    "polarity": "supportive",
+    "rank": 3,
+    "reference_point": "moon",
+    "relation_key": "gochar_timeline__moon_state__2026-09-21__2026-09-21",
+    "summary": "Moon-state timing asks for emotional steadiness and cleaner pacing today.",
+    "title": "Moon-state timing calls for steadiness",
+    "transit_planet": "jupiter"
+   }
+  ],
+  "background": [],
+  "cautions": [],
+  "primary": [
+   {
+    "category": "chart_pattern",
+    "evidence_ref": "daily_fact_01",
+    "fact_id": "daily_fact_01",
+    "id": "daily_fact_01",
+    "kind": "active_dasha_lord_gochar_peak",
+    "polarity": "supportive",
+    "rank": 1,
+    "reference_point": null,
+    "relation_key": "gochar_timeline__active_dasha_peak__jupiter__2026-09-21",
+    "summary": "Jupiter brings the current dasha stack into sharper focus today.",
+    "title": "Jupiter activates the dasha stack",
+    "transit_planet": "jupiter"
+   }
+  ],
+  "supporting": [
+   {
+    "category": "chart_pattern",
+    "evidence_ref": "daily_fact_02",
+    "fact_id": "daily_fact_02",
+    "id": "daily_fact_02",
+    "kind": "dasha_gochar_alignment",
+    "polarity": "supportive",
+    "rank": 2,
+    "reference_point": "saturn",
+    "relation_key": "gochar_timeline__dasha_gochar_alignment__gochar__active_dasha_lord__jupiter__conjunction__antardasha__saturn",
+    "summary": "Jupiter ties daily events to the active Saturn dasha theme.",
+    "title": "Jupiter contacts the active Saturn dasha theme",
+    "transit_planet": "jupiter"
+   },
+   {
+    "category": "emotions",
+    "evidence_ref": "daily_fact_03",
+    "fact_id": "daily_fact_03",
+    "id": "daily_fact_03",
+    "kind": "moon_state_window",
+    "polarity": "supportive",
+    "rank": 3,
+    "reference_point": "moon",
+    "relation_key": "gochar_timeline__moon_state__2026-09-21__2026-09-21",
+    "summary": "Moon-state timing asks for emotional steadiness and cleaner pacing today.",
+    "title": "Moon-state timing calls for steadiness",
+    "transit_planet": "jupiter"
+   }
+  ]
+ },
+ "meta": {
+  "endpoint": "vedic_daily_horoscope",
+  "endpoint_version": "v2",
+  "generated_at": "2026-09-22T16:13:57.157428Z",
+  "ruleset_version": "vedic_daily_horoscope_v2",
+  "rulesets": {
+   "chart": "classical_chart_v1",
+   "daily_horoscope": "vedic_daily_horoscope_v2",
+   "dasha": "classical_dasha_v1",
+   "gochar_insights": "classical_gochar_insights_v2",
+   "panchang": "astrosage_panchang_v1",
+   "timing": "vedic_daily_timing_v1"
+  },
+  "settings": {
+   "ayanamsha": "lahiri",
+   "house_system": "whole_sign",
+   "include_evidence": false,
+   "include_interpretation_blocks": true,
+   "include_raw_facts": false,
+   "node_type": "mean"
+  },
+  "target_date": "2026-09-22",
+  "timezone": "Asia/Kolkata",
+  "version": "premium_daily_v2"
+ },
+ "narrative": {
+  "best_use": "Panchang mood: Uttara Ashadha nakshatra with Ekadashi tithi and Atiganda yoga favors a measured, context-aware pace. Use the strongest windows for specific work and the caution windows for review.",
+  "caution": "Handle wealth and resources with extra care, and avoid forcing major moves during Rahu Kalam (14:57-16:28).",
+  "opportunity": "The cleanest opening is mind and emotions, especially during Amrit (23:55-01:24).",
+  "summary": "Jupiter brings the current dasha stack into sharper focus today. The active Vimshottari stack is Venus / Saturn / Saturn, and the overall daily band is favorable."
+ },
+ "panchang": {
+  "date": "2026-09-22",
+  "karana": {
+   "ends_at": "08:56:34",
+   "ends_at_iso": "2026-09-22T08:56:34.362585+05:30",
+   "name": "Vanij",
+   "number": 6
+  },
+  "lunar_month": {
+   "amanta": true,
+   "month_type": "regular",
+   "name": "Bhadrapada",
+   "number": 6,
+   "omitted_month": null,
+   "vikram_samvat": 2083,
+   "vikram_samvat_convention": "chaitra_shukladi"
+  },
+  "nakshatra": {
+   "ends_at": "07:07:01",
+   "ends_at_iso": "2026-09-22T07:07:01.344727+05:30",
+   "lord": "Sun",
+   "name": "Uttara Ashadha",
+   "number": 21,
+   "pada": 4
+  },
+  "sunrise": "05:50:54",
+  "sunset": "17:59:34",
+  "tithi": {
+   "ends_at": "21:43:47",
+   "ends_at_iso": "2026-09-22T21:43:47.549028+05:30",
+   "name": "Ekadashi",
+   "number": 11,
+   "paksha": "Shukla"
+  },
+  "weekday": {
+   "name": "Tuesday",
+   "number": 3
+  },
+  "yoga": {
+   "ends_at": "16:29:23",
+   "ends_at_iso": "2026-09-22T16:29:23.953659+05:30",
+   "name": "Atiganda",
+   "number": 6
+  }
+ },
+ "profile": {
+  "active_dasha_stack": [
+   {
+    "end": "2033-11-15",
+    "level": "Mahadasha",
+    "lord": "Venus",
+    "path": [
+     "Venus"
+    ],
+    "progress_fraction": 0.642574,
+    "remaining_days": 2611,
+    "start": "2013-11-15"
+   },
+   {
+    "end": "2029-11-15",
+    "level": "Antardasha",
+    "lord": "Saturn",
+    "path": [
+     "Venus",
+     "Saturn"
+    ],
+    "progress_fraction": 0.00605,
+    "remaining_days": 1150,
+    "start": "2026-09-15"
+   },
+   {
+    "end": "2027-03-17",
+    "level": "Pratyantardasha",
+    "lord": "Saturn",
+    "path": [
+     "Venus",
+     "Saturn",
+     "Saturn"
+    ],
+    "progress_fraction": 0.038251,
+    "remaining_days": 176,
+    "start": "2026-09-15"
+   }
+  ],
+  "lagna": {
+   "absolute_degree": 117.3655,
+   "degree": 27.3655,
+   "sign": "Cancer",
+   "sign_id": 4
+  },
+  "moon": {
+   "nakshatra": "Uttara Ashadha",
+   "nakshatra_id": 21,
+   "nakshatra_lord": "Sun",
+   "pada": 3,
+   "sign": "Capricorn",
+   "sign_id": 10
+  }
+ },
+ "remedy": {
+  "avoid": "Avoid overcommitting because the larger story feels promising.",
+  "basis": {
+   "dominant_dasha_lord": "Venus",
+   "evidence_ref": "daily_fact_01",
+   "panchang_nakshatra": "Uttara Ashadha",
+   "transit_planet": "jupiter"
+  },
+  "focus": "Guidance",
+  "reflection": "What would wise growth look like if it stayed practical?",
+  "simple_action": "Choose one study, advice, or planning step that expands judgment without inflating promises."
+ },
+ "scores": {
+  "career": {
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 10.58,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_02",
+     "evidence_ref": "daily_fact_02",
+     "fact_id": "daily_fact_02",
+     "impact": 10.0,
+     "kind": "dasha_gochar_alignment",
+     "polarity": "supportive",
+     "title": "Jupiter contacts the active Saturn dasha theme",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Career and duties rates strong at 91/100. Support comes through Jupiter activates the dasha stack; no major hard driver dominates this domain.",
+   "score": 91
+  },
+  "health": {
+   "band": "favorable",
+   "cautions": [],
+   "confidence": 0.69,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 7.18,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Health and vitality rates favorable at 73/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "score": 73
+  },
+  "mind": {
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 22.08,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 7.64,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Mind and emotions rates strong at 94/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "score": 94
+  },
+  "overall": {
+   "band": "favorable",
+   "cautions": [],
+   "confidence": 0.71,
+   "drivers": [
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 10.58,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_02",
+     "evidence_ref": "daily_fact_02",
+     "fact_id": "daily_fact_02",
+     "impact": 10.0,
+     "kind": "dasha_gochar_alignment",
+     "polarity": "supportive",
+     "title": "Jupiter contacts the active Saturn dasha theme",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 15.46,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Overall daily tone is favorable at 83/100, derived from the six domain scores and the active dasha/gochar emphasis.",
+   "score": 83
+  },
+  "relationships": {
+   "band": "favorable",
+   "cautions": [],
+   "confidence": 0.69,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 15.46,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Relationships rates favorable at 81/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "score": 81
+  },
+  "spiritual": {
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_02",
+     "evidence_ref": "daily_fact_02",
+     "fact_id": "daily_fact_02",
+     "impact": 18.82,
+     "kind": "dasha_gochar_alignment",
+     "polarity": "supportive",
+     "title": "Jupiter contacts the active Saturn dasha theme",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 10.0,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Spiritual focus rates strong at 94/100. Support comes through Jupiter contacts the active Saturn dasha theme; no major hard driver dominates this domain.",
+   "score": 94
+  },
+  "wealth": {
+   "band": "mixed",
+   "cautions": [],
+   "confidence": 0.62,
+   "drivers": [],
+   "explanation": "Wealth and resources rates mixed at 64/100. No direct top-ranked gochar driver dominates this domain, so it stays near the daily baseline.",
+   "score": 64
+  }
+ },
+ "sections": [
+  {
+   "advice": "Use the day for duties that benefit from patience, visible accountability, and clean sequencing.",
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 10.58,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_02",
+     "evidence_ref": "daily_fact_02",
+     "fact_id": "daily_fact_02",
+     "impact": 10.0,
+     "kind": "dasha_gochar_alignment",
+     "polarity": "supportive",
+     "title": "Jupiter contacts the active Saturn dasha theme",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Career and duties rates strong at 91/100. Support comes through Jupiter activates the dasha stack; no major hard driver dominates this domain.",
+   "key": "career",
+   "score": 91,
+   "summary": "Main support: Jupiter activates the dasha stack; Jupiter contacts the active Saturn dasha theme.",
+   "title": "Career and duties"
+  },
+  {
+   "advice": "Use the day for review, organization, pricing clarity, and practical resource choices.",
+   "band": "mixed",
+   "cautions": [],
+   "confidence": 0.62,
+   "drivers": [],
+   "explanation": "Wealth and resources rates mixed at 64/100. No direct top-ranked gochar driver dominates this domain, so it stays near the daily baseline.",
+   "key": "wealth",
+   "score": 64,
+   "summary": "This domain is shaped more by the general daily pattern than by a dominant direct trigger.",
+   "title": "Wealth and resources"
+  },
+  {
+   "advice": "Use the day for simple repair, direct kindness, and avoiding unnecessary tests of loyalty.",
+   "band": "favorable",
+   "cautions": [],
+   "confidence": 0.69,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 15.46,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Relationships rates favorable at 81/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "key": "relationships",
+   "score": 81,
+   "summary": "Main support: Moon-state timing calls for steadiness.",
+   "title": "Relationships"
+  },
+  {
+   "advice": "Use the day for rhythm, rest discipline, and lighter routines rather than strain.",
+   "band": "favorable",
+   "cautions": [],
+   "confidence": 0.69,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 7.18,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Health and vitality rates favorable at 73/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "key": "health",
+   "score": 73,
+   "summary": "Main support: Moon-state timing calls for steadiness.",
+   "title": "Health and vitality"
+  },
+  {
+   "advice": "Use the day for fewer inputs, clearer priorities, and decisions after the mind has settled.",
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "emotions",
+     "evidence_id": "daily_fact_03",
+     "evidence_ref": "daily_fact_03",
+     "fact_id": "daily_fact_03",
+     "impact": 22.08,
+     "kind": "moon_state_window",
+     "polarity": "supportive",
+     "title": "Moon-state timing calls for steadiness",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 7.64,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Mind and emotions rates strong at 94/100. Support comes through Moon-state timing calls for steadiness; no major hard driver dominates this domain.",
+   "key": "mind",
+   "score": 94,
+   "summary": "Main support: Moon-state timing calls for steadiness; Jupiter activates the dasha stack.",
+   "title": "Mind and emotions"
+  },
+  {
+   "advice": "Use the day for reflection, study, mantra, service, or one sincere simplifying action.",
+   "band": "strong",
+   "cautions": [],
+   "confidence": 0.76,
+   "drivers": [
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_02",
+     "evidence_ref": "daily_fact_02",
+     "fact_id": "daily_fact_02",
+     "impact": 18.82,
+     "kind": "dasha_gochar_alignment",
+     "polarity": "supportive",
+     "title": "Jupiter contacts the active Saturn dasha theme",
+     "transit_planet": "jupiter"
+    },
+    {
+     "category": "chart_pattern",
+     "evidence_id": "daily_fact_01",
+     "evidence_ref": "daily_fact_01",
+     "fact_id": "daily_fact_01",
+     "impact": 10.0,
+     "kind": "active_dasha_lord_gochar_peak",
+     "polarity": "supportive",
+     "title": "Jupiter activates the dasha stack",
+     "transit_planet": "jupiter"
+    }
+   ],
+   "explanation": "Spiritual focus rates strong at 94/100. Support comes through Jupiter contacts the active Saturn dasha theme; no major hard driver dominates this domain.",
+   "key": "spiritual",
+   "score": 94,
+   "summary": "Main support: Jupiter contacts the active Saturn dasha theme; Jupiter activates the dasha stack.",
+   "title": "Spiritual focus"
+  }
+ ],
+ "theme": {
+  "dominant_dasha": {
+   "level": "Mahadasha",
+   "lord": "Venus",
+   "path": [
+    "Venus"
+   ],
+   "remaining_days": 2611
+  },
+  "headline": "Supportive daily tone: Jupiter activates the dasha stack",
+  "panchang_mood": "Uttara Ashadha nakshatra with Ekadashi tithi and Atiganda yoga favors a measured, context-aware pace.",
+  "primary_influence": {
+   "category": "chart_pattern",
+   "evidence_ref": "daily_fact_01",
+   "fact_id": "daily_fact_01",
+   "id": "daily_fact_01",
+   "kind": "active_dasha_lord_gochar_peak",
+   "polarity": "supportive",
+   "rank": 1,
+   "reference_point": null,
+   "relation_key": "gochar_timeline__active_dasha_peak__jupiter__2026-09-21",
+   "summary": "Jupiter brings the current dasha stack into sharper focus today.",
+   "title": "Jupiter activates the dasha stack",
+   "transit_planet": "jupiter"
+  }
+ },
+ "timing": {
+  "abhijit": {
+   "basis": "solar_midday_daylight_1_15",
+   "duration_minutes": 49,
+   "end": "12:19",
+   "end_iso": "2026-09-22T12:19:31.333333+05:30",
+   "key": "abhijit_muhurat",
+   "label": "Abhijit Muhurat",
+   "quality": "auspicious",
+   "start": "11:30",
+   "start_iso": "2026-09-22T11:30:56.666667+05:30",
+   "tags": [
+    "general_work",
+    "clarity",
+    "important_tasks"
+   ],
+   "warnings": [
+    {
+     "key": "gulika",
+     "label": "Gulika",
+     "message": "Overlaps Gulika for 24 minutes.",
+     "overlap_minutes": 24
+    }
+   ]
+  },
+  "caution_periods": [
+   {
+    "basis": "panchang",
+    "duration_minutes": 91,
+    "end": "16:28",
+    "end_iso": "2026-09-22T16:28:00+05:30",
+    "key": "rahu_kalam",
+    "label": "Rahu Kalam",
+    "quality": "avoid",
+    "start": "14:57",
+    "start_iso": "2026-09-22T14:57:00+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "delay_launches"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_day_segment",
+    "duration_minutes": 91,
+    "end": "10:24",
+    "end_iso": "2026-09-22T10:24:09+05:30",
+    "key": "yamaganda",
+    "label": "Yamaganda",
+    "quality": "avoid",
+    "segment": 3,
+    "start": "08:53",
+    "start_iso": "2026-09-22T08:53:04+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_day_segment",
+    "duration_minutes": 91,
+    "end": "13:26",
+    "end_iso": "2026-09-22T13:26:19+05:30",
+    "key": "gulika",
+    "label": "Gulika",
+    "quality": "avoid",
+    "segment": 5,
+    "start": "11:55",
+    "start_iso": "2026-09-22T11:55:14+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "07:21",
+    "end_iso": "2026-09-22T07:21:59+05:30",
+    "index": 1,
+    "key": "chaughadia_day_1",
+    "label": "Rog",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "05:50",
+    "start_iso": "2026-09-22T05:50:54+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "08:53",
+    "end_iso": "2026-09-22T08:53:04+05:30",
+    "index": 2,
+    "key": "chaughadia_day_2",
+    "label": "Udveg",
+    "phase": "day",
+    "quality": "caution",
+    "start": "07:21",
+    "start_iso": "2026-09-22T07:21:59+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "reduce_impulse"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "14:57",
+    "end_iso": "2026-09-22T14:57:24+05:30",
+    "index": 6,
+    "key": "chaughadia_day_6",
+    "label": "Kaal",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "13:26",
+    "start_iso": "2026-09-22T13:26:19+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "17:59",
+    "end_iso": "2026-09-22T17:59:34+05:30",
+    "index": 8,
+    "key": "chaughadia_day_8",
+    "label": "Rog",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "16:28",
+    "start_iso": "2026-09-22T16:28:29+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "19:28",
+    "end_iso": "2026-09-22T19:28:31.911259+05:30",
+    "index": 1,
+    "key": "chaughadia_night_1",
+    "label": "Kaal",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "17:59",
+    "start_iso": "2026-09-22T17:59:34+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "22:26",
+    "end_iso": "2026-09-22T22:26:27.733777+05:30",
+    "index": 3,
+    "key": "chaughadia_night_3",
+    "label": "Udveg",
+    "phase": "night",
+    "quality": "caution",
+    "start": "20:57",
+    "start_iso": "2026-09-22T20:57:29.822518+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "reduce_impulse"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "04:22",
+    "end_iso": "2026-09-23T04:22:19.378813+05:30",
+    "index": 7,
+    "key": "chaughadia_night_7",
+    "label": "Rog",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "02:53",
+    "start_iso": "2026-09-23T02:53:21.467554+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "05:51",
+    "end_iso": "2026-09-23T05:51:17.290075+05:30",
+    "index": 8,
+    "key": "chaughadia_night_8",
+    "label": "Kaal",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "04:22",
+    "start_iso": "2026-09-23T04:22:19.378813+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   }
+  ],
+  "chaughadia": [
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "07:21",
+    "end_iso": "2026-09-22T07:21:59+05:30",
+    "index": 1,
+    "key": "chaughadia_day_1",
+    "label": "Rog",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "05:50",
+    "start_iso": "2026-09-22T05:50:54+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "08:53",
+    "end_iso": "2026-09-22T08:53:04+05:30",
+    "index": 2,
+    "key": "chaughadia_day_2",
+    "label": "Udveg",
+    "phase": "day",
+    "quality": "caution",
+    "start": "07:21",
+    "start_iso": "2026-09-22T07:21:59+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "reduce_impulse"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "10:24",
+    "end_iso": "2026-09-22T10:24:09+05:30",
+    "index": 3,
+    "key": "chaughadia_day_3",
+    "label": "Char",
+    "phase": "day",
+    "quality": "usable",
+    "start": "08:53",
+    "start_iso": "2026-09-22T08:53:04+05:30",
+    "tags": [
+     "travel",
+     "movement",
+     "communication"
+    ],
+    "warnings": [
+     {
+      "key": "yamaganda",
+      "label": "Yamaganda",
+      "message": "Overlaps Yamaganda for 91 minutes.",
+      "overlap_minutes": 91
+     }
+    ]
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "11:55",
+    "end_iso": "2026-09-22T11:55:14+05:30",
+    "index": 4,
+    "key": "chaughadia_day_4",
+    "label": "Labh",
+    "phase": "day",
+    "quality": "favorable",
+    "start": "10:24",
+    "start_iso": "2026-09-22T10:24:09+05:30",
+    "tags": [
+     "commerce",
+     "learning",
+     "practical_gain"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "13:26",
+    "end_iso": "2026-09-22T13:26:19+05:30",
+    "index": 5,
+    "key": "chaughadia_day_5",
+    "label": "Amrit",
+    "phase": "day",
+    "quality": "excellent",
+    "start": "11:55",
+    "start_iso": "2026-09-22T11:55:14+05:30",
+    "tags": [
+     "general_work",
+     "important_tasks",
+     "healing_routine"
+    ],
+    "warnings": [
+     {
+      "key": "gulika",
+      "label": "Gulika",
+      "message": "Overlaps Gulika for 91 minutes.",
+      "overlap_minutes": 91
+     }
+    ]
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "14:57",
+    "end_iso": "2026-09-22T14:57:24+05:30",
+    "index": 6,
+    "key": "chaughadia_day_6",
+    "label": "Kaal",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "13:26",
+    "start_iso": "2026-09-22T13:26:19+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "16:28",
+    "end_iso": "2026-09-22T16:28:29+05:30",
+    "index": 7,
+    "key": "chaughadia_day_7",
+    "label": "Shubh",
+    "phase": "day",
+    "quality": "auspicious",
+    "start": "14:57",
+    "start_iso": "2026-09-22T14:57:24+05:30",
+    "tags": [
+     "agreements",
+     "relationships",
+     "offerings"
+    ],
+    "warnings": [
+     {
+      "key": "rahu_kalam",
+      "label": "Rahu Kalam",
+      "message": "Overlaps Rahu Kalam for 91 minutes.",
+      "overlap_minutes": 91
+     }
+    ]
+   },
+   {
+    "basis": "day_chaughadia",
+    "duration_minutes": 91,
+    "end": "17:59",
+    "end_iso": "2026-09-22T17:59:34+05:30",
+    "index": 8,
+    "key": "chaughadia_day_8",
+    "label": "Rog",
+    "phase": "day",
+    "quality": "avoid",
+    "start": "16:28",
+    "start_iso": "2026-09-22T16:28:29+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "19:28",
+    "end_iso": "2026-09-22T19:28:31.911259+05:30",
+    "index": 1,
+    "key": "chaughadia_night_1",
+    "label": "Kaal",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "17:59",
+    "start_iso": "2026-09-22T17:59:34+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "20:57",
+    "end_iso": "2026-09-22T20:57:29.822518+05:30",
+    "index": 2,
+    "key": "chaughadia_night_2",
+    "label": "Labh",
+    "phase": "night",
+    "quality": "favorable",
+    "start": "19:28",
+    "start_iso": "2026-09-22T19:28:31.911259+05:30",
+    "tags": [
+     "commerce",
+     "learning",
+     "practical_gain"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "22:26",
+    "end_iso": "2026-09-22T22:26:27.733777+05:30",
+    "index": 3,
+    "key": "chaughadia_night_3",
+    "label": "Udveg",
+    "phase": "night",
+    "quality": "caution",
+    "start": "20:57",
+    "start_iso": "2026-09-22T20:57:29.822518+05:30",
+    "tags": [
+     "avoid_major_decisions",
+     "reduce_impulse"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "23:55",
+    "end_iso": "2026-09-22T23:55:25.645036+05:30",
+    "index": 4,
+    "key": "chaughadia_night_4",
+    "label": "Shubh",
+    "phase": "night",
+    "quality": "auspicious",
+    "start": "22:26",
+    "start_iso": "2026-09-22T22:26:27.733777+05:30",
+    "tags": [
+     "agreements",
+     "relationships",
+     "offerings"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "01:24",
+    "end_iso": "2026-09-23T01:24:23.556295+05:30",
+    "index": 5,
+    "key": "chaughadia_night_5",
+    "label": "Amrit",
+    "phase": "night",
+    "quality": "excellent",
+    "start": "23:55",
+    "start_iso": "2026-09-22T23:55:25.645036+05:30",
+    "tags": [
+     "general_work",
+     "important_tasks",
+     "healing_routine"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "02:53",
+    "end_iso": "2026-09-23T02:53:21.467554+05:30",
+    "index": 6,
+    "key": "chaughadia_night_6",
+    "label": "Char",
+    "phase": "night",
+    "quality": "usable",
+    "start": "01:24",
+    "start_iso": "2026-09-23T01:24:23.556295+05:30",
+    "tags": [
+     "travel",
+     "movement",
+     "communication"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "04:22",
+    "end_iso": "2026-09-23T04:22:19.378813+05:30",
+    "index": 7,
+    "key": "chaughadia_night_7",
+    "label": "Rog",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "02:53",
+    "start_iso": "2026-09-23T02:53:21.467554+05:30",
+    "tags": [
+     "avoid_strain",
+     "repair_only"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "05:51",
+    "end_iso": "2026-09-23T05:51:17.290075+05:30",
+    "index": 8,
+    "key": "chaughadia_night_8",
+    "label": "Kaal",
+    "phase": "night",
+    "quality": "avoid",
+    "start": "04:22",
+    "start_iso": "2026-09-23T04:22:19.378813+05:30",
+    "tags": [
+     "avoid_launches",
+     "protect_schedule"
+    ],
+    "warnings": []
+   }
+  ],
+  "date": "2026-09-22",
+  "favorable_period_selection": {
+   "basis": "curated_for_daily_use_from_abhijit_chaughadia_hora",
+   "returned": 6,
+   "total_candidates": 14
+  },
+  "favorable_periods": [
+   {
+    "basis": "solar_midday_daylight_1_15",
+    "duration_minutes": 49,
+    "end": "12:19",
+    "end_iso": "2026-09-22T12:19:31.333333+05:30",
+    "key": "abhijit_muhurat",
+    "label": "Abhijit Muhurat",
+    "quality": "auspicious",
+    "selection_rank": 1,
+    "start": "11:30",
+    "start_iso": "2026-09-22T11:30:56.666667+05:30",
+    "tags": [
+     "general_work",
+     "clarity",
+     "important_tasks"
+    ],
+    "warnings": [
+     {
+      "key": "gulika",
+      "label": "Gulika",
+      "message": "Overlaps Gulika for 24 minutes.",
+      "overlap_minutes": 24
+     }
+    ]
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "01:24",
+    "end_iso": "2026-09-23T01:24:23.556295+05:30",
+    "index": 5,
+    "key": "chaughadia_night_5",
+    "label": "Amrit",
+    "phase": "night",
+    "quality": "excellent",
+    "selection_rank": 2,
+    "start": "23:55",
+    "start_iso": "2026-09-22T23:55:25.645036+05:30",
+    "tags": [
+     "general_work",
+     "important_tasks",
+     "healing_routine"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "19:58",
+    "end_iso": "2026-09-22T19:58:11.215012+05:30",
+    "index": 14,
+    "key": "hora_14",
+    "label": "Jupiter Hora",
+    "lord": "Jupiter",
+    "phase": "night",
+    "quality": "excellent",
+    "selection_rank": 3,
+    "start": "18:58",
+    "start_iso": "2026-09-22T18:58:52.607506+05:30",
+    "tags": [
+     "learning",
+     "guidance",
+     "wealth"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "02:53",
+    "end_iso": "2026-09-23T02:53:21.467554+05:30",
+    "index": 21,
+    "key": "hora_21",
+    "label": "Jupiter Hora",
+    "lord": "Jupiter",
+    "phase": "night",
+    "quality": "excellent",
+    "selection_rank": 4,
+    "start": "01:54",
+    "start_iso": "2026-09-23T01:54:02.860048+05:30",
+    "tags": [
+     "learning",
+     "guidance",
+     "wealth"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "night_chaughadia",
+    "duration_minutes": 89,
+    "end": "23:55",
+    "end_iso": "2026-09-22T23:55:25.645036+05:30",
+    "index": 4,
+    "key": "chaughadia_night_4",
+    "label": "Shubh",
+    "phase": "night",
+    "quality": "auspicious",
+    "selection_rank": 5,
+    "start": "22:26",
+    "start_iso": "2026-09-22T22:26:27.733777+05:30",
+    "tags": [
+     "agreements",
+     "relationships",
+     "offerings"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "08:53",
+    "end_iso": "2026-09-22T08:53:03.999999+05:30",
+    "index": 3,
+    "key": "hora_3",
+    "label": "Venus Hora",
+    "lord": "Venus",
+    "phase": "day",
+    "quality": "auspicious",
+    "selection_rank": 6,
+    "start": "07:52",
+    "start_iso": "2026-09-22T07:52:20.666666+05:30",
+    "tags": [
+     "relationships",
+     "arts",
+     "comfort"
+    ],
+    "warnings": []
+   }
+  ],
+  "gulika": {
+   "basis": "weekday_day_segment",
+   "duration_minutes": 91,
+   "end": "13:26",
+   "end_iso": "2026-09-22T13:26:19+05:30",
+   "key": "gulika",
+   "label": "Gulika",
+   "quality": "avoid",
+   "segment": 5,
+   "start": "11:55",
+   "start_iso": "2026-09-22T11:55:14+05:30",
+   "tags": [
+    "avoid_major_decisions",
+    "protect_schedule"
+   ],
+   "warnings": []
+  },
+  "hora": [
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "06:51",
+    "end_iso": "2026-09-22T06:51:37.333333+05:30",
+    "index": 1,
+    "key": "hora_1",
+    "label": "Mars Hora",
+    "lord": "Mars",
+    "phase": "day",
+    "quality": "caution",
+    "start": "05:50",
+    "start_iso": "2026-09-22T05:50:54+05:30",
+    "tags": [
+     "action",
+     "courage",
+     "conflict_control"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "07:52",
+    "end_iso": "2026-09-22T07:52:20.666666+05:30",
+    "index": 2,
+    "key": "hora_2",
+    "label": "Sun Hora",
+    "lord": "Sun",
+    "phase": "day",
+    "quality": "mixed",
+    "start": "06:51",
+    "start_iso": "2026-09-22T06:51:37.333333+05:30",
+    "tags": [
+     "leadership",
+     "authority",
+     "visibility"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "08:53",
+    "end_iso": "2026-09-22T08:53:03.999999+05:30",
+    "index": 3,
+    "key": "hora_3",
+    "label": "Venus Hora",
+    "lord": "Venus",
+    "phase": "day",
+    "quality": "auspicious",
+    "start": "07:52",
+    "start_iso": "2026-09-22T07:52:20.666666+05:30",
+    "tags": [
+     "relationships",
+     "arts",
+     "comfort"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "09:53",
+    "end_iso": "2026-09-22T09:53:47.333332+05:30",
+    "index": 4,
+    "key": "hora_4",
+    "label": "Mercury Hora",
+    "lord": "Mercury",
+    "phase": "day",
+    "quality": "supportive",
+    "start": "08:53",
+    "start_iso": "2026-09-22T08:53:03.999999+05:30",
+    "tags": [
+     "communication",
+     "trade",
+     "study"
+    ],
+    "warnings": [
+     {
+      "key": "yamaganda",
+      "label": "Yamaganda",
+      "message": "Overlaps Yamaganda for 61 minutes.",
+      "overlap_minutes": 61
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "10:54",
+    "end_iso": "2026-09-22T10:54:30.666665+05:30",
+    "index": 5,
+    "key": "hora_5",
+    "label": "Moon Hora",
+    "lord": "Moon",
+    "phase": "day",
+    "quality": "supportive",
+    "start": "09:53",
+    "start_iso": "2026-09-22T09:53:47.333332+05:30",
+    "tags": [
+     "mind",
+     "home",
+     "relationships"
+    ],
+    "warnings": [
+     {
+      "key": "yamaganda",
+      "label": "Yamaganda",
+      "message": "Overlaps Yamaganda for 30 minutes.",
+      "overlap_minutes": 30
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "11:55",
+    "end_iso": "2026-09-22T11:55:13.999998+05:30",
+    "index": 6,
+    "key": "hora_6",
+    "label": "Saturn Hora",
+    "lord": "Saturn",
+    "phase": "day",
+    "quality": "practical",
+    "start": "10:54",
+    "start_iso": "2026-09-22T10:54:30.666665+05:30",
+    "tags": [
+     "discipline",
+     "repair",
+     "long_term_work"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "12:55",
+    "end_iso": "2026-09-22T12:55:57.333331+05:30",
+    "index": 7,
+    "key": "hora_7",
+    "label": "Jupiter Hora",
+    "lord": "Jupiter",
+    "phase": "day",
+    "quality": "excellent",
+    "start": "11:55",
+    "start_iso": "2026-09-22T11:55:13.999998+05:30",
+    "tags": [
+     "learning",
+     "guidance",
+     "wealth"
+    ],
+    "warnings": [
+     {
+      "key": "gulika",
+      "label": "Gulika",
+      "message": "Overlaps Gulika for 61 minutes.",
+      "overlap_minutes": 61
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "13:56",
+    "end_iso": "2026-09-22T13:56:40.666664+05:30",
+    "index": 8,
+    "key": "hora_8",
+    "label": "Mars Hora",
+    "lord": "Mars",
+    "phase": "day",
+    "quality": "caution",
+    "start": "12:55",
+    "start_iso": "2026-09-22T12:55:57.333331+05:30",
+    "tags": [
+     "action",
+     "courage",
+     "conflict_control"
+    ],
+    "warnings": [
+     {
+      "key": "gulika",
+      "label": "Gulika",
+      "message": "Overlaps Gulika for 30 minutes.",
+      "overlap_minutes": 30
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "14:57",
+    "end_iso": "2026-09-22T14:57:23.999997+05:30",
+    "index": 9,
+    "key": "hora_9",
+    "label": "Sun Hora",
+    "lord": "Sun",
+    "phase": "day",
+    "quality": "mixed",
+    "start": "13:56",
+    "start_iso": "2026-09-22T13:56:40.666664+05:30",
+    "tags": [
+     "leadership",
+     "authority",
+     "visibility"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "15:58",
+    "end_iso": "2026-09-22T15:58:07.333330+05:30",
+    "index": 10,
+    "key": "hora_10",
+    "label": "Venus Hora",
+    "lord": "Venus",
+    "phase": "day",
+    "quality": "auspicious",
+    "start": "14:57",
+    "start_iso": "2026-09-22T14:57:23.999997+05:30",
+    "tags": [
+     "relationships",
+     "arts",
+     "comfort"
+    ],
+    "warnings": [
+     {
+      "key": "rahu_kalam",
+      "label": "Rahu Kalam",
+      "message": "Overlaps Rahu Kalam for 61 minutes.",
+      "overlap_minutes": 61
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "16:58",
+    "end_iso": "2026-09-22T16:58:50.666663+05:30",
+    "index": 11,
+    "key": "hora_11",
+    "label": "Mercury Hora",
+    "lord": "Mercury",
+    "phase": "day",
+    "quality": "supportive",
+    "start": "15:58",
+    "start_iso": "2026-09-22T15:58:07.333330+05:30",
+    "tags": [
+     "communication",
+     "trade",
+     "study"
+    ],
+    "warnings": [
+     {
+      "key": "rahu_kalam",
+      "label": "Rahu Kalam",
+      "message": "Overlaps Rahu Kalam for 30 minutes.",
+      "overlap_minutes": 30
+     }
+    ]
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 61,
+    "end": "17:59",
+    "end_iso": "2026-09-22T17:59:34+05:30",
+    "index": 12,
+    "key": "hora_12",
+    "label": "Moon Hora",
+    "lord": "Moon",
+    "phase": "day",
+    "quality": "supportive",
+    "start": "16:58",
+    "start_iso": "2026-09-22T16:58:50.666663+05:30",
+    "tags": [
+     "mind",
+     "home",
+     "relationships"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "18:58",
+    "end_iso": "2026-09-22T18:58:52.607506+05:30",
+    "index": 13,
+    "key": "hora_13",
+    "label": "Saturn Hora",
+    "lord": "Saturn",
+    "phase": "night",
+    "quality": "practical",
+    "start": "17:59",
+    "start_iso": "2026-09-22T17:59:34+05:30",
+    "tags": [
+     "discipline",
+     "repair",
+     "long_term_work"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "19:58",
+    "end_iso": "2026-09-22T19:58:11.215012+05:30",
+    "index": 14,
+    "key": "hora_14",
+    "label": "Jupiter Hora",
+    "lord": "Jupiter",
+    "phase": "night",
+    "quality": "excellent",
+    "start": "18:58",
+    "start_iso": "2026-09-22T18:58:52.607506+05:30",
+    "tags": [
+     "learning",
+     "guidance",
+     "wealth"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "20:57",
+    "end_iso": "2026-09-22T20:57:29.822518+05:30",
+    "index": 15,
+    "key": "hora_15",
+    "label": "Mars Hora",
+    "lord": "Mars",
+    "phase": "night",
+    "quality": "caution",
+    "start": "19:58",
+    "start_iso": "2026-09-22T19:58:11.215012+05:30",
+    "tags": [
+     "action",
+     "courage",
+     "conflict_control"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "21:56",
+    "end_iso": "2026-09-22T21:56:48.430024+05:30",
+    "index": 16,
+    "key": "hora_16",
+    "label": "Sun Hora",
+    "lord": "Sun",
+    "phase": "night",
+    "quality": "mixed",
+    "start": "20:57",
+    "start_iso": "2026-09-22T20:57:29.822518+05:30",
+    "tags": [
+     "leadership",
+     "authority",
+     "visibility"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "22:56",
+    "end_iso": "2026-09-22T22:56:07.037530+05:30",
+    "index": 17,
+    "key": "hora_17",
+    "label": "Venus Hora",
+    "lord": "Venus",
+    "phase": "night",
+    "quality": "auspicious",
+    "start": "21:56",
+    "start_iso": "2026-09-22T21:56:48.430024+05:30",
+    "tags": [
+     "relationships",
+     "arts",
+     "comfort"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "23:55",
+    "end_iso": "2026-09-22T23:55:25.645036+05:30",
+    "index": 18,
+    "key": "hora_18",
+    "label": "Mercury Hora",
+    "lord": "Mercury",
+    "phase": "night",
+    "quality": "supportive",
+    "start": "22:56",
+    "start_iso": "2026-09-22T22:56:07.037530+05:30",
+    "tags": [
+     "communication",
+     "trade",
+     "study"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "00:54",
+    "end_iso": "2026-09-23T00:54:44.252542+05:30",
+    "index": 19,
+    "key": "hora_19",
+    "label": "Moon Hora",
+    "lord": "Moon",
+    "phase": "night",
+    "quality": "supportive",
+    "start": "23:55",
+    "start_iso": "2026-09-22T23:55:25.645036+05:30",
+    "tags": [
+     "mind",
+     "home",
+     "relationships"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "01:54",
+    "end_iso": "2026-09-23T01:54:02.860048+05:30",
+    "index": 20,
+    "key": "hora_20",
+    "label": "Saturn Hora",
+    "lord": "Saturn",
+    "phase": "night",
+    "quality": "practical",
+    "start": "00:54",
+    "start_iso": "2026-09-23T00:54:44.252542+05:30",
+    "tags": [
+     "discipline",
+     "repair",
+     "long_term_work"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "02:53",
+    "end_iso": "2026-09-23T02:53:21.467554+05:30",
+    "index": 21,
+    "key": "hora_21",
+    "label": "Jupiter Hora",
+    "lord": "Jupiter",
+    "phase": "night",
+    "quality": "excellent",
+    "start": "01:54",
+    "start_iso": "2026-09-23T01:54:02.860048+05:30",
+    "tags": [
+     "learning",
+     "guidance",
+     "wealth"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "03:52",
+    "end_iso": "2026-09-23T03:52:40.075060+05:30",
+    "index": 22,
+    "key": "hora_22",
+    "label": "Mars Hora",
+    "lord": "Mars",
+    "phase": "night",
+    "quality": "caution",
+    "start": "02:53",
+    "start_iso": "2026-09-23T02:53:21.467554+05:30",
+    "tags": [
+     "action",
+     "courage",
+     "conflict_control"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "04:51",
+    "end_iso": "2026-09-23T04:51:58.682566+05:30",
+    "index": 23,
+    "key": "hora_23",
+    "label": "Sun Hora",
+    "lord": "Sun",
+    "phase": "night",
+    "quality": "mixed",
+    "start": "03:52",
+    "start_iso": "2026-09-23T03:52:40.075060+05:30",
+    "tags": [
+     "leadership",
+     "authority",
+     "visibility"
+    ],
+    "warnings": []
+   },
+   {
+    "basis": "weekday_lord_chaldean_sequence",
+    "duration_minutes": 59,
+    "end": "05:51",
+    "end_iso": "2026-09-23T05:51:17.290075+05:30",
+    "index": 24,
+    "key": "hora_24",
+    "label": "Venus Hora",
+    "lord": "Venus",
+    "phase": "night",
+    "quality": "auspicious",
+    "start": "04:51",
+    "start_iso": "2026-09-23T04:51:58.682566+05:30",
+    "tags": [
+     "relationships",
+     "arts",
+     "comfort"
+    ],
+    "warnings": []
+   }
+  ],
+  "metadata": {
+   "calculation_basis": "sunrise_sunset_practical_muhurta_v1",
+   "coverage_end_iso": "2026-09-23T05:51:17.290075+05:30",
+   "coverage_start_iso": "2026-09-22T05:50:54+05:30",
+   "daylight_minutes": 729,
+   "night_minutes": 712,
+   "ruleset_version": "vedic_daily_timing_v1",
+   "weekday": "Tuesday"
+  },
+  "next_sunrise": "05:51",
+  "rahu_kalam": {
+   "basis": "panchang",
+   "duration_minutes": 91,
+   "end": "16:28",
+   "end_iso": "2026-09-22T16:28:00+05:30",
+   "key": "rahu_kalam",
+   "label": "Rahu Kalam",
+   "quality": "avoid",
+   "start": "14:57",
+   "start_iso": "2026-09-22T14:57:00+05:30",
+   "tags": [
+    "avoid_major_decisions",
+    "delay_launches"
+   ],
+   "warnings": []
+  },
+  "sunrise": "05:50",
+  "sunset": "17:59",
+  "timezone": "Asia/Kolkata",
+  "yamaganda": {
+   "basis": "weekday_day_segment",
+   "duration_minutes": 91,
+   "end": "10:24",
+   "end_iso": "2026-09-22T10:24:09+05:30",
+   "key": "yamaganda",
+   "label": "Yamaganda",
+   "quality": "avoid",
+   "segment": 3,
+   "start": "08:53",
+   "start_iso": "2026-09-22T08:53:04+05:30",
+   "tags": [
+    "avoid_major_decisions",
+    "protect_schedule"
+   ],
+   "warnings": []
+  }
+ }
+}

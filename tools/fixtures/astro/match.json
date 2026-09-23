@@ -1,0 +1,213 @@
+{
+ "ashtakoota": {
+  "kootas": [
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Person 1: Vaishya; Person 2: Vaishya."
+     }
+    ],
+    "id": "varna",
+    "max_score": 1,
+    "name": "Varna",
+    "score": 1.0,
+    "status": "strong"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Person 1: Quadruped; Person 2: Human."
+     }
+    ],
+    "id": "vashya",
+    "max_score": 2,
+    "name": "Vashya",
+    "score": 1.0,
+    "status": "moderate"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Directional Tara scores are 1.5 and 1.5."
+     }
+    ],
+    "id": "tara",
+    "max_score": 3,
+    "name": "Tara",
+    "score": 3.0,
+    "status": "strong"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Person 1: Mongoose; Person 2: Buffalo."
+     }
+    ],
+    "id": "yoni",
+    "max_score": 4,
+    "name": "Yoni",
+    "score": 2.0,
+    "status": "moderate"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Moon sign lords are Saturn and Mercury; relations are friend/neutral."
+     }
+    ],
+    "id": "graha_maitri",
+    "max_score": 5,
+    "name": "Graha Maitri",
+    "score": 4.0,
+    "status": "strong"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Person 1: Manushya; Person 2: Deva."
+     }
+    ],
+    "id": "gana",
+    "max_score": 6,
+    "name": "Gana",
+    "score": 5.0,
+    "status": "strong"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Moon signs are in 9/5 relation."
+     }
+    ],
+    "id": "bhakoot",
+    "max_score": 7,
+    "name": "Bhakoot",
+    "score": 0.0,
+    "status": "dosha"
+   },
+   {
+    "evidence": [
+     {
+      "kind": "rule_evaluation",
+      "message": "Person 1: Antya; Person 2: Adi."
+     }
+    ],
+    "id": "nadi",
+    "max_score": 8,
+    "name": "Nadi",
+    "score": 8.0,
+    "status": "strong"
+   }
+  ],
+  "max_score": 36,
+  "percentage": 66.7,
+  "recommendation": "Average Match",
+  "score": 24.0
+ },
+ "doshas": {
+  "bhakoot": {
+   "active": true,
+   "max_score": 7,
+   "message": "Bhakoot score is 0 out of 7.",
+   "score": 0.0
+  },
+  "manglik": {
+   "compatibility": {
+    "available": true,
+    "difference": 0,
+    "message": "Mangal Dosha levels are balanced between both charts.",
+    "status": "balanced"
+   },
+   "person1": {
+    "active": true,
+    "available": true,
+    "cancellations": [],
+    "message": "Low Mangal Dosha.",
+    "reference_frames": [
+     {
+      "frame": "Moon",
+      "house": 8
+     }
+    ],
+    "severity": "Low Mangal Dosha",
+    "severity_score": 1
+   },
+   "person2": {
+    "active": true,
+    "available": true,
+    "cancellations": [],
+    "message": "Low Mangal Dosha.",
+    "reference_frames": [
+     {
+      "frame": "Moon",
+      "house": 1
+     }
+    ],
+    "severity": "Low Mangal Dosha",
+    "severity_score": 1
+   }
+  },
+  "nadi": {
+   "active": false,
+   "max_score": 8,
+   "message": "Nadi score is 8 out of 8.",
+   "score": 8.0
+  }
+ },
+ "metadata": {
+  "calculation_basis": "moon_nakshatra_moon_rashi_ashtakoota",
+  "endpoint_version": "v2",
+  "person1_input_mode": "birth_chart",
+  "person2_input_mode": "birth_chart",
+  "ruleset_version": "astrosage_ashtakoota_v1"
+ },
+ "persons": [
+  {
+   "input_mode": "birth_chart",
+   "label": "Person 1",
+   "moon_nakshatra": {
+    "id": 21,
+    "lord": "Sun",
+    "name": "Uttara Ashadha",
+    "pada": 3
+   },
+   "moon_sign": {
+    "degree": 5.5881,
+    "id": 10,
+    "name": "Capricorn"
+   }
+  },
+  {
+   "input_mode": "birth_chart",
+   "label": "Person 2",
+   "moon_nakshatra": {
+    "id": 13,
+    "lord": "Moon",
+    "name": "Hasta",
+    "pada": 1
+   },
+   "moon_sign": {
+    "degree": 11.735,
+    "id": 6,
+    "name": "Virgo"
+   }
+  }
+ ],
+ "summary": {
+  "max_score": 36,
+  "minimum_traditional_threshold": 18,
+  "passes_minimum_threshold": true,
+  "risk_flags": [
+   "bhakoot_dosha",
+   "manglik_requires_review"
+  ],
+  "total_score": 24.0
+ }
+}

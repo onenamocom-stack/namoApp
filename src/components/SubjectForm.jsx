@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { callAstro } from '../lib/astro.js'
+import { useState } from 'react'
+import PlaceField, { placeLabel } from './PlaceField.jsx'
 
 /**
  * Three questions about somebody else, asked inside the conversation.
@@ -22,30 +22,17 @@ import { callAstro } from '../lib/astro.js'
  * the cost of not holding a third party's birth record, and worth saying on
  * screen rather than letting people discover.
  */
-export default function SubjectForm({ onDone, onCancel }) {
+export default function SubjectForm({
+  onDone,
+  onCancel,
+  title = 'Whose chart?',
+  cta = 'Read their chart',
+}) {
   const [form, setForm] = useState({
     name: '', date: '', time: '', timeKnown: true, place: null,
   })
-  const [placeQuery, setPlaceQuery] = useState('')
-  const [hits, setHits] = useState([])
-  const [searching, setSearching] = useState(false)
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-
-  /* Debounced, because every keystroke is an upstream geo call and the
-     provider's quota is money — the same reason AskPlace debounces. */
-  useEffect(() => {
-    const q = placeQuery.trim()
-    if (q.length < 3 || form.place) return setHits([])
-    setSearching(true)
-    const id = setTimeout(() => {
-      callAstro('geo', { q })
-        .then((res) => setHits((res?.data ?? res ?? []).slice(0, 5)))
-        .catch(() => setHits([]))
-        .finally(() => setSearching(false))
-    }, 350)
-    return () => clearTimeout(id)
-  }, [placeQuery, form.place])
 
   const valid =
     form.name.trim() &&
@@ -61,7 +48,7 @@ export default function SubjectForm({ onDone, onCancel }) {
       birth_date: `${y}-${m}-${d}`,
       birth_time: form.timeKnown ? `${form.time}:00` : null,
       birth_time_known: form.timeKnown,
-      birth_place: form.place.label ?? form.place.name,
+      birth_place: placeLabel(form.place),
       birth_lat: form.place.lat,
       birth_lon: form.place.lon ?? form.place.lng,
       birth_zone: form.place.zone ?? form.place.timezone ?? 'Asia/Kolkata',
@@ -70,7 +57,7 @@ export default function SubjectForm({ onDone, onCancel }) {
 
   return (
     <div className="pop-card space-y-3 p-4">
-      <p className="caps t-heading">Whose chart?</p>
+      <p className="caps t-heading">{title}</p>
 
       <Field label="Their name">
         <input
@@ -112,36 +99,11 @@ export default function SubjectForm({ onDone, onCancel }) {
       </Field>
 
       <Field label="Place of birth">
-        {form.place ? (
-          <button
-            type="button"
-            onClick={() => { setForm((f) => ({ ...f, place: null })); setPlaceQuery('') }}
-            className="field-line w-full text-left"
-          >
-            {form.place.label ?? form.place.name} ·{' '}
-            <span className="t-faint">change</span>
-          </button>
-        ) : (
-          <>
-            <input
-              value={placeQuery}
-              onChange={(e) => setPlaceQuery(e.target.value)}
-              placeholder="City of birth"
-              className="field-line"
-            />
-            {searching && <p className="mt-1.5 caps-sm t-faint">Searching</p>}
-            {hits.map((h) => (
-              <button
-                key={`${h.lat}${h.lon ?? h.lng}`}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, place: h }))}
-                className="act-row !py-2.5"
-              >
-                <span className="text-meta t-body">{h.label ?? h.name}</span>
-              </button>
-            ))}
-          </>
-        )}
+        <PlaceField
+          place={form.place}
+          onPick={(place) => setForm((f) => ({ ...f, place }))}
+          placeholder="City of birth"
+        />
       </Field>
 
       <p className="text-micro t-faint">
@@ -156,7 +118,7 @@ export default function SubjectForm({ onDone, onCancel }) {
           disabled={!valid}
           className="pop-btn flex-1 caps-sm disabled:opacity-40"
         >
-          Read their chart
+          {cta}
         </button>
         <button type="button" onClick={onCancel} className="pill caps-sm">
           Cancel

@@ -35,7 +35,8 @@ const FREE_TOOLS = [
   { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/horoscope' },
   { key: 'ai', label: 'tool.ai', icon: 'ai', act: ({ openChat }) => openChat('ai') },
   { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
-  { key: 'match', label: 'tool.match', icon: 'consult', to: '/people' },
+  { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match' },
+  { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat' },
 ]
 
 /** Circles, because a circle reads as a tool and a card reads as content. */
@@ -49,14 +50,14 @@ function FreeTools() {
         {FREE_TOOLS.map((f) => (
           <li key={f.key}>
             {f.to ? (
-              <Link to={f.to} className="tile w-[76px]">
+              <Link to={f.to} className="tile w-[68px]">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>
                 <span className="caps-sm leading-tight t-body">{t(f.label)}</span>
               </Link>
             ) : (
-              <button type="button" onClick={() => f.act(bag)} className="tile w-[76px]">
+              <button type="button" onClick={() => f.act(bag)} className="tile w-[68px]">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>

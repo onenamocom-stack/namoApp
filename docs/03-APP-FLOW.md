@@ -63,9 +63,10 @@ In file order, which is also resolution order.
 | `/ask` | Ask | Plain |
 | `/chart` | Chart | Plain |
 | `/chart/:id` | Placement | Plain |
-| `/people` | People | Plain |
+| `/match` | Match — Ashtakoota for two births | Plain |
+| `/muhurat` | Muhurat — auspicious windows | Plain |
 | `/people/invite` | Invite | Plain |
-| `/people/:id` | Synastry | Plain |
+| `/people` · `/people/:id` | → `/match` (redirect) | Plain |
 | `/read/:id` | Article | Plain |
 | `/reels/:id` | ReelViewer | Plain |
 | `/live/:id` | LiveRoom | Plain |
@@ -96,7 +97,7 @@ In file order, which is also resolution order.
    seeker app.
 2. **`/live` → `/consult` must also stay above `*`.** Live was absorbed into
    Consult as a mode; the legacy path is kept alive deliberately.
-3. **`/people/invite` is declared before `/people/:id`.** React Router v6 ranks
+3. **`/people/invite` is declared before the `/people/:id` redirect.** React Router v6 ranks
    by specificity so it would work either way, but the order tells a reader
    which is intended.
 4. **`/consult` and `/consult/:id` are different layouts** — a tab and a drill-in
@@ -239,9 +240,10 @@ component**, not by reordering the feed data, so the feed stays a list of
 content.
 
 ### `/consult`
-**Free-tools row of four circles, above the search field** — Horoscope and Ask
-AI open overlays, Tarot and Matching navigate. It sat on `/home` until 7 Sep
-2026. It is here because this is the screen somebody reaches already asking a
+**Free-tools row of five circles, above the search field** — Ask AI opens an
+overlay; Horoscope, Tarot, Matching and Muhurat navigate. Muhurat joined on
+22 Sep 2026 and the circles narrowed to fit a 360px phone. It sat on `/home`
+until 7 Sep 2026. It is here because this is the screen somebody reaches already asking a
 question, and the free answer belongs in front of the paid one rather than
 buried above a stream.
 
@@ -377,6 +379,48 @@ ayanamsa and house system stay printed under *Birth data*, because a wrong one
 is wrong silently and being told which was used is the only defence a reader
 has.
 
+### `/match`
+**Two slots, and the first defaults to you.** Slot one is the signed-in
+reader's own chart — the server reads their birth row, the client sends
+nothing about them — with one tap to type somebody else instead, so a parent
+can match two other people. Slot two is always typed. Submitting slot two runs
+the match.
+
+**Nothing typed is saved** (`01-PRD.md` §4.4). The result is stored server-side
+under a hash of the two births; the names and dates stay in the request. Reload
+and the form is empty again, which the form says before it is filled in.
+
+The answer leads with the total out of 36 and the vendor's verdict, then the
+pass mark of 18, then the eight kootas one by one with their evidence lines,
+then the doshas: Manglik per person, Nadi and Bhakoot for the pair. **The total
+is never shown alone** — a pair can clear 18 carrying the one dosha that
+matters, and the single number is the part people screenshot.
+
+**An unknown birth time is named on the answer, per person.** Every koota is
+read off the Moon, which crosses a nakshatra in about a day, so a substituted
+noon can move the score.
+
+### `/muhurat`
+**A purpose, a month and a place.** Six purposes (general work, vehicle,
+property, griha pravesh, namkaran, mundan), this month or the next two, and a
+place prefilled from the birth row and changeable in one tap — a muhurat is
+built from sunrise, and where you were born is rarely where you are buying a
+car. The place is named on screen for the same reason the panchang names
+Ujjain.
+
+**For my chart** appears only when a birth row exists, and switches to the
+personalised search, which ranks the same windows against that chart and may
+promote one exact moment. **It often promotes none and explains why**, and that
+sentence is then the whole answer — the screen renders it rather than an empty
+list.
+
+**An empty month is an answer, not a failure**: griha pravesh returns nothing
+through Chaturmas, and the screen says so and points at the next month. Windows
+that have already passed are dropped in the client, so the server's answer
+stays one row a month for everybody in the same 11 km cell. A window running
+past midnight is marked `+1d`, and sunrise-to-sunrise windows print their
+length, because their two clock times are identical.
+
 ### `/profile/:tab`
 **Two tabs in the URL — overview, settings.** Back always means Home here,
 regardless of history.
@@ -414,8 +458,8 @@ the two is off by a hundred on half its lines.
 `/reports` charges for real but **has no way to open the cart** — the only route
 to checkout is walking to Shop. `/premium` shows prices and grants nothing.
 `/ask` spends questions and its pack sheet grants them free, with a hardcoded
-wallet figure. `/chart`, `/chart/:id`, `/people`, `/people/:id`, `/read/:id`,
-`/reels/:id`, `/live/:id`, `/notifications` are read-only or toggle flags.
+wallet figure. `/chart`, `/chart/:id`, `/read/:id`, `/reels/:id`, `/live/:id`,
+`/notifications` are read-only or toggle flags.
 
 `/reels/:id` rewrites the URL as you scroll, so the address bar tracks the
 visible reel.
@@ -438,25 +482,29 @@ stamped with the IST day. What that changes on screen:
   the same almanac either way, so a signed-out reader on `/horoscope` gets the
   entry `/home` already wrote.
 
-**The daily reading is now the day itself, not a reading of the person** —
-9 Sep. It shows the panchang mood sentence and the four clock windows (Abhijit,
-Rahu Kalam, Yamaganda, Gulika) and nothing else. Gone from all four surfaces —
-the home reading card, the horoscope overlay, `/horoscope` and
-`/profile/horoscope` — are the headline, the summary, the 0–100 score, the four
-area ratings, the Do/Don't lists, the transits, the long sections and the
-reflection. Every one of them was computed from a birth that is not the
-reader's (`02-TRD.md` §8 has the field table).
+**The daily reading is the reader's own again — 22 Sep**, and this replaces
+the 9 Sep entry that stood here saying it was the day itself. Between those
+dates the reading came from one of twelve invented births, one per rashi, so
+`/horoscope` showed the panchang mood sentence and four clock windows and
+nothing else — everything richer described somebody who does not exist.
 
-**No surface names a rashi any more.** They did for two days. The surviving
-fields are identical across all twelve signs, so a sign printed beside them
-claimed a personalisation that was not there. `/horoscope` says on screen that
-the day is the same for everyone and links to `/chart`, which is where anything
-that turns on a birth actually lives. The reader's own moon sign still appears
-in the headers, where it comes off their own chart.
+Computed from the reader's birth, all of it is theirs, and `/horoscope` carries
+the full set again: headline, summary, the 0–100 score, six area ratings, the
+one instruction, Do/Don't, the dasha period, what is moving, the long sections
+and the reflection. `02-TRD.md` §8 has the cost, which is one upstream call per
+reader per day.
 
-The reading still depends on the chart having loaded once, because the rashi is
-what selects which of the twelve is fetched. That costs one request per account,
-ever, and nothing daily.
+**Two places appear on `/horoscope` and both are named.** The almanac line
+under the date is Ujjain, shared by everybody; the timing windows come from the
+reading and are computed at the reader's birth place. Sunrise moves about two
+hours across India, so an unnamed clock is wrong without looking wrong.
+
+**No surface names a rashi**, and that survives the change for a different
+reason than before: the reading is not a sign's reading at all now. The
+reader's own moon sign appears in the headers, off their own chart.
+
+The reading still depends on the chart having loaded once, for that header
+line. That costs one request per account, ever, and nothing daily.
 
 **The sun, moon and rising line in a header comes from the CHART**, not from the
 day's reading. It used to read the reading's `profile` block, which meant a

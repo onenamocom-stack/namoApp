@@ -76,9 +76,9 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Seeker/consultant fork | UI | `AskSide`. The consultant branch skips the birth questions entirely |
 | Login / accounts | **None** | Blocks everything |
 | Home feed | UI | One stream, seven card kinds. Daily reading and panchang hoisted to the top |
-| Daily horoscope, 3-day switcher | UI | Fixed content for all users |
-| Birth chart — table, wheel, placement detail | UI | Fixed placements for all users |
-| Panchang | UI | Fixed; its date disagrees with the horoscope's |
+| Daily horoscope, 3-day switcher | **Real** | Computed from the reader's own birth. Free |
+| Birth chart — table, wheel, placement detail | **Real** | Computed from the birth row. Free |
+| Panchang | **Real** | One row a day for everybody, computed at Ujjain and named on screen |
 | Consult — search, filter, four modes | UI | Call · Chat · Live · Booking as modes, not routes |
 | Booking a session | UI | Shows a price, **charges nothing**, books nothing |
 | Chat with a consultant | UI | Canned replies after 900 ms |
@@ -92,7 +92,8 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Academy — courses, events, downloads | UI | Enrol toasts. Course links go to YouTube *search* URLs |
 | Wallet — balance and ledger | **Real** | Server-owned. Debits only — top-up waits for payments |
 | Payments | **None** | Payment-method tags are decorative |
-| People / synastry | UI | Fixed |
+| Matching — Ashtakoota | **Real** | `/match`. 36 gunas and the doshas, from two births. Free, and nothing typed is saved. Replaced the mock friend list and its synastry, 22 Sep 2026 |
+| Muhurat | **Real** | `/muhurat`. Six purposes, a month at a time, optionally judged against your own chart. Free |
 | Notifications | UI | No read state, no deep links |
 
 ### Consultant

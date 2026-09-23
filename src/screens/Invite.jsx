@@ -11,7 +11,7 @@ export default function Invite() {
 
   return (
     <>
-      <TopBar title="Invite" back backTo="/people" />
+      <TopBar title="Invite" back backTo="/match" />
 
       <section className="section pt-14">
         <h1 className="mx-auto max-w-[13ch] text-center text-display font-light">

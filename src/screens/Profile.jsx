@@ -216,7 +216,8 @@ function Overview() {
         <Kicker>Everything else</Kicker>
         <div className="mt-2">
           <Row to="/chart" title="Your full chart" note="Nine placements, plainly written" />
-          <Row to="/people" title="People" note="Charts you have read against yours" />
+          <Row to="/match" title="Matching" note="Two charts read against each other" />
+          <Row to="/muhurat" title="Muhurat" note="When to start something that matters" />
           <Row to="/reports" title="Reports" note="Long-form readings, written once" />
           <Row to="/premium" title="Premium" note="Eros, packs and more questions" />
           <Row to="/academy" title="Academy" note="Courses, events and downloads" />

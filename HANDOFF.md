@@ -15,6 +15,7 @@ Updated 23 Sep 2026.
 | **5 · bookings** | **Done and closed.** All four done-conditions pass on dev, walked in a browser. `012` and `013` are both on both projects |
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
+| **7a · reading, matching, muhurat** | **On `main` and deployed, 23 Sep.** The daily reading is computed from the reader's own birth again — reversing 7 Sep — and `/match` (Ashtakoota) and `/muhurat` are new. **Never walked in a browser** — §29 |
 | **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **024–027 are all on production (13 Sep)** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
@@ -3776,3 +3777,78 @@ routes answer 401 rather than 404, and the console serves **Reports** and
 **Not done:** nobody has filed a real report through the app yet — the
 routes and the queue are verified, an end-to-end report-then-moderate pass
 is not.
+## 29. Horoscope, matching and muhurat — 22 Sep 2026
+
+**Merged to `main` and deployed, 23 Sep.** The API half went out first, in
+`namo-api` revision 00019, because §24's fix shipped in the same image.
+
+**The daily reading is the reader's own again.** It comes from their birth,
+cached as `horoscope:<user>:<digest>:<date>`, and `/horoscope` shows the full
+reading again — headline, the day's score, six area ratings, the one
+instruction, Do/Don't, the dasha period, what is moving, the long sections,
+the reflection. The twelve canonical births, their charts and the moon-drift
+check are deleted. **This reverses 7 Sep and supersedes 9 Sep**, and it costs
+one upstream call per reader per day: about 1,600 daily horoscope readers on
+Entry, then $40 for ten times that. `02-TRD.md` §8 has the accounting.
+
+**Two places now appear on `/horoscope`, and both are named.** The almanac
+line is Ujjain, shared. The timing windows come from the reading and are
+computed at the reader's birth place. Sunrise moves about two hours across
+India, so the screen says which is which.
+
+**`/match` is Ashtakoota.** Slot one defaults to the signed-in reader (the
+server reads their own row) and can be switched to a typed person, so a parent
+can match two other people; slot two is always typed. 36 gunas, the eight
+kootas with the vendor's evidence lines, Manglik per person, Nadi and Bhakoot
+for the pair. Nothing typed is stored: the cache key is two hashes. An unknown
+birth time is named on the answer, per person, because every koota is read off
+a Moon that crosses a nakshatra in a day.
+
+**`/muhurat` is six purposes, a month at a time**, at a place prefilled from
+the birth row and changed in one tap. Coordinates round to one decimal, so a
+city shares one row a month. `mine=1` judges the same windows against the
+caller's chart — and often promotes no single moment, returning a sentence
+saying why, which the screen renders instead of an empty list. An empty month
+(griha pravesh through Chaturmas) says so in words.
+
+**`/people` and `/people/:id` are gone**, along with `People.jsx`,
+`Synastry.jsx` and the `people` mock. Both paths redirect to `/match`.
+Consult's free-tools row is five circles now, narrowed to fit a 360px phone.
+
+**Two live bugs were found on the way, both invisible until the real provider
+came back** (§24):
+
+1. **Signup was refusing real birthplaces.** The geocoder returns up to eight
+   decimal places (Pune is 18.52322222) and both birth-detail serializers
+   declared six, so `PATCH /v1/me/` answered "Check the highlighted fields"
+   against a place the person had just picked from our own search.
+   `apps/core/fields.py` rounds instead of refusing. **Deployed, revision
+   00019.**
+2. **Namo AI's place search never returned anything.** `SubjectForm` read
+   `res.data` where the API sends `results`, so the list was always empty and
+   the failure was swallowed by its own `.catch`. Both forms use
+   `components/PlaceField.jsx` now, which also shows each result's district
+   and state — "Ujjain" returns seven places across two states, and the old
+   markup printed the name alone.
+
+**Checks.** 18 new pytest cases (astro) and one new verifier,
+`node tools/verify-astro-shapes.mjs`, which runs the REAL vendor payloads
+(`tools/fixtures/astro/`, captured 22 Sep from the reference birth) through
+the shaping functions in `src/lib/astro.js`. That is the side the Django tests
+cannot see: a renamed vendor field reads as an empty section with a green
+build. `npm run lint` and both builds are clean.
+
+**Not walked in a browser.** Windows Application Control blocks the headless
+browser on this machine, and there is no test-OTP number on
+`usgzgrdxlzgnehtbebzo`, so a signed-in local walk needs a real phone. The
+shape verifier covers the payload reads; what it cannot cover is layout and
+whether the screens feel right.
+
+**Two things this found that are older than this work:**
+
+- `node tools/verify-chart-geometry.mjs` **fails on `main`** — "South chart
+  must define exactly 12 cells". The south-Indian chart was deleted on 7 Sep
+  (`02-TRD.md` §8) and its verifier still looks for it.
+- On Python 3.14 the API suite shows **36 failures on `main`** (console,
+  admin templates, shiprocket, analytics), not one. CI runs 3.13, where they
+  pass. Locally, that is the noise floor to compare against.

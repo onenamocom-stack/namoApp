@@ -80,6 +80,8 @@ const OP_PATH = {
   horoscope: '/astro/horoscope/',
   panchang: '/astro/panchang/',
   geo: '/astro/geo/',
+  match: '/astro/match/',
+  muhurat: '/astro/muhurat/',
 }
 
 /**
@@ -90,37 +92,45 @@ const OP_PATH = {
  * refusals; this maps it back onto the { ok, code, reason } shape every
  * screen branches on, with the edge function's exact code strings.
  */
-export async function callAstro(op, params = {}) {
+export async function callAstro(op, params = {}, body = null) {
   const token = await accessToken()
   const query = new URLSearchParams()
-  if (params.date) query.set('date', params.date)
-  if (params.q) query.set('q', params.q)
+  for (const [name, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== '') query.set(name, value)
+  }
   const suffix = query.size ? `?${query.toString()}` : ''
 
   let response
   try {
     response = await fetch(`${API_BASE}${OP_PATH[op]}${suffix}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      // A body means POST: birth details typed about somebody else do not
+      // belong in a URL, where they would sit in every access log.
+      method: body ? 'POST' : 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
     })
   } catch {
     return UNREACHABLE
   }
 
-  let body = null
+  let answer = null
   try {
-    body = await response.json()
+    answer = await response.json()
   } catch {
     return UNREACHABLE
   }
 
-  if (!response.ok || body?.ok === false) {
+  if (!response.ok || answer?.ok === false) {
     // 401 'unauthenticated' is the edge function's 'signed_out'; every other
     // refusal reason already IS the code the screens branch on.
-    const code = response.status === 401 ? 'signed_out' : (body?.reason ?? 'unavailable')
-    return { ok: false, code, reason: body?.message ?? UNREACHABLE.reason }
+    const code = response.status === 401 ? 'signed_out' : (answer?.reason ?? 'unavailable')
+    return { ok: false, code, reason: answer?.message ?? UNREACHABLE.reason }
   }
 
-  return body ?? UNREACHABLE
+  return answer ?? UNREACHABLE
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -404,22 +414,197 @@ export function housesFrom(chart, timeKnown = true) {
 }
 
 /**
- * The daily reading — the fields that are actually true for the person
- * reading them: the panchang windows and the panchang mood sentence, both a
- * function of the day at the anchor city rather than of any birth.
+ * The daily reading.
+ *
+ * All of it is the reader's own again, as of 22 Sep 2026: the reading is
+ * computed from their birth rather than from one of twelve invented ones,
+ * so the headline, the scores, the dasha and the transits describe them.
+ * Between 9 and 22 Sep this returned two fields, because those were the
+ * only two the canonical-birth payload could honestly show — see
+ * `docs/02-TRD.md` §8 for what that cost and what it now costs instead.
+ *
+ * One thing on this payload is still NOT used: its own panchang, computed
+ * at the birth place. The screens read the shared Ujjain almanac, so that
+ * two tithis for one day cannot appear on two screens.
  */
 export function readingFrom(horoscope, label, context) {
   if (!horoscope) return null
 
+  const s = horoscope.scores ?? {}
   const t = horoscope.timing ?? {}
+  const dasha = (horoscope.profile?.active_dasha_stack ?? []).map((d) => d.lord).filter(Boolean)
 
   return {
     label,
     context,
     date: horoscope.meta?.target_date ?? null,
+    headline: horoscope.theme?.headline ?? '',
+    body: horoscope.narrative?.summary ?? '',
     dayMood: horoscope.narrative?.best_use ?? '',
+    focus: horoscope.remedy?.simple_action ?? '',
+    focusLabel: horoscope.remedy?.focus ?? 'Do this',
+    // 0–100 already, and it is the API's own overall band rather than
+    // anything this file arithmetic'd into existence.
+    intensity: s.overall?.score ?? null,
+    /* THE DASHA IS BACK, and it belongs to the reader. It was dropped on
+       7 Sep because the reading came from an invented birth, which made the
+       Vimshottari period that person's rather than this one's. */
+    glance: [['Tone', s.overall?.band], ['Period', dasha.join(' / ')]]
+      .filter(([, v]) => v)
+      .map(([key, value]) => ({ key, value })),
+    power: horoscope.narrative?.opportunity ?? '',
+    pressure: horoscope.narrative?.caution ?? '',
+    reflections: [horoscope.remedy?.reflection, horoscope.remedy?.avoid].filter(Boolean),
+    do: [horoscope.remedy?.simple_action].filter(Boolean),
+    dont: [horoscope.remedy?.avoid].filter(Boolean),
+    /* Six, not four. The payload scores six domains and the old screen
+       showed four of them, which threw away two for no reason. */
+    ratings: [
+      ['Career', s.career], ['Money', s.wealth], ['Relationships', s.relationships],
+      ['Health', s.health], ['Mind', s.mind], ['Spiritual', s.spiritual],
+    ]
+      .filter(([, band]) => typeof band?.score === 'number')
+      .map(([area, band]) => ({ area, score: band.score })),
+    sections: horoscope.sections ?? [],
+    transits: (horoscope.influences?.all_ranked ?? []).map((i) => ({
+      id: i.fact_id ?? i.id,
+      title: i.title,
+      body: i.summary,
+      weight: i.polarity,
+    })),
     windows: [t.abhijit, t.rahu_kalam, t.yamaganda, t.gulika].filter(Boolean),
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Matching and muhurat, added 22 Sep 2026.
+
+   NEITHER IS CACHED IN THE BROWSER. A match holds birth details somebody
+   typed about a third party, and `localStorage` outlives the session that
+   was told they would not be kept; muhurat is already one shared row a
+   month on the server, so a second call is cheap.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Ashtakoota for two people. `mine` as the first argument means the signed-in
+ * caller, whose birth the server reads from their own row — the client sends
+ * nothing about them.
+ */
+export function matchCharts(first, second) {
+  return callAstro('match', {}, { person1: first ?? null, person2: second })
+}
+
+/** Auspicious windows for a purpose, a month and a place. `mine` asks for the
+ *  version judged against the caller's own chart. */
+export function findMuhurat({ purpose, month, place, mine = false }) {
+  return callAstro('muhurat', {
+    purpose,
+    month,
+    lat: place?.lat,
+    lng: place?.lng ?? place?.lon,
+    zone: place?.timezone ?? place?.zone,
+    mine: mine ? 1 : '',
+  })
+}
+
+/** The eight kootas, the doshas and the total, in the shape the screen
+ *  renders. Points can be halves, so they print as given. */
+export function matchFrom(payload) {
+  if (!payload) return null
+  const ashtakoota = payload.ashtakoota ?? {}
+  const summary = payload.summary ?? {}
+  const doshas = payload.doshas ?? {}
+  const manglik = doshas.manglik ?? {}
+
+  return {
+    score: summary.total_score ?? ashtakoota.score ?? 0,
+    max: summary.max_score ?? ashtakoota.max_score ?? 36,
+    percentage: ashtakoota.percentage ?? null,
+    verdict: ashtakoota.recommendation ?? '',
+    threshold: summary.minimum_traditional_threshold ?? 18,
+    passes: Boolean(summary.passes_minimum_threshold),
+    people: (payload.persons ?? []).map((p) => ({
+      moon: p.moon_sign?.name ?? '',
+      nakshatra: p.moon_nakshatra?.name ?? '',
+    })),
+    kootas: (ashtakoota.kootas ?? []).map((k) => ({
+      id: k.id,
+      name: k.name,
+      score: k.score,
+      max: k.max_score,
+      status: k.status,
+      note: k.evidence?.[0]?.message ?? '',
+    })),
+    /* Manglik is per person and the other two are about the pair. A screen
+       that showed one number for all three would be saying something the
+       payload does not. */
+    manglik: ['person1', 'person2']
+      .map((side) => manglik[side])
+      .filter((m) => m?.available)
+      .map((m, index) => ({
+        who: index === 0 ? 'person1' : 'person2',
+        active: Boolean(m.active),
+        severity: m.severity ?? '',
+        cancellations: m.cancellations ?? [],
+        note: m.message ?? '',
+      })),
+    manglikTogether: manglik.compatibility?.message ?? '',
+    pairDoshas: [['Nadi', doshas.nadi], ['Bhakoot', doshas.bhakoot]]
+      .filter(([, d]) => d)
+      .map(([name, d]) => ({ name, active: Boolean(d.active), note: d.message ?? '' })),
+  }
+}
+
+/** A muhurat search as the screen reads it: windows in time order, the ones
+ *  that have already passed dropped, and whatever the personal search decided
+ *  about a single best moment. */
+export function muhuratFrom(payload, { now = new Date() } = {}) {
+  if (!payload) return null
+  const windows = (payload.best_windows ?? [])
+    .filter((w) => new Date(w.end) > now)
+    .sort((a, b) => new Date(a.start) - new Date(b.start))
+    .map((w) => ({
+      id: `${w.start}${w.end}`,
+      date: w.date,
+      start: clockOf(w.start),
+      end: clockOf(w.end),
+      // A window can end after midnight; saying so beats a time that reads
+      // as earlier than the start. Some run sunrise to sunrise — a full 24
+      // hours, where the two clock times are identical and the length is
+      // the only thing that says so.
+      overnight: (w.date ?? '') !== (w.end ?? '').slice(0, 10),
+      hours: typeof w.duration_minutes === 'number'
+        ? Math.round(w.duration_minutes / 6) / 10
+        : null,
+      score: w.score ?? null,
+      quality: w.quality ?? '',
+      reasons: w.reasons ?? [],
+      warnings: w.warnings ?? [],
+    }))
+
+  const moment = payload.best_moment
+  return {
+    windows,
+    /* The personal search often promotes nothing and explains why. That
+       explanation IS the answer in that case, so it is not optional. */
+    verdict: payload.selection_explanation?.headline ?? '',
+    moment: moment
+      ? {
+          date: (moment.datetime ?? '').slice(0, 10),
+          time: clockOf(moment.datetime),
+          score: moment.score ?? null,
+          quality: moment.quality ?? '',
+          line: moment.explanation?.headline ?? '',
+        }
+      : null,
+  }
+}
+
+/** "2026-10-29T22:11:05.251934+05:30" → "22:11". The offset is the place's
+ *  own, so the clock is read off the string rather than through a Date, which
+ *  would render it in the phone's timezone. */
+export function clockOf(iso) {
+  return typeof iso === 'string' ? iso.slice(11, 16) : ''
 }
 
 /** The almanac card. `ends_at` runs past 24:00 on purpose — left verbatim. */

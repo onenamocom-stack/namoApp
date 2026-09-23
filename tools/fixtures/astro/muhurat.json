@@ -1,0 +1,38 @@
+{
+ "acceptable_moments": [],
+ "avoid_moments": [],
+ "best_moment": null,
+ "best_windows": [],
+ "metadata": {
+  "ayanamsha": "lahiri",
+  "calculation_basis": "purpose_specific_tithi_nakshatra_intersections_with_avoid_period_warnings",
+  "calculation_notes": [
+   "Purpose-specific searches use calibrated tithi and nakshatra intersections for the requested activity.",
+   "Adhik Maas is excluded for these ceremony searches.",
+   "Rahu Kaal, Bhadra, and Panchak overlaps are returned as warnings to preserve AstroSage-style full windows."
+  ],
+  "endpoint_version": "v2",
+  "personalization_basis": null,
+  "public_candidate_count": null,
+  "ruleset_version": "freeastro_muhurat_search_v2",
+  "sampling_interval_minutes": null,
+  "scan_months_requested": null,
+  "scanned_months": null,
+  "scanned_ranges": null,
+  "search_mode": null,
+  "strict_rejection_policy": null,
+  "strict_selection_status": null,
+  "strictness": null,
+  "subject": null,
+  "timezone_used": "Asia/Kolkata"
+ },
+ "no_compromise_moment": null,
+ "purpose": "griha_pravesh",
+ "range": {
+  "day_count": 31,
+  "end_date": "2026-10-31",
+  "start_date": "2026-10-01"
+ },
+ "rejected_windows": [],
+ "selection_explanation": null
+}

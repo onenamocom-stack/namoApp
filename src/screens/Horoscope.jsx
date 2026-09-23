@@ -6,11 +6,12 @@ import {
   Acts,
   Button,
   Row,
+  Ruler,
   Section,
   Segmented,
   Stub,
 } from '../components/Primitives.jsx'
-import { useStore } from '../store.jsx'
+import { useProfileFields, useStore } from '../store.jsx'
 import { istDate, longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
 const TABS = [
@@ -23,23 +24,28 @@ const OFFSET = { yesterday: -1, today: 0, tomorrow: 1 }
 const CONTEXT = { yesterday: 'Looking back.', today: null, tomorrow: 'Looking ahead.' }
 
 /**
- * The daily reading, computed for this person rather than for their sun sign.
+ * The daily reading, computed from this person's own birth.
  *
- * Three sections the mock had are gone, and they are gone rather than filled:
- * **mood, lucky colour and lucky number**, which nothing computes, and
- * **getting along / harder work**, which is sign-to-sign compatibility the
- * daily endpoint does not return. A lucky number has to come from somewhere,
- * and "we made it up" is not a somewhere this app is willing to have. The link
- * to /people survives, because reading two charts against each other is the
- * real version of what that section was pretending to do.
+ * **The reading is theirs again as of 22 Sep 2026**, and the screen is the
+ * full one again with it: headline, the day's score, six area ratings,
+ * Do/Don't, transits and the long sections. Between 9 and 22 Sep this page
+ * showed a mood sentence and four clock times, because the reading then came
+ * from one of twelve invented births and everything else on it described
+ * that person instead (`docs/02-TRD.md` §8).
  *
- * Ratings are the API's 0–100 domain scores, shown as such. The mock's five
- * ticks were a different scale and rounding into it would have thrown away
- * three quarters of the resolution to keep a graphic.
+ * Two places appear on this page and both are named, because they differ:
+ * the almanac line is **Ujjain**, shared by everybody, and the timing windows
+ * come from the reading, computed at the reader's **birth place**. An
+ * unnamed almanac from somewhere you have never been is wrong without
+ * looking wrong.
+ *
+ * Still not filled, and still deliberately: **mood, lucky colour and lucky
+ * number**, which nothing computes.
  */
 export default function Horoscope() {
   const [key, setKey] = useState('today')
   const { showToast, hasFlag, toggleFlag, session, sessionReady } = useStore()
+  const me = useProfileFields()
 
   // Recomputed only when the tab changes, because it is a `useAstro`
   // dependency — a fresh string every render would refetch every render.
@@ -184,43 +190,19 @@ export default function Horoscope() {
             )}
 
             {/* Tense marker. Without it, a past-tense reading under a big
-                headline reads as a broken forecast rather than a review. */}
-            {/* NO RASHI LABEL HERE ANY MORE, 9 Sep. The tense marker stays —
-                a past-tense reading under a big headline reads as a broken
-                forecast rather than a review — but the sign is gone, because
-                what is left of this reading is identical across all twelve of
-                them. */}
+                headline reads as a broken forecast rather than a review. No
+                rashi label: this reading is not a sign's, it is theirs. */}
             {day.context && (
               <p className="mb-6 text-center text-micro uppercase tracking-caps text-t3">
                 {day.context}
               </p>
             )}
 
-            {/* THE HEADLINE AND THE LONG READING ARE GONE, 9 Sep, and so are
-                the instruction, the glance row, the 0-100 score, the Do/Don't
-                lists, the transits, power and pressure, the four ratings, the
-                long sections and the reflection. Every one of them was computed
-                from the canonical birth behind this rashi rather than from the
-                reader — the scores are weighted by that invented person's
-                dasha, and the only transits the payload carries are alignments
-                to it. They describe nobody.
-
-                What is left is the day, read at Ujjain, which is the same day
-                for everyone and true for all of them. Saying so on the screen
-                is the point: a thin screen that explains itself is honest, and
-                a full one that cannot is what this replaced. */}
-            <p className="horoscope">{day.dayMood}</p>
+            <h1 className="mx-auto max-w-[16ch] text-center text-title font-light">
+              {day.headline}
+            </h1>
             <Stub className="my-8" />
-            <p className="mx-auto max-w-[32ch] text-center text-meta text-t3">
-              This is the day itself, read at Ujjain, and it is the same for everyone — the
-              twelve signs return identical windows, checked. Anything that turns on your own
-              birth — your placements, your periods — is on your chart.
-            </p>
-            <div className="mt-5 text-center">
-              <Link to="/chart" className="text-meta text-t2 underline">
-                Your chart
-              </Link>
-            </div>
+            <p className="horoscope">{day.body}</p>
 
             <Acts
               className="mt-8 justify-center"
@@ -240,10 +222,83 @@ export default function Horoscope() {
             />
           </section>
 
+          {/* ── The one instruction ────────────────────────────────────────
+              Everything above is description. This is the only line that asks
+              for something, so it gets a section to itself. */}
+          {day.focus && (
+            <Section label={day.focusLabel}>
+              <p className="mx-auto max-w-[20ch] text-center text-lead font-light">{day.focus}</p>
+            </Section>
+          )}
+
+          {/* ── Day at a glance ───────────────────────────────────────────
+              The period is the reader's own Vimshottari stack. It was dropped
+              on 7 Sep, when the reading came from an invented birth and the
+              dasha on it was that person's. */}
+          {(day.glance.length > 0 || day.intensity !== null) && (
+            <Section label="Day at a glance">
+              <dl className="mx-auto max-w-[18rem]">
+                {day.glance.map((g) => (
+                  <div key={g.key} className="flex items-baseline justify-between gap-6 py-3 rule-b">
+                    <dt className="label text-left">{g.key}</dt>
+                    <dd className="text-body text-t1">{g.value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {day.intensity !== null && (
+                <div className="mx-auto mt-10 max-w-[18rem]">
+                  <div className="mb-3 flex items-baseline justify-between">
+                    <span className="label text-left">Overall</span>
+                    <span className="text-body text-t1 tnum">{day.intensity}</span>
+                  </div>
+                  <Ruler value={day.intensity} />
+                  <p className="mt-3 text-meta text-t3">
+                    The day&apos;s own score, out of a hundred, before you do anything with it.
+                  </p>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* ── Do / Don't ──────────────────────────────────────────────── */}
+          {(day.do.length > 0 || day.dont.length > 0) && (
+            <Section label="Do / Don't">
+              <p className="prose-c -mt-3 mb-8">
+                Two short lists. The left is worth your energy today. The right will cost more than
+                it returns.
+              </p>
+
+              <div className="grid grid-cols-2 gap-x-5">
+                <div>
+                  <p className="label border-b border-rule pb-2 text-left">Do</p>
+                  <ul className="mt-3">
+                    {day.do.map((t) => (
+                      <li key={t} className="py-2.5 text-body text-t1">{t}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="border-l border-rule pl-5">
+                  <p className="label border-b border-rule pb-2 text-left">Don&apos;t</p>
+                  <ul className="mt-3">
+                    {day.dont.map((t) => (
+                      <li key={t} className="py-2.5 text-body text-t2">{t}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Section>
+          )}
+
           {/* ── Windows ────────────────────────────────────────────────────
               Abhijit, Rahu kalam, Yamaganda, Gulika. Clock times for the day,
               which is what an almanac is for, and the one part of a reading
-              people act on to the minute. */}
+              people act on to the minute.
+
+              NAMED WITH THE BIRTH PLACE. These come from the reading, which
+              is computed there, while the almanac line at the top is Ujjain.
+              Two places on one screen have to say which is which — sunrise
+              moves about two hours across India. */}
           {day.windows.length > 0 && (
             <Section label="Windows">
               <ul>
@@ -261,17 +316,104 @@ export default function Horoscope() {
               </ul>
               <p className="mt-4 text-meta text-t3">
                 Auspicious first, then the three to work around.
+                {me.birthPlace && ` Clock times for ${me.birthPlace}, where you were born.`}
               </p>
             </Section>
           )}
 
+          {/* ── Power / Pressure ────────────────────────────────────────── */}
+          {(day.power || day.pressure) && (
+            <Section label="Power &amp; pressure">
+              {day.power && (
+                <div className="border-b border-rule pb-6">
+                  <p className="label mb-2 text-left">Power</p>
+                  <p className="text-read text-t1">{day.power}</p>
+                </div>
+              )}
+              {day.pressure && (
+                <div className="pt-6">
+                  <p className="label mb-2 text-left">Pressure</p>
+                  <p className="text-read text-t2">{day.pressure}</p>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* ── Ratings ─────────────────────────────────────────────────── */}
+          {day.ratings.length > 0 && (
+            <Section label={`Read across ${day.ratings.length} areas`}>
+              <ul className="mx-auto max-w-[18rem]">
+                {day.ratings.map((r) => (
+                  <li key={r.area} className="border-b border-rule py-4">
+                    <div className="mb-2 flex items-baseline justify-between gap-5">
+                      <span className="label text-left">{r.area}</span>
+                      <span className="text-meta text-t3 tnum">{r.score}/100</span>
+                    </div>
+                    <Ruler value={r.score} />
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {/* ── Transits ────────────────────────────────────────────────── */}
+          {day.transits.length > 0 && (
+            <Section label="What is moving">
+              <ul>
+                {day.transits.map((t) => (
+                  <li key={t.id} className="border-b border-rule pb-6 pt-1 last:border-b-0">
+                    <div className="mb-2 flex items-baseline justify-between gap-4">
+                      <h3 className="text-lead font-light">{t.title}</h3>
+                      <span className="flex-none text-micro uppercase tracking-caps text-t3">
+                        {t.weight}
+                      </span>
+                    </div>
+                    <p className="text-body text-t2">{t.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {/* ── The long readings ───────────────────────────────────────── */}
+          {day.sections.length > 0 && (
+            <Section label="At length">
+              <ul>
+                {day.sections.map((s) => (
+                  <li key={s.key} className="border-b border-rule pb-6 pt-1 last:border-b-0">
+                    <div className="mb-2 flex items-baseline justify-between gap-4">
+                      <h3 className="text-lead font-light">{s.title}</h3>
+                      <span className="flex-none text-micro uppercase tracking-caps text-t3 tnum">
+                        {s.score}
+                      </span>
+                    </div>
+                    <p className="text-body text-t2">{s.summary}</p>
+                    {s.advice && <p className="mt-3 text-body text-t1">{s.advice}</p>}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {/* ── Reflection ──────────────────────────────────────────────── */}
+          {day.reflections.length > 0 && (
+            <Section label="Sit with this">
+              {day.reflections.map((r, i) => (
+                <div key={r}>
+                  {i > 0 && <Stub className="my-7" />}
+                  <p className="horoscope">{r}</p>
+                </div>
+              ))}
+            </Section>
+          )}
         </>
       )}
 
       <Section label="Go deeper" last>
         <Row to="/ask" title="Ask the Stars" note="Put a real question to your chart" />
         <Row to="/chart" title="Your full chart" note="Nine placements, plainly written" />
-        <Row to="/people" title="Your people" note="Read their chart against yours" />
+        <Row to="/match" title="Matching" note="Two charts read against each other" />
+        <Row to="/muhurat" title="Muhurat" note="When to start something that matters" />
         <Row to="/shop" title="Shop" note="Stones and remedies, honestly described" />
         <Row to="/premium" title="Premium" note="Reports, Eros, unlimited questions" />
 

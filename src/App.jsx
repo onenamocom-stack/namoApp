@@ -39,8 +39,8 @@ import Horoscope from './screens/Horoscope.jsx'
 import Ask from './screens/Ask.jsx'
 import Chart from './screens/Chart.jsx'
 import Placement from './screens/Placement.jsx'
-import People from './screens/People.jsx'
-import Synastry from './screens/Synastry.jsx'
+import Match from './screens/Match.jsx'
+import Muhurat from './screens/Muhurat.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import UserProfile from './screens/UserProfile.jsx'
@@ -256,9 +256,16 @@ function Frame() {
                 <Route path="/ask" element={<Ask />} />
                 <Route path="/chart" element={<Chart />} />
                 <Route path="/chart/:id" element={<Placement />} />
-                <Route path="/people" element={<People />} />
+                <Route path="/match" element={<Match />} />
+                <Route path="/muhurat" element={<Muhurat />} />
                 <Route path="/people/invite" element={<Invite />} />
-                <Route path="/people/:id" element={<Synastry />} />
+                {/* `/people` was a list of mock friends with mock compatibility
+                    scores, and `/people/:id` their synastry. Ashtakoota on
+                    /match is the real version of both, and it holds nobody's
+                    details on file — so the old links land there rather than
+                    404, including any that are already shared. */}
+                <Route path="/people" element={<Navigate to="/match" replace />} />
+                <Route path="/people/:id" element={<Navigate to="/match" replace />} />
                 <Route path="/read/:id" element={<Article />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
