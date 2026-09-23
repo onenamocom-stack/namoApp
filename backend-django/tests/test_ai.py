@@ -535,3 +535,74 @@ class TestSubject:
         assert result["ok"]  # the question still gets an answer
         assert "not available" in seen["chart"]
         assert "Amma" in seen["chart"]  # and it still knows whose it was
+
+
+# ── how it speaks ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestVoice:
+    """The prompt's side of "stop sounding like a textbook" (22 Sep).
+
+    What a model actually says cannot be asserted here — that is
+    `tools/ai_voice_check.py`, which asks the live model and counts the
+    jargon. What CAN be asserted is that the instructions telling it not
+    to are present, and that the date it needs is in every branch.
+    """
+
+    def test_the_jargon_ban_is_in_the_prompt(self):
+        from apps.ai.prompt import SYSTEM
+
+        # The words that made "Your 7th house in Pisces holds the Moon,
+        # Saturn, Ketu, and receives aspect from Rahu in your 1st house"
+        # an answer somebody was given when they asked about marriage.
+        for term in ("house numbers", "dasha", "Rahu", "Ketu", "exalted",
+                     "aspect", "nakshatra", "retrograde"):
+            assert term in SYSTEM, term
+        assert "unless the person used them first" in SYSTEM
+
+    def test_the_answer_comes_before_the_chart(self):
+        from apps.ai.prompt import SYSTEM
+
+        assert "THE FIRST SENTENCE IS THE ANSWER" in SYSTEM
+
+    def test_being_vague_is_refused_as_firmly_as_being_technical(self):
+        """Plain must not become empty. "The stars suggest" is the other
+        failure and the prompt names it."""
+        from apps.ai.prompt import SYSTEM
+
+        assert "The stars suggest" in SYSTEM
+        assert "WHEN and WHAT" in SYSTEM
+
+    def test_today_is_in_every_branch_of_the_chart_block(self):
+        """A model has no clock and reaches for whatever year its training
+        settled on. Harmless while answers cited placements; not harmless
+        once they name months — the first run after the rewrite told
+        somebody in September 2026 that marriage opens "around mid-2025".
+        """
+        from apps.ai.prompt import chart_block, today_line
+
+        stamp = today_line().split(".")[0]
+        for block in (
+            chart_block(None),                                   # no chart
+            chart_block((("payload",), True)),                   # the tuple bug
+            chart_block({"ascendant": {"sign": "Virgo"}}),       # a real chart
+            chart_block({"ascendant": {"sign": "Virgo"}}, subject_name="Amma"),
+        ):
+            assert stamp in block
+
+    def test_the_date_is_todays_in_ist(self):
+        from django.utils import timezone
+
+        from apps.ai.prompt import today_line
+
+        ist = timezone.now() + timezone.timedelta(hours=5, minutes=30)
+        assert ist.strftime("%d %B %Y") in today_line()
+
+    def test_a_subject_chart_still_says_whose_it_is(self):
+        """The date must not have displaced the header that stops the model
+        answering "your Saturn" about somebody else's chart."""
+        from apps.ai.prompt import chart_block
+
+        block = chart_block({"ascendant": {"sign": "Leo"}}, subject_name="Amma")
+        assert "Amma's, NOT the person you are talking to" in block
