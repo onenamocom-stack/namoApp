@@ -233,6 +233,42 @@ export async function remove(contentId) {
   await api(`/content/${contentId}/remove/`, { method: 'POST', token })
 }
 
+/* ── Reporting ─────────────────────────────────────────────────────── */
+
+/**
+ * The reasons a person can pick. The server holds the same closed list and
+ * refuses anything else, so this array is the interface's copy of a rule it
+ * does not own — adding one here without adding it there gets a 400.
+ */
+export const REPORT_REASONS = [
+  { value: 'spam', label: 'Spam or a scam' },
+  { value: 'abuse', label: 'Abuse, threats or harassment' },
+  { value: 'adult', label: 'Nudity or sexual content' },
+  { value: 'false', label: 'Dangerous or false claims' },
+  { value: 'other', label: 'Something else' },
+]
+
+/**
+ * Report a post, or a person when `contentId` is null.
+ *
+ * Reporting the same thing twice answers ok rather than refusing: the
+ * intent was "I have told you about this", and it stays true. The server
+ * counts one either way.
+ *
+ * Nothing happens to the post when this returns. A report is a complaint an
+ * admin reads, not a delete — see apps/content/services.py for why a count
+ * has never been allowed to act on its own.
+ */
+export async function report({ contentId = null, profileId = null, reason, note }) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in to continue')
+  const path = contentId
+    ? `/content/${contentId}/report/`
+    : `/content/authors/${profileId}/report/`
+  return api(path, { method: 'POST', token, body: { reason, note: note || null } })
+}
+
+
 /* ── Reviews ───────────────────────────────────────────────────────────────── */
 
 /**

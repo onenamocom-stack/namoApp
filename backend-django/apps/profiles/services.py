@@ -46,6 +46,7 @@ import uuid
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import OuterRef, Subquery, TextField
+from django.utils import timezone
 
 from apps.media.models import MediaAsset
 
@@ -119,6 +120,16 @@ def serialize_profile(profile):
         "birth_lon": float(profile.birth_lon) if profile.birth_lon is not None else None,
         "birth_zone": profile.birth_zone,
         "admin": profile.admin,
+        # The video flag reaches the client so the composer can draw a Reel
+        # tab. It GRANTS nothing — the server's kind gate is the permission
+        # and refuses a clip from somebody without it whatever the UI shows.
+        # This is the same relationship ProStudio's `kinds` prop already had
+        # with the 025 policy: it decides which tabs are drawn, not who may
+        # publish.
+        "video_enabled": profile.video_enabled,
+        # Blocked people are told so rather than left to discover it by
+        # having every post refused with no explanation.
+        "blocked": profile.blocked_at is not None,
         "legacy_id": profile.legacy_id,
         "avatar_url": profile.avatar_url,
         "created_at": profile.created_at.isoformat(),
@@ -199,6 +210,51 @@ def profile_name(profile_id):
     through the public projections, exactly as before."""
     row = Profile.objects.filter(pk=profile_id).values_list("name", flat=True).first()
     return row if row is not None else None
+
+
+def is_blocked(profile_id):
+    """Has an admin blocked this person? Used by every write path that
+    publishes something — a blocked account is refused before the thing it
+    is trying to post is even looked at."""
+    return Profile.objects.filter(
+        pk=profile_id, blocked_at__isnull=False
+    ).exists()
+
+
+def video_enabled(profile_id):
+    """Is the video flag on for this person?
+
+    A capability, not a role — see `apps/content/services._may_post_video`
+    for why the two are kept apart. This answers only the flag; the
+    consultant and admin routes to video are that function's business.
+    """
+    return Profile.objects.filter(
+        pk=profile_id, video_enabled=True, blocked_at__isnull=True
+    ).exists()
+
+
+def set_video_enabled(profile_id, on):
+    """The console's switch. Returns whether a row actually changed, so the
+    caller can skip writing an audit line for a no-op."""
+    return Profile.objects.filter(pk=profile_id).exclude(
+        video_enabled=on
+    ).update(video_enabled=on) == 1
+
+
+def set_blocked(profile_id, blocked, reason=None):
+    """Block or unblock. Returns whether a row changed.
+
+    Blocking DELETES NOTHING. Their posts stop being served and new ones
+    are refused, and that is all — unblocking has to be able to put
+    everything back, and a removed account in a dispute is evidence.
+    """
+    fields = {
+        "blocked_at": timezone.now() if blocked else None,
+        "blocked_reason": reason if blocked else None,
+    }
+    qs = Profile.objects.filter(pk=profile_id)
+    qs = qs.filter(blocked_at__isnull=True) if blocked else qs.filter(blocked_at__isnull=False)
+    return qs.update(**fields) == 1
 
 
 def profile_names(profile_ids):

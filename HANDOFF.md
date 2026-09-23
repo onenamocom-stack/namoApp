@@ -3714,3 +3714,65 @@ attached, which is the state the model's own comment describes.
 Credentials are not recorded in this repo. Both were set once by hand and
 should be changed from `/console/password_change/`, because they were typed
 into a chat transcript.
+
+## 28. Posting, the video flag, and a moderation queue — 23 Sep 2026
+
+Most of this already existed. Text and image posting, the shared composer,
+the reel feed and the studio shipped in module 5; what was missing was
+exactly the three things asked for.
+
+**Video was a ROLE. It is a FLAG now.** `clip` used to need an approved
+`consultants` row, so the only way to let somebody post reels was to make
+them a consultant — which also makes them bookable, lists them as an
+astrologer and gives them a rate card. `profiles.video_enabled` is the
+grant on its own. Three routes to video, any one enough: the admin claim,
+an approved consultant row, or the flag. A blocked account fails all three.
+
+The refusal sentence changed with it. *"Only a consultant can post a
+reel"* became *"Video posting is not switched on for your account"*,
+because the old one is now false — three tests asserted the old string and
+were updated, which is what caught it.
+
+**Reporting, which did not exist at all.** `content_reports`, with
+`content_id` nullable: a report is about a POST, or about a PERSON. The
+second is the half that answers *"this account has been reported many
+times"* when somebody deletes and reposts. One report per person per
+thing, enforced by two partial unique indexes rather than one over a
+nullable column — in Postgres NULLs are distinct, so a single index would
+let the same person file forever.
+
+**A report does nothing on its own, and that is the load-bearing
+decision.** No count removes a post; no count blocks an account. Auto-hide
+at N reports hands any N accounts the power to silence anyone.
+`tests/test_moderation.py::TestAReportIsNotAVerdict` files eight reports
+from eight accounts and asserts the post is still live.
+
+**Two admin actions, deliberately different weights.** Remove the post
+(the account is untouched — one bad post is not a bad person) and block
+the person (every post hidden, cannot post again). Blocking **deletes
+nothing**: `blocked_at` is a timestamp, the feed filters them out, and
+unblocking puts it all back. Both audited with the admin's name.
+
+**Where the option lives.** A ⋯ at a feed card's corner; **Report** last
+on a reel's right rail, below where a thumb rests; **Report** in the top
+bar of `/u/:id`. Never in the action row beside Like — it is the one
+action nobody is looking for until they need it, and a mis-tap costs a
+real person an admin's attention.
+
+**One near-miss worth keeping.** The admin's removal was first written as
+`remove_content`, which is already the name of the author removing their
+own post — and that one carries an ownership check. It would have shadowed
+it entirely, so a moderation feature would have silently removed everyone's
+ability to delete their own posts. It is `admin_remove_content` now.
+
+**Live and verified.** `namo-api` revision **00023**, `namo-console`
+**00016**, both migrations applied to the production database (one new
+table, three new columns, all additive). Checked from outside: both report
+routes answer 401 rather than 404, and the console serves **Reports** and
+**People** with both admins able to reach them.
+
+**601 tests**, 20 of them new in `tests/test_moderation.py`.
+
+**Not done:** nobody has filed a real report through the app yet — the
+routes and the queue are verified, an end-to-end report-then-moderate pass
+is not.

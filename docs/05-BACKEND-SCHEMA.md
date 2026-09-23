@@ -1447,3 +1447,93 @@ one `order_items` row of `item_type='session'` titled `Namo AI · chat`.
 `ledger.ref_type` is a closed CHECK with no AI member, and 013's
 one-refund-per-order index is what makes a settle racing the sweeper credit
 once — both are reasons to go through the order layer rather than around it.
+
+## Moderation — `content_reports`, and two columns on `profiles` (23 Sep 2026)
+
+Created by `apps/content/migrations/0002_report.py` and
+`apps/profiles/migrations/0002_…`. Django migrations, like the AI tables —
+the cutover is done and Django owns the schema.
+
+### `profiles` gains two flags
+
+| Column | |
+|---|---|
+| `video_enabled` | `boolean not null default false`. May this person post a reel? |
+| `blocked_at` | `timestamptz null`. Set when an admin blocks them |
+| `blocked_reason` | `text null`. What the console recorded at the time |
+
+**`video_enabled` is a capability, not a role, and that distinction is the
+whole reason it is a column rather than a consultant row.** An approved
+consultant can already post video. This is for everybody else — the
+influencer who signs up as an ordinary seeker and should be able to post
+reels *without* becoming bookable, appearing in the astrologer list, or
+acquiring a rate card. Making them a consultant to grant one permission
+would grant four more nobody asked for.
+
+Three routes to video, checked in `apps/content/services._may_post_video`:
+the admin claim, an **approved** consultant row, or this flag. Any one is
+enough; a blocked account fails all three.
+
+**`blocked_at` is a timestamp, not a boolean**, because "when" is the
+first question asked in an appeal and a boolean cannot answer it. Blocking
+**deletes nothing**: their rows stay, the feed filters them out, and new
+posts are refused. Unblocking has to be able to put it all back.
+
+### `content_reports`
+
+```sql
+create table content_reports (
+  id           uuid primary key default gen_random_uuid(),
+  content_id   uuid references content(id) on delete cascade,  -- NULL = about the person
+  subject_id   uuid not null references profiles(id),          -- who is complained about
+  reporter_id  uuid not null references profiles(id),
+  reason       text not null check (reason in ('spam','abuse','adult','false','other')),
+  note         text,
+  status       text not null default 'open'
+               check (status in ('open','upheld','dismissed')),
+  reviewed_by  uuid,          -- the admin's profile
+  reviewed_at  timestamptz,
+  outcome      text,          -- 'dismissed' | 'post removed' | 'person blocked'
+  created_at   timestamptz not null default now(),
+  check (reporter_id <> subject_id)
+);
+```
+
+**`content_id` is nullable, and that is the design.** A report is either
+about a POST (content set, subject is its author) or about a PERSON
+(content null). The second is what makes *"this account has been reported
+many times"* answerable — a per-post count cannot see somebody who deletes
+and reposts, which is exactly what a bad actor does.
+
+**`subject_id` is denormalised from `content.author_id` on purpose.** A
+post's author never changes, and carrying it here turns "count the reports
+against this person" into one index scan instead of a join through
+`content` on every console page load.
+
+**Two partial unique indexes, not one.**
+
+```sql
+create unique index content_reports_one_per_post
+  on content_reports (content_id, reporter_id) where content_id is not null;
+create unique index content_reports_one_per_person
+  on content_reports (subject_id, reporter_id) where content_id is null;
+```
+
+One over a nullable column would not do it: in Postgres NULLs are
+distinct, so the same reporter could file the same complaint about the
+same account forever. Together they make the count mean *this many
+different people*, which is the only version of the count worth showing an
+admin.
+
+Indexes: `(created_at) where status = 'open'` — the console's queue, which
+is the one list in the product ordered **oldest first**, because the
+oldest unanswered complaint is the one somebody has been waiting on — and
+`(subject_id, -created_at)` for the count.
+
+**Nothing here acts on its own, and no trigger will be added that does.**
+A count is not a verdict. Auto-hiding at N reports hands any N accounts
+the power to silence anybody, which is not a moderation system but a
+weapon; every product that has shipped it spent the next year building the
+appeals process it should have built first. Every removal and every block
+is an admin's own action and lands in `admin_actions` with their name on
+it. `tests/test_moderation.py::TestAReportIsNotAVerdict` is the guard.

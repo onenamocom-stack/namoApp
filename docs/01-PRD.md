@@ -495,14 +495,55 @@ separate application.
 | 3 | **Marketplace** | Products, images, stock, orders, fulfilment |
 | 4 | **Reschedule a session** | Money does not move — the original charge stands |
 | 5 | **Approve consultant signups** | A queue. Until approved: invisible, unbookable, cannot earn |
-| 6 | **Remove posts, block consultants** | **Soft delete only.** A removed post in a dispute is evidence. Blocking a consultant with confirmed bookings and a pending balance needs a policy — see below |
+| 6 | **Remove posts, block anybody** | **Soft delete only.** A removed post in a dispute is evidence. Widened 23 Sep 2026 from consultants to every account, because the people reported are mostly not consultants — see §6.1. Blocking a consultant with confirmed bookings and a pending balance needs a policy — see below |
 | 7 | **Reviews, with admin audit and consultant analytics** | Reviews tied to completed bookings carry a verified badge |
 | 8 | **Search users and consultants, spend history, analytics** | The most privacy-sensitive capability. Every lookup is audited |
 | 9 | **Detect consultants gaming calls and messages** | Flags for human review — never automatic penalties |
 
+### 6.1 Who may post what, and what a report does — 23 Sep 2026
+
+**Everybody posts text and images.** Video is a separate permission.
+
+| | Text | Image | Video |
+|---|---|---|---|
+| Any signed-in person | yes | yes | only with the flag |
+| Approved consultant | yes | yes | yes |
+| Admin | yes | yes | yes |
+
+**Video is a flag on the person, not a rank.** `profiles.video_enabled`,
+switched from the console. It exists because the alternative — making
+somebody a consultant so they can post reels — also makes them bookable,
+lists them as an astrologer and gives them a rate card. An influencer who
+joins as an ordinary user should get video and none of that. Granting it
+is one switch; revoking it is the same switch.
+
+**Reporting.** Any signed-in person can report a post, or an account. Five
+reasons, a closed list, plus an optional note. Once per person per thing,
+so the count means *this many different people* rather than *this many
+taps*.
+
+**A report is a complaint, not a verdict, and nothing acts on it
+automatically.** No count removes a post and no count blocks an account,
+however large. Auto-hiding at N reports hands any N accounts the power to
+silence anyone; it is not moderation but a brigading tool, and it converts
+into an appeals backlog within a quarter. An admin reads the report and
+decides.
+
+An admin has two actions and they are deliberately different weights:
+
+| | What it does |
+|---|---|
+| **Remove the post** | It leaves the feed. The account is untouched. One bad post is not a bad person |
+| **Block the person** | Every post of theirs leaves the feed and they cannot post again. **Nothing is deleted** — unblocking restores all of it |
+
+Both are audited with the admin's name. A blocked account is told it is
+blocked rather than left to discover it through refusals it cannot explain.
+
 ### Permission tiers
 
-**Support** reads and searches. **Moderator** removes content and blocks.
+**Support** reads the report queue and searches. **Moderator** removes
+content and blocks (the console calls this tier `fulfilment` — the database
+has the rows and the CHECK, so the name here is the one that should move).
 **Finance** touches payouts and refunds. **Superadmin** manages admins.
 
 Least privilege from the first day, because retrofitting tiers later means

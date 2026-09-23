@@ -780,3 +780,44 @@ wallet on it — the balance in the chrome must not disagree with the debit
 that just happened.
 
 Every refusal sentence is the server's. There are none in the client.
+
+## Reporting — where the option lives (23 Sep 2026)
+
+One sheet, `components/ReportSheet.jsx`, raised from three places. Nothing
+else in the app reports anything.
+
+| Where | The control | What is reported |
+|---|---|---|
+| A post card in the feed | **⋯** at the card's top-right corner | that post |
+| A reel | **Report** at the bottom of the right-hand rail | that reel |
+| `/u/:id`, somebody's profile | **Report** in the top bar | that person |
+
+**Not in the action row.** Report sits away from Like, Reply, Share and
+Save on both surfaces, and the reason is the same in each: it is the one
+action nobody is looking for until they need it, and a mis-tap on it costs
+a real person an admin's attention. On the reel it is last on the rail,
+below where a thumb rests.
+
+**The person option is separate from the post option, and both are
+needed.** A per-post report cannot see somebody who deletes and reposts,
+and that is what a bad actor does. The profile route is what makes
+"reported many times" mean anything.
+
+The sheet: five reasons as a single-select list, then an optional note,
+then **Send report**. The reason is required — a free-text-only form
+collects "idk it's bad" — and the note is not, because most reports do not
+need one and a required box collects "bad".
+
+**What the seeker is told.** *"Reported. Someone will look at this."* The
+same words whether it is the first report or the fourth: the server
+answers ok either way, and telling somebody they already reported this
+invites a second tap hunting for a different outcome. Under the button,
+before they send: *reporting does not remove anything on its own*. That
+line exists so nobody refreshes the feed waiting for the post to vanish.
+
+**The composer's Reel tab follows the flag.** `/profile` passes
+`['clip','post','article']` when `profile.video_enabled` is true and
+`['post','article']` otherwise. Drawing the tab grants nothing — the
+server's kind gate is the permission and refuses a clip without it
+whatever the UI offers, the same relationship `/pro/studio`'s `kinds` prop
+has always had with the publish policy.

@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName, Row } from '../components/Primitives.jsx'
+import ReportSheet from '../components/ReportSheet.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
 
@@ -25,6 +26,7 @@ export default function UserProfile() {
   const [author, setAuthor] = useState(undefined)
   const [posts, setPosts] = useState([])
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
+  const [reporting, setReporting] = useState(false)
 
   const following = hasFlag(`followp:${id}`)
 
@@ -81,7 +83,27 @@ export default function UserProfile() {
 
   return (
     <>
-      <TopBar title="Profile" back backTo="/home" />
+      {/* Reporting a PERSON, not one of their posts, lives here and only
+          here. It is the half that answers "this account keeps doing it"
+          when the offender deletes and reposts — a per-post count cannot
+          see that, and seeing it is the reason reporting was asked for. */}
+      <TopBar
+        title="Profile"
+        back
+        backTo="/home"
+        right={
+          mine ? null : (
+            <button
+              type="button"
+              onClick={() => setReporting(true)}
+              aria-label="Report this person"
+              className="text-micro uppercase tracking-label text-t3 transition-colors hover:text-t1"
+            >
+              Report
+            </button>
+          )
+        }
+      />
 
       <section className="flex items-center gap-4 border-b border-stroke px-5 py-6">
         <PopAvatar initials={initials} size={56} />
@@ -132,6 +154,13 @@ export default function UserProfile() {
       </section>
 
       <div className="h-24" />
+
+      <ReportSheet
+        open={reporting}
+        onClose={() => setReporting(false)}
+        profileId={id}
+        name={author.name}
+      />
     </>
   )
 }

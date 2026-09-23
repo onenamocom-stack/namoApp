@@ -78,9 +78,33 @@ class Profile(models.Model):
     birth_lon = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     birth_zone = models.TextField(null=True, blank=True)  # IANA name, never an offset
     admin = models.BooleanField(default=False)
+
+    # Posting video is a FLAG, not a role. An approved consultant gets it
+    # from their consultants row; this is for everybody else — the
+    # influencer who signs up as an ordinary seeker and should be able to
+    # post reels without being made a consultant, which would also make
+    # them bookable and put them in the astrologer list. One switch in the
+    # console, granted per person, revoked the same way.
+    video_enabled = models.BooleanField(default=False)
+
+    # Set when an admin blocks this person after reviewing reports. A
+    # timestamp rather than a boolean because "when" is the first question
+    # asked in an appeal, and a boolean cannot answer it. Null is the
+    # normal state.
+    #
+    # Blocking hides their posts and refuses new ones. It does NOT delete
+    # anything: a removed account in a dispute is evidence, and unblocking
+    # has to be able to put things back.
+    blocked_at = models.DateTimeField(null=True, blank=True)
+    blocked_reason = models.TextField(null=True, blank=True)
+
     legacy_id = models.TextField(null=True, blank=True)
     avatar_url = models.TextField(null=True, blank=True)  # 027: public URL into media
     created_at = models.DateTimeField(default=timezone.now)
+
+    @property
+    def is_blocked(self):
+        return self.blocked_at is not None
 
     class Meta:
         db_table = "profiles"

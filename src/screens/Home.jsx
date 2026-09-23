@@ -4,6 +4,7 @@ import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
+import ReportSheet from '../components/ReportSheet.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Acts, Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
@@ -211,6 +212,7 @@ function Byline({ initials, name, meta, to, note }) {
 function PostCard({ post: p }) {
   const { showToast, hasFlag, toggleFlag } = useStore()
   const liked = hasFlag(`like:${p.id}`)
+  const [reporting, setReporting] = useState(false)
 
   /* The like count is the view's aggregate plus your own un-saved tap, so the
      number moves the instant you press it and still agrees with the database
@@ -218,7 +220,20 @@ function PostCard({ post: p }) {
      table and no share to count, and the mock's 96 replies against zero rows
      is the lie this phase is here to stop telling. */
   return (
-    <article className="pop-card p-4">
+    <article className="pop-card relative p-4">
+      {/* Report lives under a ⋯ at the card's corner, not in the action
+          row. It is the one action here nobody is looking for until they
+          need it, and putting it beside Like gets it pressed by accident
+          — a false report costs a real person an admin's attention. */}
+      <button
+        type="button"
+        onClick={() => setReporting(true)}
+        aria-label="Report this post"
+        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-t3 transition-colors hover:bg-surface-2 hover:text-t1"
+      >
+        <span aria-hidden="true" className="text-body leading-none">⋯</span>
+      </button>
+
       <Byline
         initials={p.initials}
         name={p.consultant}
@@ -259,6 +274,12 @@ function PostCard({ post: p }) {
               }),
           },
         ]}
+      />
+
+      <ReportSheet
+        open={reporting}
+        onClose={() => setReporting(false)}
+        contentId={p.id}
       />
     </article>
   )

@@ -143,6 +143,12 @@ class TestMeRead:
             "id", "phone", "name", "email", "birth_date", "birth_time",
             "birth_time_known", "birth_place", "birth_lat", "birth_lon",
             "birth_zone", "admin", "legacy_id", "avatar_url", "created_at",
+            # 23 Sep: the two moderation flags. Not PostgREST's select('*')
+            # any more, and that is fine — the client stopped reading this
+            # through PostgREST at the cutover. They are here because the
+            # composer draws a Reel tab off the first and the app tells a
+            # blocked person why their posts are refused off the second.
+            "video_enabled", "blocked",
         }
         assert body["id"] == TEST_USER
         assert body["phone"] == "+919999900001"
@@ -151,6 +157,8 @@ class TestMeRead:
         assert body["birth_time_known"] is True
         assert body["birth_lat"] == 26.9124
         assert body["admin"] is False
+        assert body["video_enabled"] is False
+        assert body["blocked"] is False
         assert body["created_at"]
 
     def test_no_row_is_404_not_a_blank_row(self, authed_client, clean_profiles):

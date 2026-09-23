@@ -33,7 +33,7 @@ from django.utils import timezone
 
 from apps.content import services
 from apps.content.models import Content, Review
-from apps.content.services import DUPLICATE_REFUSAL, GATE_REFUSAL, REEL_REFUSAL
+from apps.content.services import DUPLICATE_REFUSAL, GATE_REFUSAL, VIDEO_REFUSAL
 from apps.media.models import MediaAsset
 from apps.reactions.models import Reaction
 
@@ -222,7 +222,7 @@ class TestPublication:
         response = _publish(api_client, seeker_token, kind="clip", caption="a reel")
         assert response.status_code == 403
         assert response.json()["reason"] == "forbidden"
-        assert response.json()["message"] == REEL_REFUSAL
+        assert response.json()["message"] == VIDEO_REFUSAL
         assert Content.objects.count() == 0
 
     def test_author_is_not_taken_from_the_body(
@@ -239,7 +239,7 @@ class TestPublication:
         token = sign_hs256(claims=make_claims(sub=PENDING, role="consultant"))
         response = _publish(api_client, token, kind="clip", caption="a reel")
         assert response.status_code == 403
-        assert response.json()["message"] == REEL_REFUSAL
+        assert response.json()["message"] == VIDEO_REFUSAL
 
     def test_blocked_consultant_reel_refused_and_posts_invisible(
         self, api_client, sign_hs256, hs256_mode, roster
@@ -306,7 +306,7 @@ class TestApprovedConsultantKinds:
         token = sign_hs256(claims=make_claims(sub=SEEKER, role="consultant"))
         response = _publish(api_client, token, kind="clip", caption="a reel")
         assert response.status_code == 403
-        assert response.json()["message"] == REEL_REFUSAL
+        assert response.json()["message"] == VIDEO_REFUSAL
 
 
 # ── the draft -> live -> removed state machine ───────────────────────────────

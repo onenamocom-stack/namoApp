@@ -7,8 +7,8 @@ from rest_framework.status import HTTP_409_CONFLICT
 from apps.core.views import refusal_body
 
 from . import services
-from .models import Content
-from .services import DuplicateReview
+from .models import Content, Report
+from .services import AlreadyReported, DuplicateReview
 
 
 class PublishInput(serializers.Serializer):
@@ -230,3 +230,50 @@ def author(request, profile_id):
     if row is None:
         return Response(refusal_body("not_found", "That author is not available."), status=404)
     return Response(row)
+
+
+# ── reporting ───────────────────────────────────────────────────────────────
+
+
+class ReportInput(serializers.Serializer):
+    """The reason is a closed list; the note is the escape hatch.
+
+    `subject_id` is for reporting a PERSON. Exactly one of the two routes
+    supplies a target, so it is not on this serializer — the URL says which
+    kind of report this is.
+    """
+
+    reason = serializers.ChoiceField(choices=Report.Reason.choices)
+    note = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=2000,
+    )
+
+
+def _report(request, filer):
+    serializer = ReportInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    try:
+        result = filer(reason=data["reason"], note=data.get("note"))
+    except AlreadyReported:
+        # 200, not 409. The seeker's intent was "I have told you about
+        # this", and it is true — telling them they already did invites a
+        # second tap hunting for a different outcome.
+        return Response({"ok": True, "already": True})
+    return Response(result, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def report_content(request, content_id):
+    """Report one post. The ⋯ menu on a feed card and on a reel."""
+    return _report(request, lambda **kw: services.report_content(
+        request.user.pk, content_id, **kw))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def report_profile(request, profile_id):
+    """Report a person. Their profile page, under the same ⋯."""
+    return _report(request, lambda **kw: services.report_profile(
+        request.user.pk, profile_id, **kw))

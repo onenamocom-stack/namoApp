@@ -280,7 +280,7 @@ function Overview() {
  * and two queries for two integers is two chances to disagree.
  */
 function MyPosts() {
-  const { session } = useStore()
+  const { session, profile } = useStore()
   const me = session?.user?.id
   const [posts, setPosts] = useState(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
@@ -306,7 +306,7 @@ function MyPosts() {
   return (
     <section className="border-t border-stroke px-5 py-6">
       <Kicker
-        action={composing ? 'Close' : 'New post'}
+        action={profile?.blocked ? null : composing ? 'Close' : 'New post'}
         onAction={() => setComposing((v) => !v)}
       >
         Your posts
@@ -319,10 +319,28 @@ function MyPosts() {
         {counts.following} following
       </p>
 
-      {composing && (
+      {/* Said out loud. A blocked account has every post refused, and
+          somebody who is not told why will read it as the app being
+          broken and try again — which is worse for them and for whoever
+          answers the support mail. */}
+      {profile?.blocked && (
+        <p className="mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
+          Your account is blocked, so you cannot post. Your earlier posts are
+          hidden but nothing has been deleted. Write to us if you think this is
+          wrong.
+        </p>
+      )}
+
+      {composing && !profile?.blocked && (
         <div className="-mx-5 mt-4 border-y border-rule">
+          {/* Text and a photo for everyone; a Reel tab only when the flag
+              is on. The flag is the SERVER's — drawing the tab does not
+              grant anything, and a clip from somebody without it is
+              refused whatever this list says. It is here so that an
+              influencer who was given video can find it, rather than
+              being told to become a consultant. */}
           <Composer
-            kinds={['post', 'article']}
+            kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
             onPublished={() => {
               setComposing(false)
               load()

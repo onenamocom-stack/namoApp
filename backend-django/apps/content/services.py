@@ -46,7 +46,7 @@ from apps.profiles import services as profile_services
 from apps.reactions.models import Reaction
 
 from . import gateway
-from .models import Content, Review
+from .models import Content, Report, Review
 
 # The two refusal sentences src/lib/content.js already shows. The server's
 # job is to make the interface's string true (INSTRUCTIONS §2, Errors) — the
@@ -54,6 +54,10 @@ from .models import Content, Review
 GATE_REFUSAL = "You can only review a session you have completed"
 DUPLICATE_REFUSAL = "You have already reviewed this session"
 REEL_REFUSAL = "Only a consultant can post a reel"
+VIDEO_REFUSAL = "Video posting is not switched on for your account"
+BLOCKED_REFUSAL = "Your account cannot post"
+SELF_REPORT_REFUSAL = "You cannot report your own post"
+DUPLICATE_REPORT_REFUSAL = "You have already reported this"
 
 # Kinds anyone signed in may publish (025: the kind gate is an RLS predicate
 # because it depends on another table — a CHECK cannot see one).
@@ -95,10 +99,23 @@ def public_content():
         [],
         output_field=models.IntegerField(),
     )
+    # A blocked PERSON's posts leave the feed too — added 23 Sep 2026 with
+    # reporting. Separate from the consultant clause above and deliberately
+    # so: that one is about a practice not being approved, this one is a
+    # moderation decision about a human being, and the two are revoked by
+    # different people for different reasons.
+    blocked_author = RawSQL(
+        "select count(*) from profiles p"
+        f" where {_xid('p.id', 'content.author_id')} and p.blocked_at is not null",
+        [],
+        output_field=models.IntegerField(),
+    )
     return (
         Content.objects.filter(status=Content.Status.LIVE)
         .annotate(_blocked=blocked)
         .filter(_blocked=0)
+        .annotate(_author_blocked=blocked_author)
+        .filter(_author_blocked=0)
         .annotate(
             author_name=profile_services.name_subquery("author_id"),
             # 025: (cs.profile_id is not null) over a LEFT JOIN consultants
@@ -179,21 +196,48 @@ def public_detail(content_id):
 # ── publication ──────────────────────────────────────────────────────────────
 
 
-def _assert_kind_allowed(author_id, role, kind):
-    """The 025 insert policy's kind gate.
+def _assert_not_blocked(author_id):
+    """A blocked account publishes nothing at all — not a reel, not a photo,
+    not a line of text. Checked before the kind gate, because "you cannot
+    post a reel" is the wrong sentence to show somebody whose account is
+    blocked outright."""
+    if profile_services.is_blocked(author_id):
+        raise PermissionDenied(BLOCKED_REFUSAL)
 
-    Anyone may publish post/article. `clip` and `live_session` require an
-    APPROVED consultant row (the policy's EXISTS clause) — a pending or
-    blocked consultant is refused exactly as a seeker is. The admin claim
-    bypasses nothing here because an admin publishing a reel administers the
-    feed; the author is still themselves.
+
+def _may_post_video(author_id, role):
+    """Three ways to earn video, and they are deliberately separate things.
+
+    1. **An admin.** Administering the feed includes posting to it.
+    2. **An approved consultant** — the 025 policy's EXISTS clause. A
+       pending or blocked consultant is refused exactly as a seeker is.
+    3. **`profiles.video_enabled`** — the flag, added 23 Sep 2026.
+
+    The third exists because the first two are ROLES and this is a
+    CAPABILITY. An influencer who joins as an ordinary seeker should be
+    able to post reels without being turned into a consultant: that would
+    put them in the astrologer list, make them bookable, and give them a
+    rate card, none of which anybody asked for. One switch in the console
+    grants it, and flipping it back revokes it.
     """
+    if role == "admin":
+        return True
+    if gateway.is_approved_consultant(author_id):
+        return True
+    return profile_services.video_enabled(author_id)
+
+
+def _assert_kind_allowed(author_id, role, kind):
+    """The 025 insert policy's kind gate, widened by the video flag.
+
+    Anyone not blocked may publish post/article — text and images are open
+    to everybody. `clip` and `live_session` need video permission.
+    """
+    _assert_not_blocked(author_id)
     if kind in OPEN_KINDS:
         return
-    if role == "admin":
-        return
-    if not gateway.is_approved_consultant(author_id):
-        raise PermissionDenied(REEL_REFUSAL)
+    if not _may_post_video(author_id, role):
+        raise PermissionDenied(VIDEO_REFUSAL)
 
 
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
@@ -449,3 +493,115 @@ def fetch_author(profile_id):
     if name is None:
         return None
     return {"id": str(profile_id), "name": name}
+
+
+# ── reporting and moderation ────────────────────────────────────────────────
+#
+# A report is a COMPLAINT, not an action. Nothing in this section removes a
+# post or blocks a person. An admin does that in the console, having read
+# it — which is the seeker's own instruction: "admin dhyaan se dekhega".
+#
+# The alternative, auto-hiding at N reports, hands any N accounts the power
+# to silence anybody. That is not a moderation system, it is a weapon, and
+# every product that has shipped it has spent the following year building
+# the appeals process it needed instead.
+
+
+def report_content(reporter_id, content_id, *, reason, note=None):
+    """Report one post. Once per person per post."""
+    row = Content.objects.filter(pk=content_id).values("id", "author_id").first()
+    if not row:
+        raise NotFound("That post is gone")
+    if _same_profile(row["author_id"], reporter_id):
+        raise PermissionDenied(SELF_REPORT_REFUSAL)
+    return _file_report(
+        reporter_id, subject_id=row["author_id"], content_id=row["id"],
+        reason=reason, note=note,
+    )
+
+
+def report_profile(reporter_id, subject_id, *, reason, note=None):
+    """Report a person rather than one of their posts.
+
+    This is the half that makes "this account has been reported many
+    times" answerable — a per-post count cannot see somebody who deletes
+    and reposts, and that is exactly what a bad actor does.
+    """
+    if _same_profile(subject_id, reporter_id):
+        raise PermissionDenied(SELF_REPORT_REFUSAL)
+    if not profile_services.profile_name(subject_id):
+        raise NotFound("No such person")
+    return _file_report(
+        reporter_id, subject_id=subject_id, content_id=None,
+        reason=reason, note=note,
+    )
+
+
+def _same_profile(left, right):
+    return str(left).replace("-", "") == str(right).replace("-", "")
+
+
+def _file_report(reporter_id, *, subject_id, content_id, reason, note):
+    if reason not in Report.Reason.values:
+        reason = Report.Reason.OTHER
+    try:
+        with transaction.atomic():
+            report = Report.objects.create(
+                reporter_id=reporter_id, subject_id=subject_id,
+                content_id=content_id, reason=reason,
+                note=(note or "").strip()[:2000] or None,
+            )
+    except IntegrityError:
+        # The partial unique indexes. Answered as success on purpose: the
+        # seeker's intent is "I have told you about this", and telling them
+        # they already did invites a second tap looking for a different
+        # outcome. The count is unaffected either way.
+        raise AlreadyReported(DUPLICATE_REPORT_REFUSAL)
+    return {"ok": True, "id": str(report.id)}
+
+
+class AlreadyReported(Exception):
+    """Filed twice by the same person. The view answers 200, not 409 — see
+    `_file_report`."""
+
+
+def reports_against(subject_id):
+    """How many DIFFERENT people have complained about this account, and
+    how many of those are still unanswered. The console's whole reason for
+    the subject index."""
+    rows = Report.objects.filter(subject_id=subject_id)
+    return {
+        "total": rows.count(),
+        "open": rows.filter(status=Report.Status.OPEN).count(),
+    }
+
+
+def resolve_report(report_id, *, admin_profile_id, upheld, outcome):
+    """An admin has decided. Records WHO and WHAT, never silently.
+
+    This only closes the report. Removing the post and blocking the person
+    are separate calls made by the console alongside it, so that a report
+    resolved as "upheld, post removed" and a post that is actually still
+    live cannot be two different truths — each action is its own write with
+    its own audit line.
+    """
+    return Report.objects.filter(pk=report_id, status=Report.Status.OPEN).update(
+        status=Report.Status.UPHELD if upheld else Report.Status.DISMISSED,
+        reviewed_by=admin_profile_id,
+        reviewed_at=timezone.now(),
+        outcome=outcome,
+    ) == 1
+
+
+def admin_remove_content(content_id):
+    """Take a post out of the feed on an ADMIN's decision.
+
+    Deliberately not `remove_content`, which is the author removing their
+    own and carries an ownership check. This one has no owner check
+    because the admin is not the owner — naming them the same thing would
+    have shadowed the author's path entirely, which is how a moderation
+    feature quietly removes the ability to delete your own post.
+    """
+    return Content.objects.filter(pk=content_id).exclude(
+        status=Content.Status.REMOVED
+    ).update(status=Content.Status.REMOVED) == 1

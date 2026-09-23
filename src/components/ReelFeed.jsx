@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { fetchFeed } from '../lib/content.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
+import ReportSheet from './ReportSheet.jsx'
 import { firstName } from './Primitives.jsx'
 import { useStore } from '../store.jsx'
 
@@ -130,6 +131,7 @@ function RailAct({ icon, label, count, on, tone = 'default', onClick }) {
 function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMuted, isLast }) {
   const { showToast, hasFlag, toggleFlag } = useStore()
   const video = useRef(null)
+  const [reporting, setReporting] = useState(false)
 
   /* Only the reel on screen plays. Every frame used to autoplay at once, which
      was silent only because all of them were muted. `muted` is set on the
@@ -255,6 +257,16 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
             })
           }
         />
+        {/* Last on the rail, below the thumb's resting place. Report is
+            the one action here nobody is reaching for until something is
+            wrong, and a mis-tap on it costs a real person an admin's
+            attention — so it sits where a mis-tap is least likely. */}
+        <RailAct
+          icon="alert"
+          label="Report"
+          tone="plain"
+          onClick={() => setReporting(true)}
+        />
       </div>
 
       {/* ── The overlay strip ──────────────────────────────────────────── */}
@@ -301,6 +313,12 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           </span>
         </div>
       </div>
+
+      <ReportSheet
+        open={reporting}
+        onClose={() => setReporting(false)}
+        contentId={c.id}
+      />
     </section>
   )
 }

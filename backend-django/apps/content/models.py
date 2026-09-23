@@ -170,3 +170,119 @@ class FeedPin(models.Model):
         indexes = [
             models.Index(fields=["sort", "starts_at", "ends_at"], name="feed_pins_window_idx"),
         ]
+
+
+class ReportReason(models.TextChoices):
+    """Why somebody reported it. Short, closed list, and every option is a
+    thing an admin can actually act on — "other" is last and carries a note,
+    because a free-text-only form gets "idk it's bad" and a closed list with
+    no escape hatch gets the wrong reason picked to get past the form."""
+
+    SPAM = "spam", "Spam or a scam"
+    ABUSE = "abuse", "Abuse, threats or harassment"
+    ADULT = "adult", "Nudity or sexual content"
+    FALSE = "false", "Dangerous or false claims"
+    OTHER = "other", "Something else"
+
+
+class ReportStatus(models.TextChoices):
+    OPEN = "open", "Open — nobody has looked"
+    UPHELD = "upheld", "Upheld — the post or the person was actioned"
+    DISMISSED = "dismissed", "Dismissed — nothing wrong with it"
+
+
+class Report(models.Model):
+    """Somebody said this is wrong. An admin decides whether it is.
+
+    **A report is not a verdict and never acts on its own.** Nothing here
+    removes a post or blocks a person: a count is not a decision, and a
+    feature that hides content at N reports is a feature that hands any
+    five accounts the power to silence anyone. Every removal and every
+    block is an admin's own action, and lands in `admin_actions` with the
+    admin's name on it.
+
+    **`content_id` is nullable, and that is the whole design.** A report
+    is either about a POST (content set, subject is its author) or about a
+    PERSON (content null). The second is what makes "this account has been
+    reported many times" a question the console can answer, which is the
+    reason the seeker asked for reporting at all.
+
+    One report per person per thing. Somebody who dislikes a post may say
+    so once — the unique indexes make a brigade of one impossible, and make
+    the count mean "this many different people", which is the only version
+    of the count worth showing an admin.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Null means the report is about the person, not one of their posts.
+    content = models.ForeignKey(
+        Content, null=True, blank=True, on_delete=models.CASCADE,
+        related_name="reports", db_column="content_id",
+    )
+    # Who is complained about. Denormalised from content.author_id on
+    # purpose: the author of a post can never change, and carrying it here
+    # is what lets "count the reports against this person" be one index
+    # scan instead of a join through content on every console page load.
+    subject_id = models.UUIDField()
+    reporter_id = models.UUIDField()
+    reason = models.CharField(max_length=16, choices=ReportReason.choices)
+    note = models.TextField(null=True, blank=True)
+    status = models.CharField(
+        max_length=16, choices=ReportStatus.choices, default=ReportStatus.OPEN
+    )
+    # The admin who decided, and what they did about it. Kept even after
+    # the post is gone: a person told their account was blocked can be
+    # shown when, by whom, and on what — the same rule as apps/console/audit.
+    reviewed_by = models.UUIDField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    outcome = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    Reason = ReportReason
+    Status = ReportStatus
+
+    class Meta:
+        db_table = "content_reports"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(reason__in=ReportReason.values),
+                name="content_reports_reason_check",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=ReportStatus.values),
+                name="content_reports_status_check",
+            ),
+            # Nobody reports themselves. Not a real use case, and without
+            # it the report count is something an author can inflate.
+            models.CheckConstraint(
+                condition=~models.Q(reporter_id=models.F("subject_id")),
+                name="content_reports_not_self_check",
+            ),
+            # Once per post per person...
+            models.UniqueConstraint(
+                fields=["content", "reporter_id"],
+                condition=models.Q(content__isnull=False),
+                name="content_reports_one_per_post",
+            ),
+            # ...and once per PERSON per person. Two partial indexes rather
+            # than one over a nullable column, because in Postgres NULLs are
+            # distinct and a plain unique would let the same reporter file
+            # the same complaint about the same account forever.
+            models.UniqueConstraint(
+                fields=["subject_id", "reporter_id"],
+                condition=models.Q(content__isnull=True),
+                name="content_reports_one_per_person",
+            ),
+        ]
+        indexes = [
+            # The console's only list: open reports, oldest first, because
+            # the oldest unanswered complaint is the one that matters.
+            models.Index(
+                fields=["created_at"],
+                name="content_reports_open_idx",
+                condition=models.Q(status="open"),
+            ),
+            # "How many times has this account been reported?"
+            models.Index(fields=["subject_id", "-created_at"],
+                         name="content_reports_subject_idx"),
+        ]
