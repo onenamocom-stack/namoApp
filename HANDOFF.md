@@ -3691,3 +3691,26 @@ the seeker asked for and it is **not** the product: at 500 free a day the
 ₹9 path is unreachable for every tester, so the price has been proven in
 tests and not yet by a real debit. It must go back to `1` before anyone
 outside the team uses this.
+
+## 27. The console has two superadmins — 23 Sep 2026
+
+Two people can now sign in to the admin console, both at the `superadmin`
+tier: the owner's account, and a second one added today for the colleague
+who has been reviewing the AI answers. Both were verified by actually
+logging in over HTTPS — index, dashboard, products, orders, the
+pending-consultant queue and the admin list all answered 200 for each.
+
+**`is_staff` is not the gate.** `NamoAdminSite.has_permission` wants an
+**active row in `admin_users`**, and the new login bounced straight back to
+the form until it had one — a Django superuser with no console row gets a
+successful login and then nothing to see. Creating the login is half the
+job; the other half is the `admin_users` row, whose `profile_id` is the
+identity the audit trail points at.
+
+Two older `admin_users` rows still have `operator = None`. They came across
+in the migration and **cannot sign in** — admin identities with no login
+attached, which is the state the model's own comment describes.
+
+Credentials are not recorded in this repo. Both were set once by hand and
+should be changed from `/console/password_change/`, because they were typed
+into a chat transcript.
