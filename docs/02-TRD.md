@@ -273,6 +273,7 @@ bulk actions. See `04-UI-UX.md`.
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
 | Namo AI | **Gemini Flash**, behind the API — *reversed from Claude, 21 Sep 2026* | The key cannot ship to a browser and the quota is money. Gemini won on cost at this shape: short answers over structured chart data, ~₹0.02 a question against ~₹0.06. `AI_PROVIDER` selects it, so the reversal costs one env var, not a rewrite |
 | Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
+| Numerology | **`astrologyapi.com`**, trial — *added 24 Sep 2026* | A second astrology vendor, for the one thing the first does not compute. Basic auth, `json.astrologyapi.com/v1`, credentials env-only. Its tarot and palmistry were looked at and not taken — see below |
 | Place search | **`freeastroapi.com`** geo endpoint — *replaced Open-Meteo, 2 Sep 2026* | Same tier, commercially licensed, returns the IANA zone. Open-Meteo's free geocoder was non-commercial and sat on the signup path |
 
 ### Charts come from a third-party API — decided 1 Sep 2026
@@ -452,6 +453,29 @@ discarded, for the reason 4 Sep gave: two tithis for one day on two screens.
 `canon-chart:` and `rashifal:` cache keys and the moon-drift check that guarded
 them. `backend/functions/astro/` still contains them, commented out with the
 rest of the retired JavaScript backend.
+
+### A second vendor, and what was NOT taken from it — 24 Sep 2026
+
+`astrologyapi.com` was signed up for to add tarot, palmistry and numerology.
+The account was probed with its own credentials before anything was built, and
+only one of the three survived that.
+
+| | What the probe found | Decision |
+|---|---|---|
+| **Numerology** | `numero_table` and `numerological_numbers` take a name and a birth date and answer with life path, expression, soul urge, radical and name numbers, lucky stone, day and mantra. Deterministic, personal, and `Accept-Language: hi` returns Hindi | **Adopted** — the app is bilingual and has no numerology of its own |
+| **Tarot** | `tarot_predictions` and `yes_no_tarot` return the **same bytes for every caller**. Called with two different names and birth dates, identical love/career/finance prose; every parameter ignored; no card, no image | **Refused.** Generic text shown as a personal reading is the exact failure the daily reading was rebuilt to end (§8 above) |
+| **Palmistry** | Absent from all 111 tools the account's token exposes, and the documented `get-palm-id` path falls through to a generic validator | **Blocked**, not refused. A separate product the vendor has to enable |
+
+**So tarot is ours, and the reading is written by the model we already pay for.**
+The card is dealt server-side from our own decks (`apps/ai/tarot_decks.py`),
+then Gemini reads it against the question the seeker typed — about 3 paise a
+pull against ₹11, on the same provider seam as Namo AI, with its own prompt and
+its own allowance. A vendor was not needed for the one thing a vendor could not
+do anyway: answer the question that was actually asked.
+
+**Credentials are env-only** — `ASTROLOGY_API_USER_ID` and `ASTROLOGY_API_KEY`,
+on Cloud Run, never in the repo and never in a browser (INSTRUCTIONS.md rule 7).
+The trial token was pasted into a chat transcript and is to be regenerated.
 
 ### Matching and muhurat — 22 Sep 2026
 

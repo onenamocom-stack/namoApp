@@ -285,6 +285,14 @@ AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
 AI_WELCOME_FREE = int(os.environ.get("AI_WELCOME_FREE", "5"))
 AI_DAILY_FREE = int(os.environ.get("AI_DAILY_FREE", "1"))
 
+# ₹11 a tarot pull (docs/01-PRD.md §4.2), after two free ones a week. Both
+# are env vars for the same reason the AI ones are: they are prices and
+# allowances, and neither should need a deploy to change. The free count
+# lives on the server as of 24 Sep — it used to be two flags in the browser
+# that a reload cleared, which made it unlimited.
+TAROT_PRICE_PAISE = int(os.environ.get("TAROT_PRICE_PAISE", "1100"))
+TAROT_FREE_WEEKLY = int(os.environ.get("TAROT_FREE_WEEKLY", "2"))
+
 # --- Razorpay (module 8; rule 7 — server-side only, never a response body)
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")

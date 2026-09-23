@@ -1,79 +1,88 @@
-import { useState } from 'react'
-import { TAROT_PRICE, tarotDecks } from '../data/mock.js'
+import { useEffect, useState } from 'react'
+import { tarotDecks } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Stub } from '../components/Primitives.jsx'
+import { priceLabel, pullCard, tarotState } from '../lib/tarot.js'
 import { useStore } from '../store.jsx'
 
 /**
- * Tarot — a guided pull, then the card.
+ * Tarot — a guided pull, then the card read against what was asked.
  *
- * The screen used to lay everything out at once: deck pills, a card back and a
- * pull button all visible before you had decided anything. A reading is a
- * sequence, so this is a sequence — two dialogs, then the card.
+ *   deck → question → (pull) → the reading
  *
- *   deck → question → (pull) → card
+ * **The question is typed now, and that reverses the rule this screen was
+ * built on.** It used to say: "Nothing is typed: the question stays in
+ * their head, which is the whole ritual." That was right while a card
+ * answered with a line written months earlier — asking somebody to type
+ * into a box that changed nothing would have been theatre. It is wrong
+ * now. The reading is written for the question, so the question has to
+ * reach the reader (24 Sep 2026, and the partner's flow).
  *
- * The dialogs are modal on purpose. "Think of a question" is the only step
- * that asks the seeker to do something the app cannot check, and a prompt you
- * can scroll past is a prompt nobody follows. Nothing is typed: the question
- * stays in their head, which is the whole ritual.
+ * **The card is dealt by the server** (`apps/ai/tarot_decks.py`). This
+ * screen sends a deck and a question; what comes back is a card id, the
+ * reading and one remedy. A client that dealt its own card could pull
+ * until it liked the answer, and the pull is charged.
  *
- * Five decks by tradition rather than one Western pack. Bhaktamar is the odd
- * one: 48 painted faces out of `public/cards/`, plus the shloka in Sanskrit,
- * IAST and English, a question and a remedy per card. The other four are six
- * cards of drawn artwork each. Everything optional on a card is gated on the
- * field being present, so the two shapes share one renderer.
+ * **The money and the free count are the server's too.** Both used to be
+ * here — a rupee constant and two flags in the store's `flags` Set — and
+ * the flags did not survive a reload, so "two free a week" was unlimited.
  *
- * **Price is never shown before a card has been pulled.** Leading with "₹11
- * after your free ones" sells before the thing has been handed over.
- *
- * The free pulls are two flags on the store's `flags` Set rather than a
- * counter, because `flags` is a Set of strings and that is the hatch this app
- * already has. Paid pulls go through `spend()`, which refuses and toasts when
- * the wallet is short.
- *
- * ponytail: "weekly" is a pair of flags, not a dated window. Nothing here
- * persists across a reload, so a real week boundary needs a clock *and* a store
- * that remembers — add both together or neither.
+ * Three decks: Bhaktamar (48 painted faces and the shloka), the Vedic
+ * Kipper six, and twenty-two cards that answer yes or no. A deck with no
+ * art yet falls back to a plate, so adding faces is a file copy.
  */
-const FREE_PULLS = 2
-const FREE_KEYS = ['tarot:free1', 'tarot:free2']
+const MAX_QUESTION = 200
 
 export default function Tarot() {
-  const { showToast, hasFlag, toggleFlag, spend, spending, balance, lang, t } = useStore()
+  const { showToast, session, sessionReady, lang, t } = useStore()
   const [deck, setDeck] = useState(null)
-  const [card, setCard] = useState(null)
+  const [question, setQuestion] = useState('')
   const [step, setStep] = useState('deck')
-  const [showConsultDialog, setShowConsultDialog] = useState(false)
-  const [consultName, setConsultName] = useState('')
+  const [pulling, setPulling] = useState(false)
+  const [result, setResult] = useState(null)
+  const [refusal, setRefusal] = useState(null)
+  const [state, setState] = useState(null)
 
-  const usedFree = FREE_KEYS.filter(hasFlag).length
-  const freeLeft = FREE_PULLS - usedFree
-  const paying = freeLeft <= 0
-  /* `balance` is paise and TAROT_PRICE is rupees, so the comparison needs the
-     hundred. `balance` is also null until the wallet loads, and null fails
-     this test — which disables the button rather than offering a pull that
-     would be refused a moment later. */
-  const canAfford = !paying || balance >= TAROT_PRICE * 100
   const tradition = (d) => (lang === 'hi' ? d.traditionHi : d.tradition)
 
+  /* What is free and what a card costs, before anything is drawn — so the
+     pull button can say which of the two it is about to spend. */
+  useEffect(() => {
+    if (!sessionReady || !session) return
+    tarotState().then((res) => setState(res.ok ? res : null))
+  }, [sessionReady, session])
+
+  const freeLeft = state?.free_left ?? null
+  const paying = freeLeft === 0
+
   const pull = async () => {
-    // Two a week are free; after that each card is charged. spend() is a
-    // promise now — without the await, `!promise` is always false and every
-    // pull would go through, paid or not.
-    if (paying) {
-      if (!(await spend(TAROT_PRICE, `Tarot · ${deck.name}`))) return
-    } else {
-      toggleFlag(FREE_KEYS[usedFree])
-      showToast(t(freeLeft === 1 ? 'tarot.lastFree' : 'tarot.oneMore'))
+    setPulling(true)
+    setRefusal(null)
+    const res = await pullCard({ deck: deck.key, question: question.trim() })
+    setPulling(false)
+
+    if (!res.ok) {
+      setRefusal(res)
+      // A refusal the server meant carries its own sentence; the screen
+      // does not write one of its own (backend/INSTRUCTIONS.md §2).
+      showToast(res.reason)
+      return
     }
 
-    const pool = deck.cards.filter((c) => c.id !== card?.id)
-    setCard(pool[Math.floor(Math.random() * pool.length)])
+    setResult(res)
+    setState({ free_left: res.free_left, price_paise: res.price_paise })
     setStep('card')
+    if (res.charged_paise === 0 && res.free_left === 0) showToast(t('tarot.lastFree'))
   }
+
+  /* The card as this screen's own data knows it: the art and, for
+     Bhaktamar, the shloka. The server sent the id; everything else is
+     already in the bundle. */
+  const drawn = result
+    ? deck.cards.find((c) => c.id === result.card.id) ?? { id: result.card.id, name: result.card.name }
+    : null
 
   return (
     <>
@@ -81,36 +90,40 @@ export default function Tarot() {
         title={t('tarot.title')}
         back
         backTo="/home"
-        /* Only once a card exists. Before that the screen has sold nothing. */
         sub={
-          card
-            ? paying
-              ? `₹${TAROT_PRICE} ${t('tarot.aCard')}`
-              : `${freeLeft} ${t('tarot.freeLeft')}`
-            : null
+          freeLeft === null
+            ? null
+            : freeLeft > 0
+              ? `${freeLeft} ${t('tarot.freeLeft')}`
+              : `${priceLabel(state.price_paise)} ${t('tarot.aCard')}`
         }
       />
 
       <section className="px-5 py-6">
-        {card ? (
+        {result ? (
           <Card
-            card={card}
+            card={drawn}
+            reading={result.reading}
+            remedy={result.remedy}
+            verdict={result.card.verdict}
+            question={question}
             deck={deck}
             tradition={tradition}
-            canAfford={canAfford}
-            onAgain={() => setStep('question')}
-            onChangeDeck={() => setStep('deck')}
-            onConsult={() => setShowConsultDialog(true)}
+            onAgain={() => { setResult(null); setQuestion(''); setStep('question') }}
+            onChangeDeck={() => { setResult(null); setQuestion(''); setStep('deck') }}
           />
         ) : (
-          /* The face-down deck, waiting behind whichever dialog is open. It is
-             not an empty state — it is the thing the dialogs are about. */
+          /* The face-down deck, waiting behind whichever dialog is open. It
+             is not an empty state — it is the thing the dialogs are about. */
           <div className="text-center">
             <Plate
               seed={`back-${deck?.id ?? 'x'}`}
               variant="contour"
               className="mx-auto aspect-[3/4] w-2/3"
             />
+            {pulling && (
+              <p className="mt-5 text-meta t-faint">{t('tarot.reading')}</p>
+            )}
           </div>
         )}
       </section>
@@ -124,58 +137,21 @@ export default function Tarot() {
 
       <div className="h-8" />
 
-      {showConsultDialog && (
-        <Dialog
-          title={t('tarot.bookReader') || 'Book a tarot reader'}
-          onBack={() => {
-            setShowConsultDialog(false)
-            setConsultName('')
-          }}
-        >
-          <input
-            type="text"
-            placeholder={t('a.name') || 'Your name'}
-            value={consultName}
-            onChange={(e) => setConsultName(e.target.value)}
-            className="w-full rounded-lg border border-stroke bg-surface px-3 py-2 text-body placeholder-t-faint focus:border-ink focus:outline-none"
-          />
-          <PopButton
-            variant="gold"
-            className="mt-4 w-full"
-            onClick={() => {
-              if (!consultName.trim()) {
-                showToast(t('a.fieldRequired') || 'Please enter a name')
-                return
-              }
-              showToast(`Booking request sent for ${consultName}`)
-              setShowConsultDialog(false)
-              setConsultName('')
-            }}
-          >
-            {t('tarot.requestBooking') || 'Request booking'}
-          </PopButton>
-          <p className="mt-3 text-center text-meta t-faint text-sm">
-            {t('tarot.bookingNote') || 'A tarot reader will contact you shortly'}
-          </p>
-        </Dialog>
-      )}
-
-      {step === 'deck' && (
+      {step === 'deck' && !result && (
         <Dialog title={t('tarot.whichDeck')} note={t('tarot.whichDeckNote')}>
           <ul className="space-y-2">
             {tarotDecks.map((d) => (
               <li key={d.id}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setDeck(d)
-                    setCard(null)
-                    setStep('question')
-                  }}
-                  className="pop-tap flex w-full items-baseline gap-3 rounded-2xl px-4 py-3.5 text-left"
+                  onClick={() => { setDeck(d); setStep('question') }}
+                  className="pop-tap w-full rounded-2xl px-4 py-3.5 text-left"
                 >
-                  <span className="caps-sm flex-none gold">{tradition(d)}</span>
-                  <span className="min-w-0 flex-1 text-meta t-body">{d.name}</span>
+                  <span className="flex items-baseline gap-3">
+                    <span className="caps-sm flex-none gold">{tradition(d)}</span>
+                    <span className="min-w-0 flex-1 text-meta t-body">{d.name}</span>
+                  </span>
+                  <span className="mt-1.5 block caps-sm t-faint">{d.line}</span>
                 </button>
               </li>
             ))}
@@ -183,34 +159,52 @@ export default function Tarot() {
         </Dialog>
       )}
 
-      {step === 'question' && (
+      {step === 'question' && !result && (
         <Dialog
-          title={t('tarot.thinkTitle')}
-          note={t('tarot.thinkNote')}
-          onBack={() => setStep(card ? 'card' : 'deck')}
+          title={t('tarot.askTitle')}
+          note={t('tarot.askNote')}
+          onBack={() => setStep('deck')}
         >
-          <p className="text-read t-heading">{t('tarot.hold')}</p>
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value.slice(0, MAX_QUESTION))}
+            rows={3}
+            autoFocus
+            placeholder={t('tarot.askPlaceholder')}
+            aria-label={t('tarot.askTitle')}
+            className="w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
+          />
+          <p className="mt-2 text-right caps-sm t-faint tnum">
+            {question.length}/{MAX_QUESTION}
+          </p>
+
           <PopButton
             variant="gold"
-            className="mt-6"
-            disabled={!canAfford || spending}
+            className="mt-4"
+            disabled={!question.trim() || pulling}
             onClick={pull}
           >
-            {spending
+            {pulling
               ? '…'
               : paying
-                ? `${t('tarot.pull')} · ₹${TAROT_PRICE}`
+                ? `${t('tarot.pull')} · ${priceLabel(state.price_paise)}`
                 : t('tarot.pull')}
           </PopButton>
-          {/* Only someone who has already paid once sees the terms here. */}
+
+          {/* Only somebody who has spent the free ones sees the terms. */}
           {paying && (
             <p className="mt-3 text-center caps-sm t-faint">
-              {t('tarot.freeUsed', { price: TAROT_PRICE })}
+              {t('tarot.freeUsed', { price: Math.round(state.price_paise / 100) })}
             </p>
           )}
-          {!canAfford && (
+          {refusal?.needs_money && (
             <PopButton variant="ghost" to="/wallet" className="mt-3">
               {t('a.addMoney')}
+            </PopButton>
+          )}
+          {refusal?.code === 'signed_out' && (
+            <PopButton variant="ghost" to="/onboarding" className="mt-3">
+              {t('a.signIn') || 'Sign in'}
             </PopButton>
           )}
         </Dialog>
@@ -250,28 +244,40 @@ function Dialog({ title, note, onBack, children }) {
   )
 }
 
-/** The pulled card: face, verse, meaning, then consult flow. Sequential experience. */
-function Card({ card, deck, tradition, canAfford, onAgain, onChangeDeck, onConsult }) {
+/**
+ * The card that came up, then what it says about the question.
+ *
+ * The reading and the remedy are written for this pull. The shloka is not:
+ * it belongs to the card and it is the tradition's words, printed before
+ * any reading of it (`src/data/bhaktamar.js` — never rewritten).
+ */
+function Card({ card, reading, remedy, verdict, question, deck, tradition, onAgain, onChangeDeck }) {
   const { t } = useStore()
+  const [artFailed, setArtFailed] = useState(false)
+  const hasArt = Boolean(card.img) && !artFailed
+
   return (
     <>
       <PopCard raised className="overflow-hidden">
-        {card.img ? (
-          /* A painted deck. Only the Bhaktamar cards have faces; the file sits
-             in public/ so BASE_URL, not the bundler, resolves it — GitHub Pages
-             serves this app from a sub-path. */
+        {hasArt ? (
+          /* The file sits in public/, so BASE_URL resolves it — this app is
+             served from a sub-path on GitHub Pages. A deck whose art has
+             not been added yet falls back to the plate below. */
           <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#e8e2d8]">
             <img
               src={`${import.meta.env.BASE_URL}cards/${card.img}`}
               alt={card.name}
+              onError={() => setArtFailed(true)}
               className="h-full w-full object-cover"
             />
             <span className="absolute left-3 top-3">
               <PopTag>{tradition(deck)}</PopTag>
             </span>
-            <span className="absolute right-3 top-3">
-              <PopTag tone="gold">{card.no}</PopTag>
-            </span>
+            {card.no && (
+              <span className="absolute right-3 top-3">
+                <PopTag tone="gold">{card.no}</PopTag>
+              </span>
+            )}
           </div>
         ) : (
           <Plate
@@ -284,60 +290,58 @@ function Card({ card, deck, tradition, canAfford, onAgain, onChangeDeck, onConsu
             </span>
           </Plate>
         )}
-
-        {/* The verse comes straight off the face, before any reading of it —
-            the shloka is the card, the meaning is our gloss on it. */}
-        {card.sa && (
-          <div className="border-t border-stroke p-5">
-            <p className="caps-sm t-faint">
-              {t('tarot.shloka')} {card.no}
-            </p>
-            <p lang="sa" className="mt-2 text-read leading-relaxed t-body">
-              {card.sa}
-            </p>
-            <p className="mt-2 text-meta italic t-faint">{card.iast}</p>
-            {card.en && (
-              <>
-                <Stub className="my-4" />
-                <p className="text-meta t-sub">{card.en}</p>
-              </>
-            )}
-          </div>
-        )}
       </PopCard>
 
-      {/* What the card means: title, the line under it, the virtue it asks for. */}
+      {/* The card's name, and for the yes/no deck its answer — which is the
+          whole reason that deck exists, so it leads. */}
       <div className="pop-inset mt-4 p-5 text-center">
-        <p className="caps-sm gold">{card.name}</p>
+        {verdict && <p className="text-title font-light">{verdict}</p>}
+        <p className={`caps-sm gold ${verdict ? 'mt-3' : ''}`}>{card.name}</p>
         {card.sub && <p className="mt-1.5 text-meta t-faint">{card.sub}</p>}
-        <Stub className="my-4" />
-        <p className="text-read t-heading">{card.line}</p>
-        {card.virtue && <p className="mt-4 caps-sm t-faint">{card.virtue}</p>}
       </div>
 
-      {card.ask && (
-        <div className="pop-inset mt-4 p-4">
-          <p className="caps-sm t-faint">{t('tarot.askYourself')}</p>
-          <p className="mt-1.5 text-meta t-heading">{card.ask}</p>
-          <Stub className="my-4" />
+      {/* What was asked, quoted back small. Without it a reading read later
+          is a paragraph with no question attached to it. */}
+      {question && (
+        <p className="mt-5 text-center text-meta t-faint">“{question}”</p>
+      )}
+
+      <div className="mt-4 whitespace-pre-line text-read t-heading">{reading}</div>
+
+      {remedy && (
+        <div className="pop-inset mt-5 p-4">
           <p className="caps-sm t-faint">{t('tarot.remedy')}</p>
-          <p className="mt-1.5 text-meta t-body">{card.remedy}</p>
+          <p className="mt-1.5 text-meta t-body">{remedy}</p>
         </div>
       )}
 
-      <PopButton variant="gold" className="mt-6" onClick={onConsult}>
-        {t('tarot.askReader') || 'Consult with a reader'}
+      {/* The verse comes off the face of the card itself, after the reading:
+          the shloka is the card, the reading is what it says today. */}
+      {card.sa && (
+        <PopCard className="mt-5 p-5">
+          <p className="caps-sm t-faint">
+            {t('tarot.shloka')} {card.no}
+          </p>
+          <p lang="sa" className="mt-2 text-read leading-relaxed t-body">
+            {card.sa}
+          </p>
+          <p className="mt-2 text-meta italic t-faint">{card.iast}</p>
+          {card.en && (
+            <>
+              <Stub className="my-4" />
+              <p className="text-meta t-sub">{card.en}</p>
+            </>
+          )}
+        </PopCard>
+      )}
+
+      <PopButton variant="gold" className="mt-6" to="/consult">
+        {t('tarot.askReader')}
       </PopButton>
 
       <div className="mt-3 flex items-center gap-2">
-        <PopButton
-          variant="ghost"
-          className="flex-1"
-          full={false}
-          disabled={!canAfford}
-          onClick={onAgain}
-        >
-          {canAfford ? t('tarot.pullAgain') : t('tarot.topUp')}
+        <PopButton variant="ghost" className="flex-1" full={false} onClick={onAgain}>
+          {t('tarot.pullAgain')}
         </PopButton>
         <PopButton variant="ghost" className="flex-1" full={false} onClick={onChangeDeck}>
           {t('tarot.changeDeck')}

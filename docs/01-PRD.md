@@ -146,7 +146,18 @@ consultant's price is refused by the database if it does not match one.
 **₹11 per pull, after two free pulls a week.** The cheapest thing in the app and
 deliberately so — it is the habit-forming line, not a margin line.
 
-The "week" is currently two booleans in browser memory and resets on reload.
+~~The "week" is currently two booleans in browser memory and resets on reload.~~
+**Closed 24 Sep 2026.** Both the price and the count are the server's
+(`TAROT_PRICE_PAISE`, `TAROT_FREE_WEEKLY`), the week is a stored Monday in IST,
+and the charge happens in the same transaction as the count. While it was two
+browser flags the two free pulls were in fact unlimited — a reload handed out
+two more — so the ₹11 was never once reached.
+
+**What ₹11 buys changed on the same day.** A pull used to return a line written
+months earlier, identical for everyone who drew that card. It now returns a
+reading written for the question the seeker typed, and one remedy. That costs
+about 3 paise of model time against the ₹11, and it is why the question is typed
+rather than held in the head.
 
 ### 4.3 Reports
 

@@ -72,3 +72,41 @@ def ask(request):
     return Response(result)
 
 
+
+class TarotInput(serializers.Serializer):
+    """A deck and a question. **No card**: the server draws it
+    (apps/ai/tarot_decks.py), because a client that picks its own card can
+    pull until it likes the answer, and because the pull is charged.
+
+    The question is required and capped. This deck answers a question, and
+    200 characters is a question — past that it is a letter, and the model
+    is being paid by the token to read it.
+    """
+
+    deck = serializers.CharField(max_length=32, trim_whitespace=True)
+    question = serializers.CharField(
+        max_length=200, allow_blank=False, trim_whitespace=True
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def tarot_state(request):
+    """Free pulls left this week and what a paid one costs — read by the
+    screen before anything is drawn, so it can say which it is about to
+    spend."""
+    return Response({"ok": True, **services.tarot_state(request.user.id)})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def tarot(request):
+    form = TarotInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    result = services.tarot_pull(
+        request.user.id,
+        form.validated_data["deck"],
+        form.validated_data["question"],
+    )
+    # 200 on a refusal, as `ask` does and for the same reason.
+    return Response(result)

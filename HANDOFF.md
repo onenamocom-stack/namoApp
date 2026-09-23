@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 23 Sep 2026.
+Updated 24 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -16,6 +16,7 @@ Updated 23 Sep 2026.
 | **6 · metered chat** | **Done and closed.** On both projects, front end deployed, all six done-conditions verified — the last was a look at the chat bubbles, taken 3 Sep (§6) |
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
 | **7a · reading, matching, muhurat** | **On `main` and deployed, 23 Sep.** The daily reading is computed from the reader's own birth again — reversing 7 Sep — and `/match` (Ashtakoota) and `/muhurat` are new. **Never walked in a browser** — §29 |
+| **2a · tarot** | **Reworked 24 Sep on `tarot-flow`, not merged.** Typed question, server-dealt card, the reading written by the model. The two free pulls a week were a browser flag that a reload cleared — they are a server column now — §30 |
 | **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **024–027 are all on production (13 Sep)** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
@@ -4043,3 +4044,76 @@ the container exits before it starts, which is how the first run failed.
 - Shiprocket never sets `DELIVERED` — the console is the only path, so
   cashback matures only when an admin marks the parcel delivered.
 - `REFERRAL_CASHBACK_CAP_PAISE` is 0. Uncapped.
+## 32. Tarot answers the question now — 24 Sep 2026
+
+**On `tarot-flow`, not merged, not deployed.**
+
+**A pull is: pick a deck, type a question, the server deals a card, the model
+reads it.** The old flow held the question in your head, which was right while
+a card answered with a line written months earlier — the same line for
+everybody who drew it. The partner asked for the full message and a remedy,
+and a reading written for a question needs the question, so it is typed now
+(200 characters). `docs/03-APP-FLOW.md` has the state machine and the
+reversal; the note in `Tarot.jsx` that said "nothing is typed" is rewritten
+rather than deleted.
+
+**The server deals the card.** `apps/ai/tarot_decks.py` holds three decks —
+Bhaktamar's 48, the Vedic Kipper six, 22 yes/no cards — and
+`SystemRandom.choice` picks one. The client sends a deck key and a question
+and nothing else: a client that deals its own card can pull until it likes the
+answer, on a pull that is charged. The art and the shlokas stay in `src/data/`;
+only ids and names are written twice, and `node tools/verify-tarot-decks.mjs`
+fails if the two lists drift.
+
+**The money moved to the server, and that closed a real hole.** The two free
+pulls a week were `tarot:free1|free2` in the store's `flags` Set, which does
+not survive a reload — so they were unlimited and the ₹11 was never once
+reached. The count is two columns on `ai_quota` (`tarot_week`, `tarot_used`,
+migration `ai 0003`), taken in the same transaction as the debit, and the price
+is `TAROT_PRICE_PAISE`. A provider failure refunds the money and does NOT
+refund the free pull — refunding that on every failure is a free-pull generator
+for anybody who can cause a timeout.
+
+**A pull needs a session now, and that is a change in who can use it.** The
+free pulls used to be browser flags, so a signed-out visitor could draw two
+cards. The reading costs model time, so an anonymous pull is an unbounded bill
+— the screen asks them to sign in, the same rule Namo AI has. Somebody browsing
+the free-tools row who has never signed up now sees a sign-in step where they
+used to see a card.
+
+**Cost:** about 3 paise of Gemini against ₹11. The reading and the remedy come
+back as one answer and are split on the `Remedy:` line the prompt asks for; a
+missing line means no remedy rather than an invented one.
+
+**Three decks, and three deleted.** Rider-Waite, Sufi Path and Lotus Path are
+gone — six authored lines each and no art. **The art for the two new decks is
+not here**: `hindu-01..06.webp` and `yesno-01..22.webp` go in `public/cards/`,
+and until they do those decks fall back to the procedural plate. Bhaktamar's 48
+faces are unaffected.
+
+### The second vendor, and what it is not used for
+
+`astrologyapi.com` was signed up for tarot, palmistry and numerology. Probed
+with its own token before anything was built:
+
+- **Numerology works and is worth having** — `numero_table` and
+  `numerological_numbers`, personal, deterministic, Hindi via
+  `Accept-Language`. **Next piece of work.**
+- **Their tarot returns the same bytes for every caller.** Two different names
+  and birth dates, identical prose; every parameter ignored; no card, no image.
+  Refused — that is the failure §8 was rewritten to end, and it is why the
+  tarot reading above is ours.
+- **Palmistry is not on the account at all.** Absent from all 111 tools the
+  token exposes; the documented endpoint falls through to a generic validator.
+  Blocked on the vendor enabling it, and it needs a private bucket, a consent
+  line and a retention rule before any code.
+
+**The trial token was pasted into a chat transcript.** It goes on the rotate
+list — eleven now — and the credentials are env-only when the numerology work
+lands (`ASTROLOGY_API_USER_ID`, `ASTROLOGY_API_KEY`).
+
+**Checks.** 19 new tests in `tests/test_tarot.py` (the draw, the money, the
+week rollover, the refund, the refusals, and that spending tarot pulls does not
+touch the Namo AI allowance) and `node tools/verify-tarot-decks.mjs`. Lint and
+build clean. **Not walked in a browser** — same blocker as §29, the headless
+browser is blocked by Windows Application Control on this machine.

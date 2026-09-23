@@ -32,7 +32,7 @@ from apps.chat.services import _billable_paise, _minutes_held
 from apps.consultants import gateway
 from apps.wallet import services as wallet_services
 
-from . import providers
+from . import providers, tarot, tarot_decks
 from .models import Message, Quota, Session
 from .prompt import chart_block
 
@@ -341,3 +341,138 @@ def transcript(profile_id, limit=HISTORY_LIMIT):
         }
         for m in history_for(profile_id, limit)
     ]
+
+
+# ── tarot ────────────────────────────────────────────────────────────────────
+#
+# A pull is one card, one question and one answer. It shares this module's
+# provider and chart plumbing, and nothing else with Namo AI: no transcript,
+# no session, no shared allowance. Somebody who has spent today's free
+# question still has this week's free pulls, because they are different
+# products that happen to run on the same model.
+
+REFUSAL_DECK = "Pick a deck first."
+REFUSAL_TAROT_UPSTREAM = "Could not reach the reader. Try again."
+
+
+def _tarot_price_paise():
+    from django.conf import settings
+
+    return settings.TAROT_PRICE_PAISE
+
+
+def _tarot_free_weekly():
+    from django.conf import settings
+
+    return settings.TAROT_FREE_WEEKLY
+
+
+def _ist_week():
+    """The Monday of the current IST week. A week rather than a day because
+    that is what was priced (docs/01-PRD.md §4.2), and a stored Monday
+    rather than an ISO week number because a date sorts, prints and
+    compares without anybody having to remember what week 39 was."""
+    today = _ist_today()
+    return today - timezone.timedelta(days=today.weekday())
+
+
+def tarot_state(profile_id):
+    """Free pulls left this week, without spending one."""
+    row = Quota.objects.filter(profile_id=profile_id).first()
+    used = row.tarot_used if (row and row.tarot_week == _ist_week()) else 0
+    return {
+        "free_left": max(0, _tarot_free_weekly() - used),
+        "price_paise": _tarot_price_paise(),
+    }
+
+
+def _take_free_pull(profile_id):
+    """Spend one free pull if the week still has one. Returns True if it did.
+
+    Same shape as `_take_free()` for questions, and behind the same row
+    lock: two taps in one second must not both find the last free pull.
+    """
+    week = _ist_week()
+    with transaction.atomic():
+        row = (
+            Quota.objects.select_for_update()
+            .filter(profile_id=profile_id)
+            .first()
+        )
+        if row is None:
+            row = Quota.objects.create(profile_id=profile_id)
+            row = Quota.objects.select_for_update().get(profile_id=profile_id)
+
+        used = row.tarot_used if row.tarot_week == week else 0
+        if used >= _tarot_free_weekly():
+            return False
+        row.tarot_week = week
+        row.tarot_used = used + 1
+        row.save(update_fields=["tarot_week", "tarot_used"])
+        return True
+
+
+def tarot_pull(profile_id, deck_key, question):
+    """Draw a card and read it against the question.
+
+    The order is the one `ask()` settled: the money moves BEFORE the model
+    is called, inside the same transaction as the free-pull check, so two
+    taps in one tick cannot both take the last free pull and cannot both
+    escape paying — and if the model then fails, the money comes back.
+
+    **The card is drawn here, not sent by the client** (tarot_decks.draw).
+    """
+    question = (question or "").strip()
+    if not question:
+        return {"ok": False, "reason": REFUSAL_EMPTY}
+    if deck_key not in tarot_decks.DECKS:
+        return {"ok": False, "reason": REFUSAL_DECK}
+
+    price = _tarot_price_paise()
+    charged = 0
+
+    with transaction.atomic():
+        if not _take_free_pull(profile_id):
+            paid = wallet_services.debit(profile_id, price, "Tarot · one card")
+            if not paid.get("ok"):
+                return {
+                    "ok": False,
+                    "reason": paid.get("reason"),
+                    "needs_money": True,
+                    "price_paise": price,
+                    "balance_paise": paid.get("balance_paise"),
+                    "free_left": 0,
+                }
+            charged = price
+
+    card = tarot_decks.draw(deck_key)
+    block = tarot.card_block(card, chart_block(_chart_for(profile_id)))
+
+    try:
+        answer = providers.read_card(block, question)
+    except providers.UpstreamError as exc:
+        logger.error("[tarot] upstream: %s", exc)
+        # The money comes back, for the reason `ask()` gives: somebody who
+        # paid ₹11 and got "could not reach the reader" has been robbed of
+        # ₹11. The free pull is NOT given back — it was spent on a question
+        # they can retype, and refunding it on every failure is a free-pull
+        # generator for anybody who can cause a timeout.
+        if charged:
+            wallet_services.credit(
+                profile_id, charged, "Refund · tarot reading failed",
+                ref_type="refund",
+            )
+        return {"ok": False, "reason": REFUSAL_TAROT_UPSTREAM, "retryable": True,
+                "refunded_paise": charged}
+
+    reading, remedy = tarot.split_remedy(answer["text"])
+    state = tarot_state(profile_id)
+    return {
+        "ok": True,
+        "card": card,
+        "reading": reading,
+        "remedy": remedy,
+        "free_left": state["free_left"],
+        "charged_paise": charged,
+        "price_paise": price,
+    }

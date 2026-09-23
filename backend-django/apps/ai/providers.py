@@ -15,6 +15,7 @@ import urllib.request
 from django.conf import settings
 
 from .prompt import SYSTEM
+from .tarot import SYSTEM as TAROT_SYSTEM
 
 logger = logging.getLogger("apps.ai")
 
@@ -146,9 +147,26 @@ class MockProvider(Provider):
         "opinion. The chart does not give permission.",
     )
 
+    # A tarot reading has a shape the four replies above do not: an answer,
+    # the card read against the question, and a Remedy line the service
+    # splits off. A mock that returned prose with no marker would let a
+    # broken split pass every test.
+    TAROT_REPLY = (
+        "Not yet, and the card is specific about why.\n\n"
+        "The card that came up speaks to timing rather than to whether the "
+        "thing is right. What you are asking about is moving, but it is "
+        "moving on somebody else's calendar, and pushing it this week costs "
+        "you the position you already hold. What it does not say is whether "
+        "the person you are waiting on is worth the wait.\n\n"
+        "Remedy: Write down the date you will ask again, and do not ask "
+        "before it."
+    )
+
     def answer(self, system, history, question):
         # Stable per conversation rather than random: the same transcript
         # replays the same way, which is what makes a test worth writing.
+        if "CARD DRAWN" in system:
+            return {"text": self.TAROT_REPLY, "tokens_in": None, "tokens_out": None}
         index = len([m for m in history if m["role"] == "user"]) % len(self.REPLIES)
         return {"text": self.REPLIES[index], "tokens_in": None, "tokens_out": None}
 
@@ -167,3 +185,10 @@ def get_provider():
 def ask(history, question, chart_block):
     """One turn. `history` is oldest-first [{role, body}]."""
     return get_provider().answer(f"{SYSTEM}\n\n{chart_block}", history, question)
+
+
+def read_card(card_block, question):
+    """One tarot reading. No history: a pull is a closed question about one
+    card, and carrying the chat transcript into it would let a previous
+    conversation steer what the card says."""
+    return get_provider().answer(f"{TAROT_SYSTEM}\n\n{card_block}", [], question)

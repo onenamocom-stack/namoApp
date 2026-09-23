@@ -80,16 +80,9 @@ export const strings = {
 
   // ── Tarot ────────────────────────────────────────────────────────────────
   'tarot.title': { en: 'Tarot', hi: 'टैरो' },
-  'tarot.hold': {
-    en: 'Hold the question you actually came with. Not the tidy version.',
-    hi: 'वही प्रश्न मन में रखें जिसे लेकर आप आए हैं। सजाया हुआ नहीं।',
-  },
   'tarot.pull': { en: 'Pull a card', hi: 'एक कार्ड निकालें' },
-  'tarot.another': { en: 'Another', hi: 'एक और' },
-  'tarot.topUp': { en: 'Top up to pull', hi: 'निकालने के लिए पैसे जोड़ें' },
   'tarot.askReader': { en: 'Ask a reader', hi: 'पाठक से पूछें' },
   'tarot.shloka': { en: 'Shloka', hi: 'श्लोक' },
-  'tarot.askYourself': { en: 'Ask yourself', hi: 'स्वयं से पूछें' },
   'tarot.remedy': { en: 'Remedy', hi: 'उपाय' },
   'tarot.freeLeft': { en: 'free left this week', hi: 'इस सप्ताह निःशुल्क शेष' },
   'tarot.aCard': { en: 'a card', hi: 'प्रति कार्ड' },
@@ -98,7 +91,6 @@ export const strings = {
     hi: 'निःशुल्क कार्ड समाप्त · उसके बाद ₹{price} प्रति कार्ड',
   },
   'tarot.lastFree': { en: 'Your last free card this week', hi: 'इस सप्ताह का अंतिम निःशुल्क कार्ड' },
-  'tarot.oneMore': { en: 'Free card · one more this week', hi: 'निःशुल्क कार्ड · इस सप्ताह एक और' },
   'tarot.prompt': {
     en: 'One card is a prompt, not a reading. A tarot reader will do the other twenty minutes.',
     hi: 'एक कार्ड संकेत है, पूरा पाठ नहीं। बाकी बीस मिनट एक टैरो पाठक ही देगा।',
@@ -115,11 +107,19 @@ export const strings = {
     en: 'Every tradition reads the same moment differently. Pick the one you keep.',
     hi: 'हर परंपरा एक ही क्षण को अलग ढंग से पढ़ती है। वह चुनें जो आपकी है।',
   },
-  'tarot.thinkTitle': { en: 'Think of a question', hi: 'एक प्रश्न सोचें' },
-  'tarot.thinkNote': {
-    en: 'Do not type it. Hold it until the card is face up.',
-    hi: 'लिखें नहीं। जब तक कार्ड सामने न आए, उसे मन में रखें।',
+  /* The card is read against what is typed here, so it is typed. The two
+     keys this replaces told people NOT to type it, which was right while
+     the card answered with a line written months earlier. */
+  'tarot.askTitle': { en: 'What do you want to ask?', hi: 'आप क्या पूछना चाहते हैं?' },
+  'tarot.askNote': {
+    en: 'One real question. The card is read against it, so vague in is vague out.',
+    hi: 'एक असली प्रश्न। कार्ड उसी के सामने पढ़ा जाता है — अस्पष्ट प्रश्न, अस्पष्ट उत्तर।',
   },
+  'tarot.askPlaceholder': {
+    en: 'Should I take the offer in Pune?',
+    hi: 'क्या मुझे पुणे वाला प्रस्ताव लेना चाहिए?',
+  },
+  'tarot.reading': { en: 'Reading the card', hi: 'कार्ड पढ़ा जा रहा है' },
   'tarot.changeDeck': { en: 'Change deck', hi: 'डेक बदलें' },
   'tarot.pullAgain': { en: 'Pull again', hi: 'फिर निकालें' },
 

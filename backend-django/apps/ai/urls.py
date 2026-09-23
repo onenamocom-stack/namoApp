@@ -14,4 +14,6 @@ from . import views
 urlpatterns = [
     path("", views.state, name="ai-state"),
     path("ask/", views.ask, name="ai-ask"),
+    path("tarot/", views.tarot, name="ai-tarot"),
+    path("tarot/state/", views.tarot_state, name="ai-tarot-state"),
 ]

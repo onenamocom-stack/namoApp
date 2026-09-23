@@ -113,6 +113,18 @@ class Quota(models.Model):
     bonus_daily = models.IntegerField(default=0)
     bonus_until = models.DateField(null=True, blank=True)
 
+    # The free tarot pulls, weekly rather than daily, on the same row
+    # because they are the same fact about the same person: what they still
+    # have for free. `tarot_week` is the Monday of an IST week; a pull in a
+    # later week finds a stale date and the count resets.
+    #
+    # These used to be `tarot:free1|free2` in the browser's flag Set, which
+    # does not survive a reload — so the two free pulls a week were in fact
+    # unlimited and the ₹11 was never reached. A count the client keeps is
+    # not a count.
+    tarot_week = models.DateField(null=True, blank=True)
+    tarot_used = models.IntegerField(default=0)
+
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

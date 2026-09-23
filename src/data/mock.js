@@ -524,67 +524,73 @@ export const offerings = [
 ]
 
 /* ==========================================================================
-   TAROT - one free pull a week, then priced per card.
+   TAROT - two free pulls a week, then priced per card.
+
+   THE PRICE AND THE FREE COUNT ARE NOT HERE ANY MORE, since 24 Sep 2026.
+   Both are the server's (TAROT_PRICE_PAISE, TAROT_FREE_WEEKLY) and arrive
+   on the pull's response. A price the client holds is a price the client
+   can be wrong about, and a free count the client holds was unlimited: the
+   two flags that held it did not survive a reload.
    ========================================================================== */
 
-export const TAROT_PRICE = 11
-
 /**
- * Decks by tradition rather than one Western pack. The cards differ; the
- * register does not - a card describes a position, it does not promise one.
+ * Three decks, as of 24 Sep 2026. Rider-Waite, Sufi Path and Lotus Path are
+ * deleted: each was six authored lines with no art, and the pull is a real
+ * reading now rather than a line lookup, so a deck with nothing painted
+ * behind it is a name in a list.
+ *
+ * `key` is what the SERVER knows the deck by. It draws the card — the
+ * client sends a deck and a question and nothing else (rule 3), so the
+ * card list here exists to render art and a name, never to choose.
+ *
+ * `img` files live in `public/cards/`. Bhaktamar's 48 are there; the other
+ * two decks name theirs on the same pattern and fall back to a plate until
+ * the files are dropped in, so adding art is a copy, not a code change.
  */
 export const tarotDecks = [
   {
-    id: 'dk5', name: 'Bhaktamar', tradition: 'Jain', traditionHi: 'जैन',
+    id: 'dk5', key: 'bhaktamar', name: 'Bhaktamar', tradition: 'Jain', traditionHi: 'जैन',
     line: 'Forty-eight cards, one for each shloka of the stotra. The only deck here with a painted face.',
     cards: bhaktamarCards,
   },
   {
-    id: 'dk1', name: 'Rider-Waite', tradition: 'Western', traditionHi: 'पाश्चात्य',
-    line: 'The pack most people picture. Heavy on the majors.',
+    id: 'dk2', key: 'hindu', name: 'Vedic Kipper', tradition: 'Hindu', traditionHi: 'हिन्दू',
+    line: 'Read against your chart rather than alone. Each card names a house or a graha.',
     cards: [
-      { id: 'w1', name: 'The Tower', line: 'The thing you are bracing for has already happened. You are bracing for the admission.' },
-      { id: 'w2', name: 'The Hermit', line: 'Withdrawing is working. It stops working the day it becomes the point.' },
-      { id: 'w3', name: 'The Star', line: 'You are being given time, not a guarantee. Use it on the boring part.' },
-      { id: 'w4', name: 'Wheel of Fortune', line: 'Timing turns this week. Nothing about your effort changes with it.' },
-      { id: 'w5', name: 'The Moon', line: 'You have the facts. What you do not have is a version of them you can live with.' },
-      { id: 'w6', name: 'Justice', line: 'The fair outcome and the outcome you want are not the same shape this month.' },
+      { id: 'v1', name: 'Dashami, the Tenth', img: 'hindu-01.webp' },
+      { id: 'v2', name: 'Chandra, the Moon', img: 'hindu-02.webp' },
+      { id: 'v3', name: 'Ketu, the Tail', img: 'hindu-03.webp' },
+      { id: 'v4', name: 'Guru, the Teacher', img: 'hindu-04.webp' },
+      { id: 'v5', name: 'Shukra, the Bright', img: 'hindu-05.webp' },
+      { id: 'v6', name: 'Shani, the Slow', img: 'hindu-06.webp' },
     ],
   },
   {
-    id: 'dk2', name: 'Vedic Kipper', tradition: 'Hindu', traditionHi: 'हिन्दू',
-    line: 'Read against the chart rather than alone. Each card names a house.',
+    id: 'dk6', key: 'yesno', name: 'Yes or No', tradition: 'Classical', traditionHi: 'शास्त्रीय',
+    line: 'Twenty-two cards for a closed question. It answers yes or no before it explains itself.',
     cards: [
-      { id: 'v1', name: 'Dashami, the Tenth', line: 'Career asks first this month. The house you keep postponing is the one moving.' },
-      { id: 'v2', name: 'Chandra, the Moon', line: 'Your mood is weather, not evidence. Wait four days before deciding it is a pattern.' },
-      { id: 'v3', name: 'Ketu, the Tail', line: 'Something is ending without drama. Let it end without drama.' },
-      { id: 'v4', name: 'Guru, the Teacher', line: 'Advice is arriving. The useful kind will not be the flattering kind.' },
-      { id: 'v5', name: 'Shukra, the Bright', line: 'Ease is available. You are allowed to take it without earning it first.' },
-      { id: 'v6', name: 'Shani, the Slow', line: 'On schedule, not late. You are measuring against a calendar nobody agreed to.' },
-    ],
-  },
-  {
-    id: 'dk3', name: 'Sufi Path', tradition: 'Islamic', traditionHi: 'इस्लामी',
-    line: 'Stations rather than events. What the card names is a state you are in.',
-    cards: [
-      { id: 's1', name: 'Sabr, Patience', line: 'Waiting is the work here. Not the waiting where you refresh the page.' },
-      { id: 's2', name: 'Tawakkul, Trust', line: 'You have done the part that was yours. The rest was never yours.' },
-      { id: 's3', name: 'Fana, Dissolving', line: 'The version of you that wanted this is not the one who will have it.' },
-      { id: 's4', name: 'Shukr, Gratitude', line: 'Count it before it changes. It will change.' },
-      { id: 's5', name: 'Qabd, Contraction', line: 'The closing-in is a season, not a verdict. Do less and do it properly.' },
-      { id: 's6', name: 'Bast, Expansion', line: 'Room has opened. Fill it deliberately or it will fill itself.' },
-    ],
-  },
-  {
-    id: 'dk4', name: 'Lotus Path', tradition: 'Buddhist', traditionHi: 'बौद्ध',
-    line: 'Attachment, aversion and the middle. Blunter than it sounds.',
-    cards: [
-      { id: 'b1', name: 'Anicca, Impermanence', line: 'It is already leaving. Holding tighter changes the grip, not the going.' },
-      { id: 'b2', name: 'Dukkha, Friction', line: 'The discomfort is information. It is telling you where you are gripping.' },
-      { id: 'b3', name: 'Metta, Kindness', line: 'Start with the person you are hardest on. It is not who you think.' },
-      { id: 'b4', name: 'Upekkha, Equanimity', line: 'Caring less is not the goal. Caring without flinching is.' },
-      { id: 'b5', name: 'Sunyata, Emptiness', line: 'The thing you fear losing was never a fixed object. Neither are you.' },
-      { id: 'b6', name: 'Sila, Conduct', line: 'You know the right action. The question was only ever whether you would take it.' },
+      { id: 'y01', name: 'The Fool', img: 'yesno-01.webp' },
+      { id: 'y02', name: 'The Magician', img: 'yesno-02.webp' },
+      { id: 'y03', name: 'The High Priestess', img: 'yesno-03.webp' },
+      { id: 'y04', name: 'The Empress', img: 'yesno-04.webp' },
+      { id: 'y05', name: 'The Emperor', img: 'yesno-05.webp' },
+      { id: 'y06', name: 'The Hierophant', img: 'yesno-06.webp' },
+      { id: 'y07', name: 'The Lovers', img: 'yesno-07.webp' },
+      { id: 'y08', name: 'The Chariot', img: 'yesno-08.webp' },
+      { id: 'y09', name: 'Strength', img: 'yesno-09.webp' },
+      { id: 'y10', name: 'The Hermit', img: 'yesno-10.webp' },
+      { id: 'y11', name: 'Wheel of Fortune', img: 'yesno-11.webp' },
+      { id: 'y12', name: 'Justice', img: 'yesno-12.webp' },
+      { id: 'y13', name: 'The Hanged Man', img: 'yesno-13.webp' },
+      { id: 'y14', name: 'Death', img: 'yesno-14.webp' },
+      { id: 'y15', name: 'Temperance', img: 'yesno-15.webp' },
+      { id: 'y16', name: 'The Devil', img: 'yesno-16.webp' },
+      { id: 'y17', name: 'The Tower', img: 'yesno-17.webp' },
+      { id: 'y18', name: 'The Star', img: 'yesno-18.webp' },
+      { id: 'y19', name: 'The Moon', img: 'yesno-19.webp' },
+      { id: 'y20', name: 'The Sun', img: 'yesno-20.webp' },
+      { id: 'y21', name: 'Judgement', img: 'yesno-21.webp' },
+      { id: 'y22', name: 'The World', img: 'yesno-22.webp' },
     ],
   },
 ]

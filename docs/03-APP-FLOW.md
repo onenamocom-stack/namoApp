@@ -339,33 +339,46 @@ toggle a flag; full events refuse. Downloads toast; nothing is stored.
 A guided pull, as a three-state machine rather than one laid-out screen:
 
 ```
-deck ──pick a tradition──▶ question ──pull──▶ card
- ▲                            │                │
- └────── change deck ─────────┴─ pull again ───┘
+deck ──pick a tradition──▶ question ──pull──▶ reading
+ ▲                            │                  │
+ └────── change deck ─────────┴─── pull again ───┘
 ```
 
 `deck` and `question` are **centred modal dialogs**, not bottom sheets — a sheet
 reads as more of the same screen, and these are questions the screen is asking.
 The face-down deck sits behind them; it is the subject of the dialogs, not an
-empty state.
+empty state. `deck` has no dismiss: there is no screen behind it to return to.
 
-Nothing is typed at `question`. The seeker holds it in their head until the card
-is face up — the one step the app cannot verify, which is why it is modal rather
-than a line of copy you can scroll past. `deck` has no dismiss: there is no
-screen behind it to return to.
+**The question is typed, as of 24 Sep 2026.** This reverses the rule this screen
+was built on — "nothing is typed, the seeker holds it in their head until the
+card is face up" — and the reversal is the point of the change. Holding it was
+right while a card answered with a line written months earlier: typing into a
+box that changed nothing would have been theatre. The reading is now written for
+the question, so the question has to reach the reader. 200 characters, and the
+pull button stays disabled until something is in the box.
 
-Five decks. Bhaktamar leads with 48 painted faces; the other four have six
-procedurally drawn cards each.
+**The server deals the card** (`apps/ai/tarot_decks.py`). The screen sends a
+deck key and a question and nothing else; what comes back is a card id, the
+reading and one remedy. A client that dealt its own card could pull until it
+liked the answer, on a pull that is charged.
 
-Card order, fixed: **face → shloka (Devanagari, IAST, English) → meaning (title,
-subtitle, line, virtue) → ask yourself and remedy → ask a reader.** The verse
-precedes the meaning because the shloka *is* the card and the meaning is a gloss
-on it.
+Three decks: Bhaktamar (48 painted faces and the shloka), the Vedic Kipper six,
+and 22 cards that answer yes or no. Rider-Waite, Sufi Path and Lotus Path were
+deleted the same day — six authored lines each and no art. A deck whose art has
+not been added yet falls back to a plate, so adding faces is a file copy into
+`public/cards/`.
+
+Card order, fixed: **face → name (the verdict first, for the yes/no deck) → the
+question quoted back → the reading → the remedy → the shloka.** The verse moved
+BELOW the reading, and that is deliberate: it is the card, and the reading is
+what the card says about today's question — the gloss follows the thing it
+glosses, but the answer somebody paid for leads.
 
 Two free pulls a week, then **the wallet is charged for real** (price in
-`01-PRD.md` §4.2). When the balance is short the button disables and offers the
-wallet. **The price appears nowhere until a card has been pulled** — not in the
-header, not on the button, not as a footnote.
+`01-PRD.md` §4.2). Both the count and the price are the server's and arrive on
+the response; the header shows whichever is true. A short balance is a refusal
+the server writes, rendered as-is with a way to the wallet. **The price appears
+nowhere until the free pulls are gone** — not in the header, not on the button.
 
 ### `/chart`
 One switch: **Table or Chart**. The table leads, because a diagram is
@@ -755,11 +768,15 @@ toast · and the flag set. The birth draft is the one exception — it survives 
 One flat `Set` of namespaced strings, which is the prototype's best idea:
 
 `like:` · `save:` · `follow:` · `remind:` · `event:` · `accept:` · `decline:` ·
-`tarot:free1|free2` · `save:day-<key>`
+`save:day-<key>`
 
 `closed:<day>:<time>`, `accept:<id>` and `decline:<id>` are gone as of phase 4 —
 a closed slot is the absence of a `consultant_availability` row, and a decision
 is a `bookings.status` write.
+
+`tarot:free1|free2` went the same way on 24 Sep 2026, and for a sharper reason:
+a flag set that does not survive a reload cannot hold a count somebody is billed
+against. The free pulls are a column on `ai_quota` now.
 
 Sticky toggles and their toasts with no new store surface. It maps cleanly onto a
 real reactions table, which is rare for a prototype shortcut.
