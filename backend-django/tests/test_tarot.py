@@ -12,7 +12,8 @@ never reached. Every assertion here is about the server holding the count.
   the money     -> TestMoney: two free pulls a week, then ₹11; an empty
                    wallet is refused and writes no ledger row; the week
                    rolls over
-  the model     -> TestReading: the remedy is split off its own line, a
+  the model     -> TestReading: the answer splits into the three parts the
+                   screen shows (meaning, conclusion, what to do), a
                    provider failure refunds the money but not the free
                    pull, and no key ever reaches a response body
 """
@@ -89,8 +90,8 @@ def pull(deck="bhaktamar", question="Should I take the offer?"):
 class TestDraw:
     def test_the_card_comes_from_the_deck_asked_for(self):
         _wallet(SEEKER, 0)
-        _fund(SEEKER, 10000)  # three decks, and only two pulls are free
-        for deck in ("bhaktamar", "hindu", "yesno"):
+        _fund(SEEKER, 10000)  # two decks, and only two pulls are free
+        for deck in ("bhaktamar", "yesno"):
             result = services.tarot_pull(SEEKER, deck, "Will this work out?")
             assert result["ok"] is True, result
             ids = {c[0] for c in tarot_decks.DECKS[deck]["cards"]}
@@ -112,7 +113,10 @@ class TestDraw:
 
     def test_an_unknown_deck_is_refused_before_any_money_moves(self):
         _wallet(SEEKER, 10000)
-        result = services.tarot_pull(SEEKER, "rider-waite", "Anything?")
+        # The Vedic Kipper deck is written down but not in DECKS until its art
+        # lands: a deck nothing can deal must refuse like any unknown name.
+        assert "hindu" not in tarot_decks.DECKS
+        result = services.tarot_pull(SEEKER, "hindu", "Anything?")
         assert result["ok"] is False
         assert result["reason"] == services.REFUSAL_DECK
         assert wallet_services.balance_of(SEEKER) == 10000
@@ -182,20 +186,28 @@ class TestMoney:
 
 @pytest.mark.django_db
 class TestReading:
-    def test_the_remedy_is_split_off(self):
+    def test_the_answer_splits_into_the_three_parts_the_screen_shows(self):
         _wallet(SEEKER, 0)
         result = pull()
-        assert result["remedy"]
-        assert tarot.REMEDY_MARKER not in result["reading"]
-        assert result["reading"]
+        assert result["meaning"] and result["conclusion"] and result["todo"]
+        for part in ("meaning", "conclusion", "todo"):
+            for label in tarot.SECTIONS:
+                assert label not in result[part]  # the labels are not content
 
-    def test_a_reading_with_no_remedy_line_survives_whole(self):
-        reading, remedy = tarot.split_remedy("The card is plain about this.")
-        assert reading == "The card is plain about this."
-        assert remedy is None
-        # And the marker with nothing after it is not a split worth making.
-        reading, remedy = tarot.split_remedy("Something. Remedy:")
-        assert remedy is None and reading.endswith("Remedy:")
+    def test_an_unlabelled_answer_is_all_meaning(self):
+        # The part that must never be empty is the one the pull was for.
+        parts = tarot.split_sections("The card is plain about this.")
+        assert parts["meaning"] == "The card is plain about this."
+        assert parts["conclusion"] is None and parts["do"] is None
+
+    def test_a_label_mid_sentence_does_not_split(self):
+        parts = tarot.split_sections(
+            "MEANING:\nThe conclusion you reached is the wrong one.\n"
+            "DO:\nSay so."
+        )
+        assert parts["meaning"] == "The conclusion you reached is the wrong one."
+        assert parts["conclusion"] is None
+        assert parts["do"] == "Say so."
 
     def test_a_provider_failure_refunds_the_money(self, monkeypatch):
         def boom(block, question):
@@ -243,14 +255,14 @@ class TestEndpoint:
     def test_a_pull_over_http(self, authed_client):
         _wallet(SEEKER, 0)
         response = authed_client.post(
-            self.URL, {"deck": "hindu", "question": "Is this the right month?"},
+            self.URL, {"deck": "bhaktamar", "question": "Is this the right month?"},
             format="json",
         )
         assert response.status_code == 200, response.content
         body = response.json()
         assert body["ok"] is True
-        assert body["card"]["deck"] == "hindu"
-        assert body["reading"] and body["remedy"]
+        assert body["card"]["deck"] == "bhaktamar"
+        assert body["meaning"] and body["conclusion"] and body["todo"]
         assert body["free_left"] == 1
 
     def test_state_over_http(self, authed_client):

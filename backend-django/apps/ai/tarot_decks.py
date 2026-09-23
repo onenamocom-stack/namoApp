@@ -77,8 +77,10 @@ BHAKTAMAR = [
     ("j48", "The Garland of Bhakti", "Completion"),
 ]
 
-# The six-card Vedic Kipper deck. Each card names a house or a graha and is
-# read against the chart rather than alone.
+# The six-card Vedic Kipper deck — NOT IN `DECKS`, so nothing can deal it
+# yet. The faces are being drawn (24 Sep 2026); add the key back to DECKS
+# and the deck back to src/data/mock.js on the day they land, and the
+# verifier will start checking this list again.
 HINDU = [
     ("v1", "Dashami, the Tenth", "Work and standing"),
     ("v2", "Chandra, the Moon", "Mood and the mind"),
@@ -122,12 +124,6 @@ DECKS = {
         "tradition": "Jain",
         "reads": "virtue",      # third field is the card's virtue
         "cards": BHAKTAMAR,
-    },
-    "hindu": {
-        "name": "Vedic Kipper",
-        "tradition": "Hindu",
-        "reads": "subject",     # third field is what the card governs
-        "cards": HINDU,
     },
     "yesno": {
         "name": "Yes or No",

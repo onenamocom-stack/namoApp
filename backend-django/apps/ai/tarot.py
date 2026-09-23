@@ -26,24 +26,29 @@ Somebody who typed a real question, usually about work, money, a marriage
 or a person. They are not studying tarot. They want the answer, not the
 system.
 
-WHAT YOU WRITE, IN ORDER
+WHAT YOU WRITE
 
-1. THE ANSWER, FIRST SENTENCE. In their own words, not the card's.
-   "Not this month, and not because of you." "Yes, if you ask directly."
-   "The card says wait, and waiting here is the harder choice."
+Three parts, each starting on its own line with its label, exactly as
+written here and with nothing before the label:
 
-2. THE CARD, TIED TO THEIR QUESTION. Name it and say what it means HERE —
-   for this question, not in general. Four to seven sentences. Concrete.
-   If the question is about a job, talk about the job.
+MEANING:
+The card read against their question. Open with the answer in their own
+words — "Not this month, and not because of you", "Yes, if you ask
+directly" — then say what the card means HERE, for this question, not in
+general. Four to seven sentences. If they asked about a job, talk about
+the job.
 
-3. WHAT IT DOES NOT SAY. One sentence, and do not skip it. A card speaks
-   to one thing; say plainly what it leaves open, so nobody reads a whole
-   life into one draw.
+CONCLUSION:
+Two or three sentences that land it. What this adds up to, and one
+sentence on what the card does NOT say — a card speaks to one thing, and
+somebody will read a whole life into one draw unless you say where it
+stops.
 
-Then, on its own final line, starting with the word "Remedy:", ONE action
-they can take this week. Small, specific, and theirs to do — a
-conversation to have, a decision to postpone by a fixed number of days, a
-thing to write down, a recitation where the deck has one. Never a purchase.
+DO:
+One action they can take this week. Small, specific, theirs to do: a
+conversation to have, a decision to postpone by a named number of days, a
+thing to write down, a recitation where the deck has one. Never a
+purchase. One or two sentences.
 
 HOW YOU SOUND
 Second person, present tense. Plain words. Blunt rather than soothing, and
@@ -62,15 +67,15 @@ one line and read the card as the day's card instead. Do not invent a
 question on their behalf.
 
 LENGTH
-Eight to twelve sentences in total, then the Remedy line. Shorter is
-better than padded.
+Eight to twelve sentences across all three parts. Shorter is better than
+padded, and the labels are not optional.
 """
 
-# The marker the reading is split on. The model is asked for it by name in
-# the prompt above; `split_remedy` treats its absence as "no remedy" rather
-# than as an error, because a missing last line is not worth refusing an
-# otherwise good reading over.
-REMEDY_MARKER = "Remedy:"
+# The three labels the prompt asks for by name. `split_sections` treats a
+# missing one as absent rather than as an error: a reading that came back
+# whole is worth showing, and the screen fills a missing part from the
+# card's own text where the deck has some.
+SECTIONS = ("MEANING", "CONCLUSION", "DO")
 
 
 def card_block(card, chart_block_text):
@@ -96,21 +101,54 @@ def card_block(card, chart_block_text):
     return "\n".join(lines) + "\n\n" + chart_block_text
 
 
-def split_remedy(text):
-    """The model's answer as (reading, remedy).
+def split_sections(text):
+    """The model's answer as {meaning, conclusion, do}.
 
-    The remedy is asked for on its own last line. Split from the RIGHT, so
-    a reading that happens to use the word earlier keeps its sentence, and
-    return None when the line is missing rather than inventing one — an
-    invented remedy is advice nobody wrote.
+    The labels are asked for by name and matched only at the start of a
+    line, so a reading that uses the word "conclusion" mid-sentence does
+    not split there. A part that never arrives is None rather than
+    invented — the screen prefers the card's own words for the last two
+    anyway, and an invented conclusion is a sentence nobody wrote.
+
+    A model that ignored the labels entirely still returns its whole answer
+    as the meaning, which is the one part that must never be empty.
     """
     text = (text or "").strip()
-    if REMEDY_MARKER not in text:
-        return text, None
-    reading, _, remedy = text.rpartition(REMEDY_MARKER)
-    reading, remedy = reading.strip(), remedy.strip()
-    if not reading or not remedy:
-        # "Remedy:" with nothing before or after it is not a split worth
-        # making; show what came back whole.
-        return text, None
-    return reading, remedy
+    if not text:
+        return {"meaning": None, "conclusion": None, "do": None}
+
+    found = {}
+    current = None
+    for line in text.splitlines():
+        label = line.strip().rstrip(":").upper()
+        if label in SECTIONS and len(line.strip()) <= len(label) + 1:
+            current = label            # the label alone on its line
+            found.setdefault(current, [])
+            continue
+        head, sep, rest = line.partition(":")
+        if sep and head.strip().upper() in SECTIONS:
+            current = head.strip().upper()   # "MEANING: the card says…"
+            found.setdefault(current, [])
+            if rest.strip():
+                found[current].append(rest.strip())
+            continue
+        if current:
+            found[current].append(line)
+
+    if not found:
+        return {"meaning": text, "conclusion": None, "do": None}
+
+    parts = {
+        key.lower(): "\n".join(found.get(key, [])).strip() or None
+        for key in SECTIONS
+    }
+    # Whatever else is missing, the meaning is the reading: if the model
+    # labelled only the later parts, everything above the first label is
+    # still what it said about the card.
+    if not parts["meaning"]:
+        first = min(
+            (text.upper().find(k) for k in found if text.upper().find(k) != -1),
+            default=-1,
+        )
+        parts["meaning"] = text[:first].strip() or None if first > 0 else None
+    return parts

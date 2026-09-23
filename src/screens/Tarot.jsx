@@ -103,8 +103,7 @@ export default function Tarot() {
         {result ? (
           <Card
             card={drawn}
-            reading={result.reading}
-            remedy={result.remedy}
+            reading={result}
             verdict={result.card.verdict}
             question={question}
             deck={deck}
@@ -247,14 +246,26 @@ function Dialog({ title, note, onBack, children }) {
 /**
  * The card that came up, then what it says about the question.
  *
- * The reading and the remedy are written for this pull. The shloka is not:
- * it belongs to the card and it is the tradition's words, printed before
- * any reading of it (`src/data/bhaktamar.js` — never rewritten).
+ * Six steps, and the last three are this component: **meaning → conclusion
+ * → what to do** (agreed with the partner, 24 Sep 2026). The layout is the
+ * same for every deck, so a seeker who learns one learns all of them.
+ *
+ * **A deck whose cards carry their own words wins the last two.** The
+ * Bhaktamar cards have a remedy written in the tradition, and a conclusion
+ * column is coming; where the card has text, the card's text is what shows,
+ * and the model's fills the gap until then. The meaning is always written
+ * for the question — that is the part a pre-written line cannot do.
+ *
+ * The shloka is not a reading at all: it belongs to the card and it is the
+ * tradition's words (`src/data/bhaktamar.js` — never rewritten).
  */
-function Card({ card, reading, remedy, verdict, question, deck, tradition, onAgain, onChangeDeck }) {
+function Card({ card, reading, verdict, question, deck, tradition, onAgain, onChangeDeck }) {
   const { t } = useStore()
   const [artFailed, setArtFailed] = useState(false)
   const hasArt = Boolean(card.img) && !artFailed
+
+  const conclusion = card.conclusion || reading.conclusion
+  const todo = card.remedy || reading.todo
 
   return (
     <>
@@ -306,12 +317,28 @@ function Card({ card, reading, remedy, verdict, question, deck, tradition, onAga
         <p className="mt-5 text-center text-meta t-faint">“{question}”</p>
       )}
 
-      <div className="mt-4 whitespace-pre-line text-read t-heading">{reading}</div>
+      {/* 4 · what the card means for what was asked */}
+      {reading.meaning && (
+        <div className="mt-4">
+          <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
+          <p className="mt-2 whitespace-pre-line text-read t-heading">{reading.meaning}</p>
+        </div>
+      )}
 
-      {remedy && (
-        <div className="pop-inset mt-5 p-4">
-          <p className="caps-sm t-faint">{t('tarot.remedy')}</p>
-          <p className="mt-1.5 text-meta t-body">{remedy}</p>
+      {/* 5 · where it lands */}
+      {conclusion && (
+        <div className="mt-6">
+          <p className="caps-sm t-faint">{t('tarot.conclusion')}</p>
+          <p className="mt-2 whitespace-pre-line text-read t-sub">{conclusion}</p>
+        </div>
+      )}
+
+      {/* 6 · the one thing to do. Raised, because it is the only part that
+             asks for something. */}
+      {todo && (
+        <div className="pop-inset mt-6 p-4">
+          <p className="caps-sm t-faint">{t('tarot.todo')}</p>
+          <p className="mt-1.5 whitespace-pre-line text-meta t-body">{todo}</p>
         </div>
       )}
 

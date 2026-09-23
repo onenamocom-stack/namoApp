@@ -147,19 +147,21 @@ class MockProvider(Provider):
         "opinion. The chart does not give permission.",
     )
 
-    # A tarot reading has a shape the four replies above do not: an answer,
-    # the card read against the question, and a Remedy line the service
-    # splits off. A mock that returned prose with no marker would let a
-    # broken split pass every test.
+    # A tarot reading has a shape the four replies above do not: three
+    # labelled parts the service splits on. A mock that returned unlabelled
+    # prose would let a broken split pass every test.
     TAROT_REPLY = (
-        "Not yet, and the card is specific about why.\n\n"
-        "The card that came up speaks to timing rather than to whether the "
-        "thing is right. What you are asking about is moving, but it is "
-        "moving on somebody else's calendar, and pushing it this week costs "
-        "you the position you already hold. What it does not say is whether "
-        "the person you are waiting on is worth the wait.\n\n"
-        "Remedy: Write down the date you will ask again, and do not ask "
-        "before it."
+        "MEANING:\n"
+        "Not yet, and the card is specific about why. The card that came up "
+        "speaks to timing rather than to whether the thing is right. What "
+        "you are asking about is moving, but it is moving on somebody "
+        "else's calendar, and pushing it this week costs you the position "
+        "you already hold.\n\n"
+        "CONCLUSION:\n"
+        "This is a wait, not a refusal. What the card does not say is "
+        "whether the person you are waiting on is worth the wait.\n\n"
+        "DO:\n"
+        "Write down the date you will ask again, and do not ask before it."
     )
 
     def answer(self, system, history, question):

@@ -4048,6 +4048,14 @@ the container exits before it starts, which is how the first run failed.
 
 **On `tarot-flow`, not merged, not deployed.**
 
+**Six steps, agreed with the partner on 24 Sep**: pick a deck, put the
+question, pull the card, then **what the card says → where it lands → what to
+do**. The three labels are the same for every deck. The meaning is always
+written against the question; the conclusion and the action prefer the card's
+own words where the deck has them — Bhaktamar's remedy is the tradition's, and
+a conclusion column is coming from the partner — and fall back to the model's
+until then.
+
 **A pull is: pick a deck, type a question, the server deals a card, the model
 reads it.** The old flow held the question in your head, which was right while
 a card answered with a line written months earlier — the same line for
@@ -4081,15 +4089,21 @@ cards. The reading costs model time, so an anonymous pull is an unbounded bill
 the free-tools row who has never signed up now sees a sign-in step where they
 used to see a card.
 
-**Cost:** about 3 paise of Gemini against ₹11. The reading and the remedy come
-back as one answer and are split on the `Remedy:` line the prompt asks for; a
-missing line means no remedy rather than an invented one.
+**Cost:** about 3 paise of Gemini against ₹11. The three parts come back as one
+answer under labels the prompt asks for by name and are split on them; a label
+matches only at the start of a line, so a reading that says "the conclusion you
+reached" does not split there. A missing part is absent rather than invented,
+and an answer that ignored the labels entirely is all meaning — the one part
+that must never be empty.
 
-**Three decks, and three deleted.** Rider-Waite, Sufi Path and Lotus Path are
-gone — six authored lines each and no art. **The art for the two new decks is
-not here**: `hindu-01..06.webp` and `yesno-01..22.webp` go in `public/cards/`,
-and until they do those decks fall back to the procedural plate. Bhaktamar's 48
-faces are unaffected.
+**Two decks live, one parked, three deleted.** Bhaktamar (48 faces) and the
+22 yes/no cards ship. **The Vedic Kipper six are written down but not in
+`DECKS`** — the partner is drawing those faces, and a deck in the picker with
+no art is a promise the screen cannot keep; put the key back in `DECKS` and the
+deck back in `mock.js` on the day they land, and the verifier starts checking
+that list again. Rider-Waite, Sufi Path and Lotus Path are deleted outright.
+**The yes/no art is not here either**: `yesno-01..22.webp` in `public/cards/`,
+falling back to the procedural plate until it is.
 
 ### The second vendor, and what it is not used for
 

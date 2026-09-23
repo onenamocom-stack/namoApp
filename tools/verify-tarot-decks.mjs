@@ -36,19 +36,16 @@ function cardsIn(source) {
   return out
 }
 
-/** One deck's slice of `tarotDecks`, ending where the array does — an
- *  unbounded slice swallows whatever data comes after it in the file. */
-function deckSlice(key, nextKey) {
+/** One deck's slice of `tarotDecks`: from its key to the next deck's, or to
+ *  the end of the array. An unbounded slice swallows whatever data happens
+ *  to come after it in the file. */
+function deckSlice(key) {
   const start = mock.indexOf(`key: '${key}'`)
-  assert.notEqual(start, -1, `${key} is gone from src/data/mock.js — renamed?`)
-  const end = nextKey ? mock.indexOf(`key: '${nextKey}'`) : mock.indexOf('\n]', start)
+  assert.notEqual(start, -1, `${key} is in DECKS but not in src/data/mock.js — renamed?`)
+  const next = mock.indexOf("key: '", start + 10)
+  const close = mock.indexOf('\n]', start)
+  const end = next !== -1 && next < close ? next : close
   return mock.slice(start, end)
-}
-
-const clientDecks = {
-  bhaktamar: cardsIn(bhaktamar),
-  hindu: cardsIn(deckSlice('hindu', 'yesno')),
-  yesno: cardsIn(deckSlice('yesno')),
 }
 
 /* ── the server's decks ──────────────────────────────────────────────────── */
@@ -66,11 +63,23 @@ function pythonDeck(constant) {
   return out
 }
 
-const serverDecks = {
-  bhaktamar: pythonDeck('BHAKTAMAR'),
-  hindu: pythonDeck('HINDU'),
-  yesno: pythonDeck('YESNO'),
-}
+/* Only the decks in `DECKS` — a card list can sit in that file unreachable
+ * while its art is drawn (the Vedic Kipper six do, as of 24 Sep 2026), and
+ * a deck nothing can deal is not a deck the client has to name. */
+const live = python.slice(python.indexOf('DECKS = {'))
+const serverDecks = Object.fromEntries(
+  [...live.matchAll(/"(\w+)":\s*\{[\s\S]*?"cards":\s*(\w+),/g)]
+    .map(([, key, constant]) => [key, pythonDeck(constant)]),
+)
+assert.ok(Object.keys(serverDecks).length > 0, 'no decks in DECKS — is the map gone?')
+
+/* Bhaktamar's cards live in their own file with the scripture; every other
+ * deck is an entry in `tarotDecks`. */
+const clientDecks = Object.fromEntries(
+  Object.keys(serverDecks).map((key) => [
+    key, key === 'bhaktamar' ? cardsIn(bhaktamar) : cardsIn(deckSlice(key)),
+  ]),
+)
 
 /* ── they must match ─────────────────────────────────────────────────────── */
 

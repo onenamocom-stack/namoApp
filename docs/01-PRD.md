@@ -154,8 +154,9 @@ browser flags the two free pulls were in fact unlimited — a reload handed out
 two more — so the ₹11 was never once reached.
 
 **What ₹11 buys changed on the same day.** A pull used to return a line written
-months earlier, identical for everyone who drew that card. It now returns a
-reading written for the question the seeker typed, and one remedy. That costs
+months earlier, identical for everyone who drew that card. It now returns three
+parts written against the question the seeker typed — what the card says, where
+it lands, and the one thing to do. That costs
 about 3 paise of model time against the ₹11, and it is why the question is typed
 rather than held in the head.
 

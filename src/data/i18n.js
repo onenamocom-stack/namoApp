@@ -83,7 +83,10 @@ export const strings = {
   'tarot.pull': { en: 'Pull a card', hi: 'एक कार्ड निकालें' },
   'tarot.askReader': { en: 'Ask a reader', hi: 'पाठक से पूछें' },
   'tarot.shloka': { en: 'Shloka', hi: 'श्लोक' },
-  'tarot.remedy': { en: 'Remedy', hi: 'उपाय' },
+  /* The last three steps of the pull, same labels for every deck. */
+  'tarot.meaning': { en: 'What the card says', hi: 'कार्ड क्या कहता है' },
+  'tarot.conclusion': { en: 'Where it lands', hi: 'निष्कर्ष' },
+  'tarot.todo': { en: 'What to do', hi: 'क्या करें' },
   'tarot.freeLeft': { en: 'free left this week', hi: 'इस सप्ताह निःशुल्क शेष' },
   'tarot.aCard': { en: 'a card', hi: 'प्रति कार्ड' },
   'tarot.freeUsed': {

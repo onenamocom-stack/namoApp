@@ -465,13 +465,18 @@ def tarot_pull(profile_id, deck_key, question):
         return {"ok": False, "reason": REFUSAL_TAROT_UPSTREAM, "retryable": True,
                 "refunded_paise": charged}
 
-    reading, remedy = tarot.split_remedy(answer["text"])
+    # Three parts, in the order the screen shows them: what the card means
+    # for the question, what that adds up to, and the one thing to do.
+    # A deck whose cards carry their own conclusion or remedy overrides the
+    # last two on the client, which is where that text lives.
+    parts = tarot.split_sections(answer["text"])
     state = tarot_state(profile_id)
     return {
         "ok": True,
         "card": card,
-        "reading": reading,
-        "remedy": remedy,
+        "meaning": parts["meaning"],
+        "conclusion": parts["conclusion"],
+        "todo": parts["do"],
         "free_left": state["free_left"],
         "charged_paise": charged,
         "price_paise": price,

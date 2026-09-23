@@ -362,17 +362,29 @@ deck key and a question and nothing else; what comes back is a card id, the
 reading and one remedy. A client that dealt its own card could pull until it
 liked the answer, on a pull that is charged.
 
-Three decks: Bhaktamar (48 painted faces and the shloka), the Vedic Kipper six,
-and 22 cards that answer yes or no. Rider-Waite, Sufi Path and Lotus Path were
-deleted the same day — six authored lines each and no art. A deck whose art has
-not been added yet falls back to a plate, so adding faces is a file copy into
-`public/cards/`.
+**Six steps, agreed with the partner**: pick a deck, put the question, pull the
+card, then **what the card says → where it lands → what to do**. The last three
+are labelled on screen and the labels do not change between decks, so a seeker
+who learns one deck has learned them all.
+
+**Where each of the three comes from**: the meaning is always written for the
+question — that is the part a pre-written line cannot do. The conclusion and
+the action prefer the CARD's own words where the deck has them, and fall back
+to the model's where it does not. The Bhaktamar cards carry a remedy in the
+tradition's words and a conclusion column is coming, so those two will be the
+card's on that deck and the model's on the other.
+
+Two decks: Bhaktamar (48 painted faces and the shloka) and 22 cards that answer
+yes or no. The Vedic Kipper six are written down but unreachable until their
+faces are drawn — a deck in the picker with no art behind it is a promise the
+screen cannot keep. Rider-Waite, Sufi Path and Lotus Path were deleted outright
+— six authored lines each and no art.
 
 Card order, fixed: **face → name (the verdict first, for the yes/no deck) → the
-question quoted back → the reading → the remedy → the shloka.** The verse moved
-BELOW the reading, and that is deliberate: it is the card, and the reading is
-what the card says about today's question — the gloss follows the thing it
-glosses, but the answer somebody paid for leads.
+question quoted back → what the card says → where it lands → what to do → the
+shloka.** The verse sits BELOW the reading, deliberately: it is the card, and
+the reading is what the card says about today's question — the gloss follows
+the thing it glosses, but the answer somebody paid for leads.
 
 Two free pulls a week, then **the wallet is charged for real** (price in
 `01-PRD.md` §4.2). Both the count and the price are the server's and arrive on

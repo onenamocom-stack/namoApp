@@ -553,18 +553,10 @@ export const tarotDecks = [
     line: 'Forty-eight cards, one for each shloka of the stotra. The only deck here with a painted face.',
     cards: bhaktamarCards,
   },
-  {
-    id: 'dk2', key: 'hindu', name: 'Vedic Kipper', tradition: 'Hindu', traditionHi: 'हिन्दू',
-    line: 'Read against your chart rather than alone. Each card names a house or a graha.',
-    cards: [
-      { id: 'v1', name: 'Dashami, the Tenth', img: 'hindu-01.webp' },
-      { id: 'v2', name: 'Chandra, the Moon', img: 'hindu-02.webp' },
-      { id: 'v3', name: 'Ketu, the Tail', img: 'hindu-03.webp' },
-      { id: 'v4', name: 'Guru, the Teacher', img: 'hindu-04.webp' },
-      { id: 'v5', name: 'Shukra, the Bright', img: 'hindu-05.webp' },
-      { id: 'v6', name: 'Shani, the Slow', img: 'hindu-06.webp' },
-    ],
-  },
+  /* The Vedic Kipper six are not here yet: the faces are being drawn, and a
+     deck in the picker with no art behind it is a promise the screen cannot
+     keep. The card list is in backend-django/apps/ai/tarot_decks.py, out of
+     the live map, waiting for the same day. */
   {
     id: 'dk6', key: 'yesno', name: 'Yes or No', tradition: 'Classical', traditionHi: 'शास्त्रीय',
     line: 'Twenty-two cards for a closed question. It answers yes or no before it explains itself.',
