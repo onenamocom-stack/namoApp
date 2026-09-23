@@ -2,9 +2,6 @@
 
   GET  /v1/ai/            -> the transcript, the quota and any live session
   POST /v1/ai/ask/        -> one question; the answer, or a refusal
-  POST /v1/ai/session/    -> start the meter
-  POST /v1/ai/session/<id>/heartbeat/  -> seconds_left, for the clock
-  POST /v1/ai/session/<id>/end/        -> settle
 
 Every one needs a session (the JWT), because every one of them either costs
 money or reads somebody's transcript. There is no anonymous surface here —
@@ -69,21 +66,13 @@ class AskInput(serializers.Serializer):
 
 def _state(profile_id):
     quota = services.quota_state(profile_id)
-    session = services.live_session(profile_id)
     return {
         "free_left": quota["free_left"],
         "free_kind": quota["kind"],
-        "rate_paise": services._rate_paise(),
-        "session": (
-            {
-                "id": str(session.id),
-                "started_at": session.started_at.isoformat(),
-                "expires_at": session.expires_at.isoformat(),
-                "rate_paise": session.rate_paise,
-            }
-            if session
-            else None
-        ),
+        # What the NEXT question costs once the free ones are gone. The
+        # panel shows this before anybody is charged, so nobody is
+        # surprised by a debit.
+        "price_paise": services._price_paise(),
     }
 
 
@@ -126,19 +115,3 @@ def ask(request):
     return Response(result)
 
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def start(request):
-    return Response(services.start_session(request.user.id))
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def heartbeat(request, session_id):
-    return Response(services.heartbeat(request.user.id, session_id))
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def end(request, session_id):
-    return Response(services.end_session(request.user.id, session_id))

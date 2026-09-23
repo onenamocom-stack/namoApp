@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 22 Sep 2026.
+Updated 23 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -3572,3 +3572,122 @@ update command). It joins the rotate list — ten now.
 **Open:** `tools/smoke.py` cannot tell the mock from the vendor. One
 assertion closes it: Ujjain's geo result must say Madhya Pradesh, a state
 the mock never returns.
+
+## 25. The shop sells real rows, and the last one goes to one buyer — 23 Sep 2026
+
+Testing "does an admin upload reach the app" found that it could not, for
+three reasons that all had to be fixed before the question had an answer.
+
+**The app read `mock.js`.** Eleven products hard-coded in JavaScript, so
+the console could add one and the app would never show it. The catalogue is
+`GET /v1/shop/` now, from the database, with a loading state and an error
+state that says it could not reach the shop — not "nothing matches that",
+which sends somebody to clear a search that was never the problem.
+
+**Nothing decremented stock.** `buyNow` was a bare wallet debit. A sold-out
+gemstone could be bought forever and the shop's own numbers meant nothing.
+
+**So the race could not be lost, because there was nothing to race for.**
+It can be now. `claim_stock` is one conditional UPDATE — the database
+checks and subtracts in the same statement, holding the row lock, and a row
+count of 0 is the refusal:
+
+```python
+Product.objects.filter(pk=product_id, active=True, stock__gte=qty)
+               .update(stock=F("stock") - qty) == 1
+```
+
+Rows are claimed in **sorted id order** so two carts cannot deadlock. Stock
+is claimed **before** the wallet, so an order nobody can afford cannot empty
+the shelf on its way to being refused.
+
+**Refusals raise, they do not return.** `atomic()` rolls back on an
+exception and **commits on a plain `return`** — a refused coupon after a
+successful claim left the shelf one short with nobody charged. That is the
+bug this section exists for; the test that caught it is in
+`tests/test_shop_buy.py`.
+
+**Verified against the live deployment**, not only in tests: two
+simultaneous buyers of the last unit produced one order, one "Out of
+stock", **stock 0 and not −1**, and one debit. Taking the product down
+removed it from the app and refused a purchase with stock still on the row.
+
+Every trace was deleted afterwards including the R2 object, and the ledger
+was reversed **by an adjustment rather than a delete** — the ledger is
+append-only and `refuse_mutation` means it.
+
+Photos go to R2 from the console server-side (`put_bytes`), and the **path
+is what lives in the database**. `backend/INSTRUCTIONS.md` carries the
+claim-before-charge rule as §10.
+
+**A boot check now fails loudly on empty R2 credentials**
+(`apps/media/checks.py`). `. .env` failing silently in a shell had cost a
+debugging session three separate times.
+
+**Open:** images are served from the `pub-….r2.dev` origin. `media.1namo.com`
+is the fix for latency and has not been set up.
+
+## 26. Namo AI is priced per question, and answers like somebody wrote it — 23 Sep 2026
+
+Three pieces of feedback from Rahul, all three now true in production
+(`namo-api` revision **00022**).
+
+**₹9 a question, not ₹9 a minute.** The meter shipped on the 21st and
+lasted two days. A meter is the right shape when you are buying somebody's
+*time*, and an AI consumes none — it made the seeker read a clock while
+thinking, and thinking is the slow part of asking a question. The ₹9 did
+not move, only what it buys.
+
+`start_session`, `heartbeat`, `end_session` and `sweep_ai_sessions` are
+**deleted**, not left dormant: retired code that still imports and
+half-runs is worse than none, because the next reader cannot tell which
+half is live. `git show 6419773` has the whole meter if it ever comes back.
+`ai_sessions` and its table **survive** so the rows from the metered
+fortnight stay readable — money that moved is not deleted because the
+feature that moved it was retired.
+
+**The charge is taken before the model is called, and refunded if no
+answer arrives.** Somebody who paid ₹9 and got "could not reach the
+astrologer" has been robbed of ₹9. A spent **free** message is deliberately
+not given back: the question is still on screen and still retryable, and
+refunding it on every failure is a free-question generator for anybody who
+can cause a timeout.
+
+**Longer answers.** Three to five sentences is not worth ₹9. Four
+paragraphs, 150–250 words: the answer, then what this person is like, then
+what this period is doing, then what to do this week. *"People love to read
+about themselves"* — the second paragraph is the one that earns the money,
+and it was the one missing.
+
+**It answers in the language it was asked in.** It shipped English-only,
+which in this market is most of the audience reading a reply in a language
+they did not choose. Devanagari gets Devanagari, Roman Hinglish gets Roman
+Hinglish back.
+
+**Measured against the live model, not asserted.** `tools/ai_voice_check.py`
+now counts three things instead of one — jargon, length, and language:
+
+```
+plain  236 words  ·  plain  221  ·  plain  217  ·  plain  198  ·  plain  222
+mirrors the question  ·  answered in Hindi  ·  answered in Hinglish
+```
+
+It was also **lying about length** until today: it capped output at 500
+tokens while the server runs at 1200, so it measured truncated answers the
+product does not truncate. It reads `AI_MAX_OUTPUT_TOKENS` now.
+
+**581 tests** — down from 583 because the meter's own tests went with it.
+
+`tools/smoke.py` asserts `/v1/ai/session/` returns a **404**, so no future
+deploy can quietly start billing by the minute again.
+
+**`namo-sweep-ai-sched` is PAUSED, not deleted.** It fired every minute at
+a Cloud Run Job whose management command no longer exists. Pausing stops
+the failures and is reversible; deleting it and its Cloud Run Job is the
+tidy-up and has not been done.
+
+**`AI_DAILY_FREE` is still `500` on Cloud Run.** That is the testing window
+the seeker asked for and it is **not** the product: at 500 free a day the
+₹9 path is unreachable for every tester, so the price has been proven in
+tests and not yet by a real debit. It must go back to `1` before anyone
+outside the team uses this.

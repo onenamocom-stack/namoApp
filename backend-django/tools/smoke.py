@@ -152,7 +152,7 @@ def main():
     status, state = call(api, "/ai/", token)
     ok = status == 200 and "free_left" in (state or {})
     check("state reads", ok, f"{(state or {}).get('free_left')} free, "
-                             f"₹{(state or {}).get('rate_paise', 0) / 100:g}/min")
+                             f"₹{(state or {}).get('price_paise', 0) / 100:g} a question")
     if ok:
         check("the transcript comes back", isinstance(state.get("messages"), list),
               f"{len(state.get('messages') or [])} messages")
@@ -169,23 +169,31 @@ def main():
               "shopping for a second opinion" not in text and len(text) > 20,
               text[:56] + "…")
 
-    session_id = None
-    status, started = call(api, "/ai/session/", token, "POST")
-    if status == 200 and (started or {}).get("ok"):
-        session_id = started["session_id"]
-        check("the meter starts and holds whole minutes", True,
-              f"{started.get('minutes_held')} min")
-        status, beat = call(api, f"/ai/session/{session_id}/heartbeat/", token, "POST")
-        check("the clock counts down", status == 200 and (beat or {}).get("live"),
-              f"{(beat or {}).get('seconds_left')}s left")
-        status, ended = call(api, f"/ai/session/{session_id}/end/", token, "POST")
-        check("ending refunds the unused time",
-              status == 200 and (ended or {}).get("ok"),
-              f"charged ₹{(ended or {}).get('charged_paise', 0) / 100:g}, "
-              f"back ₹{(ended or {}).get('refund_paise', 0) / 100:g}")
-    else:
-        check("the meter refuses cleanly when it cannot start", status == 200,
-              (started or {}).get("reason", str(status)))
+    if answered:
+        # Per question since 23 Sep. The field must be THERE even when the
+        # answer was free — a client that cannot see what it was charged
+        # cannot refresh a wallet, and a silent debit is a support ticket.
+        check("the answer says what it cost",
+              "charged_paise" in answer and "price_paise" in answer,
+              f"charged ₹{answer.get('charged_paise', 0) / 100:g} "
+              f"of ₹{answer.get('price_paise', 0) / 100:g}")
+
+    # Rahul, 23 Sep: "It only replying in english". Asked in Devanagari,
+    # answered in Devanagari — a prompt rule is not a guarantee, so it is
+    # checked against the live model rather than trusted.
+    status, hindi = call(api, "/ai/ask/", token, "POST",
+                         {"question": "मेरी लग्न राशि क्या है?"})
+    if status == 200 and (hindi or {}).get("ok"):
+        text = hindi.get("text", "")
+        check("a Hindi question is answered in Hindi",
+              sum("\u0900" <= c <= "\u097f" for c in text) > 20,
+              text[:56] + "…")
+
+    # The meter is retired, not dormant. If this route still answers, some
+    # deploy is running the old code and can still bill by the minute.
+    status, _ = call(api, "/ai/session/", token, "POST")
+    check("the per-minute meter is gone from the live API",
+          status in (404, 405), str(status))
 
     # ── the invariant that catches whatever the rest missed ────────────
     print("\nLedger")

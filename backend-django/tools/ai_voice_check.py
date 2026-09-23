@@ -58,6 +58,36 @@ QUESTIONS = (
 # a different kind of failure.
 MIRRORED = "Which dasha am I running, and where is my moon sign?"
 
+# 23 Sep, from the team: *"we need more detailed answer… People love to
+# read about themselves"* and *"It only replying in english"*. Both are
+# prompt rules now, and a prompt rule is a hope until it is measured.
+#
+# A four-line answer to "when will I get married" is not worth ₹9. The
+# floor is deliberately below the prompt's 150-word target — this catches
+# the answer that collapsed to two sentences, not the one that came in at
+# 140 words.
+MIN_WORDS = 110
+
+# Asked in Hindi, in Hinglish, and in Devanagari-free Roman Hindi, which
+# is how most people in this market actually type.
+LANGUAGES = (
+    ("Hindi", "मेरी शादी कब होगी?", lambda t: _devanagari(t) > 20),
+    ("Hinglish", "Meri job change karni chahiye ya nahi?",
+     lambda t: _devanagari(t) > 20 or _hinglish(t)),
+)
+
+HINGLISH = re.compile(
+    r"\b(hai|hain|ho|hoga|hogi|karna|karni|aap|aapka|aapki|abhi|lekin|"
+    r"par|kyunki|samay|waqt|thoda|zyada|nahi|chahiye)\b", re.I)
+
+
+def _devanagari(text):
+    return sum("\u0900" <= c <= "\u097f" for c in text)
+
+
+def _hinglish(text):
+    return len(set(m.group(0).lower() for m in HINGLISH.finditer(text))) >= 4
+
 CHART = {
     "ascendant": {"sign": "Virgo", "nakshatra": {"name": "Uttara Phalguni"}},
     "planets": [
@@ -86,14 +116,18 @@ def system_prompt():
     return f"{prompt.SYSTEM}\n\n{prompt.chart_block(CHART)}"
 
 
-def ask(system, question, key, model):
+def ask(system, question, key, model, max_tokens=1200):
     response = requests.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         headers={"Content-Type": "application/json", "x-goog-api-key": key},
         json={
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": question}]}],
-            "generationConfig": {"maxOutputTokens": 500, "temperature": 0.7,
+            # The SAME ceiling the server uses. It was a hardcoded 500
+            # while the server ran at 1200, so this tool truncated answers
+            # the product does not truncate — and a length check measured
+            # against a truncated answer measures nothing.
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.7,
                                  "thinkingConfig": {"thinkingBudget": 0}},
         },
         timeout=45,
@@ -111,6 +145,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--key", default=os.environ.get("GEMINI_API_KEY"))
     parser.add_argument("--model", default=os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
+    parser.add_argument("--max-tokens", type=int,
+                        default=int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "1200")))
     args = parser.parse_args()
     if not args.key:
         sys.exit("Set GEMINI_API_KEY or pass --key.")
@@ -119,30 +155,49 @@ def main():
     total = 0
 
     for question in QUESTIONS:
-        answer = ask(system, question, args.key, args.model)
+        answer = ask(system, question, args.key, args.model, args.max_tokens)
         if answer is None:
             print(f"{RED}no answer{OFF} for {question!r}")
             total += 1
             continue
         hits = sorted({m.group(0).lower() for m in JARGON.finditer(answer)})
+        words = len(answer.split())
         total += len(hits)
         mark = f"{GREEN}plain{OFF}" if not hits else f"{RED}technical{OFF}"
+        if words < MIN_WORDS:
+            total += 1
+            mark += f"  {RED}thin at {words} words{OFF}"
+        else:
+            mark += f"  {DIM}{words} words{OFF}"
         print(f"\n{DIM}Q  {question}{OFF}")
         print(textwrap.fill(f"A  {answer}", 92, subsequent_indent="   "))
         print(f"   {mark}" + (f"  {hits}" if hits else ""))
 
-    answer = ask(system, MIRRORED, args.key, args.model)
+    answer = ask(system, MIRRORED, args.key, args.model, args.max_tokens)
     mirrors = bool(answer and JARGON.search(answer))
     print(f"\n{DIM}Q  {MIRRORED}{OFF}")
     print(textwrap.fill(f"A  {answer or '(none)'}", 92, subsequent_indent="   "))
     print(f"   {GREEN}mirrors the question{OFF}" if mirrors
           else f"   {RED}should answer in the same vocabulary it was asked in{OFF}")
+    if not mirrors:
+        total += 1
+
+    for label, question, passes in LANGUAGES:
+        answer = ask(system, question, args.key, args.model, args.max_tokens)
+        good = bool(answer) and passes(answer)
+        total += 0 if good else 1
+        print(f"\n{DIM}Q  {question}{OFF}")
+        print(textwrap.fill(f"A  {answer or '(none)'}", 92, subsequent_indent="   "))
+        print(f"   {GREEN}answered in {label}{OFF}" if good
+              else f"   {RED}answered in English — it was asked in {label}{OFF}")
 
     print()
-    if total == 0 and mirrors:
-        print(f"{GREEN}plain throughout, and still technical when asked to be{OFF}\n")
+    if total == 0:
+        print(f"{GREEN}plain, long enough, in the language it was asked in"
+              f" — and still technical when asked to be{OFF}\n")
         return
-    print(f"{RED}{total} jyotish term(s) reached somebody who did not ask for them{OFF}\n")
+    print(f"{RED}{total} problem(s): jargon, thin answers, or English where"
+          f" it was not asked for{OFF}\n")
     sys.exit(1)
 
 

@@ -216,13 +216,20 @@ GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 # The ceiling on one answer. The prompt asks for three to six sentences;
 # this is what makes a runaway answer a truncation rather than a bill.
-AI_MAX_OUTPUT_TOKENS = int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "500"))
+# Raised from 500 with the 23 Sep rewrite: the answers are four
+# paragraphs now, not three sentences, and a ceiling that truncates one
+# mid-word is worse than no ceiling. Still a ceiling — a runaway answer
+# should be a truncation, not a bill.
+AI_MAX_OUTPUT_TOKENS = int(os.environ.get("AI_MAX_OUTPUT_TOKENS", "1200"))
 # Gemini 3.x thinking tokens are drawn from the output budget and billed
 # at the output rate. Zero for this product: the chart arrives structured
 # and the answer is a few sentences of it. Raise it only with a reason.
 AI_THINKING_BUDGET = int(os.environ.get("AI_THINKING_BUDGET", "0"))
-# ₹9 a minute (docs/01-PRD.md §4.4). An env var rather than a constant
-# because it is a price, and a price change must not need a deploy.
+# ₹9 a QUESTION (docs/01-PRD.md §4.4, reversed from per-minute 23 Sep).
+# An env var rather than a constant because it is a price, and a price
+# change must not need a deploy — this one changed twice in three days.
+AI_PRICE_PAISE = int(os.environ.get("AI_PRICE_PAISE", "900"))
+# The retired per-minute meter still reads this. Nothing new should.
 AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
 # The free allowances (docs/01-PRD.md §4.4): five on arrival, then one a day
 # from the next day. Env vars rather than constants so a testing window can

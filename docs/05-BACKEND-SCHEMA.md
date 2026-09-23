@@ -1393,6 +1393,8 @@ money.
 
 ## Namo AI — `ai_sessions`, `ai_messages`, `ai_quota` (21 Sep 2026)
 
+> `ai_sessions` is retired — see below. The other two are live.
+
 Three tables, created by `apps/ai/migrations/0001_initial.py`. The first
 tables in this product that are Django migrations rather than numbered SQL
 in `backend/schema/` — the cutover is done and Django owns the schema now.
@@ -1409,20 +1411,26 @@ what makes the daily allowance start the day *after* the five run out.
 Without it the daily branch fires the moment the fifth is spent and a new
 account gets six on day one.
 
-**`ai_sessions`** — the meter. Same money shape as `sessions` (014): hold at
-start, settle at end, refund the unused minutes. Deliberately not the same
-table: `sessions.consultant_id` is a non-null FK, and widening it so the AI
-could share the rows would put a null case in every consultant query
-forever. `expires_at` caps the spend — the clock never runs past what was
-held, so an abandoned tab is bounded by arithmetic rather than by a sweeper
-arriving in time.
+**`ai_sessions`** — **dead since 23 Sep 2026. Nothing writes it.** It held
+the per-minute meter that was live 21–23 Sep: hold at start, settle at end,
+refund the unused minutes, `expires_at` capping the spend. Billing is per
+question now, so there is no clock to hold.
 
-Indexes: `(profile_id, -started_at)` for the caller's own, and
-`(status, expires_at)` for the sweeper's read.
+The table and the model are **kept, not dropped**, so the rows written
+during the metered fortnight stay readable — they are money that moved, and
+money that moved is not deleted because the feature that moved it was
+retired. `apps/ai/services.py` writes `session=None` on every message.
 
-**`ai_messages`** — the transcript. `session_id` is **nullable**: a free
-message belongs to nobody's clock but is the same conversation, and the
-model must see it. `tokens_in`/`tokens_out` are the provider's own counts,
+Its indexes — `(profile_id, -started_at)` and `(status, expires_at)`, the
+latter built for a sweeper that no longer runs — stay with it.
+
+Drop it only when the ledger rows it explains are themselves out of
+retention, and drop both together or neither.
+
+**`ai_messages`** — the transcript. `session_id` is **nullable**, which was
+for free messages that belonged to nobody's clock. Since the meter was
+retired it is null on **every** row, and the column is what makes the old
+rows still legible. `tokens_in`/`tokens_out` are the provider's own counts,
 shown to no one — they are how "is this priced sanely" stops being a guess.
 
 Retention is **30 days**, swept nightly by `flush_ai_messages`. That is a

@@ -1,20 +1,26 @@
-"""Namo AI — quota, meter, and one turn of conversation.
+"""Namo AI — quota, price, and one turn of conversation.
 
-THE MONEY SHAPE, and why it is what it is
-The seeker chose per-minute over per-message (21 Sep 2026), matching how
-every Indian astrology app bills a human astrologer. It is the model with
-the loudest complaint against it — "the timer never stops", thinking and
-typing are billable — so two things here answer that complaint directly
-rather than papering over it:
+THE MONEY SHAPE, and why it changed
+**₹9 a question** (23 Sep, Rahul's call). It was ₹9 a minute for two days.
 
-  * The hold is the whole wallet, floored to minutes, taken up front. The
-    clock cannot run past what was held, so an abandoned tab spends what it
-    bought and not a rupee more.
-  * Unused minutes are refunded at settle, always. Ending early is cheaper,
-    which is the opposite of what the complaint describes.
+The per-minute meter is retired: `start_session`, `heartbeat` and the
+clock are gone from the live path. It worked, it was tested, and it was
+answering a question nobody was asking — a metered session makes sense
+when you are buying somebody's TIME, and an AI consumes none. It also
+made the seeker read a clock while thinking, which is the complaint every
+app in this category already has.
 
-The arithmetic is imported from chat.services rather than copied. Two
-implementations of the same billing rule drift, and the drift is money.
+Per question is what it says on the tin: five free on arrival, one a day
+after that, then ₹9 for each answer.
+
+**A failed answer is refunded.** The charge is taken before the model is
+called — so a question that costs money is never lost to a timeout — and
+given back if no answer arrives. Somebody who paid ₹9 and got "could not
+reach the astrologer" has been robbed of ₹9, and there is no version of
+that which is acceptable.
+
+`apps/ai/models.Session` and its table survive so the rows from the
+metered fortnight stay readable. Nothing writes them any more.
 """
 
 import logging
@@ -35,12 +41,8 @@ logger = logging.getLogger("apps.ai")
 # The sentences the interface shows. They live here because the server owns
 # the refusal (backend/INSTRUCTIONS.md §2) — the client renders the string
 # it is given and invents none of its own.
-REFUSAL_NO_WALLET = "Add money before you start a session."
-REFUSAL_SHORT_BALANCE = "Not enough for a minute. Add money to keep going."
-REFUSAL_ALREADY_LIVE = "You already have a session running."
-REFUSAL_NO_SESSION = "Start a session to keep asking."
-REFUSAL_SESSION_OVER = "That session has ended."
-REFUSAL_NOT_YOURS = "That is not your session."
+REFUSAL_NO_WALLET = "Add money to keep asking."
+REFUSAL_SHORT_BALANCE = "Not enough for a question. Add money to keep going."
 REFUSAL_EMPTY = "Type a question first."
 REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
 
@@ -70,6 +72,18 @@ def _ist_today():
     """The calendar the product already uses (docs/02-TRD.md §10). IST has
     no DST, so the shift is a constant and this needs no zone database."""
     return (timezone.now() + timezone.timedelta(hours=5, minutes=30)).date()
+
+
+def _price_paise():
+    """What one answer costs, once the free allowance is gone. ₹9.
+
+    A setting rather than a constant because it is a price, and this one
+    changed twice in three days — per minute on the 21st, per question on
+    the 23rd. A price change must not need a deploy.
+    """
+    from django.conf import settings
+
+    return settings.AI_PRICE_PAISE
 
 
 # ── quota ────────────────────────────────────────────────────────────────────
@@ -133,184 +147,18 @@ def _take_free(profile_id):
     return False
 
 
-# ── the meter ────────────────────────────────────────────────────────────────
-
-
-def live_session(profile_id, now=None):
-    """The caller's running session, or None. Anything past its expiry is
-    not live however the row is labelled — the sweeper settles it, and
-    until it does this must not let another question through."""
-    now = now or timezone.now()
-    return (
-        Session.objects.filter(
-            profile_id=profile_id, status=Session.Status.LIVE, expires_at__gt=now
-        )
-        .order_by("-started_at")
-        .first()
-    )
-
-
-def start_session(profile_id, now=None):
-    """Start the clock. No request/accept dance — there is nobody to accept.
-
-    The whole wallet is held, floored to minutes, exactly as chat.accept
-    does it. Holding the whole balance rather than a slice is what lets the
-    seeker keep asking without a top-up interrupting them mid-thought; the
-    refund at settle is what makes that fair.
-    """
-    now = now or timezone.now()
-    rate = _rate_paise()
-
-    with transaction.atomic():
-        if live_session(profile_id, now):
-            return {"ok": False, "reason": REFUSAL_ALREADY_LIVE}
-
-        balance = wallet_services.lock_wallet_balance(profile_id)
-        if balance is None:
-            return {"ok": False, "reason": REFUSAL_NO_WALLET}
-
-        minutes = _minutes_held(balance, rate)
-        if minutes < 1:
-            return {
-                "ok": False,
-                "reason": REFUSAL_SHORT_BALANCE,
-                "balance_paise": balance,
-            }
-
-        hold = minutes * rate
-        session = Session.objects.create(
-            profile_id=profile_id,
-            rate_paise=rate,
-            started_at=now,
-            expires_at=now + timezone.timedelta(minutes=minutes),
-            heartbeat_at=now,
-            hold_paise=hold,
-        )
-
-        # An order, exactly as chat.accept writes one — and for a reason
-        # beyond symmetry: `ledger.ref_type` is a closed CHECK of
-        # order/payment/refund/adjustment, so a debit has to point at an
-        # order to be writable at all, and 013's one-refund-per-order index
-        # is what makes the settle idempotent. item_type is 'session'
-        # because that is what this is and because the CHECK on
-        # order_items has no 'ai' member; the title is what tells the two
-        # apart on a statement.
-        order_id = gateway.insert_order(profile_id, hold)
-        gateway.insert_order_item(
-            order_id,
-            item_type="session",
-            item_id=session.id,
-            title="Namo AI · chat",
-            unit_price_paise=rate,
-        )
-        session.order_id = order_id
-        session.save(update_fields=("order_id",))
-
-        wallet_services.insert_ledger(
-            profile_id,
-            -hold,
-            f"Namo AI · {minutes} min held",
-            ref_type="order",
-            ref_id=order_id,
-        )
-
-    return {
-        "ok": True,
-        "session_id": str(session.id),
-        "rate_paise": rate,
-        "seconds_left": minutes * 60,
-        "minutes_held": minutes,
-    }
-
-
-def end_session(profile_id, session_id, reason=None, now=None):
-    """Settle. Charged is the minutes used, rounded up, capped at the hold;
-    the rest comes back. Idempotent — a pressed End racing the sweeper must
-    not refund twice."""
-    now = now or timezone.now()
-    session = Session.objects.filter(pk=session_id).first()
-    if session is None:
-        return {"ok": False, "reason": REFUSAL_SESSION_OVER}
-    if profile_id is not None and str(session.profile_id) != str(profile_id):
-        return {"ok": False, "reason": REFUSAL_NOT_YOURS}
-    if session.status != Session.Status.LIVE:
-        return {"ok": True, "already_ended": True, "charged_paise": session.charged_paise}
-
-    stop = min(now, session.expires_at)
-    charged = _billable_paise(
-        session.started_at, stop, session.hold_paise, session.rate_paise
-    )
-    refund = session.hold_paise - charged
-
-    # The UPDATE is the claim. Whoever's update returns 1 owns the settle,
-    # and only that one writes the refund — the same guard chat.end_session
-    # uses, and for the same race (a pressed End meeting the sweeper).
-    claimed = Session.objects.filter(
-        pk=session.id, status=Session.Status.LIVE
-    ).update(status=Session.Status.ENDED, ended_at=now, charged_paise=charged)
-    if claimed == 0:
-        settled = Session.objects.get(pk=session.id)
-        return {"ok": True, "already_ended": True, "charged_paise": settled.charged_paise}
-
-    # 013's partial unique index allows one refund per order, which is what
-    # makes a pressed End racing the sweeper credit once even if both get
-    # past the claim above.
-    if refund > 0:
-        wallet_services.insert_ledger(
-            session.profile_id,
-            refund,
-            "Refund · unused minutes",
-            ref_type="refund",
-            ref_id=session.order_id,
-            note=reason or "ended",
-        )
-    # The order opened at the hold is restated at what was actually spent,
-    # so a statement and the ledger agree.
-    if session.order_id:
-        gateway.set_order_total(session.order_id, charged)
-
-    return {"ok": True, "charged_paise": charged, "refund_paise": refund,
-            "seconds_billed": charged * 60 // session.rate_paise}
-
-
-def heartbeat(profile_id, session_id, now=None):
-    """The clock on screen. The server's seconds_left always wins — the
-    browser counts down between beats for smoothness, never for truth."""
-    now = now or timezone.now()
-    session = Session.objects.filter(pk=session_id, profile_id=profile_id).first()
-    if session is None or session.status != Session.Status.LIVE:
-        return {"ok": True, "live": False, "seconds_left": 0}
-
-    remaining = session.expires_at - now
-    seconds_left = max(0, int(remaining.total_seconds()))
-    Session.objects.filter(pk=session.id).update(heartbeat_at=now)
-    return {
-        "ok": True,
-        "live": seconds_left > 0,
-        "seconds_left": seconds_left,
-        "rate_paise": session.rate_paise,
-    }
-
-
-def sweep_sessions(now=None):
-    """Settle everything past its expiry. Runs on the same one-minute
-    schedule as the consultant sweeper; without it an abandoned tab leaves
-    a session 'live' forever and the held minutes never come back."""
-    now = now or timezone.now()
-    settled = 0
-    for session in Session.objects.filter(
-        status=Session.Status.LIVE, expires_at__lte=now
-    ):
-        result = end_session(None, session.id, reason="swept", now=now)
-        if result.get("ok") and not result.get("already_ended"):
-            settled += 1
-    return {"settled": settled}
-
-
-def _rate_paise():
-    from django.conf import settings
-
-    return settings.AI_RATE_PAISE
+# ── the meter, retired 23 Sep ───────────────────────────────────────────────
+#
+# start_session / heartbeat / end_session / sweep_sessions lived here and
+# are deleted. Billing is per question now, so there is no clock to start
+# and nothing to settle. They were removed rather than left dormant:
+# retired code that still imports and half-runs is worse than no code,
+# because the next person to read it cannot tell which half is live.
+#
+# `models.Session` and the `ai_sessions` table survive so the rows written
+# during the metered fortnight stay readable. Nothing writes them.
+#
+# git show 6419773 has the whole thing if per-minute ever comes back.
 
 
 # ── the conversation ─────────────────────────────────────────────────────────
@@ -384,28 +232,34 @@ def ask(profile_id, question, subject=None):
         return {"ok": False, "reason": REFUSAL_EMPTY}
 
     now = timezone.now()
+    price = _price_paise()
+    charged = 0
 
     with transaction.atomic():
         used_free = _take_free(profile_id)
-        session = None
         if not used_free:
-            session = live_session(profile_id, now)
-            if session is None:
+            # Charged BEFORE the model is called, and inside the same
+            # transaction as the quota check — so two taps in one tick
+            # cannot both find the last free message and cannot both
+            # escape paying.
+            paid = wallet_services.debit(profile_id, price, "Namo AI · one question")
+            if not paid.get("ok"):
                 state = quota_state(profile_id)
                 return {
                     "ok": False,
-                    "reason": REFUSAL_NO_SESSION,
-                    "needs_session": True,
+                    "reason": paid.get("reason"),
+                    "needs_money": True,
+                    "price_paise": price,
+                    "balance_paise": paid.get("balance_paise"),
                     "free_left": state["free_left"],
-                    "rate_paise": _rate_paise(),
                 }
+            charged = price
 
         # Written before the call, so a question that costs money is never
         # lost to a provider timeout — the seeker can see what they asked.
-        # The QUESTION is the seeker's own words and is theirs to keep; the
-        # subject's birth details are not in it and are never stored.
+        # The subject's birth details are not in it and are never stored.
         Message.objects.create(
-            profile_id=profile_id, session=session, role=Message.Role.USER,
+            profile_id=profile_id, session=None, role=Message.Role.USER,
             body=question, created_at=now,
         )
 
@@ -422,14 +276,24 @@ def ask(profile_id, question, subject=None):
         answer = providers.ask(history, question, block)
     except providers.UpstreamError as exc:
         logger.error("[ai] upstream: %s", exc)
-        # The free message is NOT given back. It was spent on a question the
-        # seeker can still see and retry, and refunding it on every failure
-        # is a free-question generator for anyone who can cause a timeout.
-        # A paid minute is different — the clock refunds itself at settle.
-        return {"ok": False, "reason": REFUSAL_UPSTREAM, "retryable": True}
+        # THE MONEY COMES BACK. Somebody who paid ₹9 and got "could not
+        # reach the astrologer" has been robbed of ₹9, and no amount of
+        # "they can just retry" makes that acceptable.
+        #
+        # The free message is NOT given back, deliberately: it was spent
+        # on a question they can still see and retry, and refunding it on
+        # every failure is a free-question generator for anybody who can
+        # cause a timeout.
+        if charged:
+            wallet_services.credit(
+                profile_id, charged, "Refund · Namo AI could not answer",
+                ref_type="refund",
+            )
+        return {"ok": False, "reason": REFUSAL_UPSTREAM, "retryable": True,
+                "refunded_paise": charged}
 
     reply = Message.objects.create(
-        profile_id=profile_id, session=session, role=Message.Role.MODEL,
+        profile_id=profile_id, session=None, role=Message.Role.MODEL,
         body=answer["text"], tokens_in=answer.get("tokens_in"),
         tokens_out=answer.get("tokens_out"),
     )
@@ -441,7 +305,8 @@ def ask(profile_id, question, subject=None):
         "text": reply.body,
         "created_at": reply.created_at.isoformat(),
         "free_left": state["free_left"],
-        "session_id": str(session.id) if session else None,
+        "charged_paise": charged,
+        "price_paise": price,
     }
 
 

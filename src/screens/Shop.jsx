@@ -75,7 +75,7 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, spending, setCartOpen, showToast, session, sessionReady } =
+  const { cartCount, addToCart, buyNow, spending, setCartOpen, session, sessionReady } =
     useStore()
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.

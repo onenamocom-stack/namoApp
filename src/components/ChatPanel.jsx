@@ -15,7 +15,6 @@ import {
   subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
-import { clock as aiClock } from '../lib/ai.js'
 import useAskAi from './useAskAi.js'
 import SubjectForm from './SubjectForm.jsx'
 
@@ -447,7 +446,7 @@ function initialsOf(name) {
 function AskAi() {
   const {
     messages, draft, setDraft, send, thinking, loading,
-    freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+    freeLeft, pricePaise, outOfFree,
     who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
@@ -460,20 +459,15 @@ function AskAi() {
     <>
       <div className="flex flex-none items-center justify-between gap-3 border-b border-rule px-4 py-3">
         <p className="caps-sm t-body">Namo AI · reads your chart</p>
-        {live ? (
-          /* The meter, where the quota used to be. It counts down, and End
-             is one tap away from it rather than buried in a menu. */
-          <span className="flex items-center gap-2">
-            <span className="caps-sm tnum text-live">{aiClock(live.secondsLeft)}</span>
-            <button type="button" onClick={stopMeter} className="caps-sm gold underline">
-              End
-            </button>
-          </span>
-        ) : (
-          <span className={`caps-sm tnum ${freeLeft === 0 ? 'text-live' : 'gold'}`}>
-            {loading ? '—' : freeLeft === 0 ? 'None left' : `${freeLeft} free`}
-          </span>
-        )}
+        {/* What the NEXT question costs, said before anybody is charged.
+            A debit nobody was warned about is a support ticket. */}
+        <span className="caps-sm tnum gold">
+          {loading
+            ? '—'
+            : outOfFree
+              ? pricePaise ? `₹${rupees(pricePaise)} each` : ''
+              : `${freeLeft} free`}
+        </span>
       </div>
 
       {/* Said once, pinned, and never repeated per message — a warning on
@@ -545,55 +539,46 @@ function AskAi() {
 
         {thinking && <p className="animate-breathe caps-sm t-faint">Reading your chart</p>}
 
-        {needsMeter && (
-          <div className="pop-card p-4 text-center">
-            <p className="caps t-heading">Out of free questions</p>
-            <p className="mt-2 text-meta t-body">
-              One free message arrives tomorrow. Until then a session runs at{' '}
-              {ratePaise ? `₹${rupees(ratePaise)}` : '—'} a minute, charged from your wallet.
-              Unused minutes come back.
-            </p>
-            <PopButton
-              size="sm"
-              variant="gold"
-              className="mt-4"
-              onClick={startMeter}
-              disabled={starting}
-            >
-              {starting ? 'Starting…' : 'Start a session'}
-            </PopButton>
-            <p className="mt-3 text-micro t-faint">
-              A consultant reads the same chart and argues back.{' '}
-              <Link to="/consult" className="underline">
-                See astrologers
-              </Link>
-            </p>
-          </div>
+        {outOfFree && (
+          /* Not a wall. The free ones are gone and the next answer costs
+             ₹9 — asking still works, so this is a price, not a lock. The
+             card the meter needed had a BUTTON because a session had to
+             be started; nothing has to be started now. */
+          <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
+            Your free questions are used. The next answer costs{' '}
+            <b>{pricePaise ? `₹${rupees(pricePaise)}` : '—'}</b> from your wallet, and
+            one more free one arrives tomorrow.{' '}
+            <Link to="/consult" className="underline">
+              A consultant
+            </Link>{' '}
+            reads the same chart and argues back.
+          </p>
         )}
         <div ref={endRef} />
       </div>
 
-      {!needsMeter && (
-        <div className="no-scrollbar flex flex-none gap-2 overflow-x-auto border-t border-rule px-4 py-3">
-          {askSuggestions.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => send(s.text)}
-              className="pill caps-sm flex-none !px-3.5 !py-2"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Always shown. It used to vanish behind the meter's wall, which
+          hid the one thing that helps somebody who cannot phrase a
+          question — and hid it exactly when they were being asked to pay. */}
+      <div className="no-scrollbar flex flex-none gap-2 overflow-x-auto border-t border-rule px-4 py-3">
+        {askSuggestions.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => send(s.text)}
+            className="pill caps-sm flex-none !px-3.5 !py-2"
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
 
       <Composer
         value={draft}
         onChange={setDraft}
         onSend={() => send()}
-        disabled={needsMeter || thinking || (who === null && messages.length === 0)}
-        placeholder={needsMeter ? 'Start a session to keep asking' : 'Ask about your chart'}
+        disabled={thinking || (who === null && messages.length === 0)}
+        placeholder="Ask about your chart"
       />
     </>
   )

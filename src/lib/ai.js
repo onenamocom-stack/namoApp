@@ -18,20 +18,18 @@
  * Refusals arrive as 200 + {ok:false, reason} and the reason is rendered
  * verbatim. There are no refusal sentences in this file.
  *
- * ── THE CLOCK ───────────────────────────────────────────────────────────────
- * The meter is per-minute, so the seeker must be able to see it. `ticker`
- * counts down locally between heartbeats for smoothness and takes the
- * server's seconds_left as truth every time one lands — the same rule the
- * consultant room follows. A clock that drifts in the seeker's favour is a
- * bug; one that drifts the other way is a complaint.
+ * ── THE PRICE ───────────────────────────────────────────────────────────────
+ * ₹9 a question, and `state.price_paise` carries it so the panel can say
+ * so BEFORE anybody is charged. Nobody should meet a debit as a surprise.
+ *
+ * A failed answer is refunded by the server. The client does not have to
+ * arrange that and must not try — it shows the refusal and the money is
+ * already back.
  */
 
 import { supabase } from './supabase.js'
 
 const API = import.meta.env.VITE_DJANGO_API_URL
-
-/** The server's number wins; this is only how often we ask for it. */
-const HEARTBEAT_MS = 10_000
 
 async function accessToken() {
   const { data: { session } } = await supabase.auth.getSession()
@@ -80,73 +78,9 @@ export function ask(question, subject = null) {
   })
 }
 
-export function startSession() {
-  return api('/session/', { method: 'POST' })
-}
+/* startSession, heartbeat, endSession and `ticker` lived here and are
+   gone (23 Sep). Billing is ₹9 a QUESTION now, so there is no clock to
+   start, nothing to settle, and no meter for a closing tab to leave
+   running. git show 6419773 has them if per-minute ever comes back. */
 
-export function heartbeat(sessionId) {
-  return api(`/session/${sessionId}/heartbeat/`, { method: 'POST' })
-}
 
-export function endSession(sessionId, { keepalive = false } = {}) {
-  return api(`/session/${sessionId}/end/`, { method: 'POST', keepalive })
-}
-
-/**
- * The visible clock.
- *
- * Starts from the server's seconds_left, ticks down every second so the
- * number on screen moves, and re-asks the server every ten seconds. The
- * local tick is cosmetic: every heartbeat overwrites it, and when the
- * server says the session is over `onEnd` fires once and the ticker stops
- * itself. Returns its own stop function.
- *
- * Nothing here settles anything. The money is closed by the server — by the
- * seeker pressing End, or by the sweeper — because a browser that is
- * closed, asleep or offline cannot be the thing that ends a meter.
- */
-export function ticker(sessionId, { seconds, onTick, onEnd }) {
-  let left = seconds
-  let stopped = false
-
-  const stop = () => {
-    stopped = true
-    clearInterval(tick)
-    clearInterval(beat)
-  }
-
-  const finish = () => {
-    if (stopped) return
-    stop()
-    onEnd?.()
-  }
-
-  const tick = setInterval(() => {
-    left = Math.max(0, left - 1)
-    onTick?.(left)
-    if (left === 0) finish()
-  }, 1000)
-
-  const beat = setInterval(async () => {
-    try {
-      const state = await heartbeat(sessionId)
-      if (!state.live) return finish()
-      left = state.seconds_left
-      onTick?.(left)
-    } catch {
-      /* A dropped beat is not an ended session. The local tick keeps
-         running and the next beat corrects it; the server is still
-         holding the real clock and the sweeper is still behind it. */
-    }
-  }, HEARTBEAT_MS)
-
-  onTick?.(left)
-  return stop
-}
-
-/** m:ss, for the header. Not a duration library: this is the only place in
- *  the app that prints one. */
-export function clock(seconds) {
-  const s = Math.max(0, seconds)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}

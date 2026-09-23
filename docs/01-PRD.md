@@ -164,8 +164,22 @@ numbers are a placeholder multiplied at load time:
 ### 4.4 Namo AI
 
 An astrologer that reads the seeker's own chart, answers only about
-astrology, and refuses to be a general assistant. Three to five sentences
-and never a guarantee — the chart is timing, not permission.
+astrology, and refuses to be a general assistant. Never a guarantee — the
+chart is timing, not permission.
+
+**Four paragraphs, 150–250 words — lengthened 23 Sep 2026.** It was three
+to five sentences, and three to five sentences is not worth ₹9. The shape
+is: the answer, then what this person is like, then what this period is
+doing to them, then what to do about it this week. The second paragraph is
+the one that matters — people read their chart to read about themselves,
+and an answer that skips straight to advice reads like a horoscope column.
+
+**It answers in the language it was asked in — added 23 Sep 2026.** Hindi
+in Devanagari gets Devanagari, Hinglish typed in Roman letters gets the
+same Roman Hinglish back, English gets English. It shipped English-only,
+which in this market is most of the audience reading a reply in a language
+they did not choose. `backend-django/tools/ai_voice_check.py` measures it
+against the live model, because a prompt rule is a hope until it is.
 
 **It speaks to somebody who has never studied jyotish.** The first
 sentence is the answer, in the words the seeker used. House numbers,
@@ -185,27 +199,33 @@ year" — rather than a placement. A timeframe a person can plan around
 beats one they have to look up. It gives no medical, legal or financial instruction and makes
 no prediction about death, disease or pregnancy.
 
-**The ladder, decided 21 Sep 2026:**
+**The ladder, decided 21 Sep 2026, repriced 23 Sep:**
 
 | | |
 |---|---|
 | On arrival | **5 free messages**, once per account, never refilled |
 | From the next day | **1 free message a day** (IST calendar) |
-| After that | **₹9 a minute**, metered, charged from the wallet |
+| After that | **₹9 a question**, charged from the wallet |
 
 The daily message begins the day **after** the welcome five are spent — a
 new account gets five on its first day, not six.
 
-A session holds what the wallet can pay, floored to whole minutes, and
-**refunds every unused minute** when it ends. It ends when the seeker ends
-it, or when the held minutes run out. **The clock is on screen the whole
-time.** Per-minute billing is the loudest complaint in this category —
-thinking and typing are billable and the timer is usually hidden — and
-showing it is the least this can do about that.
+**Per question, not per minute — 23 Sep 2026.** The meter shipped on the
+21st and lasted two days. A meter is the right shape when you are buying
+somebody's *time*, and an AI consumes none: it made the seeker read a
+clock while they were thinking, and thinking is the part of asking a
+question that takes the longest. One price for one answer is also the only
+version a seeker can check. The ₹9 did not move, only what it buys.
+
+**A failed answer is refunded.** The ₹9 is taken before the model is
+called, so a paid question is never lost to a timeout, and given back if
+no answer arrives. The free message is **not** given back — it was spent
+on a question that is still on screen and still retryable, and refunding
+it on every failure is a free-question generator.
 
 **The question packs are gone.** 6/₹199, 12/₹349 and 20/₹499 granted
-questions without charging and priced a counter the browser owned. The
-metered session replaces them.
+questions without charging and priced a counter the browser owned. Per-
+question pricing replaces them and the two-day meter alike.
 
 **The disclaimer is pinned, not repeated.** Under the header on both
 surfaces, always visible, never per message — a warning on every bubble is

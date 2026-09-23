@@ -13,8 +13,8 @@
  * server (backend/INSTRUCTIONS.md rule 3).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ask, endSession, fetchState, startSession, ticker } from '../lib/ai.js'
+import { useCallback, useEffect, useState } from 'react'
+import { ask, fetchState } from '../lib/ai.js'
 import { useStore } from '../store.jsx'
 import { track } from '../lib/analytics.js'
 
@@ -26,9 +26,7 @@ export default function useAskAi() {
   const [thinking, setThinking] = useState(false)
   const [loading, setLoading] = useState(true)
   const [freeLeft, setFreeLeft] = useState(null)
-  const [ratePaise, setRatePaise] = useState(null)
-  const [live, setLive] = useState(null) // { id, secondsLeft }
-  const [starting, setStarting] = useState(false)
+  const [pricePaise, setPricePaise] = useState(null)
   /* Whose chart the conversation is about. null is the seeker's own.
      Held HERE and nowhere else — the server computes a chart from it and
      writes none of it down, so a reload loses it, deliberately. */
@@ -38,61 +36,11 @@ export default function useAskAi() {
      a modal in front of every one of them is a tax on thinking. */
   const [who, setWho] = useState(null)
   const [asking, setAsking] = useState(false) // the form is open
-  const stopRef = useRef(null)
-  const liveRef = useRef(null)
 
-  /* The clock. `ticker` counts down locally for smoothness and takes the
-     server's seconds_left as truth on every heartbeat; when the server says
-     the session is over it fires once and stops itself. The wallet refresh
-     is there because the settle wrote a refund the seeker should see. */
-  const watch = useCallback(
-    (sessionId, seconds) => {
-      stopRef.current?.()
-      stopRef.current = ticker(sessionId, {
-        seconds,
-        onTick: (secondsLeft) => {
-          liveRef.current = sessionId
-          setLive({ id: sessionId, secondsLeft })
-        },
-        onEnd: () => {
-          liveRef.current = null
-          setLive(null)
-          refreshWallet(session?.user?.id)
-          showToast('Session ended. Unused minutes are back in your wallet.')
-        },
-      })
-    },
-    [refreshWallet, session, showToast],
-  )
-
-  /* Leaving settles the meter. A closed tab, a locked phone or a back press
-     is the commonest way a session ends, and waiting for the sweeper would
-     hold the seeker's money for up to a minute after they stopped using it.
-
-     `fetch(..., {keepalive: true})` rather than sendBeacon: a beacon cannot
-     carry an Authorization header, and the alternative — the token in the
-     query string — writes it into every access log between here and the
-     server. keepalive survives unload and keeps the header.
-
-     Fire-and-forget by design. The sweeper stays the backstop for what this
-     cannot reach (a killed browser, no network), and the settle is
-     idempotent, so arriving twice costs nothing. */
-  useEffect(() => {
-    const settle = () => {
-      const id = liveRef.current
-      if (!id) return
-      liveRef.current = null
-      endSession(id, { keepalive: true }).catch(() => {})
-    }
-    const onHide = () => document.visibilityState === 'hidden' && settle()
-    window.addEventListener('pagehide', settle)
-    document.addEventListener('visibilitychange', onHide)
-    return () => {
-      window.removeEventListener('pagehide', settle)
-      document.removeEventListener('visibilitychange', onHide)
-      settle()
-    }
-  }, [])
+  /* Nothing to settle on the way out any more. The per-minute meter kept
+     a clock running that a closed tab would have left spending, so it had
+     to be ended with a keepalive fetch. Per question, a closed tab owes
+     nothing. */
 
   useEffect(() => {
     let active = true
@@ -101,58 +49,14 @@ export default function useAskAi() {
         if (!active) return
         setMessages(state.messages ?? [])
         setFreeLeft(state.free_left)
-        setRatePaise(state.rate_paise)
-        /* A tab reopened mid-session finds its own meter rather than
-           starting a second one — which is why the live session comes back
-           with the transcript rather than being asked for separately. */
-        if (state.session) {
-          const secondsLeft = Math.max(
-            0,
-            Math.round((new Date(state.session.expires_at) - Date.now()) / 1000),
-          )
-          watch(state.session.id, secondsLeft)
-        }
+        setPricePaise(state.price_paise)
       })
       .catch((err) => console.error('[ai] state failed:', err.message))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
-      stopRef.current?.()
     }
-  }, [watch])
-
-  const startMeter = useCallback(async () => {
-    if (starting) return
-    setStarting(true)
-    try {
-      const result = await startSession()
-      if (!result.ok) {
-        track('ai_session_refused', { reason_kind: 'server' })
-        return showToast(result.reason)
-      }
-      track('ai_session_start', { minutes_held: result.minutes_held })
-      watch(result.session_id, result.seconds_left)
-      refreshWallet(session?.user?.id)
-    } catch (err) {
-      showToast(err.message)
-    } finally {
-      setStarting(false)
-    }
-  }, [starting, watch, showToast, refreshWallet, session])
-
-  const stopMeter = useCallback(async () => {
-    if (!live) return
-    /* Stop the local clock first. The settle is the server's and it is
-       idempotent, but a ticker still counting while the request is in
-       flight shows seconds nobody is being charged for. */
-    stopRef.current?.()
-    setLive(null)
-    try {
-      await endSession(live.id)
-    } finally {
-      refreshWallet(session?.user?.id)
-    }
-  }, [live, refreshWallet, session])
+  }, [])
 
   const send = useCallback(
     async (text) => {
@@ -172,16 +76,19 @@ export default function useAskAi() {
           setMessages((m) => m.filter((x) => x.id !== asked.id))
           setDraft(question)
           if (typeof result.free_left === 'number') setFreeLeft(result.free_left)
-          if (result.rate_paise) setRatePaise(result.rate_paise)
+          if (result.price_paise) setPricePaise(result.price_paise)
           showToast(result.reason)
           return
         }
         setMessages((m) => [...m, { id: result.id, role: 'model', text: result.text }])
         setFreeLeft(result.free_left)
+        /* The debit happened server-side. Refresh so the wallet figure on
+           screen is not one question behind. */
+        if (result.charged_paise) refreshWallet(session?.user?.id)
         /* Whether it was free or paid, and whether it was about somebody
            else — three flags, no question text. What people ASK is theirs;
            how often the feature is used is ours to know. */
-        track('ai_question', { paid: Boolean(live), about_other: Boolean(subject) })
+        track('ai_question', { paid: Boolean(result.charged_paise), about_other: Boolean(subject) })
       } catch (err) {
         setMessages((m) => m.filter((x) => x.id !== asked.id))
         setDraft(question)
@@ -190,7 +97,7 @@ export default function useAskAi() {
         setThinking(false)
       }
     },
-    [draft, thinking, showToast, subject, live],
+    [draft, thinking, showToast, subject, refreshWallet, session],
   )
 
   /* Switching subject mid-conversation. The transcript stays — it is the
@@ -217,13 +124,10 @@ export default function useAskAi() {
     thinking,
     loading,
     freeLeft,
-    ratePaise,
-    live,
-    starting,
-    startMeter,
-    stopMeter,
-    /* "Out of free, and no clock running" — the one state both renderings
-       branch on, computed here so they cannot disagree about it. */
-    needsMeter: freeLeft === 0 && !live,
+    pricePaise,
+    /* Out of free ones. Both renderings branch on this, computed here so
+       they cannot disagree about it. Asking still works — it just costs
+       now — so this is a PRICE notice, not a lock. */
+    outOfFree: freeLeft === 0,
   }
 }

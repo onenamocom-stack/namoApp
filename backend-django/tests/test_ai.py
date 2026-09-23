@@ -118,11 +118,12 @@ class TestQuota:
         for i in range(5):
             result = services.ask(SEEKER, f"question {i}")
             assert result["ok"], f"free question {i + 1} should have been free"
-        # The sixth is the whole point: no wallet, no session, no more free.
+        # The sixth is the whole point: with no wallet there is nothing to
+        # charge, so it is refused rather than quietly given away.
         sixth = services.ask(SEEKER, "one more")
         assert sixth["ok"] is False
-        assert sixth["reason"] == services.REFUSAL_NO_SESSION
-        assert sixth["needs_session"] is True
+        assert sixth["needs_money"] is True
+        assert sixth["price_paise"] == RATE
 
     def test_welcome_five_is_per_account_not_per_reload(self):
         """The bug this module exists to close. Five, then five again from a
@@ -200,118 +201,101 @@ class TestQuota:
         assert Message.objects.count() == 0
 
 
-# ── the meter ────────────────────────────────────────────────────────────────
+# ── what a question costs ───────────────────────────────────────────────────
 
 
 @pytest.mark.django_db(transaction=True)
-class TestMeter:
-    def test_start_holds_the_whole_wallet_floored_to_minutes(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 2_500)  # ₹25 -> two whole minutes at ₹9, ₹7 unspendable
+class TestPrice:
+    """₹9 a question (23 Sep). It was ₹9 a minute for two days.
 
-        result = services.start_session(SEEKER)
+    The meter is retired: a metered session makes sense when you are
+    buying somebody's TIME, and an AI consumes none. What replaces it has
+    one rule the meter never needed — **a failed answer is refunded.**
+    """
+
+    def test_free_questions_cost_nothing(self):
+        _wallet(SEEKER)
+        _fund(SEEKER, 5_000)
+        result = services.ask(SEEKER, "first one")
         assert result["ok"]
-        assert result["minutes_held"] == 2
-        assert result["seconds_left"] == 120
-        # ₹18 held, ₹7 left in the wallet — the part-minute is neither held
-        # nor sold.
-        assert _balance(SEEKER) == 2_500 - 1_800
+        assert result["charged_paise"] == 0
+        assert _balance(SEEKER) == 5_000
 
-    def test_no_wallet_and_short_balance_are_different_sentences(self):
-        assert services.start_session(SEEKER)["reason"] == services.REFUSAL_NO_WALLET
+    def test_the_first_paid_question_costs_nine_rupees(self):
         _wallet(SEEKER)
-        _fund(SEEKER, 500)  # ₹5 — not a minute
-        result = services.start_session(SEEKER)
-        assert result["reason"] == services.REFUSAL_SHORT_BALANCE
-        assert result["balance_paise"] == 500
-        assert _balance(SEEKER) == 500  # nothing taken
-
-    def test_unused_time_comes_back(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 9_000)  # ten minutes
-        start = timezone.now()
-        session = services.start_session(SEEKER, now=start)
-        assert _balance(SEEKER) == 0  # all ten minutes held
-
-        # 150s is exactly five 30-second blocks: ₹22.50 billed, the rest back.
-        stop = start + timezone.timedelta(seconds=150)
-        end = services.end_session(SEEKER, session["session_id"], now=stop)
-        assert end["charged_paise"] == 2_250
-        assert end["refund_paise"] == 9_000 - 2_250
-        assert _balance(SEEKER) == 6_750
-
-    def test_the_smallest_charge_is_one_block(self):
-        """One second still costs something — but half of what it used to.
-        A part-block is a block; the floor is thirty seconds, not sixty."""
-        _wallet(SEEKER)
-        _fund(SEEKER, 9_000)
-        start = timezone.now()
-        session = services.start_session(SEEKER, now=start)
-        end = services.end_session(
-            SEEKER, session["session_id"], now=start + timezone.timedelta(seconds=1)
-        )
-        assert end["charged_paise"] == RATE // 2
-        assert end["seconds_billed"] == 30
-
-    def test_an_abandoned_session_is_swept_and_cannot_overspend(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 1_800)  # two minutes
-        start = timezone.now()
-        services.start_session(SEEKER, now=start)
-
-        # The tab is left open for an hour. The clock stops at what was held.
-        much_later = start + timezone.timedelta(hours=1)
-        assert services.sweep_sessions(now=much_later)["settled"] == 1
-
-        session = Session.objects.get(profile_id=SEEKER)
-        assert session.status == Session.Status.ENDED
-        assert session.charged_paise == 1_800  # the two it bought, not sixty
-        # The hold is still the ceiling under block billing: blocks accrue
-        # past the expiry, the clamp is what stops them.
-        assert _balance(SEEKER) == 0
-
-    def test_only_one_live_session_at_a_time(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 9_000)
-        services.start_session(SEEKER)
-        assert services.start_session(SEEKER)["reason"] == services.REFUSAL_ALREADY_LIVE
-
-    def test_heartbeat_counts_down_and_goes_dead(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 1_800)
-        start = timezone.now()
-        session = services.start_session(SEEKER, now=start)
-        sid = session["session_id"]
-
-        beat = services.heartbeat(SEEKER, sid, now=start + timezone.timedelta(seconds=30))
-        assert beat["live"] is True
-        assert beat["seconds_left"] == 90
-
-        past = services.heartbeat(SEEKER, sid, now=start + timezone.timedelta(minutes=5))
-        assert past["live"] is False
-        assert past["seconds_left"] == 0
-
-    def test_a_paid_question_needs_a_live_session_not_just_a_wallet(self):
-        _wallet(SEEKER)
-        _fund(SEEKER, 9_000)
+        _fund(SEEKER, 5_000)
         for _ in range(5):
-            services.ask(SEEKER, "q")
-        # Money in the wallet is not consent to start spending it.
-        refused = services.ask(SEEKER, "sixth")
-        assert refused["needs_session"] is True
-        assert _balance(SEEKER) == 9_000
+            services.ask(SEEKER, "free one")
+        result = services.ask(SEEKER, "the sixth")
+        assert result["ok"]
+        assert result["charged_paise"] == RATE
+        assert _balance(SEEKER) == 5_000 - RATE
 
-        services.start_session(SEEKER)
-        assert services.ask(SEEKER, "sixth")["ok"]
+    def test_an_empty_wallet_refuses_before_the_model_is_called(self, monkeypatch):
+        called = []
 
-    def test_ending_someone_elses_session_is_refused(self):
+        def spy(*args, **kwargs):
+            called.append(1)
+            return {"text": "x", "tokens_in": None, "tokens_out": None}
+
         _wallet(SEEKER)
-        _fund(SEEKER, 9_000)
-        session = services.start_session(SEEKER)
-        stranger = uuid.uuid4()
-        result = services.end_session(stranger, session["session_id"])
-        assert result["reason"] == services.REFUSAL_NOT_YOURS
-        assert Session.objects.get(pk=session["session_id"]).status == "live"
+        _fund(SEEKER, 100)  # nowhere near ₹9
+        for _ in range(5):
+            services.ask(SEEKER, "free")
+        monkeypatch.setattr(providers, "ask", spy)
+
+        result = services.ask(SEEKER, "cannot afford this")
+        assert result["ok"] is False
+        assert result["needs_money"] is True
+        assert result["price_paise"] == RATE
+        assert not called, "the model was called for a question nobody paid for"
+        assert _balance(SEEKER) == 100
+
+    def test_a_failed_answer_gives_the_money_back(self, monkeypatch):
+        """Somebody who paid ₹9 and got "could not reach the astrologer"
+        has been robbed of ₹9. "They can just retry" is not an answer to
+        that."""
+        _wallet(SEEKER)
+        _fund(SEEKER, 5_000)
+        for _ in range(5):
+            services.ask(SEEKER, "free")
+
+        def boom(*args, **kwargs):
+            raise providers.UpstreamError("gemini unreachable")
+
+        monkeypatch.setattr(providers, "ask", boom)
+        result = services.ask(SEEKER, "this will fail")
+
+        assert result["ok"] is False
+        assert result["refunded_paise"] == RATE
+        assert _balance(SEEKER) == 5_000, "the money did not come back"
+
+    def test_a_failed_FREE_question_is_not_refunded(self, monkeypatch):
+        """Deliberately different. Refunding a free message on every
+        failure is a free-question generator for anybody who can cause a
+        timeout."""
+        def boom(*args, **kwargs):
+            raise providers.UpstreamError("down")
+
+        monkeypatch.setattr(providers, "ask", boom)
+        before = services.quota_state(SEEKER)["free_left"]
+        services.ask(SEEKER, "fails")
+        assert services.quota_state(SEEKER)["free_left"] == before - 1
+
+    def test_the_question_survives_a_failure_so_it_can_be_retried(self, monkeypatch):
+        def boom(*args, **kwargs):
+            raise providers.UpstreamError("down")
+
+        monkeypatch.setattr(providers, "ask", boom)
+        services.ask(SEEKER, "where is my Saturn")
+        assert [m.body for m in Message.objects.all()] == ["where is my Saturn"]
+
+    def test_the_price_is_visible_before_anybody_is_charged(self):
+        """The panel shows it while the free ones are still running, so a
+        ₹9 debit is never a surprise."""
+        from apps.ai.views import _state
+
+        assert _state(SEEKER)["price_paise"] == RATE
 
 
 # ── races ────────────────────────────────────────────────────────────────────
@@ -346,19 +330,34 @@ class TestRaces:
         assert len(granted) == 1, results
         assert Quota.objects.get(profile_id=SEEKER).welcome_used == 5
 
-    def test_a_settle_racing_the_sweeper_refunds_once(self):
+    def test_two_simultaneous_paid_questions_are_charged_twice_not_once(self):
+        """The mirror of the free-message race. Two paid questions in one
+        tick must take ₹18, not ₹9 — the debit is inside the same
+        transaction as the quota check, so neither can slip past it."""
         _wallet(SEEKER)
-        _fund(SEEKER, 9_000)
-        start = timezone.now()
-        session = services.start_session(SEEKER, now=start)
-        stop = start + timezone.timedelta(minutes=1)
+        _fund(SEEKER, 5_000)
+        for _ in range(5):
+            services.ask(SEEKER, "free")
+        before = _balance(SEEKER)
 
-        first = services.end_session(SEEKER, session["session_id"], now=stop)
-        second = services.end_session(SEEKER, session["session_id"], now=stop)
-        assert first["ok"] and not first.get("already_ended")
-        assert second["already_ended"] is True
-        # One refund, not two: 9000 held, 900 charged, 8100 back — once.
-        assert _balance(SEEKER) == 8_100
+        results = []
+        barrier = threading.Barrier(2)
+
+        def run():
+            barrier.wait()
+            try:
+                results.append(services.ask(SEEKER, "paid"))
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=run) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert all(r.get("ok") for r in results), results
+        assert before - _balance(SEEKER) == 2 * RATE
 
 
 # ── the model call ───────────────────────────────────────────────────────────

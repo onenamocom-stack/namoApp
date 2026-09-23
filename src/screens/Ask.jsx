@@ -5,26 +5,25 @@ import { TopBar } from '../components/Chrome.jsx'
 import { Button, Section } from '../components/Primitives.jsx'
 import useAskAi from '../components/useAskAi.js'
 import SubjectForm from '../components/SubjectForm.jsx'
-import { clock } from '../lib/ai.js'
 import { rupees } from '../store.jsx'
 
 /**
  * Namo AI as a full screen — the reading column, not the chat bubble.
  *
  * Shares every number with the panel through `useAskAi`: the quota, the
- * meter, the clock and the send path are one implementation, because two
- * copies of the money would be two places for it to drift. What differs is
- * only how it is drawn.
+ * price and the send path are one implementation, because two copies of
+ * the money would be two places for it to drift. What differs is only how
+ * it is drawn.
  *
- * The question packs are gone. They granted questions while displaying a
- * price and were replaced (21 Sep 2026) by five free on arrival, one a day
- * after that, and a metered session at the server's rate — docs/01-PRD.md
- * §4.4. Nothing here prices anything: `ratePaise` is the server's.
+ * Priced per QUESTION since 23 Sep 2026 — five free on arrival, one a day
+ * after that, then ₹9 an answer (docs/01-PRD.md §4.4). Before that it was
+ * a per-minute meter with a clock in this header, and before that question
+ * packs. Nothing here prices anything: `pricePaise` is the server's.
  */
 export default function Ask() {
   const {
     messages, draft, setDraft, send, thinking, loading,
-    freeLeft, ratePaise, live, starting, startMeter, stopMeter, needsMeter,
+    freeLeft, pricePaise, outOfFree,
     who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
@@ -43,28 +42,17 @@ export default function Ask() {
         title="Ask AI"
         sub="Reads your chart"
         right={
-          live ? (
-            <span className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-micro uppercase tracking-label tnum text-live">
-                {clock(live.secondsLeft)}
-              </span>
-              <button
-                type="button"
-                onClick={stopMeter}
-                className="text-micro uppercase tracking-label underline gold"
-              >
-                End
-              </button>
-            </span>
-          ) : (
-            <span
-              className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${
-                freeLeft === 0 ? 'text-t1' : 'text-t2'
-              }`}
-            >
-              {loading ? '—' : freeLeft === 0 ? 'None' : `${freeLeft} free`}
-            </span>
-          )
+          <span
+            className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${
+              outOfFree ? 'text-t1' : 'text-t2'
+            }`}
+          >
+            {loading
+              ? '—'
+              : outOfFree
+                ? pricePaise ? `₹${rupees(pricePaise)} each` : ''
+                : `${freeLeft} free`}
+          </span>
         }
       />
 
@@ -139,23 +127,21 @@ export default function Ask() {
         <div ref={endRef} />
       </div>
 
-      {needsMeter ? (
-        <Section label="Out of free questions" last>
+      {outOfFree && (
+        /* A price, not a wall. Asking still works. */
+        <Section label="Free questions used" tight>
           <p className="horoscope">
-            One free message arrives tomorrow. Until then a session runs at{' '}
-            {ratePaise ? `₹${rupees(ratePaise)}` : '—'} a minute, charged from your wallet while
-            it is open. Unused minutes come back when you end it.
+            The next answer costs {pricePaise ? `₹${rupees(pricePaise)}` : '—'} from your
+            wallet, and one more free one arrives tomorrow.
           </p>
-          <Button className="mt-10" variant="solid" onClick={startMeter} disabled={starting}>
-            {starting ? 'Starting…' : 'Start a session'}
-          </Button>
-          <Button to="/consult" variant="quiet" className="mt-3">
+          <Button to="/consult" variant="quiet" className="mt-5">
             Or ask a person instead
           </Button>
         </Section>
-      ) : (
-        <>
-          <Section label="If you cannot phrase it" tight>
+      )}
+
+      <>
+        <Section label="If you cannot phrase it" tight>
             <ul>
               {askSuggestions.map((s) => (
                 <li key={s.id}>
@@ -187,11 +173,12 @@ export default function Ask() {
               onClick={() => send()}
               disabled={!draft.trim() || thinking || (who === null && messages.length === 0)}
             >
-              {live ? 'Send' : 'Send · uses one'}
+              {outOfFree
+                ? `Send · ${pricePaise ? `₹${rupees(pricePaise)}` : ''}`
+                : 'Send · uses one free'}
             </Button>
           </Section>
-        </>
-      )}
+      </>
 
       <div className="h-8" />
     </>

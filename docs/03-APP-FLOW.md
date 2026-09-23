@@ -745,7 +745,7 @@ next rather than showing an empty list.
 | Sun, moon and rising are the mock's for every account, on four screens — `Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx` and via `useProfileFields()` | Open by design — they need the ephemeris service. **Phase 7 must change all four**, not just the hook |
 | Two Bhaktamar cards carry incomplete verses | Flagged in data; needs a verified source |
 
-## Namo AI — the Ask AI tab and `/ask` (21 Sep 2026)
+## Namo AI — the Ask AI tab and `/ask` (21 Sep 2026, repriced 23 Sep)
 
 Two surfaces, one state machine. `useAskAi` holds it; the panel draws chat
 bubbles and `/ask` draws a reading column, and neither owns a number.
@@ -754,20 +754,29 @@ bubbles and `/ask` draws a reading column, and neither owns a number.
 |---|---|
 | loading | "Opening" |
 | free left | the count in the header slot; the composer is open |
-| out of free, no clock | "Out of free questions" — when the next free one arrives, the rate, and **Start a session**; beside it, a link to a consultant |
-| clock running | the header slot becomes **m:ss counting down**, with **End** next to it; the composer is open |
-| clock ended | a toast naming the refund; the header returns to the free count |
+| out of free | the header slot reads **₹9 each**, and a line under the transcript says the next answer costs ₹9, that one more free one arrives tomorrow, and that a consultant reads the same chart; the composer stays open |
+| wallet empty | the server's refusal, and the Add money path |
 
-**The clock is the point.** It replaces the quota in the same header slot
-rather than appearing somewhere new, so the thing being spent is always in
-the place the seeker already looks.
+**The price sits where the count sat.** Same header slot, so the thing
+being spent is always in the place the seeker already looks — and it is
+read **before** a question is sent, never discovered after the debit.
+
+**There is no wall and no button.** Out of free is a price, not a lock:
+the composer stays open, the suggestion rail stays visible, and sending
+charges ₹9. The Send button says what it will cost — "Send · ₹9" — which
+is the consent. Nothing has to be started first.
+
+That replaced a **Start a session** card and an m:ss clock in the header,
+live 21–23 Sep. It is gone: `/v1/ai/session/` no longer exists, and
+`tools/smoke.py` asserts the route is a 404 so no deploy can quietly bill
+by the minute again.
 
 A refused question goes **back into the composer**, not into the
 transcript: it was never asked, and leaving it on screen above a refusal
 reads as answered-badly.
 
-A tab reopened mid-session finds its own meter — the live session comes
-back with the transcript from `GET /v1/ai/`, so it never starts a second
-one.
+A charged answer returns `charged_paise`, and the client refreshes the
+wallet on it — the balance in the chrome must not disagree with the debit
+that just happened.
 
 Every refusal sentence is the server's. There are none in the client.
