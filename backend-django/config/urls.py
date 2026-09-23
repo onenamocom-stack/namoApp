@@ -31,6 +31,7 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/profiles/", include("apps.profiles.urls")),
         path("v1/ai/", include("apps.ai.urls")),
         path("v1/events/", include("apps.analytics.urls")),
+        path("v1/shop/", include("apps.shop.urls")),
     ]
 
 if settings.ADMIN_ENABLED:

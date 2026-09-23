@@ -249,3 +249,57 @@ is ended immediately.
 
 All three passed `npm run lint`, `npm run build` and the full pytest run.
 None survives `smoke.py`.
+
+## 10. Stock is claimed in one statement, and refusals raise
+
+**Two people tap Buy on the last item in the same tick. Exactly one gets
+it, the other is told, and the other is not charged.**
+
+The naive shape is read-then-write, and both callers pass the check
+because the gap between the read and the write is where the other
+transaction lives:
+
+```python
+if product.stock >= qty:     # both read 1
+    product.stock -= qty     # both write 0
+```
+
+What `apps/shop/services.claim_stock` does instead is a **conditional
+UPDATE** — the database evaluates the condition and applies the
+subtraction in one statement, holding the row lock for its duration:
+
+```python
+Product.objects.filter(pk=id, active=True, stock__gte=qty)
+       .update(stock=F("stock") - qty) == 1
+```
+
+A row count of 0 IS the answer. There is no gap to lose a race in.
+
+Three rules that came with it:
+
+1. **Rows are claimed in sorted id order.** Two carts holding the same two
+   products in opposite orders would each hold what the other wants, and
+   the database breaks the deadlock by killing one — which a seeker
+   experiences as a random failure.
+2. **Stock is claimed before the wallet is touched.** An unaffordable order
+   that already took the last item off the shelf is worse than a rejected
+   one: the seeker who *could* pay is then told it is sold out.
+3. **A refusal RAISES, it does not return.** `transaction.atomic()` rolls
+   back on an exception; a plain `return` from inside it **commits**
+   everything done so far. A refused coupon after a successful claim left
+   the shelf one short with nobody charged — an item sold to nobody.
+   Raising makes the correct thing the default.
+
+Written through the ORM, not raw SQL. The first cut compared `id = %s`
+against a dashed uuid string: Postgres accepts that and SQLite does not,
+because Django stores a UUIDField there as 32 hex characters with no
+dashes. It would have worked in production and matched nothing in the
+tests — the worst arrangement available, since the suite would have been
+proving nothing about the one mechanism it exists to prove.
+
+**No reservation layer, deliberately.** Blinkit and Zomato hold stock with
+a short expiry while checkout is open, usually in Redis, because payment
+is a redirect taking thirty seconds and an item must not be sold from
+under a basket. Here the wallet is debited in the same transaction as the
+decrement — there is no window to reserve across. It becomes worth
+building the day checkout leaves the server.

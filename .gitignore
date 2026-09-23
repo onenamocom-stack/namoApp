@@ -59,3 +59,4 @@ mocks/
 .env
 .env.local
 **/.env
+.tmp-test/

@@ -16,6 +16,7 @@ import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 import { createWalletApi } from './lib/wallet.js'
 import { createProfileApi } from './lib/profile.js'
+import { buy as buyFromShop } from './lib/shop.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -588,15 +589,52 @@ export function AppProvider({ children }) {
 
   /** Buy now — charge the wallet directly and skip the cart entirely.
    *  Async, because `spend` is. Callers must await it too. */
+  /**
+   * Buy one thing, now.
+   *
+   * This used to be `spend(price, name)` — a bare wallet debit. It took
+   * the money and never touched stock, so a sold-out gemstone could be
+   * bought forever and the shop's own numbers meant nothing.
+   *
+   * It goes through the server's checkout now, which claims the stock and
+   * debits the wallet in ONE transaction. That matters for the case this
+   * was rebuilt for: two people tapping Buy on the last item in the same
+   * tick. Exactly one succeeds; the other gets "Out of stock" and is not
+   * charged — and neither outcome is decided here. The client sends the
+   * attempt and shows the sentence that comes back.
+   *
+   * The re-entrancy guard stays: two taps in one tick would otherwise be
+   * two orders for one person.
+   */
   const buyNow = useCallback(
     async (product) => {
-      if (await spend(product.price, product.name)) {
-        showToast(`Ordered · ${product.name}`)
-        return true
+      if (spendingRef.current) {
+        showToast('One payment at a time.')
+        return false
       }
-      return false
+      spendingRef.current = true
+      setSpending(true)
+      try {
+        const result = await buyFromShop([{ product_id: product.id, qty: 1 }])
+        if (!result.ok) {
+          showToast(result.reason)
+          return false
+        }
+        showToast(`Ordered · ${product.name}`)
+        // The debit happened server-side, so the balance here is stale
+        // until this lands. Awaited inside the guard, for the same
+        // ordering reason `spend` awaits its own read.
+        await refreshWallet(session?.user?.id)
+        return true
+      } catch (err) {
+        showToast(err.message)
+        return false
+      } finally {
+        spendingRef.current = false
+        setSpending(false)
+      }
     },
-    [spend, showToast],
+    [showToast, refreshWallet, session],
   )
 
   /* `me` is rebuilt only when the side flips, not on every render — it feeds

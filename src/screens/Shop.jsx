@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
-import { products, shopCategories, shopSubcategories } from '../data/mock.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { shopCategories, shopSubcategories } from '../data/mock.js'
+import { fetchProducts } from '../lib/shop.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
@@ -100,6 +101,27 @@ export default function Shop() {
     const el = rail.current
     if (el) el.scrollTo({ left: i * step(el), behavior: 'smooth' })
   }
+
+  /* The catalogue is the database's now, not mock.js's. Until this the
+     console could add a product and the app would never show it — the
+     eleven here were hard-coded in a JavaScript file.
+
+     A failed load leaves the list empty and says so, rather than falling
+     back to the mock: a shop quietly showing products that are not for
+     sale is worse than a shop that admits it cannot reach the server. */
+  const [products, setProducts] = useState([])
+  const [loadingShop, setLoadingShop] = useState(true)
+  const [shopError, setShopError] = useState(false)
+
+  const loadProducts = useCallback(() => {
+    setLoadingShop(true)
+    fetchProducts()
+      .then((rows) => { setProducts(rows); setShopError(false) })
+      .catch((err) => { console.error('[shop] load failed:', err.message); setShopError(true) })
+      .finally(() => setLoadingShop(false))
+  }, [])
+
+  useEffect(loadProducts, [loadProducts])
 
   const filters = ['All', ...shopCategories]
   const q = query.trim().toLowerCase()
@@ -292,7 +314,24 @@ export default function Shop() {
       <section className="px-4 py-4">
         <Kicker>{`${rest.length} ${rest.length === 1 ? 'item' : 'items'}`}</Kicker>
 
-        {rest.length === 0 ? (
+        {loadingShop ? (
+          <p className="animate-breathe py-12 text-center text-meta t-faint">
+            Opening the shop
+          </p>
+        ) : shopError ? (
+          /* Says it cannot reach the shop rather than showing an empty one.
+             "Nothing matches that" under a failed request sends somebody
+             to clear a search that was never the problem. */
+          <div className="py-12 text-center">
+            <p className="text-meta t-body">We could not reach the shop.</p>
+            <p className="mt-1 text-micro t-faint">
+              Nothing is wrong with your search.
+            </p>
+            <PopButton size="sm" full={false} className="mt-5" onClick={loadProducts}>
+              Try again
+            </PopButton>
+          </div>
+        ) : rest.length === 0 ? (
           <p className="py-12 text-center text-meta t-faint">
             Nothing matches that. Clear the search, or drop the subcategory.
           </p>

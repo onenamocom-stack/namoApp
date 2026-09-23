@@ -173,3 +173,67 @@ class TestTiers:
         # Django renders a read-only view rather than a form, or refuses.
         assert response.status_code in (200, 403)
         assert b'name="total_paise"' not in response.content
+
+
+@pytest.mark.django_db
+class TestProductPhoto:
+    """The photo goes to R2 and the row keeps a URL.
+
+    The same rule the migration was run to establish — 202 MB of video
+    came OUT of Postgres onto object storage — applied to a smaller file.
+    Eleven products is not a storage problem; four hundred with photos in
+    columns is.
+    """
+
+    @pytest.fixture(autouse=True)
+    def local_media(self, settings):
+        settings.MEDIA_PROVIDER = "local"
+        settings.MEDIA_PUBLIC_BASE_URL = "https://media.test"
+
+    def test_an_uploaded_photo_becomes_a_url_and_an_asset_row(self, category):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.media.models import MediaAsset
+
+        client, _ = _admin(Tier.FULFILMENT)
+        client.post(reverse("namo:shop_product_add"), {
+            "name": "Photo Sapphire", "category": str(category.pk),
+            "price": "1850", "mrp": "2400", "stock": "3",
+            "weight_grams": "12", "tax_rate_bps": "0", "image_url": "",
+            "upload": SimpleUploadedFile("stone.png", b"\x89PNG\r\n\x1a\n" + b"x" * 400,
+                                         content_type="image/png"),
+        }, follow=True)
+
+        product = Product.objects.get(name="Photo Sapphire")
+        assert product.image_url.startswith("https://media.test/")
+        assert "images/" in product.image_url
+        # A pointer, not the bytes.
+        assert len(product.image_url) < 300
+
+        asset = MediaAsset.objects.get()
+        assert asset.bucket_key in product.image_url
+        assert asset.status == "ready"
+
+    def test_a_pdf_is_not_a_product_photo(self, category):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        form = ProductForm(
+            data={"name": "X", "category": category.pk, "price": "100",
+                  "stock": "1", "weight_grams": "10", "tax_rate_bps": "0"},
+            files={"upload": SimpleUploadedFile("x.pdf", b"%PDF",
+                                                content_type="application/pdf")},
+        )
+        assert not form.is_valid()
+        assert "upload" in form.errors
+
+    def test_an_oversized_photo_is_refused_with_the_seeker_paths_limit(self, category):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        big = SimpleUploadedFile("huge.png", b"x" * 16, content_type="image/png")
+        big.size = 20 * 1024 * 1024  # past the 10 MB image cap
+        form = ProductForm(
+            data={"name": "X", "category": category.pk, "price": "100",
+                  "stock": "1", "weight_grams": "10", "tax_rate_bps": "0"},
+            files={"upload": big},
+        )
+        assert not form.is_valid()
+        assert "10 MB" in str(form.errors["upload"])

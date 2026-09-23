@@ -19,7 +19,9 @@ from django.utils.safestring import mark_safe
 
 from apps.console.audit import AuditedAdmin, record
 from apps.console.models import Tier
-from apps.console.site import at_least, site
+from apps.console.site import admin_row, at_least, site
+from apps.media import providers as media
+from apps.media.models import MediaAsset, MediaKind, MediaStatus
 from django.utils import timezone
 
 from . import shiprocket
@@ -64,6 +66,17 @@ class RupeeField(forms.DecimalField):
 class ProductForm(forms.ModelForm):
     price = RupeeField(label="Price")
     mrp = RupeeField(label="MRP (struck through)", required=False)
+    # FileField, not ImageField: ImageField decodes the file to prove it is
+    # an image, which needs Pillow — a real dependency in the deployed image
+    # for a check that buys little here. The mime and the size are validated
+    # below. The gap it leaves is a file that CLAIMS image/png and is not:
+    # it renders as a broken picture in the shop, which the operator who
+    # uploaded it can see and fix. Nothing decodes it, so it is not a way in.
+    upload = forms.FileField(
+        required=False,
+        label="Photo",
+        help_text="Goes to R2. The database keeps the URL, never the bytes.",
+    )
 
     class Meta:
         model = Product
@@ -71,6 +84,7 @@ class ProductForm(forms.ModelForm):
             "name", "subtitle", "category", "subcategory", "image_url",
             "stock", "weight_grams", "tax_rate_bps", "featured", "active",
         )
+        widgets = {"image_url": forms.TextInput(attrs={"size": 80})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -80,6 +94,15 @@ class ProductForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
+        upload = data.get("upload")
+        if upload:
+            mime = getattr(upload, "content_type", "") or ""
+            if not mime.startswith("image/"):
+                raise forms.ValidationError({"upload": f"That is not an image ({mime})."})
+            try:
+                media.validate_upload("image", upload.name, upload.size, mime)
+            except media.ValidationError as exc:
+                raise forms.ValidationError({"upload": str(exc)}) from None
         price, mrp = data.get("price"), data.get("mrp")
         # The screens compute the discount badge from the pair. An MRP at
         # or below the price renders a zero or negative saving, which looks
@@ -156,6 +179,29 @@ class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
         product turns somebody's past order into a dangling reference.
         `active = False` takes it off the shop and keeps the history."""
         return False
+
+    def save_model(self, request, obj, form, change):
+        """The photo goes to R2 and the row keeps a URL.
+
+        The same rule the reels upload follows and the migration was run
+        to establish: object storage holds the bytes, Postgres holds a
+        pointer. A product photo written into a column would be the same
+        mistake at a smaller size, and 11 products becomes 400.
+        """
+        upload = form.cleaned_data.get("upload")
+        if upload:
+            admin = admin_row(request)
+            owner = str(admin.profile_id) if admin else "console"
+            mime = upload.content_type or "image/jpeg"
+            key = media.make_bucket_key(owner, "image", upload.name)
+            obj.image_url = media.get_provider().put_bytes(key, upload.read(), mime)
+            MediaAsset.objects.create(
+                owner=owner, kind=MediaKind.IMAGE, bucket_key=key, mime=mime,
+                size_bytes=upload.size, status=MediaStatus.READY,
+            )
+            record(request, "product.photo", "product", target_id=obj.pk,
+                   bucket_key=key, size_bytes=upload.size)
+        super().save_model(request, obj, form, change)
 
     def _bulk(self, request, queryset, verb, **fields):
         if not at_least(request, Tier.FULFILMENT):
