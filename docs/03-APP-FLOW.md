@@ -242,8 +242,8 @@ content.
 
 ### `/consult`
 **Free-tools row of six circles, above the search field** — Ask AI opens an
-overlay; Horoscope, Tarot, Matching, Muhurat and Numbers navigate. Muhurat
-joined on 22 Sep 2026 and Numbers on 25 Sep; at six the row **scrolls** rather
+overlay; Horoscope, Tarot, Matching, Muhurat and Numerology navigate. Muhurat
+joined on 22 Sep 2026 and Numerology on 25 Sep; at six the row **scrolls** rather
 than shrinking further, because a seventh 56px circle has an unreadable label
 and dropping one makes the choice for the seeker. It sat on `/home`
 until 7 Sep 2026. It is here because this is the screen somebody reaches already asking a
@@ -300,6 +300,22 @@ inserts by default. Rows come from a service-role script today and the phase 13
 admin console later — `02-TRD.md` §7 refuses an admin role in the client, so
 there is nothing to add here.
 
+**Status and wallpapers are one layout — 25 Sep 2026.** They were a
+full-width list and a two-column grid, which made the same artwork look like
+two products and gave the wallpaper thumbnails no room to be looked at. One
+card now, and only the ACTION differs: a status is shared, a wallpaper is
+downloaded.
+
+**Sharing a status composes a picture.** The artwork is the background; the
+person's photo goes bottom LEFT in a circle with a gold ring, their name and
+today's date beside it, and the Namo mark bottom right. The photo comes from
+the gallery, the camera or their profile picture, and it is **optional** —
+somebody who only wants to forward the artwork is not made to put their face
+on it. The sheet shows a preview of exactly that arrangement before anything
+is handed over, because a share sheet is the last place to discover what you
+are sending. Everything except the artwork is drawn only if it loaded: a
+photo that fails costs a corner, not the picture.
+
 **What the web cannot do, the screen does not claim.** There is no native
 shell, so no API sets a wallpaper or a ringtone: every button reads *Download*
 and a line under the grid says what to do with the file.
@@ -341,8 +357,15 @@ be removed without removing the images.
 No money anywhere. Nothing books a pandit.
 
 ### `/shop`
-Cart knob with a count badge. Promo banners that set a category filter. Category
-pills revealing subcategory pills. A chart-matched hero when unfiltered.
+**A floating cart button, bottom right, whenever this screen is open** — since
+25 Sep 2026. It carried a count badge and appeared only once something was in
+the cart, which meant the one control people go looking for was missing
+exactly when they went looking for it. The badge still appears only with a
+count; an empty cart opens a sheet that says it is empty, which is an answer
+where a missing button is not.
+
+Promo banners that set a category filter. Category pills revealing subcategory
+pills. A chart-matched hero when unfiltered.
 
 **Add** goes to the cart; **Buy now** charges the wallet immediately. Sold-out
 products keep their row with both controls dead.

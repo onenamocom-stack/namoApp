@@ -302,14 +302,19 @@ export default function Bhakti() {
             )}
           </PopCard>
         ) : (
-          <ul className={kind === 'status' ? 'space-y-4' : isAudio(kind) ? 'space-y-3' : 'grid grid-cols-2 gap-3'}>
+          <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
-              kind === 'status' ? (
-                <StatusCard key={a.id} asset={a} onShare={() => setSharing(a)} />
-              ) : isAudio(kind) ? (
+              isAudio(kind) ? (
                 <AudioRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : (
-                <WallpaperCard key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
+                <PictureCard
+                  key={a.id}
+                  asset={a}
+                  ratio={kind === 'status' ? 'aspect-[4/5]' : 'aspect-[3/4]'}
+                  action={kind === 'status' ? 'Share' : 'Download'}
+                  busy={busy === a.id}
+                  onAction={() => (kind === 'status' ? setSharing(a) : save(a))}
+                />
               ),
             )}
           </ul>
@@ -345,7 +350,20 @@ function Credit({ asset }) {
 }
 
 /** Status artwork, full width — the thing being shared is a whole picture. */
-function StatusCard({ asset, onShare }) {
+/**
+ * One card for both picture shelves — 25 Sep 2026.
+ *
+ * Status and wallpapers were a full-width list and a two-column grid, which
+ * made the same artwork look like two products and gave the wallpaper
+ * thumbnails no room to be looked at. One layout now: the picture at full
+ * width, title and credit under it, one action on the right.
+ *
+ * The ACTION differs and the layout does not. A status is shared — composed
+ * with the person on it and handed to the share sheet. A wallpaper is
+ * downloaded: stamping a face and a watermark into the corner of somebody's
+ * lock screen is not what that shelf is for.
+ */
+function PictureCard({ asset, ratio, action, busy, onAction }) {
   return (
     <li>
       <PopCard className="overflow-hidden">
@@ -353,15 +371,22 @@ function StatusCard({ asset, onShare }) {
           src={asset.url}
           alt={asset.title}
           loading="lazy"
-          className="aspect-[4/5] w-full bg-surface2 object-cover"
+          className={`${ratio} w-full bg-surface2 object-cover`}
         />
         <div className="flex items-center gap-3 p-3.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-body t-heading">{asset.title}</p>
             <Credit asset={asset} />
           </div>
-          <PopButton size="sm" variant="gold" full={false} onClick={onShare}>
-            Share
+          {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
+          <PopButton
+            size="sm"
+            variant={action === 'Share' ? 'gold' : 'default'}
+            full={false}
+            disabled={busy}
+            onClick={onAction}
+          >
+            {busy ? 'Saving…' : action}
           </PopButton>
         </div>
       </PopCard>
@@ -369,40 +394,6 @@ function StatusCard({ asset, onShare }) {
   )
 }
 
-function WallpaperCard({ asset, busy, onSave }) {
-  return (
-    <li>
-      <PopCard className="overflow-hidden">
-        <img
-          src={asset.url}
-          alt={asset.title}
-          loading="lazy"
-          className="aspect-[3/4] w-full bg-surface2 object-cover"
-        />
-        <div className="p-3">
-          <p className="truncate text-meta t-heading">{asset.title}</p>
-          <Credit asset={asset} />
-          <div className="mt-2.5 flex items-center justify-between gap-2">
-            <Price paise={asset.pricePaise} />
-            <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
-              {busy ? 'Saving…' : 'Download'}
-            </PopButton>
-          </div>
-        </div>
-      </PopCard>
-    </li>
-  )
-}
-
-/**
- * An audio row. One `<audio>` element for the whole screen would be tidier,
- * but it lives here per row because pausing on unmount is then automatic and
- * two rows cannot get out of sync with one shared `playing` id.
- *
- * This is the app's first audio of any kind — `HANDOFF.md` recorded "no audio
- * anywhere" as a deliberate omission until 9 Sep 2026, and the mandir's
- * sangeet button said so on screen.
- */
 function AudioRow({ asset, busy, onSave }) {
   const el = useRef(null)
   const [playing, setPlaying] = useState(false)
@@ -474,16 +465,43 @@ function ShareSheet({ asset, onClose }) {
   const gallery = useRef(null)
   const camera = useRef(null)
   const [working, setWorking] = useState(false)
+  const [photo, setPhoto] = useState(null)   // { src, revoke } or null
 
-  const run = async (src, revoke) => {
+  /* The picked file is an object URL and object URLs leak. Revoke on close
+     and on replacement, not in the share handler — somebody who picks a
+     photo and then changes their mind never reaches the share handler. */
+  useEffect(() => {
+    if (!asset) setPhoto((current) => { if (current?.revoke) URL.revokeObjectURL(current.revoke); return null })
+  }, [asset])
+
+  const attach = (src, revoke) =>
+    setPhoto((current) => {
+      if (current?.revoke) URL.revokeObjectURL(current.revoke)
+      return { src, revoke }
+    })
+
+  const pick = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''   // so choosing the same file twice still fires
+    if (!file) return
+    attach(URL.createObjectURL(file), null)
+  }
+
+  const share = async () => {
+    if (!asset) return
     setWorking(true)
     try {
-      const blob = await composeStatus(src, longDate(new Date().toISOString()))
+      const blob = await composeStatus(asset.url, {
+        photoSrc: photo?.src ?? null,
+        name: photo ? me.name : '',
+        dateLabel: longDate(new Date().toISOString()),
+        logoSrc: `${import.meta.env.BASE_URL}namo-logo.png`,
+      })
       if (!blob) throw new Error('compose failed')
-      const name = `namo-status-${Date.now()}.jpg`
-      const shared = await shareFile(blob, name, 'Namo')
+      const filename = `namo-status-${Date.now()}.jpg`
+      const shared = await shareFile(blob, filename, 'Namo')
       if (!shared) {
-        saveBlob(blob, name)
+        saveBlob(blob, filename)
         showToast('Saved — sharing needs a phone')
       }
       onClose()
@@ -491,45 +509,77 @@ function ShareSheet({ asset, onClose }) {
       showToast('Could not prepare that image.')
     } finally {
       setWorking(false)
-      if (revoke) URL.revokeObjectURL(revoke)
     }
-  }
-
-  const pick = (e) => {
-    const f = e.target.files?.[0]
-    e.target.value = '' // so choosing the same file twice still fires
-    if (!f) return
-    const url = URL.createObjectURL(f)
-    run(url, url)
   }
 
   return (
     <Sheet open={!!asset} onClose={onClose} title="Share to status">
       <p className="text-meta t-body">
-        We hand the picture to your share sheet — you pick WhatsApp, then Status. Today’s date is
-        printed on it.
+        We hand the picture to your share sheet — you pick WhatsApp, then Status. Your name and
+        today’s date are printed on it, with the Namo mark in the corner.
       </p>
 
-      <div className="mt-5 space-y-2">
+      {/* What the export will look like, in the order it is drawn: the
+          artwork, your face bottom left, the mark bottom right. Small, but
+          it is the only way to know what you are about to send. */}
+      {asset && (
+        <div className="relative mt-5 overflow-hidden rounded-2xl">
+          <img src={asset.url} alt={asset.title} className="aspect-[9/16] w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-ink/80 to-transparent p-3">
+            {photo ? (
+              <img
+                src={photo.src}
+                alt="Your picture"
+                className="h-12 w-12 flex-none rounded-full border-2 border-gold object-cover"
+              />
+            ) : (
+              <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white/70">
+                <Icon name="plus" size={18} />
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              {photo && me.name && (
+                <span className="block truncate text-meta font-semibold text-white">{me.name}</span>
+              )}
+              <span className="block truncate caps-sm text-white/75">
+                {longDate(new Date().toISOString())}
+              </span>
+            </span>
+            <img
+              src={`${import.meta.env.BASE_URL}namo-logo.png`}
+              alt=""
+              className="h-7 flex-none opacity-90"
+            />
+          </div>
+        </div>
+      )}
+
+      <p className="mt-4 caps-sm t-faint">
+        {photo ? 'Your picture is on it. Tap another to change it.' : 'A picture is optional.'}
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <PopButton full={false} disabled={working} onClick={() => gallery.current?.click()}>
+          From gallery
+        </PopButton>
+        <PopButton full={false} disabled={working} onClick={() => camera.current?.click()}>
+          Take one
+        </PopButton>
         {me.avatarUrl && (
-          <PopButton disabled={working} onClick={() => run(me.avatarUrl, null)}>
-            Use profile picture
+          <PopButton full={false} disabled={working} onClick={() => attach(me.avatarUrl, null)}>
+            Profile picture
           </PopButton>
         )}
-        <PopButton
-          variant="gold"
-          disabled={working}
-          onClick={() => asset && run(asset.url, null)}
-        >
-          {working ? 'Preparing…' : 'Use this artwork'}
-        </PopButton>
-        <PopButton disabled={working} onClick={() => gallery.current?.click()}>
-          Add image from gallery
-        </PopButton>
-        <PopButton disabled={working} onClick={() => camera.current?.click()}>
-          Add image from camera
-        </PopButton>
+        {photo && (
+          <PopButton full={false} disabled={working} onClick={() => attach(null, null)}>
+            Remove picture
+          </PopButton>
+        )}
       </div>
+
+      <PopButton variant="gold" className="mt-3" disabled={working} onClick={share}>
+        {working ? 'Preparing…' : 'Share this'}
+      </PopButton>
 
       <input
         ref={gallery}

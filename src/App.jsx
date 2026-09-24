@@ -201,19 +201,25 @@ function CartFab() {
   const { cartCount, setCartOpen } = useStore()
   const { pathname } = useLocation()
 
-  if (pathname !== '/shop' || cartCount === 0) return null
+  /* On /shop, always — 25 Sep 2026. It used to appear only once something
+     was in the cart, so the one control people look for was absent exactly
+     when they went looking for it. An empty cart opens a sheet that says it
+     is empty, which is an answer; a missing button is not. */
+  if (pathname !== '/shop') return null
 
   return (
     <button
       type="button"
       onClick={() => setCartOpen(true)}
-      aria-label={`Cart, ${cartCount} items`}
+      aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
       className="pop-tap absolute bottom-24 right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-gold-fill text-ink shadow-lg"
     >
       <Icon name="cart" size={22} />
-      <span className="absolute -right-0.5 -top-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
-        {cartCount}
-      </span>
+      {cartCount > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
+          {cartCount}
+        </span>
+      )}
     </button>
   )
 }

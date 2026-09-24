@@ -55,7 +55,7 @@ export const strings = {
   'tool.tarot': { en: 'Tarot', hi: 'टैरो' },
   'tool.match': { en: 'Matching', hi: 'मिलान' },
   'tool.muhurat': { en: 'Muhurat', hi: 'मुहूर्त' },
-  'tool.numerology': { en: 'Numbers', hi: 'अंक' },
+  'tool.numerology': { en: 'Numerology', hi: 'अंकशास्त्र' },
 
   // ── Mandir ───────────────────────────────────────────────────────────────
   'puja.tag': { en: 'e-puja', hi: 'ई-पूजा' },

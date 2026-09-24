@@ -152,37 +152,120 @@ export async function shareFile(blob, filename, text) {
  * getting this wrong fails loudly. Bucket and site assets are both same-origin
  * or CORS-enabled, which is what makes this legal at all.
  */
-export async function composeStatus(src, dateLabel) {
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = src
-  await img.decode()
+/** Load an image for the canvas, or null if it will not load. A photo the
+ *  person picked from their own gallery cannot taint the canvas; remote
+ *  artwork needs CORS, which the media bucket sends. A failure here must
+ *  never take the whole status down — it costs a corner, not the picture. */
+async function loadImage(src) {
+  if (!src) return null
+  try {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = src
+    await img.decode()
+    return img
+  } catch {
+    console.error('[bhakti] could not load an image for the status')
+    return null
+  }
+}
+
+/** Draw `img` to cover the whole canvas, centred, without stretching it. */
+function drawCover(ctx, img, width, height) {
+  const scale = Math.max(width / img.width, height / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h)
+}
+
+/**
+ * A status image: the artwork, and the person on it.
+ *
+ * One 1080×1920 canvas, in the order it is read:
+ *
+ *   the artwork, covering the frame
+ *   a scrim along the bottom, because the artwork under it is sometimes a
+ *     pale sky and sometimes a dark temple interior and only one of those
+ *     survives a text shadow
+ *   the person's photo, bottom LEFT, in a circle with a gold ring
+ *   their name and the date beside it
+ *   the Namo logo, bottom RIGHT, as a watermark
+ *
+ * Everything except the artwork is optional and drawn only if it loaded, so
+ * a missing photo costs a corner rather than the picture.
+ */
+export async function composeStatus(artworkSrc, { photoSrc, name, dateLabel, logoSrc } = {}) {
+  const art = await loadImage(artworkSrc)
+  if (!art) return null
 
   const c = document.createElement('canvas')
   c.width = 1080
   c.height = 1920
   const ctx = c.getContext('2d')
 
-  const scale = Math.max(c.width / img.width, c.height / img.height)
-  const w = img.width * scale
-  const h = img.height * scale
   ctx.fillStyle = '#0e0e10'
   ctx.fillRect(0, 0, c.width, c.height)
-  ctx.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h)
+  drawCover(ctx, art, c.width, c.height)
 
-  if (dateLabel) {
-    /* A scrim under the text, not a text shadow. The artwork behind this is
-       sometimes a pale sky and sometimes a dark temple interior, and only one
-       of those is survivable with a shadow. */
-    const pad = 48
-    ctx.font = '600 40px "Plus Jakarta Sans", system-ui, sans-serif'
-    const width = ctx.measureText(dateLabel).width
-    const boxH = 96
-    ctx.fillStyle = 'rgba(14, 14, 16, 0.55)'
-    ctx.fillRect(0, c.height - boxH - pad, width + pad * 2, boxH)
-    ctx.fillStyle = '#ffffff'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(dateLabel, pad, c.height - pad - boxH / 2)
+  const [photo, logo] = await Promise.all([loadImage(photoSrc), loadImage(logoSrc)])
+  const pad = 56
+  const strip = 260                       // the band the stamp lives in
+  const stripTop = c.height - strip
+
+  if (photo || name || dateLabel || logo) {
+    const fade = ctx.createLinearGradient(0, stripTop - 120, 0, c.height)
+    fade.addColorStop(0, 'rgba(14, 14, 16, 0)')
+    fade.addColorStop(1, 'rgba(14, 14, 16, 0.82)')
+    ctx.fillStyle = fade
+    ctx.fillRect(0, stripTop - 120, c.width, strip + 120)
+  }
+
+  let textLeft = pad
+  if (photo) {
+    const size = 168
+    const cx = pad + size / 2
+    const cy = stripTop + strip / 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2)
+    ctx.closePath()
+    ctx.clip()
+    // Cover the circle, not the frame: a portrait squeezed into a circle is
+    // the thing that makes these images look homemade.
+    const scale = Math.max(size / photo.width, size / photo.height)
+    const w = photo.width * scale
+    const h = photo.height * scale
+    ctx.drawImage(photo, cx - w / 2, cy - h / 2, w, h)
+    ctx.restore()
+
+    ctx.beginPath()
+    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2)
+    ctx.lineWidth = 6
+    ctx.strokeStyle = '#d4a24c'
+    ctx.stroke()
+    textLeft = pad + size + 28
+  }
+
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = '#ffffff'
+  const middle = stripTop + strip / 2
+  if (name && dateLabel) {
+    ctx.font = '700 46px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.fillText(name, textLeft, middle - 6)
+    ctx.font = '500 34px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'
+    ctx.fillText(dateLabel, textLeft, middle + 44)
+  } else if (name || dateLabel) {
+    ctx.font = '600 42px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.fillText(name || dateLabel, textLeft, middle + 14)
+  }
+
+  if (logo) {
+    const w = 190
+    const h = (logo.height / logo.width) * w
+    ctx.globalAlpha = 0.9
+    ctx.drawImage(logo, c.width - pad - w, middle - h / 2, w, h)
+    ctx.globalAlpha = 1
   }
 
   return new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))

@@ -4196,7 +4196,27 @@ not evil.
 further makes the labels unreadable and dropping one makes the choice for the
 seeker.
 
+### Four follow-ups the same day
+
+- **The tool is called Numerology**, not Numbers.
+- **A status is composed now.** The artwork is the background, the person's
+  photo goes bottom left in a circle with a gold ring, their name and the
+  date beside it, and the Namo mark bottom right. The photo comes from the
+  gallery, the camera or their profile picture and is **optional**. The share
+  sheet previews that exact arrangement first — a share sheet is the last
+  place to discover what you are about to send. `composeStatus` took one
+  image and stamped a date on it; it takes the artwork and an options object
+  now, and draws each part only if it loaded, so a photo that fails costs a
+  corner rather than the picture.
+- **Wallpapers use the status layout.** One `PictureCard` for both shelves;
+  only the action differs, because stamping a face and a watermark into the
+  corner of somebody's lock screen is not what that shelf is for.
+- **The Shop cart button is always on `/shop`.** It used to render only with
+  a count, so the control people look for was missing exactly when they
+  looked. The badge still needs a count.
+
 **Checks.** 13 new tests in `tests/test_numerology.py` — the cache key holds no
 account id, spacing and case do not split it, a missing birth DATE asks for a
 date rather than a birthplace, and no response body carries the vendor's host
-or credentials. Lint and build clean. **Not walked in a browser.**
+or credentials. Lint and build clean. **Not walked in a browser** — and the
+status composer in particular is a canvas, which no test here can look at.
