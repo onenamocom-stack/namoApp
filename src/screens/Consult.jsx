@@ -598,7 +598,12 @@ export default function Consult() {
                     size="sm"
                     variant={kind === 'chat' ? 'gold' : 'ghost'}
                     full={false}
-                    className="flex-1"
+                    className="flex-1 disabled:pointer-events-none disabled:opacity-40"
+                    /* Dead while they are offline — the same rule as the
+                       profile page. A card that offers Call to somebody
+                       asleep is the card that teaches a seeker the app
+                       does not work. */
+                    disabled={!c.online}
                     onClick={
                       kind === 'call'
                         ? () => showToast(`Calling ${firstName(c.name)} — prototype only`)
@@ -610,6 +615,14 @@ export default function Consult() {
                   </PopButton>
                 ))}
               </div>
+
+              {/* Said, not left to two faded buttons. Booking still works,
+                  and that is the sentence's real job. */}
+              {!c.online && (
+                <p className="mt-2 text-micro t-faint">
+                  Offline right now · you can still book a time
+                </p>
+              )}
             </li>
           ))}
         </ul>

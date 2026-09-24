@@ -229,6 +229,21 @@ AI_THINKING_BUDGET = int(os.environ.get("AI_THINKING_BUDGET", "0"))
 # An env var rather than a constant because it is a price, and a price
 # change must not need a deploy — this one changed twice in three days.
 AI_PRICE_PAISE = int(os.environ.get("AI_PRICE_PAISE", "900"))
+
+# ── video calls (24 Sep 2026) ───────────────────────────────────────────────
+# Daily.co. Empty by default and the feature stays dark when it is — the
+# transport is not the money, so a missing key must degrade to "video is
+# unavailable" and never to a session that bills for a call nobody can join.
+DAILY_API_KEY = os.environ.get("DAILY_API_KEY", "")
+DAILY_DOMAIN = os.environ.get("DAILY_DOMAIN", "")  # e.g. 1namo.daily.co
+
+# Recording and transcription stay OFF, and this is a policy line, not a
+# default waiting to be flipped. At $0.0059 per unmuted participant-minute
+# transcription costs more than the video it transcribes — but the reason
+# is the other one: these are people's marriages, money and illnesses, and
+# recording them needs consent this product has not asked for.
+DAILY_ENABLE_RECORDING = os.environ.get("DAILY_ENABLE_RECORDING", "") == "1"
+
 # The retired per-minute meter still reads this. Nothing new should.
 AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
 # The free allowances (docs/01-PRD.md §4.4): five on arrival, then one a day

@@ -3929,3 +3929,27 @@ problems is a consent question before it is a cost one. Abzzo has
 and **never branched on**. Thirty-two of the production services are
 `mode='call'`, six sessions have run, and every one of them was delivered
 as a text thread. Until Phase 3 the product sells "call" and delivers chat.
+
+### Presence, follow-up — 24 Sep 2026
+
+**The roster's own Call and Chat buttons were still live for an offline
+consultant.** Only the profile page had been gated. A card in the list
+that offers Call to somebody asleep is the card that teaches a seeker the
+app does not work, so both are `disabled` now with the same line under
+them — *"Offline right now · you can still book a time"*. Booking stays
+enabled deliberately: it is the thing an offline consultant can still
+give you.
+
+Only one path actually opens a paid session (`ConsultantProfile`'s
+`askForChat`), and it was already gated — the roster buttons were a
+promise the card could not keep rather than a hole in the money.
+
+**Daily.co is configured.** Domain `1namo.daily.co`, key set on
+`namo-api` (revision **00028**) and verified against the API. Settings:
+`DAILY_API_KEY`, `DAILY_DOMAIN`, and `DAILY_ENABLE_RECORDING` which
+defaults **off** — that one is a policy line, not a default waiting to be
+flipped. Nothing uses any of it yet; Phase 2 is the next commit.
+
+The key is a plain Cloud Run env var, like `GEMINI_API_KEY` and the
+Razorpay secret. Anybody with Viewer on the GCP project can read all
+three without deploying. Secret Manager is the fix and has not been done.
