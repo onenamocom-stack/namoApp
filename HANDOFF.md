@@ -4050,11 +4050,14 @@ the container exits before it starts, which is how the first run failed.
 
 **Six steps, agreed with the partner on 24 Sep**: pick a deck, put the
 question, pull the card, then **what the card says → where it lands → what to
-do**. The three labels are the same for every deck. The meaning is always
-written against the question; the conclusion and the action prefer the card's
-own words where the deck has them — Bhaktamar's remedy is the tradition's, and
-a conclusion column is coming from the partner — and fall back to the model's
-until then.
+do**. The three labels are the same for every deck.
+
+**Since the decks arrived with their own text (25 Sep), only the middle part is
+written by the model.** The meaning is the card's, the action is the card's
+where the deck has one, and the conclusion is the model's on every deck —
+because it is the only part that can turn on what was typed. A yes/no card's
+verdict is the card's too, printed large, and the prompt is told it and told
+not to argue with it.
 
 **A pull is: pick a deck, type a question, the server deals a card, the model
 reads it.** The old flow held the question in your head, which was right while
@@ -4096,14 +4099,19 @@ reached" does not split there. A missing part is absent rather than invented,
 and an answer that ignored the labels entirely is all meaning — the one part
 that must never be empty.
 
-**Two decks live, one parked, three deleted.** Bhaktamar (48 faces) and the
-22 yes/no cards ship. **The Vedic Kipper six are written down but not in
-`DECKS`** — the partner is drawing those faces, and a deck in the picker with
-no art is a promise the screen cannot keep; put the key back in `DECKS` and the
-deck back in `mock.js` on the day they land, and the verifier starts checking
-that list again. Rider-Waite, Sufi Path and Lotus Path are deleted outright.
-**The yes/no art is not here either**: `yesno-01..22.webp` in `public/cards/`,
-falling back to the procedural plate until it is.
+**Both decks arrived finished on 25 Sep** — art and text, from the partner's
+two zips. **Bhaktamar**: 48 faces re-rendered, and its master sheet's *Meaning*
+and *What you should do?* replace the older `line` and `ask` fields in
+`bhaktamar.js`; the recitation `remedy` stays and prints under the action.
+**Yes or No**: 27 cards (nine yes, nine no, nine wait) in `src/data/yesno.js`,
+each with a verdict, a result line, a meaning and a shloka. The Vedic Kipper
+six are still written down but out of `DECKS` — no faces yet. Rider-Waite,
+Sufi Path and Lotus Path are deleted outright.
+
+**The art is 15 MB in `public/cards/`**, 75 files at about 190 KB each. The
+originals are 3 MB PNGs; they are resized to 760px wide (2× the widest the card
+renders at) and saved as WebP at q75. Re-run that conversion the same way if
+the deck is ever re-rendered — the source zips are not in the repo.
 
 ### The second vendor, and what it is not used for
 

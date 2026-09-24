@@ -367,18 +367,21 @@ card, then **what the card says → where it lands → what to do**. The last th
 are labelled on screen and the labels do not change between decks, so a seeker
 who learns one deck has learned them all.
 
-**Where each of the three comes from**: the meaning is always written for the
-question — that is the part a pre-written line cannot do. The conclusion and
-the action prefer the CARD's own words where the deck has them, and fall back
-to the model's where it does not. The Bhaktamar cards carry a remedy in the
-tradition's words and a conclusion column is coming, so those two will be the
-card's on that deck and the model's on the other.
+**Where each of the three comes from**, now that both decks arrived with their
+own text (25 Sep 2026): the **meaning** is the card's, written once and true of
+the card. The **conclusion** is the model's on every deck — it is the only part
+that can turn on what was typed, and it is the reason the question is asked at
+all. The **action** is the card's where the deck has one (Bhaktamar's sheet
+writes one, and its recitation follows underneath) and the model's where it
+does not.
 
-Two decks: Bhaktamar (48 painted faces and the shloka) and 22 cards that answer
-yes or no. The Vedic Kipper six are written down but unreachable until their
-faces are drawn — a deck in the picker with no art behind it is a promise the
-screen cannot keep. Rider-Waite, Sufi Path and Lotus Path were deleted outright
-— six authored lines each and no art.
+Two decks, both with their faces: **Bhaktamar**, 48 cards carrying the shloka,
+the meaning and the action; and **Yes or No**, 27 cards — nine yes, nine no,
+nine wait — each with a verdict, a one-line result, a meaning and a shloka. The
+verdict is the CARD's and is printed large above the reading; the model is told
+it and may not argue with it. The Vedic Kipper six are written down but
+unreachable until their faces are drawn. Rider-Waite, Sufi Path and Lotus Path
+were deleted outright — six authored lines each and no art.
 
 Card order, fixed: **face → name (the verdict first, for the yes/no deck) → the
 question quoted back → what the card says → where it lands → what to do → the

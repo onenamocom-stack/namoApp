@@ -98,10 +98,18 @@ class TestDraw:
             assert result["card"]["id"] in ids
             assert result["card"]["deck"] == deck
 
-    def test_the_yesno_deck_answers_yes_or_no(self):
+    def test_the_yesno_deck_answers_yes_no_or_wait(self):
         _wallet(SEEKER, 0)
         result = services.tarot_pull(SEEKER, "yesno", "Should I call him?")
-        assert result["card"]["verdict"] in ("Yes", "No", "Maybe")
+        assert result["card"]["verdict"] in ("Yes", "No", "Wait")
+
+    def test_the_yesno_deck_is_an_even_split(self):
+        # Nine of each, from the partner's sheet. A deck that drifts towards
+        # one answer is a deck that is telling people what they want to hear.
+        from collections import Counter
+
+        spread = Counter(card[2] for card in tarot_decks.YESNO)
+        assert spread == {"Yes": 9, "No": 9, "Wait": 9}
 
     def test_every_card_in_every_deck_can_be_drawn(self):
         # Ids are unique within a deck and the draw covers the deck: a

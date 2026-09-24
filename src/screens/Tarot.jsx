@@ -264,8 +264,14 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
   const [artFailed, setArtFailed] = useState(false)
   const hasArt = Boolean(card.img) && !artFailed
 
-  const conclusion = card.conclusion || reading.conclusion
-  const todo = card.remedy || reading.todo
+  /* Where each of the three parts comes from. The card wins wherever the
+     deck has words of its own — both decks carry a meaning now, and
+     Bhaktamar carries its action — and the model fills what is left. The
+     CONCLUSION is the model's on every deck: it is the only part that can
+     turn on what was typed, and it is why the question is asked at all. */
+  const meaning = card.meaning || reading.meaning
+  const conclusion = reading.conclusion || card.conclusion
+  const todo = card.todo || reading.todo
 
   return (
     <>
@@ -304,10 +310,14 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
       </PopCard>
 
       {/* The card's name, and for the yes/no deck its answer — which is the
-          whole reason that deck exists, so it leads. */}
+          whole reason that deck exists, so it leads. The verdict is the
+          CARD's, off the deck sheet; the model never gets to overturn it. */}
       <div className="pop-inset mt-4 p-5 text-center">
         {verdict && <p className="text-title font-light">{verdict}</p>}
-        <p className={`caps-sm gold ${verdict ? 'mt-3' : ''}`}>{card.name}</p>
+        {card.verdictLine && (
+          <p className="mt-1.5 text-meta t-sub">{card.verdictLine}</p>
+        )}
+        <p className={`caps-sm gold ${verdict ? 'mt-4' : ''}`}>{card.name}</p>
         {card.sub && <p className="mt-1.5 text-meta t-faint">{card.sub}</p>}
       </div>
 
@@ -317,11 +327,11 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
         <p className="mt-5 text-center text-meta t-faint">“{question}”</p>
       )}
 
-      {/* 4 · what the card means for what was asked */}
-      {reading.meaning && (
+      {/* 4 · what the card means */}
+      {meaning && (
         <div className="mt-4">
           <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
-          <p className="mt-2 whitespace-pre-line text-read t-heading">{reading.meaning}</p>
+          <p className="mt-2 whitespace-pre-line text-read t-heading">{meaning}</p>
         </div>
       )}
 
@@ -339,6 +349,12 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
         <div className="pop-inset mt-6 p-4">
           <p className="caps-sm t-faint">{t('tarot.todo')}</p>
           <p className="mt-1.5 whitespace-pre-line text-meta t-body">{todo}</p>
+          {/* The Jain deck also carries a recitation, written in the
+              tradition. It belongs to this step rather than to a fourth
+              one — the layout is six steps on every deck. */}
+          {card.remedy && (
+            <p className="mt-3 whitespace-pre-line text-meta t-sub">{card.remedy}</p>
+          )}
         </div>
       )}
 
@@ -347,12 +363,17 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
       {card.sa && (
         <PopCard className="mt-5 p-5">
           <p className="caps-sm t-faint">
-            {t('tarot.shloka')} {card.no}
+            {/* The number is the VERSE number, and only Bhaktamar has one —
+                its 48 cards are the 48 shlokas of the stotra. On any other
+                deck a number here would claim a verse that does not exist. */}
+            {t('tarot.shloka')}{deck.key === 'bhaktamar' ? ` ${card.no}` : ''}
           </p>
           <p lang="sa" className="mt-2 text-read leading-relaxed t-body">
             {card.sa}
           </p>
-          <p className="mt-2 text-meta italic t-faint">{card.iast}</p>
+          {/* The yes/no deck's cards carry the verse alone; only Bhaktamar
+              has a transliteration and an English rendering beside it. */}
+          {card.iast && <p className="mt-2 text-meta italic t-faint">{card.iast}</p>}
           {card.en && (
             <>
               <Stub className="my-4" />

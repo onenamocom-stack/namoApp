@@ -11,6 +11,7 @@
 // carried over verbatim. Those are not ours to rewrite.
 
 import { bhaktamarCards } from './bhaktamar.js'
+import { yesNoCards } from './yesno.js'
 
 export const user = {
   name: 'Ananya',
@@ -559,31 +560,8 @@ export const tarotDecks = [
      the live map, waiting for the same day. */
   {
     id: 'dk6', key: 'yesno', name: 'Yes or No', tradition: 'Classical', traditionHi: 'शास्त्रीय',
-    line: 'Twenty-two cards for a closed question. It answers yes or no before it explains itself.',
-    cards: [
-      { id: 'y01', name: 'The Fool', img: 'yesno-01.webp' },
-      { id: 'y02', name: 'The Magician', img: 'yesno-02.webp' },
-      { id: 'y03', name: 'The High Priestess', img: 'yesno-03.webp' },
-      { id: 'y04', name: 'The Empress', img: 'yesno-04.webp' },
-      { id: 'y05', name: 'The Emperor', img: 'yesno-05.webp' },
-      { id: 'y06', name: 'The Hierophant', img: 'yesno-06.webp' },
-      { id: 'y07', name: 'The Lovers', img: 'yesno-07.webp' },
-      { id: 'y08', name: 'The Chariot', img: 'yesno-08.webp' },
-      { id: 'y09', name: 'Strength', img: 'yesno-09.webp' },
-      { id: 'y10', name: 'The Hermit', img: 'yesno-10.webp' },
-      { id: 'y11', name: 'Wheel of Fortune', img: 'yesno-11.webp' },
-      { id: 'y12', name: 'Justice', img: 'yesno-12.webp' },
-      { id: 'y13', name: 'The Hanged Man', img: 'yesno-13.webp' },
-      { id: 'y14', name: 'Death', img: 'yesno-14.webp' },
-      { id: 'y15', name: 'Temperance', img: 'yesno-15.webp' },
-      { id: 'y16', name: 'The Devil', img: 'yesno-16.webp' },
-      { id: 'y17', name: 'The Tower', img: 'yesno-17.webp' },
-      { id: 'y18', name: 'The Star', img: 'yesno-18.webp' },
-      { id: 'y19', name: 'The Moon', img: 'yesno-19.webp' },
-      { id: 'y20', name: 'The Sun', img: 'yesno-20.webp' },
-      { id: 'y21', name: 'Judgement', img: 'yesno-21.webp' },
-      { id: 'y22', name: 'The World', img: 'yesno-22.webp' },
-    ],
+    line: 'Twenty-seven cards for a closed question. Nine say yes, nine say no, nine say wait.',
+    cards: yesNoCards,
   },
 ]
 

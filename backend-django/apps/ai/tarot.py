@@ -92,8 +92,17 @@ def card_block(card, chart_block_text):
         f"  Card: {card['name']}",
     ]
     if card.get("verdict"):
-        lines.append(f"  This deck answers yes or no. This card answers: {card['verdict']}")
-        lines.append("  Lead with that answer. Do not soften it into a maybe.")
+        lines.append(f"  This deck answers a closed question. This card answers: {card['verdict']}")
+        lines.append(
+            "  That answer is the card's and it is already on the screen. Do not "
+            "soften it, argue with it, or turn a No into a maybe — read what it "
+            "means for their question."
+        )
+    # ponytail: the model is told the card's NAME and verdict, not the
+    # paragraph the deck sheet writes about it — that text lives in
+    # src/data/ and is printed above the reading. Copy the meanings in here
+    # if the conclusions ever read as generic; it is 75 lines of duplication
+    # and a second thing to keep in step, so not until they do.
     if card.get("virtue"):
         lines.append(f"  The virtue this card carries: {card['virtue']}")
     if card.get("subject"):

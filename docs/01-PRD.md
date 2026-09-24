@@ -155,8 +155,10 @@ two more — so the ₹11 was never once reached.
 
 **What ₹11 buys changed on the same day.** A pull used to return a line written
 months earlier, identical for everyone who drew that card. It now returns three
-parts written against the question the seeker typed — what the card says, where
-it lands, and the one thing to do. That costs
+parts — what the card says, where it lands, and the one thing to do. The first
+and third are the deck's own words (both decks arrived with their text and art
+on 25 Sep); the middle one is written against the question the seeker typed,
+and is what a pre-written deck cannot do. That costs
 about 3 paise of model time against the ₹11, and it is why the question is typed
 rather than held in the head.
 

@@ -20,7 +20,7 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8')
 /* ── the client's decks ──────────────────────────────────────────────────── */
 
 const mock = read('../src/data/mock.js')
-const bhaktamar = read('../src/data/bhaktamar.js')
+
 
 /** Ids and names out of an array of `{ id: 'x', name: 'y' }` objects.
  *
@@ -73,12 +73,25 @@ const serverDecks = Object.fromEntries(
 )
 assert.ok(Object.keys(serverDecks).length > 0, 'no decks in DECKS — is the map gone?')
 
-/* Bhaktamar's cards live in their own file with the scripture; every other
- * deck is an entry in `tarotDecks`. */
+/* A deck's cards are either written inline in `tarotDecks` or imported from
+ * their own file when they carry scripture — Bhaktamar and Yes/No both do.
+ * Follow the import rather than assuming either shape. */
+const imports = new Map(
+  [...mock.matchAll(/import\s*\{\s*(\w+)\s*\}\s*from\s*'\.\/([\w.]+)'/g)]
+    .map(([, name, file]) => [name, file]),
+)
+
+function clientCards(key) {
+  const slice = deckSlice(key)
+  const named = slice.match(/cards:\s*(\w+),/)
+  if (!named) return cardsIn(slice)          // written inline
+  const file = imports.get(named[1])
+  assert.ok(file, `${key}: cards come from ${named[1]}, which mock.js does not import`)
+  return cardsIn(read(`../src/data/${file}`))
+}
+
 const clientDecks = Object.fromEntries(
-  Object.keys(serverDecks).map((key) => [
-    key, key === 'bhaktamar' ? cardsIn(bhaktamar) : cardsIn(deckSlice(key)),
-  ]),
+  Object.keys(serverDecks).map((key) => [key, clientCards(key)]),
 )
 
 /* ── they must match ─────────────────────────────────────────────────────── */
@@ -106,15 +119,37 @@ for (const deck of Object.keys(serverDecks)) {
   }
 }
 
-// The yes/no deck answers a closed question, so every card must carry one.
-const verdicts = [...read('../backend-django/apps/ai/tarot_decks.py')
-  .slice(python.indexOf('YESNO = ['))
-  .matchAll(/"(Yes|No|Maybe)"\),/g)]
+/* ── and the verdicts must agree ─────────────────────────────────────────── */
+//
+// The screen prints the CLIENT's verdict and the prompt is told the SERVER's.
+// If those two ever disagree, the card says Yes in large type over a reading
+// that argues No, which is worse than either answer alone.
+
+const serverVerdicts = new Map(
+  [...python.slice(python.indexOf('YESNO = [')).matchAll(/"(y\d\d)",\s*"[^"]*",\s*"(\w+)"/g)]
+    .map(([, id, verdict]) => [id, verdict]),
+)
+const clientVerdicts = new Map(
+  [...read('../src/data/yesno.js').matchAll(/id: "(y\d\d)",[\s\S]*?verdict: "(\w+)"/g)]
+    .map(([, id, verdict]) => [id, verdict]),
+)
+
 assert.equal(
-  verdicts.length, serverDecks.yesno.size,
+  serverVerdicts.size, serverDecks.yesno.size,
   'a yes/no card with no verdict: that deck exists to answer, and a card that ' +
   'cannot is a horoscope',
 )
+assert.equal(clientVerdicts.size, serverVerdicts.size, 'src/data/yesno.js is missing verdicts')
+for (const [id, verdict] of serverVerdicts) {
+  assert.ok(
+    ['Yes', 'No', 'Wait'].includes(verdict),
+    `${id}: "${verdict}" is not one of Yes, No, Wait`,
+  )
+  assert.equal(
+    clientVerdicts.get(id), verdict,
+    `${id}: the screen would print "${clientVerdicts.get(id)}" over a reading told "${verdict}"`,
+  )
+}
 
 const total = Object.values(serverDecks).reduce((n, d) => n + d.size, 0)
 console.log(`tarot decks OK - ${total} cards across ${Object.keys(serverDecks).length} decks, both lists agree`)

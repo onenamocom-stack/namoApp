@@ -90,32 +90,39 @@ HINDU = [
     ("v6", "Shani, the Slow", "Time, delay and discipline"),
 ]
 
-# Twenty-two cards that answer a closed question. The verdicts are the
-# traditional ones, not ours to improvise: this deck exists to say yes or
-# no, and a deck that says "maybe" to everything is a horoscope.
+# Twenty-seven cards that answer a closed question, from the partner's
+# final deck sheet (25 Sep 2026): nine yes, nine no, nine wait. The verdict
+# is the CARD's, never the model's — this deck exists to answer, and a deck
+# that hedges every draw is a horoscope. `src/data/yesno.js` carries the
+# same 27 with their art, meanings and shlokas.
 YESNO = [
-    ("y01", "The Fool", "Yes"),
-    ("y02", "The Magician", "Yes"),
-    ("y03", "The High Priestess", "Maybe"),
-    ("y04", "The Empress", "Yes"),
-    ("y05", "The Emperor", "Yes"),
-    ("y06", "The Hierophant", "Yes"),
-    ("y07", "The Lovers", "Yes"),
-    ("y08", "The Chariot", "Yes"),
-    ("y09", "Strength", "Yes"),
-    ("y10", "The Hermit", "No"),
-    ("y11", "Wheel of Fortune", "Yes"),
-    ("y12", "Justice", "Maybe"),
-    ("y13", "The Hanged Man", "No"),
-    ("y14", "Death", "No"),
-    ("y15", "Temperance", "Maybe"),
-    ("y16", "The Devil", "No"),
-    ("y17", "The Tower", "No"),
-    ("y18", "The Star", "Yes"),
-    ("y19", "The Moon", "No"),
-    ("y20", "The Sun", "Yes"),
-    ("y21", "Judgement", "Yes"),
-    ("y22", "The World", "Yes"),
+    ("y01", "The Lotus", "Yes"),
+    ("y02", "Rising Sun", "Yes"),
+    ("y03", "Sacred Conch", "Yes"),
+    ("y04", "Banyan Tree", "Yes"),
+    ("y05", "Kamadhenu", "Yes"),
+    ("y06", "Peacock Feather", "Yes"),
+    ("y07", "Kalash", "Yes"),
+    ("y08", "Sacred Lamp", "Yes"),
+    ("y09", "Holy Ganga", "Yes"),
+    ("y10", "Closed Gate", "No"),
+    ("y11", "The Storm", "No"),
+    ("y12", "Broken Bridge", "No"),
+    ("y13", "Eclipse", "No"),
+    ("y14", "Dry Tree", "No"),
+    ("y15", "The Serpent", "No"),
+    ("y16", "Sacred Ashes", "No"),
+    ("y17", "Mirage", "No"),
+    ("y18", "Thorn", "No"),
+    ("y19", "Full Moon", "Wait"),
+    ("y20", "The Rishi", "Wait"),
+    ("y21", "Hidden Path", "Wait"),
+    ("y22", "Mountain Cave", "Wait"),
+    ("y23", "Prayer Bell", "Wait"),
+    ("y24", "River Bend", "Wait"),
+    ("y25", "The Seed", "Wait"),
+    ("y26", "Sacred Silence", "Wait"),
+    ("y27", "Wheel of Time", "Wait"),
 ]
 
 DECKS = {
