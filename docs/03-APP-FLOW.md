@@ -65,6 +65,7 @@ In file order, which is also resolution order.
 | `/chart/:id` | Placement | Plain |
 | `/match` | Match — Ashtakoota for two births | Plain |
 | `/muhurat` | Muhurat — auspicious windows | Plain |
+| `/numerology` | Numerology — the numbers in a name | Plain |
 | `/people/invite` | Invite | Plain |
 | `/people` · `/people/:id` | → `/match` (redirect) | Plain |
 | `/read/:id` | Article | Plain |
@@ -240,9 +241,11 @@ component**, not by reordering the feed data, so the feed stays a list of
 content.
 
 ### `/consult`
-**Free-tools row of five circles, above the search field** — Ask AI opens an
-overlay; Horoscope, Tarot, Matching and Muhurat navigate. Muhurat joined on
-22 Sep 2026 and the circles narrowed to fit a 360px phone. It sat on `/home`
+**Free-tools row of six circles, above the search field** — Ask AI opens an
+overlay; Horoscope, Tarot, Matching, Muhurat and Numbers navigate. Muhurat
+joined on 22 Sep 2026 and Numbers on 25 Sep; at six the row **scrolls** rather
+than shrinking further, because a seventh 56px circle has an unreadable label
+and dropping one makes the choice for the seeker. It sat on `/home`
 until 7 Sep 2026. It is here because this is the screen somebody reaches already asking a
 question, and the free answer belongs in front of the paid one rather than
 buried above a stream.
@@ -275,6 +278,22 @@ approving six invented astrologers, is in `01-PRD.md` §7.
 Wallpapers, ringtones, pooja tunes and bhajans, read from `bhakti_assets`
 (migration 024) with a kind switcher and a deity filter built from whichever
 deities are present in the selected kind.
+
+**Five circles, and the fifth leaves the screen — 25 Sep 2026.** Darshan sits
+in the kind row and navigates to `/darshan`: the row answers "pick a
+devotional thing to do", and the shrine is the one people came for. It was
+reachable only from Home's third tab, which nobody reads as "the mandir is
+over there". It renders as a link rather than a button, because it belongs in
+browser history and the other four do not.
+
+**Then three banners, then a search field.** The banners sit UNDER the tiles —
+the tiles are the navigation, and an offer that pushes navigation off the first
+screen is furniture. Two of the three move this screen (to Status, to
+Wallpapers) rather than leaving it, and the third opens the shrine. Search
+reads the title and the deity of the **current kind only**: the tiles already
+said which shelf you are on, and a search that silently jumped shelves would
+make them a lie. An empty result says so and offers to clear itself, which is
+a different state from a shelf that is genuinely empty.
 
 **No client writes.** The table has a select policy and no other, so RLS denies
 inserts by default. Rows come from a service-role script today and the phase 13
@@ -328,12 +347,37 @@ pills revealing subcategory pills. A chart-matched hero when unfiltered.
 **Add** goes to the cart; **Buy now** charges the wallet immediately. Sold-out
 products keep their row with both controls dead.
 
+### `/numerology`
+**A name, a birth date and the numbers in them.** The name is a field, and
+that is the design: numerology counts the name as it was GIVEN, and a married
+name or another spelling is a different set of numbers that only the reader
+can choose between. The profile's name is the first thing tried, not the last
+word. The birth DATE is not editable — it is on file, a date has no spelling,
+and a screen that let you try dates would be a screen for trying other
+people's.
+
+Numbers first, lucky things second: the vendor is strongest at colour, day,
+metal, stone, deity and mantra, but somebody came for a number and leading
+with a gemstone reads as a shop. The vendor's `evil_num` is printed as
+**Harder** — a number nobody chose is not evil, and saying so to a seeker is
+not what this product means.
+
+This is the one screen reading a SECOND vendor (`02-TRD.md` §8), and it needs
+a birth date but no birthplace, so its 409 asks for a date and never sends
+somebody off to fix a chart.
+
 ### `/academy`
-Courses / Events / Downloads.
+Courses / Events / E-book.
 
 Course *Resume* and *Watch* are external links to **YouTube search URLs** — the
 only outbound links in the app. *Enrol* toasts. Events show a seat-fill bar and
-toggle a flag; full events refuse. Downloads toast; nothing is stored.
+toggle a flag; full events refuse.
+
+**The third tab was Downloads until 25 Sep 2026**, and the rename took the two
+video rows with it: a shelf called E-book listing a 410 MB recording is the
+kind of label this codebase keeps deleting. Lessons live inside their course,
+which is where somebody looking for one goes. The list is still a prototype
+and says so; the real books arrive with the Academy's own materials.
 
 ### `/tarot`
 A guided pull, as a three-state machine rather than one laid-out screen:

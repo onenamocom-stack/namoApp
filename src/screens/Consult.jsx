@@ -37,6 +37,7 @@ const FREE_TOOLS = [
   { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
   { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match' },
   { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat' },
+  { key: 'numerology', label: 'tool.numerology', icon: 'reports', to: '/numerology' },
 ]
 
 /** Circles, because a circle reads as a tool and a card reads as content. */
@@ -45,10 +46,10 @@ function FreeTools() {
   const bag = { openChat }
 
   return (
-    <section className="px-2 pb-1 pt-3">
-      <ul className="flex items-start justify-around">
+    <section className="pb-1 pt-3">
+      <ul className="no-scrollbar flex gap-1 overflow-x-auto px-4">
         {FREE_TOOLS.map((f) => (
-          <li key={f.key}>
+          <li key={f.key} className="flex-none">
             {f.to ? (
               <Link to={f.to} className="tile w-[68px]">
                 <span className="tile-face">

@@ -89,11 +89,12 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Shop — categories, cart, checkout | UI | **Charges the wallet for real** |
 | Reports | UI | **Charges the wallet for real** |
 | Premium tiers | UI | Shows a price, grants nothing |
-| Academy — courses, events, downloads | UI | Enrol toasts. Course links go to YouTube *search* URLs |
+| Academy — courses, events, e-books | UI | Enrol toasts. Course links go to YouTube *search* URLs |
 | Wallet — balance and ledger | **Real** | Server-owned. Debits only — top-up waits for payments |
 | Payments | **None** | Payment-method tags are decorative |
 | Matching — Ashtakoota | **Real** | `/match`. 36 gunas and the doshas, from two births. Free, and nothing typed is saved. Replaced the mock friend list and its synastry, 22 Sep 2026 |
 | Muhurat | **Real** | `/muhurat`. Six purposes, a month at a time, optionally judged against your own chart. Free |
+| Numerology | **Real** | `/numerology`. The numbers in a name and a birth date, from a second vendor. Free, and the name is the reader's to correct |
 | Notifications | UI | No read state, no deep links |
 
 ### Consultant

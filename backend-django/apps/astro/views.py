@@ -17,6 +17,7 @@ decides the answer (rule 3).
 
 import logging
 
+from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +26,7 @@ from apps.core.views import refusal_body
 
 from . import services
 from .providers import UpstreamError
+from .numerology import numerology as numerology_service
 from .serializers import MatchInput, subject_birth
 
 logger = logging.getLogger("apps.astro")
@@ -62,6 +64,19 @@ def _resolve_date(request):
     if date_string is None:
         return None, _refusal(400, "invalid", "That date is outside what we compute.")
     return date_string, None
+
+
+def _profile_name(request):
+    """The name on the caller's own row, as the default to read. Blank when
+    there is none, which the serializer turns into the 400 that asks for
+    one — better than reading a numerology profile for an empty string."""
+    try:
+        from apps.profiles.models import Profile
+
+        return (Profile.objects.filter(pk=request.user.pk).values_list("name", flat=True).first() or "")
+    except Exception:  # noqa: BLE001 — a missing name is not a 500
+        logger.exception("numerology: could not read the caller's name")
+        return ""
 
 
 def _birth_or_refusal(request):
@@ -242,4 +257,55 @@ def muhurat(request):
         "ok": True, "data": payload, "purpose": purpose, "month": month,
         "personal": bool(birth), "cached": cached,
         "time_known": services.time_known(birth) if birth else None,
+    })
+
+
+class NumerologyInput(serializers.Serializer):
+    """The name to read, and nothing else.
+
+    Numerology counts the name as it was GIVEN — often not the name on the
+    profile, which may be married, shortened or spelled another way. Only
+    the person asking knows which, so they send it; the birth date still
+    comes from their own row, because that one is on file and they have no
+    reason to retype it.
+    """
+
+    name = serializers.CharField(max_length=80, allow_blank=False, trim_whitespace=True)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def numerology(request):
+    """A numerology profile for the caller's birth date and a name they give.
+
+    `?name=` overrides the profile's name; `?lang=hi` asks the vendor for
+    Hindi, which it answers on a header. The birth DATE is read from the
+    caller's own row — a date is not a spelling and there is nothing to
+    correct.
+    """
+    # The DATE alone, not the whole birth row: numerology counts a date and a
+    # name and never touches a coordinate, so somebody whose place is missing
+    # still has a numerology profile and must not be sent to fix a chart.
+    try:
+        birth = services.get_birth_details(request.user.pk)
+    except Exception:
+        logger.exception("numerology: could not read profile for %s", request.user.pk)
+        return _refusal(500, "unavailable", "Could not load your birth details. Try again.")
+    if not birth or not birth["birth_date"]:
+        return _refusal(409, "no_birth", "Add your birth date to see your numbers.")
+
+    form = NumerologyInput(data={"name": request.query_params.get("name") or _profile_name(request)})
+    if not form.is_valid():
+        return _refusal(400, "invalid", "Type the name to read.")
+
+    lang = "hi" if request.query_params.get("lang") == "hi" else "en"
+    try:
+        payload, cached = numerology_service(
+            form.validated_data["name"], birth["birth_date"], lang,
+        )
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "numerology")
+    return Response({
+        "ok": True, "data": payload, "name": form.validated_data["name"],
+        "birth_date": str(birth["birth_date"]), "lang": lang, "cached": cached,
     })

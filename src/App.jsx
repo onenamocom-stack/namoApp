@@ -42,6 +42,7 @@ import Chart from './screens/Chart.jsx'
 import Placement from './screens/Placement.jsx'
 import Match from './screens/Match.jsx'
 import Muhurat from './screens/Muhurat.jsx'
+import Numerology from './screens/Numerology.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import UserProfile from './screens/UserProfile.jsx'
@@ -259,6 +260,7 @@ function Frame() {
                 <Route path="/chart/:id" element={<Placement />} />
                 <Route path="/match" element={<Match />} />
                 <Route path="/muhurat" element={<Muhurat />} />
+                <Route path="/numerology" element={<Numerology />} />
                 <Route path="/people/invite" element={<Invite />} />
                 {/* `/people` was a list of mock friends with mock compatibility
                     scores, and `/people/:id` their synastry. Ashtakoota on

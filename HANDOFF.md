@@ -17,6 +17,7 @@ Updated 24 Sep 2026.
 | **7 · charts** | **Done and closed.** Both projects, front end deployed, all three done-conditions pass. The reference chart was verified by arithmetic that does not go through the API, so the check survives them changing or going away |
 | **7a · reading, matching, muhurat** | **On `main` and deployed, 23 Sep.** The daily reading is computed from the reader's own birth again — reversing 7 Sep — and `/match` (Ashtakoota) and `/muhurat` are new. **Never walked in a browser** — §29 |
 | **2a · tarot** | **Reworked 24 Sep on `tarot-flow`, not merged.** Typed question, server-dealt card, the reading written by the model. The two free pulls a week were a browser flag that a reload cleared — they are a server column now — §31 |
+| **2b · numerology** | **Built 25 Sep on `bhakti-numerology`, not merged.** `/numerology` from the second vendor, cached by name and date. Bhakti gained darshan, banners and search; Academy's Downloads tab is E-book — §33 |
 | **UI · Home, Bhakti, header, avatars** | **On `main` and deployed, 10 Sep.** Live video deleted both sides; Home split into Feed/Today/Darshan; shrine moved to `/darshan`; Bhakti holds the nav slot; the horoscope slide-over deleted for a page; Shop's cart is a floating button; your own profile picture works. **024–027 are all on production (13 Sep)** — production has no `bhakti_assets`, so `/bhakti` there shows its empty state until they are applied. **Never walked in a browser** — see §5 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
@@ -4139,3 +4140,63 @@ week rollover, the refund, the refusals, and that spending tarot pulls does not
 touch the Namo AI allowance) and `node tools/verify-tarot-decks.mjs`. Lint and
 build clean. **Not walked in a browser** — same blocker as §29, the headless
 browser is blocked by Windows Application Control on this machine.
+
+## 33. Numerology, and three changes to screens that existed — 25 Sep 2026
+
+**On `bhakti-numerology`, not merged, not deployed.**
+
+**Numerology is built, from the second vendor.** `GET /v1/astro/numerology/`
+takes the caller's birth date off their own row and a NAME they give, and
+returns astrologyapi.com's two payloads as one cached reading: destiny,
+radical and name numbers with the lucky colour, day, metal, stone, deity and
+mantra, plus life path, expression, soul urge, personality, subconscious self
+and the four challenge numbers. `?lang=hi` asks the vendor for Hindi, which it
+answers on a header.
+
+**It lives in `apps/astro`** rather than an app of its own — same cache table,
+same single-flight memo, same refusal envelope, and a new app would have
+copied three of those to own one vendor call. `NUMEROLOGY_PROVIDER` picks
+between the real one and an offline mock, the seam `ASTRO_PROVIDER` and
+`AI_PROVIDER` already use. **`ASTROLOGY_API_USER_ID` and `ASTROLOGY_API_KEY`
+are not set on Cloud Run yet** — until they are, the endpoint answers from the
+mock, whose two arithmetic numbers (radical and destiny) are computed properly
+so a screen built against it is not built against nonsense.
+
+**The reading is keyed by name, date and language, and by nothing else.** No
+account id: two people with one name and one birthday share a row, which is
+the same reasoning as a subject chart or a match, and the same consequence
+that no birth record is written down. Spacing and case are normalised, so
+"Ravi  Kumar" and "ravi kumar" are one reading rather than two.
+
+**The name is a field on the screen, and that is the design.** Numerology
+counts the name as it was given at birth; a married name or another spelling
+is a different set of numbers, and only the reader knows which is theirs. The
+profile's name is the first thing tried, not the last word. The birth date is
+not editable — it is on file, and a screen that let you try dates would be a
+screen for trying other people's.
+
+**The vendor's `evil_num` is printed as "Harder".** A number nobody chose is
+not evil.
+
+### The other three
+
+- **Darshan is in Bhakti.** A fifth circle in the kind row, rendered as a link
+  because it leaves the screen. It was reachable only from Home's third tab,
+  which nobody reads as "the mandir is over there".
+- **Bhakti has banners and a search field.** Three banners under the tiles —
+  two of them move the screen rather than leaving it — and a search that reads
+  the title and deity of the **current kind only**, because the tiles already
+  said which shelf you are on. An empty search says so and offers to clear
+  itself, which is a different state from an empty shelf.
+- **Academy's Downloads tab is E-book**, and the rename took the two video
+  rows with it: a shelf called E-book listing a 410 MB recording is the kind
+  of label this codebase keeps deleting.
+
+**The free-tools row is six circles and scrolls now.** At six, shrinking
+further makes the labels unreadable and dropping one makes the choice for the
+seeker.
+
+**Checks.** 13 new tests in `tests/test_numerology.py` — the cache key holds no
+account id, spacing and case do not split it, a missing birth DATE asks for a
+date rather than a birthplace, and no response body carries the vendor's host
+or credentials. Lint and build clean. **Not walked in a browser.**

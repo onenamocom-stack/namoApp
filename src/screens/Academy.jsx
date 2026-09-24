@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { academyEvents, courses, downloads } from '../data/mock.js'
+import { academyEvents, courses, ebooks } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
@@ -9,10 +9,10 @@ import { useStore } from '../store.jsx'
 const TABS = [
   { key: 'courses', label: 'Courses' },
   { key: 'events', label: 'Events' },
-  { key: 'downloads', label: 'Downloads' },
+  { key: 'ebooks', label: 'E-book' },
 ]
 
-/** Academy — courses, live events and saved content. */
+/** Academy — courses, live events and e-books. */
 export default function Academy() {
   const [tab, setTab] = useState('courses')
 
@@ -25,7 +25,7 @@ export default function Academy() {
       <div key={tab} className="animate-fade">
         {tab === 'courses' && <Courses />}
         {tab === 'events' && <Events />}
-        {tab === 'downloads' && <Downloads />}
+        {tab === 'ebooks' && <Ebooks />}
       </div>
 
       <div className="h-24" />
@@ -207,14 +207,14 @@ function Events() {
   )
 }
 
-function Downloads() {
+function Ebooks() {
   const { showToast } = useStore()
 
   return (
     <section className="px-5 py-6">
-      <Kicker>Saved to this device</Kicker>
+      <Kicker>Yours to read</Kicker>
       <ul className="mt-4 space-y-4">
-        {downloads.map((d) => (
+        {ebooks.map((d) => (
           <li key={d.id}>
             <PopCard className="overflow-hidden">
               <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full">
@@ -232,11 +232,11 @@ function Downloads() {
                   <p className="mt-1 caps-sm t-faint">From {d.course}</p>
                 </div>
                 <PopButton
-                  onClick={() => showToast(`Opening ${d.kind.toLowerCase()}`)}
+                  onClick={() => showToast(`Opening ${d.title}`)}
                   full={false}
                   className="flex-none px-4"
                 >
-                  {d.kind === 'Video' ? 'Play' : 'Open'}
+                  Read
                 </PopButton>
               </div>
             </PopCard>
@@ -245,7 +245,7 @@ function Downloads() {
       </ul>
 
       <p className="mt-8 text-center text-meta t-faint">
-        Downloads are a prototype list. Nothing is actually stored on the device.
+A prototype list. The real books arrive with the Academy's own materials.
       </p>
     </section>
   )

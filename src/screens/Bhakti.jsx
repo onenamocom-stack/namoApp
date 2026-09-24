@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
+import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard, PopTag } from '../components/Pop.jsx'
+import { Search } from '../components/Primitives.jsx'
 import { composeStatus, download, fetchAssets, saveBlob, shareFile } from '../lib/bhakti.js'
 import { longDate } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
@@ -43,9 +46,56 @@ const KINDS = [
   { key: 'wallpaper', label: 'Wallpapers', icon: 'eye', help: 'Save it, then set it from your photo gallery.' },
   { key: 'tune', label: 'Tunes', icon: 'bell', help: 'Save it, then pick it in your phone’s sound settings.' },
   { key: 'bhajan', label: 'Bhajans', icon: 'pooja', help: 'Saves as an audio file you can play anywhere.' },
+  /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
+     screen. It sits in this row anyway (25 Sep 2026): the row answers "pick
+     a devotional thing to do", and the shrine is the one people came for.
+     It was reachable only from Home's third tab, which nobody reads as
+     "the mandir is over there". */
+  { key: 'darshan', label: 'Darshan', icon: 'pooja', to: '/darshan' },
 ]
 
 const isAudio = (kind) => kind === 'tune' || kind === 'bhajan'
+
+/**
+ * Three banners, the same object Consult and Shop use: a gradient block with
+ * one CTA. Two of them move this screen rather than leaving it, so a tap
+ * lands somewhere real instead of toasting "prototype only".
+ */
+const BANNERS = [
+  {
+    id: 'bn-darshan',
+    kicker: 'The shrine',
+    title: 'Sit for darshan',
+    note: 'Seven deities, twenty-six murtis, and an aarti you can ring.',
+    cta: 'Enter the mandir',
+    art: 'orbit',
+    from: '#7c2d12',
+    to: '#c2410c',
+    to_: '/darshan',
+  },
+  {
+    id: 'bn-status',
+    kicker: 'Daily',
+    title: 'A status for this morning',
+    note: 'Share it to WhatsApp before the day starts.',
+    cta: 'See today’s',
+    art: 'halftone',
+    from: '#6b3410',
+    to: '#a85400',
+    kind: 'status',
+  },
+  {
+    id: 'bn-wallpaper',
+    kicker: 'Free',
+    title: 'Put a deity on your lock screen',
+    note: 'Painted wallpapers, saved to your gallery.',
+    cta: 'Browse wallpapers',
+    art: 'contour',
+    from: '#8a3a00',
+    to: '#b45309',
+    kind: 'wallpaper',
+  },
+]
 
 export default function Bhakti() {
   const { showToast } = useStore()
@@ -53,6 +103,7 @@ export default function Bhakti() {
   const [failed, setFailed] = useState(false)
   const [kind, setKind] = useState('status')
   const [deity, setDeity] = useState('All')
+  const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(null)
   const [sharing, setSharing] = useState(null) // the asset whose share sheet is open
 
@@ -68,18 +119,30 @@ export default function Bhakti() {
 
   const ofKind = useMemo(() => (assets ?? []).filter((a) => a.kind === kind), [assets, kind])
 
+  /* Search runs over the CURRENT kind, not the whole library: the row of
+     tiles above already said which shelf you are on, and a search that
+     silently jumped shelves would make the tiles a lie. Title and deity,
+     because those are the two things printed on a card. */
+  const matching = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return ofKind
+    return ofKind.filter((a) =>
+      `${a.title} ${a.deity ?? ''}`.toLowerCase().includes(needle),
+    )
+  }, [ofKind, query])
+
   /* Deities present in THIS kind, not across the library — a chip that filters
      to nothing is a dead control, and the wallpaper deities are not going to
      be the bhajan deities. */
   const deities = useMemo(
-    () => ['All', ...[...new Set(ofKind.map((a) => a.deity).filter(Boolean))]],
-    [ofKind],
+    () => ['All', ...[...new Set(matching.map((a) => a.deity).filter(Boolean))]],
+    [matching],
   )
 
   /* A chip selected under one kind may not exist under the next. Fall back
      rather than showing an empty grid under a chip that is still lit. */
   const activeDeity = deities.includes(deity) ? deity : 'All'
-  const list = activeDeity === 'All' ? ofKind : ofKind.filter((a) => a.deity === activeDeity)
+  const list = activeDeity === 'All' ? matching : matching.filter((a) => a.deity === activeDeity)
 
   const meta = KINDS.find((k) => k.key === kind)
 
@@ -105,21 +168,89 @@ export default function Bhakti() {
         <ul className="flex items-start justify-around">
           {KINDS.map((k) => (
             <li key={k.key}>
-              <button
-                type="button"
-                onClick={() => setKind(k.key)}
-                aria-pressed={kind === k.key}
-                className="tile w-[80px]"
-              >
-                <span className={`tile-face ${kind === k.key ? 'tile-face-on' : ''}`}>
-                  <Icon name={k.icon} size={22} />
-                </span>
-                <span className="caps-sm leading-tight t-body">{k.label}</span>
-              </button>
+              {/* Darshan leaves the screen; the other four switch shelves on
+                  it. A link and a button, because they do different things
+                  and one of them belongs in browser history. */}
+              {k.to ? (
+                <Link to={k.to} className="tile w-[68px]">
+                  <span className="tile-face">
+                    <Icon name={k.icon} size={22} />
+                  </span>
+                  <span className="caps-sm leading-tight t-body">{k.label}</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setKind(k.key)}
+                  aria-pressed={kind === k.key}
+                  className="tile w-[68px]"
+                >
+                  <span className={`tile-face ${kind === k.key ? 'tile-face-on' : ''}`}>
+                    <Icon name={k.icon} size={22} />
+                  </span>
+                  <span className="caps-sm leading-tight t-body">{k.label}</span>
+                </button>
+              )}
             </li>
           ))}
         </ul>
       </section>
+
+      {/* ── Banners ──────────────────────────────────────────────────────
+          Under the tiles rather than above them: the tiles are the
+          navigation and these are an offer, and an offer that pushes the
+          navigation off the first screen is furniture. */}
+      <div className="pt-3">
+        <div className="rail gap-3 px-4">
+          {BANNERS.map((b, i) => {
+            const inner = (
+              <>
+                <Plate
+                  seed={b.id}
+                  variant={b.art}
+                  className="pointer-events-none absolute -right-8 -top-6 h-[150%] w-2/3 animate-float bg-transparent opacity-25 mix-blend-overlay"
+                />
+                <span className="relative flex flex-col items-start">
+                  <span className="caps-sm text-white/70">{b.kicker}</span>
+                  <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
+                    {b.title}
+                  </span>
+                  <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.note}</span>
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
+                    {b.cta} <span aria-hidden="true">→</span>
+                  </span>
+                </span>
+              </>
+            )
+            const style = {
+              backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
+              animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
+            }
+            return b.to_ ? (
+              <Link key={b.id} to={b.to_} className="banner w-[86%] p-3 text-left" style={style}>
+                {inner}
+              </Link>
+            ) : (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => { setKind(b.kind); setQuery('') }}
+                className="banner w-[86%] p-3 text-left"
+                style={style}
+              >
+                {inner}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <Search
+        value={query}
+        onChange={setQuery}
+        placeholder={`Search ${meta ? meta.label.toLowerCase() : 'bhakti'}`}
+        label="Search bhakti"
+      />
 
       {deities.length > 1 && (
         <div className="rail mt-3 gap-1.5 px-4">
@@ -150,11 +281,25 @@ export default function Bhakti() {
           </PopCard>
         ) : list.length === 0 ? (
           <PopCard className="p-5">
-            <p className="text-body t-heading">Nothing here yet.</p>
-            <p className="mt-2 text-meta t-body">
-              {meta.label} are curated rather than uploaded, so this fills up when the next batch is
-              published.
-            </p>
+            {query.trim() ? (
+              <>
+                <p className="text-body t-heading">Nothing matches “{query.trim()}”.</p>
+                <p className="mt-2 text-meta t-body">
+                  Search reads the title and the deity, and only the shelf you are on.
+                </p>
+                <PopButton className="mt-4" onClick={() => setQuery('')}>
+                  Clear the search
+                </PopButton>
+              </>
+            ) : (
+              <>
+                <p className="text-body t-heading">Nothing here yet.</p>
+                <p className="mt-2 text-meta t-body">
+                  {meta.label} are curated rather than uploaded, so this fills up when the next
+                  batch is published.
+                </p>
+              </>
+            )}
           </PopCard>
         ) : (
           <ul className={kind === 'status' ? 'space-y-4' : isAudio(kind) ? 'space-y-3' : 'grid grid-cols-2 gap-3'}>

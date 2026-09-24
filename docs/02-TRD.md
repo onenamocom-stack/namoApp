@@ -462,7 +462,7 @@ only one of the three survived that.
 
 | | What the probe found | Decision |
 |---|---|---|
-| **Numerology** | `numero_table` and `numerological_numbers` take a name and a birth date and answer with life path, expression, soul urge, radical and name numbers, lucky stone, day and mantra. Deterministic, personal, and `Accept-Language: hi` returns Hindi | **Adopted** — the app is bilingual and has no numerology of its own |
+| **Numerology** | `numero_table` and `numerological_numbers` take a name and a birth date and answer with life path, expression, soul urge, radical and name numbers, lucky stone, day and mantra. Deterministic, personal, and `Accept-Language: hi` returns Hindi | **Adopted, and built 25 Sep** — `GET /v1/astro/numerology/`, cached as `numerology:<digest of name+date+lang>` |
 | **Tarot** | `tarot_predictions` and `yes_no_tarot` return the **same bytes for every caller**. Called with two different names and birth dates, identical love/career/finance prose; every parameter ignored; no card, no image | **Refused.** Generic text shown as a personal reading is the exact failure the daily reading was rebuilt to end (§8 above) |
 | **Palmistry** | Absent from all 111 tools the account's token exposes, and the documented `get-palm-id` path falls through to a generic validator | **Blocked**, not refused. A separate product the vendor has to enable |
 
@@ -475,7 +475,18 @@ do anyway: answer the question that was actually asked.
 
 **Credentials are env-only** — `ASTROLOGY_API_USER_ID` and `ASTROLOGY_API_KEY`,
 on Cloud Run, never in the repo and never in a browser (INSTRUCTIONS.md rule 7).
-The trial token was pasted into a chat transcript and is to be regenerated.
+`NUMEROLOGY_PROVIDER` selects between them and the offline mock, the same seam
+`ASTRO_PROVIDER` and `AI_PROVIDER` use. The trial token was pasted into a chat
+transcript and is to be regenerated.
+
+**Numerology lives in `apps/astro`, not in an app of its own.** It is a second
+vendor behind the same cache table, the same single-flight memo and the same
+refusal envelope; a separate app would copy three of those to own one call.
+Two upstream calls make one cached reading, and the reading is a function of a
+NAME and a DATE and of nothing else — so the key holds no account id, and two
+people with the same name and birthday share one row. The name is the one
+thing the client sends, because numerology counts the name as it was given at
+birth and the profile often holds another one.
 
 ### Matching and muhurat — 22 Sep 2026
 

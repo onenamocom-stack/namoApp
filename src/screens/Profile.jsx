@@ -221,7 +221,7 @@ function Overview() {
           <Row to="/muhurat" title="Muhurat" note="When to start something that matters" />
           <Row to="/reports" title="Reports" note="Long-form readings, written once" />
           <Row to="/premium" title="Premium" note="Eros, packs and more questions" />
-          <Row to="/academy" title="Academy" note="Courses, events and downloads" />
+          <Row to="/academy" title="Academy" note="Courses, events and e-books" />
           {/* No count here any more. The number is the server's (ai_quota)
               and this row would have to fetch it; a stale client counter
               beside a screen that knows better is worse than no number. */}

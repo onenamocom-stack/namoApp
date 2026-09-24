@@ -9,4 +9,5 @@ urlpatterns = [
     path("horoscope/", views.horoscope, name="astro-horoscope"),
     path("match/", views.match, name="astro-match"),
     path("muhurat/", views.muhurat, name="astro-muhurat"),
+    path("numerology/", views.numerology, name="astro-numerology"),
 ]

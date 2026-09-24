@@ -173,6 +173,14 @@ ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 
+# --- astrologyapi.com (numerology; docs/02-TRD.md §8)
+# A SECOND astrology vendor, for the one thing the first does not compute.
+# Basic auth: the user id is the username and the key is the password, and
+# neither ever reaches a browser (INSTRUCTIONS.md rule 7).
+NUMEROLOGY_PROVIDER = os.environ.get("NUMEROLOGY_PROVIDER", "mock")
+ASTROLOGY_API_USER_ID = os.environ.get("ASTROLOGY_API_USER_ID", "")
+ASTROLOGY_API_KEY = os.environ.get("ASTROLOGY_API_KEY", "")
+
 # --- Shiprocket (stage 5) -------------------------------------------------
 # Abzzo's account, borrowed exactly as Razorpay's was. Namo's parcels show
 # up in their dashboard and the labels carry their pickup address, which is

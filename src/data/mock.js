@@ -674,7 +674,7 @@ export const loadingLines = [
 export const topUpAmounts = [500, 1000, 2000, 5000]
 
 /* ══════════════════════════════════════════════════════════════════════════
-   ACADEMY — courses, live events and saved downloads.
+   ACADEMY — courses, live events and e-books.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export const courses = [
@@ -767,11 +767,15 @@ export const academyEvents = [
   },
 ]
 
-export const downloads = [
-  { id: 'd1', title: 'Birth chart basics — lesson 1', kind: 'Video', size: '182 MB', saved: '2 days ago', course: 'Reading a birth chart' },
-  { id: 'd2', title: 'Dasha reference tables', kind: 'PDF', size: '1.4 MB', saved: '5 days ago', course: 'Dashas and timing' },
+/* Renamed from `downloads` on 25 Sep 2026, and the two video rows went with
+   the name: a shelf called E-books that lists a 410 MB recording is the kind
+   of label this codebase keeps deleting. Videos live inside their course,
+   which is where somebody looking for a lesson goes. */
+export const ebooks = [
+  { id: 'd2', title: 'Dashas and timing — the reference tables', kind: 'PDF', size: '1.4 MB', saved: '5 days ago', course: 'Dashas and timing' },
   { id: 'd3', title: 'Tarot spreads worksheet', kind: 'PDF', size: '820 KB', saved: '1 week ago', course: 'Tarot as a thinking tool' },
-  { id: 'd4', title: 'Saturn return clinic — recording', kind: 'Video', size: '410 MB', saved: '2 weeks ago', course: 'Live event' },
+  { id: 'd5', title: 'Reading a birth chart — the workbook', kind: 'PDF', size: '3.1 MB', saved: '2 weeks ago', course: 'Reading a birth chart' },
+  { id: 'd6', title: 'Panchang, plainly explained', kind: 'PDF', size: '2.2 MB', saved: '3 weeks ago', course: 'Reading a birth chart' },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════
