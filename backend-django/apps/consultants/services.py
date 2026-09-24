@@ -766,3 +766,17 @@ def go_offline(consultant_id):
     return Consultant.objects.filter(profile_id=consultant_id).update(
         accepting_now=False
     ) == 1
+
+
+def is_approved(profile_id):
+    """Does this person have an approved practice?
+
+    Lives here rather than being imported from `apps.content.gateway`,
+    where the same question is answered for the publish gate. That one is
+    the content module's private view of the roster; a third module
+    reaching into it would make content a dependency of everything that
+    ever needs to know what a consultant is.
+    """
+    return Consultant.objects.filter(
+        profile_id=profile_id, status=ConsultantStatus.APPROVED
+    ).exists()

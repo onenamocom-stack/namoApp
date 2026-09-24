@@ -904,3 +904,36 @@ when it was drawn, and a seeker with an empty wallet asking an offline
 astrologer is told *the astrologer is offline*, which is both the true
 answer and the fixable one. Telling them to add money would send them to
 pay for a call that still would not connect.
+
+## Referrals — where the codes live (25 Sep 2026)
+
+| Screen | What is there |
+|---|---|
+| `/profile` → Settings, **first section** | The seeker's own `N…` code, tap to copy, and a box for somebody else's — which disappears once used |
+| `/pro/affiliate` | The consultant's `A…` code, a per-product **Get link**, and what it pays. Reached from a row at the top of the studio |
+| `/shop` arrived at with `?ref=A…` | A line under the header naming the code, before anything is tapped |
+| Chat panel → **Alerts** | Real rows since today. Opening the tab marks them read |
+
+**The Shop banner says cashback, and says it first.** *You pay the full
+price and get 10% back in your wallet seven days after delivery — on your
+first order only.* All three facts before any Buy button, because a
+seeker who discovers after paying that the 10% was not taken off the
+total has been surprised by their own money.
+
+**The link code is held in `sessionStorage`, not just the URL.** The
+journey from a shared link is rarely one page — arrive, browse, sign in,
+then buy — and a code living only in `location.hash` would be gone by the
+time it mattered, with nobody able to explain why the consultant went
+uncredited. Session, not local: it belongs to this visit.
+
+**Only `A…` codes are read from a link.** An `N…` code is claimed once at
+onboarding; treating one as a shop coupon would send a seeker to a till
+to be told, correctly and uselessly, that it is the wrong kind.
+
+**The affiliate URL is built by the server.** These get pasted into
+WhatsApp and live for months, so the shape of one is a contract with
+every link already sent — a template string in a screen cannot be
+corrected later without breaking all of them.
+
+**Alerts poll at 15s**, against chat's 3s. An alert is something you find
+when you look, not something you are interrupted by.

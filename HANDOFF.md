@@ -3953,3 +3953,93 @@ flipped. Nothing uses any of it yet; Phase 2 is the next commit.
 The key is a plain Cloud Run env var, like `GEMINI_API_KEY` and the
 Razorpay secret. Anybody with Viewer on the GCP project can read all
 three without deploying. Secret Manager is the fix and has not been done.
+
+## 31. Referrals, cashback and a notifications table — 25 Sep 2026
+
+Two programmes that share a shape and nothing else, plus the alerts
+system they needed and the product did not have.
+
+**Codes.** Eight characters, one prefix and seven random, from a
+31-letter alphabet with **0, O, 1, I and L removed** — these get read
+aloud and typed off screenshots. `N…` seeker, `A…` consultant. A person
+can hold both: a seeker later approved as a consultant keeps the N code
+they may already have shared.
+
+**The 10% is cashback, not a discount, and that is the point.** The order
+is paid at the listed price and the money comes back into the wallet,
+where it is spent on a reading or another order and never withdrawn —
+the wallet has no seeker withdraw path. A discount would have cost the
+same and kept none of it inside the product.
+
+**It waits seven days after DELIVERY, not at checkout.** Otherwise a
+buyer takes the cashback, spends it on a consultation, and returns the
+item; money already paid to a consultant cannot be clawed back. A return
+cancels both rows and nothing has to be recovered from anyone.
+
+**The cap is off and is a flag** — `REFERRAL_CASHBACK_CAP_PAISE`, zero
+meaning no cap, on the owner's instruction. An uncapped 10% on the
+₹26,400 gemstone is ₹2,640 a side, which is the number to remember when
+setting it.
+
+**Sign-up referrals move no money**: three free AI questions a day for
+three days, both sides, with day one's welcome five untouched.
+
+### Two bugs this found, both mine
+
+**The first-order check counted the order being placed.** `claim_purchase`
+runs after the order and its items are written, so every referred order
+saw its own line and refused itself as a second purchase. Every referral
+would have failed. Caught by the first live test, not by reading it.
+
+**`admin_remove_content`'s lesson, again**: the earnings row was written
+with `note=`, a column `earnings_ledger` does not have — it is `kind`.
+Tests caught that one.
+
+### Tested against production, with dummy money, then removed
+
+₹1,000 dummy product, ₹100 a side. Paid **full price**, wallet to ₹0,
+cashback pending with no maturity date; swept before delivery → nothing;
+delivered → matures 1 Oct; window forced closed → ₹100 into the buyer's
+wallet and ₹100 into the consultant's earnings at 0 bps; second order
+with the same code → *"This coupon is for first-time buyers only"*; swept
+again → nothing moved. A separate run proved the sign-up perk (3/day for
+3 days, both sides, welcome five untouched, no money) and a return
+(**both rows cancelled, nothing paid**).
+
+**The cleanup hit rule 2 and was allowed to.** `ledger` and
+`earnings_ledger` both refuse DELETE by trigger — append-only, and that
+was not going to be disabled on a production database to tidy a test. The
+money went out the sanctioned way, as reversing entries; everything
+deletable was deleted. **Five test profiles remain**, renamed
+`[test] referral programme, 25 Sep 2026`, with zero balances, because
+their ledger rows cannot leave and so neither can they. **Every wallet
+still reconciles with its ledger** — checked after.
+
+### Notifications, which did not exist
+
+The Alerts tab read seven hard-coded strings out of `mock.js`, the same
+seven for every account, forever. There is a `notifications` table now,
+and the tab reads it.
+
+**Polling, not push** — and that is this codebase's existing answer, not a
+shortcut: `src/lib/chat.js` says at the top that Realtime subscriptions
+became pollers at the cutover and WebSocket delivery is a later phase.
+Alerts poll at 15s against chat's 3s.
+
+### Live
+
+`namo-api` **00029**, `namo-console` **00017**, migrations applied.
+`namo-mature-cashback` Cloud Run Job on `namo-mature-cashback-sched`,
+daily 03:30 IST — created, executed by hand, then triggered through the
+scheduler to prove the wiring. It needed `--command=python`; without it
+the container exits before it starts, which is how the first run failed.
+
+**663 tests**, 29 new in `tests/test_referrals.py`.
+
+### Open
+
+- **Onboarding does not ask for a code.** It is claimed from the profile
+  card instead, which works but means a new seeker has to find it.
+- Shiprocket never sets `DELIVERED` — the console is the only path, so
+  cashback matures only when an admin marks the parcel delivered.
+- `REFERRAL_CASHBACK_CAP_PAISE` is 0. Uncapped.

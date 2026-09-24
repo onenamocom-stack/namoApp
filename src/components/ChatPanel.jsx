@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { askSuggestions, notifications } from '../data/mock.js'
+import { askSuggestions } from '../data/mock.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -15,6 +15,11 @@ import {
   subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
+import {
+  ago as alertAgo,
+  markRead as markAlertsRead,
+  subscribeToAlerts,
+} from '../lib/notifications.js'
 import useAskAi from './useAskAi.js'
 import SubjectForm from './SubjectForm.jsx'
 
@@ -586,22 +591,57 @@ function AskAi() {
 
 /* ── Alerts ──────────────────────────────────────────────────────────────── */
 
-/** The old notifications route, folded in as the third tab. */
+/**
+ * The alerts tab. Real rows since 25 Sep 2026.
+ *
+ * It read seven hard-coded strings out of `mock.js` until then — the same
+ * seven for every account, forever, including the one about readings
+ * arriving at 08:00 that nothing ever sent.
+ *
+ * Polling, not push: `lib/chat.js` explains why at the top of the file,
+ * and alerts poll slower than messages because an alert is something you
+ * find when you look rather than something you are interrupted by.
+ *
+ * Opening the tab marks everything read. That is the honest reading of
+ * the gesture — a badge that survives you looking at the list is a badge
+ * you learn to ignore.
+ */
 function Alerts() {
+  const [items, setItems] = useState(null)
+
+  useEffect(() => subscribeToAlerts((payload) => setItems(payload.items)), [])
+
+  useEffect(() => {
+    if (items && items.some((n) => !n.read)) markAlertsRead()
+  }, [items])
+
+  if (items === null) {
+    return <p className="animate-breathe px-4 py-6 text-meta t-faint">Loading.</p>
+  }
+
+  if (!items.length) {
+    return (
+      <p className="px-4 py-6 text-meta t-faint">
+        Nothing yet. Cashback, referrals and anything the sky does worth
+        interrupting you for will land here.
+      </p>
+    )
+  }
+
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
       <ul>
-        {notifications.map((n) => (
-          <li key={n.id} className="border-b border-rule px-4 py-4">
-            <p className="caps-sm t-faint tnum">{n.time}</p>
-            <p className="mt-1.5 text-meta t-sub">{n.text}</p>
+        {items.map((n) => (
+          <li
+            key={n.id}
+            className={`border-b border-rule px-4 py-4 ${n.read ? '' : 'bg-surface-2'}`}
+          >
+            <p className="caps-sm t-faint tnum">{alertAgo(n.created_at)}</p>
+            <p className="mt-1.5 text-meta t-heading">{n.title}</p>
+            {n.body && <p className="mt-1 text-meta t-sub">{n.body}</p>}
           </li>
         ))}
       </ul>
-      <p className="px-4 py-6 text-meta t-faint">
-        Readings arrive at 08:00. Everything else is the sky doing something worth interrupting
-        you for.
-      </p>
     </div>
   )
 }

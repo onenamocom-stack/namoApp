@@ -551,6 +551,16 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
         obj.updated_at = timezone.now()
         super().save_model(request, obj, form, change)
 
+        # Delivery starts the referral cashback's clock; a return kills it.
+        # After super(), so the status that is acted on is the one that
+        # actually saved — and outside any transaction of ours, because a
+        # cashback bookkeeping failure must not refuse a legitimate
+        # shipment update an admin is making.
+        if "status" in form.changed_data:
+            from apps.referrals import services as referral_services
+
+            referral_services.on_shipment_status(obj.order_id, obj.status)
+
 
 @dj.register(ShopCategory, site=site)
 class ShopCategoryAdmin(AuditedAdmin, dj.ModelAdmin):

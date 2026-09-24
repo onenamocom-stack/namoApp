@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
 import Composer from '../components/Composer.jsx'
+import ReferralCard from '../components/ReferralCard.jsx'
 import { fetchByAuthor, followCounts } from '../lib/content.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
@@ -380,6 +381,11 @@ function SettingsTab() {
 
   return (
     <>
+      {/* First, above Consulting. The owner asked for it on settings, and
+          a referral card below three preference rows is one nobody
+          scrolls to — the thing it needs most is to be seen. */}
+      <ReferralCard />
+
       <section className="border-b border-rule px-5 py-6">
         <Kicker>Consulting</Kicker>
         <div className="mt-2">

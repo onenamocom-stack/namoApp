@@ -1592,3 +1592,87 @@ the same dot, and the one that is wrong is always somebody's evening.
 No index yet: eight approved consultants, and the roster reads all of them
 on every load. `(accepting_now, last_seen_at)` partial on `accepting_now`
 is the index when the roster stops being one page.
+
+## Referrals — `referral_codes`, `referrals`, `referral_cashback`, `notifications` (25 Sep 2026)
+
+Four tables. Django migrations (`apps/referrals/0001`, `apps/notifications/0001`),
+plus two columns on `ai_quota`.
+
+### `referral_codes`
+
+`profile_id`, `kind`, `code` unique, `active`, unique on (profile_id, kind).
+
+**Eight characters: one prefix, seven random**, from a 31-letter alphabet
+with **0, O, 1, I and L removed**. These get read aloud on calls, typed
+off screenshots and written on paper; every confusable pair dropped is a
+pair somebody would eventually mistype into a stranger's code. 31⁷ ≈ 27
+billion, so the unique index handles collisions as a formality rather
+than something the generator reasons about.
+
+`N…` is a seeker's, `A…` an approved consultant's. **A person can hold
+both** — a seeker who is later approved keeps the N code they may already
+have shared and gains an A code. Re-prefixing the old one would silently
+break every link already written down.
+
+Minted lazily, on first ask. Most people never share one, and a code
+nobody sees is a row nobody needs.
+
+### `referrals`
+
+`kind` (signup | purchase), `referrer_id`, `referee_id`, `code`,
+`order_id`.
+
+**Unique on (referee_id, kind).** A seeker is brought into the product
+once and buys their first thing once. This index is what makes the
+console's *"did anybody claim twice"* question answerable without a scan,
+and it is the whole defence against one account collecting the new-seeker
+perk from six friends' codes. A CHECK refuses self-referral.
+
+`referrer_id` is denormalised from the code rather than joined through
+it: a code can be deactivated, and the history of who was credited must
+not move when it is.
+
+### `referral_cashback`
+
+`referral_id`, `profile_id`, `side` (buyer | referrer), `amount_paise`,
+`status` (pending | paid | cancelled), `matures_at`, `paid_at`. Unique on
+(referral, side).
+
+**Pending until seven days after DELIVERY, and `matures_at` is set from
+the delivery date, not the order's.** Credited at purchase, a buyer could
+take the cashback, spend it on a consultation and return the item — and
+money already paid to a consultant cannot be clawed back. The wait is
+what makes the programme safe to run at all. A return or a cancellation
+moves the row to `cancelled`, and nothing has to be recovered from anyone
+because nothing was paid.
+
+**Two rows, not one with two amounts**, because they are paid into
+different books: the buyer's into the wallet (spendable, and not
+withdrawable — the wallet has no seeker withdraw path at all), the
+consultant's into `earnings_ledger` at `fee_bps = 0`, which they already
+draw from at month end.
+
+Index `(matures_at) where status = 'pending'` — the sweep's only read.
+
+### `notifications`
+
+`profile_id`, `kind` (dotted string), `title`, `body`, `ref_type`,
+`ref_id`, `read_at`, `dedupe_key` unique.
+
+**`kind` is a string, not a choices list.** Eight apps would otherwise
+edit one enum in this module on every feature. **`dedupe_key`** is what
+makes an alert safe to write from a retried job — a maturation sweep that
+runs again after a crash does not announce the same cashback five times.
+
+Delivery is **polling**, the same answer `src/lib/chat.js` already gives:
+Realtime subscriptions became pollers at the cutover and WebSocket
+delivery is a later phase. Alerts poll every 15s against chat's 3s.
+
+### `ai_quota` gains `bonus_daily` and `bonus_until`
+
+An end date and a number, **not a balance of granted messages**. The ask
+was *three a day for three days*: somebody who misses a day does not get
+to spend the backlog on the third, and a balance would let them. Past the
+date the row is inert and nothing has to clean it up. The allowance is
+`max(setting, bonus)` so raising `AI_DAILY_FREE` for a testing window
+cannot cut somebody's referral perk down.

@@ -62,10 +62,22 @@ def _welcome_free():
     return settings.AI_WELCOME_FREE
 
 
-def _daily_free():
+def _daily_free(row=None):
+    """The daily allowance for this person, today.
+
+    Normally the setting. A seeker inside a referral boost window gets
+    the larger of the two — larger, not the boost outright, so that
+    raising AI_DAILY_FREE for a testing window cannot accidentally cut
+    somebody's referral perk down to three.
+    """
     from django.conf import settings
 
-    return settings.AI_DAILY_FREE
+    base = settings.AI_DAILY_FREE
+    if row is None or not row.bonus_until or not row.bonus_daily:
+        return base
+    if row.bonus_until < _ist_today():
+        return base
+    return max(base, row.bonus_daily)
 
 
 def _ist_today():
@@ -100,7 +112,15 @@ def quota_state(profile_id):
     # fresh account has none left on the day its fifth was spent — "one a
     # day FROM THE NEXT DAY", which is what was asked for.
     used_today = row.daily_used if (row and row.last_free_on == _ist_today()) else 0
-    return {"free_left": max(0, _daily_free() - used_today), "kind": "daily"}
+    allowance = _daily_free(row)
+    return {
+        "free_left": max(0, allowance - used_today),
+        "kind": "daily",
+        # Surfaced so the panel can say WHY there are three today rather
+        # than leaving a seeker to notice the number changed on its own.
+        "daily_allowance": allowance,
+        "boosted": bool(row and row.bonus_until and row.bonus_until >= _ist_today()),
+    }
 
 
 def _take_free(profile_id):
@@ -129,7 +149,7 @@ def _take_free(profile_id):
         # allowance so the daily branch below cannot also fire.
         row.welcome_used += 1
         row.last_free_on = today
-        row.daily_used = _daily_free()
+        row.daily_used = _daily_free(row)
         row.save(update_fields=("welcome_used", "last_free_on", "daily_used"))
         return True
 
@@ -139,7 +159,7 @@ def _take_free(profile_id):
         row.save(update_fields=("last_free_on", "daily_used"))
         return True
 
-    if row.daily_used < _daily_free():
+    if row.daily_used < _daily_free(row):
         row.daily_used += 1
         row.save(update_fields=("daily_used",))
         return True

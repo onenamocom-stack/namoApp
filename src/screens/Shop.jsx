@@ -6,6 +6,7 @@ import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
+import { looksLikeReferral } from '../lib/referrals.js'
 import { useMyChart } from '../lib/astro.js'
 
 /**
@@ -86,6 +87,15 @@ export default function Shop() {
   const [sub, setSub] = useState(null)
   const rail = useRef(null)
 
+  /* A consultant's link lands here as ?ref=ACODE (and ?p=<id> for one
+     product). Held in sessionStorage as well as state, because the
+     journey from the link is rarely one page: a seeker arrives, browses,
+     signs in — and a code that only lived in the URL would be gone by the
+     time they reached Buy, with nobody able to say why they were not
+     credited. Sign-up codes (N…) are deliberately ignored: those are
+     claimed once at onboarding, not at a till. */
+  const referral = useReferralFromLink()
+
   // One banner's worth of scroll, measured off the DOM rather than derived
   // from the percentage width — the gap and the rail padding are in there too.
   const step = (el) =>
@@ -146,6 +156,20 @@ export default function Shop() {
           instead — see `CartFab` in App.jsx, which is mounted against the
           phone frame rather than this scroller so it cannot scroll away. */}
       <TabHeader />
+
+      {/* Said BEFORE anything is tapped, and said as cashback.
+          A seeker who discovers after paying that the 10% was not taken
+          off the total has been surprised by their own money, which is
+          the one surprise this product cannot afford. Three facts, in the
+          order they matter: it is back not off, it is after delivery, and
+          it is first order only. */}
+      {referral && (
+        <p className="border-b border-rule bg-surface-2 px-5 py-3 text-micro t-sub">
+          Code <b className="tnum">{referral}</b> is applied. You pay the full
+          price and get <b>10% back</b> in your wallet seven days after delivery —
+          on your first order only.
+        </p>
+      )}
 
       <Search value={query} onChange={setQuery} placeholder="Search stones, maalas and kits" />
 
@@ -300,7 +324,7 @@ export default function Shop() {
                   full={false}
                   variant="gold"
                   disabled={spending}
-                  onClick={() => buyNow(hero)}
+                  onClick={() => buyNow(hero, referral)}
                 >
                   Buy now
                 </PopButton>
@@ -393,7 +417,7 @@ export default function Shop() {
                             variant="gold"
                             full={false}
                             disabled={spending}
-                            onClick={() => buyNow(p)}
+                            onClick={() => buyNow(p, referral)}
                             className="flex-1"
                           >
                             Buy
@@ -422,4 +446,45 @@ export default function Shop() {
       <div className="h-28" />
     </>
   )
+}
+
+/**
+ * The referral code a link brought, if any.
+ *
+ * Kept in sessionStorage as well as state. The journey from a shared link
+ * is rarely one page — arrive, browse, sign in, then buy — and a code
+ * that lived only in `location.hash` would be gone by the time it
+ * mattered, with nobody able to explain why the consultant was not
+ * credited. Session storage, not local: it belongs to this visit.
+ *
+ * Only A… codes. An N… code is a sign-up code claimed once at onboarding,
+ * and silently treating one as a shop coupon would send a seeker to a
+ * till to be told, correctly but uselessly, that it is the wrong kind.
+ */
+function useReferralFromLink() {
+  const [code, setCode] = useState(() => {
+    try {
+      return sessionStorage.getItem('namo.ref') || null
+    } catch {
+      return null
+    }
+  })
+
+  useEffect(() => {
+    // HashRouter puts the query after the hash, so `location.search` is
+    // empty and the params live in the hash's own query string.
+    const hash = window.location.hash
+    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : ''
+    const found = new URLSearchParams(q).get('ref')
+    if (!found || !looksLikeReferral(found) || !found.toUpperCase().startsWith('A')) return
+    const upper = found.toUpperCase()
+    setCode(upper)
+    try {
+      sessionStorage.setItem('namo.ref', upper)
+    } catch {
+      /* private window, blocked storage — the code still works this page */
+    }
+  }, [])
+
+  return code
 }

@@ -783,3 +783,53 @@ milestone.
   nothing, on purpose.
 - Desktop for seekers. The app is a 420px phone frame. Only the admin console is
   a desktop product.
+
+## 12. Referrals — two programmes (25 Sep 2026)
+
+They share a shape and nothing else. Keeping that straight is the whole
+design: one is a coupon used at a till, the other a code typed at
+sign-up.
+
+| | Consultant → seeker | Seeker → seeker | Consultant → consultant |
+|---|---|---|---|
+| Code | `A…` | `N…` | — |
+| Used | at shop checkout | at sign-up | — |
+| Reward | **10% back, both sides** | **3 free AI questions a day for 3 days, both sides** | **nothing** |
+| Limit | the buyer's **first ever order** | once per account, ever | — |
+
+### The 10% is cashback, not a discount
+
+**This is the commercial decision the whole programme rests on.** The
+order is paid at the listed price; the 10% arrives afterwards as wallet
+credit. Revenue is recognised in full, and the money stays inside the
+product — cashback is spent on a reading or another order, never
+withdrawn, because the wallet has no seeker withdraw path.
+
+A 10% discount would have cost the same on paper and bought none of that.
+
+The consultant's 10% goes to `earnings_ledger` at zero platform fee and
+leaves with their month-end payout. A consultant buying through another
+consultant's link earns nobody anything, and is **refused rather than
+silently credited zero** — being told "you got 10%" and receiving nothing
+is worse than being told no.
+
+### It waits seven days after delivery
+
+Not at checkout. A buyer could otherwise take the cashback, spend it on a
+consultation, and return the item; money already paid to a consultant
+cannot be clawed back. A returned or cancelled parcel cancels both rows
+and nothing has to be recovered from anybody.
+
+### The cap is off, and is a flag
+
+`REFERRAL_CASHBACK_CAP_PAISE`, **zero meaning no cap**, which is where it
+starts on the owner's instruction. The flag exists so a limit can be set
+without a deploy. The number to remember: an uncapped 10% on today's
+dearest item, a ₹26,400 gemstone, is ₹2,640 a side.
+
+### Sign-up referrals move no money
+
+Three free AI questions a day for three days, to both sides. The welcome
+five on day one are untouched — those are constant for every account,
+referred or not, so the perk is about the days after. The referrer is
+told when somebody joins with their code.

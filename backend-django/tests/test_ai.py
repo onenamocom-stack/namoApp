@@ -150,7 +150,12 @@ class TestQuota:
         assert services.quota_state(SEEKER)["free_left"] == 0
 
         day[0] = day[0] + timezone.timedelta(days=1)
-        assert services.quota_state(SEEKER) == {"free_left": 1, "kind": "daily"}
+        # `daily_allowance` and `boosted` joined the payload on 24 Sep with
+        # referral boosts — the panel needs to say WHY there are three today
+        # rather than leave a seeker to notice the number moved on its own.
+        assert services.quota_state(SEEKER) == {
+            "free_left": 1, "kind": "daily", "daily_allowance": 1, "boosted": False,
+        }
         assert services.ask(SEEKER, "tomorrow")["ok"]
         assert services.ask(SEEKER, "tomorrow again")["ok"] is False
 

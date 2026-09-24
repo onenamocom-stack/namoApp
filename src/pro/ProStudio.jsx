@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchByAuthor } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Composer from '../components/Composer.jsx'
@@ -45,6 +46,24 @@ export default function ProStudio() {
       <TabHeader />
 
       <Composer kinds={KINDS} onPublished={() => setReload((n) => n + 1)} />
+
+      {/* The way in to affiliate links, above the composer's output rather
+          than buried in the profile tab. A screen reachable only by typing
+          its URL is a screen nobody uses — the dashboard learned that the
+          hard way on 22 Sep. This sits where a consultant already is when
+          they have just finished posting about a product. */}
+      <Link
+        to="/pro/affiliate"
+        className="mx-5 mt-2 flex items-center justify-between gap-3 rounded-lg border border-rule px-4 py-3.5 transition-colors hover:border-t1"
+      >
+        <span className="min-w-0">
+          <span className="block text-body text-t1">Share a product, earn 10%</span>
+          <span className="mt-0.5 block text-micro t-faint">
+            Your link, and what it pays
+          </span>
+        </span>
+        <span aria-hidden="true" className="flex-none caps-sm gold">Open</span>
+      </Link>
 
       <section className="px-5 py-6">
         <Kicker action="See all" to="/pro/profile">

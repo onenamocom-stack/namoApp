@@ -225,9 +225,33 @@ def _purchase(profile_id, wanted, coupon_code):
         products[product_id] = (product, qty)
 
     subtotal = sum(p.price_paise * q for p, q in products.values())
-    discount, coupon, refusal = check_coupon(coupon_code, subtotal)
-    if refusal:
-        raise Refused(refusal)
+
+    # TWO KINDS OF CODE GO IN THE SAME BOX, and they do opposite things.
+    #
+    # A shop coupon is a DISCOUNT: the total comes down and the revenue
+    # with it. A consultant's referral code is not — the order is paid in
+    # full and 10% comes back afterwards as wallet credit. That is the
+    # whole commercial point: the money stays inside the product instead
+    # of leaving it, and a discount would have done the opposite.
+    #
+    # Referral codes are checked first because their namespace is its own
+    # (one letter of prefix, then seven), so a referral code reaching
+    # check_coupon would be refused as an unknown coupon — the wrong
+    # sentence for a code that is perfectly valid.
+    referral_code = None
+    discount, coupon = 0, None
+    if coupon_code:
+        from apps.referrals import services as referral_services
+
+        if referral_services.resolve(coupon_code) is not None:
+            verdict = referral_services.check_coupon(profile_id, coupon_code)
+            if not verdict["ok"]:
+                raise Refused(verdict["reason"])
+            referral_code = coupon_code
+        else:
+            discount, coupon, refusal = check_coupon(coupon_code, subtotal)
+            if refusal:
+                raise Refused(refusal)
     total = max(0, subtotal - discount)
 
     # The wallet takes its own row lock inside this transaction. It is the
@@ -254,10 +278,26 @@ def _purchase(profile_id, wanted, coupon_code):
         # coupon, so `used_count` cannot be a query over orders.
         Coupon.objects.filter(pk=coupon.pk).update(used_count=coupon.used_count + 1)
 
+    cashback = 0
+    if referral_code:
+        # Inside this transaction on purpose: an order that refuses for any
+        # later reason must take its attribution with it. Nothing is PAID
+        # here — two pending rows are written and they mature seven days
+        # after the parcel is delivered.
+        from apps.referrals import services as referral_services
+
+        claimed = referral_services.claim_purchase(profile_id, order, referral_code)
+        if not claimed["ok"]:
+            raise Refused(claimed["reason"])
+        cashback = claimed.get("cashback_paise", 0)
+
     return {
         "ok": True, "order_id": str(order.id),
         "subtotal_paise": subtotal, "discount_paise": discount,
         "total_paise": total, "balance_paise": paid.get("balance_paise"),
+        # Not a discount and deliberately named so. The client says
+        # "₹X back after delivery", never "₹X off".
+        "cashback_paise": cashback,
     }
 
 

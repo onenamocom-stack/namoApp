@@ -607,7 +607,7 @@ export function AppProvider({ children }) {
    * two orders for one person.
    */
   const buyNow = useCallback(
-    async (product) => {
+    async (product, coupon = null) => {
       if (spendingRef.current) {
         showToast('One payment at a time.')
         return false
@@ -615,12 +615,23 @@ export function AppProvider({ children }) {
       spendingRef.current = true
       setSpending(true)
       try {
-        const result = await buyFromShop([{ product_id: product.id, qty: 1 }])
+        const result = await buyFromShop(
+          [{ product_id: product.id, qty: 1 }],
+          coupon || null,
+        )
         if (!result.ok) {
           showToast(result.reason)
           return false
         }
-        showToast(`Ordered · ${product.name}`)
+        /* Cashback, never "off". The order was paid in full and the 10%
+           arrives after delivery — saying "₹X off" here would describe a
+           different offer, and one the seeker would then look for on the
+           total they just paid. */
+        showToast(
+          result.cashback_paise
+            ? `Ordered · ₹${rupees(result.cashback_paise)} back after delivery`
+            : `Ordered · ${product.name}`,
+        )
         // The debit happened server-side, so the balance here is stale
         // until this lands. Awaited inside the guard, for the same
         // ordering reason `spend` awaits its own read.

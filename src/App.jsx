@@ -32,6 +32,7 @@ import ProStudio from './pro/ProStudio.jsx'
 import ProConsult from './pro/ProConsult.jsx'
 import ProProfile from './pro/ProProfile.jsx'
 import ProApply from './pro/ProApply.jsx'
+import ProAffiliate from './pro/ProAffiliate.jsx'
 
 import Profile from './screens/Profile.jsx'
 import Wallet from './screens/Wallet.jsx'
@@ -328,6 +329,7 @@ function Frame() {
             <Route element={<ProLayout />}>
               <Route path="/pro/earnings" element={<ProEarnings />} />
               <Route path="/pro/studio" element={<ProStudio />} />
+              <Route path="/pro/affiliate" element={<ProAffiliate />} />
               <Route path="/pro/consult" element={<ProConsult />} />
               {/* Profile carries its tab in the URL too, same reason as the
                   seeker's — Earnings needs to stay deep-linkable now that it

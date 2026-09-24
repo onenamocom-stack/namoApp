@@ -99,6 +99,20 @@ class Quota(models.Model):
     # bypasses billing — and what will let it be three a day if that ever
     # becomes the product.
     daily_used = models.IntegerField(default=0)
+
+    # ── the referral boost (24 Sep 2026) ────────────────────────────────
+    #
+    # The comment above turned out to be right: three a day did become the
+    # product, for referred seekers and the people who referred them.
+    #
+    # An END DATE and a NUMBER, not a balance of granted messages. The ask
+    # was "three a day for three days" — somebody who misses a day does
+    # not get to spend the backlog on the third, and a balance would let
+    # them. Past the date the row is inert and the normal allowance
+    # applies again; nothing has to clean it up.
+    bonus_daily = models.IntegerField(default=0)
+    bonus_until = models.DateField(null=True, blank=True)
+
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

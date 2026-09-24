@@ -69,6 +69,8 @@ LOCAL_APPS = [
     "apps.profiles",
     "apps.ai",
     "apps.shop",
+    "apps.notifications",
+    "apps.referrals",
     "apps.analytics",
 ]
 # apps.console comes FIRST, before django.contrib.admin, and that order is
@@ -243,6 +245,36 @@ DAILY_DOMAIN = os.environ.get("DAILY_DOMAIN", "")  # e.g. 1namo.daily.co
 # is the other one: these are people's marriages, money and illnesses, and
 # recording them needs consent this product has not asked for.
 DAILY_ENABLE_RECORDING = os.environ.get("DAILY_ENABLE_RECORDING", "") == "1"
+
+# ── referrals (24 Sep 2026) ─────────────────────────────────────────────────
+# 10% back to the buyer and 10% to the consultant whose code it was, on the
+# buyer's FIRST order only.
+REFERRAL_CASHBACK_BPS = int(os.environ.get("REFERRAL_CASHBACK_BPS", "1000"))
+
+# The cap per side, per order. **Zero means no cap**, which is where it
+# starts on the owner's instruction — the flag exists so a limit can be
+# imposed without a deploy the day an order is large enough to want one.
+# On today's catalogue an uncapped 10% is ₹2,640 a side on the ₹26,400
+# gemstone, which is the number to remember when setting it.
+REFERRAL_CASHBACK_CAP_PAISE = int(os.environ.get("REFERRAL_CASHBACK_CAP_PAISE", "0"))
+
+# How long after DELIVERY the cashback sits pending. The return window,
+# plus nothing — this is the whole defence against buy, take the cashback,
+# spend it on a consultation, return the item.
+REFERRAL_HOLD_DAYS = int(os.environ.get("REFERRAL_HOLD_DAYS", "7"))
+
+# What a sign-up referral buys, for BOTH sides: this many free AI questions
+# a day, for this many days. The welcome five on day one are untouched —
+# they are constant for every account, referred or not.
+REFERRAL_AI_DAILY = int(os.environ.get("REFERRAL_AI_DAILY", "3"))
+REFERRAL_AI_DAYS = int(os.environ.get("REFERRAL_AI_DAYS", "3"))
+
+# Where an affiliate link points. The server builds the whole URL rather
+# than letting the app concatenate one: a consultant's link gets pasted
+# into WhatsApp and lives for months, so the shape of it is a contract and
+# belongs somewhere one change fixes every link made after it.
+APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "https://1namo.com")
+
 
 # The retired per-minute meter still reads this. Nothing new should.
 AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
