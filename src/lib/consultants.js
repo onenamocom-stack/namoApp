@@ -129,6 +129,10 @@ function shape(row, services = []) {
     bio: row.bio ?? '',
     credentials: row.credentials ?? [],
     verified: row.verified,
+    // The server's answer, not the client's arithmetic on a timestamp.
+    // Two phones with two clocks would otherwise disagree about the same
+    // dot, and the one that is wrong is always somebody's evening.
+    online: row.online === true,
     rating: row.rating_avg_cache,
     reviewCount: row.rating_count_cache,
     fixed,
@@ -376,5 +380,41 @@ export async function listPriceBands() {
   } catch (err) {
     console.error('[bands] load failed:', err?.message)
     throw err
+  }
+}
+
+/* ── Presence ───────────────────────────────────────────────────────────────── */
+
+/**
+ * The pro app checking in. Called every thirty seconds while the app is
+ * open, and again the instant the switch is flipped.
+ *
+ * `accepting` left undefined is a plain heartbeat and leaves the switch
+ * alone — an app open in a background tab must not put anybody online.
+ * Passing it is the toggle.
+ *
+ * Every beat carries the switch's state, so a toggle whose request failed
+ * corrects itself thirty seconds later rather than leaving a consultant
+ * invisible — or worse, visible and absent — until they notice.
+ *
+ * The server decides `online`; this never computes it. Returns null when
+ * the caller is not an approved consultant, which is the seeker app
+ * calling a route that is not for it.
+ */
+export async function beat(accepting) {
+  const token = await accessToken()
+  if (!token) return null
+  try {
+    return await api('/consultants/presence/', {
+      method: 'POST',
+      token,
+      body: accepting === undefined ? {} : { accepting },
+    })
+  } catch (err) {
+    // A dropped beat is not an error worth showing. The grace window
+    // forgives two, and the next one fixes it; a toast every time a lift
+    // loses signal would be the loudest thing in the app.
+    if (err?.status !== 403) console.error('[presence] beat failed:', err?.message)
+    return null
   }
 }

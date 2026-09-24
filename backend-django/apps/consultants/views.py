@@ -43,6 +43,10 @@ def _consultant_row(consultant, service_rows):
         "bio": consultant.bio or "",
         "credentials": consultant.credentials or [],
         "verified": consultant.verified,
+        # Presence, derived server-side — never the client's arithmetic on a
+        # last_seen timestamp, because two devices with two clocks would
+        # disagree about the same dot.
+        "online": bool(getattr(consultant, "online", False)),
         "rating_avg_cache": consultant.rating_avg_cache,
         "rating_count_cache": consultant.rating_count_cache,
         "services": service_rows,
@@ -355,3 +359,36 @@ def earnings(request, consultant_id):
             refusal_body("forbidden", "That is not your practice."), status=403
         )
     return Response(services.list_earnings(consultant_id))
+
+
+# ── presence ────────────────────────────────────────────────────────────────
+
+
+class PresenceInput(serializers.Serializer):
+    """`accepting` is optional: a bare POST is a heartbeat and leaves the
+    switch where it is. Sending it is the toggle."""
+
+    accepting = serializers.BooleanField(required=False, allow_null=True)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def presence(request):
+    """The pro app checking in — every thirty seconds, and on every flip of
+    the switch.
+
+    Always about the CALLER. There is no consultant_id in the body, because
+    a route that lets one account mark another online is a route that lets
+    anyone put a green dot on somebody who has gone home.
+    """
+    serializer = PresenceInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    state = services.touch_presence(
+        request.user.pk, accepting=serializer.validated_data.get("accepting")
+    )
+    if state is None:
+        return Response(
+            refusal_body("not_a_consultant", "You are not an approved consultant."),
+            status=403,
+        )
+    return Response(state)

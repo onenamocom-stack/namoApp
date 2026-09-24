@@ -47,7 +47,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, connection, transaction
-from django.db.models import F
+from django.db.models import BooleanField, Case, F, Value, When
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
@@ -249,7 +249,7 @@ def public_consultants():
     safe columns plus the name."""
     return (
         Consultant.objects.filter(status=ConsultantStatus.APPROVED)
-        .annotate(name=_name_expr("profile_id"))
+        .annotate(name=_name_expr("profile_id"), online=online_expr())
         .order_by(F("rating_avg_cache").desc(nulls_last=True), "-created_at")
     )
 
@@ -677,3 +677,92 @@ def list_earnings(consultant_id, limit=50):
         }
         for row in rows
     ]
+
+
+# ── presence (24 Sep 2026) ──────────────────────────────────────────────────
+
+
+# How stale a heartbeat may be and still count as here. The pro app beats
+# every 30s, so ninety seconds forgives two missed beats — a phone that
+# switched from wifi to mobile data mid-tap should not go dark.
+#
+# Long enough that a flaky network does not blink the dot; short enough
+# that a closed app stops taking calls before a seeker has typed their
+# question. Nothing writes "offline": going dark is the ABSENCE of a
+# write, which is the only kind of offline a dead battery can produce.
+PRESENCE_GRACE_SECONDS = 90
+
+
+def _cutoff(now=None):
+    from django.utils import timezone
+
+    return (now or timezone.now()) - timedelta(seconds=PRESENCE_GRACE_SECONDS)
+
+
+def online_expr(now=None):
+    """Annotation: is this consultant takeable RIGHT NOW?
+
+    Both halves, because either alone sends a seeker to somebody who will
+    not answer — see the fields' own comment on the model.
+    """
+    return Case(
+        When(accepting_now=True, last_seen_at__gte=_cutoff(now), then=Value(True)),
+        default=Value(False),
+        output_field=BooleanField(),
+    )
+
+
+def is_online(consultant_id, now=None):
+    """One consultant, for the refusal at the top of a session request."""
+    return Consultant.objects.filter(
+        profile_id=consultant_id,
+        status=ConsultantStatus.APPROVED,
+        accepting_now=True,
+        last_seen_at__gte=_cutoff(now),
+    ).exists()
+
+
+def touch_presence(consultant_id, accepting=None, now=None):
+    """The pro app checking in, and optionally flipping the switch.
+
+    One endpoint for both because they travel together: every heartbeat
+    carries the toggle's current state, so a toggle that failed to save
+    corrects itself on the next beat rather than leaving the consultant
+    invisible — or worse, visible and absent — until they notice.
+
+    Returns the state as the server now sees it, which is what the pro
+    app renders. It never renders its own optimistic copy: the dot a
+    seeker sees is this row, and two sources of truth for "am I online"
+    is how a consultant sits waiting for calls that were never offered.
+    """
+    from django.utils import timezone
+
+    stamp = now or timezone.now()
+    fields = {"last_seen_at": stamp}
+    if accepting is not None:
+        fields["accepting_now"] = bool(accepting)
+
+    updated = Consultant.objects.filter(
+        profile_id=consultant_id, status=ConsultantStatus.APPROVED
+    ).update(**fields)
+    if not updated:
+        return None
+
+    row = Consultant.objects.filter(profile_id=consultant_id).values(
+        "accepting_now", "last_seen_at"
+    ).first()
+    return {
+        "accepting_now": row["accepting_now"],
+        "online": row["accepting_now"] and row["last_seen_at"] >= _cutoff(stamp),
+        "last_seen_at": row["last_seen_at"].isoformat(),
+        "grace_seconds": PRESENCE_GRACE_SECONDS,
+    }
+
+
+def go_offline(consultant_id):
+    """The switch, off. Used by the toggle and by signing out of the pro
+    app — leaving `accepting_now` true on a logout would put a green dot
+    on somebody who has gone home."""
+    return Consultant.objects.filter(profile_id=consultant_id).update(
+        accepting_now=False
+    ) == 1

@@ -7,6 +7,7 @@ urlpatterns = [
     path("price-bands/", views.price_bands, name="consultants-price-bands"),
     path("apply/", views.apply, name="consultants-apply"),
     path("me/", views.me, name="consultants-me"),
+    path("presence/", views.presence, name="consultants-presence"),
     path("bookings/", views.book, name="consultants-book"),
     path("bookings/mine/", views.my_bookings, name="consultants-my-bookings"),
     path(

@@ -181,7 +181,13 @@ def pro_user(money_tables):
                 [str(pid), timezone.now()],
             )
     consultant = Consultant.objects.create(
-        profile_id=PRO, category="Astrologer", status="approved"
+        profile_id=PRO, category="Astrologer", status="approved",
+        # Online: the switch on, the app beating. Since 24 Sep a request to
+        # an offline consultant is refused before the money is looked at,
+        # so every test that expects a session to START has to say the
+        # consultant is actually there. TestPresence below tests the
+        # refusal itself.
+        accepting_now=True, last_seen_at=timezone.now(),
     )
     service = ConsultantService.objects.create(
         consultant_id=PRO,
@@ -342,7 +348,8 @@ class TestRequest:
     def test_other_consultants_service_refused(self, pro_user):
         service = pro_user[1]
         other = Consultant.objects.create(
-            profile_id=SECOND_SEEKER, category="Astrologer", status="approved"
+            profile_id=SECOND_SEEKER, category="Astrologer", status="approved",
+            accepting_now=True, last_seen_at=timezone.now(),
         )
         foreign = ConsultantService.objects.create(
             consultant_id=other.profile_id,

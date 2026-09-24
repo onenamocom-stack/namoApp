@@ -1552,3 +1552,43 @@ weapon; every product that has shipped it spent the next year building the
 appeals process it should have built first. Every removal and every block
 is an admin's own action and lands in `admin_actions` with their name on
 it. `tests/test_moderation.py::TestAReportIsNotAVerdict` is the guard.
+
+## Presence — two columns on `consultants` (24 Sep 2026)
+
+`apps/consultants/migrations/0002_…`.
+
+| Column | |
+|---|---|
+| `accepting_now` | `boolean not null default false`. **Intent** — the switch the consultant flips |
+| `last_seen_at` | `timestamptz null`. **Reality** — their app said hello |
+
+```
+online = accepting_now AND last_seen_at >= now() - interval '90 seconds'
+```
+
+**Two columns, not one, and the pair is the design.** Either alone ends
+the same way — a green dot, a seeker pressing it, and nobody answering:
+
+- **Switch alone.** Flipped on this morning, app shut, consultant asleep.
+  Nothing is ever going to write `false` for a phone that is off.
+- **Heartbeat alone.** The app is open on the earnings screen at dinner.
+  Having the app open is not consent to be called.
+
+**Nothing writes "offline".** Going dark is the *absence* of a write, so a
+crashed app, a dead battery and a closed tab all take the dot down by
+themselves within ninety seconds. A sweeper would be a thing that
+sometimes fails to arrive in time; this cannot.
+
+**Ninety seconds, against a thirty-second beat** — two dropped beats
+forgiven, so a wifi-to-mobile handover mid-tap does not blink the dot,
+while a closed app stops taking calls before a seeker has typed their
+question. `services.PRESENCE_GRACE_SECONDS`.
+
+**Derived on the server, never in the client.** `online_expr()` annotates
+the roster queryset and the payload carries a boolean. Two phones with two
+clocks doing their own arithmetic on `last_seen_at` would disagree about
+the same dot, and the one that is wrong is always somebody's evening.
+
+No index yet: eight approved consultants, and the roster reads all of them
+on every load. `(accepting_now, last_seen_at)` partial on `accepting_now`
+is the index when the roster stops being one page.

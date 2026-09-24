@@ -869,3 +869,38 @@ line exists so nobody refreshes the feed waiting for the post to vanish.
 server's kind gate is the permission and refuses a clip without it
 whatever the UI offers, the same relationship `/pro/studio`'s `kinds` prop
 has always had with the publish policy.
+
+## Online and offline (24 Sep 2026)
+
+**The consultant's switch** lives in the pro app's header, first of the
+controls and visible on every screen — `components/PresenceToggle.jsx`. A
+dot and a word, because a consultant who cannot see that they are offline
+sits waiting for calls nobody was ever offered, and that is the most
+expensive confusion this app can create. Never in a menu.
+
+Flipping it beats immediately, so the switch and the dot agree within the
+same tap. The app then beats every thirty seconds and **every beat carries
+the switch**, so a toggle whose request failed corrects itself thirty
+seconds later rather than leaving somebody visible and absent.
+
+| What the seeker sees | When |
+|---|---|
+| Green dot on the avatar | `online` from the roster — the server's boolean, not the client's arithmetic |
+| Chat and Call live | online |
+| Chat and Call faded, and a line saying so | offline, with Schedule still working |
+
+**The line is said, not implied.** Two faded glyphs and nothing else
+produces "nothing happens when I tap". *"<name> is offline right now. You
+can still schedule a session."* — and the second sentence is the point,
+because the offline state still has something to offer.
+
+**The dot used to be `verified`.** It stood in while there was no
+presence, and one consultant was showing green on a roster where nobody
+was online.
+
+**The server refuses too, and refuses first.** `request_chat` re-checks
+presence before it looks at any money — the roster's dot was a second old
+when it was drawn, and a seeker with an empty wallet asking an offline
+astrologer is told *the astrologer is offline*, which is both the true
+answer and the fixable one. Telling them to add money would send them to
+pay for a call that still would not connect.

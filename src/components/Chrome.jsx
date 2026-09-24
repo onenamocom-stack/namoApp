@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
+import PresenceToggle from './PresenceToggle.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 /* App chrome: the top bar, the bottom nav, the sheet and the toast.
@@ -175,6 +176,13 @@ export function TabHeader({ action = null }) {
       </Link>
 
       <span className="flex-1" />
+
+      {/* The consultant's online switch. First of the controls, because it
+          is the one that decides whether anything else on this screen
+          matters — a consultant who cannot see that they are offline sits
+          waiting for calls nobody was ever offered. Renders nothing in
+          the seeker app. */}
+      <PresenceToggle />
 
       {action}
 

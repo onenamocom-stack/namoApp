@@ -269,24 +269,48 @@ export default function ConsultantProfile() {
             >
               <Icon name="calendar" size={18} />
             </button>
+            {/* Chat and call are dead while the astrologer is offline. The
+                server refuses the request anyway (presence is re-checked
+                there, because the dot was a second old when it was drawn) —
+                this is so nobody presses a button that was never going to
+                work, and so the reason is on screen instead of in a toast
+                they have to summon. */}
             <button
               type="button"
-              aria-label={`Chat with ${firstName(c.name)}`}
+              aria-label={
+                c.online
+                  ? `Chat with ${firstName(c.name)}`
+                  : `${firstName(c.name)} is offline`
+              }
               onClick={askForChat}
-              disabled={asking}
-              className="pill knob !h-10 flex-1 justify-center"
+              disabled={asking || !c.online}
+              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
             >
               <Icon name="chat" size={18} />
             </button>
             <button
               type="button"
-              aria-label={`Call ${firstName(c.name)}`}
+              aria-label={
+                c.online ? `Call ${firstName(c.name)}` : `${firstName(c.name)} is offline`
+              }
               onClick={() => showToast(`Calling ${firstName(c.name)} — prototype only`)}
-              className="pill knob !h-10 flex-1 justify-center"
+              disabled={!c.online}
+              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
             >
               <Icon name="phone" size={18} />
             </button>
           </div>
+
+          {/* Said, not merely implied by two faded glyphs. "Nothing
+              happens when I tap" is the complaint a disabled control
+              produces on its own. Schedule still works, which is the
+              whole point of saying it here. */}
+          {!c.online && (
+            <p className="mt-3 text-micro t-faint">
+              {firstName(c.name)} is offline right now. You can still schedule a
+              session.
+            </p>
+          )}
 
           {/* Intro recording. */}
           <button

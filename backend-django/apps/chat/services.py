@@ -84,6 +84,7 @@ PREVIEW_CHARS = 120  # 016: left(body, 120) — characters, not bytes
 REFUSAL_SIGN_IN = "Sign in to start a chat."
 REFUSAL_SELF_CHAT = "You cannot chat with yourself."
 REFUSAL_NOT_TAKING = "That consultant is not taking chats."
+REFUSAL_OFFLINE = "That astrologer is offline right now."
 REFUSAL_NOT_PRICED = "That session is not priced yet."
 REFUSAL_BAD_MODE = "That service cannot be started live."
 REFUSAL_SHORT_BALANCE = "Not enough balance"
@@ -192,6 +193,15 @@ def request_chat(seeker_id, consultant_id, service_id, now=None):
     )
     if service is None:
         return {"ok": False, "reason": REFUSAL_NOT_TAKING}
+    # Presence, checked BEFORE any money is looked at. A request to somebody
+    # who is asleep would be refused eventually — by nobody accepting it,
+    # after a hold and a wait — and "eventually" is the part that costs the
+    # seeker their evening. The server refuses here rather than trusting the
+    # roster's dot, which was a second old when it was drawn.
+    from apps.consultants import services as consultant_services
+
+    if not consultant_services.is_online(consultant_id, now=now):
+        return {"ok": False, "reason": REFUSAL_OFFLINE}
     if service.price_paise <= 0:
         return {"ok": False, "reason": REFUSAL_NOT_PRICED}
     # 018 fix 3: consultant_services.mode permits 'booking', sessions.mode

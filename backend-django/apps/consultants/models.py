@@ -62,6 +62,30 @@ class Consultant(models.Model):
         max_length=16, choices=ConsultantStatus.choices, default=ConsultantStatus.PENDING
     )
     verified = models.BooleanField(default=False)
+
+    # ── presence (24 Sep 2026) ──────────────────────────────────────────
+    #
+    # TWO fields, not one, and the pair is the whole design.
+    #
+    # `accepting_now` is INTENT — a switch the consultant flips: "I want
+    # calls right now". `last_seen_at` is REALITY — their app said hello in
+    # the last ninety seconds.
+    #
+    # Either alone is wrong, and wrong in a way seekers pay for:
+    #
+    #   Toggle only     — they flip it on, shut the app and go to sleep.
+    #                     A seeker sees a green dot, calls, is held, and
+    #                     nobody ever picks up. The money is refunded but
+    #                     the trust is not.
+    #   Heartbeat only  — their app is open on the earnings screen while
+    #                     they eat dinner. Green dot, no answer, same
+    #                     ending. Having the app open is not consent.
+    #
+    # Online = both. Nothing writes "offline": it is derived, so a crashed
+    # phone, a dead battery and a closed tab all go dark by themselves
+    # within ninety seconds with no sweeper to arrive in time.
+    accepting_now = models.BooleanField(default=False)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
     # The three named exceptions to §1.3, written by the reviews trigger and a
     # nightly job in Supabase. Nothing in this module writes them (020 owns
     # the review-side recompute; it reads this row through its own gateway).

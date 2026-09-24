@@ -315,9 +315,11 @@ export default function Consult() {
     return inCat && inQuery
   })
 
-  /* There is no `online` column and no presence yet — that is phase 6, and a
-     dot that is always green is worse than no dot. `verified` is a real column
-     on a real row, and it is the claim this rail was always making.
+  /* The dot is PRESENCE now (24 Sep 2026), not `verified`. It stood in for
+     online while there was no presence — a dot that is always green is
+     worse than no dot — and the roster carries the real thing today:
+     `accepting_now` and a heartbeat inside ninety seconds, decided by the
+     server so two phones with two clocks cannot disagree about it.
 
      Filtered from `list`, not from `roster`. Taken off the whole roster it
      disagreed with the count beside it — filter to a category holding one
@@ -518,7 +520,7 @@ export default function Consult() {
         <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
           {featured.map((c) => (
             <div key={c.id} className="pop-card w-36 flex-none p-3.5 text-center">
-              <PopAvatar initials={c.initials} size={64} online={c.verified} className="mx-auto" />
+              <PopAvatar initials={c.initials} size={64} online={c.online} className="mx-auto" />
               <p className="mt-2.5 truncate text-meta t-heading">{c.name}</p>
               <p className="mt-0.5 truncate caps-sm t-faint">{c.specialization.split(' · ')[0]}</p>
               <div className="mt-2 flex items-center justify-between">
@@ -553,7 +555,7 @@ export default function Consult() {
                 to={`/consult/${c.id}`}
                 className="flex items-start gap-4 transition-opacity hover:opacity-60"
               >
-                <PopAvatar initials={c.initials} size={56} online={c.verified} />
+                <PopAvatar initials={c.initials} size={56} online={c.online} />
 
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">

@@ -3852,3 +3852,80 @@ whether the screens feel right.
 - On Python 3.14 the API suite shows **36 failures on `main`** (console,
   admin templates, shiprocket, analytics), not one. CI runs 3.13, where they
   pass. Locally, that is the noise floor to compare against.
+
+## 30. Presence — the green dot means something now — 24 Sep 2026
+
+Phase 1 of video calling. No video in it: this is the thing video needs
+and did not have.
+
+**The dot was `verified`.** `Consult.jsx` said so in a comment — *"There
+is no `online` column and no presence yet… a dot that is always green is
+worse than no dot"* — and used `verified` as the stand-in. On the live
+roster that put a green dot on one consultant who was not online.
+
+**Two columns, not one.** `consultants.accepting_now` is INTENT, a switch
+the consultant flips. `last_seen_at` is REALITY, their app beating every
+thirty seconds. Online is both, with ninety seconds of grace.
+
+Either alone ends the same way — a dot, a seeker pressing it, nobody
+answering. Switch alone: flipped on this morning, app shut, asleep.
+Heartbeat alone: app open on the earnings screen at dinner. Having the app
+open is not consent to be called.
+
+**Nothing writes "offline".** Going dark is the absence of a beat, so a
+dead battery, a crashed app and a closed tab all take the dot down by
+themselves. A sweeper is a thing that sometimes does not arrive in time.
+
+**The server refuses before it looks at money.** `request_chat` re-checks
+presence rather than trusting the roster's dot, which was a second old
+when it was drawn. A seeker with an empty wallet asking an offline
+astrologer now hears *the astrologer is offline* — the true answer and the
+fixable one. The old order would have sent them to add money for a call
+that still would not connect.
+
+**Fifty tests failed when the gate went in**, every one of them a chat
+test whose consultant had no presence. That is the gate working: the
+fixtures now say the consultant is actually there, and
+`tests/test_presence.py` tests the refusal itself. **616 tests**, 15 new.
+
+**Live.** `namo-api` revision **00026**, migration applied. Checked from
+outside: the roster carries `online`, all eight consultants read
+`online=false` because nobody has opened the pro app since — including the
+one who was green yesterday.
+
+### What the video plan looks like from here
+
+The per-minute money machine was already built and running, which is why
+this is a two-week job and not a two-month one. `sessions` freezes
+`rate_paise` at request time, accept holds `floor(balance / rate)` whole
+minutes, end settles and refunds the unused, `expires_at` is a timestamp
+so a dead tab cannot buy a free minute, and the sweeper closes what nobody
+closed. Rates in production already span **₹37 to ₹3300** — any rate
+works, it is an integer.
+
+Still to come:
+
+- **Phase 2 · transport.** Daily.co. Abzzo has the client pattern
+  (`designers/daily_client.py`: private room, two participants, `exp`,
+  `eject_at_room_exp`) but **its `DAILY_API_KEY` was never set** — the
+  code is dormant there, so there is no key to reuse and an account has to
+  be made. Room `exp` must equal the session's `expires_at`, or the call
+  continues free after the money stops.
+- **Phase 3 · both call screens**, seeker and pro.
+- **Phase 4 · the edges.** Consultant never joins: full refund. Network
+  drops: session stays live, rejoin. Money runs out: Daily ejects, the
+  sweeper settles.
+
+Costs, checked: **$0.004 per participant-minute** video, so a 1:1 call is
+about **₹0.70/min** against a ₹37–3300 rate — under 2% of revenue. Audio
+is $0.00099, four times cheaper, applied automatically when there is no
+video track. 10,000 free minutes a month. **Recording and transcription
+stay off**: at $0.0059 per unmuted participant-minute that is ~₹1/min for
+two people, more than the video itself — and recording somebody's personal
+problems is a consent question before it is a cost one. Abzzo has
+`auto_start_transcription` on; that must not be copied across.
+
+**Still true and unchanged:** `mode` on `sessions` is stored, constrained,
+and **never branched on**. Thirty-two of the production services are
+`mode='call'`, six sessions have run, and every one of them was delivered
+as a text thread. Until Phase 3 the product sells "call" and delivers chat.
