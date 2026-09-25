@@ -139,6 +139,34 @@ def _price_paise():
 # ── quota ────────────────────────────────────────────────────────────────────
 
 
+def welcome_left(row):
+    """How many of the arrival five this person still has."""
+    return _welcome_free() - (row.welcome_used if row else 0)
+
+
+def open_bonus_window(row, now=None):
+    """Start an earned referral boost, from TOMORROW.
+
+    Tomorrow and not today, because the day it opens on is part-spent —
+    starting it today made the same reward worth two questions or three
+    depending on the hour it was earned.
+
+    Extending never shortens: somebody boosted twice keeps the earlier
+    start and the later end, so a second referral can only widen the
+    window.
+    """
+    if not row.bonus_days:
+        return row
+    begins = _ist_today() + timezone.timedelta(days=1)
+    until = begins + timezone.timedelta(days=row.bonus_days - 1)
+    if row.bonus_from is None or row.bonus_from > begins:
+        row.bonus_from = begins
+    if row.bonus_until is None or row.bonus_until < until:
+        row.bonus_until = until
+    row.save(update_fields=("bonus_from", "bonus_until", "bonus_daily", "bonus_days"))
+    return row
+
+
 def quota_state(profile_id):
     """What is free right now, without spending anything. The panel reads
     this to decide whether to show a question box or a Start button."""
@@ -199,6 +227,13 @@ def _take_free(profile_id):
         row.last_free_on = today
         row.daily_used = _daily_free(row)
         row.save(update_fields=("welcome_used", "last_free_on", "daily_used"))
+        # THE LAST WELCOME MESSAGE OPENS A WAITING BOOST. A referred
+        # seeker earns one before they are on the daily ladder at all;
+        # scheduling it at claim time spent it against days they were
+        # still using the welcome five for, and it expired before they
+        # ever saw a boosted day.
+        if welcome_left(row) <= 0 and row.bonus_days and row.bonus_from is None:
+            open_bonus_window(row)
         return True
 
     if row.last_free_on != today:

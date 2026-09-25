@@ -111,7 +111,12 @@ class Quota(models.Model):
     # them. Past the date the row is inert and the normal allowance
     # applies again; nothing has to clean it up.
     bonus_daily = models.IntegerField(default=0)
-    # A WINDOW, not just an end date — and it opens TOMORROW.
+    # How many days the boost lasts. Held separately from the dates because
+    # a referee's boost is SCHEDULED LATER — see below — and the length has
+    # to survive the wait.
+    bonus_days = models.IntegerField(default=0)
+    # A WINDOW, not just an end date — and it opens TOMORROW, or the day
+    # after the welcome five run out, whichever is later.
     #
     # Starting it today made the reward worth different amounts depending
     # on the hour it was earned: refer at 11pm having already spent your
@@ -121,6 +126,14 @@ class Quota(models.Model):
     # different amounts out of the same act.
     #
     # Whole days only, so "three a day for three days" is three days.
+    #
+    # NULL WITH `bonus_days` SET MEANS "EARNED, NOT YET STARTED". A new
+    # seeker's first days are the welcome five, and those are the same for
+    # everybody. Opening the boost the day after the referral spent it
+    # against days the seeker was never on the daily ladder for — they
+    # finished the welcome five a week later and the boost had already
+    # expired, so the person the whole programme is for got nothing. It is
+    # scheduled when the last welcome message is spent instead.
     bonus_from = models.DateField(null=True, blank=True)
     bonus_until = models.DateField(null=True, blank=True)
 

@@ -4484,3 +4484,32 @@ that looks like a live one.
 `profile.birth_date` on the next line dereferencing a null. Lint and build
 were both clean — the same shape as the shadowed `const` an hour earlier.
 Caught by reading the line under the one I changed.
+
+### The referee never saw their boost — 25 Sep 2026
+
+Found by the owner testing it live, and it was a real product bug, not a
+test artefact.
+
+**A referee's boost was scheduled from the day after the referral. A new
+seeker spends their first days on the welcome five.** So the three
+boosted days were spent against days that seeker was not on the daily
+ladder for at all, and by the time they reached it the window had
+expired. **The person the whole programme exists to attract got nothing.**
+
+At real scale: join Monday with a code, boost runs Tue–Thu, finish the
+welcome five on Friday, and Saturday gives you one.
+
+**The window is scheduled when the last welcome message is spent.**
+`bonus_days` holds the length; `bonus_from`/`bonus_until` stay **null**
+while welcome messages remain, which is what "earned, not yet started"
+looks like in the row. A referrer already past welcome still starts
+tomorrow, unchanged.
+
+`tests/test_referrals.py::TestTheBoostWaitsForTheWelcomeFive` spends the
+welcome five over five separate days — which is what a real new seeker
+does and what broke this — and asserts `[3, 3, 3, 1, 1]` afterwards.
+
+Both test accounts were re-armed under the new rule; their old windows
+had been scheduled by the old one and had already expired.
+
+**714 tests.** `namo-api` **00040**.

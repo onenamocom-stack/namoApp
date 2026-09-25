@@ -105,12 +105,14 @@ class TestCodes:
 @pytest.mark.django_db
 class TestSignupReferral:
     def test_both_sides_get_three_a_day_for_three_days(self, people):
+        """Both are granted the same boost. WHEN it opens differs, and that
+        is the point — see TestTheBoostWaitsForTheWelcomeFive."""
         result = services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
         assert result["ok"]
         for who in (FRIEND, BUYER):
             row = Quota.objects.get(profile_id=who)
             assert row.bonus_daily == 3
-            assert row.bonus_until == (timezone.now() + timedelta(days=3)).date()
+            assert row.bonus_days == 3
 
     def test_the_welcome_five_are_untouched(self, people):
         """Day one is five for everybody, referred or not. The perk is
@@ -590,3 +592,76 @@ class TestTheCompressedWindow:
         time.sleep(1.1)
         assert ai_services.quota_state(FRIEND)["free_left"] == 3
         assert ai_services.quota_state(FRIEND)["boosted"] is True
+
+
+
+# ── the boost waits for the welcome five ────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestTheBoostWaitsForTheWelcomeFive:
+    """A referee's boost opens when they reach the daily ladder, not three
+    days after the referral.
+
+    THE BUG THIS EXISTS FOR, found by the owner testing it live: a new
+    seeker signs up with a code and spends the next few days on the
+    welcome five, which are the same for everybody. The boost was
+    scheduled from the day after the referral, so it expired while they
+    were still on welcome — and the person the entire programme exists to
+    attract never saw a single boosted day.
+
+    At real scale: join Monday with a code, boost runs Tue-Thu, finish the
+    welcome five on Friday, and Saturday gives you one.
+    """
+
+    def test_a_new_seekers_boost_is_earned_but_not_yet_scheduled(self, people):
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        row = Quota.objects.get(profile_id=FRIEND)
+        assert row.bonus_daily == 3 and row.bonus_days == 3
+        assert row.bonus_from is None, "scheduled against days spent on welcome"
+        assert row.bonus_until is None
+
+    def test_the_referrer_who_is_already_past_welcome_starts_tomorrow(
+        self, people, monkeypatch
+    ):
+        day = [ai_services._ist_today()]
+        monkeypatch.setattr(ai_services, "_ist_today", lambda: day[0])
+        for i in range(5):
+            ai_services.ask(BUYER, f"w{i}")
+
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        row = Quota.objects.get(profile_id=BUYER)
+        assert row.bonus_from == day[0] + timedelta(days=1)
+        assert row.bonus_until == day[0] + timedelta(days=3)
+
+    def test_the_last_welcome_message_opens_it(self, people, monkeypatch):
+        day = [ai_services._ist_today()]
+        monkeypatch.setattr(ai_services, "_ist_today", lambda: day[0])
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        for i in range(4):
+            ai_services.ask(FRIEND, f"w{i}")
+        assert Quota.objects.get(profile_id=FRIEND).bonus_from is None
+
+        ai_services.ask(FRIEND, "the fifth")
+        row = Quota.objects.get(profile_id=FRIEND)
+        assert row.bonus_from == day[0] + timedelta(days=1)
+
+    def test_the_referee_actually_gets_three_a_day(self, people, monkeypatch):
+        """The whole point. Welcome five first, then three a day for three
+        days, then one — however many days the welcome five took."""
+        day = [ai_services._ist_today()]
+        monkeypatch.setattr(ai_services, "_ist_today", lambda: day[0])
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        # A week of using one welcome message a day, which is what a real
+        # new seeker does and what broke this.
+        for i in range(5):
+            assert ai_services.ask(FRIEND, f"w{i}")["ok"]
+            day[0] += timedelta(days=1)
+
+        seen = []
+        for _ in range(5):
+            seen.append(ai_services.quota_state(FRIEND)["free_left"])
+            day[0] += timedelta(days=1)
+        assert seen == [3, 3, 3, 1, 1], f"got {seen}"
