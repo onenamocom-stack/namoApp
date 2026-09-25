@@ -517,3 +517,76 @@ class TestTheBoostStartsTomorrow:
         after = Quota.objects.get(profile_id=BUYER)
         assert after.bonus_from <= began
         assert after.bonus_until >= ended
+
+
+# ── the compressed testing window ───────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestTheCompressedWindow:
+    """`AI_FREE_WINDOW_SECONDS` makes a "day" short enough to watch.
+
+    It exists so the ladder can be SEEN working — five welcome, then one a
+    day, then three a day after a referral — instead of waited out over
+    three real days. Zero is off, and zero is production.
+
+    Everything follows from one function. The allowance reset, the
+    referral boost's start and end, and the weekly tarot pull all ask
+    `_ist_today()`, so compressing it compresses all three together and
+    nothing else in the module had to learn about testing.
+    """
+
+    def test_off_by_default_and_that_is_production(self, settings):
+        settings.AI_FREE_WINDOW_SECONDS = 0
+        from django.utils import timezone as tz
+
+        assert ai_services._ist_today() == (
+            tz.now() + timedelta(hours=5, minutes=30)
+        ).date()
+
+    def test_a_short_window_advances_the_day(self, settings):
+        settings.AI_FREE_WINDOW_SECONDS = 1
+        first = ai_services._ist_today()
+        import time
+
+        time.sleep(1.1)
+        assert ai_services._ist_today() > first, "the period did not roll over"
+
+    def test_the_allowance_resets_when_the_window_rolls(self, people, settings):
+        """The thing being tested by hand: one a day, and 'a day' is two
+        minutes."""
+        settings.AI_FREE_WINDOW_SECONDS = 1
+        settings.AI_DAILY_FREE = 1
+
+        for i in range(5):
+            ai_services.ask(BUYER, f"welcome {i}")   # burn the welcome five
+        import time
+
+        time.sleep(1.1)
+        assert ai_services.quota_state(BUYER)["free_left"] == 1
+        ai_services.ask(BUYER, "the one")
+        assert ai_services.quota_state(BUYER)["free_left"] == 0
+
+        time.sleep(1.1)
+        assert ai_services.quota_state(BUYER)["free_left"] == 1, (
+            "the next window did not refill the allowance"
+        )
+
+    def test_a_referred_seeker_gets_three_per_window(self, people, settings):
+        """The whole point of the exercise: three, not one, once the boost
+        opens — and it opens at the NEXT window, not this one."""
+        settings.AI_FREE_WINDOW_SECONDS = 1
+        settings.AI_DAILY_FREE = 1
+
+        for i in range(5):
+            ai_services.ask(FRIEND, f"welcome {i}")
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        # Still this window: the boost starts next one.
+        assert ai_services.quota_state(FRIEND)["free_left"] == 0
+
+        import time
+
+        time.sleep(1.1)
+        assert ai_services.quota_state(FRIEND)["free_left"] == 3
+        assert ai_services.quota_state(FRIEND)["boosted"] is True

@@ -293,6 +293,16 @@ AI_RATE_PAISE = int(os.environ.get("AI_RATE_PAISE", "900"))
 AI_WELCOME_FREE = int(os.environ.get("AI_WELCOME_FREE", "5"))
 AI_DAILY_FREE = int(os.environ.get("AI_DAILY_FREE", "1"))
 
+# How long a "free message day" lasts, in seconds. **Zero is off and means
+# the IST calendar day**, which is production.
+#
+# Set it to 120 and a day is two minutes: the daily allowance resets every
+# two minutes and a three-day referral boost lasts six. It exists so the
+# ladder can be watched working instead of waited out over three days —
+# and it is one env var, so turning it off needs no deploy and nothing to
+# migrate back.
+AI_FREE_WINDOW_SECONDS = int(os.environ.get("AI_FREE_WINDOW_SECONDS", "0"))
+
 # ₹11 a tarot pull (docs/01-PRD.md §4.2), after two free ones a week. Both
 # are env vars for the same reason the AI ones are: they are prices and
 # allowances, and neither should need a deploy to change. The free count

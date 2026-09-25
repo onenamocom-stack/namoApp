@@ -4293,3 +4293,44 @@ deploy.
 
 **706 tests**, 4 new in `TestTheBoostStartsTomorrow` — including the
 owner's exact scenario, so it cannot drift back.
+
+### A compressed free-message window, for testing — 25 Sep 2026
+
+**`AI_FREE_WINDOW_SECONDS`. Zero is off and means the IST calendar day,
+which is production.** Set to 120 and a "day" is two minutes.
+
+It exists because the referral ladder takes three days to watch and the
+owner wanted to see it work. One env var, no deploy to flip, and nothing
+to migrate back.
+
+**Everything follows from one function.** `_ist_today()` answers *which
+free-message period are we in*, and the daily allowance reset, the
+referral boost's `bonus_from`/`bonus_until`, and the weekly tarot pull
+all ask it. Compressing it compresses all three together, and no other
+rule had to learn that testing exists.
+
+It still returns a **date**: the period is mapped onto consecutive dates
+rather than stored as a timestamp, so `ai_quota.last_free_on` and the
+boost columns need no schema change and the flag turns off cleanly.
+
+**Live on `namo-api` revision 00039, for the owner's test:**
+
+```
+AI_FREE_WINDOW_SECONDS = 120     (a "day" is 2 minutes)
+AI_DAILY_FREE          = 1       (was 500 — the old testing value)
+```
+
+**Both must go back before anyone outside the team uses this:**
+
+```
+gcloud run services update namo-api --region=asia-south1 \
+  --update-env-vars AI_FREE_WINDOW_SECONDS=0,AI_DAILY_FREE=1
+```
+
+`AI_DAILY_FREE=1` is the real product value, so only the window needs to
+return to 0. The 500 it held since the 22nd was itself a testing leftover
+and is gone.
+
+**710 tests**, 4 new in `TestTheCompressedWindow`, which sleep against a
+one-second window rather than mocking the clock — the thing being tested
+is that real elapsed time rolls the period over.

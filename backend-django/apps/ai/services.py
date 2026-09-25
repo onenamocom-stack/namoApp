@@ -24,6 +24,7 @@ metered fortnight stay readable. Nothing writes them any more.
 """
 
 import logging
+from datetime import UTC, datetime
 
 from django.db import transaction
 from django.utils import timezone
@@ -85,9 +86,41 @@ def _daily_free(row=None):
     return max(base, row.bonus_daily)
 
 
+# Where a compressed testing window counts from. Any fixed recent date
+# works; this one keeps the bucket numbers small enough that the dates
+# they map to stay inside `date`'s range for years.
+_WINDOW_EPOCH = datetime(2026, 9, 1, tzinfo=UTC)
+
+
 def _ist_today():
-    """The calendar the product already uses (docs/02-TRD.md §10). IST has
-    no DST, so the shift is a constant and this needs no zone database."""
+    """Which free-message period are we in?
+
+    Normally the IST calendar day (docs/02-TRD.md §10) — IST has no DST,
+    so the shift is a constant and this needs no zone database.
+
+    **`AI_FREE_WINDOW_SECONDS` compresses it for testing.** Set to 120 and
+    a "day" is two minutes: the daily allowance resets every two minutes
+    and a three-day referral boost lasts six. Nothing else in the module
+    changes, because every rule that says "a day" asks this one function —
+    the allowance reset, the boost window, and the weekly tarot pull all
+    follow from here.
+
+    It returns a DATE either way. The period is mapped onto consecutive
+    dates rather than stored as a timestamp, so `ai_quota.last_free_on`
+    and the boost's `bonus_from`/`bonus_until` need no schema change and
+    the flag can be turned off again with nothing to migrate back.
+
+    **Zero is off, and that is production.** This exists so a seeker can
+    watch the ladder work without waiting three days for it.
+    """
+    from django.conf import settings
+
+    window = getattr(settings, "AI_FREE_WINDOW_SECONDS", 0)
+    if window > 0:
+        elapsed = (timezone.now() - _WINDOW_EPOCH).total_seconds()
+        return _WINDOW_EPOCH.date() + timezone.timedelta(
+            days=int(elapsed // window)
+        )
     return (timezone.now() + timezone.timedelta(hours=5, minutes=30)).date()
 
 
