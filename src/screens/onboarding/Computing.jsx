@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signOut } from '../../lib/signout.js'
 import { loadingLines, user } from '../../data/mock.js'
 import { ChartNorth } from '../../components/ChartSquare.jsx'
 import { Button, Field, Stub } from '../../components/Primitives.jsx'
@@ -94,13 +95,20 @@ export default function Computing() {
        while it is in flight, which is indistinguishable from "nothing stored"
        — and guessing wrong here overwrites a real birth record. */
     if (profileLoading) return
-    if (!profile) {
-      // The trigger guarantees a row for every session, so a null profile
-      // after loading is a failed read, not an absent record. Say so rather
-      // than writing blind or silently doing nothing.
-      setSaveError('Could not load your profile. Check your connection and try again.')
-      return
-    }
+    /* A missing profile is WRITTEN, not refused.
+    
+       This used to say the trigger guarantees a row for every session, so
+       a null profile had to be a failed read. That stopped being true:
+       a profile can be deleted while its Supabase auth user survives —
+       `reset_test_account` does exactly that, and so does any account
+       erasure — and the app then had a session, no row, and no way out
+       but a Try Again that re-raised the same error forever.
+    
+       Writing is the right answer and always was. `save_onboarding` calls
+       `ensure_profile`, so the PATCH below creates the row when it is
+       missing and updates it when it is not. And we only reach here with
+       a COMPLETE draft — the effect above sends an incomplete one back to
+       the questions — so there is nothing to write blind. */
 
     /* A returning user must not lose what is already stored. There is no
        sign-in-only route yet — onboarding is the only way back to a session,
@@ -108,7 +116,10 @@ export default function Computing() {
        would replace a real birth record with whatever was retyped to get past
        the questions, and every downstream cusp with it. Sign them in and
        leave the row alone. */
-    if (profile.birth_date) {
+    /* Optional chaining, because `profile` can now be null here — the
+       guard above it used to make that impossible and no longer does.
+       A null profile falls through to the write, which is the point. */
+    if (profile?.birth_date) {
       written.current = true
       return
     }
@@ -176,6 +187,28 @@ export default function Computing() {
           >
             Try again
           </Button>
+
+          {/* A WAY OUT, because Try again cannot always work. When the
+              failure is the same one every time — and it was, for a
+              session whose profile had been deleted — a lone retry button
+              is a dead end that looks like a live one. Starting over
+              signs out first, because the stuck session IS the problem
+              and carrying it into a fresh attempt reproduces it. */}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await signOut()
+              } catch {
+                /* Already signed out, or the network is gone. Either way
+                   the next screen is the one to be on. */
+              }
+              navigate('/onboarding', { replace: true })
+            }}
+            className="mt-6 block w-full text-center text-micro uppercase tracking-caps text-t3 underline transition-colors hover:text-t1"
+          >
+            Start over instead
+          </button>
         </div>
       </div>
     )

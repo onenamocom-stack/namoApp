@@ -4456,3 +4456,31 @@ to onboarding.
 **The About section it replaced was three years stale**: *"A front-end
 layout prototype — no backend, no auth, no network calls… nothing
 survives a reload"*, above a button offering to run onboarding again.
+
+### A session with no profile was a dead end — 25 Sep 2026
+
+`Computing.jsx` said, in a comment, that *"the trigger guarantees a row
+for every session, so a null profile after loading is a failed read, not
+an absent record"* — and refused with *"Could not load your profile"*.
+
+**That stopped being true the moment `reset_test_account` existed.** It
+deletes the profile and leaves the Supabase auth user, which is exactly a
+session with no row. Any account erasure produces the same state. The
+screen then had no way out: **Try again re-ran the same effect and
+re-raised the same error forever.**
+
+**A missing profile is written now, not refused.** `save_onboarding` calls
+`ensure_profile`, so the PATCH creates the row when it is absent — the
+server could always recover and only the client refused to try. That path
+is reached only with a complete draft; an incomplete one is already sent
+back to the questions by the effect above it.
+
+**And the error screen has a way out** — *Start over instead*, which signs
+out first, because the stuck session IS the problem and carrying it into a
+fresh attempt reproduces it. A lone retry that cannot work is a dead end
+that looks like a live one.
+
+**One near-miss while fixing it.** Removing the `if (!profile)` guard left
+`profile.birth_date` on the next line dereferencing a null. Lint and build
+were both clean — the same shape as the shadowed `const` an hour earlier.
+Caught by reading the line under the one I changed.
