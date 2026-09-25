@@ -4334,3 +4334,39 @@ and is gone.
 **710 tests**, 4 new in `TestTheCompressedWindow`, which sleep against a
 one-second window rather than mocking the clock — the thing being tested
 is that real elapsed time rolls the period over.
+
+### `reset_test_account` — freeing a phone number for the next test — 25 Sep 2026
+
+```
+python manage.py reset_test_account 7011921246            # dry run
+python manage.py reset_test_account 7011921246 --yes --service-key=<supabase service role>
+```
+
+Testing the referral ladder needs a **new** seeker, and a new seeker needs
+a phone number nobody has used. Without this, every round of testing burns
+a real number.
+
+**The Supabase auth user is the point.** Deleting the `profiles` row alone
+achieves nothing — auth lives in Supabase, so the next sign-up with that
+number logs back into the same account and the test is not a new seeker at
+all. The command does both sides.
+
+**It refuses rather than half-deleting.** `ledger` and `earnings_ledger`
+are append-only by trigger, so an account that has moved money keeps those
+rows and therefore keeps its profile. A half-deleted account is worse for
+the next test than an untouched one. Verified against production: the
+owner's own number is refused with *10 wallet ledger rows*.
+
+**Dry run by default.** `--yes` is the only thing that deletes.
+
+**Two findings from the first dry run:**
+
+- **`7011921246` already has a profile** — name `there`, created 20 Sep,
+  no quota row, no messages, no ledger. Deletable, but it means a sign-up
+  on that number is a **login**, not a new account. The quota being empty
+  means the welcome five still arrive, so the referral test would behave
+  correctly either way.
+- **No Supabase service-role key exists anywhere on this machine.**
+  `backend-django/.env` and `~/namo-migration.env` both hold the variable
+  empty. Without it the Django rows can go but the auth user cannot, and
+  the number stays unusable for a genuinely fresh sign-up.
