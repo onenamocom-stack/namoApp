@@ -4,10 +4,11 @@ import QuestionFrame from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
 import { supabase } from '../../lib/supabase.js'
 import { PRO_APP_URL } from '../../lib/urls.js'
+import { claimCode } from '../../lib/referrals.js'
 
 export default function VerifyOtp() {
   const navigate = useNavigate()
-  const { birth } = useStore()
+  const { birth, showToast } = useStore()
   /* The consultant branch has no birth details to write, so it skips
      Computing entirely and lands on the application. */
   const pro = useSearchParams()[0].get('next') === 'pro'
@@ -42,10 +43,19 @@ export default function VerifyOtp() {
       window.location.href = PRO_APP_URL
       return
     }
-    // The referral step sits between here and Computing: it is an
-    // authenticated write, so it could not have run before the OTP, and
-    // this is the last moment somebody is still in the flow.
-    navigate('/onboarding/referral')
+    /* The referral code was typed on the phone screen, beside the number,
+       and is claimed HERE — the first moment there is a session for the
+       server to credit. It is deliberately not awaited into the happy
+       path: a bad code must not hold somebody at the door over a perk, so
+       a refusal becomes a toast and onboarding carries on. The code is
+       still claimable from the profile afterwards. */
+    const code = (birth.referralCode || '').trim()
+    if (code) {
+      claimCode(code)
+        .then(() => showToast('Referral applied. Three free questions a day from tomorrow.'))
+        .catch((e) => showToast(e.message))
+    }
+    navigate('/onboarding/computing')
   }
 
   const resend = async () => {

@@ -4377,13 +4377,21 @@ The owner went through sign-up looking for the referral field and did not
 find one, because there was not one. Both entry points now exist where
 they belong.
 
-**Sign-up code → a new onboarding step**, `/onboarding/referral`, between
-Verify and Computing. It could not have been earlier: claiming is an
-authenticated write, so there is no session before the OTP. It is the
-only optional question in the flow — **"I don't have one"** is a plain
-button and Continue lights up only when something is typed. A refusal
-shows the server's sentence and leaves the skip working; nobody is held
-at the door over a perk.
+**Sign-up code → the phone screen**, under the number and the email,
+where the owner looked for it. A separate step after Verify was tried
+first and removed the same day: it was where the *write* had to happen,
+not where the *field* belonged.
+
+**Collected there, claimed after the OTP.** Claiming credits two accounts
+and the server has to know which one is asking, so it needs a session and
+there is none on the phone screen. The code rides in the draft and
+`VerifyOtp` applies it the moment there is somebody to apply it to —
+deliberately not awaited into the happy path, so a bad code becomes a
+toast and onboarding carries on. Nobody is held at the door over a perk,
+and the code is still claimable from the profile afterwards.
+
+Hidden on sign-in and on the consultant branch: a code is claimable once
+per account ever, and neither of those is a new seeker.
 
 The box on the profile stays, but it was never enough on its own: a code
 is claimable once per account ever, and somebody who has to find Settings

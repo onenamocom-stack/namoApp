@@ -128,6 +128,43 @@ export default function AskPhone() {
         </label>
       )}
 
+      {/* The referral code, on the same screen as the number — which is
+          where the owner looked for it.
+          
+          IT IS ONLY COLLECTED HERE, not claimed. Claiming credits two
+          accounts and the server has to know which one is asking, so it
+          needs a session and there is none until the OTP lands. The code
+          rides along in the draft and `VerifyOtp` applies it the moment
+          there is somebody to apply it to.
+          
+          Not shown when signing in: a code is claimable once per account
+          ever, and somebody resuming an account either used one or did
+          not. */}
+      {!signin && !pro && (
+        <label className="mx-auto mt-10 flex max-w-[19rem] flex-col items-center gap-2">
+          <input
+            value={birth.referralCode ?? ''}
+            onChange={(e) =>
+              setBirthField('referralCode', e.target.value.toUpperCase().trim())
+            }
+            placeholder="NXXXXXXX"
+            maxLength={16}
+            aria-label="Referral code, optional"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck="false"
+            className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-light tracking-[0.15em] text-t1 outline-none transition-colors placeholder:tracking-normal placeholder:text-t4 focus:border-t1"
+          />
+          <span className="text-micro uppercase tracking-caps text-t3">
+            Referral code · optional
+          </span>
+          <span className="mt-1 text-center text-micro t-faint">
+            Invited by someone? You both get three free questions a day for
+            three days.
+          </span>
+        </label>
+      )}
+
       {noAccount && (
         <p className="mx-auto mt-6 max-w-measure text-center text-meta text-live">
           We don&apos;t have an account for that number.{' '}
