@@ -35,6 +35,13 @@ REFUSAL_WRONG_KIND_AT_CHECKOUT = (
 REFUSAL_CONSULTANT_TO_CONSULTANT = (
     "Referral rewards are for seekers. Nothing is credited between consultants."
 )
+# A consultant claiming a seeker's sign-up code. Same rule, different
+# direction: the programme brings SEEKERS into the product, and a
+# practitioner arriving is a different event with a different queue
+# (they apply, and somebody approves them).
+REFUSAL_CONSULTANT_AS_REFEREE = (
+    "Referral codes are for seekers. Your practice is not signed up this way."
+)
 
 
 # ── codes ───────────────────────────────────────────────────────────────────
@@ -127,6 +134,27 @@ def claim_signup(referee_id, code, now=None):
         return {"ok": False, "reason": REFUSAL_WRONG_KIND_AT_SIGNUP}
     if str(row.profile_id).replace("-", "") == str(referee_id).replace("-", ""):
         return {"ok": False, "reason": REFUSAL_SELF}
+
+    # NOBODY EARNS ANYTHING WHEN A CONSULTANT IS THE ONE ARRIVING.
+    #
+    # Both directions into a consultant pay nothing, and for the same
+    # reason: this programme exists to bring SEEKERS into the product.
+    # A practitioner joining is a different event entirely — they apply
+    # and somebody approves them — and free AI questions are not what
+    # either side of that wants.
+    #
+    # Refused rather than silently worth nothing, which is the rule the
+    # consultant-to-consultant case already follows: telling somebody
+    # their code worked and crediting them nothing is worse than telling
+    # them it does not apply.
+    #
+    # Checked at CLAIM time only. A seeker who used a code legitimately
+    # and is approved as a consultant months later keeps what they were
+    # given; nothing reaches back.
+    from apps.consultants import services as consultant_services
+
+    if consultant_services.is_approved(referee_id):
+        return {"ok": False, "reason": REFUSAL_CONSULTANT_AS_REFEREE}
 
     try:
         with transaction.atomic():

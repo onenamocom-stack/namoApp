@@ -4045,6 +4045,37 @@ the container exits before it starts, which is how the first run failed.
 - Shiprocket never sets `DELIVERED` — the console is the only path, so
   cashback matures only when an admin marks the parcel delivered.
 - `REFERRAL_CASHBACK_CAP_PAISE` is 0. Uncapped.
+### Referrals, the fourth direction — 25 Sep 2026
+**`seeker → consultant` paid both sides and should not have.** The
+sign-up claim never asked what the referee was, so an approved consultant
+could type a seeker's `N…` code and earn both of them three free AI
+questions a day. Found by being asked whether every direction was
+tested — it was not, and it was not built either.
+Refused now, with its own sentence. Both directions into a consultant pay
+nothing for the same reason: the programme brings **seekers** into the
+product, and a practitioner arriving is a different event with its own
+approval queue.
+Checked at **claim time only**. A seeker who used a code legitimately and
+is approved months later keeps what they were given; nothing reaches
+backwards, and there is a test that says so.
+**All four directions now tested against production**, with dummy money,
+and the data removed afterwards:
+| | Result |
+|---|---|
+| consultant → seeker | ₹1,000 paid in full, ₹0 discount, ₹100 a side owed |
+| seeker → seeker | 3/day for 3 days both sides, **0 cashback rows** |
+| consultant → consultant | refused, 0 rows, wallet untouched at ₹1,000 |
+| seeker → consultant | refused, 0 referrals, **no quota row for either side** |
+Consultant→consultant had only ever been covered by a unit test before
+this; it had never run against the live deployment.
+`namo-api` **00034**. **668 tests**, 5 new in `TestEveryDirection`, which
+holds all four in one class so the two that pay nothing sit beside the two
+that do — those are the ones a later feature is most likely to re-enable
+by accident.
+Cleanup hit the append-only ledgers again and went out as a reversing
+entry. Four more `[test] referral matrix` profiles remain with zero
+balances. Every wallet still reconciles.
+
 ## 32. Tarot answers the question now — 24 Sep 2026
 
 **On `tarot-flow`, not merged, not deployed.**

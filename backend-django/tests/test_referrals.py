@@ -354,3 +354,81 @@ class TestAffiliateLinks:
         assert services.affiliate_link(PRO)["code"] == services.affiliate_link(
             PRO, product.id
         )["code"]
+
+
+# ── the full matrix: who earns what from whom ───────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+class TestEveryDirection:
+    """All four combinations, in one place.
+
+    Two of them pay, two of them pay nothing, and the two that pay nothing
+    are the ones most likely to be quietly re-enabled by somebody adding a
+    feature later. Both are REFUSALS rather than silent zeroes: telling
+    somebody their code worked and crediting them nothing is worse than
+    telling them it does not apply to them.
+    """
+
+    def _second_pro(self):
+        pid = "dddddddd-9999-8888-7777-666666666666"
+        Profile.objects.create(id=pid, phone=pid, name="Another astrologer")
+        Consultant.objects.create(
+            profile_id=pid, category="Astrologer", status="approved"
+        )
+        return pid
+
+    # ── the two that pay ────────────────────────────────────────────────
+
+    def test_consultant_to_seeker_pays_both(self, people, product):
+        _fund(BUYER, PRICE)
+        result = shop_services.buy(
+            BUYER, [{"product_id": str(product.id), "qty": 1}],
+            coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
+        )
+        assert result["ok"] and result["cashback_paise"] == TENTH
+        assert Cashback.objects.count() == 2
+
+    def test_seeker_to_seeker_pays_both_in_questions(self, people):
+        result = services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        assert result["ok"]
+        assert result["you"]["daily"] == 3 and result["them"]["daily"] == 3
+        assert Cashback.objects.count() == 0, "a sign-up referral moves no money"
+
+    # ── the two that pay nothing ────────────────────────────────────────
+
+    def test_consultant_to_consultant_pays_nobody(self, people, product):
+        other = self._second_pro()
+        _fund(other, PRICE)
+        result = shop_services.buy(
+            other, [{"product_id": str(product.id), "qty": 1}],
+            coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
+        )
+        assert result["reason"] == services.REFUSAL_CONSULTANT_TO_CONSULTANT
+        assert Cashback.objects.count() == 0
+        assert Referral.objects.count() == 0
+
+    def test_seeker_to_consultant_pays_nobody(self, people):
+        """The direction added 25 Sep. A consultant claiming a seeker's
+        sign-up code earned both sides three free questions a day until
+        this went in."""
+        other = self._second_pro()
+        result = services.claim_signup(other, _code(BUYER, ReferralCode.Kind.SEEKER))
+        assert result["reason"] == services.REFUSAL_CONSULTANT_AS_REFEREE
+        assert Referral.objects.count() == 0
+        assert Quota.objects.filter(profile_id=other).count() == 0
+        assert Quota.objects.filter(profile_id=BUYER).count() == 0, (
+            "the referrer was credited for a referral that never happened"
+        )
+
+    def test_a_seeker_approved_later_keeps_what_they_were_given(self, people):
+        """Checked at CLAIM time only. Somebody who used a code as a
+        seeker and is approved months later does not have it taken back —
+        nothing reaches backwards."""
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        Profile.objects.filter(pk=FRIEND).exists()
+        Consultant.objects.create(
+            profile_id=FRIEND, category="Astrologer", status="approved"
+        )
+        assert Quota.objects.get(profile_id=FRIEND).bonus_daily == 3
+        assert Referral.objects.filter(referee_id=FRIEND).count() == 1

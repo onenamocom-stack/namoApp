@@ -805,12 +805,26 @@ They share a shape and nothing else. Keeping that straight is the whole
 design: one is a coupon used at a till, the other a code typed at
 sign-up.
 
-| | Consultant → seeker | Seeker → seeker | Consultant → consultant |
-|---|---|---|---|
-| Code | `A…` | `N…` | — |
-| Used | at shop checkout | at sign-up | — |
-| Reward | **10% back, both sides** | **3 free AI questions a day for 3 days, both sides** | **nothing** |
-| Limit | the buyer's **first ever order** | once per account, ever | — |
+| | Consultant → seeker | Seeker → seeker | Consultant → consultant | Seeker → consultant |
+|---|---|---|---|---|
+| Code | `A…` | `N…` | `A…` | `N…` |
+| Used | at shop checkout | at sign-up | at shop checkout | at sign-up |
+| Reward | **10% back, both sides** | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
+| Limit | the buyer's **first ever order** | once per account, ever | — | — |
+
+**Both directions into a consultant pay nothing**, and for one reason:
+this programme exists to bring SEEKERS into the product. A practitioner
+arriving is a different event with its own queue — they apply, and
+somebody approves them — and free AI questions are not what either side
+of that wants.
+
+Both are **refused, not silently credited zero.** Telling somebody their
+code worked and giving them nothing is worse than telling them it does
+not apply.
+
+The seeker→consultant check runs at **claim time only**: somebody who
+used a code legitimately as a seeker and is approved months later keeps
+what they were given. Nothing reaches backwards.
 
 ### The 10% is cashback, not a discount
 
