@@ -4424,3 +4424,35 @@ service-role key exists on this machine — but that is enough to re-test:
 signing in recreates the profile through `ensure_profile`, with no quota
 row and no referral claimed, so the welcome five and a fresh claim both
 work. A genuinely new auth user still needs the key.
+
+### There was no sign-out. Anywhere. — 25 Sep 2026
+
+Not in the seeker app, not in the consultant app, not behind a menu. Once
+signed in there was no way out except clearing site data.
+
+**`src/lib/signout.js`, one implementation, two callers** — Profile →
+Settings, and the consultant's Settings tab. Last on the screen and by
+itself: it is the one action there somebody can regret, so it does not
+sit in a row list where a thumb reaches for the row above.
+
+**The consultant goes offline first.** `accepting_now` left true on a
+logout puts a green dot on somebody who has gone home — seekers press it,
+nobody answers, and the presence work is undone by the one screen that
+did not know about it. It runs before the token is dropped, because
+afterwards there is nothing to authenticate it with. A failure does not
+block the sign-out: the heartbeat stops either way and the dot goes dark
+within ninety seconds, which is the whole reason presence is a heartbeat
+and not a flag somebody has to remember to clear.
+
+**`sessionStorage` is cleared** — the onboarding draft holds a name, a
+birth time and a birth place, plus any referral code carried in from a
+link. On a shared phone the next person is a real person.
+
+Everything else was already handled and is not repeated: `store.jsx`
+watches `onAuthStateChange` and drops the profile, consultant row, wallet
+and cached charts on a null session, and `SessionGate` sends the app back
+to onboarding.
+
+**The About section it replaced was three years stale**: *"A front-end
+layout prototype — no backend, no auth, no network calls… nothing
+survives a reload"*, above a button offering to run onboarding again.

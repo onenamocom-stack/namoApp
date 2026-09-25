@@ -6,6 +6,7 @@ import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
 import { rupees, useConsultantFields, useStore } from '../store.jsx'
 import { listServices } from '../lib/consultants.js'
+import { signOut } from '../lib/signout.js'
 import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
@@ -251,6 +252,18 @@ function Reviews() {
 
 function Settings({ me }) {
   const { showToast } = useStore()
+  const [leaving, setLeaving] = useState(false)
+
+  const leave = async () => {
+    if (leaving) return
+    setLeaving(true)
+    try {
+      await signOut()
+    } catch (err) {
+      showToast(err.message)
+      setLeaving(false)
+    }
+  }
 
   return (
     <>
@@ -293,6 +306,23 @@ function Settings({ me }) {
           <Row to="/home" title="Switch to seeking" note="Browse Namo as a client" />
           <Row onClick={() => showToast('Help — prototype only')} title="Help & support" />
         </div>
+
+        {/* Last, alone, and it takes the green dot down on the way out.
+            `signOut` goes offline before it drops the token — a logout
+            that left `accepting_now` true would put a dot on somebody who
+            has gone home, and seekers would press it. */}
+        <button
+          type="button"
+          onClick={leave}
+          disabled={leaving}
+          className="mt-8 w-full rounded-lg border border-rule py-3.5 text-center caps-sm text-live transition-colors hover:border-live disabled:opacity-40"
+        >
+          {leaving ? 'Signing out…' : 'Sign out'}
+        </button>
+        <p className="mt-3 text-center text-micro t-faint">
+          You go offline, and seekers stop seeing you as available.
+        </p>
+
         <p className="mt-6 text-meta t-faint">
           Your practice, your prices and your availability are real. Content, reviews and
           earnings are not yet.

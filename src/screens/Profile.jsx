@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
 import Composer from '../components/Composer.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
+import { signOut } from '../lib/signout.js'
 import { fetchByAuthor, followCounts } from '../lib/content.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
@@ -374,7 +375,22 @@ function MyPosts() {
 /* ── Settings tab ────────────────────────────────────────────────────────── */
 
 function SettingsTab() {
-  const { showToast, hasFlag, toggleFlag } = useStore()
+  const { showToast, hasFlag, toggleFlag, profile } = useStore()
+  const [leaving, setLeaving] = useState(false)
+
+  /* The store is already watching onAuthStateChange and SessionGate
+     already sends a signed-out app back to onboarding, so this only has
+     to do the signing out. */
+  const leave = async () => {
+    if (leaving) return
+    setLeaving(true)
+    try {
+      await signOut()
+    } catch (err) {
+      showToast(err.message)
+      setLeaving(false)
+    }
+  }
   // Full/uncropped is the default now; the flag is an opt-in back to the
   // screen-filling crop, so its absence is the common case.
   const fullImage = !hasFlag('setting:croppedDeityImage')
@@ -427,17 +443,39 @@ function SettingsTab() {
       </section>
 
       <section className="px-5 py-6">
-        <Kicker>About</Kicker>
-        <p className="mt-4 text-meta t-body">
-          Namo. A front-end layout prototype — no backend, no auth, no network calls. Every value
-          on screen comes from one hardcoded file, and nothing survives a reload.
+        <Kicker>Account</Kicker>
+        <div className="mt-2">
+          <Row
+            onClick={() => showToast(`Signed in as ${profile?.phone ?? '—'}`)}
+            title="Phone"
+            note="Your number is your account. It cannot be changed here."
+            meta={profile?.phone ?? '—'}
+          />
+          <Link to="/notifications" className="act-row">
+            <span className="min-w-0">
+              <span className="block text-body text-t1">Notification history</span>
+            </span>
+          </Link>
+        </div>
+
+        {/* Last, and by itself. Signing out is the one action on this
+            screen somebody can regret, so it does not sit in a row list
+            where a thumb reaches for the thing above it.
+
+            The old copy here said Namo had "no backend, no auth, no
+            network calls" and offered to run onboarding again. All three
+            were true in the prototype and none of them since phase 1. */}
+        <button
+          type="button"
+          onClick={leave}
+          disabled={leaving}
+          className="mt-8 w-full rounded-lg border border-rule py-3.5 text-center caps-sm text-live transition-colors hover:border-live disabled:opacity-40"
+        >
+          {leaving ? 'Signing out…' : 'Sign out'}
+        </button>
+        <p className="mt-3 text-center text-micro t-faint">
+          You will need the code texted to your number to get back in.
         </p>
-        <PopButton to="/onboarding" className="mt-5">
-          Run onboarding again
-        </PopButton>
-        <Link to="/notifications" className="mt-4 block text-center caps-sm t-faint">
-          Notification history
-        </Link>
       </section>
     </>
   )
