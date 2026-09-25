@@ -45,13 +45,22 @@ export default function VerifyOtp() {
     }
     /* The referral code was typed on the phone screen, beside the number,
        and is claimed HERE — the first moment there is a session for the
-       server to credit. It is deliberately not awaited into the happy
+       server to credit.
+
+       NOT NAMED `code`. It was, for one deploy, and `const code` inside
+       this function shadowed the OTP state of the same name for the whole
+       function scope — so `token: code` above it read a `const` in its
+       temporal dead zone and threw before the request was ever sent. The
+       throw was swallowed by the unawaited async call, `setVerifying(false)`
+       never ran, and every sign-up sat on "Verifying…" forever. Lint and
+       build were both clean: shadowing is legal JavaScript.
+ It is deliberately not awaited into the happy
        path: a bad code must not hold somebody at the door over a perk, so
        a refusal becomes a toast and onboarding carries on. The code is
        still claimable from the profile afterwards. */
-    const code = (birth.referralCode || '').trim()
-    if (code) {
-      claimCode(code)
+    const referral = (birth.referralCode || '').trim()
+    if (referral) {
+      claimCode(referral)
         .then(() => showToast('Referral applied. Three free questions a day from tomorrow.'))
         .catch((e) => showToast(e.message))
     }

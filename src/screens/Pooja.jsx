@@ -147,7 +147,7 @@ export default function Pooja() {
       last += d
       moved += Math.abs(d)
       if (moved > 12) turned.current = true // past this it is a turn, not a tap
-      setTurn((t) => t + d)
+      setTurn((prev) => prev + d)
     }
     const end = (ev) => {
       ev.currentTarget?.releasePointerCapture?.(e.pointerId)
@@ -156,7 +156,7 @@ export default function Pooja() {
       ev.currentTarget?.removeEventListener('pointercancel', end)
       setTurning(false)
       // Settle to the nearest whole turn so it never rests crooked.
-      setTurn((t) => Math.round(t / 360) * 360)
+      setTurn((prev) => Math.round(prev / 360) * 360)
     }
 
     e.currentTarget.addEventListener('pointermove', move)
@@ -168,14 +168,14 @@ export default function Pooja() {
   // the DOM does not fill up over a long session.
   useEffect(() => {
     if (!petals.length) return
-    const t = setTimeout(() => setPetals((p) => p.slice(8)), 3600)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setPetals((p) => p.slice(8)), 3600)
+    return () => clearTimeout(timer)
   }, [petals])
 
   useEffect(() => {
     if (!ripples.length) return
-    const t = setTimeout(() => setRipples((r) => r.slice(1)), 1000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setRipples((r) => r.slice(1)), 1000)
+    return () => clearTimeout(timer)
   }, [ripples])
 
   const ripple = () => {

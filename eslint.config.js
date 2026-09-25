@@ -62,6 +62,19 @@ export default [
       // dead, which is what a half-finished rename leaves behind.
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
 
+      // A `const` that shadows an outer name of the same name, inside the
+      // function that already reads the outer one. Legal JavaScript, so
+      // nothing else catches it — and in a `const`, every read ABOVE the
+      // declaration is a temporal-dead-zone throw rather than a wrong
+      // value. It cost a day of sign-ups on 25 Sep: a referral variable
+      // named `code` shadowed the OTP state, `verifyOtp` threw before it
+      // sent anything, and the screen sat on "Verifying…" forever with a
+      // green lint and a green build.
+      //
+      // Errors, not warns. This is the exact class of bug the traps list
+      // in CLAUDE.md is about — a runtime failure a passing build hides.
+      'no-shadow': 'error',
+
       // The store's dependency array is hand-maintained (HANDOFF §1). This is
       // the rule that notices when the value object and the array disagree.
       'react-hooks/rules-of-hooks': 'error',

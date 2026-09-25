@@ -383,7 +383,7 @@ export default function ConsultantProfile() {
         <Segmented
           items={c.fixed.map((s) => ({ key: s.id, label: `${s.duration_mins} min` }))}
           value={service?.id}
-          onChange={(id) => setService(c.fixed.find((s) => s.id === id) ?? null)}
+          onChange={(picked) => setService(c.fixed.find((s) => s.id === picked) ?? null)}
         />
 
         <p className="label mt-8 text-left mb-4">Day</p>
