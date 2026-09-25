@@ -27,6 +27,10 @@ export default function useAskAi() {
   const [loading, setLoading] = useState(true)
   const [freeLeft, setFreeLeft] = useState(null)
   const [pricePaise, setPricePaise] = useState(null)
+  /* A referral boost that has been EARNED but does not open until
+     tomorrow. Without this the panel shows the same number as before and
+     the seeker reads their reward as nothing having happened. */
+  const [boostFrom, setBoostFrom] = useState(null)
   /* Whose chart the conversation is about. null is the seeker's own.
      Held HERE and nowhere else — the server computes a chart from it and
      writes none of it down, so a reload loses it, deliberately. */
@@ -50,6 +54,7 @@ export default function useAskAi() {
         setMessages(state.messages ?? [])
         setFreeLeft(state.free_left)
         setPricePaise(state.price_paise)
+        setBoostFrom(state.boost_from ?? null)
       })
       .catch((err) => console.error('[ai] state failed:', err.message))
       .finally(() => active && setLoading(false))
@@ -125,6 +130,7 @@ export default function useAskAi() {
     loading,
     freeLeft,
     pricePaise,
+    boostFrom,
     /* Out of free ones. Both renderings branch on this, computed here so
        they cannot disagree about it. Asking still works — it just costs
        now — so this is a PRICE notice, not a lock. */

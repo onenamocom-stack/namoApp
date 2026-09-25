@@ -75,7 +75,12 @@ def _daily_free(row=None):
     base = settings.AI_DAILY_FREE
     if row is None or not row.bonus_until or not row.bonus_daily:
         return base
-    if row.bonus_until < _ist_today():
+    today = _ist_today()
+    # Closed on both ends. `bonus_from` is the day AFTER the referral, so
+    # the day it was earned pays nothing extra — see the field's comment.
+    if row.bonus_from and today < row.bonus_from:
+        return base
+    if row.bonus_until < today:
         return base
     return max(base, row.bonus_daily)
 
@@ -104,6 +109,8 @@ def _price_paise():
 def quota_state(profile_id):
     """What is free right now, without spending anything. The panel reads
     this to decide whether to show a question box or a Start button."""
+    from django.conf import settings
+
     row = Quota.objects.filter(profile_id=profile_id).first()
     welcome_left = _welcome_free() - (row.welcome_used if row else 0)
     if welcome_left > 0:
@@ -119,7 +126,15 @@ def quota_state(profile_id):
         # Surfaced so the panel can say WHY there are three today rather
         # than leaving a seeker to notice the number changed on its own.
         "daily_allowance": allowance,
-        "boosted": bool(row and row.bonus_until and row.bonus_until >= _ist_today()),
+        "boosted": allowance > settings.AI_DAILY_FREE,
+        # Set while a boost is earned but not yet open, so the panel
+        # can say "from tomorrow" instead of showing a number that has
+        # not changed and looks like nothing happened.
+        "boost_from": (
+            row.bonus_from.isoformat()
+            if row and row.bonus_from and row.bonus_from > _ist_today()
+            else None
+        ),
     }
 
 

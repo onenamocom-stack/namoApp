@@ -111,6 +111,17 @@ class Quota(models.Model):
     # them. Past the date the row is inert and the normal allowance
     # applies again; nothing has to clean it up.
     bonus_daily = models.IntegerField(default=0)
+    # A WINDOW, not just an end date — and it opens TOMORROW.
+    #
+    # Starting it today made the reward worth different amounts depending
+    # on the hour it was earned: refer at 11pm having already spent your
+    # one message and today buys you two, refer at 8am and it buys you
+    # three. Same reward, different value, for no reason a seeker could
+    # see — and the referrer and the person they referred got visibly
+    # different amounts out of the same act.
+    #
+    # Whole days only, so "three a day for three days" is three days.
+    bonus_from = models.DateField(null=True, blank=True)
     bonus_until = models.DateField(null=True, blank=True)
 
     # The free tarot pulls, weekly rather than daily, on the same row

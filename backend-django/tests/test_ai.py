@@ -154,7 +154,11 @@ class TestQuota:
         # referral boosts — the panel needs to say WHY there are three today
         # rather than leave a seeker to notice the number moved on its own.
         assert services.quota_state(SEEKER) == {
-            "free_left": 1, "kind": "daily", "daily_allowance": 1, "boosted": False,
+            "free_left": 1, "kind": "daily", "daily_allowance": 1,
+            "boosted": False,
+            # `boost_from` joined on 25 Sep, when the referral boost was
+            # moved to start the day AFTER it is earned.
+            "boost_from": None,
         }
         assert services.ask(SEEKER, "tomorrow")["ok"]
         assert services.ask(SEEKER, "tomorrow again")["ok"] is False

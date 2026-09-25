@@ -42,6 +42,13 @@ def _state(profile_id):
         # panel shows this before anybody is charged, so nobody is
         # surprised by a debit.
         "price_paise": services._price_paise(),
+        # A referral boost, open or coming. Both are needed: the number
+        # explains why there are three today, and the date explains why
+        # there are still only one — a reward that changes nothing
+        # visible on the day it is earned reads as a reward that failed.
+        "daily_allowance": quota.get("daily_allowance"),
+        "boosted": quota.get("boosted", False),
+        "boost_from": quota.get("boost_from"),
     }
 
 

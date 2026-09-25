@@ -100,18 +100,34 @@ def _ai_boost(profile_id, now=None):
     """
     from apps.ai.models import Quota
 
+    from apps.ai.services import _ist_today
+
     stamp = now or timezone.now()
-    until = (stamp + timezone.timedelta(days=settings.REFERRAL_AI_DAYS)).date()
+    # STARTS TOMORROW. The day the referral happens is already part-spent,
+    # and starting today made the same reward worth two questions or three
+    # depending on the hour — with the referrer and the person they
+    # referred visibly getting different amounts out of one act.
+    #
+    # Whole days, inclusive at both ends: from tomorrow, for
+    # REFERRAL_AI_DAYS days. Three days means three days.
+    begins = _ist_today() + timezone.timedelta(days=1)
+    until = begins + timezone.timedelta(days=settings.REFERRAL_AI_DAYS - 1)
 
     row, _ = Quota.objects.get_or_create(profile_id=profile_id)
-    # Extending never shortens: somebody referred twice on consecutive days
-    # keeps the later end date, and a second referral cannot cut the first
-    # one short.
+    # Extending never shortens. Somebody referred twice keeps the earlier
+    # start and the later end, so a second referral can only ever widen
+    # the window — never cut the first one short.
+    if row.bonus_from is None or row.bonus_from > begins:
+        row.bonus_from = begins
     if row.bonus_until is None or row.bonus_until < until:
         row.bonus_until = until
     row.bonus_daily = max(row.bonus_daily or 0, settings.REFERRAL_AI_DAILY)
-    row.save(update_fields=("bonus_until", "bonus_daily"))
-    return {"daily": row.bonus_daily, "until": row.bonus_until.isoformat()}
+    row.save(update_fields=("bonus_from", "bonus_until", "bonus_daily"))
+    return {
+        "daily": row.bonus_daily,
+        "from": row.bonus_from.isoformat(),
+        "until": row.bonus_until.isoformat(),
+    }
 
 
 def claim_signup(referee_id, code, now=None):
@@ -187,8 +203,8 @@ def _notify_referrer(referral, grant):
         kind="referral.signup",
         title="Someone joined with your code",
         body=(
-            f"You both get {grant['daily']} free questions a day with Namo AI "
-            f"until {grant['until']}."
+            f"You both get {grant['daily']} free questions a day with Namo AI, "
+            f"starting tomorrow, until {grant['until']}."
         ),
         ref_type="referral",
         ref_id=str(referral.id),

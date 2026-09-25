@@ -432,3 +432,88 @@ class TestEveryDirection:
         )
         assert Quota.objects.get(profile_id=FRIEND).bonus_daily == 3
         assert Referral.objects.filter(referee_id=FRIEND).count() == 1
+
+
+# ── when the boost opens ────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestTheBoostStartsTomorrow:
+    """Three a day for three days, and the three days start TOMORROW.
+
+    IT USED TO START TODAY, and the owner spotted what that meant by
+    asking a plain question: *I have already used today's one message and
+    then I refer somebody — do I get four today, or three from tomorrow?*
+
+    Neither. The boost raised the day's ALLOWANCE, so they got two more
+    today. Which made the same reward worth two questions or three
+    depending on the hour it was earned, and gave the referrer visibly
+    less than the person they referred — whose first day is the welcome
+    five and whose boost therefore always began clean.
+
+    Whole days now. The day it is earned pays nothing extra.
+    """
+
+    def _burn_the_welcome_five(self, profile_id, monkeypatch):
+        day = [ai_services._ist_today()]
+        monkeypatch.setattr(ai_services, "_ist_today", lambda: day[0])
+        for i in range(5):
+            ai_services.ask(profile_id, f"welcome {i}")
+        day[0] += timedelta(days=1)
+        return day
+
+    def test_the_day_it_is_earned_gives_nothing_extra(self, people, monkeypatch):
+        """The owner's exact question. Today's number does not move."""
+        day = self._burn_the_welcome_five(BUYER, monkeypatch)
+
+        ai_services.ask(BUYER, "today's one")
+        assert ai_services.quota_state(BUYER)["free_left"] == 0
+
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        state = ai_services.quota_state(BUYER)
+        assert state["free_left"] == 0, "the boost paid out on a part-spent day"
+        assert state["daily_allowance"] == 1
+        assert state["boosted"] is False
+        # But it is coming, and the panel can say so rather than showing an
+        # unchanged number that looks like nothing happened.
+        assert state["boost_from"] == (day[0] + timedelta(days=1)).isoformat()
+
+    def test_three_a_day_for_exactly_three_days(self, people, monkeypatch):
+        day = self._burn_the_welcome_five(BUYER, monkeypatch)
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        seen = []
+        for _ in range(5):
+            day[0] += timedelta(days=1)
+            seen.append(ai_services.quota_state(BUYER)["free_left"])
+        assert seen == [3, 3, 3, 1, 1], f"got {seen}"
+
+    def test_both_sides_get_the_same_window(self, people):
+        """The unfairness that started this: the referrer used to get less
+        than the person they referred, purely because their own day was
+        already part-spent while the referee's first day was the untouched
+        welcome five."""
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        a = Quota.objects.get(profile_id=BUYER)
+        b = Quota.objects.get(profile_id=FRIEND)
+        assert (a.bonus_from, a.bonus_until, a.bonus_daily) == (
+            b.bonus_from, b.bonus_until, b.bonus_daily
+        )
+
+    def test_a_second_referral_only_ever_widens_the_window(self, people, monkeypatch):
+        """Referred twice keeps the earlier start and the later end. A
+        later referral must not be able to cut an earlier one short."""
+        day = self._burn_the_welcome_five(BUYER, monkeypatch)
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        first = Quota.objects.get(profile_id=BUYER)
+        began, ended = first.bonus_from, first.bonus_until
+
+        third = "eeeeeeee-1111-2222-3333-444444444444"
+        Profile.objects.create(id=third, phone=third, name="A third seeker")
+        day[0] += timedelta(days=2)
+        services.claim_signup(third, _code(BUYER, ReferralCode.Kind.SEEKER))
+
+        after = Quota.objects.get(profile_id=BUYER)
+        assert after.bonus_from <= began
+        assert after.bonus_until >= ended

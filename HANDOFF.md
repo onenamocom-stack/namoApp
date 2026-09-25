@@ -4251,3 +4251,45 @@ account id, spacing and case do not split it, a missing birth DATE asks for a
 date rather than a birthplace, and no response body carries the vendor's host
 or credentials. Lint and build clean. **Not walked in a browser** — and the
 status composer in particular is a canvas, which no test here can look at.
+
+### The referral boost starts tomorrow — 25 Sep 2026
+
+**It used to start the same day, and the owner found what that meant by
+asking a plain question**: *I have already used today's one message and
+then I refer somebody — do I get four today, or three from tomorrow?*
+
+Neither. The boost raised the day's **allowance**, so they got two more
+today. Which meant the same reward was worth two questions or three
+depending on the hour it was earned — and the referrer reliably got less
+than the person they referred, whose first day is the untouched welcome
+five. It was also four calendar days, not three.
+
+`ai_quota` has `bonus_from` now as well as `bonus_until`. The window opens
+**tomorrow** and runs whole days, so three days means three days and the
+clock has nothing to do with it. A second referral only ever widens the
+window: earlier start, later end, never shorter.
+
+The day it is earned now shows an unchanged number, so both AI surfaces
+say why — *"Your referral is in. 3 free questions a day start tomorrow."*
+A reward that changes nothing visible reads as a reward that failed.
+
+### Two migrations both numbered 0003, and a deploy that went out anyway
+
+**`ai` had two 0003s** — the referral bonus and Atharv's tarot columns.
+The file was renumbered to `0004` in the rebase, but **production had
+recorded it under the old name**, so Django read the new one as pending
+and tried to add `tarot_used` a second time. Fixed by renaming the
+`django_migrations` row: the schema it describes was already correct.
+
+**The deploy went out while that migration was failing.** `manage.py
+migrate | tail -3 && gcloud run deploy` — a pipeline exits with `tail`'s
+status, so the `&&` saw success. Revision 00036 ran for a few minutes
+with code that reads `bonus_from` against a table that did not have it;
+any signed-in seeker opening the AI panel would have had a 500.
+Production logs show no 5xx in the window, so nobody hit it.
+
+**Never pipe a migration into `tail` before `&&`.** Run it, read it, then
+deploy.
+
+**706 tests**, 4 new in `TestTheBoostStartsTomorrow` — including the
+owner's exact scenario, so it cannot drift back.

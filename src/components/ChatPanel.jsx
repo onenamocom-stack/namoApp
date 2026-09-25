@@ -451,7 +451,7 @@ function initialsOf(name) {
 function AskAi() {
   const {
     messages, draft, setDraft, send, thinking, loading,
-    freeLeft, pricePaise, outOfFree,
+    freeLeft, pricePaise, outOfFree, boostFrom,
     who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
@@ -543,6 +543,16 @@ function AskAi() {
         )}
 
         {thinking && <p className="animate-breathe caps-sm t-faint">Reading your chart</p>}
+
+        {/* A boost that is earned but not yet open. Without this the
+            seeker sees the same number as before and reads their reward as
+            nothing having happened — which is the complaint that moved the
+            window to start tomorrow in the first place. */}
+          {boostFrom && (
+          <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
+            Your referral is in. <b>3 free questions a day</b> start tomorrow.
+          </p>
+        )}
 
         {outOfFree && (
           /* Not a wall. The free ones are gone and the next answer costs

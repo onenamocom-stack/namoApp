@@ -23,7 +23,7 @@ import { rupees } from '../store.jsx'
 export default function Ask() {
   const {
     messages, draft, setDraft, send, thinking, loading,
-    freeLeft, pricePaise, outOfFree,
+    freeLeft, pricePaise, outOfFree, boostFrom,
     who, subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
@@ -126,6 +126,16 @@ export default function Ask() {
         )}
         <div ref={endRef} />
       </div>
+
+      {/* A boost that is earned but not yet open. Without this the
+          seeker sees the same number as before and reads their reward as
+          nothing having happened — which is the complaint that moved the
+          window to start tomorrow in the first place. */}
+      {boostFrom && (
+        <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
+          Your referral is in. <b>3 free questions a day</b> start tomorrow.
+        </p>
+      )}
 
       {outOfFree && (
         /* A price, not a wall. Asking still works. */
