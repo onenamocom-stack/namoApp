@@ -139,6 +139,16 @@ def serialize_profile(profile):
 # ── row creation and the onboarding write ────────────────────────────────────
 
 
+def _ensure_wallet(profile_id):
+    """The wallet half of what `handle_new_user` does. Imported here
+    rather than at module scope: profiles is the lower-level module and
+    the wallet already reads profiles, so a top-level import would close
+    the loop."""
+    from apps.wallet import services as wallet_services
+
+    wallet_services.ensure_wallet(profile_id)
+
+
 def ensure_profile(user_id, phone=None, name=None):
     """handle_new_user as code: the row for a freshly signed-up phone, named
     from the signup metadata with 001's 'there' fallback. Returns
@@ -149,14 +159,24 @@ def ensure_profile(user_id, phone=None, name=None):
         return profile, False
     try:
         with transaction.atomic():
-            return (
-                Profile.objects.create(
-                    id=user_id,
-                    phone=phone if phone else f"+unknown-{user_id}",
-                    name=name or DEFAULT_NAME,
-                ),
-                True,
+            created = Profile.objects.create(
+                id=user_id,
+                phone=phone if phone else f"+unknown-{user_id}",
+                name=name or DEFAULT_NAME,
             )
+            # THE WALLET COMES WITH THE PROFILE, because the Supabase
+            # trigger this function stands in for creates both. Without
+            # it an account exists that cannot be charged and cannot be
+            # told why usefully: `debit` answers "No wallet on this
+            # account", which names no fix and is not the seeker's fault.
+            #
+            # Seen for real on 25 Sep: `reset_test_account` removed a
+            # profile and its wallet, signing in recreated the profile
+            # here, and the account was left unable to pay for anything.
+            # A restored backup or a trigger that did not fire produces
+            # the same state.
+            _ensure_wallet(created.id)
+            return created, True
     except IntegrityError:
         return Profile.objects.get(pk=user_id), False
 

@@ -625,3 +625,41 @@ class TestRaces:
         row = Profile.objects.get(pk=TEST_USER)
         assert row.name == "Ananya Sharma"
         assert row.email == "ananya@example.com"
+
+
+@pytest.mark.django_db
+class TestTheWalletComesWithTheProfile:
+    """`ensure_profile` stands in for Supabase's `handle_new_user`, which
+    creates a profile AND a wallet. It only made the profile.
+
+    THE STATE THAT CAUSED THIS: an account was reset for testing — profile
+    and wallet both deleted — and signing in recreated the profile alone.
+    The account could then never be charged for anything, and the sentence
+    it got was "No wallet on this account", which names no fix and is not
+    the seeker's fault. A restored backup, or a trigger that did not fire,
+    produces exactly the same account.
+    """
+
+    def test_a_created_profile_has_a_wallet(self, clean_profiles):
+        from apps.profiles import services
+        from apps.wallet import services as wallet_services
+
+        profile, created = services.ensure_profile(TEST_USER, phone="+919999900042")
+        assert created
+        assert wallet_services.balance_of(profile.id) == 0, (
+            "a profile without a wallet cannot be charged for anything"
+        )
+
+    def test_an_existing_profile_is_left_alone(self, clean_profiles):
+        """The second call must not touch a wallet that already has money
+        in it — `ensure_wallet` is an upsert, and this is the test that
+        says so out loud."""
+        from apps.profiles import services
+        from apps.wallet import services as wallet_services
+
+        profile, _ = services.ensure_profile(TEST_USER, phone="+919999900042")
+        wallet_services.credit(profile.id, 5_000, "top-up", ref_type="adjustment")
+
+        again, created = services.ensure_profile(TEST_USER, phone="+919999900042")
+        assert created is False
+        assert wallet_services.balance_of(again.id) == 5_000

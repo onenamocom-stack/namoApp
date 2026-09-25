@@ -4513,3 +4513,28 @@ Both test accounts were re-armed under the new rule; their old windows
 had been scheduled by the old one and had already expired.
 
 **714 tests.** `namo-api` **00040**.
+
+### A recreated profile had no wallet — 25 Sep 2026
+
+`ensure_profile` stands in for Supabase's `handle_new_user`, which creates
+a profile **and a wallet**. It only ever made the profile, and nothing
+else on the normal path calls `ensure_wallet`.
+
+Found because `reset_test_account` deletes both, signing in recreated the
+profile alone, and the account was then **unable to be charged for
+anything** — `debit` answers *"No wallet on this account"*, which names no
+fix and is not the seeker's fault. A restored backup or a trigger that did
+not fire produces the same account.
+
+Fixed at the source: creating a profile creates its wallet. Six
+production rows were missing one and now have it, all at ₹0.
+
+**Not the question that found it.** The owner asked why the AI answered
+with a ₹0 balance. It answered because the questions were free: five
+welcome plus three from the referral boost, which the windows confirm —
+`08-02` four, `08-03` one (the fifth welcome, which scheduled the boost),
+`08-04` three boosted. Verified separately that an account with no free
+left and no money is refused with *"Not enough balance"* and
+`needs_money: true`.
+
+**714 tests**, 2 new. `namo-api` **00041**.
