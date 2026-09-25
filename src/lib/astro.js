@@ -316,7 +316,15 @@ export function istDate(offsetDays = 0) {
  *  library for one line. */
 export function longDate(iso) {
   if (!iso) return ''
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+  /* Tolerate a full timestamp, not just a date. Every caller here passes
+     `YYYY-MM-DD`, but one passed `new Date().toISOString()` and the
+     concatenation below produced `…ZT00:00:00Z` — an unparseable string that
+     rendered as the words "Invalid Date" onto a shared status image. An
+     empty string would have been a missing line; this was a wrong one. */
+  const day = String(iso).slice(0, 10)
+  const date = new Date(`${day}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   })
 }

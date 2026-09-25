@@ -6,7 +6,7 @@ import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
 import { composeStatus, download, fetchAssets, saveBlob, shareFile } from '../lib/bhakti.js'
-import { longDate } from '../lib/astro.js'
+import { istDate, longDate } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -494,7 +494,7 @@ function ShareSheet({ asset, onClose }) {
       const blob = await composeStatus(asset.url, {
         photoSrc: photo?.src ?? null,
         name: photo ? me.name : '',
-        dateLabel: longDate(new Date().toISOString()),
+        dateLabel: longDate(istDate()),
         logoSrc: `${import.meta.env.BASE_URL}namo-logo.png`,
       })
       if (!blob) throw new Error('compose failed')
@@ -542,7 +542,7 @@ function ShareSheet({ asset, onClose }) {
                 <span className="block truncate text-meta font-semibold text-white">{me.name}</span>
               )}
               <span className="block truncate caps-sm text-white/75">
-                {longDate(new Date().toISOString())}
+                {longDate(istDate())}
               </span>
             </span>
             <img
