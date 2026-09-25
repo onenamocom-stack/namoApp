@@ -4370,3 +4370,49 @@ owner's own number is refused with *10 wallet ledger rows*.
   `backend-django/.env` and `~/namo-migration.env` both hold the variable
   empty. Without it the Django rows can go but the auth user cannot, and
   the number stays unusable for a genuinely fresh sign-up.
+
+### Where the two codes are actually entered — 25 Sep 2026
+
+The owner went through sign-up looking for the referral field and did not
+find one, because there was not one. Both entry points now exist where
+they belong.
+
+**Sign-up code → a new onboarding step**, `/onboarding/referral`, between
+Verify and Computing. It could not have been earlier: claiming is an
+authenticated write, so there is no session before the OTP. It is the
+only optional question in the flow — **"I don't have one"** is a plain
+button and Continue lights up only when something is typed. A refusal
+shows the server's sentence and leaves the skip working; nobody is held
+at the door over a perk.
+
+The box on the profile stays, but it was never enough on its own: a code
+is claimable once per account ever, and somebody who has to find Settings
+three days later has usually thrown it away.
+
+**Astrologer's code → the cart**, between the total and Pay. That is the
+last moment it can change anything and the first moment the basket is
+known. A code carried in from a link arrives already filled from
+`sessionStorage`. The line under it says **10% back, not 10% off**,
+before paying — the total above deliberately does not move.
+
+### The cart was not going through checkout at all
+
+Found while adding the coupon. `CartSheet` called `spend()` — a bare
+wallet debit. **No stock claimed, no order row, no coupon.** The last
+gemstone could be sold to everybody holding it in a cart.
+
+`buyNow` was fixed on 23 Sep and this path was missed, because the race
+it was fixed for was demonstrated with the Buy button and nobody opened
+the cart. `checkoutCart()` goes through the server's `buy()` now: stock
+in sorted id order, then the wallet, then the order — one transaction.
+
+Its footer also still said *"Nothing is shipped — fulfilment is phase
+10."* Shipping shipped on the 23rd.
+
+### 7011921246 reset
+
+Profile and wallet deleted. The **Supabase auth user remains** — no
+service-role key exists on this machine — but that is enough to re-test:
+signing in recreates the profile through `ensure_profile`, with no quota
+row and no referral claimed, so the welcome five and a fresh claim both
+work. A genuinely new auth user still needs the key.

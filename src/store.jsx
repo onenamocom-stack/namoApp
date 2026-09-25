@@ -648,6 +648,55 @@ export function AppProvider({ children }) {
     [showToast, refreshWallet, session],
   )
 
+  /**
+   * The whole cart, through the SERVER's checkout.
+   *
+   * It used to be a bare `spend()` — a wallet debit and nothing else. No
+   * stock was claimed, no order row was written, and the last gemstone
+   * could be sold to everybody who had it in a cart. `buyNow` was fixed
+   * on 23 Sep and this path was missed, because the bug it was fixed for
+   * (two people, one item) was demonstrated with the Buy button.
+   *
+   * One transaction now, the same one: stock claimed in sorted id order,
+   * then the wallet, then the order. And it carries the coupon, which is
+   * the only place a coupon can be applied to a multi-item basket.
+   */
+  const checkoutCart = useCallback(
+    async (coupon = null) => {
+      if (!cart.length) return null
+      if (spendingRef.current) {
+        showToast('One payment at a time.')
+        return null
+      }
+      spendingRef.current = true
+      setSpending(true)
+      try {
+        const result = await buyFromShop(
+          cart.map((l) => ({ product_id: l.id, qty: l.qty })),
+          coupon || null,
+        )
+        if (!result.ok) {
+          showToast(result.reason)
+          return result
+        }
+        showToast(
+          result.cashback_paise
+            ? `Ordered · ₹${rupees(result.cashback_paise)} back after delivery`
+            : 'Ordered',
+        )
+        await refreshWallet(session?.user?.id)
+        return result
+      } catch (err) {
+        showToast(err.message)
+        return null
+      } finally {
+        spendingRef.current = false
+        setSpending(false)
+      }
+    },
+    [cart, showToast, refreshWallet, session],
+  )
+
   /* `me` is rebuilt only when the side flips, not on every render — it feeds
      the shared TabHeader, so a fresh object each time would rerender all five
      tabs for nothing. */
@@ -715,6 +764,7 @@ export function AppProvider({ children }) {
       cartOpen,
       setCartOpen,
       buyNow,
+      checkoutCart,
       hasFlag,
       toggleFlag,
       balance,
@@ -760,6 +810,7 @@ export function AppProvider({ children }) {
       clearCart,
       cartOpen,
       buyNow,
+      checkoutCart,
       hasFlag,
       toggleFlag,
       balance,

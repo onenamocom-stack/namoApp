@@ -17,6 +17,7 @@ import AskTime from './screens/onboarding/AskTime.jsx'
 import AskPlace from './screens/onboarding/AskPlace.jsx'
 import AskPhone from './screens/onboarding/AskPhone.jsx'
 import VerifyOtp from './screens/onboarding/VerifyOtp.jsx'
+import AskReferral from './screens/onboarding/AskReferral.jsx'
 import Computing from './screens/onboarding/Computing.jsx'
 
 import Home from './screens/Home.jsx'
@@ -254,6 +255,7 @@ function Frame() {
                 <Route path="/onboarding/place" element={<AskPlace />} />
                 <Route path="/onboarding/phone" element={<AskPhone />} />
                 <Route path="/onboarding/verify" element={<VerifyOtp />} />
+                <Route path="/onboarding/referral" element={<AskReferral />} />
                 <Route path="/onboarding/computing" element={<Computing />} />
 
                 {/* Profile carries its tab in the URL so it stays deep-linkable. */}

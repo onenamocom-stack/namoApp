@@ -165,9 +165,9 @@ export default function Shop() {
           it is first order only. */}
       {referral && (
         <p className="border-b border-rule bg-surface-2 px-5 py-3 text-micro t-sub">
-          Code <b className="tnum">{referral}</b> is applied. You pay the full
-          price and get <b>10% back</b> in your wallet seven days after delivery —
-          on your first order only.
+          Code <b className="tnum">{referral}</b> is saved and goes in at
+          checkout. You pay the full price and get <b>10% back</b> in your
+          wallet seven days after delivery — on your first order only.
         </p>
       )}
 

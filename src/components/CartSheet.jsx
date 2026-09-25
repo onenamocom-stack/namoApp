@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { looksLikeReferral } from '../lib/referrals.js'
 import { Sheet } from './Chrome.jsx'
 import Plate from './Plate.jsx'
 import { PopButton } from './Pop.jsx'
@@ -20,15 +22,30 @@ export default function CartSheet() {
     setQty,
     removeFromCart,
     clearCart,
-    spend,
+    checkoutCart,
     spending,
   } = useStore()
 
-  /* `spend` is a promise since phase 2. Without the await this reads as
-     truthy every time and clears the cart on a payment the server refused. */
+  /* An astrologer's code, typed here or carried in from their link. This
+     is the only place it can be applied to a basket — the Shop's Buy
+     button is one product, and a coupon that only worked there would be a
+     coupon most people could not use. */
+  const [coupon, setCoupon] = useState(() => {
+    try {
+      return sessionStorage.getItem('namo.ref') || ''
+    } catch {
+      return ''
+    }
+  })
+
+  /* Through the server's checkout, which claims the stock and writes the
+     order. It used to be a bare `spend()` — a wallet debit and nothing
+     else — so the last item could be sold to everyone holding it in a
+     cart. Still awaited: without it a refusal reads as truthy and clears
+     a cart nobody paid for. */
   const checkout = async () => {
-    if (!cart.length) return
-    if (await spend(cartTotal, `Order · ${cart.length} ${cart.length === 1 ? 'item' : 'items'}`)) {
+    const result = await checkoutCart(coupon)
+    if (result?.ok) {
       clearCart()
       setCartOpen(false)
     }
@@ -95,6 +112,33 @@ export default function CartSheet() {
             <span className="text-lead tnum t-heading">₹{cartTotal.toLocaleString('en-IN')}</span>
           </div>
 
+          {/* The coupon goes HERE, between the total and the payment, which
+              is the last moment it can change what happens and the first
+              moment somebody knows what they are buying. An astrologer's
+              code carried in from their link arrives already filled. */}
+          <label className="mt-5 block">
+            <span className="caps-sm t-faint">Coupon or astrologer&apos;s code</span>
+            <input
+              value={coupon}
+              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+              placeholder="Optional"
+              maxLength={32}
+              aria-label="Coupon or astrologer's code"
+              className="mt-2 w-full rounded-lg border border-rule bg-transparent px-3 py-2.5 text-body tracking-[0.1em] text-t1 outline-none transition-colors placeholder:tracking-normal placeholder:text-t4 focus:border-t1"
+            />
+          </label>
+
+          {/* Cashback, never "off" — and said before paying, because a
+              seeker who finds out afterwards that the 10% was not taken
+              off the total has been surprised by their own money. The
+              total above does not move, and this explains why. */}
+          {looksLikeReferral(coupon) && coupon.startsWith('A') && (
+            <p className="mt-2 text-micro t-sub">
+              You pay the full price and get <b>10% back</b> in your wallet
+              seven days after delivery — on your first order only.
+            </p>
+          )}
+
           <div className="mt-5 flex gap-2">
             <PopButton size="sm" onClick={clearCart}>
               Clear
@@ -105,7 +149,8 @@ export default function CartSheet() {
           </div>
 
           <p className="mt-4 text-center text-meta t-faint">
-            The wallet is real. Nothing is shipped — fulfilment is phase 10.
+            Paid from your wallet. Stock is claimed when you pay, so nothing
+            is held for you until then.
           </p>
         </>
       )}

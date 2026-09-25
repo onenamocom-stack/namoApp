@@ -42,7 +42,10 @@ export default function VerifyOtp() {
       window.location.href = PRO_APP_URL
       return
     }
-    navigate('/onboarding/computing')
+    // The referral step sits between here and Computing: it is an
+    // authenticated write, so it could not have run before the OTP, and
+    // this is the last moment somebody is still in the flow.
+    navigate('/onboarding/referral')
   }
 
   const resend = async () => {
