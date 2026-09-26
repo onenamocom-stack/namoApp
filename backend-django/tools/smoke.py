@@ -196,6 +196,14 @@ def main():
           status in (404, 405), str(status))
 
     # ── the invariant that catches whatever the rest missed ────────────
+    print("\nSign-up")
+    defaults = signup_columns_have_defaults()
+    if defaults is None:
+        print(f"  {DIM}skip  no database url{OFF}")
+    else:
+        check("every not-null signup column has a database default",
+              defaults[0], defaults[1])
+
     print("\nLedger")
     ledger_ok = reconciles()
     if ledger_ok is None:
@@ -204,6 +212,45 @@ def main():
         check("every wallet still replays from its ledger", ledger_ok[0], ledger_ok[1])
 
     finish()
+
+
+def signup_columns_have_defaults():
+    """Can Supabase's trigger still create an account?
+
+    `handle_new_user` inserts three columns into `profiles` — id, phone,
+    name — so every OTHER not-null column on `profiles` and `wallets`
+    needs a default IN THE DATABASE. Django's defaults are Python-side:
+    `AddField` adds the column with one and then drops it, so the ORM
+    keeps working and the trigger dies.
+
+    THIS HAS BROKEN SIGN-UP TWICE. Once after the project migration
+    (HANDOFF §10j) and once when `video_enabled` landed on 23 Sep, which
+    took three days to notice because Supabase Auth reports it as
+    "Database error saving new user" and names no column.
+
+    `backend/schema/032_profiles_signup_defaults.sql` sets them. This is
+    the check that says whether the last migration undid it again — a
+    live-database invariant, the same class as the ledger reconciling.
+    """
+    url = os.environ.get("TARGET_DB_URL") or os.environ.get("DATABASE_URL")
+    if not url:
+        return None
+    try:
+        import subprocess
+
+        result = subprocess.run(
+            ["psql", url, "-tA", "-c",
+             "select string_agg(table_name||'.'||column_name, ', ')"
+             " from information_schema.columns"
+             " where table_name in ('profiles','wallets')"
+             "   and is_nullable = 'NO' and column_default is null"
+             "   and column_name not in ('id','profile_id','phone','name')"],
+            capture_output=True, text=True, timeout=30,
+        )
+        missing = (result.stdout or "").strip()
+        return not missing, missing or "every one has a default"
+    except Exception as exc:  # noqa: BLE001
+        return False, f"could not check: {exc}"
 
 
 def reconciles():

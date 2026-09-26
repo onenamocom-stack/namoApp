@@ -4622,3 +4622,16 @@ append-only and a refund is a credit, not a deletion — the order marked
 
 **Still missing: there is no orders page.** Nothing in the app lists what
 somebody has bought, so a refund like this one is invisible to them.
+
+### And the enforcement §34 asked for — 26 Sep 2026
+
+§34 ends with *"nothing enforced it, so the next migration undid it"*.
+`tools/smoke.py` enforces it now: **every not-null column on `profiles`
+and `wallets` must have a database default**, checked against the live
+database beside the ledger reconciliation — the same class of invariant,
+and the same reason for living there rather than in the test suite. The
+test suite runs on SQLite and cannot see a Postgres column default at
+all.
+
+`video_enabled` was mine, from the moderation work on 23 Sep. It broke
+every sign-up for three days.
