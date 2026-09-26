@@ -161,3 +161,10 @@ def read(request, thread_id):
             status=HTTP_403_FORBIDDEN,
         )
     return Response(result)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def cancel(request, session_id):
+    """The seeker withdrawing a request nobody has answered."""
+    return Response(services.cancel_request(request.user.pk, session_id))

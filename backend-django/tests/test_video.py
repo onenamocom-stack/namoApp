@@ -108,16 +108,38 @@ class TestWhoMayJoin:
 
 @pytest.mark.django_db
 class TestWhenThereIsNoDoor:
-    def test_a_requested_session_has_not_bought_a_window(
+    def test_a_requested_session_says_WAIT_not_no(
         self, people, configured, fake_daily
     ):
-        """No money has moved yet, so there is nothing to join."""
+        """The bug that cost real money on 26 Sep.
+
+        The seeker is sent to the call screen the moment they ask, so the
+        first join always lands before the consultant has accepted. That
+        refusal used to be final — the screen asked once, showed "that
+        session is not live", and never asked again. The consultant
+        answered seven seconds later, the meter started, and the seeker
+        sat looking at an error until the money ran out.
+        """
         s = _session(status=Session.Status.REQUESTED, minutes=None)
-        assert services.join(SEEKER, s.id)["reason"] == services.REFUSAL_NOT_LIVE
+        out = services.join(SEEKER, s.id)
+        assert out["ok"] is False
+        assert out["reason"] == services.REFUSAL_WAITING
+        assert out["retry"] is True, "the client must know to ask again"
+        assert fake_daily["rooms"] == [], "no room until the money is held"
+
+    def test_a_declined_session_does_not_retry(self, people, configured, fake_daily):
+        """Not-live-any-more. Waiting for something that will not happen
+        is worse than being told."""
+        s = _session(status=Session.Status.DECLINED, minutes=None)
+        out = services.join(SEEKER, s.id)
+        assert out["reason"] == services.REFUSAL_DECLINED
+        assert out["retry"] is False
 
     def test_an_ended_session_is_closed(self, people, configured, fake_daily):
         s = _session(status=Session.Status.ENDED)
-        assert services.join(SEEKER, s.id)["reason"] == services.REFUSAL_NOT_LIVE
+        out = services.join(SEEKER, s.id)
+        assert out["reason"] == services.REFUSAL_NOT_LIVE
+        assert out["retry"] is False
 
     def test_an_expired_window_is_refused_rather_than_opened(
         self, people, configured, fake_daily
@@ -178,3 +200,47 @@ class TestTheRoomDiesWithTheMoney:
         s = _session()
         assert services.join(SEEKER, s.id)["room"] == services.room_name(s.id)
         assert services.room_name(s.id) == services.room_name(s.id)
+
+
+@pytest.mark.django_db
+class TestCancellingAnUnansweredCall:
+    """Walking away before anybody answers.
+
+    `end_session` answers `already_ended` for anything that is not live,
+    so a seeker who left had their request sitting there for the
+    sweeper's fifteen minutes — and a consultant answering inside that
+    window would start the meter for somebody who had gone.
+    """
+
+    def test_a_requested_session_can_be_withdrawn(self, people):
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        assert chat.cancel_request(SEEKER, s.id) == {"ok": True}
+        s.refresh_from_db()
+        assert s.status == Session.Status.EXPIRED
+
+    def test_a_live_session_is_not_cancelled_this_way(self, people):
+        """Money is held against a live one. Ending it is a settle, not a
+        withdrawal, and that is `end_session`'s job."""
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.LIVE)
+        assert chat.cancel_request(SEEKER, s.id) == {"ok": True, "already": True}
+        s.refresh_from_db()
+        assert s.status == Session.Status.LIVE
+
+    def test_a_stranger_cannot_cancel_it(self, people):
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        assert chat.cancel_request(STRANGER, s.id) == {"ok": True, "already": True}
+        s.refresh_from_db()
+        assert s.status == Session.Status.REQUESTED
+
+    def test_cancelling_twice_is_not_an_error(self, people):
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        chat.cancel_request(SEEKER, s.id)
+        assert chat.cancel_request(SEEKER, s.id)["already"] is True

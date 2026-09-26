@@ -21,7 +21,9 @@ from . import providers
 logger = logging.getLogger("apps.video")
 
 REFUSAL_UNAVAILABLE = "Video calling is not switched on yet."
+REFUSAL_WAITING = "Waiting for them to answer."
 REFUSAL_NOT_LIVE = "That session is not live."
+REFUSAL_DECLINED = "They could not take the call."
 REFUSAL_NOT_YOURS = "That session is not yours."
 REFUSAL_EXPIRED = "That session has ended."
 REFUSAL_UPSTREAM = "Could not open the call. Try again."
@@ -55,15 +57,40 @@ def join(actor_id, session_id, now=None):
     if not (is_consultant or is_seeker):
         return {"ok": False, "reason": REFUSAL_NOT_YOURS}
 
-    # LIVE ONLY. A requested session has taken no money and bought no
-    # window; an ended one has been settled. Neither has a door.
+    # LIVE ONLY — but "not live" has two meanings and the client must be
+    # able to tell them apart.
+    #
+    # REQUESTED is not-live-YET. The seeker is sent to the call screen the
+    # moment they ask, because an empty room with a countdown is a truer
+    # picture of "waiting for them" than a spinner on a list. They arrive
+    # before the consultant has accepted, so the first join is always
+    # refused — and on 26 Sep that refusal was final: the screen asked
+    # once, showed "that session is not live", and never asked again. The
+    # consultant answered seven seconds later, the meter started, and the
+    # seeker sat looking at an error until the money ran out.
+    #
+    # Everything else is not-live-ANY-MORE and there is nothing to wait
+    # for. `status` goes out so the client stops guessing from a sentence.
+    if session.status == Session.Status.REQUESTED:
+        return {"ok": False, "reason": REFUSAL_WAITING,
+                "status": session.status, "retry": True}
     if session.status != Session.Status.LIVE:
-        return {"ok": False, "reason": REFUSAL_NOT_LIVE}
+        return {
+            "ok": False,
+            "reason": (
+                REFUSAL_DECLINED
+                if session.status == Session.Status.DECLINED
+                else REFUSAL_NOT_LIVE
+            ),
+            "status": session.status,
+            "retry": False,
+        }
     if session.expires_at is None or session.expires_at <= stamp:
         # The sweeper will settle it within the minute. Refusing here
         # rather than opening a room that Daily would eject them from
         # two seconds later.
-        return {"ok": False, "reason": REFUSAL_EXPIRED}
+        return {"ok": False, "reason": REFUSAL_EXPIRED,
+                "status": session.status, "retry": False}
 
     name = room_name(session.id)
     try:

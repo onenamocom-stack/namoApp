@@ -138,6 +138,23 @@ export async function requestChat(consultantId, serviceId) {
   }
 }
 
+/**
+ * The seeker withdrawing a request nobody has answered.
+ *
+ * NOT `endChat`. That answers "already ended" for anything not live, so
+ * a seeker who walked away left their request on the table for the
+ * sweeper's fifteen minutes — and a consultant answering inside that
+ * window would start the meter for somebody who had gone.
+ */
+export async function cancelRequest(sessionId) {
+  try {
+    return await api(`/chat/sessions/${sessionId}/cancel/`, { method: 'POST' })
+  } catch (err) {
+    console.error('[chat] cancel failed:', err.message)
+    return { ok: false }
+  }
+}
+
 /** The consultant's join. This is where the hold is taken and the clock starts. */
 export async function acceptChat(sessionId) {
   try {

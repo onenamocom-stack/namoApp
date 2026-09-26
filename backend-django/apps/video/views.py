@@ -18,5 +18,10 @@ def join(request, session_id):
     """
     result = services.join(request.user.pk, session_id)
     if not result["ok"]:
-        return Response(refusal_body("refused", result["reason"]), status=409)
+        # `retry` rides along on the refusal body: a seeker who arrives
+        # before the consultant accepts must be told to wait, not told no.
+        body = refusal_body("refused", result["reason"])
+        body["retry"] = result.get("retry", False)
+        body["status"] = result.get("status")
+        return Response(body, status=409)
     return Response(result)

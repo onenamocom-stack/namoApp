@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { embedUrl, joinCall, timeLeft } from '../lib/video.js'
-import { endChat, heartbeat } from '../lib/chat.js'
+import { cancelRequest, endChat, heartbeat } from '../lib/chat.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -32,11 +32,33 @@ export default function Call() {
   const [leaving, setLeaving] = useState(false)
   const ended = useRef(false)
 
+  /* ASK UNTIL THERE IS A DOOR, not once.
+  
+     The seeker lands here the moment they press Call, which is before
+     the consultant has accepted — so the first join is always refused.
+     That refusal used to be final: the screen showed "that session is
+     not live" and never asked again. The consultant answered seven
+     seconds later, the meter started, and the seeker sat looking at an
+     error until the money ran out. It cost a real ₹35.
+  
+     Only `retry` refusals loop. Declined, ended and expired are answers,
+     and waiting for something that will not happen is worse than being
+     told. */
   useEffect(() => {
     let alive = true
-    joinCall(id).then((answer) => alive && setCall(answer))
+    let timer = null
+
+    const ask = async () => {
+      const answer = await joinCall(id)
+      if (!alive) return
+      setCall(answer)
+      if (!answer.ok && answer.retry) timer = setTimeout(ask, 2500)
+    }
+    ask()
+
     return () => {
       alive = false
+      if (timer) clearTimeout(timer)
     }
   }, [id])
 
@@ -87,6 +109,36 @@ export default function Call() {
     return (
       <div className="flex min-h-full animate-breathe items-center justify-center bg-ink">
         <p className="caps-sm on-ink">Opening the call</p>
+      </div>
+    )
+  }
+
+  /* Waiting is not failing, and must not look like it. Their name is not
+     here — this screen only has a session id — so it says what is true
+     without pretending to know more. */
+  if (!call.ok && call.retry) {
+    return (
+      <div className="flex min-h-full animate-fade flex-col items-center justify-center bg-ink px-6 text-center">
+        <span className="block h-2.5 w-2.5 animate-pulse rounded-full bg-live" />
+        <p className="mt-6 text-lead font-light on-ink">Ringing</p>
+        <p className="mt-3 max-w-measure text-meta text-white/60">
+          Waiting for them to answer. Nothing is charged until they do.
+        </p>
+        {/* Cancel takes the request OFF THE TABLE, it does not just
+            leave the screen. Navigating away used to leave it sitting
+            there for the sweeper's fifteen minutes, and a consultant
+            answering inside that window would have started the meter for
+            somebody who had already gone. */}
+        <button
+          type="button"
+          onClick={async () => {
+            await cancelRequest(id)
+            navigate('/consult', { replace: true })
+          }}
+          className="mt-12 text-micro uppercase tracking-caps text-white/50 underline"
+        >
+          Cancel
+        </button>
       </div>
     )
   }

@@ -4887,3 +4887,50 @@ trip is just faster.
 
 `ConsultantProfile` lost its own copy of the handler, plus the four
 imports and the local `asking` flag that went with it.
+
+### The seeker was charged for a call they never got into — 27 Sep 2026
+
+Reported as *"maine call kia bhi nahi, bass dabaya… mere paise katt gya"*,
+and the logs say exactly what happened:
+
+```
+18:36:38  seeker (Android, 1namo.com)   POST …/join/ → 409
+18:36:45  consultant (Mac, namo-pro)    POST …/join/ → 200
+```
+
+**The seeker is sent to the call screen the moment they press Call**, so
+the first join always lands while the session is still `requested`.
+`video.join` refused it — correctly, no money had been held yet — and the
+screen **asked once and never again.** The consultant answered seven
+seconds later, the meter started against ₹170 of held balance, and the
+seeker sat looking at *"That session is not live"* until it ran out.
+
+**`requested` is not-live-YET and now says so.** The refusal carries
+`retry: true` and its own sentence; everything else carries
+`retry: false`, because waiting for something that will not happen is
+worse than being told. The call screen polls every 2.5s on a retryable
+refusal and shows **Ringing — nothing is charged until they answer**,
+which is true: `request_chat` writes a row and moves no money.
+
+**Cancel now withdraws the request.** It used to navigate away and leave
+it on the table for the sweeper's fifteen minutes — and a consultant
+answering inside that window would have started the meter for somebody
+who had gone. `cancel_request` moves `requested` → `expired`; it refuses
+to touch a live session, because money is held against that one and
+ending it is a settle, not a withdrawal. **`expired`, not `declined`:**
+declined is the consultant's verb and reads as a refusal on their record,
+and the status list is a CHECK on a money table that does not need a
+sixth value to say "this never became a session".
+
+**The money was made whole.** The session was settled (₹35 for 4 minutes,
+₹135 back), then the ₹35 refunded as a credit because the product failed,
+and the consultant's ₹28.70 earnings row reversed — mirrored sign for
+sign, since the CHECK is `net = gross − fee` on negative rows too. Back to
+**₹178.50**, the balance before the call.
+
+**A false alarm along the way:** the session looked unswept until I read
+the clock — the database is **UTC** and `expires_at 18:53` had not
+arrived yet. pg_cron's `session_sweep()` had run 43 seconds earlier and
+was working fine.
+
+**746 tests**, 5 new. `namo-api` **00047**.

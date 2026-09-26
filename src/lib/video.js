@@ -34,7 +34,16 @@ export async function joinCall(sessionId) {
     })
     const data = await response.json().catch(() => null)
     if (!response.ok) {
-      return { ok: false, reason: data?.message || 'Could not open the call.' }
+      return {
+        ok: false,
+        reason: data?.message || 'Could not open the call.',
+        // The seeker reaches this screen before the consultant has
+        // accepted, so the first ask is always refused. `retry` is what
+        // tells waiting apart from refused — without it the screen asked
+        // once, showed an error, and sat there while the meter ran.
+        retry: data?.retry === true,
+        status: data?.status ?? null,
+      }
     }
     return {
       ok: true,

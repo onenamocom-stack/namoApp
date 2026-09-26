@@ -707,3 +707,33 @@ def list_sessions(actor_id):
         shaped["consultant_name"] = names.get(flat(row.consultant_id))
         out.append(shaped)
     return out
+
+
+def cancel_request(seeker_id, session_id, now=None):
+    """The seeker withdrawing before anybody answered.
+
+    NO MONEY IS INVOLVED, which is what makes this safe and separate:
+    `request_chat` writes a row and stops, so there is nothing to settle
+    — only a request to take off the table.
+
+    `end_session` does NOT do this. It answers `already_ended` for
+    anything that is not live, so a seeker who walked away left their
+    request sitting there for the sweeper's fifteen minutes — and a
+    consultant answering inside that window would start the meter for
+    somebody who had gone.
+
+    EXPIRED, not declined. `declined` is the consultant's verb and reads
+    as a refusal on their record. The status list is a CHECK on a money
+    table and gaining a sixth value is a migration nobody needs: expired
+    already means "this request never became a session", which is
+    exactly what happened.
+    """
+    stamp = now or timezone.now()
+    moved = Session.objects.filter(
+        pk=session_id, seeker_id=seeker_id, status=Session.Status.REQUESTED
+    ).update(status=Session.Status.EXPIRED, ended_at=stamp)
+    if not moved:
+        # Already answered, already gone, or not theirs. All three are
+        # "nothing to cancel" and none of them is an error worth a screen.
+        return {"ok": True, "already": True}
+    return {"ok": True}
