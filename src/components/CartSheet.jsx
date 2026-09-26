@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { looksLikeReferral } from '../lib/referrals.js'
 import { Sheet } from './Chrome.jsx'
+import CodeField from './CodeField.jsx'
 import Plate from './Plate.jsx'
 import { PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -139,28 +139,20 @@ export default function CartSheet() {
               is the last moment it can change what happens and the first
               moment somebody knows what they are buying. An astrologer's
               code carried in from their link arrives already filled. */}
-          <label className="mt-5 block">
-            <span className="caps-sm t-faint">Coupon or astrologer&apos;s code</span>
-            <input
+          {/* The tick means the SERVER agrees. This drew its "10% back"
+              line off a regex until 26 Sep, so a well-shaped code nobody
+              had ever issued looked exactly as valid as a real one —
+              until Pay refused it. The subtotal goes with the check so
+              the answer can name the actual amount rather than "10%". */}
+          <div className="mt-5">
+            <CodeField
               value={coupon}
-              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-              placeholder="Optional"
-              maxLength={32}
-              aria-label="Coupon or astrologer's code"
-              className="mt-2 w-full rounded-lg border border-rule bg-transparent px-3 py-2.5 text-body tracking-[0.1em] text-t1 outline-none transition-colors placeholder:tracking-normal placeholder:text-t4 focus:border-t1"
+              onChange={setCoupon}
+              subtotalPaise={cartTotal * 100}
+              label="Coupon or astrologer's code"
+              hint="An astrologer's code pays you 10% back after delivery, on your first order."
             />
-          </label>
-
-          {/* Cashback, never "off" — and said before paying, because a
-              seeker who finds out afterwards that the 10% was not taken
-              off the total has been surprised by their own money. The
-              total above does not move, and this explains why. */}
-          {looksLikeReferral(coupon) && coupon.startsWith('A') && (
-            <p className="mt-2 text-micro t-sub">
-              You pay the full price and get <b>10% back</b> in your wallet
-              seven days after delivery — on your first order only.
-            </p>
-          )}
+          </div>
 
           <div className="mt-5 flex gap-2">
             <PopButton size="sm" onClick={clearCart}>

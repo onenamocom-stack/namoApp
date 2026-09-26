@@ -524,6 +524,24 @@ class TestTheBoostStartsTomorrow:
 # ── the compressed testing window ───────────────────────────────────────────
 
 
+def _next_window(settings):
+    """Wait until the period actually rolls over.
+
+    `time.sleep(window)` from an arbitrary point can land either side of
+    a boundary, because the buckets are epoch-aligned and not relative to
+    when the test started. Sleeping a fixed amount made this suite fail
+    roughly one run in ten. Polling for the change is deterministic and
+    usually faster.
+    """
+    import time
+
+    start = ai_services._ist_today()
+    deadline = time.monotonic() + settings.AI_FREE_WINDOW_SECONDS + 3
+    while ai_services._ist_today() == start:
+        assert time.monotonic() < deadline, "the window never rolled"
+        time.sleep(0.05)
+
+
 @pytest.mark.django_db
 class TestTheCompressedWindow:
     """`AI_FREE_WINDOW_SECONDS` makes a "day" short enough to watch.
@@ -549,9 +567,7 @@ class TestTheCompressedWindow:
     def test_a_short_window_advances_the_day(self, settings):
         settings.AI_FREE_WINDOW_SECONDS = 1
         first = ai_services._ist_today()
-        import time
-
-        time.sleep(1.1)
+        _next_window(settings)
         assert ai_services._ist_today() > first, "the period did not roll over"
 
     def test_the_allowance_resets_when_the_window_rolls(self, people, settings):
@@ -562,14 +578,13 @@ class TestTheCompressedWindow:
 
         for i in range(5):
             ai_services.ask(BUYER, f"welcome {i}")   # burn the welcome five
-        import time
 
-        time.sleep(1.1)
+        _next_window(settings)
         assert ai_services.quota_state(BUYER)["free_left"] == 1
         ai_services.ask(BUYER, "the one")
         assert ai_services.quota_state(BUYER)["free_left"] == 0
 
-        time.sleep(1.1)
+        _next_window(settings)
         assert ai_services.quota_state(BUYER)["free_left"] == 1, (
             "the next window did not refill the allowance"
         )
@@ -587,9 +602,7 @@ class TestTheCompressedWindow:
         # Still this window: the boost starts next one.
         assert ai_services.quota_state(FRIEND)["free_left"] == 0
 
-        import time
-
-        time.sleep(1.1)
+        _next_window(settings)
         assert ai_services.quota_state(FRIEND)["free_left"] == 3
         assert ai_services.quota_state(FRIEND)["boosted"] is True
 
@@ -665,3 +678,58 @@ class TestTheBoostWaitsForTheWelcomeFive:
             seen.append(ai_services.quota_state(FRIEND)["free_left"])
             day[0] += timedelta(days=1)
         assert seen == [3, 3, 3, 1, 1], f"got {seen}"
+
+
+# ── telling somebody whether their code is any good ─────────────────────────
+
+
+@pytest.mark.django_db
+class TestCheckingACode:
+    """A green tick has to mean the SERVER agrees.
+
+    The cart used to show its "10% back" line off a regex in the browser,
+    so a well-shaped code nobody had ever issued looked exactly as valid
+    as a real one — right up until Pay refused it.
+    """
+
+    def test_a_real_consultant_code_says_what_it_gives(self, people, product):
+        code = _code(PRO, ReferralCode.Kind.CONSULTANT)
+        out = services.describe_code(code, viewer_id=BUYER, subtotal_paise=PRICE)
+        assert out["ok"] and out["kind"] == "consultant"
+        assert out["cashback_paise"] == TENTH
+        assert "₹100" in out["note"]
+
+    def test_a_code_nobody_issued_is_refused(self, people):
+        out = services.describe_code("AZZZZZZZ", viewer_id=BUYER)
+        assert out["ok"] is False
+        assert out["reason"] == services.REFUSAL_UNKNOWN_CODE
+
+    def test_your_own_code_is_refused_by_name(self, people):
+        out = services.describe_code(_code(BUYER, ReferralCode.Kind.SEEKER),
+                                     viewer_id=BUYER)
+        assert out["reason"] == services.REFUSAL_SELF
+
+    def test_a_second_order_is_refused_before_the_tap(self, people, product):
+        """The whole point of checking early: the refusal that used to
+        arrive after Pay now arrives while they are still typing."""
+        _fund(BUYER, PRICE * 3)
+        code = _code(PRO, ReferralCode.Kind.CONSULTANT)
+        shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}],
+                          coupon_code=code)
+        out = services.describe_code(code, viewer_id=BUYER, subtotal_paise=PRICE)
+        assert out["reason"] == services.REFUSAL_NOT_FIRST_ORDER
+
+    def test_signed_out_it_says_what_kind_without_guessing_at_rules(self, people):
+        """The onboarding field sits before the OTP. With no session there
+        is nobody to check "your own code" against, so it answers only
+        what the code is — and must not claim more."""
+        out = services.describe_code(_code(BUYER, ReferralCode.Kind.SEEKER))
+        assert out["ok"] and out["kind"] == "seeker"
+        assert "three days" in out["note"]
+
+    def test_it_writes_nothing(self, people):
+        """Read-only. Checking a code must not consume it."""
+        before = Referral.objects.count()
+        services.describe_code(_code(BUYER, ReferralCode.Kind.SEEKER), viewer_id=FRIEND)
+        services.describe_code(_code(PRO, ReferralCode.Kind.CONSULTANT), viewer_id=FRIEND)
+        assert Referral.objects.count() == before

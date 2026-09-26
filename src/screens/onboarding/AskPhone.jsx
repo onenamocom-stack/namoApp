@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
+import CodeField from '../../components/CodeField.jsx'
 import { useStore } from '../../store.jsx'
 import { supabase } from '../../lib/supabase.js'
 
@@ -141,28 +142,19 @@ export default function AskPhone() {
           ever, and somebody resuming an account either used one or did
           not. */}
       {!signin && !pro && (
-        <label className="mx-auto mt-10 flex max-w-[19rem] flex-col items-center gap-2">
-          <input
+        <div className="mx-auto mt-10 max-w-[19rem]">
+          {/* Checked against the server as they type, even though there
+              is no session yet: signed out the check answers what kind
+              of code it is, which is enough to catch a mistyped one here
+              rather than after the OTP. */}
+          <CodeField
             value={birth.referralCode ?? ''}
-            onChange={(e) =>
-              setBirthField('referralCode', e.target.value.toUpperCase().trim())
-            }
+            onChange={(v) => setBirthField('referralCode', v.trim())}
+            label="Referral code · optional"
             placeholder="NXXXXXXX"
-            maxLength={16}
-            aria-label="Referral code, optional"
-            autoComplete="off"
-            autoCapitalize="characters"
-            spellCheck="false"
-            className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-light tracking-[0.15em] text-t1 outline-none transition-colors placeholder:tracking-normal placeholder:text-t4 focus:border-t1"
+            hint="Invited by someone? You both get three free questions a day for three days."
           />
-          <span className="text-micro uppercase tracking-caps text-t3">
-            Referral code · optional
-          </span>
-          <span className="mt-1 text-center text-micro t-faint">
-            Invited by someone? You both get three free questions a day for
-            three days.
-          </span>
-        </label>
+        </div>
       )}
 
       {noAccount && (

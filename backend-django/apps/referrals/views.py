@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.views import refusal_body
@@ -100,4 +100,49 @@ def my_cashback(request):
         "paid_paise": sum(
             c.amount_paise for c in rows if c.status == Cashback.Status.PAID
         ),
+    })
+
+
+class CheckInput(serializers.Serializer):
+    code = serializers.CharField(max_length=32)
+    subtotal_paise = serializers.IntegerField(required=False, default=0, min_value=0)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def check(request):
+    """Is this code any good, and what does it do?
+
+    Read-only, and answers for the CALLER when there is one. Signed in,
+    every rule applies — your own code, already used one, not your first
+    order. Signed out, it answers only what kind of code it is, which is
+    all an onboarding screen can be told before there is a session.
+
+    Anonymous on purpose: the referral field sits on the phone screen,
+    before the OTP, and a code that cannot be checked until afterwards is
+    a code somebody mistypes and only finds out about later.
+    """
+    serializer = CheckInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    viewer = request.user.pk if request.user and request.user.is_authenticated else None
+    code = serializer.validated_data["code"]
+    subtotal = serializer.validated_data["subtotal_paise"]
+
+    verdict = services.describe_code(code, viewer_id=viewer, subtotal_paise=subtotal)
+    if verdict["kind"] is not None:
+        return Response(verdict)
+
+    # Not a referral code. The cart's one box takes shop coupons too, and
+    # they are a different table with a different answer — a DISCOUNT,
+    # which comes off the total rather than back afterwards. Tried second
+    # because the referral namespace is its own shape and resolves fast.
+    from apps.shop import services as shop_services
+
+    discount, coupon, refusal = shop_services.check_coupon(code, subtotal)
+    if coupon is None:
+        return Response({"ok": False, "kind": None,
+                         "reason": refusal or services.REFUSAL_UNKNOWN_CODE})
+    return Response({
+        "ok": True, "kind": "coupon", "discount_paise": discount,
+        "note": f"₹{discount / 100:g} off" if discount else "Valid",
     })

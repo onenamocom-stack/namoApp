@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { claimCode, myCodes } from '../lib/referrals.js'
+import CodeField from './CodeField.jsx'
 import { Section } from './Primitives.jsx'
 import { PopButton } from './Pop.jsx'
 import { useStore } from '../store.jsx'
@@ -97,30 +98,24 @@ export default function ReferralCard() {
       {canClaim && (
         <div className="mt-7 border-t border-rule pt-6">
           <p className="caps-sm t-faint">Have someone else&apos;s code?</p>
-          <div className="mt-3 flex gap-2">
-            <input
+          <div className="mt-3">
+            <CodeField
               value={typed}
-              onChange={(e) => setTyped(e.target.value.toUpperCase())}
+              onChange={setTyped}
+              label="Their code"
               placeholder="NXXXXXXX"
-              maxLength={16}
-              aria-label="Referral code"
-              className="min-w-0 flex-1 rounded-lg border border-rule bg-transparent px-3 py-2.5 text-body tracking-[0.15em] text-t1 outline-none transition-colors placeholder:tracking-normal placeholder:text-t4 focus:border-t1"
+              hint="Once per account. An astrologer's shop coupon goes in at checkout instead."
             />
-            <PopButton
-              size="sm"
-              variant="gold"
-              full={false}
-              className="flex-none"
-              onClick={claim}
-              disabled={!typed.trim() || claiming}
-            >
-              {claiming ? '…' : 'Apply'}
-            </PopButton>
           </div>
-          <p className="mt-2 text-micro t-faint">
-            Once per account. A shop coupon from an astrologer goes in at
-            checkout instead.
-          </p>
+          <PopButton
+            size="sm"
+            variant="gold"
+            className="mt-3"
+            onClick={claim}
+            disabled={!typed.trim() || claiming}
+          >
+            {claiming ? '…' : 'Apply'}
+          </PopButton>
         </div>
       )}
     </Section>

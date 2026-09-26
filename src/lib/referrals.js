@@ -101,6 +101,35 @@ export async function myCashback() {
 }
 
 /**
+ * What does this code do, before anybody commits to it?
+ *
+ * The SERVER answers. The cart used to draw its "10% back" line off the
+ * regex below, so a well-shaped code nobody had ever issued looked
+ * exactly as valid as a real one — right up until Pay refused it.
+ *
+ * Signed in, every rule applies: your own code, already used one, not
+ * your first order. Signed out it answers what kind of code it is, which
+ * is all the onboarding screen can be told before there is a session.
+ *
+ * Never throws. A check that fails on a flaky network must leave the
+ * field usable — the real answer comes at Pay either way.
+ */
+export async function checkCode(code, subtotalPaise = 0) {
+  const trimmed = (code || '').trim()
+  if (!trimmed) return null
+  const token = await accessToken()
+  try {
+    return await api('/referrals/check/', {
+      method: 'POST',
+      token,
+      body: { code: trimmed, subtotal_paise: Math.round(subtotalPaise) },
+    })
+  } catch {
+    return null
+  }
+}
+
+/**
  * Is this a referral code rather than a shop coupon?
  *
  * Used only to change what the basket SAYS before it is sent — "10% back

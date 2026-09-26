@@ -4635,3 +4635,43 @@ all.
 
 `video_enabled` was mine, from the moderation work on 23 Sep. It broke
 every sign-up for three days.
+
+### A green tick that means the server agrees — 26 Sep 2026
+
+The cart drew its *"10% back"* line off a **regex in the browser**, so a
+well-shaped code nobody had ever issued looked exactly as valid as a real
+one — right up until Pay refused it.
+
+`POST /v1/referrals/check/` answers what a code would do without using
+it. Read-only, and **anonymous on purpose**: the referral field sits on
+the phone screen before the OTP, and a code that cannot be checked until
+afterwards is one somebody mistypes and finds out about later. Signed in
+it applies every rule — your own code, already used one, not your first
+order. Signed out it says only what kind of code it is, and must not
+claim more.
+
+Shop coupons fall through the same endpoint and get the other answer: a
+**discount**, off the total, rather than cashback afterwards.
+
+`components/CodeField.jsx` is the one box, used in three places — the
+cart, the phone screen and the profile card. It debounces 500ms (eight
+keystrokes would be eight requests, seven of them about a prefix), drops
+out-of-order answers by sequence number (type, backspace, retype and an
+older reply could otherwise tick a code no longer in the box), and
+**never blocks**: a check that fails on a flaky network leaves the field
+usable, because the real answer comes at Pay regardless.
+
+### Two process notes
+
+**I piped pytest into `tail` before `&&` again** — the same mistake
+written down yesterday for `migrate`. The pipeline exits with `tail`'s
+status, so a failing suite deployed anyway. The failure was a flaky test
+rather than a regression, which is luck, not a defence.
+
+**The flaky test is fixed rather than retried.** `TestTheCompressedWindow`
+slept a fixed 1.1s against a 1s window; buckets are epoch-aligned, so the
+sleep could land either side of a boundary. It now waits for the period
+to actually roll — deterministic, and usually faster. Five consecutive
+green runs.
+
+**722 tests.** `namo-api` **00043**.

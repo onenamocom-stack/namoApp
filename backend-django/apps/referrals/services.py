@@ -559,3 +559,50 @@ def _notify_cancelled(row, status):
         ref_type="cashback", ref_id=str(row.id),
         dedupe_key=f"cashback.cancelled:{row.id}",
     )
+
+
+def describe_code(code, viewer_id=None, subtotal_paise=0):
+    """What would this code do, without using it?
+
+    Answers the question the cart asks while somebody is still typing, so
+    a green tick means the SERVER agrees rather than a regex in the
+    browser agreeing with itself. Read-only: nothing here writes a row or
+    consumes anything.
+
+    `viewer_id` is optional. Without it this answers only what kind of
+    code it is and whether it exists — which is what an onboarding screen
+    can know, since there is no session yet to check "your own code" or
+    "already used one" against. With it, every rule is applied.
+    """
+    row = resolve(code)
+    if row is None:
+        return {"ok": False, "kind": None, "reason": REFUSAL_UNKNOWN_CODE}
+    if not row.active:
+        return {"ok": False, "kind": row.kind, "reason": REFUSAL_INACTIVE}
+
+    if row.kind == ReferralCode.Kind.CONSULTANT:
+        if viewer_id is None:
+            return {"ok": True, "kind": row.kind,
+                    "note": "An astrologer's code. Use it at checkout."}
+        verdict = check_coupon(viewer_id, row.code)
+        if not verdict["ok"]:
+            return {"ok": False, "kind": row.kind, "reason": verdict["reason"]}
+        back = _cashback_paise(subtotal_paise)
+        return {
+            "ok": True, "kind": row.kind, "cashback_paise": back,
+            "note": (
+                f"₹{back / 100:g} back in your wallet seven days after delivery"
+                if back else "10% back in your wallet after delivery"
+            ),
+        }
+
+    # A seeker's sign-up code.
+    if viewer_id is None:
+        return {"ok": True, "kind": row.kind,
+                "note": "A friend's code. Three free questions a day for three days."}
+    if str(row.profile_id).replace("-", "") == str(viewer_id).replace("-", ""):
+        return {"ok": False, "kind": row.kind, "reason": REFUSAL_SELF}
+    if Referral.objects.filter(referee_id=viewer_id, kind=Referral.Kind.SIGNUP).exists():
+        return {"ok": False, "kind": row.kind, "reason": REFUSAL_ALREADY_REFERRED}
+    return {"ok": True, "kind": row.kind,
+            "note": "Three free questions a day for three days, for both of you."}
