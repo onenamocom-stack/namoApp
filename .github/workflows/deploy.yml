@@ -101,3 +101,36 @@ jobs:
         #
         # On 1 Sep that turned a ten-minute timeout into a 19-second success on
         # the identical commit. Normal here is 33-43s; ten minutes means stuck.
+
+  # ── the consultant app ──────────────────────────────────────────────────
+  #
+  # `namo-pro` is a deploy shell: it holds a workflow and a README, and
+  # builds THIS repo's main with `--mode pro`. Its own trigger is a push
+  # to itself, and nothing pushes to it — so the consultant app last
+  # rebuilt on 21 Sep and sat five days behind the source while presence,
+  # the affiliate screen, sign-out and the incoming-call banner all
+  # shipped here and reached nobody.
+  #
+  # One repo, two apps, one source of truth. A deploy of the seeker app
+  # is a deploy of the consultant app.
+  pro:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rebuild the consultant app
+        env:
+          # A fine-grained PAT with actions:write on namo-pro. Without it
+          # this step says so and passes: a missing secret must not fail a
+          # seeker deploy that has already succeeded.
+          PRO_DISPATCH_TOKEN: ${{ secrets.PRO_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$PRO_DISPATCH_TOKEN" ]; then
+            echo "::warning::PRO_DISPATCH_TOKEN is not set — the consultant app was NOT rebuilt and is now behind this deploy."
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $PRO_DISPATCH_TOKEN" \
+            https://api.github.com/repos/onenamocom-stack/namo-pro/actions/workflows/deploy.yml/dispatches \
+            -d '{"ref":"main"}'
+          echo "Consultant app rebuild dispatched."

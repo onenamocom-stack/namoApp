@@ -4800,3 +4800,26 @@ does not tell a consultant who is calling.
 **Not yet done:** nobody has run a real two-device call. The room, the
 tokens and the expiry are verified against live Daily; two humans on two
 phones are not.
+
+### The consultant app had not rebuilt since 21 Sep — 26 Sep 2026
+
+`namo-pro` is a **deploy shell**: a workflow and a README that build
+*this* repo's main with `--mode pro`. Its trigger is a push to itself,
+and **nothing pushes to it.**
+
+So everything built for the consultant side since the 21st reached
+nobody: the **presence toggle**, the **affiliate link screen**,
+**sign-out**, and now the **incoming-call banner**. The seeker app
+deployed on every push and the consultant app sat five days behind the
+same source.
+
+`deploy.yml` has a `pro` job now, after `deploy`: one repo, two apps, and
+a deploy of the seeker app is a deploy of the consultant app. It needs
+**`PRO_DISPATCH_TOKEN`** in this repo's secrets — a fine-grained PAT with
+`actions: write` on `namo-pro`. Without it the step **warns and passes**,
+because a missing secret must not fail a seeker deploy that has already
+succeeded — and the warning names what did not happen.
+
+Until that secret exists the consultant app must be rebuilt by hand:
+**Actions → Deploy consultant app → Run workflow**, on `namo-pro`. That
+needs admin on that repo.
