@@ -4863,3 +4863,27 @@ The pro build already carried `/onboarding/name`, `/onboarding/phone` and
 out to be missing from it an hour earlier.
 
 **The name-after-verify order is Atharv's**, and left alone.
+
+### The roster's Call button was still the prototype — 27 Sep 2026
+
+Pressing **Call** on `/consult` said *"Calling Raghu — prototype only"*.
+
+The consultant's **profile** got a working Call button when video
+shipped. The **roster row** — the same button, on the card people
+actually press first — kept the toast it has carried since the
+prototype. Its Chat button was the same shape of stale: it opened the
+panel without requesting a session at all.
+
+Two copies of one button, and the one that mattered was the stub.
+
+`components/useStartSession.js` is the request now, and both screens call
+it. Call and chat are the **same per-minute session** — one meter, one
+hold, one settle; `mode` is a label on the row and nothing branches on
+it — so the hook takes a `to` and changes nothing else.
+
+It also refuses locally before asking: signed out, not priced, or
+offline. The server refuses all three anyway; saying so without a round
+trip is just faster.
+
+`ConsultantProfile` lost its own copy of the handler, plus the four
+imports and the local `asking` flag that went with it.

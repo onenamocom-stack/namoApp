@@ -6,6 +6,7 @@ import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName, Search } from '../components/Primitives.jsx'
+import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants, listMyBookings } from '../lib/consultants.js'
 import { PRO_APP_URL } from '../lib/urls.js'
@@ -224,7 +225,8 @@ const CHANNELS = {
 }
 
 export default function Consult() {
-  const { showToast, openChat, session } = useStore()
+  const { showToast, session } = useStore()
+  const { start, asking } = useStartSession()
   /* Real consultants from phase 4, read through `consultants_public` — the
      view is the access control, so an unapproved practice is missing from
      this list because the server never sent it, not because a filter here
@@ -604,12 +606,8 @@ export default function Consult() {
                        profile page. A card that offers Call to somebody
                        asleep is the card that teaches a seeker the app
                        does not work. */
-                    disabled={!c.online}
-                    onClick={
-                      kind === 'call'
-                        ? () => showToast(`Calling ${firstName(c.name)} — prototype only`)
-                        : () => openChat('live')
-                    }
+                    disabled={!c.online || asking}
+                    onClick={() => start(c, kind)}
                   >
                     <Icon name={CHANNELS[kind].icon} size={15} />
                     <span className="ml-1.5">{CHANNELS[kind].label}</span>

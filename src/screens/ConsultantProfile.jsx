@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
+import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
 import {
   Avatar,
@@ -18,7 +19,6 @@ import {
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
-import { requestChat } from '../lib/chat.js'
 import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
 
 const TABS = [
@@ -58,9 +58,8 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
-  const navigate = useNavigate()
-  const { showToast, hasFlag, toggleFlag, openChat, bookSession, spending, session } = useStore()
-  const [asking, setAsking] = useState(false)
+  const { start, asking } = useStartSession()
+  const { showToast, hasFlag, toggleFlag, bookSession, spending } = useStore()
   const [tab, setTab] = useState('about')
   const [sheet, setSheet] = useState(false)
   const [slot, setSlot] = useState(null)
@@ -138,42 +137,13 @@ export default function ConsultantProfile() {
      consultant joins, which is the opposite of booking a slot. The panel opens
      straight away so the seeker can watch for the answer; the meter appears in
      it the moment the session goes live. */
-  /* A video call is the SAME per-minute session as a chat — one meter,
-     one hold, one settle. What differs is only how the two of them talk
-     while it runs, which is why this asks for a session exactly as chat
-     does and then waits on the same accept.
-
-     The seeker lands on /call/:id straight away rather than after the
-     consultant joins: an empty room with a countdown is a truer picture
-     of "waiting for them" than a spinner on this page, and the call
-     screen already has the clock the money runs on. */
-  const askForCall = async () => {
-    if (!session) return showToast('Sign in to start a call.')
-    if (!c.perMinute) return showToast(`${firstName(c.name)} is not taking calls.`)
-    setAsking(true)
-    try {
-      const res = await requestChat(c.id, c.perMinute.id)
-      if (!res?.ok) return showToast(res?.reason ?? 'Could not reach the astrologer.')
-      showToast(`Calling ${firstName(c.name)} · ₹${rupees(c.perMinute.price_paise)}/min once they join`)
-      navigate(`/call/${res.session_id}`)
-    } finally {
-      setAsking(false)
-    }
-  }
-
-  const askForChat = async () => {
-    if (!session) return showToast('Sign in to start a chat.')
-    if (!c.perMinute) return showToast(`${firstName(c.name)} is not taking chats.`)
-    setAsking(true)
-    try {
-      const res = await requestChat(c.id, c.perMinute.id)
-      if (!res?.ok) return showToast(res?.reason ?? 'Could not reach the consultant.')
-      showToast(`Asked ${firstName(c.name)} · ₹${rupees(c.perMinute.price_paise)}/min once they join`)
-      openChat('live')
-    } finally {
-      setAsking(false)
-    }
-  }
+  /* Call and chat are the same per-minute session — one meter, one
+     hold, one settle. `useStartSession` is that request, shared with the
+     roster on /consult, which kept a "prototype only" toast on its own
+     Call button for a week after this screen got a working one. Two
+     copies of the same button is how that happens. */
+  const askForCall = () => start(c, 'call')
+  const askForChat = () => start(c, 'chat')
 
   /* One call, one transaction. The sheet sends the consultant, the service and
      the server's own `startsAt` — and no price (rule 3). A refusal keeps the
