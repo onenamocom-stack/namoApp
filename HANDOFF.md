@@ -4840,3 +4840,26 @@ Two fixes, and the second is the one that would have bitten next:
   present, the gate would have hung up on somebody who is paying by the
   minute, one render after they answered.
 
+
+### Two doors on the consultant's front page — 26 Sep 2026
+
+`/pro/apply` had one button — *Verify your number* — and it took everyone
+through sign-**up**, which asks a returning consultant for a name their
+account already has.
+
+Two people arrive on that screen. One has never had a practice and needs
+the whole application. The other is approved, priced, and only needs to
+get back in.
+
+- **Apply as a consultant** → `/onboarding/name?next=pro`, unchanged.
+- **I already have an account** → `/onboarding/phone?next=pro&mode=signin`.
+
+`mode=signin` is what makes Supabase refuse to mint an account for a
+number nobody has verified, so a mistyped number answers *"we don't have
+an account for that"* instead of quietly creating a second one.
+
+The pro build already carried `/onboarding/name`, `/onboarding/phone` and
+`/onboarding/verify` — checked before linking, after `/call/:id` turned
+out to be missing from it an hour earlier.
+
+**The name-after-verify order is Atharv's**, and left alone.

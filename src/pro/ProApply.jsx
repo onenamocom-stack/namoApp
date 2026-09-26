@@ -98,8 +98,27 @@ function SignUp() {
         </div>
       </PopCard>
 
+      {/* TWO DOORS, because two different people arrive here.
+      
+          One has never been a consultant and needs the whole application.
+          The other already has a practice — approved, priced, maybe with
+          sessions behind it — and only needs to get back in. There was
+          one button, and it took both of them through sign-UP, which asks
+          a returning consultant for a name the account already has.
+      
+          Sign in carries `mode=signin`, which is what makes Supabase
+          refuse to mint a new account for a number nobody has verified —
+          so a mistyped number says "we don't have an account for that"
+          instead of quietly creating a second one. */}
       <Button to="/onboarding/name?next=pro" variant="solid" className="mt-10">
-        Verify your number
+        Apply as a consultant
+      </Button>
+      <Button
+        to="/onboarding/phone?next=pro&mode=signin"
+        variant="quiet"
+        className="mt-3"
+      >
+        I already have an account
       </Button>
       <a href={SEEKER_URL} className="mx-auto mt-6 block text-meta text-t3 underline hover:text-t1">
         I am looking for a reading instead
