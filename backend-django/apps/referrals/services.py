@@ -279,9 +279,21 @@ def cashback_row(row):
 def _has_bought_before(profile_id, exclude_order_id=None):
     """Has this person ever completed a shop order?
 
-    PAID or REFUNDED both count as having bought. A refunded order still
-    used the one first-order offer this programme allows — otherwise buy,
-    refund, buy again is an unlimited 10%.
+    PAID and REFUNDED count. CANCELLED does not, and the line between
+    them is whether the thing was ever actually bought:
+
+      REFUNDED  they had it and sent it back. The one first-order offer
+                was used — otherwise buy, return, buy again is an
+                unlimited 10%.
+      CANCELLED the order never happened. A mis-tap reversed before
+                anything shipped, or an admin undoing a mistake. Holding
+                the offer against somebody for an order they never
+                received is charging them for our correction.
+
+    Both are reversals in the ledger and only the status tells them
+    apart, which is why an admin undoing an accidental purchase must
+    write CANCELLED and not REFUNDED. Getting that wrong on 26 Sep cost
+    the owner their own first-order coupon.
     """
     from apps.shop.models import Order, OrderItem
 

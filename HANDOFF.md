@@ -4675,3 +4675,32 @@ to actually roll — deterministic, and usually faster. Five consecutive
 green runs.
 
 **722 tests.** `namo-api` **00043**.
+
+### Refunded is not cancelled — 26 Sep 2026
+
+The owner's coupon was refused with *"This coupon is for first-time
+buyers only"* on an account that had never completed a purchase.
+
+**Because I marked their accidental order `refunded`, and
+`_has_bought_before` counts refunds on purpose** — a returned order used
+the one first-order offer, otherwise buy, return, buy again is an
+unlimited 10%.
+
+The order had never shipped. It was a **cancellation**, and `CANCELLED`
+is already in the status list and already excluded:
+
+| | |
+|---|---|
+| `REFUNDED` | they had it and sent it back — the offer was used |
+| `CANCELLED` | the order never happened — nothing was used |
+
+Both are reversals in the ledger and **only the status tells them
+apart**, so an admin undoing an accidental purchase must write
+`CANCELLED`. That rule now lives in `_has_bought_before`'s docstring
+beside the code that depends on it, and in
+`TestWhatCountsAsHavingBought`, which asserts all three statuses.
+
+Order `cf501856` corrected; the coupon answers
+*"₹89 back in your wallet seven days after delivery"* again.
+
+**726 tests.** `namo-api` **00044**.

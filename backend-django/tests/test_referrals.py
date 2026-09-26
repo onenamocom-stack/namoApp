@@ -733,3 +733,49 @@ class TestCheckingACode:
         services.describe_code(_code(BUYER, ReferralCode.Kind.SEEKER), viewer_id=FRIEND)
         services.describe_code(_code(PRO, ReferralCode.Kind.CONSULTANT), viewer_id=FRIEND)
         assert Referral.objects.count() == before
+
+
+
+# ── refunded is not cancelled ───────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+class TestWhatCountsAsHavingBought:
+    """A returned order uses up the first-order offer. A cancelled one
+    does not.
+
+    Both are reversals and only the status tells them apart. An admin
+    undoing an accidental purchase wrote REFUNDED on 26 Sep and cost the
+    owner their own coupon — the order had never shipped.
+    """
+
+    def _an_order(self, product, status):
+        _fund(BUYER, PRICE * 2)
+        result = shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}])
+        order = Order.objects.get(pk=result["order_id"])
+        order.status = status
+        order.save(update_fields=["status"])
+        return order
+
+    def test_a_paid_order_uses_the_offer(self, people, product):
+        self._an_order(product, Order.Status.PAID)
+        assert services._has_bought_before(BUYER) is True
+
+    def test_a_returned_order_still_uses_it(self, people, product):
+        """Otherwise buy, return, buy again is an unlimited 10%."""
+        self._an_order(product, Order.Status.REFUNDED)
+        assert services._has_bought_before(BUYER) is True
+
+    def test_a_cancelled_order_does_not(self, people, product):
+        """It never happened. Holding it against somebody is charging
+        them for a correction that was ours to make."""
+        self._an_order(product, Order.Status.CANCELLED)
+        assert services._has_bought_before(BUYER) is False
+
+    def test_and_the_coupon_still_works_after_a_cancellation(self, people, product):
+        self._an_order(product, Order.Status.CANCELLED)
+        out = services.describe_code(
+            _code(PRO, ReferralCode.Kind.CONSULTANT),
+            viewer_id=BUYER, subtotal_paise=PRICE,
+        )
+        assert out["ok"] and out["cashback_paise"] == TENTH
