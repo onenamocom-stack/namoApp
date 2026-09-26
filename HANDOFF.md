@@ -4559,3 +4559,35 @@ not undo what was written while it was on.**
 The test account is reset again — profile, wallet, quota, messages,
 referral and code all gone. Its Supabase auth user remains; freeing the
 number properly still needs a service-role key.
+
+## 34. Sign-up was broken for three days — 26 Sep 2026
+
+**Every new account failed with "Database error saving new user".** Not the
+app's message: Supabase Auth says that when the `on_auth_user_created`
+trigger raises, and it says nothing about which column.
+
+**`handle_new_user` inserts three columns** — `(id, phone, name)` — so every
+other NOT NULL column on `profiles` needs a default IN THE DATABASE.
+`video_enabled` arrived with the moderation work on 23 Sep as a Django
+`BooleanField(default=False)`, and **Django's defaults are Python-side**:
+`AddField` adds the column with a default and then issues
+`ALTER COLUMN ... DROP DEFAULT`. The ORM keeps filling it in on its own
+writes and never notices; the trigger inserts three columns and dies.
+
+**This is the second time.** §10j restored exactly these defaults after the
+project migration and wrote down why — "without them `handle_new_user` and
+the client-insert policies cannot function". The rule did not survive the
+next migration, because nothing enforced it.
+
+**`backend/schema/032_profiles_signup_defaults.sql` is the fix and the
+check**: it sets the defaults and then RAISES if any NOT NULL column on
+`profiles` or `wallets` still has none. Idempotent — **run it after any
+Django migration that touches those two tables**, and treat a raise as a
+broken signup path rather than a lint.
+
+**What it does not fix: OTP delivery.** The SMS is slow because it leaves a
+US long code (`+1 717 584 9736`, §15) for an Indian handset — an
+international route with no DLT registration, queued behind carrier
+filtering. Nothing in this repo changes that; it is the MSG91-or-not
+decision §15 left open, and it is now a signup problem rather than a
+preference.
