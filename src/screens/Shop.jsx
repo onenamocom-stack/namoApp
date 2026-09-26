@@ -76,7 +76,7 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, spending, setCartOpen, session, sessionReady } =
+  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady } =
     useStore()
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
@@ -323,10 +323,9 @@ export default function Shop() {
                   size="sm"
                   full={false}
                   variant="gold"
-                  disabled={spending}
-                  onClick={() => buyNow(hero, referral)}
+                  onClick={() => buyNow(hero)}
                 >
-                  Buy now
+                  Review &amp; buy
                 </PopButton>
               </div>
             </div>
@@ -416,8 +415,7 @@ export default function Shop() {
                             size="sm"
                             variant="gold"
                             full={false}
-                            disabled={spending}
-                            onClick={() => buyNow(p, referral)}
+                            onClick={() => buyNow(p)}
                             className="flex-1"
                           >
                             Buy

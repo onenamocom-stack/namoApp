@@ -3,7 +3,7 @@ import { looksLikeReferral } from '../lib/referrals.js'
 import { Sheet } from './Chrome.jsx'
 import Plate from './Plate.jsx'
 import { PopButton } from './Pop.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
 
 /**
  * Cart sheet.
@@ -24,12 +24,18 @@ export default function CartSheet() {
     clearCart,
     checkoutCart,
     spending,
+    balance,
   } = useStore()
 
   /* An astrologer's code, typed here or carried in from their link. This
      is the only place it can be applied to a basket — the Shop's Buy
      button is one product, and a coupon that only worked there would be a
      coupon most people could not use. */
+  // Paise against rupees: `cartTotal` is rupees (the catalogue's unit on
+  // this screen) and the wallet is paise everywhere. Compared in paise,
+  // because that is the one the server uses.
+  const short = balance !== null && balance < cartTotal * 100
+
   const [coupon, setCoupon] = useState(() => {
     try {
       return sessionStorage.getItem('namo.ref') || ''
@@ -112,6 +118,23 @@ export default function CartSheet() {
             <span className="text-lead tnum t-heading">₹{cartTotal.toLocaleString('en-IN')}</span>
           </div>
 
+          {/* What leaves and what is left, before the button that does it.
+              Buy used to charge on the tap with none of this on screen —
+              a gold button two taps from Add, and the money was gone
+              before the page changed. */}
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="caps-sm t-faint">Wallet after</span>
+            <span
+              className={`text-meta tnum ${short ? 'text-live' : 't-sub'}`}
+            >
+              {balance === null
+                ? '—'
+                : short
+                  ? `short by ₹${rupees(cartTotal * 100 - balance)}`
+                  : `₹${rupees(balance - cartTotal * 100)}`}
+            </span>
+          </div>
+
           {/* The coupon goes HERE, between the total and the payment, which
               is the last moment it can change what happens and the first
               moment somebody knows what they are buying. An astrologer's
@@ -143,8 +166,20 @@ export default function CartSheet() {
             <PopButton size="sm" onClick={clearCart}>
               Clear
             </PopButton>
-            <PopButton size="sm" variant="gold" disabled={spending} onClick={checkout}>
-              {spending ? 'Paying…' : 'Pay from wallet'}
+            {/* The amount is ON the button. A button that says only "Pay"
+                is one somebody presses without reading the total above
+                it — which is exactly how this went wrong. */}
+            <PopButton
+              size="sm"
+              variant="gold"
+              disabled={spending || short}
+              onClick={checkout}
+            >
+              {spending
+                ? 'Paying…'
+                : short
+                  ? 'Not enough balance'
+                  : `Pay ₹${cartTotal.toLocaleString('en-IN')}`}
             </PopButton>
           </div>
 

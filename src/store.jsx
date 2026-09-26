@@ -606,47 +606,28 @@ export function AppProvider({ children }) {
    * The re-entrancy guard stays: two taps in one tick would otherwise be
    * two orders for one person.
    */
+  /**
+   * Buy takes you to the till. It does not pay.
+   *
+   * IT USED TO CHARGE ON THE TAP — no review, no confirmation, no way
+   * back. A gold button beside Add, two taps apart, and the money was
+   * gone before the screen changed. That cost the owner ₹890 by a
+   * mis-tap on 26 Sep, and it would have cost a seeker the same.
+   *
+   * Adding to the cart and opening it is the whole fix, and it is better
+   * than a confirm dialog on the card: the cart already shows what is
+   * being bought, the total, the coupon box and the wallet, so the
+   * review is the payment screen rather than a second one to maintain.
+   * There is one place money leaves, and it has a Pay button on it.
+   */
   const buyNow = useCallback(
-    async (product, coupon = null) => {
-      if (spendingRef.current) {
-        showToast('One payment at a time.')
-        return false
-      }
-      spendingRef.current = true
-      setSpending(true)
-      try {
-        const result = await buyFromShop(
-          [{ product_id: product.id, qty: 1 }],
-          coupon || null,
-        )
-        if (!result.ok) {
-          showToast(result.reason)
-          return false
-        }
-        /* Cashback, never "off". The order was paid in full and the 10%
-           arrives after delivery — saying "₹X off" here would describe a
-           different offer, and one the seeker would then look for on the
-           total they just paid. */
-        showToast(
-          result.cashback_paise
-            ? `Ordered · ₹${rupees(result.cashback_paise)} back after delivery`
-            : `Ordered · ${product.name}`,
-        )
-        // The debit happened server-side, so the balance here is stale
-        // until this lands. Awaited inside the guard, for the same
-        // ordering reason `spend` awaits its own read.
-        await refreshWallet(session?.user?.id)
-        return true
-      } catch (err) {
-        showToast(err.message)
-        return false
-      } finally {
-        spendingRef.current = false
-        setSpending(false)
-      }
+    (product) => {
+      addToCart(product, true)   // silent: opening the cart is the feedback
+      setCartOpen(true)
     },
-    [showToast, refreshWallet, session],
+    [addToCart, setCartOpen],
   )
+
 
   /**
    * The whole cart, through the SERVER's checkout.

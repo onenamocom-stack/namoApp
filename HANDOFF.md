@@ -4591,3 +4591,34 @@ international route with no DLT registration, queued behind carrier
 filtering. Nothing in this repo changes that; it is the MSG91-or-not
 decision §15 left open, and it is now a signup problem rather than a
 preference.
+
+### Buy charged on the tap — 26 Sep 2026
+
+A gold **Buy** button sat two taps from **Add** on every product card and
+**took the money immediately**. No review, no total on screen, no
+confirmation, no way back. The owner mis-tapped it and lost ₹890 to a
+Tulsi Maala they did not want.
+
+**Buy adds to the cart and opens it now.** The cart already shows the
+items, the total, the coupon box and the Pay button — so the review is
+the payment screen rather than a second one to keep in step with it.
+**There is one place money leaves, and it has a Pay button on it.**
+
+The cart also says what the payment does, before it happens:
+
+- **Wallet after** — what will be left, or *short by ₹X* in red.
+- **The amount is on the button** — `Pay ₹890`, not `Pay`. A button
+  saying only "Pay" is one somebody presses without reading the total
+  above it, which is how this went wrong in the first place.
+- Pay is **disabled when the balance is short**, rather than refusing
+  after the tap.
+
+The dead one-tap path was removed rather than left behind a flag: two
+code paths that move money are two places for the money to differ.
+
+The ₹890 was refunded — a **credit entry**, because the ledger is
+append-only and a refund is a credit, not a deletion — the order marked
+`refunded`, and the stock put back on the shelf.
+
+**Still missing: there is no orders page.** Nothing in the app lists what
+somebody has bought, so a refund like this one is invisible to them.
