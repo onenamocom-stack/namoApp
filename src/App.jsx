@@ -154,6 +154,11 @@ function SessionGate() {
       // for sign-up and sign-in (ProApply sends new consultants through
       // them with ?next=pro). Those three stay reachable; every other
       // non-/pro path goes to the studio, where the gate takes over.
+      // A call is not a seeker screen. The consultant is ON it, with
+      // their own token and the money running — bouncing them to the
+      // studio would hang up on somebody who is paying by the minute.
+      if (pathname.startsWith('/call/')) return
+
       const authStep =
         pathname.startsWith('/onboarding/name') ||
         pathname.startsWith('/onboarding/phone') ||
@@ -249,6 +254,14 @@ function Frame() {
           />
 
           <Route element={<PlainLayout />}>
+            {/* THE CALL IS IN BOTH APPS. It is the one screen a seeker and
+                a consultant are on at the same time — full-bleed, its own
+                controls over the video, no bottom nav on either side. It
+                shipped inside the seeker-only block below, so the
+                consultant's Answer button navigated to a route their
+                build did not have. */}
+            <Route path="/call/:id" element={<Call />} />
+
             {/* The seeker's screens. Absent from the consultant build —
                 a consultant who needs the seeker app follows a link out to
                 the deployed seeker site. */}
@@ -289,7 +302,6 @@ function Frame() {
                     anybody bookable. */}
                 <Route path="/u/:id" element={<UserProfile />} />
                 <Route path="/reels/:id" element={<ReelViewer />} />
-                <Route path="/call/:id" element={<Call />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/premium" element={<Premium />} />

@@ -4823,3 +4823,20 @@ succeeded — and the warning names what did not happen.
 Until that secret exists the consultant app must be rebuilt by hand:
 **Actions → Deploy consultant app → Run workflow**, on `namo-pro`. That
 needs admin on that repo.
+
+### The call screen was missing from the consultant build — 26 Sep 2026
+
+`/call/:id` shipped inside `App.jsx`'s `{!isPro && …}` block, so the
+consultant's **Answer** button navigated to a route their own build does
+not carry. Caught by grepping the rebuilt pro bundle for *"End call"* and
+finding nothing.
+
+Two fixes, and the second is the one that would have bitten next:
+
+- The route moved to the **shared** `PlainLayout`. A call is the one
+  screen a seeker and a consultant are on at the same time.
+- **`SessionGate` now exempts `/call/`.** In the consultant build every
+  non-`/pro` path redirects to the studio — so even with the route
+  present, the gate would have hung up on somebody who is paying by the
+  minute, one render after they answered.
+
