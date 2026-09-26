@@ -5,7 +5,16 @@ import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
-import { composeStatus, download, fetchAssets, saveBlob, shareFile } from '../lib/bhakti.js'
+import {
+  composeStatus,
+  download,
+  fetchAssets,
+  recallStatusPhoto,
+  rememberStatusPhoto,
+  saveBlob,
+  shareFile,
+  shrinkForStatus,
+} from '../lib/bhakti.js'
 import { istDate, longDate } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 
@@ -461,30 +470,42 @@ function AudioRow({ asset, busy, onSave }) {
  * now a real thing behind it.
  */
 function ShareSheet({ asset, onClose }) {
-  const { showToast, me } = useStore()
+  const { showToast, me, session } = useStore()
+  const who = session?.user?.id ?? null
   const gallery = useRef(null)
   const camera = useRef(null)
   const [working, setWorking] = useState(false)
-  const [photo, setPhoto] = useState(null)   // { src, revoke } or null
+  /* A data URL, or null. Not an object URL any more: the picture is kept
+     between visits (26 Sep 2026), and an object URL dies with the page. */
+  const [photo, setPhoto] = useState(null)
 
-  /* The picked file is an object URL and object URLs leak. Revoke on close
-     and on replacement, not in the share handler — somebody who picks a
-     photo and then changes their mind never reaches the share handler. */
+  /* Last time's picture, back on the sheet. It stays until it is changed or
+     removed — somebody posting every morning should not go hunting for the
+     same face every morning. */
   useEffect(() => {
-    if (!asset) setPhoto((current) => { if (current?.revoke) URL.revokeObjectURL(current.revoke); return null })
-  }, [asset])
+    if (asset) setPhoto(recallStatusPhoto(who))
+  }, [asset, who])
 
-  const attach = (src, revoke) =>
-    setPhoto((current) => {
-      if (current?.revoke) URL.revokeObjectURL(current.revoke)
-      return { src, revoke }
-    })
+  const attach = async (src) => {
+    if (!src) {
+      setPhoto(null)
+      rememberStatusPhoto(who, null)
+      return
+    }
+    setWorking(true)
+    const small = await shrinkForStatus(src)
+    setWorking(false)
+    if (!small) return showToast('Could not read that picture.')
+    setPhoto(small)
+    rememberStatusPhoto(who, small)
+  }
 
   const pick = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''   // so choosing the same file twice still fires
     if (!file) return
-    attach(URL.createObjectURL(file), null)
+    const url = URL.createObjectURL(file)
+    attach(url).finally(() => URL.revokeObjectURL(url))
   }
 
   const share = async () => {
@@ -492,7 +513,7 @@ function ShareSheet({ asset, onClose }) {
     setWorking(true)
     try {
       const blob = await composeStatus(asset.url, {
-        photoSrc: photo?.src ?? null,
+        photoSrc: photo,
         name: photo ? me.name : '',
         dateLabel: longDate(istDate()),
         logoSrc: `${import.meta.env.BASE_URL}namo-logo.png`,
@@ -528,7 +549,7 @@ function ShareSheet({ asset, onClose }) {
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-ink/80 to-transparent p-3">
             {photo ? (
               <img
-                src={photo.src}
+                src={photo}
                 alt="Your picture"
                 className="h-12 w-12 flex-none rounded-full border-2 border-gold object-cover"
               />
@@ -555,7 +576,9 @@ function ShareSheet({ asset, onClose }) {
       )}
 
       <p className="mt-4 caps-sm t-faint">
-        {photo ? 'Your picture is on it. Tap another to change it.' : 'A picture is optional.'}
+        {photo
+          ? 'Your picture is on it, and stays until you change it.'
+          : 'A picture is optional.'}
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -566,12 +589,12 @@ function ShareSheet({ asset, onClose }) {
           Take one
         </PopButton>
         {me.avatarUrl && (
-          <PopButton full={false} disabled={working} onClick={() => attach(me.avatarUrl, null)}>
+          <PopButton full={false} disabled={working} onClick={() => attach(me.avatarUrl)}>
             Profile picture
           </PopButton>
         )}
         {photo && (
-          <PopButton full={false} disabled={working} onClick={() => attach(null, null)}>
+          <PopButton full={false} disabled={working} onClick={() => attach(null)}>
             Remove picture
           </PopButton>
         )}

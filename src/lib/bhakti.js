@@ -282,3 +282,71 @@ export function saveBlob(blob, filename) {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(href), 10_000)
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PHOTO A PERSON PUTS ON THEIR STATUS, REMEMBERED.
+
+   Asked for on 26 Sep 2026: the picture stays until they change it. Somebody
+   posting a status every morning should not hunt through their gallery every
+   morning for the same face.
+
+   Kept as a small data URL in `localStorage`, and three decisions inside
+   that:
+
+   - **Downscaled to 320px before it is stored.** The original is whatever
+     the phone camera produced — several megabytes — and localStorage is a
+     few megabytes in total for the whole origin. The circle it lands in is
+     168px on a 1080px canvas, so 320 is already twice what it can show.
+   - **The user id is in the key**, as with the astro cache: a shared phone
+     must not put the last person's face on this person's status.
+   - **It is a convenience, never a requirement.** Storage can be full or
+     denied (a private window), and every path here answers null rather than
+     throwing — the sheet then simply opens with no picture attached, which
+     is the same state as a first visit.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const PHOTO_KEY = (who) => `bhakti:status-photo:${who ?? 'anon'}`
+const PHOTO_SIZE = 320
+
+/** Shrink an image to a square data URL, or null if it cannot be read. */
+export async function shrinkForStatus(src, size = PHOTO_SIZE) {
+  try {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = src
+    await img.decode()
+
+    const c = document.createElement('canvas')
+    c.width = size
+    c.height = size
+    const ctx = c.getContext('2d')
+    // Cover, not stretch: this ends up inside a circle, and a squeezed face
+    // is the thing that makes these images look homemade.
+    const scale = Math.max(size / img.width, size / img.height)
+    const w = img.width * scale
+    const h = img.height * scale
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+    return c.toDataURL('image/jpeg', 0.85)
+  } catch {
+    console.error('[bhakti] could not read that picture')
+    return null
+  }
+}
+
+export function recallStatusPhoto(who) {
+  try {
+    return localStorage.getItem(PHOTO_KEY(who)) || null
+  } catch {
+    return null
+  }
+}
+
+export function rememberStatusPhoto(who, dataUrl) {
+  try {
+    if (dataUrl) localStorage.setItem(PHOTO_KEY(who), dataUrl)
+    else localStorage.removeItem(PHOTO_KEY(who))
+  } catch {
+    /* Quota full, or storage denied. The picture is still on the status
+       being composed right now; it just will not be there next time. */
+  }
+}

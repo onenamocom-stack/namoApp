@@ -311,7 +311,13 @@ person's photo goes bottom LEFT in a circle with a gold ring, their name and
 today's date beside it, and the Namo mark bottom right. The photo comes from
 the gallery, the camera or their profile picture, and it is **optional** —
 somebody who only wants to forward the artwork is not made to put their face
-on it. The sheet shows a preview of exactly that arrangement before anything
+on it, and **it is remembered until it is changed** (26 Sep 2026) — a 320px
+data URL in `localStorage`, keyed by user id, because posting every morning
+should not mean hunting the gallery every morning and a shared phone must not
+put the last person's face on this one's status. Storage full or denied leaves
+the sheet with no picture, which is the same state as a first visit.
+
+The sheet shows a preview of exactly that arrangement before anything
 is handed over, because a share sheet is the last place to discover what you
 are sending. Everything except the artwork is drawn only if it loaded: a
 photo that fails costs a corner, not the picture.
