@@ -4704,3 +4704,42 @@ Order `cf501856` corrected; the coupon answers
 *"₹89 back in your wallet seven days after delivery"* again.
 
 **726 tests.** `namo-api` **00044**.
+
+## 36. There was no orders page — 26 Sep 2026
+
+An order left no trace anywhere a seeker could see it. A mis-tap that
+charged ₹890 and the correction that put it back were both invisible to
+the person they happened to; the only proof either had occurred was in
+the database.
+
+`GET /v1/shop/orders/` and `/orders`, reached from Profile → Settings →
+Account, above the alerts — an order is the thing somebody comes looking
+for.
+
+**Products only, decided server-side.** `orders` also carries sessions
+and AI questions, and a shop history listing *"Namo AI · chat ₹9"* beside
+a rudraksha would be a statement rather than an order list. A line at the
+foot of the screen points at the wallet for those.
+
+**What each order says, in the order somebody asks it:** what it was (the
+items — that is how an order is recognised), **where it is**, what it
+cost, and what it earned.
+
+*Where it is* is not "paid". Paid is the least interesting true thing
+about a parcel: the screen says Confirmed, Packed, **On its way**,
+Delivered, Returned, Cancelled or Refunded, reading the shipment first
+and falling back to the order's own status.
+
+**The cashback line is ABSENT, not zero, when an order earned none** —
+which is most of them. A line that exists only to say a thing did not
+happen makes every order look like it was supposed to. When there is one
+it has four readings that must not sound alike: *lands on 3 Oct* once
+delivery has started the clock, *seven days after this is delivered*
+before that, *is in your wallet* when paid, and *was cancelled when this
+order came back* on a return.
+
+It shows **the buyer's** cashback row. Two exist per referred order and
+the consultant's belongs in their earnings, not in somebody else's
+history — there is a test for that.
+
+**730 tests**, 4 new. `namo-api` **00045**.

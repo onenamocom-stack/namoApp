@@ -281,3 +281,83 @@ class TestCoupons:
         services.buy(BUYER_A, [{"product_id": sapphire.id, "qty": 1}], coupon_code="TWICE")
         coupon.refresh_from_db()
         assert coupon.used_count == 1
+
+
+# ── the order history ───────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+class TestOrderHistory:
+    """What somebody has bought, and what it earned them.
+
+    There was no orders page at all until 26 Sep, so a refund was
+    invisible to the person it happened to.
+    """
+
+    def _bought(self, sapphire, coupon=None):
+        _buyer(BUYER_A, 500_000)
+        result = services.buy(
+            BUYER_A, [{"product_id": str(sapphire.id), "qty": 1}],
+            coupon_code=coupon,
+        )
+        assert result["ok"], result
+        return result
+
+    def test_products_only(self, sapphire):
+        """`orders` also carries sessions and AI questions. A shop history
+        listing "Namo AI · chat ₹9" beside a sapphire would be a
+        statement, not an order list."""
+        self._bought(sapphire)
+        session = Order.objects.create(
+            profile_id=BUYER_A, status=Order.Status.PAID, total_paise=900
+        )
+        OrderItem.objects.create(
+            order=session, item_type="session", title="Namo AI · chat",
+            item_id=uuid.uuid4(), qty=1, unit_price_paise=900, tax_rate_bps=0,
+        )
+
+        rows = services.order_history(BUYER_A)
+        assert len(rows) == 1
+        assert rows[0]["items"][0]["title"] == "Blue Sapphire"
+
+    def test_an_order_with_no_cashback_carries_none(self, sapphire):
+        """None, not zero. A line that exists only to say a thing did not
+        happen makes every order look like it was supposed to."""
+        self._bought(sapphire)
+        assert services.order_history(BUYER_A)[0]["cashback"] is None
+
+    def test_a_referred_order_shows_what_is_owed(self, sapphire):
+        from apps.consultants.models import Consultant
+        from apps.referrals import services as ref
+        from apps.referrals.models import ReferralCode
+
+        pro = uuid.UUID("abcdef00-1111-4222-8333-444444444444")
+        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer")
+        Consultant.objects.create(profile_id=pro, category="Astrologer",
+                                  status="approved")
+        code = ref.code_for(pro, ReferralCode.Kind.CONSULTANT).code
+
+        self._bought(sapphire, coupon=code)
+        row = services.order_history(BUYER_A)[0]
+        assert row["cashback"]["status"] == "pending"
+        assert row["cashback"]["amount_paise"] == 18_500
+        assert row["cashback"]["matures_at"] is None, "the clock starts at delivery"
+
+    def test_it_is_the_buyers_cashback_not_the_consultants(self, sapphire):
+        """Two rows exist per referred order. The consultant's belongs in
+        their earnings, not in somebody else's history."""
+        from apps.consultants.models import Consultant
+        from apps.referrals import services as ref
+        from apps.referrals.models import Cashback, ReferralCode
+
+        pro = uuid.UUID("abcdef00-5555-4666-8777-888888888888")
+        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer")
+        Consultant.objects.create(profile_id=pro, category="Astrologer",
+                                  status="approved")
+        self._bought(sapphire,
+                     coupon=ref.code_for(pro, ReferralCode.Kind.CONSULTANT).code)
+
+        assert Cashback.objects.count() == 2
+        row = services.order_history(BUYER_A)[0]
+        assert row["cashback"]["amount_paise"] == Cashback.objects.get(
+            profile_id=BUYER_A).amount_paise

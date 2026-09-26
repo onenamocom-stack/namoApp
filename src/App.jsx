@@ -36,6 +36,7 @@ import ProAffiliate from './pro/ProAffiliate.jsx'
 
 import Profile from './screens/Profile.jsx'
 import Wallet from './screens/Wallet.jsx'
+import Orders from './screens/Orders.jsx'
 import Horoscope from './screens/Horoscope.jsx'
 import Ask from './screens/Ask.jsx'
 import Chart from './screens/Chart.jsx'
@@ -260,6 +261,7 @@ function Frame() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:tab" element={<Profile />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/horoscope" element={<Horoscope />} />
                 <Route path="/ask" element={<Ask />} />
                 <Route path="/chart" element={<Chart />} />

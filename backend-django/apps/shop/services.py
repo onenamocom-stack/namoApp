@@ -54,7 +54,7 @@ from django.db.models import F
 
 from apps.wallet import services as wallet_services
 
-from .models import Coupon, Order, OrderItem, Product
+from .models import Coupon, Order, OrderItem, Product, Shipment
 
 logger = logging.getLogger("apps.shop")
 
@@ -308,3 +308,96 @@ def _label(products):
     if len(names) == 1:
         return names[0]
     return f"{names[0]} and {len(names) - 1} more"
+
+
+# ── what somebody has bought ────────────────────────────────────────────────
+
+
+def order_history(profile_id, limit=50):
+    """The caller's orders, newest first, with everything a person needs to
+    recognise one: what was in it, what it cost, where it is, and what it
+    earned them.
+
+    PRODUCTS ONLY. `orders` also carries sessions and AI questions —
+    `item_type` spans the whole product — and a shop history listing "Namo
+    AI · chat ₹9" beside a rudraksha would be a statement, not an order
+    list. The wallet ledger is where money is read; this is where parcels
+    are.
+    """
+    from apps.referrals.models import Cashback
+
+    orders = list(
+        Order.objects.filter(profile_id=profile_id)
+        .order_by("-created_at")[:limit]
+    )
+    if not orders:
+        return []
+
+    ids = [o.id for o in orders]
+    items = {}
+    for row in OrderItem.objects.filter(order_id__in=ids, item_type="product"):
+        items.setdefault(row.order_id, []).append(row)
+    shipments = {s.order_id: s for s in Shipment.objects.filter(order_id__in=ids)}
+    # The buyer's side only. The consultant's row for the same order is
+    # theirs to see in their earnings, not in somebody else's history.
+    cashback = {
+        c.referral.order_id: c
+        for c in Cashback.objects.filter(
+            referral__order_id__in=ids, profile_id=profile_id
+        ).select_related("referral")
+    }
+
+    out = []
+    for order in orders:
+        lines = items.get(order.id, [])
+        if not lines:
+            continue  # a session or an AI question, not a parcel
+        out.append({
+            "id": str(order.id),
+            "created_at": order.created_at.isoformat(),
+            "status": order.status,
+            "total_paise": order.total_paise,
+            "items": [
+                {
+                    "title": line.title,
+                    "qty": line.qty,
+                    "unit_price_paise": line.unit_price_paise,
+                    "product_id": str(line.item_id) if line.item_id else None,
+                }
+                for line in lines
+            ],
+            "shipment": _shipment_row(shipments.get(order.id)),
+            "cashback": _cashback_row(cashback.get(order.id)),
+        })
+    return out
+
+
+def _shipment_row(shipment):
+    if shipment is None:
+        return None
+    return {
+        "status": shipment.status,
+        "courier": shipment.courier,
+        "awb": shipment.awb,
+        "shipped_at": shipment.shipped_at.isoformat() if shipment.shipped_at else None,
+        "delivered_at": (
+            shipment.delivered_at.isoformat() if shipment.delivered_at else None
+        ),
+    }
+
+
+def _cashback_row(cashback):
+    """None when this order earned none, which is most of them.
+
+    The screen shows nothing at all in that case rather than "₹0 cashback"
+    — a line that exists only to say a thing did not happen is a line that
+    makes every order look like it was supposed to.
+    """
+    if cashback is None:
+        return None
+    return {
+        "amount_paise": cashback.amount_paise,
+        "status": cashback.status,
+        "matures_at": cashback.matures_at.isoformat() if cashback.matures_at else None,
+        "paid_at": cashback.paid_at.isoformat() if cashback.paid_at else None,
+    }

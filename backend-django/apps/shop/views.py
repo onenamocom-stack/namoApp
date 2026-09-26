@@ -56,3 +56,12 @@ def buy(request):
     # 200 on a refusal: "out of stock" is an answer the screen shows, not a
     # transport failure, and the client's one error path stays the network.
     return Response(result)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def orders(request):
+    """The caller's order history. Always their own — there is no
+    profile_id parameter, because a route that takes one is a route that
+    reads somebody else's purchases."""
+    return Response({"items": services.order_history(request.user.pk)})

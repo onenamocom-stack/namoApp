@@ -451,6 +451,10 @@ function SettingsTab() {
             note="Your number is your account. It cannot be changed here."
             meta={profile?.phone ?? '—'}
           />
+          {/* First in Account, above the alerts: an order is the thing
+              somebody comes looking for, and there was nowhere to look
+              until 26 Sep. */}
+          <Row to="/orders" title="Your orders" note="What you have bought, and where it is" />
           <Link to="/notifications" className="act-row">
             <span className="min-w-0">
               <span className="block text-body text-t1">Notification history</span>

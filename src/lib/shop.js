@@ -101,3 +101,37 @@ export function buy(lines, coupon = null) {
     body: { lines, ...(coupon ? { coupon } : {}) },
   })
 }
+
+/**
+ * What this person has bought. Newest first, products only.
+ *
+ * Products only is the server's decision and the right one: `orders`
+ * also carries sessions and AI questions, and a shop history listing
+ * "Namo AI · chat ₹9" beside a rudraksha would be a statement rather
+ * than an order list. The wallet ledger is where money is read.
+ */
+export async function fetchOrders() {
+  // `api` prefixes /shop and carries the token itself.
+  if (!(await accessToken())) return []
+  try {
+    const data = await api('/orders/')
+    return (data?.items ?? []).map((o) => ({
+      id: o.id,
+      placedAt: o.created_at,
+      status: o.status,
+      totalPaise: o.total_paise,
+      items: (o.items ?? []).map((i) => ({
+        title: i.title,
+        qty: i.qty,
+        unitPricePaise: i.unit_price_paise,
+      })),
+      shipment: o.shipment,
+      // null when this order earned none, which is most of them. The
+      // screen shows nothing at all in that case.
+      cashback: o.cashback,
+    }))
+  } catch (err) {
+    console.error('[orders] load failed:', err?.message)
+    return []
+  }
+}
