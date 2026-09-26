@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
 import CodeField from '../../components/CodeField.jsx'
 import { useStore } from '../../store.jsx'
+import { isPro } from '../../side.js'
 import { supabase } from '../../lib/supabase.js'
 
 /**
@@ -31,7 +32,7 @@ export default function AskPhone() {
   const navigate = useNavigate()
   const { birth, setBirthField } = useStore()
   const [params] = useSearchParams()
-  const pro = params.get('next') === 'pro'
+  const pro = isPro || params.get('next') === 'pro'
   const signin = params.get('mode') === 'signin'
   const next = pro ? '?next=pro' : ''
   const [digits, setDigits] = useState(() => (birth.phone || '').replace('+91', ''))

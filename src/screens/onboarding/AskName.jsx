@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
+import { isPro } from '../../side.js'
 
 /**
  * Asked first because it is the only question here with no wrong answer — it
@@ -14,7 +15,8 @@ export default function AskName() {
   /* `?next=pro` is the consultant build's branch (its Verify-your-number button). It skips the four birth
      questions — a consultant is not here for a reading — and rejoins at the
      phone step, which is the same account either way. */
-  const pro = useSearchParams()[0].get('next') === 'pro'
+  const [params] = useSearchParams()
+  const pro = isPro || params.get('next') === 'pro'
 
   const valid = name.trim().length > 0
 

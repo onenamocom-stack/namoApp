@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
+import { isPro } from '../../side.js'
 import { supabase } from '../../lib/supabase.js'
 import { PRO_APP_URL } from '../../lib/urls.js'
 import { claimCode } from '../../lib/referrals.js'
@@ -11,7 +12,8 @@ export default function VerifyOtp() {
   const { birth, showToast } = useStore()
   /* The consultant branch has no birth details to write, so it skips
      Computing entirely and lands on the application. */
-  const pro = useSearchParams()[0].get('next') === 'pro'
+  const [params] = useSearchParams()
+  const pro = isPro || params.get('next') === 'pro'
   const [code, setCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState('')
@@ -19,7 +21,44 @@ export default function VerifyOtp() {
 
   const valid = /^\d{6}$/.test(code)
 
-  const verify = async () => {
+  /* WEBOTP: READ THE CODE OUT OF THE SMS INSTEAD OF MAKING SOMEBODY TYPE IT.
+     Android Chrome only — `autoComplete="one-time-code"` below is the whole of
+     what iOS offers, and that one is a keyboard suggestion the person still
+     taps. Everywhere else this block does nothing and the field behaves as it
+     always did.
+
+     THIS NEEDS THE SMS TEMPLATE TO COOPERATE. The browser will not hand over a
+     code from a message that is not bound to this origin, so the text has to
+     END with the origin and the code on its own last line:
+
+         Your Namo code is 123456
+
+         @onenamocom-stack.github.io #123456
+
+     Without that last line the promise below simply never resolves, silently,
+     which is exactly how this looks when it is misconfigured. Set it in
+     Supabase → Authentication → SMS templates. The origin has to match the
+     deployment, so it changes again at the move to 1namo.com. */
+  const autoFilled = useRef(false)
+  useEffect(() => {
+    if (!('OTPCredential' in window)) return
+    const ac = new AbortController()
+    navigator.credentials
+      .get({ otp: { transport: ['sms'] }, signal: ac.signal })
+      .then((cred) => {
+        const digits = (cred && cred.code ? cred.code : '').replace(/\D/g, '').slice(0, 6)
+        if (digits.length !== 6) return
+        autoFilled.current = true
+        setCode(digits)
+      })
+      .catch(() => {
+        /* Aborted on unmount, dismissed by the person, or no SMS arrived.
+           None of those is an error worth showing: the field still works. */
+      })
+    return () => ac.abort()
+  }, [])
+
+  const verify = useCallback(async () => {
     if (!valid || verifying) return
     setVerifying(true)
     setError('')
@@ -65,7 +104,17 @@ export default function VerifyOtp() {
         .catch((e) => showToast(e.message))
     }
     navigate('/onboarding/computing')
-  }
+  }, [valid, verifying, birth.phone, birth.referralCode, code, pro, navigate, showToast])
+
+  /* Only a code that came from the SMS submits itself. Auto-submitting while
+     somebody is typing takes the screen away mid-keystroke on the one field
+     where a typo is likely. */
+  useEffect(() => {
+    if (autoFilled.current && valid && !verifying) {
+      autoFilled.current = false
+      verify()
+    }
+  }, [valid, verifying, verify])
 
   const resend = async () => {
     setError('')
@@ -87,7 +136,10 @@ export default function VerifyOtp() {
       <label className="mx-auto flex max-w-[13rem] flex-col items-center gap-2">
         <input
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(e) => {
+            autoFilled.current = false
+            setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+          }}
           placeholder="000000"
           aria-label="Six-digit code"
           inputMode="numeric"
