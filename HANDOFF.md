@@ -4976,3 +4976,33 @@ So this round is instrumentation and resilience, not a fix:
 
 **Open:** why the seeker was refused after the session went live. The
 next occurrence will say so in the log.
+
+### Decline, and "Someone is calling" — 27 Sep 2026
+
+**There was no way to say no.** The incoming-call banner had one button,
+Answer, so a consultant who could not take a call could only let it ring
+out — fifteen minutes, by the sweeper's clock, with the seeker watching a
+Ringing screen the whole time.
+
+`decline_request` writes **`declined`**, not `expired`. That distinction
+is the consultant's record: `expired` is what the sweeper writes when
+nobody answered at all, and somebody who said no on purpose did not
+simply fail to reply. `cancel_request` keeps `expired` for the mirror
+case, where the **seeker** walked away. No money is involved in either —
+the hold is taken at accept, so neither ever had any against it.
+
+The seeker's screen stops ringing on its own: `join` answers
+`DECLINED` with `retry: false`.
+
+**Decline sits inboard and quiet; Answer keeps the loud colour and the
+outside edge.** Answer is the one that starts a meter, and a thumb
+reaching under a ringing banner must not find it by accident.
+
+### And the banner said "Someone is calling"
+
+`list_sessions` gained `seeker_name` yesterday and it was **always
+null**. `profile_names` keys on the canonical uuid — dashes and all — and
+the lookup stripped them, so every name missed and fell through to
+"Someone". Fixed, with a test that asserts both names.
+
+**752 tests**, 6 new. `namo-api` **00049**.

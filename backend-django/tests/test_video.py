@@ -64,9 +64,12 @@ def fake_daily(monkeypatch):
 
 
 def _session(status=Session.Status.LIVE, minutes=10):
-    service = ConsultantService.objects.create(
-        consultant_id=PRO, band_id=uuid.uuid4(), mode="call",
-        billing="per_minute", duration_mins=1, price_paise=5_000,
+    # One service per consultant: the table is unique on
+    # (consultant, mode, billing, duration), so a test that makes two
+    # sessions must reuse it rather than mint a second.
+    service, _ = ConsultantService.objects.get_or_create(
+        consultant_id=PRO, mode="call", billing="per_minute", duration_mins=1,
+        defaults={"band_id": uuid.uuid4(), "price_paise": 5_000},
     )
     now = timezone.now()
     return Session.objects.create(
@@ -248,3 +251,80 @@ class TestCancellingAnUnansweredCall:
         s = _session(status=Session.Status.REQUESTED, minutes=None)
         chat.cancel_request(SEEKER, s.id)
         assert chat.cancel_request(SEEKER, s.id)["already"] is True
+
+
+@pytest.mark.django_db
+class TestDecliningACall:
+    """The consultant saying no. No money is involved — the hold is taken
+    at accept, so a declined request had none."""
+
+    def test_the_consultant_can_decline(self, people):
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        assert chat.decline_request(PRO, s.id) == {"ok": True}
+        s.refresh_from_db()
+        assert s.status == Session.Status.DECLINED
+
+    def test_declined_reads_differently_from_expired(self, people):
+        """`expired` is what the sweeper writes when nobody answered at
+        all. A consultant who said no on purpose did not simply fail to
+        reply, and their record should not say they did.
+
+        One at a time: the table is unique on (seeker, consultant) for an
+        open request, which is the rule that stops a seeker stacking five
+        calls on one astrologer.
+        """
+        from apps.chat import services as chat
+
+        declined = _session(status=Session.Status.REQUESTED, minutes=None)
+        chat.decline_request(PRO, declined.id)
+        declined.refresh_from_db()
+        assert declined.status == Session.Status.DECLINED
+
+        walked_away = _session(status=Session.Status.REQUESTED, minutes=None)
+        chat.cancel_request(SEEKER, walked_away.id)
+        walked_away.refresh_from_db()
+        assert walked_away.status == Session.Status.EXPIRED
+
+    def test_a_live_session_is_not_declined(self, people):
+        """Money is held against a live one. Ending it is a settle."""
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.LIVE)
+        assert chat.decline_request(PRO, s.id)["already"] is True
+        s.refresh_from_db()
+        assert s.status == Session.Status.LIVE
+
+    def test_nobody_declines_somebody_elses_call(self, people):
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        assert chat.decline_request(STRANGER, s.id)["already"] is True
+        s.refresh_from_db()
+        assert s.status == Session.Status.REQUESTED
+
+    def test_the_seeker_is_told_it_was_declined(self, people, configured, fake_daily):
+        """Not left ringing. `join` answers DECLINED with retry false, so
+        the call screen stops waiting and says so."""
+        from apps.chat import services as chat
+
+        s = _session(status=Session.Status.REQUESTED, minutes=None)
+        chat.decline_request(PRO, s.id)
+        out = services.join(SEEKER, s.id)
+        assert out["reason"] == services.REFUSAL_DECLINED
+        assert out["retry"] is False
+
+
+@pytest.mark.django_db
+class TestTheConsultantSeesWhoIsCalling:
+    def test_the_session_list_carries_the_seeker_name(self, people):
+        """It carried None — `profile_names` keys on the canonical uuid,
+        dashes and all, and the lookup stripped them. Every name came
+        back empty and the incoming call read "Someone is calling"."""
+        from apps.chat import services as chat
+
+        _session(status=Session.Status.REQUESTED, minutes=None)
+        row = chat.list_sessions(PRO)[0]
+        assert row["seeker_name"] == "A Seeker"
+        assert row["consultant_name"] == "An Astrologer"

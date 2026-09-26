@@ -168,3 +168,10 @@ def read(request, thread_id):
 def cancel(request, session_id):
     """The seeker withdrawing a request nobody has answered."""
     return Response(services.cancel_request(request.user.pk, session_id))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def decline(request, session_id):
+    """The consultant turning down a call nobody has paid for yet."""
+    return Response(services.decline_request(request.user.pk, session_id))

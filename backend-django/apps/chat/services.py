@@ -58,6 +58,7 @@ the 014 check's time-faking discipline — move started_at, never wait — ports
 to pytest with zero clock jitter.
 """
 
+import uuid
 from django.db import IntegrityError, connection, models, transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -697,14 +698,17 @@ def list_sessions(actor_id):
         [r.seeker_id for r in rows] + [r.consultant_id for r in rows]
     )
 
-    def flat(value):
-        return str(value).replace("-", "")
+    # `profile_names` keys on the CANONICAL uuid — dashes and all — and
+    # this looked up a dashless one, so every name came back None and the
+    # consultant's incoming call read "Someone is calling".
+    def key(value):
+        return str(uuid.UUID(str(value)))
 
     out = []
     for row in rows:
         shaped = {field: getattr(row, field) for field in SESSION_ROW_FIELDS}
-        shaped["seeker_name"] = names.get(flat(row.seeker_id))
-        shaped["consultant_name"] = names.get(flat(row.consultant_id))
+        shaped["seeker_name"] = names.get(key(row.seeker_id))
+        shaped["consultant_name"] = names.get(key(row.consultant_id))
         out.append(shaped)
     return out
 
@@ -735,5 +739,33 @@ def cancel_request(seeker_id, session_id, now=None):
     if not moved:
         # Already answered, already gone, or not theirs. All three are
         # "nothing to cancel" and none of them is an error worth a screen.
+        return {"ok": True, "already": True}
+    return {"ok": True}
+
+
+def decline_request(consultant_id, session_id, now=None):
+    """The consultant saying no to a call nobody has paid for yet.
+
+    NO MONEY IS INVOLVED. `request_chat` writes a row and stops — the
+    hold is taken at accept — so declining is only taking the request off
+    the table. Nothing to settle, nothing to refund.
+
+    DECLINED, not expired. This is the consultant's own answer and it
+    should read as one: `expired` is what the sweeper writes when nobody
+    answered at all, and a consultant who said no on purpose did not
+    simply fail to reply. `cancel_request` uses `expired` for the mirror
+    case, where the SEEKER walked away.
+
+    Scoped to the consultant on the row, so declining somebody else's
+    call is not a thing that can happen.
+    """
+    stamp = now or timezone.now()
+    moved = Session.objects.filter(
+        pk=session_id, consultant_id=consultant_id,
+        status=Session.Status.REQUESTED,
+    ).update(status=Session.Status.DECLINED, ended_at=stamp)
+    if not moved:
+        # Already answered, already gone, or not theirs. None of the three
+        # is an error the consultant needs a screen about.
         return {"ok": True, "already": True}
     return {"ok": True}

@@ -139,6 +139,23 @@ export async function requestChat(consultantId, serviceId) {
 }
 
 /**
+ * The consultant turning a call down.
+ *
+ * No money is involved — the hold is taken at accept, so a declined
+ * request had none. It writes `declined` rather than `expired` because
+ * this is an answer, and `expired` is what the sweeper writes when
+ * nobody gave one.
+ */
+export async function declineRequest(sessionId) {
+  try {
+    return await api(`/chat/sessions/${sessionId}/decline/`, { method: 'POST' })
+  } catch (err) {
+    console.error('[chat] decline failed:', err.message)
+    return { ok: false }
+  }
+}
+
+/**
  * The seeker withdrawing a request nobody has answered.
  *
  * NOT `endChat`. That answers "already ended" for anything not live, so

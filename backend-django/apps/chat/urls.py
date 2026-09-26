@@ -8,6 +8,7 @@ urlpatterns = [
     path("sessions/<uuid:session_id>/accept/", views.accept, name="chat-accept"),
     path("sessions/<uuid:session_id>/end/", views.end, name="chat-end"),
     path("sessions/<uuid:session_id>/cancel/", views.cancel, name="chat-cancel"),
+    path("sessions/<uuid:session_id>/decline/", views.decline, name="chat-decline"),
     path("sessions/<uuid:session_id>/heartbeat/", views.heartbeat, name="chat-heartbeat"),
     path("threads/", views.my_threads, name="chat-threads"),
     path("threads/<uuid:thread_id>/messages/", views.messages, name="chat-messages"),

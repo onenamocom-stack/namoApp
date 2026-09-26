@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { acceptChat, listSessions, subscribeToMySessions } from '../lib/chat.js'
+import {
+  acceptChat,
+  declineRequest,
+  listSessions,
+  subscribeToMySessions,
+} from '../lib/chat.js'
 import { isPro } from '../side.js'
 import { rupees, useStore } from '../store.jsx'
 
@@ -54,6 +59,18 @@ export default function IncomingCall() {
 
   if (!isPro || !myId || pending.length === 0) return null
 
+  /* Declining costs nothing and settles nothing — the hold is taken at
+     accept, so a request turned down never had money against it. The
+     seeker's call screen stops ringing on its own: `join` answers
+     DECLINED with retry false. */
+  const turnDown = async (row) => {
+    if (busy) return
+    setBusy(row.id)
+    await declineRequest(row.id)
+    setBusy(null)
+    load()
+  }
+
   const answer = async (row) => {
     if (busy) return
     setBusy(row.id)
@@ -83,6 +100,18 @@ export default function IncomingCall() {
               ₹{rupees(row.rate_paise)}/min · {row.mode}
             </span>
           </span>
+          {/* DECLINE FIRST, and quieter. A consultant reaching for one
+              of these under a ringing banner must not hit Answer while
+              aiming for the other — Answer is the one that starts a
+              meter, so it keeps the loud colour and the outside edge. */}
+          <button
+            type="button"
+            onClick={() => turnDown(row)}
+            disabled={busy === row.id}
+            className="flex-none rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] t-faint transition-colors hover:text-t1 disabled:opacity-60"
+          >
+            Decline
+          </button>
           <button
             type="button"
             onClick={() => answer(row)}
