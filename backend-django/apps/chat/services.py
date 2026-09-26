@@ -688,6 +688,22 @@ def list_sessions(actor_id):
     ).order_by("-requested_at")[:50]
     # Raw values: DRF renders UUIDs to strings and datetimes to ISO-8601 in
     # the response, the exact shapes PostgREST returned.
-    return [
-        {field: getattr(row, field) for field in SESSION_ROW_FIELDS} for row in rows
-    ]
+    # The other party's name, in bulk. A consultant looking at an
+    # incoming call needs to know who is calling, and a row of UUIDs does
+    # not tell them — one lookup for the page rather than one per row.
+    from apps.profiles import services as profile_services
+
+    names = profile_services.profile_names(
+        [r.seeker_id for r in rows] + [r.consultant_id for r in rows]
+    )
+
+    def flat(value):
+        return str(value).replace("-", "")
+
+    out = []
+    for row in rows:
+        shaped = {field: getattr(row, field) for field in SESSION_ROW_FIELDS}
+        shaped["seeker_name"] = names.get(flat(row.seeker_id))
+        shaped["consultant_name"] = names.get(flat(row.consultant_id))
+        out.append(shaped)
+    return out

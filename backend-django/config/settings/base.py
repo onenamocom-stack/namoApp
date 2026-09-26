@@ -71,6 +71,7 @@ LOCAL_APPS = [
     "apps.shop",
     "apps.notifications",
     "apps.referrals",
+    "apps.video",
     "apps.analytics",
 ]
 # apps.console comes FIRST, before django.contrib.admin, and that order is

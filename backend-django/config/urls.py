@@ -32,6 +32,7 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/ai/", include("apps.ai.urls")),
         path("v1/notifications/", include("apps.notifications.urls")),
         path("v1/referrals/", include("apps.referrals.urls")),
+        path("v1/video/", include("apps.video.urls")),
         path("v1/events/", include("apps.analytics.urls")),
         path("v1/shop/", include("apps.shop.urls")),
     ]

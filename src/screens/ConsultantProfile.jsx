@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -58,6 +58,7 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { showToast, hasFlag, toggleFlag, openChat, bookSession, spending, session } = useStore()
   const [asking, setAsking] = useState(false)
   const [tab, setTab] = useState('about')
@@ -137,6 +138,29 @@ export default function ConsultantProfile() {
      consultant joins, which is the opposite of booking a slot. The panel opens
      straight away so the seeker can watch for the answer; the meter appears in
      it the moment the session goes live. */
+  /* A video call is the SAME per-minute session as a chat — one meter,
+     one hold, one settle. What differs is only how the two of them talk
+     while it runs, which is why this asks for a session exactly as chat
+     does and then waits on the same accept.
+
+     The seeker lands on /call/:id straight away rather than after the
+     consultant joins: an empty room with a countdown is a truer picture
+     of "waiting for them" than a spinner on this page, and the call
+     screen already has the clock the money runs on. */
+  const askForCall = async () => {
+    if (!session) return showToast('Sign in to start a call.')
+    if (!c.perMinute) return showToast(`${firstName(c.name)} is not taking calls.`)
+    setAsking(true)
+    try {
+      const res = await requestChat(c.id, c.perMinute.id)
+      if (!res?.ok) return showToast(res?.reason ?? 'Could not reach the astrologer.')
+      showToast(`Calling ${firstName(c.name)} · ₹${rupees(c.perMinute.price_paise)}/min once they join`)
+      navigate(`/call/${res.session_id}`)
+    } finally {
+      setAsking(false)
+    }
+  }
+
   const askForChat = async () => {
     if (!session) return showToast('Sign in to start a chat.')
     if (!c.perMinute) return showToast(`${firstName(c.name)} is not taking chats.`)
@@ -293,8 +317,8 @@ export default function ConsultantProfile() {
               aria-label={
                 c.online ? `Call ${firstName(c.name)}` : `${firstName(c.name)} is offline`
               }
-              onClick={() => showToast(`Calling ${firstName(c.name)} — prototype only`)}
-              disabled={!c.online}
+              onClick={askForCall}
+              disabled={asking || !c.online}
               className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
             >
               <Icon name="phone" size={18} />

@@ -37,6 +37,8 @@ import ProAffiliate from './pro/ProAffiliate.jsx'
 import Profile from './screens/Profile.jsx'
 import Wallet from './screens/Wallet.jsx'
 import Orders from './screens/Orders.jsx'
+import Call from './screens/Call.jsx'
+import IncomingCall from './components/IncomingCall.jsx'
 import Horoscope from './screens/Horoscope.jsx'
 import Ask from './screens/Ask.jsx'
 import Chart from './screens/Chart.jsx'
@@ -84,6 +86,10 @@ function ProLayout() {
   const { pathname } = useLocation()
   return (
     <>
+      {/* Above the scroll and on every screen. A call request that can
+          only be seen by being on the right tab is one that gets missed,
+          and the seeker is watching a countdown while it is. */}
+      <IncomingCall />
       <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
         {/* Inside the shell, not around it: a screen that throws must not take
             the bottom nav with it, or there is no way out of the crash. */}
@@ -283,6 +289,7 @@ function Frame() {
                     anybody bookable. */}
                 <Route path="/u/:id" element={<UserProfile />} />
                 <Route path="/reels/:id" element={<ReelViewer />} />
+                <Route path="/call/:id" element={<Call />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/premium" element={<Premium />} />

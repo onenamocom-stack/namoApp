@@ -4743,3 +4743,60 @@ the consultant's belongs in their earnings, not in somebody else's
 history — there is a test for that.
 
 **730 tests**, 4 new. `namo-api` **00045**.
+
+## 37. Video calling — phases 2 and 3 — 26 Sep 2026
+
+`apps/video/`, `/call/:id`, and the consultant's answer button. Verified
+against real Daily: room created, two tokens, room `exp` equal to the
+session's `expires_at` to the second.
+
+**THE MONEY IS NOT IN THIS MODULE.** `apps/chat` still owns the meter —
+the hold at accept, `expires_at`, the settle, the sweeper. Video only
+hands out a door for a window that money already bought, so a failure to
+get a room refuses the **join** and never the session. A consultant who
+cannot open a call has not been paid for one that did not happen, and
+there is a test for each half of that.
+
+**The room dies with the money.** `exp` is the session's own
+`expires_at` and `eject_at_room_exp` enforces it. Without that pair the
+sweeper settles on time and the two of them keep talking for free, which
+is the one failure that makes per-minute billing meaningless.
+
+**The room name is derived, not stored** — `namo-<session id>`. No column
+on `sessions`, nothing to drift, and both sides asking for the same
+session get the same room.
+
+**Two tokens, one room.** The consultant is the owner (that is what lets
+them end it); the seeker is not, because a seeker with owner rights could
+close a call they are not paying for. A private room plus per-person
+tokens means a forwarded link is a link to a locked door.
+
+**Daily's prebuilt iframe, not their SDK.** The SDK buys control over a
+layout nobody has asked for and costs a dependency plus every
+device-permission edge case we would then own. The iframe arrives with
+mute, camera, a device picker and a leave button that already work on the
+phones people have.
+
+**Leave is ours.** Daily's own leave button closes a window; it does not
+settle anything. The overlay's End call runs `endChat`, and a tab closed
+without it is the sweeper's job — which is why the meter has never
+depended on this screen.
+
+### The consultant had no way to answer
+
+`acceptChat` shipped with the chat meter in module 6 and **nothing in the
+consultant app ever called it**. A seeker could request a session and no
+screen anywhere showed the request. The money side was complete and the
+door was missing.
+
+`components/IncomingCall.jsx` is mounted in the **pro shell**, not on a
+calls page: a request that can only be seen from the right tab is one
+that gets missed while the seeker watches a countdown. `list_sessions`
+now carries `seeker_name` and `consultant_name`, because a row of UUIDs
+does not tell a consultant who is calling.
+
+**741 tests**, 11 new. `namo-api` **00046**.
+
+**Not yet done:** nobody has run a real two-device call. The room, the
+tokens and the expiry are verified against live Daily; two humans on two
+phones are not.

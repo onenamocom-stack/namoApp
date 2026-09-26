@@ -88,6 +88,10 @@ SESSION_KEYS = {
     "id", "seeker_id", "consultant_id", "service_id", "thread_id", "order_id",
     "mode", "rate_paise", "status", "requested_at", "started_at", "expires_at",
     "ended_at", "heartbeat_at", "hold_paise", "charged_paise", "created_at",
+    # 26 Sep, with video calling: a consultant looking at an incoming call
+    # needs to know who is calling, and a row of UUIDs does not tell them.
+    # Joined in bulk — one lookup for the page, not one per row.
+    "seeker_name", "consultant_name",
 }
 
 
