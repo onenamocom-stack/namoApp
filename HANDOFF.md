@@ -4934,3 +4934,45 @@ arrived yet. pg_cron's `session_sweep()` had run 43 seconds earlier and
 was working fine.
 
 **746 tests**, 5 new. `namo-api` **00047**.
+
+### Still charging for calls that do not open — 27 Sep 2026
+
+Three more attempts, ₹70 charged, and the seeker never got into a room.
+**Refunded in full (₹178.50) and the consultant's earnings zeroed.**
+
+The logs now read properly — the earlier "200 then 409" was me
+misreading an **OPTIONS preflight** as a join:
+
+```
+08.408  seeker      POST → 409     ringing, correct
+11.130  seeker      POST → 409
+13.769  seeker      POST → 409
+14.776  consultant  POST → 200     consultant is in
+16.487  seeker      POST → 409     STILL refused, and the loop stopped here
+```
+
+**The root cause is not found yet, and the reason is that nothing logged
+it.** A 409 in the access log with no body and no line from `apps.video`
+meant the cause had to be guessed from response byte counts. Reproducing
+the same pair against production — consultant joins, then seeker —
+returns 200 for both.
+
+So this round is instrumentation and resilience, not a fix:
+
+- **Every refusal is logged** with reason, session, status, actor and
+  whether it is retryable. `_refuse()` is the only way out of `join()`
+  now. A refusal nobody can read is a bug nobody can fix.
+- **Upstream failures retry.** They returned `retryable: True`, which the
+  client did not read — it reads `retry`. Daily hiccuping for one of the
+  two was a terminal answer while the meter ran.
+- **The screen keeps asking** every eight seconds for as long as it is
+  showing a failure, and says *"Still trying"* — a screen that has given
+  up and one that is retrying look identical unless one says so.
+- **The failure screen ends the session.** It offered *"Back to
+  astrologers"*, which left the session live and the meter running until
+  the sweeper reached it. It is **End the call** now.
+
+**746 tests.** `namo-api` **00048**.
+
+**Open:** why the seeker was refused after the session went live. The
+next occurrence will say so in the log.

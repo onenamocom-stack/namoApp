@@ -33,6 +33,26 @@ def room_name(session_id):
     return f"namo-{str(session_id).replace('-', '')}"
 
 
+def _refuse(reason, *, session=None, actor_id=None, retry=False, **extra):
+    """Every refusal, logged with the reason.
+
+    IT WAS NOT, AND THAT COST AN EVENING. A seeker was refused four times
+    while the meter ran, and the only trace was a 409 in the access log
+    with no body and no line from this module — so the cause had to be
+    guessed at from response byte counts. A refusal nobody can read is a
+    bug nobody can fix.
+    """
+    logger.warning(
+        "[video] refused: %s | session=%s status=%s actor=%s retry=%s",
+        reason,
+        str(session.id)[:8] if session else "-",
+        session.status if session else "-",
+        str(actor_id)[:8] if actor_id else "-",
+        retry,
+    )
+    return {"ok": False, "reason": reason, "retry": retry, **extra}
+
+
 def join(actor_id, session_id, now=None):
     """The URL and token for this person to enter this session's call.
 
@@ -44,18 +64,18 @@ def join(actor_id, session_id, now=None):
     from apps.chat.models import Session
 
     if not providers.is_configured():
-        return {"ok": False, "reason": REFUSAL_UNAVAILABLE}
+        return _refuse(REFUSAL_UNAVAILABLE, actor_id=actor_id)
 
     stamp = now or timezone.now()
     session = Session.objects.filter(pk=session_id).first()
     if session is None:
-        return {"ok": False, "reason": REFUSAL_NOT_LIVE}
+        return _refuse(REFUSAL_NOT_LIVE, actor_id=actor_id)
 
     actor = str(actor_id).replace("-", "")
     is_consultant = str(session.consultant_id).replace("-", "") == actor
     is_seeker = str(session.seeker_id).replace("-", "") == actor
     if not (is_consultant or is_seeker):
-        return {"ok": False, "reason": REFUSAL_NOT_YOURS}
+        return _refuse(REFUSAL_NOT_YOURS, session=session, actor_id=actor_id)
 
     # LIVE ONLY — but "not live" has two meanings and the client must be
     # able to tell them apart.
@@ -72,25 +92,21 @@ def join(actor_id, session_id, now=None):
     # Everything else is not-live-ANY-MORE and there is nothing to wait
     # for. `status` goes out so the client stops guessing from a sentence.
     if session.status == Session.Status.REQUESTED:
-        return {"ok": False, "reason": REFUSAL_WAITING,
-                "status": session.status, "retry": True}
+        return _refuse(REFUSAL_WAITING, session=session, actor_id=actor_id,
+                       retry=True, status=session.status)
     if session.status != Session.Status.LIVE:
-        return {
-            "ok": False,
-            "reason": (
-                REFUSAL_DECLINED
-                if session.status == Session.Status.DECLINED
-                else REFUSAL_NOT_LIVE
-            ),
-            "status": session.status,
-            "retry": False,
-        }
+        return _refuse(
+            REFUSAL_DECLINED
+            if session.status == Session.Status.DECLINED
+            else REFUSAL_NOT_LIVE,
+            session=session, actor_id=actor_id, status=session.status,
+        )
     if session.expires_at is None or session.expires_at <= stamp:
         # The sweeper will settle it within the minute. Refusing here
         # rather than opening a room that Daily would eject them from
         # two seconds later.
-        return {"ok": False, "reason": REFUSAL_EXPIRED,
-                "status": session.status, "retry": False}
+        return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
+                       status=session.status)
 
     name = room_name(session.id)
     try:
@@ -106,8 +122,12 @@ def join(actor_id, session_id, now=None):
             expires_at=session.expires_at,
         )
     except providers.UpstreamError as exc:
-        logger.error("[video] %s: %s", name, exc)
-        return {"ok": False, "reason": REFUSAL_UPSTREAM, "retryable": True}
+        logger.error("[video] daily failed for %s: %s", name, exc)
+        # RETRYABLE, and the client must actually retry it. Daily
+        # hiccuping for one of the two while the meter runs stranded the
+        # seeker on an error screen with their money going.
+        return _refuse(REFUSAL_UPSTREAM, session=session, actor_id=actor_id,
+                       retry=True, status=session.status)
 
     return {
         "ok": True,

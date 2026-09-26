@@ -174,7 +174,11 @@ class TestWhenThereIsNoDoor:
         s = _session()
         out = services.join(SEEKER, s.id)
         assert out["reason"] == services.REFUSAL_UPSTREAM
-        assert out["retryable"] is True
+        # RETRY, not just "retryable". Daily hiccuping for one of the two
+        # while the meter runs stranded the seeker on an error screen
+        # with their money going — a transient failure must not be a
+        # terminal answer while a session is live.
+        assert out["retry"] is True
         assert Session.objects.get(pk=s.id).status == Session.Status.LIVE
 
 

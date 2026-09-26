@@ -56,9 +56,23 @@ export default function Call() {
     }
     ask()
 
+    /* AND KEEP ASKING WHILE THE MONEY RUNS. A refusal that arrives once
+       the session is live is transient by definition — Daily hiccuping,
+       a token that did not mint — and treating it as final left a seeker
+       on an error screen watching their balance drain. This second loop
+       is slower and exists only for that: once every eight seconds, and
+       only while the screen is showing a failure. */
+    const insist = setInterval(() => {
+      setCall((current) => {
+        if (current && !current.ok) ask()
+        return current
+      })
+    }, 8000)
+
     return () => {
       alive = false
       if (timer) clearTimeout(timer)
+      clearInterval(insist)
     }
   }, [id])
 
@@ -154,12 +168,23 @@ export default function Call() {
             reason — not live, not yours, time is up, or not switched
             on — so there is nothing to translate here. */}
         <p className="mx-auto mt-6 max-w-measure text-meta text-live">{call.reason}</p>
+        {/* It IS still trying. A screen that has given up and a screen
+            that is retrying look identical unless one of them says so,
+            and the difference matters when a meter is running. */}
+        <p className="mx-auto mt-3 max-w-measure text-micro t-faint">
+          Still trying. If it does not open, end the call — you are only charged
+          for the time it was open.
+        </p>
+        {/* END, not "back". Walking away from this screen used to leave
+            the session live and the meter running until the sweeper got
+            to it. */}
         <button
           type="button"
-          onClick={() => navigate('/consult', { replace: true })}
-          className="mt-10 text-micro uppercase tracking-caps text-t3 underline"
+          onClick={finish}
+          disabled={leaving}
+          className="mx-auto mt-10 block rounded-full bg-live px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white disabled:opacity-60"
         >
-          Back to astrologers
+          {leaving ? 'Ending…' : 'End the call'}
         </button>
       </div>
     )
