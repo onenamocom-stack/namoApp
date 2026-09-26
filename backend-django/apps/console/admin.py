@@ -11,6 +11,8 @@ from django.contrib import admin as dj, messages
 from django.utils.html import format_html
 
 from apps.consultants.models import Consultant
+from apps.media.models import MediaAsset
+from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
 
 from .audit import AuditedAdmin, record
@@ -25,11 +27,13 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     audit_target = "consultant"
     list_display = ("who", "category", "specialization", "status", "verified", "created_at")
     list_filter = ("status", "verified", "category")
-    search_fields = ("specialization", "bio", "category")
+    # Tags are what a seeker searches by, so they are what an
+    # operator should be able to search by too.
+    search_fields = ("specialization", "bio", "category", "tags", "degree")
     ordering = ("status", "-created_at")
     readonly_fields = (
         "profile_id", "created_at", "rating_avg_cache", "rating_count_cache",
-        "rank_score_cache", "legacy_id", "who",
+        "rank_score_cache", "legacy_id", "who", "certificate",
     )
     actions = ("approve", "block", "unblock")
     list_per_page = 50
@@ -40,6 +44,31 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         if p is None:
             return str(obj.profile_id)
         return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
+
+    @dj.display(description="Degree certificate")
+    def certificate(self, obj):
+        """A link that works for ten minutes, and only here.
+
+        The scan sits in the private bucket: it has no public URL and the
+        only reader it is meant to have is whoever is deciding this
+        application. Signing on view rather than storing a URL means a link
+        copied out of this page is worthless by the time it is pasted
+        anywhere.
+        """
+        if not obj.degree_asset_id:
+            return "—"
+        asset = MediaAsset.objects.filter(pk=obj.degree_asset_id).first()
+        if asset is None:
+            return "the file is gone"
+        try:
+            url = get_provider().presign_get(asset.bucket_key, bucket_for(asset.kind))
+        except Exception as exc:  # noqa: BLE001 — a broken link is not a broken page
+            return f"cannot sign a link right now ({type(exc).__name__})"
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">Open the certificate</a>'
+            '<br><small>expires in ten minutes · {}</small>',
+            url, asset.mime,
+        )
 
     def has_delete_permission(self, request, obj=None):
         """Never. PRD §6 capability 6: soft delete only — a removed record

@@ -42,6 +42,14 @@ def _consultant_row(consultant, service_rows):
         "experience_yrs": consultant.experience_yrs,
         "bio": consultant.bio or "",
         "credentials": consultant.credentials or [],
+        # Tags are for search and the profile, so they are public. The
+        # DEGREE TEXT is public too — it is a credential, and a credential
+        # nobody can read is not one. `degree_asset_id` is deliberately
+        # absent from both shapes: the scan of a certificate carries a name,
+        # a date of birth and a registration number, and its only reader is
+        # the console operator deciding the application.
+        "tags": consultant.tags or [],
+        "degree": consultant.degree or "",
         "verified": consultant.verified,
         # Presence, derived server-side — never the client's arithmetic on a
         # last_seen timestamp, because two devices with two clocks would
@@ -207,6 +215,8 @@ def me(request):
             "experience_yrs": consultant.experience_yrs,
             "bio": consultant.bio,
             "credentials": consultant.credentials or [],
+            "tags": consultant.tags or [],
+            "degree": consultant.degree,
             "status": consultant.status,
             "verified": consultant.verified,
             "rating_avg_cache": consultant.rating_avg_cache,
@@ -228,6 +238,13 @@ class ApplyInput(serializers.Serializer):
     experience_yrs = serializers.IntegerField(required=False, allow_null=True, default=None)
     bio = serializers.CharField(allow_blank=True, required=False, default="")
     credentials = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    tags = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    degree = serializers.CharField(allow_blank=True, required=False, default="")
+    # The asset id of a certificate the applicant already uploaded through
+    # /v1/media/presign (kind "document"). A URL is not accepted and could
+    # not be used: the file is in the private bucket and the console signs
+    # its own link to read it.
+    degree_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     tier = serializers.IntegerField(min_value=1, max_value=6)
 
 
@@ -249,6 +266,9 @@ def apply(request):
             experience_yrs=data["experience_yrs"],
             bio=data["bio"] or None,
             credentials=data["credentials"],
+            tags=data["tags"],
+            degree=data["degree"] or None,
+            degree_asset_id=data["degree_asset_id"],
             tier=data["tier"],
         )
     except AlreadyApplied as exc:

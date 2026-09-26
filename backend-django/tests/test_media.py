@@ -78,6 +78,66 @@ class TestLocalProvider:
 
 
 @pytest.mark.django_db
+class TestPrivateDocuments:
+    """A degree certificate is the first upload that must not be public.
+
+    R2_BUCKET is served from an r2.dev address, so every object in it is
+    readable by anyone holding the link — fine for painted artwork and a
+    reel, wrong for a scan carrying a name, a date of birth and a
+    registration number.
+    """
+
+    DOC = dict(kind="document", filename="degree.pdf", size_bytes=2048, mime="application/pdf")
+
+    def test_a_document_goes_to_the_private_bucket(self, authed_client, settings, monkeypatch):
+        settings.MEDIA_PROVIDER = "r2"
+        settings.R2_BUCKET = "namo-media"
+        settings.R2_PRIVATE_BUCKET = "namo-private"
+
+        client = MagicMock()
+        client.generate_presigned_url.return_value = "https://r2.example/presigned"
+        monkeypatch.setattr("apps.media.providers.boto3.client", MagicMock(return_value=client))
+
+        response = authed_client.post("/v1/media/presign/", data=self.DOC, format="json")
+        assert response.status_code == 201, response.content
+        call = client.generate_presigned_url.call_args
+        params = call.kwargs["Params"] if call.kwargs else call.args[1]
+        assert params["Bucket"] == "namo-private"
+
+    def test_no_private_bucket_is_a_refusal_not_a_public_upload(
+        self, authed_client, settings,
+    ):
+        # The dangerous failure is falling back to R2_BUCKET, which would
+        # publish the certificate. Refusing is the safe one.
+        settings.MEDIA_PROVIDER = "r2"
+        settings.R2_BUCKET = "namo-media"
+        settings.R2_PRIVATE_BUCKET = ""
+        response = authed_client.post("/v1/media/presign/", data=self.DOC, format="json")
+        assert response.status_code == 400
+        assert MediaAsset.objects.count() == 0
+
+    def test_a_document_has_no_public_url(self, authed_client, settings):
+        settings.MEDIA_PROVIDER = "local"
+        settings.R2_PRIVATE_BUCKET = "namo-private"
+        body = authed_client.post("/v1/media/presign/", data=self.DOC, format="json").json()
+        # Null, not a URL into a bucket that serves nobody: a caller storing
+        # this on a row would otherwise store a link that 403s forever.
+        assert body["public_url"] is None
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            dict(kind="document", filename="x.exe", size_bytes=2048, mime="application/x-msdownload"),
+            dict(kind="document", filename="x.pdf", size_bytes=6 * 1024 * 1024, mime="application/pdf"),
+        ],
+        ids=["not-a-document", "over-5mb"],
+    )
+    def test_rejects(self, authed_client, settings, body):
+        settings.R2_PRIVATE_BUCKET = "namo-private"
+        assert authed_client.post("/v1/media/presign/", data=body, format="json").status_code == 400
+
+
+@pytest.mark.django_db
 class TestR2Provider:
     def test_presign_calls_boto3_with_r2_config(self, authed_client, settings, monkeypatch):
         settings.MEDIA_PROVIDER = "r2"

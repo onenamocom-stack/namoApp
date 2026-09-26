@@ -23,20 +23,46 @@ class ValidationError(ValueError):
 
 
 KIND_RULES = {
-    # kind: (mime prefix, max size bytes)
-    "reel": ("video/", 100 * 1024 * 1024),  # 100 MB
-    "image": ("image/", 10 * 1024 * 1024),  # 10 MB
-    "audio": ("audio/", 25 * 1024 * 1024),  # 25 MB
+    # kind: (accepted mime prefixes, max size bytes)
+    "reel": (("video/",), 100 * 1024 * 1024),   # 100 MB
+    "image": (("image/",), 10 * 1024 * 1024),   # 10 MB
+    "audio": (("audio/",), 25 * 1024 * 1024),   # 25 MB
+    # A certificate is a scan or a PDF, and 5 MB is a generous scan.
+    "document": (("application/pdf", "image/jpeg", "image/png"), 5 * 1024 * 1024),
 }
+
+# THE KINDS THAT MUST NOT BE PUBLIC. Everything else in this app is art or a
+# reel and is served from the public bucket's r2.dev URL; a degree
+# certificate carries a full name, often a date of birth and a registration
+# number, and belongs in a bucket with no public URL at all. An unset
+# R2_PRIVATE_BUCKET is a refusal rather than a silent fall back to the
+# public one — falling back would publish the document.
+PRIVATE_KINDS = {"document"}
+
+
+def bucket_for(kind):
+    from django.conf import settings
+
+    if kind in PRIVATE_KINDS:
+        bucket = getattr(settings, "R2_PRIVATE_BUCKET", "")
+        if not bucket:
+            raise ValidationError(
+                "document uploads need R2_PRIVATE_BUCKET; refusing to put a "
+                "certificate in the public bucket"
+            )
+        return bucket
+    return settings.R2_BUCKET
 
 
 def validate_upload(kind, filename, size_bytes, mime):
     """Gate per docs/07 §4: the presign endpoint is size- and mime-gated."""
     if kind not in KIND_RULES:
         raise ValidationError(f"unknown kind {kind!r}")
-    prefix, max_bytes = KIND_RULES[kind]
-    if not mime.startswith(prefix):
-        raise ValidationError(f"{kind} uploads must be {prefix}* (got {mime!r})")
+    prefixes, max_bytes = KIND_RULES[kind]
+    if not any(mime.startswith(p) for p in prefixes):
+        raise ValidationError(
+            f"{kind} uploads must be one of {', '.join(prefixes)} (got {mime!r})"
+        )
     if not filename or "/" in filename or "\\" in filename or filename.startswith("."):
         raise ValidationError("bad filename")
     if not isinstance(size_bytes, int) or isinstance(size_bytes, bool) or size_bytes <= 0:
@@ -64,8 +90,8 @@ def get_provider():
 class R2Provider:
     """Cloudflare R2, S3-compatible. Presigned PUT, 15-minute expiry."""
 
-    def presign_put(self, bucket_key, mime, size_bytes):
-        client = boto3.client(
+    def _client(self):
+        return boto3.client(
             "s3",
             endpoint_url=settings.R2_ENDPOINT,
             aws_access_key_id=settings.R2_ACCESS_KEY,
@@ -73,10 +99,13 @@ class R2Provider:
             config=BotoConfig(signature_version="s3v4"),
             region_name="auto",
         )
+
+    def presign_put(self, bucket_key, mime, size_bytes, bucket=None):
+        client = self._client()
         upload_url = client.generate_presigned_url(
             "put_object",
             Params={
-                "Bucket": settings.R2_BUCKET,
+                "Bucket": bucket or settings.R2_BUCKET,
                 "Key": bucket_key,
                 "ContentType": mime,
                 "ContentLength": size_bytes,
@@ -88,6 +117,19 @@ class R2Provider:
             "headers": {"Content-Type": mime, "Content-Length": str(size_bytes)},
         }
 
+
+    def presign_get(self, bucket_key, bucket, seconds=600):
+        """A link the reviewer can open, dead ten minutes later.
+
+        The only way to read a private object. Ten minutes because it is
+        long enough to open a PDF and short enough that a link pasted into
+        a chat is worthless by the time anybody else clicks it.
+        """
+        return self._client().generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": bucket_key},
+            ExpiresIn=seconds,
+        )
 
     def put_bytes(self, bucket_key, data, mime):
         """Upload server-side, for the console.
@@ -121,7 +163,10 @@ class LocalProvider:
     def put_bytes(self, bucket_key, data, mime):
         return public_url(bucket_key)
 
-    def presign_put(self, bucket_key, mime, size_bytes):
+    def presign_get(self, bucket_key, bucket, seconds=600):
+        return f"{settings.MEDIA_PUBLIC_BASE_URL}/local-private/{bucket_key}"
+
+    def presign_put(self, bucket_key, mime, size_bytes, bucket=None):
         return {
             "upload_url": f"{settings.MEDIA_PUBLIC_BASE_URL}/local-upload/{bucket_key}",
             "headers": {"Content-Type": mime, "Content-Length": str(size_bytes)},

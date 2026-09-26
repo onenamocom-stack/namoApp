@@ -508,6 +508,81 @@ class TestListings:
 
 
 @pytest.mark.django_db
+class TestTagsAndDegree:
+    """The fields added on 27 Sep: tags for search, the degree for the
+    profile, and the certificate that must never become public."""
+
+    def _apply(self, api_client, sign_hs256, body_extra):
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            _profile(cursor, SEEKER, "Tara Verma")
+        token = sign_hs256(claims=make_claims(sub=SEEKER))
+        body = {
+            "category": "Astrologer",
+            "specialization": "Vedic · Career",
+            "languages": ["Hindi", "English"],
+            "experience_yrs": 12,
+            "bio": "I read charts the way a doctor reads a scan.",
+            "credentials": ["Jyotish Visharad"],
+            "tier": 5,
+            **body_extra,
+        }
+        return api_client.post(
+            "/v1/consultants/apply/", data=body, format="json", **auth(token)
+        )
+
+    def test_tags_and_degree_are_stored(
+        self, api_client, sign_hs256, hs256_mode, money_tables, catalogue
+    ):
+        asset = uuid.uuid4()
+        response = self._apply(api_client, sign_hs256, {
+            "tags": ["manglik", "kundli milan", "career"],
+            "degree": "Jyotish Acharya, Banaras Hindu University, 2011",
+            "degree_asset_id": str(asset),
+        })
+        assert response.status_code == 201, response.content
+        row = Consultant.objects.get(profile_id=SEEKER)
+        assert row.tags == ["manglik", "kundli milan", "career"]
+        assert row.degree.startswith("Jyotish Acharya")
+        assert str(row.degree_asset_id) == str(asset)
+
+    def test_they_are_optional(
+        self, api_client, sign_hs256, hs256_mode, money_tables, catalogue
+    ):
+        # An application without them is still an application — most
+        # practitioners in this market have no certificate to scan.
+        assert self._apply(api_client, sign_hs256, {}).status_code == 201
+        row = Consultant.objects.get(profile_id=SEEKER)
+        assert row.tags == [] and row.degree is None and row.degree_asset_id is None
+
+    def test_the_certificate_never_reaches_a_seeker(
+        self, api_client, sign_hs256, hs256_mode, money_tables, catalogue
+    ):
+        """The scan carries a name, often a date of birth and a registration
+        number. Tags and the degree TEXT are profile copy and are public; the
+        asset id is not, on any shape."""
+        asset = uuid.uuid4()
+        self._apply(api_client, sign_hs256, {
+            "tags": ["manglik"],
+            "degree": "Jyotish Acharya",
+            "degree_asset_id": str(asset),
+        })
+        Consultant.objects.filter(profile_id=SEEKER).update(status="approved")
+
+        listing = api_client.get("/v1/consultants/").content.decode()
+        card = api_client.get(f"/v1/consultants/{SEEKER}/").json()
+        own = api_client.get(
+            "/v1/consultants/me/", **auth(sign_hs256(claims=make_claims(sub=SEEKER)))
+        ).json()
+
+        assert "manglik" in listing and str(asset) not in listing
+        assert card["tags"] == ["manglik"] and card["degree"] == "Jyotish Acharya"
+        assert "degree_asset_id" not in card
+        assert "degree_asset_id" not in own   # not even to the owner: they
+                                              # uploaded it, they know
+
+@pytest.mark.django_db
 class TestApply:
     def test_application_lands_pending_with_band_priced_services(
         self, api_client, sign_hs256, hs256_mode, money_tables, catalogue

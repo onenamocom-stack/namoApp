@@ -11,6 +11,7 @@
  * URL.
  */
 import { supabase } from './supabase.js'
+import { uploadAsset } from './media.js'
 
 /* VITE_DJANGO_API_URL already carries the /v1 prefix — the deployed libs
    (consultants, chat, content, …) all build `${API_BASE}${path}`. Prepending
@@ -68,53 +69,10 @@ export async function uploadAvatar(file) {
   const token = await getToken()
   if (!token) throw new Error('Sign in to change your picture')
 
-  /* 1. Ask for a presigned PUT — the media app's size/mime gate answers
-     here (image/*, 10 MB cap) with a sentence, before anything uploads. */
-  const presignResponse = await fetch(`${API}/media/presign/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      kind: 'image',
-      filename: file.name,
-      size_bytes: file.size,
-      mime: file.type,
-    }),
-  })
-  let presign = null
-  try {
-    presign = await presignResponse.json()
-  } catch {
-    /* not JSON — the network */
-  }
-  if (presignResponse.status !== 201 || !presign) {
-    throw new Error(
-      presign?.message ?? 'Could not start that upload. Try again.',
-    )
-  }
-
-  /* 2. The bytes go straight to the bucket; Django and Postgres never see
-     them. A failed PUT is a network fact, not a refusal. */
-  const put = await fetch(presign.upload_url, {
-    method: 'PUT',
-    headers: presign.headers,
-    body: file,
-  })
-  if (!put.ok) throw new Error('Could not upload that picture. Try again.')
-
-  /* 3. The row flips processing -> ready, owner-scoped and idempotent. */
-  const confirm = await fetch(`${API}/media/${presign.asset_id}/confirm/`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (confirm.status !== 200) {
-    let body = null
-    try {
-      body = await confirm.json()
-    } catch {
-      /* not JSON — the network */
-    }
-    throw new Error(body?.message ?? 'Could not confirm that upload. Try again.')
-  }
+  /* Steps 1-3 — presign, PUT, confirm — live in `lib/media.js` now: the
+     consultant's degree certificate needs the same three and only the kind
+     differs. */
+  const { assetId } = await uploadAsset(file, 'image')
 
   /* 4. Point the caller's profile row at the READY asset. The server
      verifies ownership and readiness again — someone else's asset or an
@@ -122,7 +80,7 @@ export async function uploadAvatar(file) {
   const set = await call('/me/avatar/', {
     method: 'POST',
     token,
-    body: { asset_id: presign.asset_id },
+    body: { asset_id: assetId },
   })
   if (set.status !== 200 || !set.body) {
     throw new Error(

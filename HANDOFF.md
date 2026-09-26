@@ -5006,3 +5006,49 @@ the lookup stripped them, so every name missed and fell through to
 "Someone". Fixed, with a test that asserts both names.
 
 **752 tests**, 6 new. `namo-api` **00049**.
+## 38. The consultant application asks five more things — 27 Sep 2026
+
+**On `main`.** Asked for by the partner: the application should collect what
+a seeker actually reads. Four of the five were already there — languages,
+expertise (the category), about (the bio) and years of practice. Two are new:
+
+- **Tags**, free text, comma separated, on the row as `tags text[]`. A seeker
+  searches with words the five categories do not carry — "manglik", "kundli
+  milan", "career". Free rather than a fixed list, because a fixed list is
+  curated by the people who do not take the bookings. Public, and the console
+  searches them too.
+- **Degree**, as written, plus **a copy of the certificate**.
+
+**The certificate is the part with a decision in it.** A scan carries a full
+name, often a date of birth and a registration number, and the only storage
+this app had is `R2_BUCKET`, served from an r2.dev address — everything in it
+is world-readable. So:
+
+- `media` gains the kind **`document`** (PDF, JPEG or PNG, 5 MB) and a
+  **`PRIVATE_KINDS`** set. A document is presigned into `R2_PRIVATE_BUCKET`,
+  and **an unset private bucket is a refusal, not a fall back to the public
+  one** — falling back would publish the certificate.
+- A document's `public_url` comes back **null**, so nothing can store a link
+  into a bucket that serves nobody.
+- The console shows **"Open the certificate"**, signed for ten minutes at the
+  moment of viewing. A link copied out of that page is worthless by the time
+  it is pasted anywhere.
+- `degree_asset_id` is on **no** public shape, and not on the consultant's own
+  `me/` either. The degree TEXT is public — a credential nobody can read is
+  not one.
+
+**`R2_PRIVATE_BUCKET` does not exist yet.** Until it is created and the env
+var set, the certificate field refuses with the reason, and the rest of the
+application works. The bucket must have **no public access and no r2.dev
+URL**; that is the whole point of it.
+
+**Migrations to apply**: `consultants 0003` (tags, degree, degree_asset_id)
+and `media 0002` (the kind CHECK, which currently allows only reel/image/
+audio and would refuse every document).
+
+**Checks.** Three consultant tests, including that an approved consultant's
+public card carries the tags and the degree and never the asset id; four
+media tests, including that a missing private bucket refuses rather than
+publishing. `uploadAsset` in `src/lib/media.js` is the presign/PUT/confirm
+dance lifted out of `avatar.js`, which now calls it — the certificate would
+have been the second copy.

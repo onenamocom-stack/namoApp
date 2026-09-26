@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Button, Label, Section } from '../components/Primitives.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
@@ -6,6 +6,7 @@ import Plate from '../components/Plate.jsx'
 import { categories } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
 import { applyAsConsultant, listPriceBands } from '../lib/consultants.js'
+import { uploadAsset } from '../lib/media.js'
 import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
 
 /**
@@ -162,8 +163,17 @@ function Application({ onDone, toast }) {
     experience: '',
     bio: '',
     credentials: '',
+    tags: '',
+    degree: '',
     tier: null,
   })
+  /* The certificate, once it is uploaded: { id, name }. The file goes to
+     the private bucket the moment it is picked rather than on submit, so a
+     slow scan uploads while the rest of the form is still being typed —
+     and so a refused file (wrong type, too big) is said here instead of
+     after everything else was filled in. */
+  const [cert, setCert] = useState(null)
+  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -210,6 +220,9 @@ function Application({ onDone, toast }) {
         experienceYrs: parseInt(form.experience, 10) || null,
         bio: form.bio.trim(),
         credentials: list(form.credentials),
+        tags: list(form.tags),
+        degree: form.degree.trim(),
+        degreeAssetId: cert?.id ?? null,
         tier: form.tier,
       })
     } catch (err) {
@@ -254,6 +267,31 @@ function Application({ onDone, toast }) {
                placeholder="12" inputMode="numeric" />
         <Input label="Credentials" value={form.credentials} onChange={set('credentials')}
                placeholder="Jyotish Visharad, ICAS Certified" />
+        {/* Free text, comma separated. A seeker searches with words the
+            five categories do not carry — "manglik", "kundli milan",
+            "career" — and a fixed list would be curated by the people who
+            do not take the bookings. */}
+        <Input label="Tags" value={form.tags} onChange={set('tags')}
+               placeholder="manglik, kundli milan, career, vastu" />
+        <Input label="Degree" value={form.degree} onChange={set('degree')}
+               placeholder="Jyotish Acharya, Banaras Hindu University, 2011" />
+        <Certificate
+          cert={cert}
+          uploading={uploading}
+          onPick={async (file) => {
+            setUploading(true)
+            setError('')
+            try {
+              const { assetId } = await uploadAsset(file, 'document')
+              setCert({ id: assetId, name: file.name })
+            } catch (err) {
+              setError(err.message)
+            } finally {
+              setUploading(false)
+            }
+          }}
+          onClear={() => setCert(null)}
+        />
 
         <label className="mt-6 block">
           <span className="text-micro uppercase tracking-caps text-t3">How you read</span>
@@ -310,6 +348,59 @@ function TierDetail({ bands, tier }) {
       {fixed.map((b) => `${b.duration_mins} min · ₹${rupees(b.price_paise)}`).join('   ')}
       {perMinute && `   ·   ₹${rupees(perMinute.price_paise)} a minute`}
     </p>
+  )
+}
+
+/**
+ * The degree certificate — optional, and private.
+ *
+ * Most practitioners in this market have no certificate to scan, so this
+ * never blocks an application. What it does do is say where the file goes:
+ * a scan carries a full name, often a date of birth and a registration
+ * number, and it lands in a bucket with no public URL. The only reader is
+ * whoever decides the application, through a link the console signs for ten
+ * minutes.
+ */
+function Certificate({ cert, uploading, onPick, onClear }) {
+  const input = useRef(null)
+  return (
+    <label className="mt-5 block">
+      <span className="text-micro uppercase tracking-caps text-t3">Certificate</span>
+      {cert ? (
+        <div className="mt-1.5 flex items-baseline justify-between gap-3">
+          <span className="min-w-0 truncate text-body t-body">{cert.name}</span>
+          <button type="button" onClick={onClear} className="flex-none caps-sm text-t2 underline">
+            Remove
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => input.current?.click()}
+          className="field-line mt-1.5 w-full text-left disabled:opacity-40"
+        >
+          {uploading ? 'Uploading…' : 'Attach a copy — PDF or photo, up to 5 MB'}
+        </button>
+      )}
+      <span className="mt-1.5 block text-micro t-faint">
+        Optional. Only the reviewer sees it, through a link that expires; it is never shown to
+        seekers.
+      </span>
+      <input
+        ref={input}
+        type="file"
+        accept="application/pdf,image/jpeg,image/png"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) onPick(file)
+        }}
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+    </label>
   )
 }
 

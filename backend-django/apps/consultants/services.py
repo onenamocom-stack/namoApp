@@ -325,7 +325,7 @@ def add_time_off(consultant_id, starts_at, ends_at, reason=None):
 
 
 def apply(profile_id, *, category, specialization, languages, experience_yrs, bio,
-          credentials, tier):
+          credentials, tier, tags=None, degree=None, degree_asset_id=None):
     """One application, one transaction (rule 5): the consultants row — the
     insert grant's columns ONLY; status lands 'pending' and verified False
     because the request shape has no fields for them (009 check assertion 8:
@@ -350,6 +350,9 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
                 experience_yrs=experience_yrs,
                 bio=bio,
                 credentials=list(credentials or []),
+                tags=list(tags or []),
+                degree=degree,
+                degree_asset_id=degree_asset_id,
             )
             for n, band in enumerate(bands):
                 ConsultantService.objects.create(

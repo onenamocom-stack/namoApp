@@ -8,7 +8,14 @@ from django.conf import settings
 from apps.core.views import refusal_body
 
 from .models import MediaAsset
-from .providers import ValidationError, get_provider, make_bucket_key, validate_upload
+from .providers import (
+    PRIVATE_KINDS,
+    ValidationError,
+    bucket_for,
+    get_provider,
+    make_bucket_key,
+    validate_upload,
+)
 
 
 class MediaAssetSerializer(serializers.ModelSerializer):
@@ -34,6 +41,9 @@ def presign(request):
     mime = data.get("mime", "")
     try:
         validate_upload(kind, filename, size_bytes, mime)
+        # Which bucket, decided here and not by the caller: a document goes
+        # to the private one or nowhere (apps/media/providers.py).
+        bucket = bucket_for(kind)
     except ValidationError as exc:
         return Response(refusal_body("invalid", str(exc)), status=400)
 
@@ -46,7 +56,7 @@ def presign(request):
         status=MediaAsset.Status.PROCESSING,
     )
     asset.save()
-    signed = get_provider().presign_put(asset.bucket_key, mime, size_bytes)
+    signed = get_provider().presign_put(asset.bucket_key, mime, size_bytes, bucket=bucket)
     return Response(
         {
             "asset_id": str(asset.id),
@@ -56,7 +66,13 @@ def presign(request):
             # 022's bucket is public-read, and so is this — the row pointing
             # at the file is already readable by anon through content_public,
             # so a signed URL would buy a round trip per card and buy nothing.
-            "public_url": f"{settings.MEDIA_PUBLIC_BASE_URL.rstrip('/')}/{asset.bucket_key}",
+            # A private kind has no public URL, and saying null is the
+            # point: a caller that stores this on a row would otherwise
+            # store a link into a bucket that serves nobody.
+            "public_url": (
+                None if kind in PRIVATE_KINDS
+                else f"{settings.MEDIA_PUBLIC_BASE_URL.rstrip('/')}/{asset.bucket_key}"
+            ),
         },
         status=201,
     )

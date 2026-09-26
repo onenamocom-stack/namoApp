@@ -8,6 +8,9 @@ class MediaKind(models.TextChoices):
     REEL = "reel", "Reel"
     IMAGE = "image", "Image"
     AUDIO = "audio", "Audio"
+    # A consultant's degree certificate, and nothing else so far. It is
+    # the first kind that must NOT be world-readable — see providers.
+    DOCUMENT = "document", "Document"
 
 
 class MediaStatus(models.TextChoices):

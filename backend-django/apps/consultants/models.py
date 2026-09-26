@@ -58,6 +58,17 @@ class Consultant(models.Model):
     experience_yrs = models.SmallIntegerField(null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
     credentials = TextArrayField()
+    # Asked on the application, 27 Sep 2026, because a seeker searches with
+    # words the categories do not carry — "manglik", "career", "kundli
+    # milan". Free text on purpose: a fixed list would be curated by the
+    # people who do not take the bookings.
+    tags = TextArrayField()
+    # The degree as written, and the scan of it. The scan is a MediaAsset id
+    # and never a URL: it lives in the private bucket, so the only way to
+    # read it is a link the console signs for ten minutes. It is never part
+    # of any public shape (see `consultants_public`).
+    degree = models.TextField(null=True, blank=True)
+    degree_asset_id = models.UUIDField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=ConsultantStatus.choices, default=ConsultantStatus.PENDING
     )

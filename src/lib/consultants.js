@@ -356,7 +356,8 @@ export async function myConsultant() {
  *  rows, priced BY COPYING the band rows server-side. Returns the row;
  *  a refusal throws with the server's message, which ProApply renders. */
 export async function applyAsConsultant({ category, specialization, languages,
-                                          experienceYrs, bio, credentials, tier }) {
+                                          experienceYrs, bio, credentials, tags,
+                                          degree, degreeAssetId, tier }) {
   const token = await accessToken()
   return api('/consultants/apply/', {
     method: 'POST',
@@ -367,6 +368,11 @@ export async function applyAsConsultant({ category, specialization, languages,
       experience_yrs: experienceYrs,
       bio,
       credentials,
+      tags,
+      degree,
+      // The certificate is sent as an ASSET ID, never a URL: the file is in
+      // the private bucket and there is no URL to send.
+      degree_asset_id: degreeAssetId,
       tier,
     },
     token,

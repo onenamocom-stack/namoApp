@@ -162,6 +162,11 @@ R2_ENDPOINT = os.environ.get("R2_ENDPOINT", "")
 R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY", "")
 R2_SECRET_KEY = os.environ.get("R2_SECRET_KEY", "")
 R2_BUCKET = os.environ.get("R2_BUCKET", "")
+# Documents — a consultant's degree certificate today. A SEPARATE bucket with
+# no public URL: R2_BUCKET is served from an r2.dev address, which makes every
+# object in it world-readable. Unset, document uploads are refused rather than
+# quietly published (apps/media/providers.py).
+R2_PRIVATE_BUCKET = os.environ.get("R2_PRIVATE_BUCKET", "")
 # "r2" in prod, "local" in dev (fake URLs, nothing leaves the machine)
 MEDIA_PROVIDER = os.environ.get("MEDIA_PROVIDER", "local")
 MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.example.com")
