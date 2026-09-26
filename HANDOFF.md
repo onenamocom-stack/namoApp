@@ -4538,3 +4538,24 @@ left and no money is refused with *"Not enough balance"* and
 `needs_money: true`.
 
 **714 tests**, 2 new. `namo-api` **00041**.
+
+### Testing window reverted — 25 Sep 2026
+
+`AI_FREE_WINDOW_SECONDS` back to **0** on `namo-api` revision **00042**:
+a free-message day is the IST calendar day again. `AI_DAILY_FREE` stays
+**1**, which is the product value — the 500 it held since the 22nd was
+itself a leftover and is gone.
+
+**One piece of debris the compressed window left.** It maps each
+two-minute bucket onto a consecutive *date*, so a boost scheduled during
+the test carried `bonus_until = 2075-08-05`. Inert while it sits in the
+future — but `open_bonus_window` only ever widens a window, so a later
+referral would have set `bonus_from` to tomorrow and left the end in
+2075: a fifty-year boost. One row, cleared.
+
+Worth remembering the next time the flag goes on: **turning it off does
+not undo what was written while it was on.**
+
+The test account is reset again — profile, wallet, quota, messages,
+referral and code all gone. Its Supabase auth user remains; freeing the
+number properly still needs a service-role key.
