@@ -767,17 +767,6 @@ export const academyEvents = [
   },
 ]
 
-/* Renamed from `downloads` on 25 Sep 2026, and the two video rows went with
-   the name: a shelf called E-books that lists a 410 MB recording is the kind
-   of label this codebase keeps deleting. Videos live inside their course,
-   which is where somebody looking for a lesson goes. */
-export const ebooks = [
-  { id: 'd2', title: 'Dashas and timing — the reference tables', kind: 'PDF', size: '1.4 MB', saved: '5 days ago', course: 'Dashas and timing' },
-  { id: 'd3', title: 'Tarot spreads worksheet', kind: 'PDF', size: '820 KB', saved: '1 week ago', course: 'Tarot as a thinking tool' },
-  { id: 'd5', title: 'Reading a birth chart — the workbook', kind: 'PDF', size: '3.1 MB', saved: '2 weeks ago', course: 'Reading a birth chart' },
-  { id: 'd6', title: 'Panchang, plainly explained', kind: 'PDF', size: '2.2 MB', saved: '3 weeks ago', course: 'Reading a birth chart' },
-]
-
 /* ══════════════════════════════════════════════════════════════════════════
    CHAT — consultant threads for the side panel. The AI tab reuses
    askConversation; these are the human ones.

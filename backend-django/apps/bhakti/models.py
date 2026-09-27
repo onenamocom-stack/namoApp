@@ -9,6 +9,7 @@ class Kind(models.TextChoices):
     WALLPAPER = "wallpaper", "Wallpaper"
     TUNE = "tune", "Tune"
     BHAJAN = "bhajan", "Bhajan"
+    EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
 
 
 class BhaktiAsset(models.Model):
@@ -35,6 +36,7 @@ class BhaktiAsset(models.Model):
         WALLPAPER = "wallpaper", "Wallpaper"
         TUNE = "tune", "Tune"
         BHAJAN = "bhajan", "Bhajan"
+        EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     kind = models.CharField(max_length=16, choices=Kind.choices)

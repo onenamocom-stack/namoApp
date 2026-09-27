@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { academyEvents, courses, ebooks } from '../data/mock.js'
+import { useEffect, useState } from 'react'
+import { academyEvents, courses } from '../data/mock.js'
+import { fetchAssets } from '../lib/bhakti.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
@@ -207,32 +208,44 @@ function Events() {
   )
 }
 
+/* The books are `bhakti_assets` rows of kind 'ebook': the same curated,
+   credited, priceable catalogue as the Bhakti shelves, read in the same one
+   request. A PDF opens in the browser's own viewer, which is also where it
+   saves from. */
 function Ebooks() {
-  const { showToast } = useStore()
+  const [books, setBooks] = useState(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    fetchAssets()
+      .then((all) => setBooks(all.filter((a) => a.kind === 'ebook')))
+      .catch(() => setFailed(true))
+  }, [])
+
+  if (failed) return <p className="px-5 py-10 text-center text-meta t-faint">Could not reach the library. Try again.</p>
+  if (!books) return <p className="px-5 py-10 text-center text-meta t-faint">Loading…</p>
+  if (!books.length) return <p className="px-5 py-10 text-center text-meta t-faint">No e-books yet.</p>
 
   return (
     <section className="px-5 py-6">
       <Kicker>Yours to read</Kicker>
       <ul className="mt-4 space-y-4">
-        {ebooks.map((d) => (
+        {books.map((d) => (
           <li key={d.id}>
             <PopCard className="overflow-hidden">
-              <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full">
-                <span className="absolute left-3 top-3">
-                  <PopTag>{d.kind}</PopTag>
-                </span>
-                <span className="caps-sm absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 shadow-sm t-sub tnum">
-                  {d.size} · {d.saved}
-                </span>
-              </Plate>
+              {d.previewUrl ? (
+                <img src={d.previewUrl} alt="" loading="lazy" className="aspect-[21/9] w-full object-cover" />
+              ) : (
+                <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full" />
+              )}
 
               <div className="flex items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-meta t-heading">{d.title}</p>
-                  <p className="mt-1 caps-sm t-faint">From {d.course}</p>
+                  <p className="mt-1 caps-sm t-faint">PDF · {d.artist}</p>
                 </div>
                 <PopButton
-                  onClick={() => showToast(`Opening ${d.title}`)}
+                  href={d.url}
                   full={false}
                   className="flex-none px-4"
                 >
@@ -243,10 +256,6 @@ function Ebooks() {
           </li>
         ))}
       </ul>
-
-      <p className="mt-8 text-center text-meta t-faint">
-A prototype list. The real books arrive with the Academy's own materials.
-      </p>
     </section>
   )
 }

@@ -130,7 +130,7 @@ class TestKindVocabulary:
     The surviving vocabulary is the check constraint's — the database
     refuses anything else, from any writer."""
 
-    @pytest.mark.parametrize("kind", ["status", "wallpaper", "tune", "bhajan"])
+    @pytest.mark.parametrize("kind", ["status", "wallpaper", "tune", "bhajan", "ebook"])
     def test_026_kinds_accepted(self, kind):
         row = make_asset(kind=kind)
         assert row.kind == kind

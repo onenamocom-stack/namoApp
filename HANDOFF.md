@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 24 Sep 2026.
+Updated 27 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -5060,3 +5060,23 @@ media tests, including that a missing private bucket refuses rather than
 publishing. `uploadAsset` in `src/lib/media.js` is the presign/PUT/confirm
 dance lifted out of `avatar.js`, which now calls it — the certificate would
 have been the second copy.
+
+## 39. Bhajans and e-books are real content — 27 Sep 2026
+
+**Live on `usgzgrdxlzgnehtbebzo`:** 37 bhajans and 5 e-books in
+`bhakti_assets`, files in the `namo-media` R2 bucket (`bhakti/bhajans/`,
+`ebooks/`), each with a PNG thumbnail/cover in `preview_url`. Credited
+Namo / All rights reserved / Namo original, unpriced. `deity` carries the
+tradition (Beej Mantra, Jai Guru Ji, Jainism, Neem Karori Baba, Sanatan,
+Santmat), which is what the filter chips show. Verified through the live API.
+
+- **E-books are a Bhakti kind, not a table.** Same shape — title, file, cover,
+  credit, price — so `bhakti 0002_ebook_kind` widens the kind CHECK (applied on
+  production) and Academy's E-book tab filters `fetchAssets()` to `ebook`. The
+  Bhakti screen filters by its own kinds, so the rows never appear there. The
+  mock `ebooks` list is deleted.
+- **Loaded by a one-off script, not a committed seed.** Legacy ids are
+  `bh-<slug>` / `eb-<slug>`, so a re-run upserts. The next batch belongs in the
+  admin console.
+- **Open:** covers and thumbnails are the original 2–3 MB PNGs. Convert to
+  WebP if the E-book tab is slow on a phone.
