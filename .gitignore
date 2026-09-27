@@ -60,3 +60,9 @@ mocks/
 .env.local
 **/.env
 .tmp-test/
+
+# The laptop's own copy of everything that must not be pushed: the env
+# files, the hand-written Makefile and compose file, and a handover note.
+# Git history is permanent — a credential committed once stays in every
+# clone forever, so these live here and go to Drive by hand.
+_local/
