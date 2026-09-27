@@ -5037,14 +5037,22 @@ is world-readable. So:
   `me/` either. The degree TEXT is public — a credential nobody can read is
   not one.
 
-**`R2_PRIVATE_BUCKET` does not exist yet.** Until it is created and the env
-var set, the certificate field refuses with the reason, and the rest of the
-application works. The bucket must have **no public access and no r2.dev
-URL**; that is the whole point of it.
+**Shipped, 27 Sep 2026.** `R2_PRIVATE_BUCKET=namo-docs` — a bucket with no
+public access and no r2.dev URL, which is the whole point of it. It is set on
+**both** services: `namo-api` (00051) and `namo-console` (00019). The console
+is the one that signs the GET, so a deploy that updates only the API leaves
+the certificate link broken while everything else looks fine.
 
-**Migrations to apply**: `consultants 0003` (tags, degree, degree_asset_id)
-and `media 0002` (the kind CHECK, which currently allows only reel/image/
-audio and would refuse every document).
+**Migrations applied** on `usgzgrdxlzgnehtbebzo`: `consultants 0003` (tags,
+degree, degree_asset_id) and `media 0002` (the kind CHECK — before it, the
+database refused every document). Verified through the live API: the public
+consultant list serves `tags` and `degree` and carries no `degree_asset_id`.
+
+**The Supabase MCP connector is not this database.** It resolves to
+`mrjsatelbuiypodeulcx`, which has `profiles`, `consultants` and `wallets` but
+no `media_assets` and no `django_migrations`. A migration applied through it
+reports success and changes nothing here. Compare `get_project_url` against
+the service's `DATABASE_URL` before writing through it.
 
 **Checks.** Three consultant tests, including that an approved consultant's
 public card carries the tags and the degree and never the asset id; four
