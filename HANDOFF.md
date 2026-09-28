@@ -5080,10 +5080,10 @@ Santmat), which is what the filter chips show. Verified through the live API.
   admin console.
 - **Mantras, 28 Sep:** a fifth Bhakti shelf (`bhakti 0003_mantra_kind`). Om
   and Om Namah Shivay, `mn-<slug>`, files in `bhakti/mantras/`. Play asks "How
-  many times?" (1–1008) and `MantraRow` replays the clip on `ended` until the
+  many times?" (1–1008) and `TrackCard` (`counted`) replays the clip on `ended` until the
   count runs out, showing "Repeat n of N" with a Stop. The Gayatri Mantra
   folder arrived empty and is not loaded.
-- **Bhajans are video cards, 28 Sep:** `BhajanCard` shows the 16:9 thumbnail
+- **Bhajans and mantras are video cards, 28–29 Sep:** one `TrackCard` for both shelves. It shows the 16:9 thumbnail
   (`preview_url`), then the title with a heart and a play button — no Save on
   this shelf. Once started, the native audio controls appear for scrubbing,
   and starting one pauses any other. The heart is the feed's `like:<id>`

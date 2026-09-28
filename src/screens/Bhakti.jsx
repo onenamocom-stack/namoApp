@@ -314,10 +314,8 @@ export default function Bhakti() {
         ) : (
           <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
-              kind === 'bhajan' ? (
-                <BhajanCard key={a.id} asset={a} />
-              ) : kind === 'mantra' ? (
-                <MantraRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
+              kind === 'bhajan' || kind === 'mantra' ? (
+                <TrackCard key={a.id} asset={a} counted={kind === 'mantra'} />
               ) : isAudio(kind) ? (
                 <AudioRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : (
@@ -457,20 +455,30 @@ function AudioRow({ asset, busy, onSave }) {
 }
 
 /**
- * A bhajan is a full track with its own artwork, so it gets the video-card
- * shape (28 Sep 2026): the 16:9 thumbnail, then the title with a heart and a
- * play button — no download here, asked for the same day. Once it has started
- * the browser's own controls appear under the picture, because a ten-minute
- * track needs a scrubber. Starting one pauses any other.
+ * Bhajans and mantras share one video-card shape (28–29 Sep 2026): the 16:9
+ * thumbnail, then the title with a heart and a play button — no download on
+ * these shelves.
  *
- * The heart is the feed's `like:<id>` reaction, so it is per account and
- * survives a reload.
+ * A bhajan is a full track: once started, the browser's own controls appear
+ * under the picture, because a ten-minute track needs a scrubber.
+ *
+ * A mantra is `counted`: it is chanted a set number of times, so play asks
+ * "How many times?" first and the clip repeats that many, with "Repeat n of
+ * N" under the title. Pausing keeps the count; Stop drops it, and the next
+ * play asks again.
+ *
+ * Starting any track pauses every other. The heart is the feed's `like:<id>`
+ * reaction, so it is per account and survives a reload.
  */
-function BhajanCard({ asset }) {
+function TrackCard({ asset, counted = false }) {
   const { hasFlag, toggleFlag } = useStore()
   const el = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [started, setStarted] = useState(false)
+  const [asking, setAsking] = useState(false)
+  const [times, setTimes] = useState('')
+  const [total, setTotal] = useState(0)
+  const [left, setLeft] = useState(0) // plays still owed, this one included; 0 = no count running
   // ponytail: stored as target_type 'content' because lib/reactions.js maps
   // `like` to content and the server does not check the target exists. Give
   // bhakti its own target_type (reactions CHECK + API deploy) before anything
@@ -478,11 +486,29 @@ function BhajanCard({ asset }) {
   const likeKey = `like:${asset.id}`
   const liked = hasFlag(likeKey)
 
+  const play = () => el.current?.play().catch(() => setPlaying(false))
+
   const toggle = () => {
-    const a = el.current
-    if (!a) return
-    if (a.paused) a.play().catch(() => setPlaying(false))
-    else a.pause()
+    if (playing) return el.current.pause()
+    if (!counted || left > 0) return play()
+    setAsking((v) => !v)
+  }
+
+  const start = (e) => {
+    e.preventDefault()
+    const n = Math.floor(Number(times))
+    if (!(n >= 1 && n <= 1008)) return
+    setTotal(n)
+    setLeft(n)
+    setAsking(false)
+    el.current.currentTime = 0
+    play()
+  }
+
+  const stop = () => {
+    el.current.pause()
+    el.current.currentTime = 0
+    setLeft(0)
   }
 
   const onPlay = (e) => {
@@ -490,6 +516,19 @@ function BhajanCard({ asset }) {
     setPlaying(true)
     setStarted(true)
   }
+
+  const onEnded = () => {
+    if (left > 1) {
+      setLeft(left - 1)
+      el.current.currentTime = 0
+      play()
+    } else {
+      setLeft(0)
+      setPlaying(false)
+    }
+  }
+
+  const scrubber = started && !counted
 
   return (
     <li>
@@ -504,17 +543,26 @@ function BhajanCard({ asset }) {
           ref={el}
           src={asset.url}
           preload="none"
-          controls={started}
-          className={started ? 'block w-full px-3 pt-3' : 'hidden'}
+          controls={scrubber}
+          className={scrubber ? 'block w-full px-3 pt-3' : 'hidden'}
           onPlay={onPlay}
           onPause={() => setPlaying(false)}
-          onEnded={() => setPlaying(false)}
+          onEnded={onEnded}
         />
 
         <div className="flex items-center gap-3 p-3.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-body t-heading">{asset.title}</p>
-            <Credit asset={asset} />
+            {left > 0 ? (
+              <p className="mt-1 caps-sm t-faint tnum">
+                Repeat {total - left + 1} of {total} ·{' '}
+                <button type="button" onClick={stop} className="underline">
+                  Stop
+                </button>
+              </p>
+            ) : (
+              <Credit asset={asset} />
+            )}
           </div>
           <button
             type="button"
@@ -536,97 +584,9 @@ function BhajanCard({ asset }) {
             <Icon name={playing ? 'pause' : 'play'} size={18} />
           </button>
         </div>
-      </PopCard>
-    </li>
-  )
-}
-
-/**
- * A mantra is chanted a counted number of times, so play asks for the count
- * first and the clip repeats that many (asked for 28 Sep 2026). Pausing keeps
- * the count; Stop drops it, and the next play asks again.
- */
-function MantraRow({ asset, busy, onSave }) {
-  const el = useRef(null)
-  const [playing, setPlaying] = useState(false)
-  const [asking, setAsking] = useState(false)
-  const [times, setTimes] = useState('')
-  const [total, setTotal] = useState(0)
-  const [left, setLeft] = useState(0) // plays still owed, this one included; 0 = no count running
-
-  const play = () => el.current?.play().catch(() => setPlaying(false))
-
-  const toggle = () => {
-    if (playing) return el.current.pause()
-    if (left > 0) return play()
-    setAsking((v) => !v)
-  }
-
-  const start = (e) => {
-    e.preventDefault()
-    const n = Math.floor(Number(times))
-    if (!(n >= 1 && n <= 1008)) return
-    setTotal(n)
-    setLeft(n)
-    setAsking(false)
-    el.current.currentTime = 0
-    play()
-  }
-
-  const stop = () => {
-    el.current.pause()
-    el.current.currentTime = 0
-    setLeft(0)
-  }
-
-  const ended = () => {
-    if (left > 1) {
-      setLeft(left - 1)
-      el.current.currentTime = 0
-      play()
-    } else {
-      setLeft(0)
-      setPlaying(false)
-    }
-  }
-
-  return (
-    <li>
-      <PopCard className="p-3">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
-            className="pill knob !h-11 !w-11 flex-none justify-center"
-          >
-            <Icon name={playing ? 'pause' : 'play'} size={18} />
-          </button>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-meta t-heading">{asset.title}</p>
-            {left > 0 ? (
-              <p className="caps-sm t-faint tnum">
-                Repeat {total - left + 1} of {total} ·{' '}
-                <button type="button" onClick={stop} className="underline">
-                  Stop
-                </button>
-              </p>
-            ) : (
-              <Credit asset={asset} />
-            )}
-          </div>
-
-          <div className="flex flex-none items-center gap-2">
-            <Price paise={asset.pricePaise} />
-            <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
-              {busy ? '…' : 'Save'}
-            </PopButton>
-          </div>
-        </div>
 
         {asking && (
-          <form onSubmit={start} className="mt-3 flex items-center gap-2">
+          <form onSubmit={start} className="flex items-center gap-2 px-3.5 pb-3.5">
             <label htmlFor={`times-${asset.id}`} className="caps-sm t-faint flex-none">
               How many times?
             </label>
@@ -648,15 +608,6 @@ function MantraRow({ asset, busy, onSave }) {
             </PopButton>
           </form>
         )}
-
-        <audio
-          ref={el}
-          src={asset.url}
-          preload="none"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={ended}
-        />
       </PopCard>
     </li>
   )
