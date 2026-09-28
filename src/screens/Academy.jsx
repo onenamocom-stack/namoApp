@@ -8,14 +8,14 @@ import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 
 const TABS = [
+  { key: 'ebooks', label: 'E-book' },
   { key: 'courses', label: 'Courses' },
   { key: 'events', label: 'Events' },
-  { key: 'ebooks', label: 'E-book' },
 ]
 
-/** Academy — courses, live events and e-books. */
+/** Academy — e-books, courses and live events. */
 export default function Academy() {
-  const [tab, setTab] = useState('courses')
+  const [tab, setTab] = useState('ebooks') // leads: the only tab with real content (28 Sep 2026)
 
   return (
     <>

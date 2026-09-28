@@ -396,7 +396,7 @@ a birth date but no birthplace, so its 409 asks for a date and never sends
 somebody off to fix a chart.
 
 ### `/academy`
-Courses / Events / E-book.
+E-book / Courses / Events. E-book leads and opens by default (28 Sep 2026) — it is the only tab reading real content.
 
 Course *Resume* and *Watch* are external links to **YouTube search URLs** — the
 only outbound links in the app. *Enrol* toasts. Events show a seat-fill bar and
