@@ -5083,5 +5083,8 @@ Santmat), which is what the filter chips show. Verified through the live API.
   many times?" (1–1008) and `MantraRow` replays the clip on `ended` until the
   count runs out, showing "Repeat n of N" with a Stop. The Gayatri Mantra
   folder arrived empty and is not loaded.
-- **Open:** covers and thumbnails are the original 2–3 MB PNGs. Convert to
-  WebP if the E-book tab is slow on a phone.
+- **Bhajans are video cards, 28 Sep:** `BhajanCard` shows the 16:9 thumbnail
+  (`preview_url`) with a play button over it; once started, the native audio
+  controls appear under it for scrubbing, and starting one pauses any other.
+  Every thumbnail and cover was re-uploaded as a 1280px WebP (111 MB of PNG ->
+  8 MB) and `preview_url` repointed; the PNGs stay in R2, unreferenced.

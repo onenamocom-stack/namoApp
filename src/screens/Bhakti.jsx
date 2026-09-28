@@ -314,7 +314,9 @@ export default function Bhakti() {
         ) : (
           <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
-              kind === 'mantra' ? (
+              kind === 'bhajan' ? (
+                <BhajanCard key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
+              ) : kind === 'mantra' ? (
                 <MantraRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : isAudio(kind) ? (
                 <AudioRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
@@ -449,6 +451,80 @@ function AudioRow({ asset, busy, onSave }) {
           onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}
         />
+      </PopCard>
+    </li>
+  )
+}
+
+/**
+ * A bhajan is a full track with its own artwork, so it gets the video-card
+ * shape (28 Sep 2026): the 16:9 thumbnail, a play button over it, and once it
+ * has started the browser's own controls underneath — a ten-minute track needs
+ * a scrubber, and the native one is the one people already know. Starting one
+ * pauses any other, because two bhajans at once is never what somebody meant.
+ */
+function BhajanCard({ asset, busy, onSave }) {
+  const el = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [started, setStarted] = useState(false)
+
+  const toggle = () => {
+    const a = el.current
+    if (!a) return
+    if (a.paused) a.play().catch(() => setPlaying(false))
+    else a.pause()
+  }
+
+  const onPlay = (e) => {
+    document.querySelectorAll('audio').forEach((other) => other !== e.target && other.pause())
+    setPlaying(true)
+    setStarted(true)
+  }
+
+  return (
+    <li>
+      <PopCard className="overflow-hidden">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
+          className="relative block aspect-video w-full bg-surface2"
+        >
+          {asset.previewUrl && (
+            <img src={asset.previewUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+          )}
+          <span
+            className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+              playing ? 'opacity-0 hover:opacity-100' : ''
+            }`}
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/60 text-white">
+              <Icon name={playing ? 'pause' : 'play'} size={24} />
+            </span>
+          </span>
+        </button>
+
+        <audio
+          ref={el}
+          src={asset.url}
+          preload="none"
+          controls={started}
+          className={started ? 'block w-full px-3 pt-3' : 'hidden'}
+          onPlay={onPlay}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+
+        <div className="flex items-center gap-3 p-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-body t-heading">{asset.title}</p>
+            <Credit asset={asset} />
+          </div>
+          {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
+          <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
+            {busy ? 'Saving…' : 'Save'}
+          </PopButton>
+        </div>
       </PopCard>
     </li>
   )
