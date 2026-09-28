@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 27 Sep 2026.
+Updated 28 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -5061,7 +5061,7 @@ publishing. `uploadAsset` in `src/lib/media.js` is the presign/PUT/confirm
 dance lifted out of `avatar.js`, which now calls it — the certificate would
 have been the second copy.
 
-## 39. Bhajans and e-books are real content — 27 Sep 2026
+## 39. Bhajans, e-books and mantras are real content — 27–28 Sep 2026
 
 **Live on `usgzgrdxlzgnehtbebzo`:** 37 bhajans and 5 e-books in
 `bhakti_assets`, files in the `namo-media` R2 bucket (`bhakti/bhajans/`,
@@ -5078,5 +5078,10 @@ Santmat), which is what the filter chips show. Verified through the live API.
 - **Loaded by a one-off script, not a committed seed.** Legacy ids are
   `bh-<slug>` / `eb-<slug>`, so a re-run upserts. The next batch belongs in the
   admin console.
+- **Mantras, 28 Sep:** a fifth Bhakti shelf (`bhakti 0003_mantra_kind`). Om
+  and Om Namah Shivay, `mn-<slug>`, files in `bhakti/mantras/`. Play asks "How
+  many times?" (1–1008) and `MantraRow` replays the clip on `ended` until the
+  count runs out, showing "Repeat n of N" with a Stop. The Gayatri Mantra
+  folder arrived empty and is not loaded.
 - **Open:** covers and thumbnails are the original 2–3 MB PNGs. Convert to
   WebP if the E-book tab is slow on a phone.

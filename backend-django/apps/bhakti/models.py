@@ -10,6 +10,7 @@ class Kind(models.TextChoices):
     TUNE = "tune", "Tune"
     BHAJAN = "bhajan", "Bhajan"
     EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
+    MANTRA = "mantra", "Mantra"  # a short clip the screen repeats a chosen number of times
 
 
 class BhaktiAsset(models.Model):
@@ -37,6 +38,7 @@ class BhaktiAsset(models.Model):
         TUNE = "tune", "Tune"
         BHAJAN = "bhajan", "Bhajan"
         EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
+        MANTRA = "mantra", "Mantra"  # a short clip the screen repeats a chosen number of times
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     kind = models.CharField(max_length=16, choices=Kind.choices)

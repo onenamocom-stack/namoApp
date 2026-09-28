@@ -130,7 +130,7 @@ class TestKindVocabulary:
     The surviving vocabulary is the check constraint's — the database
     refuses anything else, from any writer."""
 
-    @pytest.mark.parametrize("kind", ["status", "wallpaper", "tune", "bhajan", "ebook"])
+    @pytest.mark.parametrize("kind", ["status", "wallpaper", "tune", "bhajan", "ebook", "mantra"])
     def test_026_kinds_accepted(self, kind):
         row = make_asset(kind=kind)
         assert row.kind == kind
@@ -144,7 +144,7 @@ class TestKindVocabulary:
 
     def test_unknown_kind_refused(self):
         with pytest.raises(IntegrityError):
-            make_asset(kind="mantra")
+            make_asset(kind="podcast")
 
 
 @pytest.mark.django_db

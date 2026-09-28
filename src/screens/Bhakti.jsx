@@ -21,7 +21,7 @@ import { rupees, useStore } from '../store.jsx'
 /**
  * Bhakti — the devotional media library, in the slot the shrine used to hold.
  *
- * Four kinds, as circle tiles rather than a segmented control: the same
+ * Five kinds, as circle tiles rather than a segmented control: the same
  * `.tile` / `.tile-face` grammar as Consult's free-tools row, so the two
  * screens that offer "pick a thing to do" look like they were designed
  * together. WhatsApp status leads and opens by default — it is the thing
@@ -55,6 +55,7 @@ const KINDS = [
   { key: 'wallpaper', label: 'Wallpapers', icon: 'eye', help: 'Save it, then set it from your photo gallery.' },
   { key: 'tune', label: 'Tunes', icon: 'bell', help: 'Save it, then pick it in your phone’s sound settings.' },
   { key: 'bhajan', label: 'Bhajans', icon: 'pooja', help: 'Saves as an audio file you can play anywhere.' },
+  { key: 'mantra', label: 'Mantras', icon: 'sound', help: 'Tap play, say how many times, and it repeats that many.' },
   /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
      screen. It sits in this row anyway (25 Sep 2026): the row answers "pick
      a devotional thing to do", and the shrine is the one people came for.
@@ -63,7 +64,7 @@ const KINDS = [
   { key: 'darshan', label: 'Darshan', icon: 'pooja', to: '/darshan' },
 ]
 
-const isAudio = (kind) => kind === 'tune' || kind === 'bhajan'
+const isAudio = (kind) => kind === 'tune' || kind === 'bhajan' || kind === 'mantra'
 
 /**
  * Three banners, the same object Consult and Shop use: a gradient block with
@@ -313,7 +314,9 @@ export default function Bhakti() {
         ) : (
           <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
-              isAudio(kind) ? (
+              kind === 'mantra' ? (
+                <MantraRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
+              ) : isAudio(kind) ? (
                 <AudioRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : (
                 <PictureCard
@@ -445,6 +448,127 @@ function AudioRow({ asset, busy, onSave }) {
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}
+        />
+      </PopCard>
+    </li>
+  )
+}
+
+/**
+ * A mantra is chanted a counted number of times, so play asks for the count
+ * first and the clip repeats that many (asked for 28 Sep 2026). Pausing keeps
+ * the count; Stop drops it, and the next play asks again.
+ */
+function MantraRow({ asset, busy, onSave }) {
+  const el = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [asking, setAsking] = useState(false)
+  const [times, setTimes] = useState('')
+  const [total, setTotal] = useState(0)
+  const [left, setLeft] = useState(0) // plays still owed, this one included; 0 = no count running
+
+  const play = () => el.current?.play().catch(() => setPlaying(false))
+
+  const toggle = () => {
+    if (playing) return el.current.pause()
+    if (left > 0) return play()
+    setAsking((v) => !v)
+  }
+
+  const start = (e) => {
+    e.preventDefault()
+    const n = Math.floor(Number(times))
+    if (!(n >= 1 && n <= 1008)) return
+    setTotal(n)
+    setLeft(n)
+    setAsking(false)
+    el.current.currentTime = 0
+    play()
+  }
+
+  const stop = () => {
+    el.current.pause()
+    el.current.currentTime = 0
+    setLeft(0)
+  }
+
+  const ended = () => {
+    if (left > 1) {
+      setLeft(left - 1)
+      el.current.currentTime = 0
+      play()
+    } else {
+      setLeft(0)
+      setPlaying(false)
+    }
+  }
+
+  return (
+    <li>
+      <PopCard className="p-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
+            className="pill knob !h-11 !w-11 flex-none justify-center"
+          >
+            <Icon name={playing ? 'pause' : 'play'} size={18} />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-meta t-heading">{asset.title}</p>
+            {left > 0 ? (
+              <p className="caps-sm t-faint tnum">
+                Repeat {total - left + 1} of {total} ·{' '}
+                <button type="button" onClick={stop} className="underline">
+                  Stop
+                </button>
+              </p>
+            ) : (
+              <Credit asset={asset} />
+            )}
+          </div>
+
+          <div className="flex flex-none items-center gap-2">
+            <Price paise={asset.pricePaise} />
+            <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
+              {busy ? '…' : 'Save'}
+            </PopButton>
+          </div>
+        </div>
+
+        {asking && (
+          <form onSubmit={start} className="mt-3 flex items-center gap-2">
+            <label htmlFor={`times-${asset.id}`} className="caps-sm t-faint flex-none">
+              How many times?
+            </label>
+            <input
+              id={`times-${asset.id}`}
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="1008"
+              required
+              autoFocus
+              placeholder="e.g. 108"
+              value={times}
+              onChange={(e) => setTimes(e.target.value)}
+              className="w-full rounded-lg border border-stroke bg-surface px-3 py-2 text-body tnum placeholder-t-faint focus:border-ink focus:outline-none"
+            />
+            <PopButton type="submit" size="sm" full={false}>
+              Play
+            </PopButton>
+          </form>
+        )}
+
+        <audio
+          ref={el}
+          src={asset.url}
+          preload="none"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={ended}
         />
       </PopCard>
     </li>
