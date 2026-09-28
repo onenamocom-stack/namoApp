@@ -315,7 +315,7 @@ export default function Bhakti() {
           <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
               kind === 'bhajan' ? (
-                <BhajanCard key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
+                <BhajanCard key={a.id} asset={a} />
               ) : kind === 'mantra' ? (
                 <MantraRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : isAudio(kind) ? (
@@ -458,15 +458,25 @@ function AudioRow({ asset, busy, onSave }) {
 
 /**
  * A bhajan is a full track with its own artwork, so it gets the video-card
- * shape (28 Sep 2026): the 16:9 thumbnail, a play button over it, and once it
- * has started the browser's own controls underneath — a ten-minute track needs
- * a scrubber, and the native one is the one people already know. Starting one
- * pauses any other, because two bhajans at once is never what somebody meant.
+ * shape (28 Sep 2026): the 16:9 thumbnail, then the title with a heart and a
+ * play button — no download here, asked for the same day. Once it has started
+ * the browser's own controls appear under the picture, because a ten-minute
+ * track needs a scrubber. Starting one pauses any other.
+ *
+ * The heart is the feed's `like:<id>` reaction, so it is per account and
+ * survives a reload.
  */
-function BhajanCard({ asset, busy, onSave }) {
+function BhajanCard({ asset }) {
+  const { hasFlag, toggleFlag } = useStore()
   const el = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [started, setStarted] = useState(false)
+  // ponytail: stored as target_type 'content' because lib/reactions.js maps
+  // `like` to content and the server does not check the target exists. Give
+  // bhakti its own target_type (reactions CHECK + API deploy) before anything
+  // counts likes per type.
+  const likeKey = `like:${asset.id}`
+  const liked = hasFlag(likeKey)
 
   const toggle = () => {
     const a = el.current
@@ -484,25 +494,11 @@ function BhajanCard({ asset, busy, onSave }) {
   return (
     <li>
       <PopCard className="overflow-hidden">
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
-          className="relative block aspect-video w-full bg-surface2"
-        >
+        <div className="aspect-video w-full bg-surface2">
           {asset.previewUrl && (
             <img src={asset.previewUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
           )}
-          <span
-            className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-              playing ? 'opacity-0 hover:opacity-100' : ''
-            }`}
-          >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/60 text-white">
-              <Icon name={playing ? 'pause' : 'play'} size={24} />
-            </span>
-          </span>
-        </button>
+        </div>
 
         <audio
           ref={el}
@@ -520,10 +516,25 @@ function BhajanCard({ asset, busy, onSave }) {
             <p className="truncate text-body t-heading">{asset.title}</p>
             <Credit asset={asset} />
           </div>
-          {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
-          <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
-            {busy ? 'Saving…' : 'Save'}
-          </PopButton>
+          <button
+            type="button"
+            onClick={() => toggleFlag(likeKey)}
+            aria-pressed={liked}
+            aria-label={liked ? `Unlike ${asset.title}` : `Like ${asset.title}`}
+            className={`flex-none p-1 transition-transform duration-150 active:scale-90 ${
+              liked ? 'text-live' : 'text-t2 hover:text-t1'
+            }`}
+          >
+            <Icon name="heart" size={24} weight={1.8} filled={liked} />
+          </button>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
+            className="pill knob !h-11 !w-11 flex-none justify-center"
+          >
+            <Icon name={playing ? 'pause' : 'play'} size={18} />
+          </button>
         </div>
       </PopCard>
     </li>

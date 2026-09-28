@@ -5084,7 +5084,12 @@ Santmat), which is what the filter chips show. Verified through the live API.
   count runs out, showing "Repeat n of N" with a Stop. The Gayatri Mantra
   folder arrived empty and is not loaded.
 - **Bhajans are video cards, 28 Sep:** `BhajanCard` shows the 16:9 thumbnail
-  (`preview_url`) with a play button over it; once started, the native audio
-  controls appear under it for scrubbing, and starting one pauses any other.
-  Every thumbnail and cover was re-uploaded as a 1280px WebP (111 MB of PNG ->
-  8 MB) and `preview_url` repointed; the PNGs stay in R2, unreferenced.
+  (`preview_url`), then the title with a heart and a play button — no Save on
+  this shelf. Once started, the native audio controls appear for scrubbing,
+  and starting one pauses any other. The heart is the feed's `like:<id>`
+  reaction, so it persists per account — **stored as target_type `content`**,
+  because `lib/reactions.js` maps `like` to content and the server does not
+  check targets. Give bhakti its own target_type before counting likes by type.
+- **Open:** thumbnails and covers are still 2–3 MB PNGs on production. 1280px
+  WebPs (111 MB -> 8 MB) are built in the loader's scratch folder; running the
+  loader once uploads them and repoints `preview_url`.
