@@ -243,7 +243,8 @@ def _fill(rows, window):
     cursor = window["start"]
     while cursor < window["end"]:
         key = cursor.date()
-        labels.append(cursor.strftime("%b" if grain == "month" else "%-d %b"))
+        # Not "%-d": that flag is glibc/BSD only and raises on Windows.
+        labels.append(cursor.strftime("%b") if grain == "month" else f"{cursor.day} {cursor:%b}")
         values.append(found.get(key, 0))
         if grain == "month":
             month = cursor.month

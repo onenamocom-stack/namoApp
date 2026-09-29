@@ -63,6 +63,12 @@ npm run build                  # proves less than you think
 npm run lint                   # proves the part the build cannot
 ```
 
+**The working machine is Windows as of 29 Sep** (the Mac was retired). The
+Django venv is `backend-django\.venv\Scripts\python.exe`, not `.venv/bin/`;
+the gitignored Makefile still assumes the Mac. Never copy `node_modules` or a
+venv across machines — both carry platform binaries. Strftime's `%-d` raises
+on Windows; format the day number by hand.
+
 **Two Supabase projects, and never mix them.** Rules in
 `backend/INSTRUCTIONS.md` §3.
 
