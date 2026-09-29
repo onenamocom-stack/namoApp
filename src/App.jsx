@@ -158,6 +158,10 @@ function SessionGate() {
       // their own token and the money running — bouncing them to the
       // studio would hang up on somebody who is paying by the minute.
       if (pathname.startsWith('/call/')) return
+      // The two seeker screens this build carries on purpose: ProConsult
+      // opens /chart?name=… for a booking, ProProfile previews /consult/:id.
+      // Bounced to the studio from 20 Sep until 29 Sep.
+      if (pathname === '/chart' || pathname.startsWith('/consult/')) return
 
       const authStep =
         pathname.startsWith('/onboarding/name') ||
