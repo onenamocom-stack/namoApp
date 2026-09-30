@@ -480,6 +480,13 @@ Card order, fixed since 30 Sep 2026 (owner's): **face → name → shloka →
 looked at before anything explains them; the reading waits behind one tap. This
 reverses the order that put the shloka below the reading.
 
+**The Yes or No deck is its sheet and nothing more** (30 Sep 2026, owner's
+call): after *Reveal my reading* it shows the verdict, the sheet's sentence
+and the card's meaning — no *Where it lands*, no *What to do*, no closing line,
+and no *Still stuck* section under it. None of that was on the partner's sheet.
+The server does not call the model for this deck (`sheet_only` in
+`apps/ai/tarot_decks.py`); the pull is still counted and charged.
+
 Two free pulls a week, then **the wallet is charged for real** (price in
 `01-PRD.md` §4.2). Both the count and the price are the server's and arrive on
 the response; the header shows whichever is true. A short balance is a refusal

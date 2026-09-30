@@ -119,12 +119,16 @@ export default function Tarot() {
         )}
       </section>
 
-      <section className="border-t border-rule px-5 py-6">
-        <Kicker action={t('tarot.askStars')} to="/ask">
-          {t('tarot.stuck')}
-        </Kicker>
-        <p className="mt-2 text-meta t-body">{t('tarot.notDecide')}</p>
-      </section>
+      {/* Not under a yes/no answer: the partner's sheet is the whole of that
+          reading, and this was app copy, not the sheet (30 Sep 2026). */}
+      {deck?.key !== 'yesno' && (
+        <section className="border-t border-rule px-5 py-6">
+          <Kicker action={t('tarot.askStars')} to="/ask">
+            {t('tarot.stuck')}
+          </Kicker>
+          <p className="mt-2 text-meta t-body">{t('tarot.notDecide')}</p>
+        </section>
+      )}
 
       <div className="h-8" />
 
@@ -245,9 +249,13 @@ function Card({ card, reading, verdict, deck, tradition }) {
   /* The card wins wherever the deck has words of its own; the model fills
      the rest. The CONCLUSION is the model's on every deck — the only part
      that can turn on what was typed. */
-  const meaning = card.meaning || reading.meaning
-  const conclusion = reading.conclusion || card.conclusion
-  const todo = card.todo || reading.todo
+  /* The YES/NO deck is its sheet and nothing else (30 Sep 2026, owner's
+     call): verdict, its sentence, the meaning, the shloka. No model text,
+     no "where it lands", no "what to do" — none of it was on the sheet. */
+  const sheetOnly = deck.key === 'yesno'
+  const meaning = card.meaning || (sheetOnly ? null : reading.meaning)
+  const conclusion = sheetOnly ? null : reading.conclusion || card.conclusion
+  const todo = sheetOnly ? null : card.todo || reading.todo
 
   return (
     <>
@@ -352,7 +360,7 @@ function Card({ card, reading, verdict, deck, tradition }) {
             </div>
           )}
 
-          <p className="mt-6 text-center text-meta t-faint">{t('tarot.prompt')}</p>
+          {!sheetOnly && <p className="mt-6 text-center text-meta t-faint">{t('tarot.prompt')}</p>}
         </div>
       )}
     </>

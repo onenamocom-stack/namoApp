@@ -130,6 +130,17 @@ class TestDraw:
         assert wallet_services.balance_of(SEEKER) == 10000
         assert _ledger_rows(SEEKER) == 0  # refused before the ledger
 
+    def test_the_yes_no_deck_is_the_sheet_alone(self, monkeypatch):
+        # 30 Sep 2026: the partner's sheet is the whole yes/no reading, so the
+        # model is not asked — and the pull still counts.
+        monkeypatch.setattr(providers, "read_card",
+                            lambda *a: pytest.fail("the yes/no deck must not call the model"))
+        _wallet(SEEKER, 10000)
+        result = services.tarot_pull(SEEKER, "yesno", "")
+        assert result["ok"] is True and result["card"]["verdict"]
+        assert result["meaning"] is None and result["conclusion"] is None and result["todo"] is None
+        assert result["free_left"] == 1
+
     def test_an_unspoken_question_is_read_as_one(self, monkeypatch):
         # 30 Sep 2026: nothing is typed — the person thinks of a yes-or-no
         # question. The model is told exactly that, never an empty string.

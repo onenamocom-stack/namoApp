@@ -137,6 +137,10 @@ DECKS = {
         "tradition": "Classical",
         "reads": "verdict",     # third field is Yes / No / Maybe
         "cards": YESNO,
+        # The partner's sheet IS the reading for this deck (30 Sep 2026,
+        # owner's call): verdict, its sentence, the meaning and the shloka.
+        # Nothing the model wrote was on the sheet, so it is not asked.
+        "sheet_only": True,
     },
 }
 

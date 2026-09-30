@@ -530,6 +530,14 @@ def tarot_pull(profile_id, deck_key, question):
             charged = price
 
     card = tarot_decks.draw(deck_key)
+    if tarot_decks.DECKS[deck_key].get("sheet_only"):
+        # The card's own words are the whole reading; the screen prints them
+        # from src/data/. No model call, so nothing to fail or refund.
+        state = tarot_state(profile_id)
+        return {
+            "ok": True, "card": card, "meaning": None, "conclusion": None, "todo": None,
+            "free_left": state["free_left"], "charged_paise": charged, "price_paise": price,
+        }
     block = tarot.card_block(card, chart_block(_chart_for(profile_id)))
 
     try:
