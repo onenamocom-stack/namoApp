@@ -5143,3 +5143,11 @@ ends and the tab shows the offer again.
 SQLite with the ledger trigger emulated, not against a funded prod wallet);
 the chart, prediction and muhurat screens in a browser; the 402 → buy → reload
 loop on a phone.
+
+**Found on the way, not fixed:** `tests/test_analytics.py::TestSeries::test_traffic_carries_both_views_and_visits`
+fails for the first 5½ hours of every IST month — it failed CI on this push
+(00:02 IST, 1 Oct) and fails on `f302347` too, so it predates §40. "This
+month" is resolved in IST while events land on their UTC date, so an event
+written just after IST midnight on the 1st counts in the previous month. The
+dashboard's month-to-date charts have the same gap; the fix belongs in
+`apps/analytics/periods` or the series bucketing, not the test.
