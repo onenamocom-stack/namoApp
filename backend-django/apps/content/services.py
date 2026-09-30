@@ -46,7 +46,14 @@ from apps.profiles import services as profile_services
 from apps.reactions.models import Reaction
 
 from . import gateway
-from .models import MAX_TAGGED_PRODUCTS, Content, ContentProduct, Report, Review
+from .models import (
+    MAX_TAGGED_PRODUCTS,
+    Content,
+    ContentProduct,
+    ContentView,
+    Report,
+    Review,
+)
 
 # The two refusal sentences src/lib/content.js already shows. The server's
 # job is to make the interface's string true (INSTRUCTIONS §2, Errors) — the
@@ -300,6 +307,28 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
 
         referral_services.code_for(author_id, CodeKind.CONSULTANT)
     return row
+
+
+def record_view(content_id, viewer_id):
+    """Count this person once for this post; return the post's view count.
+
+    Only live, publicly visible content — a draft or a blocked author's reel
+    is a 404 here exactly as it is on the detail view. The author's own
+    views are not counted. The row and the counter move together, and the
+    unique index makes a double-send (two tabs, a retry) a no-op rather
+    than a second view."""
+    row = public_content().filter(pk=content_id).only("id", "author_id", "view_count").first()
+    if row is None:
+        raise NotFound("That post is not available.")
+    if str(row.author_id).replace("-", "") == str(viewer_id).replace("-", ""):
+        return row.view_count
+    try:
+        with transaction.atomic():
+            ContentView.objects.create(content_id=row.id, viewer_id=viewer_id)
+            Content.objects.filter(pk=row.id).update(view_count=F("view_count") + 1)
+    except IntegrityError:
+        pass  # already counted
+    return Content.objects.values_list("view_count", flat=True).get(pk=row.id)
 
 
 def attach_products(rows):

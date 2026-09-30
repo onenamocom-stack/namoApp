@@ -1082,6 +1082,26 @@ connects as the owner, which RLS does not bind. No earlier Django migration
 does this; whether the tables they created are open to PostgREST is
 unchecked, and HANDOFF carries it as an open finding.
 
+### 5.2b `content_views` — who has watched a reel (30 Sep 2026)
+
+```sql
+create table content_views (
+  id          uuid primary key,
+  content_id  uuid not null references content(id) on delete cascade,
+  viewer_id   uuid not null,
+  created_at  timestamptz not null default now(),
+  constraint content_views_once unique (content_id, viewer_id)
+);
+alter table content_views enable row level security;  -- no policies
+```
+
+Migration `content/0004_content_views`. `POST /v1/content/<id>/view/`
+(signed in) inserts a row and bumps `content.view_count` in one transaction —
+the owner that column was waiting for. **One per person per reel, ever**: the
+number is people, not plays. The author is not counted, anonymous viewers are
+not counted, hidden content is a 404. The app sends it after a reel has been
+on screen for two seconds.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

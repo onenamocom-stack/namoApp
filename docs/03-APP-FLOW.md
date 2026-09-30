@@ -228,7 +228,13 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 | Card | Actions |
 |---|---|
 | Post | Like · Reply (toast) · Share (toast) · Save. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
-| Reel | → `/reels/:id` · Like · Save. A tagged product → `/shop?p=<id>&ref=…` |
+| Reel | → `/reels/:id` · Like · Reply (toast) · Share (share sheet / copy) · Save · views. A tagged product → `/shop?p=<id>&ref=…` |
+
+Home's three tabs are labelled **Reels · आज का पंचांग · आज के दर्शन** (30 Sep;
+keys and URLs unchanged). No stories strip, no dates on posts. In
+`/reels/:id` there is no position counter, and the chips under the author are
+the reel's tagged products — "Book a session" was removed from there.
+`/bhakti` has no header tag and its search sits above the tiles.
 | Reading | *Read all* → horoscope overlay |
 | Panchang | *Full chart* → `/chart` |
 | Article | → `/read/:id` · Save |

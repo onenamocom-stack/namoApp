@@ -11,6 +11,7 @@ urlpatterns = [
     path("follow-counts/", views.follow_counts, name="content-follow-counts"),
     path("authors/<uuid:profile_id>/", views.author, name="content-author"),
     path("<uuid:content_id>/remove/", views.remove, name="content-remove"),
+    path("<uuid:content_id>/view/", views.record_view, name="content-view"),
     path("<uuid:content_id>/report/", views.report_content, name="content-report"),
     path("authors/<uuid:profile_id>/report/", views.report_profile,
          name="content-report-author"),

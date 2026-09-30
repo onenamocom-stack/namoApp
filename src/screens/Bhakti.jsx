@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
-import { PopButton, PopCard, PopTag } from '../components/Pop.jsx'
+import { PopButton, PopCard } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
 import {
   composeStatus,
@@ -170,7 +170,16 @@ export default function Bhakti() {
 
   return (
     <>
-      <TabHeader action={<PopTag tone="gold">Bhakti</PopTag>} />
+      {/* No "Bhakti" tag in the header since 30 Sep — the tab bar already
+          names the screen. Search leads, above the tiles (owner's call). */}
+      <TabHeader />
+
+      <Search
+        value={query}
+        onChange={setQuery}
+        placeholder={`Search ${meta ? meta.label.toLowerCase() : 'bhakti'}`}
+        label="Search bhakti"
+      />
 
       {/* Circle tiles, not a segmented control — same grammar as Consult's
           free-tools row, because both answer "pick a thing to do". */}
@@ -254,13 +263,6 @@ export default function Bhakti() {
           })}
         </div>
       </div>
-
-      <Search
-        value={query}
-        onChange={setQuery}
-        placeholder={`Search ${meta ? meta.label.toLowerCase() : 'bhakti'}`}
-        label="Search bhakti"
-      />
 
       {deities.length > 1 && (
         <div className="rail mt-3 gap-1.5 px-4">

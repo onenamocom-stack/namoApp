@@ -159,6 +159,15 @@ def publish(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def record_view(request, content_id):
+    """The reel on screen was watched by this person. Once per person per
+    reel, ever (ContentView); returns the post's view count."""
+    views = services.record_view(content_id, request.user.pk)
+    return Response({"views": views})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def remove(request, content_id):
     """Soft delete, owner-scoped (admin excepted). Never a DELETE — a removed
     post in a dispute is evidence (020)."""

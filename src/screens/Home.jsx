@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed, productHref } from '../lib/content.js'
+import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
@@ -38,10 +39,13 @@ const SOURCES = {
 /** `content.kind` in the database → which card renders it. */
 const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
 
+/* Hindi names since 30 Sep, on the owner's call — the first audience reads
+   Hindi. The keys, and so the URLs, are unchanged. "Reels" stays English
+   because that is the word Hindi speakers use for them. */
 const TABS = [
-  { key: 'feed', label: 'Feed' },
-  { key: 'today', label: 'Today' },
-  { key: 'darshan', label: 'Darshan' },
+  { key: 'feed', label: 'Reels' },
+  { key: 'today', label: 'आज का पंचांग' },
+  { key: 'darshan', label: 'आज के दर्शन' },
 ]
 
 /**
@@ -121,11 +125,6 @@ export default function Home() {
      approximating. */
   const items = [...real, ...stillMock]
 
-  /* The stories strip: each author once, in the order the feed dealt them. */
-  const authors = published.filter(
-    (c, i) => c.authorId && published.findIndex((d) => d.authorId === c.authorId) === i,
-  )
-
   if (!known) return <Navigate to="/home" replace />
   if (tab === 'darshan') return null // the effect above is already leaving
 
@@ -162,10 +161,9 @@ export default function Home() {
         ) : (
           <>
             {/* White, full bleed, no gutters — the feed is a column of posts
-                edge to edge, as Instagram's is, under a strip of the people
-                in it. */}
+                edge to edge, as Instagram's is. The stories strip of authors
+                that sat on top was removed on 30 Sep (owner's call). */}
             <div className="mt-3 bg-white">
-              <Stories people={authors} />
               {items.map((item) => {
                 switch (item.kind) {
                   case 'post':
@@ -225,47 +223,15 @@ function RingAvatar({ initials, size = 32, ring = true }) {
   )
 }
 
-/** "Dr. Nandita Rao" → "Nandita". A title is not what a story circle says. */
-function firstName(full) {
-  const words = (full || '').split(' ').filter(Boolean)
-  const name = words.find((w) => !/^(dr|pt|pandit|acharya|shri|sri|smt|mr|mrs|ms)\.?$/i.test(w))
-  return name || words[0] || ''
-}
-
-/**
- * The strip across the top — everyone with something in the feed, once
- * each, in feed order. A circle opens that person's page; there are no
- * ephemeral stories behind it, so it goes where their name would.
- */
-function Stories({ people }) {
-  if (!people.length) return null
-  return (
-    <div className="no-scrollbar flex gap-4 overflow-x-auto border-b border-rule bg-white px-4 py-3">
-      {people.map((p) => (
-        <Link
-          key={p.authorId}
-          to={authorHref(p)}
-          className="flex w-[68px] flex-none flex-col items-center gap-1.5 transition-transform active:scale-95"
-        >
-          <RingAvatar initials={p.initials} size={56} />
-          <span className="w-full truncate text-center text-[11px] text-t2">
-            {firstName(p.consultant)}
-          </span>
-        </Link>
-      ))}
-    </div>
-  )
-}
-
-/** Post header: ringed avatar, bold name · time, an optional tag, and ⋯. */
-function PostHead({ initials, name, time, to, note, tag, onMore, moreLabel }) {
+/** Post header: ringed avatar, bold name, an optional tag, and ⋯. No date —
+ *  removed 30 Sep on the owner's call; a reel reads as current. */
+function PostHead({ initials, name, to, note, tag, onMore, moreLabel }) {
   const who = (
     <>
       <RingAvatar initials={initials} size={30} />
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-meta">
           <span className="font-semibold text-t1">{name}</span>
-          {time && <span className="text-t3 tnum"> · {time}</span>}
         </span>
         {note && <span className="block truncate text-[11px] text-t3">{note}</span>}
       </span>
@@ -295,7 +261,9 @@ function PostHead({ initials, name, time, to, note, tag, onMore, moreLabel }) {
   )
 }
 
-/** One icon in the action row. `on` fills it; the heart goes saffron. */
+/** One icon in the action row. `on` fills it; the heart goes saffron. At
+ *  rest the icons are the light slate (`--text-3`), not black — asked for
+ *  on 30 Sep; the row should sit back behind the picture. */
 function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
   return (
     <button
@@ -304,7 +272,7 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
       aria-label={on && onLabel ? onLabel : label}
       aria-pressed={onLabel ? on : undefined}
       className={`-m-1.5 p-1.5 transition-transform active:scale-90 ${
-        on && tone ? tone : 'text-t1 hover:text-t2'
+        on && tone ? tone : 'text-t3 hover:text-t2'
       }`}
     >
       <Icon name={icon} size={25} weight={1.7} filled={on} />
@@ -339,7 +307,7 @@ function ActionRow({ id, like = true, onComment, onShare }) {
         label="Save"
         onLabel="Saved"
         on={hasFlag(`save:${id}`)}
-        tone="text-t1"
+        tone="text-t2"
         onClick={() =>
           toggleFlag(`save:${id}`, {
             on: 'Saved to your reading list',
@@ -356,18 +324,24 @@ function ActionRow({ id, like = true, onComment, onShare }) {
  * "more". The count is the view's aggregate plus your own un-saved tap, so it
  * moves the instant you press and still agrees with the database on reload.
  */
-function Caption({ id, likes, name, to, text }) {
+function Caption({ id, likes, views, name, to, text }) {
   const { hasFlag } = useStore()
   const [open, setOpen] = useState(false)
   const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
   const long = (text || '').length > 110
+  /* Views: shown once there are any. The API counts one per signed-in
+     viewer; before it was deployed every reel read 0, and "0 views" on
+     every reel would have been a statement about the counter, not the
+     reel. */
+  const counts = [
+    count > 0 && `${count.toLocaleString('en-IN')} ${count === 1 ? 'like' : 'likes'}`,
+    views > 0 && `${views.toLocaleString('en-IN')} ${views === 1 ? 'view' : 'views'}`,
+  ].filter(Boolean)
 
   return (
     <div className="px-3 pb-4 pt-2">
-      {count != null && count > 0 && (
-        <p className="text-meta font-semibold text-t1 tnum">
-          {count.toLocaleString('en-IN')} {count === 1 ? 'like' : 'likes'}
-        </p>
+      {counts.length > 0 && (
+        <p className="text-meta font-semibold text-t1 tnum">{counts.join(' · ')}</p>
       )}
       {text && (
         <p className={`mt-1 text-meta text-t1 ${long && !open ? 'line-clamp-2' : ''}`}>
@@ -473,7 +447,6 @@ function PostCard({ post: p }) {
       <PostHead
         initials={p.initials}
         name={p.consultant}
-        time={p.time}
         to={authorHref(p)}
         onMore={() => setReporting(true)}
         moreLabel="Report this post"
@@ -495,7 +468,12 @@ function PostCard({ post: p }) {
       <ActionRow
         id={p.id}
         onComment={() => showToast('Replies — prototype only')}
-        onShare={() => showToast('Note copied')}
+        // A post has no page of its own, so Share sends the author's —
+        // until 30 Sep this toasted "Note copied" and copied nothing.
+        onShare={async () => {
+          const said = await shareLink(authorHref(p), { title: p.consultant })
+          if (said) showToast(said)
+        }}
       />
       <Caption
         id={p.id}
@@ -511,11 +489,12 @@ function PostCard({ post: p }) {
 }
 
 function ReelCard({ reel: r }) {
+  const { showToast } = useStore()
   const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
 
   return (
     <article className="border-b border-rule bg-white">
-      <PostHead initials={r.initials} name={r.consultant} time={r.time} to={authorHref(r)} />
+      <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} />
 
       <Link to={`/reels/${r.id}`} className="group relative block">
         <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
@@ -550,10 +529,18 @@ function ReelCard({ reel: r }) {
       {/* No duration and no audio credit: both were mock strings on a Plate
           that plays nothing. No Share either — a reel never had one, and a
           toast claiming a copied link that was not copied would be a lie. */}
-      <ActionRow id={r.id} />
+      <ActionRow
+        id={r.id}
+        onComment={() => showToast('Replies — prototype only')}
+        onShare={async () => {
+          const said = await shareLink(`/reels/${r.id}`, { title: r.consultant })
+          if (said) showToast(said)
+        }}
+      />
       <Caption
         id={r.id}
         likes={r.likes}
+        views={r.views}
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
@@ -724,7 +711,6 @@ function ArticleCard({ read: b }) {
       <PostHead
         initials={b.initials}
         name={b.consultant}
-        time={b.time}
         note="published an article"
         to={authorHref(b)}
       />

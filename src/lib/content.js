@@ -196,6 +196,22 @@ export async function apiSupportsTags() {
   }
 }
 
+/**
+ * This person watched this reel. Counted once per person ever, server-side
+ * (ContentView); returns the new count, or null when there is no session or
+ * the API predates view counting — a failed count must not interrupt a reel.
+ */
+export async function recordView(contentId) {
+  const token = await accessToken()
+  if (!token) return null
+  try {
+    const data = await api(`/content/${contentId}/view/`, { method: 'POST', token })
+    return data?.views ?? null
+  } catch {
+    return null
+  }
+}
+
 /** One person's published work — their profile tab and the studio list. */
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const rows = await api(`/content/by-author/?author_id=${authorId}&limit=${limit}`)

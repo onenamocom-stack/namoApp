@@ -19,8 +19,10 @@ from .test_content import (  # noqa: F401 — fixtures are used by name
     _publish,
     _set_consultant_status,
     admin_token,
+    auth,
     content_tables,
     roster,
+    second_seeker_token,
     seeker_token,
 )
 
@@ -188,3 +190,45 @@ class TestReading:
         _set_consultant_status(APPROVED, "pending")
         assert api_client.get(f"/v1/content/{cid}/").status_code == 404
         assert api_client.get("/v1/content/feed/").json()["results"] == []
+
+
+# ── views (ContentView, once per person) ───────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestViews:
+    def _reel(self, api_client, consultant_token):
+        response = _publish(
+            api_client, consultant_token, kind="clip", caption="watch",
+            media_url="https://x/reel.mp4",
+        )
+        return response.json()["id"]
+
+    def _view(self, api_client, token, cid):
+        return api_client.post(f"/v1/content/{cid}/view/", **auth(token))
+
+    def test_one_person_counts_once(
+        self, api_client, consultant_token, seeker_token, second_seeker_token, roster
+    ):
+        cid = self._reel(api_client, consultant_token)
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
+        # Replaying, scrolling back, a second tab: still one person.
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
+        assert self._view(api_client, second_seeker_token, cid).json() == {"views": 2}
+        row = api_client.get("/v1/content/feed/").json()["results"][0]
+        assert row["view_count"] == 2
+
+    def test_author_does_not_count(self, api_client, consultant_token, roster):
+        cid = self._reel(api_client, consultant_token)
+        assert self._view(api_client, consultant_token, cid).json() == {"views": 0}
+
+    def test_needs_a_session(self, api_client, consultant_token, roster):
+        cid = self._reel(api_client, consultant_token)
+        assert api_client.post(f"/v1/content/{cid}/view/").status_code == 401
+
+    def test_hidden_content_is_a_404(
+        self, api_client, consultant_token, seeker_token, roster
+    ):
+        cid = self._reel(api_client, consultant_token)
+        _set_consultant_status(APPROVED, "pending")
+        assert self._view(api_client, seeker_token, cid).status_code == 404

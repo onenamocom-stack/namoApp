@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { fetchFeed } from '../lib/content.js'
+import { fetchFeed, productHref, recordView } from '../lib/content.js'
+import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
 import ReportSheet from './ReportSheet.jsx'
@@ -160,6 +161,23 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   const saved = hasFlag(`save:${c.id}`)
   const following = hasFlag(`follow:${c.consultantId}`)
 
+  /* A view is two seconds on screen, not a frame. Opening a reel link makes
+     the FIRST reel active for an instant before the scroll lands on the
+     tapped one, and a swipe passes through reels nobody watched — counting
+     on `active` alone recorded both. The server counts a person once, ever,
+     so a later visit re-sending is harmless; the ref saves the request while
+     the reel stays mounted. */
+  const [views, setViews] = useState(c.views ?? 0)
+  const counted = useRef(false)
+  useEffect(() => {
+    if (!active || counted.current) return undefined
+    const t = setTimeout(() => {
+      counted.current = true
+      recordView(c.id).then((n) => n != null && setViews(n))
+    }, 2000)
+    return () => clearTimeout(t)
+  }, [active, c.id])
+
   return (
     <section className="relative h-full snap-start snap-always overflow-hidden">
       {/* The media, edge to edge. Tapping it toggles playback — the only
@@ -244,7 +262,11 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           icon="share"
           label="Share"
           tone="plain"
-          onClick={() => showToast('Reel link copied')}
+          onClick={async () => {
+            // Real now — this toasted "Reel link copied" and copied nothing.
+            const said = await shareLink(`/reels/${c.id}`, { title: c.consultant })
+            if (said) showToast(said)
+          }}
         />
         <RailAct
           icon="bookmark"
@@ -297,21 +319,45 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
         </div>
 
         <p className="mt-3 text-meta leading-snug text-white">{c.caption}</p>
-        <p className="mt-1.5 text-[11px] uppercase tracking-[0.08em] text-white/60">{c.time}</p>
+        {/* Views, not the date (30 Sep, owner's call). Shown once there are
+            any — before the API counted, every reel would have read 0. */}
+        {views > 0 && (
+          <p className="mt-1.5 text-[11px] font-semibold text-white/75 tnum">
+            {views.toLocaleString('en-IN')} {views === 1 ? 'view' : 'views'}
+          </p>
+        )}
 
-        {/* The commercial hook. Small and inline — a full-width block here
-            would cover the thing you came to watch. */}
-        <div className="mt-3 flex items-center gap-2">
-          <Link
-            to={`/consult/${c.consultantId}`}
-            className="rounded-xl bg-white px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-ink shadow-md transition-transform active:scale-95"
-          >
-            Book a session
-          </Link>
-          <span className="text-[10px] uppercase tracking-[0.08em] text-white/45">
-            {isLast ? 'Last reel' : 'Swipe up'}
-          </span>
-        </div>
+        {/* The commercial hook is the products the author tagged on THIS
+            reel, not "Book a session" (30 Sep, owner's call). Each chip opens
+            the product in the shop with the author's code. Small and inline —
+            a full-width block here would cover the thing you came to watch.
+            A reel with no tags shows nothing here. */}
+        {c.products?.length > 0 && (
+          <div className="no-scrollbar -mr-20 mt-3 flex gap-2 overflow-x-auto pr-20">
+            {c.products.map((pr) => (
+              <Link
+                key={pr.id}
+                to={productHref(pr, c.shopRef)}
+                className="flex max-w-[210px] flex-none items-center gap-2 rounded-xl bg-white/95 py-1.5 pl-1.5 pr-3 shadow-md transition-transform active:scale-95"
+              >
+                {pr.image ? (
+                  <img src={pr.image} alt="" className="h-9 w-9 flex-none rounded-lg object-cover" />
+                ) : (
+                  <Plate seed={pr.id} className="h-9 w-9 flex-none !rounded-lg" />
+                )}
+                <span className="min-w-0 leading-tight">
+                  <span className="block truncate text-[12px] font-semibold text-ink">{pr.name}</span>
+                  <span className="block text-[12px] font-semibold text-gold tnum">
+                    ₹{pr.price.toLocaleString('en-IN')}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+        {isLast && (
+          <p className="mt-2 text-[10px] uppercase tracking-[0.08em] text-white/45">Last reel</p>
+        )}
       </div>
 
       <ReportSheet

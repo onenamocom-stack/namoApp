@@ -138,6 +138,33 @@ class ContentProduct(models.Model):
         ]
 
 
+class ContentView(models.Model):
+    """One signed-in person has watched this reel (30 Sep 2026).
+
+    `content.view_count` is the count of these rows, kept by the server in
+    the same transaction as the insert — which is what finally gives that
+    column an owner (020 left it at 0 "until something server-side owns
+    it"). One row per person per reel, ever: replaying, scrolling back and
+    reloading are not new views, so the number is people, not plays, and
+    nobody can raise it by sitting on a reel. The author watching their own
+    reel is not recorded. Anonymous viewers are not counted — there is no
+    identity to de-duplicate on.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content = models.ForeignKey(
+        Content, on_delete=models.CASCADE, db_column="content_id", related_name="views",
+    )
+    viewer_id = models.UUIDField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "content_views"
+        constraints = [
+            models.UniqueConstraint(fields=["content", "viewer_id"], name="content_views_once"),
+        ]
+
+
 class ReviewStatus(models.TextChoices):
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"
