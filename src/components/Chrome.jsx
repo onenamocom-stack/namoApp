@@ -275,7 +275,9 @@ export function TopBar({
           )}
         </div>
         <div className="min-w-0 text-center">
-          <p className="label truncate">{title}</p>
+          {/* The screen's name is a heading, not a label — near-black and
+              bold, as Sri Mandir's header titles are. */}
+          <p className="label truncate font-bold !text-t1">{title}</p>
           {sub && <p className="mt-0.5 truncate text-micro uppercase tracking-caps text-t3">{sub}</p>}
         </div>
         <div className="flex items-center justify-end pr-4">{right}</div>

@@ -75,10 +75,16 @@ against*:
 
 | Token | Value | On the page | Use |
 |---|---|---|---|
-| `--text` | `#1f1f1f` | 15.5:1 | Headings |
-| `--text-2` | `#4a4a4a` | 8.2:1 | Body |
-| `--text-3` | `#6b6b6b` | 4.9:1 | The readable floor |
-| `--text-4` | `#b3b3b8` | 2.0:1 | **Non-text only** — ticks, rules, spokes, placeholders |
+| `--text` | `#1b1b1f` | 16:1 | Headings |
+| `--text-2` | `#505866` | 6.9:1 | Body and paragraphs — slate, as Sri Mandir's are |
+| `--text-3` | `#687080` | 4.8:1 | The readable floor |
+| `--text-4` | `#b5bac4` | 2.0:1 | **Non-text only** — ticks, rules, spokes, placeholders |
+
+The opacity ladder is solid slate now: `.t-heading` = `--text`, `.t-sub`
+`#3f4653`, `.t-body` = `--text-2`, `.t-faint` `#858c99` (3.3:1, asides only).
+A `Kicker` (a section heading like "Today's reading") is `.t-heading`;
+`.label` (section labels, key/value keys) is `--gold` at 600; the top bar's
+screen title is `--text`, bold.
 
 **Saffron**, the only accent. The token names stay `--gold*`: they are read
 by dozens of call sites, and the name has meant "the one voltage" since the
@@ -250,8 +256,8 @@ through the labels.
 (700 / −0.02em — the Tailwind utility only sets family, the *look* lives here) ·
 `.caps` (11px/700/0.1em) · `.caps-sm` (10px/700/0.1em)
 
-**Ink ladder**, opacity rather than extra colours — `.t-heading` .95 · `.t-sub`
-.74 · `.t-body` .60 · `.t-faint` .45 · `.gold`
+**Text ladder** (§2.1) — `.t-heading` · `.t-sub` · `.t-body` · `.t-faint` ·
+`.gold`
 **On ink** — `.on-ink` .95 · `.on-ink-sub` .72 · `.on-ink-faint` .48
 
 **Structure** — `.section` · `.section-tight` · `.rule-b` · `.rule-t` ·

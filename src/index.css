@@ -58,11 +58,13 @@
   --hi-ink: rgba(255, 255, 255, 0.14); /* highlight on a dark one  */
   --lo: rgba(17, 17, 17, 0.1); /* the shade under a lip            */
 
-  /* Charcoal type, measured against the grey page (#f6f6f8). */
-  --text: #1f1f1f; /* 15.5:1 on the page                            */
-  --text-2: #4a4a4a; /*  8.2:1 — body                                  */
-  --text-3: #6b6b6b; /*  4.9:1 — the floor for anything readable       */
-  --text-4: #b3b3b8; /*  2.0:1 — NON-TEXT ONLY: ticks, rules, spokes   */
+  /* Sri Mandir's type colours, measured against the grey page (#f6f6f8):
+     near-black headings over SLATE body copy — a blue-grey paragraph reads
+     softer under a black headline than a neutral grey does. */
+  --text: #1b1b1f; /* 16:1 on the page — headings                   */
+  --text-2: #505866; /*  6.9:1 — body and paragraphs                  */
+  --text-3: #687080; /*  4.8:1 — meta; the floor for anything readable */
+  --text-4: #b5bac4; /*  2.0:1 — NON-TEXT ONLY: ticks, rules, spokes   */
 
   /* The single voltage: Sri Mandir's saffron. The two-token split is the
      load-bearing part — one value dark enough to read as text, one bright
@@ -159,8 +161,11 @@
 @layer components {
   /* ── Type roles ───────────────────────────────────────────────────────── */
 
+  /* Labels — section labels and the key side of a key/value row — are the
+     burnt orange, as Sri Mandir sets its date and place lines. */
   .label {
-    @apply text-label uppercase tracking-label text-t2;
+    @apply text-label uppercase tracking-label text-gold;
+    font-weight: 600;
   }
 
   .label-c {
@@ -209,19 +214,20 @@
     letter-spacing: 0.1em;
   }
 
-  /* The hierarchy ladder. On a light canvas these are ink at four opacities —
-     the same mechanic as the dark build, inverted. */
+  /* The hierarchy ladder: a near-black heading, then three slate steps —
+     the same family as `--text-2`, so a card's title and its paragraph read
+     as one voice at two volumes. */
   .t-heading {
-    color: rgba(17, 17, 17,0.95);
+    color: var(--text);
   }
   .t-sub {
-    color: rgba(17, 17, 17,0.74);
+    color: #3f4653;
   }
   .t-body {
-    color: rgba(17, 17, 17,0.6);
+    color: var(--text-2);
   }
   .t-faint {
-    color: rgba(17, 17, 17,0.45);
+    color: #858c99; /* 3.3:1 — timestamps and asides, as before */
   }
   .gold {
     color: var(--gold);

@@ -88,7 +88,7 @@ export function PopButton({
 export function Kicker({ children, action, onAction, to, className = '' }) {
   return (
     <div className={`flex items-baseline justify-between gap-4 ${className}`}>
-      <p className="caps t-body">{children}</p>
+      <p className="caps t-heading">{children}</p>
       {action &&
         (to ? (
           <Link to={to} className="caps-sm gold">
