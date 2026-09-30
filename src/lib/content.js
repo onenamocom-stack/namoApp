@@ -119,6 +119,7 @@ function shape(row) {
     views: row.view_count,
     likes: row.like_count,
     saves: row.save_count,
+    comments: row.comment_count ?? 0,
     publishedAt: row.published_at,
     time: ago(row.published_at),
     // Shop products the author tagged, and the author's A code for the link.
@@ -194,6 +195,49 @@ export async function apiSupportsTags() {
   } catch {
     return false
   }
+}
+
+/** A comment row as the sheet renders it. */
+function shapeComment(c) {
+  return {
+    id: c.id,
+    authorId: c.author_id,
+    name: c.author_name || 'Someone',
+    initials: (c.author_name || '?')
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase(),
+    body: c.body,
+    time: ago(c.created_at),
+  }
+}
+
+/** A post's comments, oldest first. Anonymous, like the feed. */
+export async function fetchComments(contentId) {
+  const rows = await api(`/content/${contentId}/comments/`)
+  return (rows ?? []).map(shapeComment)
+}
+
+/** Comment as the signed-in person; returns the new row. */
+export async function postComment(contentId, body) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in to comment')
+  const row = await api(`/content/${contentId}/comments/`, {
+    method: 'POST',
+    body: { body },
+    token,
+  })
+  return shapeComment(row)
+}
+
+/** Remove a comment: your own, or any on your own post. */
+export async function removeComment(commentId) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in first')
+  await api(`/content/comments/${commentId}/remove/`, { method: 'POST', token })
 }
 
 /**

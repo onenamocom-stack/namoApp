@@ -165,6 +165,55 @@ class ContentView(models.Model):
         ]
 
 
+MAX_COMMENT_CHARS = 1000
+
+
+class CommentStatus(models.TextChoices):
+    LIVE = "live", "Live"
+    REMOVED = "removed", "Removed"
+
+
+class Comment(models.Model):
+    """A comment on a post or reel (30 Sep 2026).
+
+    Until this table the comment icon toasted "Replies — prototype only".
+    Anyone signed in and not blocked may comment on anything publicly
+    visible. Removal is a status, never a DELETE — the same rule as content,
+    because a removed comment in a dispute is evidence. The commenter, the
+    post's author and an admin may remove one; nobody may edit one, so what
+    a reply answered cannot change under it.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content = models.ForeignKey(
+        Content, on_delete=models.CASCADE, db_column="content_id", related_name="comments",
+    )
+    author_id = models.UUIDField()
+    body = models.TextField()
+    status = models.CharField(
+        max_length=16, choices=CommentStatus.choices, default=CommentStatus.LIVE
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    Status = CommentStatus
+
+    class Meta:
+        db_table = "content_comments"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=CommentStatus.values),
+                name="content_comments_status_check",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["content", "created_at"],
+                name="content_comments_thread_idx",
+                condition=models.Q(status="live"),
+            ),
+        ]
+
+
 class ReviewStatus(models.TextChoices):
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"

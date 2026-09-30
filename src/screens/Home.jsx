@@ -7,6 +7,7 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
+import CommentSheet from '../components/CommentSheet.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
@@ -204,8 +205,8 @@ export default function Home() {
    the like count, then "name caption". The colours stay the app's own —
    saffron for a liked heart and the story ring, green in the ring and on
    the call-to-action strips. What each action DOES is unchanged: likes and
-   saves are the same durable `like:`/`save:` flags, Reply and Share the same
-   toasts, Report the same sheet. */
+   saves are the same durable `like:`/`save:` flags and Report the same sheet;
+   comments open CommentSheet and Share is a real share (both since 30 Sep). */
 
 /** The story-ring avatar: saffron into green, a white gap, then the face. */
 function RingAvatar({ initials, size = 32, ring = true }) {
@@ -285,8 +286,7 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
 
 /**
  * Heart, comment, share — and save on the right. Like and Save are the
- * durable flags; Comment and Share are the same toasts the old text row
- * fired. `like` is left out for items that never had one.
+ * durable flags; Comment opens the thread and Share shares. `like` is left out for items that never had one.
  */
 function ActionRow({ id, like = true, onComment, onShare }) {
   const { hasFlag, toggleFlag } = useStore()
@@ -327,7 +327,7 @@ function ActionRow({ id, like = true, onComment, onShare }) {
  * "more". The count is the view's aggregate plus your own un-saved tap, so it
  * moves the instant you press and still agrees with the database on reload.
  */
-function Caption({ id, likes, views, name, to, text }) {
+function Caption({ id, likes, views, name, to, text, comments = 0, onComments }) {
   const { hasFlag } = useStore()
   const [open, setOpen] = useState(false)
   const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
@@ -357,6 +357,11 @@ function Caption({ id, likes, views, name, to, text }) {
       {long && !open && (
         <button type="button" onClick={() => setOpen(true)} className="mt-0.5 text-meta text-t3">
           more
+        </button>
+      )}
+      {comments > 0 && onComments && (
+        <button type="button" onClick={onComments} className="mt-1 block text-meta text-t3">
+          {comments === 1 ? 'View 1 comment' : `View all ${comments.toLocaleString('en-IN')} comments`}
         </button>
       )}
     </div>
@@ -436,6 +441,8 @@ function ProductStrip({ tagged = [], shopRef }) {
 function PostCard({ post: p }) {
   const { showToast } = useStore()
   const [reporting, setReporting] = useState(false)
+  const [commenting, setCommenting] = useState(false)
+  const [comments, setComments] = useState(p.comments ?? 0)
   const text = p.body || p.caption
   /* A plain note has no media. Instagram's answer is a text tile — the words
      set large on colour, square — which keeps the rhythm of the grid of
@@ -470,7 +477,7 @@ function PostCard({ post: p }) {
 
       <ActionRow
         id={p.id}
-        onComment={() => showToast('Replies — prototype only')}
+        onComment={() => setCommenting(true)}
         // A post has no page of its own, so Share sends the author's —
         // until 30 Sep this toasted "Note copied" and copied nothing.
         onShare={async () => {
@@ -484,15 +491,26 @@ function PostCard({ post: p }) {
         name={p.consultant}
         to={authorHref(p)}
         text={tile ? null : text}
+        comments={comments}
+        onComments={() => setCommenting(true)}
       />
 
       <ReportSheet open={reporting} onClose={() => setReporting(false)} contentId={p.id} />
+      <CommentSheet
+        open={commenting}
+        onClose={() => setCommenting(false)}
+        contentId={p.id}
+        postAuthorId={p.authorId}
+        onCount={setComments}
+      />
     </article>
   )
 }
 
 function ReelCard({ reel: r }) {
   const { showToast } = useStore()
+  const [commenting, setCommenting] = useState(false)
+  const [comments, setComments] = useState(r.comments ?? 0)
   const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
 
   return (
@@ -530,11 +548,10 @@ function ReelCard({ reel: r }) {
       <ProductStrip tagged={r.products} shopRef={r.shopRef} />
 
       {/* No duration and no audio credit: both were mock strings on a Plate
-          that plays nothing. No Share either — a reel never had one, and a
-          toast claiming a copied link that was not copied would be a lie. */}
+          that plays nothing. */}
       <ActionRow
         id={r.id}
-        onComment={() => showToast('Replies — prototype only')}
+        onComment={() => setCommenting(true)}
         onShare={async () => {
           const said = await shareLink(`/reels/${r.id}`, { title: r.consultant })
           if (said) showToast(said)
@@ -547,6 +564,15 @@ function ReelCard({ reel: r }) {
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
+        comments={comments}
+        onComments={() => setCommenting(true)}
+      />
+      <CommentSheet
+        open={commenting}
+        onClose={() => setCommenting(false)}
+        contentId={r.id}
+        postAuthorId={r.authorId}
+        onCount={setComments}
       />
     </article>
   )

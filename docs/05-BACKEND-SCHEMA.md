@@ -1137,6 +1137,31 @@ A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
 (`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;
 `GET /v1/bhakti/assets/<id>/file/` signs a ten-minute link for an owner.
 
+### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
+
+```sql
+create table content_comments (
+  id          uuid primary key,
+  content_id  uuid not null references content(id) on delete cascade,
+  author_id   uuid not null,
+  body        text not null,             -- trimmed, 1..1000 chars (service)
+  status      text not null default 'live' check (status in ('live','removed')),
+  created_at  timestamptz not null default now()
+);
+create index content_comments_thread_idx on content_comments (content_id, created_at)
+  where status = 'live';
+alter table content_comments enable row level security;  -- no policies
+```
+
+Migration `content/0005_content_comments`, applied to production 30 Sep.
+`GET /v1/content/<id>/comments/` (anonymous, oldest first) and `POST` the
+same path (signed in, not blocked). `POST /v1/content/comments/<id>/remove/`
+— the commenter, the post's author, or an admin; a status, never a DELETE.
+No editing. A blocked person's comments leave the thread and the count.
+`comment_count` on every public content row counts the same rows the thread
+lists. The post's author gets a `content.comment` notification for other
+people's comments, never their own.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

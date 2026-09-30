@@ -5,6 +5,7 @@ import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
 import ReportSheet from './ReportSheet.jsx'
+import CommentSheet from './CommentSheet.jsx'
 import { firstName } from './Primitives.jsx'
 import { useStore } from '../store.jsx'
 
@@ -133,6 +134,8 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   const { showToast, hasFlag, toggleFlag } = useStore()
   const video = useRef(null)
   const [reporting, setReporting] = useState(false)
+  const [commenting, setCommenting] = useState(false)
+  const [comments, setComments] = useState(c.comments ?? 0)
 
   /* Only the reel on screen plays. Every frame used to autoplay at once, which
      was silent only because all of them were muted. `muted` is set on the
@@ -254,9 +257,10 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
         />
         <RailAct
           icon="chat"
-          label="Reply"
+          label="Comments"
           tone="plain"
-          onClick={() => showToast('Replies — prototype only')}
+          count={comments.toLocaleString('en-IN')}
+          onClick={() => setCommenting(true)}
         />
         <RailAct
           icon="share"
@@ -364,6 +368,13 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
         open={reporting}
         onClose={() => setReporting(false)}
         contentId={c.id}
+      />
+      <CommentSheet
+        open={commenting}
+        onClose={() => setCommenting(false)}
+        contentId={c.id}
+        postAuthorId={c.authorId}
+        onCount={setComments}
       />
     </section>
   )

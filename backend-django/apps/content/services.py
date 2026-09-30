@@ -47,7 +47,9 @@ from apps.reactions.models import Reaction
 
 from . import gateway
 from .models import (
+    MAX_COMMENT_CHARS,
     MAX_TAGGED_PRODUCTS,
+    Comment,
     Content,
     ContentProduct,
     ContentView,
@@ -147,6 +149,16 @@ def public_content():
                 "select count(*) from reactions r"
                 " where r.target_type = 'content' and r.target_id = content.id"
                 " and r.kind = 'save'",
+                [],
+                output_field=models.IntegerField(),
+            ),
+            # Live comments by people who are not blocked — the same rows
+            # the comment sheet lists, so the number and the list agree.
+            comment_count=RawSQL(
+                "select count(*) from content_comments cc"
+                " where cc.content_id = content.id and cc.status = 'live'"
+                " and not exists (select 1 from profiles p"
+                f"  where {_xid('p.id', 'cc.author_id')} and p.blocked_at is not null)",
                 [],
                 output_field=models.IntegerField(),
             ),
@@ -329,6 +341,91 @@ def record_view(content_id, viewer_id):
     except IntegrityError:
         pass  # already counted
     return Content.objects.values_list("view_count", flat=True).get(pk=row.id)
+
+
+# ── comments ─────────────────────────────────────────────────────────────────
+
+COMMENT_EMPTY_REFUSAL = "Write something first"
+COMMENT_LONG_REFUSAL = f"Keep it under {MAX_COMMENT_CHARS} characters"
+
+
+def list_comments(content_id, *, limit=100):
+    """A post's live comments, oldest first — a thread reads top to bottom.
+    A hidden post is a 404, exactly as its detail view is; a blocked
+    person's comments leave with them, as their posts do."""
+    if not public_content().filter(pk=content_id).exists():
+        raise NotFound("That post is not available.")
+    blocked = RawSQL(
+        "select count(*) from profiles p"
+        f" where {_xid('p.id', 'content_comments.author_id')} and p.blocked_at is not null",
+        [],
+        output_field=models.IntegerField(),
+    )
+    return list(
+        Comment.objects.filter(content_id=content_id, status=Comment.Status.LIVE)
+        .annotate(_blocked=blocked)
+        .filter(_blocked=0)
+        .annotate(author_name=profile_services.name_subquery("author_id"))
+        .order_by("created_at", "id")[:limit]
+    )
+
+
+def add_comment(content_id, author_id, body):
+    """Post a comment as the caller (rule 3: the author is the JWT, never the
+    body). The post's author hears about it, unless they wrote it."""
+    _assert_not_blocked(author_id)
+    text = (body or "").strip()
+    if not text:
+        raise ValidationError({"body": COMMENT_EMPTY_REFUSAL})
+    if len(text) > MAX_COMMENT_CHARS:
+        raise ValidationError({"body": COMMENT_LONG_REFUSAL})
+    post = public_content().filter(pk=content_id).only("id", "author_id").first()
+    if post is None:
+        raise NotFound("That post is not available.")
+    row = _with_name(Comment.objects.create(content_id=post.id, author_id=author_id, body=text))
+
+    if str(post.author_id).replace("-", "") != str(author_id).replace("-", ""):
+        # After the write and never raising (notify.push): a comment that
+        # posted and went unannounced is fine; one rolled back because the
+        # alert failed is not.
+        from apps.notifications import services as notify
+
+        notify.push(
+            post.author_id,
+            kind="content.comment",
+            title=f"{row.author_name or 'Someone'} commented on your post",
+            body=text[:140],
+            ref_type="content",
+            ref_id=str(post.id),
+        )
+    return row
+
+
+def _with_name(row):
+    """The commenter's name on a freshly created row, as the list carries it."""
+    row.author_name = (
+        Comment.objects.filter(pk=row.pk)
+        .annotate(n=profile_services.name_subquery("author_id"))
+        .values_list("n", flat=True)
+        .first()
+    )
+    return row
+
+
+def remove_comment(comment_id, actor_id, role):
+    """Soft delete. The commenter, the post's author (their post, their
+    thread) or an admin — nobody else."""
+    row = Comment.objects.select_related("content").filter(pk=comment_id).first()
+    if row is None or row.status == Comment.Status.REMOVED:
+        raise NotFound("That comment is not available.")
+    me = str(actor_id).replace("-", "")
+    mine = str(row.author_id).replace("-", "") == me
+    my_post = str(row.content.author_id).replace("-", "") == me
+    if not (mine or my_post or role == "admin"):
+        raise PermissionDenied("You do not have access to this.")
+    row.status = Comment.Status.REMOVED
+    row.save(update_fields=["status"])
+    return row
 
 
 def attach_products(rows):

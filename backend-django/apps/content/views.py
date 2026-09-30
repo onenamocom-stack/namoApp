@@ -60,6 +60,7 @@ def _public_row(row):
         "published_at": row.published_at,
         "like_count": row.like_count,
         "save_count": row.save_count,
+        "comment_count": row.comment_count,
         # Tagged shop products, and the author's A code for the link to carry
         # (services.attach_products). Empty and null on an untagged post.
         "products": [
@@ -155,6 +156,44 @@ def publish(request):
         product_ids=data["product_ids"],
     )
     return Response({"id": str(row.id)}, status=201)
+
+
+def _comment_row(c):
+    return {
+        "id": str(c.id),
+        "author_id": str(c.author_id),
+        "author_name": c.author_name,
+        "body": c.body,
+        "created_at": c.created_at,
+    }
+
+
+class CommentInput(serializers.Serializer):
+    # Length is checked in the service, so the refusal sentence is its own.
+    body = serializers.CharField(allow_blank=True, trim_whitespace=False)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def comments(request, content_id):
+    """GET: a post's live comments, oldest first — anonymous, like the feed.
+    POST: comment as the caller; signed in, not blocked."""
+    if request.method == "GET":
+        return Response([_comment_row(c) for c in services.list_comments(content_id)])
+    if not request.user or not request.user.is_authenticated:
+        return Response(refusal_body("unauthenticated", "Sign in to comment."), status=401)
+    data = CommentInput(data=request.data)
+    data.is_valid(raise_exception=True)
+    row = services.add_comment(content_id, request.user.pk, data.validated_data["body"])
+    return Response(_comment_row(row), status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def remove_comment(request, comment_id):
+    """Soft delete: the commenter, the post's author, or an admin."""
+    services.remove_comment(comment_id, request.user.pk, getattr(request.user, "role", ""))
+    return Response({"removed": True})
 
 
 @api_view(["POST"])
