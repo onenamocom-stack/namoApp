@@ -4027,7 +4027,10 @@ still reconciles with its ledger** — checked after.
 
 The Alerts tab read seven hard-coded strings out of `mock.js`, the same
 seven for every account, forever. There is a `notifications` table now,
-and the tab reads it.
+and the tab reads it. **So does Profile → Notification history
+(`/notifications`), as of 30 Sep** — until then it still rendered the mock
+list ("Kabir opened your chart", a daily 08:00 reading nothing sends) to
+every real account. Found walking a signed-in production account in Chrome.
 
 **Polling, not push** — and that is this codebase's existing answer, not a
 shortcut: `src/lib/chat.js` says at the top that Realtime subscriptions

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/signout.js'
-import { loadingLines, user } from '../../data/mock.js'
+import { loadingLines } from '../../data/mock.js'
 import { ChartNorth } from '../../components/ChartSquare.jsx'
 import { Button, Field, Stub } from '../../components/Primitives.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
@@ -80,7 +80,10 @@ export default function Computing() {
   }, [session, profile, profileLoading, draftComplete, navigate])
 
   const done = step >= loadingLines.length
-  const name = birth.name || user.name
+  // Signing in types no name, so the draft is empty and the stored profile is
+  // the answer. The mock user's name was the fallback, which greeted every
+  // returning account as "Ananya".
+  const name = birth.name || profile?.name || ''
 
   useEffect(() => {
     if (done) return undefined
@@ -218,7 +221,7 @@ export default function Computing() {
     return (
       <div className="flex min-h-full animate-fade flex-col px-6 pb-10 pt-12 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Chart ready</p>
-        <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-light">Here you are, {name}.</h1>
+        <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-light">{name ? `Here you are, ${name}.` : 'Here you are.'}</h1>
 
         <Stub className="my-10" />
         <ChartNorth size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />
