@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 28 Sep 2026.
+Updated 30 Sep 2026.
 
 | Phase | State |
 |---|---|
@@ -23,6 +23,7 @@ Updated 28 Sep 2026.
 | **"Logged out" on reopen — fixed 30 Sep** | The session was never lost: it persists in `localStorage` and a 400-day cookie (`lib/supabase.js`). Opening the bare site routed `/` → `/onboarding`, and Intro showed "Begin / Sign in" to a signed-in account. `SessionGate` now sends a signed-in account with a birth date from `/onboarding` to `/home`. Reproduced and verified in Chrome with a saved session. Not checked: the Supabase project's own session time-box / inactivity settings, which would end a session server-side |
 | **Feed feedback round — on `main` and deployed (front end), 30 Sep** | Stories strip and post dates removed; lighter action icons; reels have like / reply / share / save; Home tabs are Reels · आज का पंचांग · आज के दर्शन; the reel viewer lost its "n / 49" counter and its "Book a session" chip, which is now the reel's tagged products; Bhakti lost its header tag and its search moved above the tiles. **Share is real now** (`lib/share.js`, share sheet or clipboard) — the old "link copied" toasts copied nothing. **Reel views** need the API: `content_views`, migration `content/0004`, `docs/05` §5.2b; until `namo-api` is redeployed no view is recorded and the count stays hidden (it only shows above 0) |
 | **Products tagged on posts and reels, and reel views — LIVE, 30 Sep** | Consultants tag up to 3 shop products in the studio composer; the feed and the reel viewer show them; a tap opens `/shop?p=…&ref=<their A code>` with the product ringed, and the purchase credits them the affiliate 10% (owner's call). Reels count one view per signed-in person. Tables `content_products` and `content_views` (`docs/05` §5.2a–b), migrations `content/0003`–`0004` **applied to production**, API **`namo-api-00053-b79`** serving 100%, no 5xx in its first hour. Verified live: the feed carries `products`, and one reel watched from the test account went 0 → 1 views. **Not verified live: a real consultant tagging a product** (no consultant login on this machine), nor the RLS flag on the two new tables (the read was refused by the session's permission guard). Deploying from the Windows laptop: `gcloud.cmd run deploy namo-api --source . --region=asia-south1` from `backend-django/` — `gcloud.ps1` is blocked by the execution policy; migrations first, from the laptop, with `backend-django/.env` loaded into the shell (settings do not read `.env` themselves) Open finding: no earlier Django migration enables RLS on the tables it creates, so they may be reachable through PostgREST with the anon key — unchecked |
+| **30 Sep list — paid predictions, twelve free sign readings, D1–D60, gender, and seven more** | **Deployed 30 Sep** — migrations on production, API `namo-api-00054-vc8`, front end on `main`. Entitlements table (₹99 predictions / ₹49 muhurat / ₹99 e-book). **Never walked in a browser; no real purchase made on production** — §40 |
 | **9 · reviews and content** | **Done and closed.** Both projects, front end deployed, all three done-conditions walked in a browser on dev (9 Sep) and the check passes on both. Two bugs the walk found are fixed — §8 |
 
 **Production has one real consultant**, who applied through `/pro/apply` and was
@@ -865,7 +866,7 @@ Recorded so they are not re-argued. Reasoning is in the documents.
 | Provenance of the 48 Bhaktamar card faces | Seed |
 | **Whether a metered chat can be reviewed.** The RLS policy names `bookings`; phase 6's `sessions` is a different table, so a seeker whose only contact was a chat cannot review that consultant. A decision, not a bug — widening it is a small migration | Nothing today. It bites the first consultant who works mostly by chat |
 | **Astrology advertising checked by someone qualified.** `01-PRD.md` §7 and §8 both say do this before publishing, *including* for profiles labelled as demos | **Seeding the feed from the mock consultants.** Theoretical until 9 Sep; live the moment §8's tool runs on production |
-| **Whether `astro_cache` ever gets a sweeper** — rows are 11 kB each and nothing deletes them | Nothing. Much smaller than it was: the reading is twelve rows a day rather than one per person per day, so growth is now a constant |
+| **Whether `astro_cache` ever gets a sweeper** — rows are 11 kB each and nothing deletes them | Nothing. Free readings are twelve rows a day; paid ones one per paying reader per day; charts and divisional charts one each per account, ever |
 
 **Report prices and the duplicate SKUs closed on 7 Sep** and are gone from this
 table. The six prices are typed in `mock.js`, `REPORT_MULTIPLIER` is deleted, and
@@ -5106,3 +5107,39 @@ Santmat), which is what the filter chips show. Verified through the live API.
 - **Open:** thumbnails and covers are still 2–3 MB PNGs on production. 1280px
   WebPs (111 MB -> 8 MB) are built in the loader's scratch folder; running the
   loader once uploads them and repoints `preview_url`.
+
+## 40. Eleven changes from the owner's list — 30 Sep 2026
+
+**Deployed 30 Sep: migrations `profiles/0003_gender` and
+`wallet/0002_entitlements` applied to production, API `namo-api-00054-vc8`, front end
+on `main`.** Branch `sep30-changes`. Backend: 761 pass, the same 34 fail as on
+`main` (Python 3.14 noise — console, shiprocket, admin, and the 404-page
+`test_no_cache_route`); 17 new tests in `tests/test_entitlements.py`. Lint and
+build clean. **Never walked in a browser** — the paid paths especially.
+
+| # | Asked | Done |
+|---|---|---|
+| 1 | New mantras from Drive | Eight on production, `mn-<slug>`: Om and Om Namah Shivay (unchanged audio, WebP thumbnails now), Gayatri Mantra (arrived with audio this time), Laxmi Beej, Kuber Beej, Om Dum Durgay Namah, Om Em Sarsvataye Namah, Om Namah Bhagwate Vasudevay. Titles are the Drive folder names verbatim |
+| 2 | Paid e-book, ₹99 | *A Complete Guide to Beej Mantra*, `eb-a-complete-guide-to-beej-mantra`, `price_paise` 9900. The PDF is in the **private** bucket (`namo-docs`); the row's `media_url` is the key. The list never shows it; `GET /v1/bhakti/assets/<id>/file/` signs a ten-minute link for an owner, 402 with the price otherwise. Academy shows the price, the offer, then *Open PDF* |
+| 3 | Gender at sign-up | `/onboarding/gender` after the name; `profiles.gender` (male/female/other, NULL for older accounts), in the PATCH allow-list; shown under Birth data |
+| 4 | No chart after the OTP | `Computing` saves, fetches the chart and all divisional charts, and goes to `/home`. No loading list, no reveal |
+| 5 | Muhurat judged against your chart, ₹49 | 402 until bought, per purpose per month (`muhurat`, ref `<purpose>:<YYYY-MM>`), forever once bought. Checked before the birth row, so an unpaid tap costs no upstream call |
+| 6 | Twelve generic horoscopes, as before | `GET /v1/astro/rashifal/?sign=` — the 7 Sep canonical births, recovered from git, Moon-checked before any reading is trusted. Home's Today card (sign chips, the reader's moon sign first) and `/horoscope`. `02-TRD.md` §8 says why this is honest now and was not on 7 Sep: the sign is named |
+| 7 | Horoscope → full chart; Vedic only; D1 then every D; Chart and Prediction tabs; prediction ₹99/month | Consult's Horoscope tile opens `/chart`. Chart tab: D1 drawn, then D2–D60 as expanding rows (`GET /v1/astro/vargas/`, all seventeen in one vendor call, cached forever, fetched at sign-up). Prediction tab: the reader's own yesterday/today/tomorrow, **402 until bought**, ₹99 for 30 days (`prediction`), buying early extends from the end |
+| 8 | Namo AI its own page, out of chat | `/ask` (titled Namo AI, with Back); Consult's AI tile goes there; the messages panel is Consultant / Alerts |
+| 9 | Tarot | Yes/no question wording (box kept — the reading is written for it); card → name → shloka → *Reveal my reading* → the reading; *Ask a reader*, *Pull again*, *Change deck* removed |
+| 10 | Shared reel link: Back left the app | `useGoBack` in `Chrome.jsx`: `history.state.idx > 0` or the fallback route. The old check (`location.key !== 'default'`) was fooled by the reel feed's `replace` navigations. TopBar, the reel viewer and onboarding all use it |
+| 11 | Editing birth details asked for an OTP and did not save | Profile → `/onboarding/date?edit=1` → time → place, which **saves** and returns to `/profile`. Cause: the edit ran the sign-up chain, and `Computing` refuses to overwrite a stored birth date. Second cause: the browser cached the chart under the account, not the birth, so it is now cleared on save |
+
+**Entitlements** (`docs/05` §5.2c, prices `01-PRD.md` §4.11): one table, written
+only by `apps.wallet.services.buy` in the same transaction as its ledger row
+(`ref_id` = the entitlement). **RLS is on** in the migration itself, checked on
+production (`relrowsecurity` true, zero policies) — the open finding about
+Django tables and PostgREST does not apply to this one. `POST /v1/wallet/buy/`
+takes `{sku, ref}` and never a price. **No auto-renewal**: a prediction plan
+ends and the tab shows the offer again.
+
+**Not verified:** a real purchase on production (the paths are tested against
+SQLite with the ledger trigger emulated, not against a funded prod wallet);
+the chart, prediction and muhurat screens in a browser; the 402 → buy → reload
+loop on a phone.
