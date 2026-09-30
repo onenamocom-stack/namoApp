@@ -48,7 +48,7 @@ export default function Chart() {
   const [params, setParams] = useSearchParams()
   const tab = TABS.some((x) => x.key === params.get('tab')) ? params.get('tab') : 'chart'
   const setTab = (next) => setParams(next === 'chart' ? {} : { tab: next }, { replace: true })
-  const { t, session, sessionReady } = useStore()
+  const { session, sessionReady } = useStore()
   const me = useProfileFields()
   const who = session?.user?.id ?? null
 
@@ -85,7 +85,7 @@ export default function Chart() {
       <Segmented items={TABS} value={tab} onChange={setTab} />
 
       {tab === 'chart' && (
-        <ChartTab chart={chart} who={who} ready={sessionReady} display={display} me={me} t={t} />
+        <ChartTab chart={chart} who={who} ready={sessionReady} display={display} me={me} />
       )}
       {tab === 'dasha' && <DashaTab who={who} ready={sessionReady} />}
       {tab === 'prediction' && <PredictionTab who={who} ready={sessionReady} me={me} />}
@@ -95,7 +95,7 @@ export default function Chart() {
   )
 }
 
-function ChartTab({ chart, who, ready, display, me, t }) {
+function ChartTab({ chart, who, ready, display, me }) {
   const vargas = useAstro('vargas', { ready, who })
   const divisions = vargasFrom(vargas.payload, vargas.timeKnown).filter((v) => v.division !== 1)
   const houses = housesFrom(chart.payload, chart.timeKnown)
@@ -129,7 +129,6 @@ function ChartTab({ chart, who, ready, display, me, t }) {
             ascendant, and the ascendant is the one thing a rough time does not survive.
           </p>
         )}
-        {houses && <p className="prose-c mt-8">{t('chart.northNote')}</p>}
       </Section>
 
       <Section label="Divisional charts">
