@@ -137,7 +137,15 @@ function PlainLayout() {
  * over from there.
  */
 function SessionGate() {
-  const { session, sessionReady, consultant, consultantLoading, consultantError } = useStore()
+  const {
+    session,
+    sessionReady,
+    consultant,
+    consultantLoading,
+    consultantError,
+    profile,
+    profileLoading,
+  } = useStore()
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
@@ -188,11 +196,33 @@ function SessionGate() {
       return
     }
 
-    if (session) return
+    if (session) {
+      /* A signed-in account never sees the welcome screen. Opening the bare
+         site (`/`) routes to `/onboarding`, which is Intro's "Begin / Sign
+         in" — so until 30 Sep a person whose session had survived closing
+         the tab still looked signed out, and signed in again. Only once the
+         profile has arrived and carries a birth date: an account whose
+         sign-up stopped before the birth details still needs the questions,
+         and Intro's Begin is how it gets back to them. */
+      if (pathname === '/onboarding' && !profileLoading && profile?.birth_date) {
+        navigate('/home', { replace: true })
+      }
+      return
+    }
     const fromPro = pathname === '/chart' || pathname.startsWith('/consult/')
     if (pathname.startsWith('/onboarding') || fromPro) return
     navigate('/onboarding', { replace: true })
-  }, [session, sessionReady, consultant, consultantLoading, consultantError, pathname, navigate])
+  }, [
+    session,
+    sessionReady,
+    consultant,
+    consultantLoading,
+    consultantError,
+    profile,
+    profileLoading,
+    pathname,
+    navigate,
+  ])
 
   return null
 }
