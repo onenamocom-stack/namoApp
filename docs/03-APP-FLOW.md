@@ -487,8 +487,15 @@ the server writes, rendered as-is with a way to the wallet. **The price appears
 nowhere until the free pulls are gone** — not in the header, not on the button.
 
 ### `/chart`
-**Where Consult's Horoscope tile lands, since 30 Sep 2026.** Two tabs: **Chart**
-on the left, where Table was, and **Prediction** on the right (`?tab=prediction`).
+**Where Consult's Horoscope tile lands, since 30 Sep 2026.** Three tabs:
+**Chart**, **Dasha** and **Prediction** (`?tab=dasha`, `?tab=prediction`).
+
+**Dasha** is the Vimshottari timeline, free: what is running today (mahadasha
+and antardasha, with their end dates) in a raised card, then the nine
+mahadashas from birth, the running one open to its antardashas and any other
+one tap away. The running period is found on the phone by today's date, from a
+timeline cached forever. Without a birth time the screen says the dates are
+approximate — every one is measured from the Moon.
 
 **Chart is Vedic only; the placement table is gone.** D1 leads, drawn. Under it,
 every other divisional chart the vendor computes — D2, D3, D4, D5, D7, D9, D10,

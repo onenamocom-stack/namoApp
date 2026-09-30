@@ -439,6 +439,7 @@ the table says, rather than serve the neighbouring rashi's reading.
 | Your own reading | one per paying reader per day who opens it |
 | Natal chart | one per account, ever |
 | Divisional charts D1–D60 | one per account, ever — all seventeen in one call, fetched at sign-up |
+| Vimshottari dasha | one per account, ever — `POST /api/v2/vedic/dasha`, `levels` 2, **no reference date**; `dasha:<user id>:<birth digest>`. The vendor's `active_periods` are computed for the day of the call, so they are never read: the running period is found in the cached timeline by today's date |
 | Panchang | one a day, total |
 | Match | one per distinct pair of births, ever |
 | Muhurat | one per purpose × place cell × month; judged against a chart, one per paying reader per purpose × month |

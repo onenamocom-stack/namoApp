@@ -47,6 +47,11 @@ class AstroProvider(abc.ABC):
         birth, every division asked for in `divisions`, in one call."""
 
     @abc.abstractmethod
+    def dasha(self, body):
+        """POST /api/v2/vedic/dasha — the Vimshottari timeline for one birth,
+        `levels` deep (mahadasha, antardasha, …)."""
+
+    @abc.abstractmethod
     def panchang(self, body):
         """POST /api/v2/vedic/panchang — the day's almanac for one place."""
 
@@ -112,6 +117,9 @@ class FreeAstroApiProvider(AstroProvider):
 
     def vargas(self, body):
         return self._post("/api/v2/vedic/vargas", body)
+
+    def dasha(self, body):
+        return self._post("/api/v2/vedic/dasha", body)
 
     def panchang(self, body):
         return self._post("/api/v2/vedic/panchang", body)
@@ -215,6 +223,10 @@ DAY_SENTENCES = [
 _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 _NAK_LENGTH = 40.0 / 3.0  # 13°20'
+
+# Vimshottari: each lord's mahadasha, in years. 120 in all.
+_DASHA_YEARS = {"Ketu": 7, "Venus": 20, "Sun": 6, "Moon": 10, "Mars": 7,
+                "Rahu": 18, "Jupiter": 16, "Saturn": 19, "Mercury": 17}
 
 # The reading's six domains, as the vendor names them, with their titles.
 _AREAS = {
@@ -403,6 +415,54 @@ class MockProvider(AstroProvider):
                 ],
             }
         return {"vargas": out, "metadata": {"ayanamsha": body.get("ayanamsha")}}
+
+    def dasha(self, body):
+        """The vendor's shape off the mock chart's Moon: nine mahadashas from
+        birth in Vimshottari order, each with its antardashas, the first one
+        cut to the balance left at birth. Dates are whole days."""
+        chart = MockProvider.chart(self, body)
+        moon = next(p for p in chart["planets"] if p["name"] == "Moon")
+        lon = SIGNS.index(moon["sign"]) * 30 + moon["degree_in_sign"]
+        nak = _nakshatra(lon)
+        first = NAKSHATRA_LORDS.index(nak["lord"])
+        remaining = 1 - (lon % _NAK_LENGTH) / _NAK_LENGTH
+        born = date(int(body["year"]), int(body["month"]), int(body["day"]))
+        year_days = 365.25
+
+        def period(level, lord, start, years):
+            return {"level": level, "lord": lord, "start": start.isoformat(),
+                    "end": (start + timedelta(days=round(years * year_days))).isoformat(),
+                    "duration_years": round(years, 2)}
+
+        timeline, start = [], born
+        for i in range(9):
+            lord = NAKSHATRA_LORDS[(first + i) % 9]
+            full = _DASHA_YEARS[lord]
+            years = full * remaining if i == 0 else full
+            maha = period("Mahadasha", lord, start, years)
+            subs, sub_start = [], start
+            # Antardashas run from the mahadasha lord onward; the first
+            # mahadasha only keeps the ones that fall after birth.
+            elapsed = full - years
+            for j in range(9):
+                sub_lord = NAKSHATRA_LORDS[(NAKSHATRA_LORDS.index(lord) + j) % 9]
+                length = full * _DASHA_YEARS[sub_lord] / 120
+                if elapsed >= length:
+                    elapsed -= length
+                    continue
+                length -= elapsed
+                elapsed = 0
+                subs.append(period("Antardasha", sub_lord, sub_start, length))
+                sub_start = date.fromisoformat(subs[-1]["end"])
+            maha["sub_periods"] = subs
+            timeline.append(maha)
+            start = date.fromisoformat(maha["end"])
+        return {
+            "moon_nakshatra": {"name": nak["name"], "pada": nak["pada"], "lord": nak["lord"]},
+            "birth_balance": {"lord": nak["lord"], "remaining_years": round(_DASHA_YEARS[nak["lord"]] * remaining, 4)},
+            "timeline": timeline,
+            "metadata": {"system": "vimshottari", "levels_requested": body.get("levels", 2)},
+        }
 
     def panchang(self, body):
         seed = _seed("panchang", json.dumps(body, sort_keys=True, default=str))

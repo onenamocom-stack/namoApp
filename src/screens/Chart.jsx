@@ -5,6 +5,7 @@ import { ChartNorth } from '../components/ChartSquare.jsx'
 import Paywall from '../components/Paywall.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import {
+  dashaFrom,
   housesFrom,
   istDate,
   longDate,
@@ -18,20 +19,24 @@ import { DAY_OFFSET, DAY_TABS, ReadingView, dayFrom } from './Horoscope.jsx'
 
 const TABS = [
   { key: 'chart', label: 'Chart' },
+  { key: 'dasha', label: 'Dasha' },
   { key: 'prediction', label: 'Prediction' },
 ]
 
 /**
  * The full chart — where Consult's Horoscope tile lands (30 Sep 2026).
  *
- * Two tabs, as the owner laid them out: **Chart** on the left, where Table
- * used to be, and **Prediction** on the right.
+ * Three tabs, as the owner laid them out (30 Sep 2026): **Chart**, **Dasha**
+ * and **Prediction**.
  *
  * - **Chart** is Vedic only. The placement table is gone. D1 leads, drawn;
  *   under it every divisional chart the vendor computes (D2…D60), each one
  *   a row that opens to its own diagram. All of it was computed once at
  *   sign-up (`Computing.jsx`) and is cached forever, on the server and in
  *   this browser — opening this screen computes nothing.
+ * - **Dasha** is the Vimshottari timeline from birth: what is running now,
+ *   then the nine mahadashas, each opening to its antardashas. Free, and
+ *   computed at sign-up with the charts.
  * - **Prediction** is the reader's own yesterday / today / tomorrow, from
  *   their birth. ₹99 for 30 days; the price is the server's and arrives on
  *   the refusal. The free reading is by sign, on Home and /horoscope.
@@ -41,7 +46,7 @@ const TABS = [
  */
 export default function Chart() {
   const [params, setParams] = useSearchParams()
-  const tab = params.get('tab') === 'prediction' ? 'prediction' : 'chart'
+  const tab = TABS.some((x) => x.key === params.get('tab')) ? params.get('tab') : 'chart'
   const setTab = (next) => setParams(next === 'chart' ? {} : { tab: next }, { replace: true })
   const { t, session, sessionReady } = useStore()
   const me = useProfileFields()
@@ -79,11 +84,11 @@ export default function Chart() {
 
       <Segmented items={TABS} value={tab} onChange={setTab} />
 
-      {tab === 'chart' ? (
+      {tab === 'chart' && (
         <ChartTab chart={chart} who={who} ready={sessionReady} display={display} me={me} t={t} />
-      ) : (
-        <PredictionTab who={who} ready={sessionReady} me={me} />
       )}
+      {tab === 'dasha' && <DashaTab who={who} ready={sessionReady} />}
+      {tab === 'prediction' && <PredictionTab who={who} ready={sessionReady} me={me} />}
 
       <div className="h-8" />
     </>
@@ -168,6 +173,118 @@ function ChartTab({ chart, who, ready, display, me, t }) {
             perfectly and belongs to nobody. */}
         <Field k="Ayanamsa" v="Lahiri" />
         <Field k="Houses" v="Whole sign" />
+      </Section>
+    </div>
+  )
+}
+
+/** "2026-12-17" -> "17 Dec 2026". */
+function shortDate(iso) {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+  })
+}
+
+/**
+ * Vimshottari dasha — the planetary periods a life runs through, read off
+ * the Moon's nakshatra at birth. What is running today leads; under it the
+ * nine mahadashas in order, the running one open to its antardashas, any
+ * other one tap away.
+ *
+ * Every date is measured from the Moon, which crosses a nakshatra in about a
+ * day — so without a birth time the dates are approximate, and it says so.
+ */
+function DashaTab({ who, ready }) {
+  const got = useAstro('dasha', { ready, who })
+  const dasha = dashaFrom(got.payload)
+  const [open, setOpen] = useState(null)
+  const openLord = open ?? dasha?.maha?.start ?? null
+
+  if (got.loading) return <p className="mx-5 mt-6 text-meta text-t3">Opening your dasha.</p>
+  if (got.refusal) {
+    return (
+      <div className="mx-5 mt-6 border-t border-rule pt-6">
+        <p className="text-body text-t1">{got.refusal.reason}</p>
+        {got.refusal.code === 'no_birth' && (
+          <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
+            Add them in your profile
+          </Link>
+        )}
+      </div>
+    )
+  }
+  if (!dasha) return null
+
+  return (
+    <div className="animate-fade">
+      {dasha.maha && (
+        <section className="section">
+          <div className="pop-raised p-5 text-center">
+            <p className="caps-sm gold">Running now</p>
+            <p className="mt-3 text-title font-semibold t-heading">
+              {dasha.maha.lord}
+              {dasha.antar && <span className="t-sub"> · {dasha.antar.lord}</span>}
+            </p>
+            <p className="mt-1 text-meta t-body">
+              {dasha.maha.lord} mahadasha
+              {dasha.antar && `, ${dasha.antar.lord} antardasha`}
+            </p>
+            {dasha.antar && (
+              <p className="mt-3 caps-sm t-faint">
+                Until {shortDate(dasha.antar.end)} · mahadasha until {shortDate(dasha.maha.end)}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      <Section label="Mahadashas · Vimshottari">
+        {dasha.nakshatra && (
+          <p className="mb-4 text-meta t-faint">
+            From your Moon in {dasha.nakshatra.name}
+            {dasha.nakshatra.pada ? `, pada ${dasha.nakshatra.pada}` : ''}.
+            {!got.timeKnown && ' Without a birth time these dates are approximate.'}
+          </p>
+        )}
+        <ul>
+          {dasha.periods.map((m) => (
+            <li key={m.start} className="border-b border-rule">
+              <button
+                type="button"
+                onClick={() => setOpen(openLord === m.start ? '' : m.start)}
+                aria-expanded={openLord === m.start}
+                className="flex w-full items-baseline justify-between gap-4 py-4 text-left"
+              >
+                <span className={`text-body ${m.current ? 'font-semibold gold' : m.past ? 't-faint' : 't-heading'}`}>
+                  {m.lord}
+                  {m.current && <span className="ml-2 caps-sm">now</span>}
+                </span>
+                <span className="flex-none text-meta text-t3 tnum">
+                  {shortDate(m.start)} – {shortDate(m.end)} {openLord === m.start ? '▴' : '▾'}
+                </span>
+              </button>
+              {openLord === m.start && (
+                <ul className="animate-fade pb-4 pl-4">
+                  {m.subs.map((a) => (
+                    <li
+                      key={a.start}
+                      className={`flex items-baseline justify-between gap-4 py-1.5 text-meta ${
+                        a.current ? 'font-semibold gold' : 't-body'
+                      }`}
+                    >
+                      <span>
+                        {m.lord} · {a.lord}
+                      </span>
+                      <span className="tnum t-faint">
+                        {shortDate(a.start)} – {shortDate(a.end)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       </Section>
     </div>
   )

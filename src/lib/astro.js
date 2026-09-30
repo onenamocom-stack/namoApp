@@ -79,6 +79,7 @@ const OP_PATH = {
   chart: '/astro/chart/',
   horoscope: '/astro/horoscope/',
   vargas: '/astro/vargas/',
+  dasha: '/astro/dasha/',
   rashifal: '/astro/rashifal/',
   panchang: '/astro/panchang/',
   geo: '/astro/geo/',
@@ -166,7 +167,7 @@ const inFlight = new Map()
  *  The chart's stamp is a generation, not a date: change it and every phone
  *  refetches. 'provider-1' retired the charts the API computed on the mock
  *  provider from 21 to 22 Sep 2026 (HANDOFF, "The astro API ran on the mock"). */
-const BIRTH_ONLY = (op) => op === 'chart' || op === 'vargas'
+const BIRTH_ONLY = (op) => op === 'chart' || op === 'vargas' || op === 'dasha'
 const cacheStamp = (op) => (BIRTH_ONLY(op) ? 'provider-1' : istDate())
 
 /* THE PANCHANG AND THE TWELVE SIGN READINGS CARRY NO USER: they are the same
@@ -689,4 +690,39 @@ export function vargasFrom(payload, timeKnown = true) {
       ascendant: v.ascendant?.sign ?? null,
       houses: housesFrom(v, timeKnown),
     }))
+}
+
+/**
+ * The Vimshottari timeline as the Dasha tab reads it (30 Sep 2026): nine
+ * mahadashas from birth, each with its antardashas, and which of each is
+ * running on `today` (IST, `YYYY-MM-DD`).
+ *
+ * The running period is found HERE, by date, and never read from the
+ * vendor's `active_periods`: those are computed for the day of the call, and
+ * the timeline is cached forever. ISO dates compare correctly as strings.
+ */
+export function dashaFrom(payload, today = istDate()) {
+  if (!payload?.timeline) return null
+  const running = (p) => p.start <= today && today < p.end
+  const periods = payload.timeline.map((m) => ({
+    lord: m.lord,
+    start: m.start,
+    end: m.end,
+    years: m.duration_years,
+    current: running(m),
+    past: m.end <= today,
+    subs: (m.sub_periods ?? []).map((a) => ({
+      lord: a.lord,
+      start: a.start,
+      end: a.end,
+      current: running(a),
+    })),
+  }))
+  const maha = periods.find((p) => p.current) ?? null
+  return {
+    nakshatra: payload.moon_nakshatra ?? null,
+    periods,
+    maha,
+    antar: maha?.subs.find((a) => a.current) ?? null,
+  }
 }

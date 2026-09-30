@@ -178,6 +178,23 @@ def vargas(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dasha(request):
+    """The Vimshottari timeline for the caller's own birth — free, cached
+    forever (services.user_dasha)."""
+    birth, refusal = _birth_or_refusal(request)
+    if refusal is not None:
+        return refusal
+    try:
+        payload, cached = services.user_dasha(request.user.pk, birth)
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "dasha")
+    return Response({
+        "ok": True, "data": payload, "time_known": services.time_known(birth), "cached": cached,
+    })
+
+
+@api_view(["GET"])
 @permission_classes([AllowAny])  # a sign's reading is nobody's — twelve rows a day for everybody
 def rashifal(request):
     """The free generic reading for one rashi: `?sign=Leo&date=`."""

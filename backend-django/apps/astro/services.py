@@ -519,3 +519,20 @@ def rashifal(sign, date_string):
             "include_evidence": False, "include_raw_facts": False,
         }),
     )
+
+
+# ── Vimshottari dasha (30 Sep 2026) ──────────────────────────────────────────
+
+
+def user_dasha(user_id, birth):
+    """Mahadashas and antardashas for the caller's own birth, cached forever
+    as `dasha:<user id>:<birth digest>`.
+
+    Asked WITHOUT a reference date, and only the timeline is read: the
+    vendor's `active_periods` are computed for the day of the call, so a
+    cached copy would name last year's period as running. The screen finds
+    the running period in the timeline by today's date instead."""
+    return memo(
+        f"dasha:{user_id}:{birth_digest(birth)}",
+        lambda: get_provider().dasha({**birth_body(birth), "levels": 2}),
+    )

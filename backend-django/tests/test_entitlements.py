@@ -256,3 +256,32 @@ class TestGender:
         assert Profile.objects.get(pk=TEST_USER).gender == "female"
         bad = api_client.patch("/v1/profiles/me/", {"gender": "robot"}, format="json", **auth(token))
         assert bad.status_code == 400
+
+
+@pytest.mark.django_db
+class TestDasha:
+    def test_the_timeline_from_birth_in_one_call_cached_forever(self, api_client, provider, token,
+                                                               monkeypatch):
+        calls = []
+        real = provider.dasha
+        monkeypatch.setattr(provider, "dasha", lambda body: calls.append(body) or real(body))
+        insert_profile()
+        first = api_client.get("/v1/astro/dasha/", **auth(token))
+        assert first.status_code == 200, first.content
+        timeline = first.json()["data"]["timeline"]
+        assert len(timeline) == 9
+        assert timeline[0]["start"] == BIRTH["birth_date"]
+        for maha, following in zip(timeline, timeline[1:]):
+            assert maha["end"] == following["start"]
+            subs = maha["sub_periods"]
+            # the antardashas tile the mahadasha, no gap and no overlap
+            assert subs[0]["start"] == maha["start"]
+            assert all(a["end"] == b["start"] for a, b in zip(subs, subs[1:]))
+        # no reference date: the cached answer must not go stale on a date
+        assert "reference_date" not in calls[0] and calls[0]["levels"] == 2
+        assert api_client.get("/v1/astro/dasha/", **auth(token)).json()["cached"] is True
+        assert len(calls) == 1
+
+    def test_signed_out_and_no_birth(self, api_client, provider, token):
+        assert api_client.get("/v1/astro/dasha/").status_code == 401
+        assert api_client.get("/v1/astro/dasha/", **auth(token)).status_code == 409

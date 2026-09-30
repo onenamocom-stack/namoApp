@@ -43,14 +43,15 @@ export function birthFields(birth) {
 }
 
 /**
- * The chart and every divisional chart, computed now so no screen waits on
- * them later. Both are cached forever on the server and in this browser. A
+ * The chart, every divisional chart and the dasha timeline, computed now so
+ * no screen waits on them later. Both are cached forever on the server and in this browser. A
  * failure here is not the person's problem — /chart asks again.
  */
 export function warmCharts(who) {
   return Promise.all([
     cachedAstro('chart', { who }),
     cachedAstro('vargas', { who }),
+    cachedAstro('dasha', { who }),
   ]).catch(() => {})
 }
 
