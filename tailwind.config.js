@@ -60,6 +60,10 @@ export default {
       'gold-wash': alpha('var(--gold-wash)'),
       live: alpha('var(--live)'),
       ok: alpha('var(--ok)'),
+      // The green main-action button's two values, for the few non-button
+      // surfaces that carry it (the feed's call-to-action strips).
+      btn: alpha('var(--btn)'),
+      'btn-deep': alpha('var(--btn-deep)'),
       // The grey-black. Bottom bar, primary CTA, raised Live button.
       ink: alpha('var(--ink)'),
       ink2: alpha('var(--ink-2)'),

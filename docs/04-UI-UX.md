@@ -46,7 +46,8 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 | `--ink` | `#262626` | Dark slabs — toasts, scrims, reel backdrop, sent chat bubble — and the logo |
 | `--ink-2` | `#363636` | A block sitting on ink |
 | `--ink-lit` | `#444444` | The lit top of an ink gradient |
-| `--btn` / `--btn-deep` / `--btn-edge` | `#2e9e66` / `#18804e` / `#136b41` | The green main-action button |
+| `--btn` / `--btn-deep` / `--btn-edge` | `#45bd82` / `#2ea56b` / `#27925d` | The green main-action button — two shades lighter since 30 Sep, at the owner's call |
+| `--orange-hi` / `--orange-lo` / `--orange-edge` | `#ffa05e` / `#f5782c` / `#e8691f` | Every saffron FILLED surface — secondary button, selected chip, tile, sub-nav thumb. Lightened with the green |
 | `--hi` | `rgba(255,255,255,0.9)` | Specular highlight, light surface |
 | `--hi-ink` | `rgba(255,255,255,0.14)` | Specular highlight, dark surface |
 | `--lo` | `rgba(17,17,17,0.1)` | Shade under a lip |
@@ -57,9 +58,19 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 `Button variant="solid"`) is the ONE main action on a screen — pay, buy,
 book, add money, begin — and is **green**. The class name is historical: it
 means "the voltage CTA". Plain `.pop-btn` is a secondary filled action and
-is **saffron**. `.pop-btn-ghost` is the white third. White on the green deep
-end is 4.7:1; white on the saffron deep end is 3.6:1, which is the trade Sri
-Mandir makes for bold caps on a button that is never the only way through.
+is **saffron**. `.pop-btn-ghost` is the white third. After the 30 Sep
+lightening, white on the green deep end is 3.0:1 and on the saffron deep end
+2.8:1 — below AA, accepted for a softer look on buttons that carry bold caps
+and are never the only way through a screen.
+
+**The Home feed is Instagram-shaped** (30 Sep): a stories strip of the feed's
+authors (saffron-to-green ring), then full-bleed posts on white separated by
+hairlines — header, edge-to-edge media, an icon action row (heart fills
+saffron, bookmark right), the like count, "name caption". A short text-only
+post renders as a square peach-to-mint text tile. House suggestions (course,
+product) and articles carry a tinted call-to-action strip under the media:
+green for a commitment, saffron for a read. The components are in
+`Home.jsx`.
 
 **Selected state is saffron.** Pills, sub-nav thumbs and tile faces fill
 orange with a white label; the segmented control's thumb stays white with an
@@ -92,16 +103,16 @@ first build, whatever its hue.
 
 | Token | Value | Note |
 |---|---|---|
-| `--gold` | `#b84a0a` | Text and borders. **4.9:1 on the page, 5.2:1 on white** |
-| `--gold-fill` | `#f26a1b` | Fills, icons, bars. **No small text.** See the rule below |
-| `--gold-dim` | `#963c06` | |
-| `--gold-wash` | `rgba(242,106,27,0.14)` | |
+| `--gold` | `#c0500d` | Text and borders. **4.4:1 on the page, 4.7:1 on white** |
+| `--gold-fill` | `#f5782c` | Fills, icons, bars. **No small text.** See the rule below |
+| `--gold-dim` | `#a3440a` | |
+| `--gold-wash` | `rgba(245,120,44,0.14)` | |
 
-**No small text sits on `--gold-fill`.** It is 3.0:1 against the page, so
+**No small text sits on `--gold-fill`.** It is 2.7:1 against the page, so
 pointing `--gold` at it would drop every orange label below AA in one line,
 and no build step checks contrast. Badges on the fill use `text-ink`
-(charcoal, well above AA); filled orange buttons use a deeper gradient
-(`#ff7b2c`→`#e2560f`) with white bold caps.
+(charcoal, well above AA); filled orange surfaces use the `--orange-*`
+gradient with white bold caps.
 
 Two rules that survive from the old design doc and still hold:
 

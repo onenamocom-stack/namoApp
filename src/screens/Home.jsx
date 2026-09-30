@@ -3,10 +3,11 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
+import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
-import { Kicker, PopAvatar, PopBar, PopButton, PopTag } from '../components/Pop.jsx'
-import { Acts, Segmented } from '../components/Primitives.jsx'
+import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
+import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
 
@@ -120,6 +121,11 @@ export default function Home() {
      approximating. */
   const items = [...real, ...stillMock]
 
+  /* The stories strip: each author once, in the order the feed dealt them. */
+  const authors = published.filter(
+    (c, i) => c.authorId && published.findIndex((d) => d.authorId === c.authorId) === i,
+  )
+
   if (!known) return <Navigate to="/home" replace />
   if (tab === 'darshan') return null // the effect above is already leaving
 
@@ -155,7 +161,11 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="space-y-3.5 p-4">
+            {/* White, full bleed, no gutters — the feed is a column of posts
+                edge to edge, as Instagram's is, under a strip of the people
+                in it. */}
+            <div className="mt-3 bg-white">
+              <Stories people={authors} />
               {items.map((item) => {
                 switch (item.kind) {
                   case 'post':
@@ -187,148 +197,322 @@ export default function Home() {
   )
 }
 
-/** Shared byline. Keeps every card's attribution identical. */
-function Byline({ initials, name, meta, to, note }) {
-  const inner = (
-    <>
-      <PopAvatar initials={initials} size={32} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-meta t-heading">{name}</span>
-        {note && <span className="block caps-sm t-faint">{note}</span>}
+/* ── The Instagram-shaped feed (30 Sep 2026) ────────────────────────────────
+   Every item is one full-bleed post on white, separated by a hairline rather
+   than boxed in a card: header row, media edge to edge, an icon action row,
+   the like count, then "name caption". The colours stay the app's own —
+   saffron for a liked heart and the story ring, green in the ring and on
+   the call-to-action strips. What each action DOES is unchanged: likes and
+   saves are the same durable `like:`/`save:` flags, Reply and Share the same
+   toasts, Report the same sheet. */
+
+/** The story-ring avatar: saffron into green, a white gap, then the face. */
+function RingAvatar({ initials, size = 32, ring = true }) {
+  return (
+    <span
+      className="inline-flex flex-none rounded-full"
+      style={{
+        padding: ring ? (size >= 48 ? 3 : 2) : 0,
+        background: ring
+          ? 'linear-gradient(45deg, #ffb347, var(--gold-fill) 40%, #ef5d3a 60%, var(--btn))'
+          : 'transparent',
+      }}
+    >
+      <span className="inline-flex rounded-full bg-white" style={{ padding: ring ? 2 : 0 }}>
+        <PopAvatar initials={initials} size={size} />
       </span>
-      {meta && <span className="flex-none caps-sm t-faint tnum">{meta}</span>}
+    </span>
+  )
+}
+
+/** "Dr. Nandita Rao" → "Nandita". A title is not what a story circle says. */
+function firstName(full) {
+  const words = (full || '').split(' ').filter(Boolean)
+  const name = words.find((w) => !/^(dr|pt|pandit|acharya|shri|sri|smt|mr|mrs|ms)\.?$/i.test(w))
+  return name || words[0] || ''
+}
+
+/**
+ * The strip across the top — everyone with something in the feed, once
+ * each, in feed order. A circle opens that person's page; there are no
+ * ephemeral stories behind it, so it goes where their name would.
+ */
+function Stories({ people }) {
+  if (!people.length) return null
+  return (
+    <div className="no-scrollbar flex gap-4 overflow-x-auto border-b border-rule bg-white px-4 py-3">
+      {people.map((p) => (
+        <Link
+          key={p.authorId}
+          to={authorHref(p)}
+          className="flex w-[68px] flex-none flex-col items-center gap-1.5 transition-transform active:scale-95"
+        >
+          <RingAvatar initials={p.initials} size={56} />
+          <span className="w-full truncate text-center text-[11px] text-t2">
+            {firstName(p.consultant)}
+          </span>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+/** Post header: ringed avatar, bold name · time, an optional tag, and ⋯. */
+function PostHead({ initials, name, time, to, note, tag, onMore, moreLabel }) {
+  const who = (
+    <>
+      <RingAvatar initials={initials} size={30} />
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block truncate text-meta">
+          <span className="font-semibold text-t1">{name}</span>
+          {time && <span className="text-t3 tnum"> · {time}</span>}
+        </span>
+        {note && <span className="block truncate text-[11px] text-t3">{note}</span>}
+      </span>
     </>
   )
-  if (to) {
-    return (
-      <Link to={to} className="flex items-center gap-3 transition-opacity hover:opacity-70">
-        {inner}
-      </Link>
-    )
-  }
-  return <div className="flex items-center gap-3">{inner}</div>
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2.5">
+      {to ? (
+        <Link to={to} className="flex min-w-0 flex-1 items-center gap-2.5">
+          {who}
+        </Link>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">{who}</div>
+      )}
+      {tag && <PopTag>{tag}</PopTag>}
+      {onMore && (
+        <button
+          type="button"
+          onClick={onMore}
+          aria-label={moreLabel}
+          className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-t1 transition-colors hover:bg-surface"
+        >
+          <span aria-hidden="true" className="text-lead leading-none">⋯</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** One icon in the action row. `on` fills it; the heart goes saffron. */
+function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={on && onLabel ? onLabel : label}
+      aria-pressed={onLabel ? on : undefined}
+      className={`-m-1.5 p-1.5 transition-transform active:scale-90 ${
+        on && tone ? tone : 'text-t1 hover:text-t2'
+      }`}
+    >
+      <Icon name={icon} size={25} weight={1.7} filled={on} />
+    </button>
+  )
+}
+
+/**
+ * Heart, comment, share — and save on the right. Like and Save are the
+ * durable flags; Comment and Share are the same toasts the old text row
+ * fired. `like` is left out for items that never had one.
+ */
+function ActionRow({ id, like = true, onComment, onShare }) {
+  const { hasFlag, toggleFlag } = useStore()
+  return (
+    <div className="flex items-center gap-4 px-3 pt-2.5">
+      {like && (
+        <ActIcon
+          icon="heart"
+          label="Like"
+          onLabel="Liked"
+          on={hasFlag(`like:${id}`)}
+          tone="text-gold-fill"
+          onClick={() => toggleFlag(`like:${id}`)}
+        />
+      )}
+      {onComment && <ActIcon icon="chat" label="Reply" onClick={onComment} />}
+      {onShare && <ActIcon icon="share" label="Share" onClick={onShare} />}
+      <span className="flex-1" />
+      <ActIcon
+        icon="bookmark"
+        label="Save"
+        onLabel="Saved"
+        on={hasFlag(`save:${id}`)}
+        tone="text-t1"
+        onClick={() =>
+          toggleFlag(`save:${id}`, {
+            on: 'Saved to your reading list',
+            off: 'Removed from your reading list',
+          })
+        }
+      />
+    </div>
+  )
+}
+
+/**
+ * The like count, then "name caption", clamped to two lines with Instagram's
+ * "more". The count is the view's aggregate plus your own un-saved tap, so it
+ * moves the instant you press and still agrees with the database on reload.
+ */
+function Caption({ id, likes, name, to, text }) {
+  const { hasFlag } = useStore()
+  const [open, setOpen] = useState(false)
+  const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
+  const long = (text || '').length > 110
+
+  return (
+    <div className="px-3 pb-4 pt-2">
+      {count != null && count > 0 && (
+        <p className="text-meta font-semibold text-t1 tnum">
+          {count.toLocaleString('en-IN')} {count === 1 ? 'like' : 'likes'}
+        </p>
+      )}
+      {text && (
+        <p className={`mt-1 text-meta text-t1 ${long && !open ? 'line-clamp-2' : ''}`}>
+          <Link to={to} className="mr-1.5 font-semibold">
+            {name}
+          </Link>
+          <span className="text-t2">{text}</span>
+        </p>
+      )}
+      {long && !open && (
+        <button type="button" onClick={() => setOpen(true)} className="mt-0.5 text-meta text-t3">
+          more
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The Instagram "Shop now" strip under a suggested post: full width, tinted,
+ * label left and a chevron right. Green for a commitment, saffron for a read.
+ */
+function CtaStrip({ to, onClick, children, tone = 'orange' }) {
+  const cls = `flex w-full items-center justify-between px-3 py-2.5 text-meta font-semibold transition-colors ${
+    // The green text is a step darker than the button: #1f7a4d holds 5:1 on
+    // the tint, where the button's own green would not.
+    tone === 'green' ? 'bg-btn/10 text-[#1f7a4d]' : 'bg-gold-wash text-gold'
+  }`
+  const inner = (
+    <>
+      <span>{children}</span>
+      <span aria-hidden="true">›</span>
+    </>
+  )
+  return to ? (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} className={cls}>
+      {inner}
+    </button>
+  )
 }
 
 function PostCard({ post: p }) {
-  const { showToast, hasFlag, toggleFlag } = useStore()
-  const liked = hasFlag(`like:${p.id}`)
+  const { showToast } = useStore()
   const [reporting, setReporting] = useState(false)
+  const text = p.body || p.caption
+  /* A plain note has no media. Instagram's answer is a text tile — the words
+     set large on colour, square — which keeps the rhythm of the grid of
+     pictures. Only for a short note: a long one reads better as a caption. */
+  const tile = !p.mediaUrl && text && text.length <= 240
 
-  /* The like count is the view's aggregate plus your own un-saved tap, so the
-     number moves the instant you press it and still agrees with the database
-     on the next load. Reply and Share carry NO count: there is no comments
-     table and no share to count, and the mock's 96 replies against zero rows
-     is the lie this phase is here to stop telling. */
   return (
-    <article className="pop-card relative p-4">
-      {/* Report lives under a ⋯ at the card's corner, not in the action
-          row. It is the one action here nobody is looking for until they
-          need it, and putting it beside Like gets it pressed by accident
-          — a false report costs a real person an admin's attention. */}
-      <button
-        type="button"
-        onClick={() => setReporting(true)}
-        aria-label="Report this post"
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-t3 transition-colors hover:bg-surface-2 hover:text-t1"
-      >
-        <span aria-hidden="true" className="text-body leading-none">⋯</span>
-      </button>
-
-      <Byline
+    <article className="border-b border-rule bg-white">
+      {/* Report stays under the ⋯, not in the action row: it is the one action
+          nobody looks for until they need it, and beside Like it gets pressed
+          by accident — a false report costs a real person an admin's time. */}
+      <PostHead
         initials={p.initials}
         name={p.consultant}
-        meta={p.time}
+        time={p.time}
         to={authorHref(p)}
+        onMore={() => setReporting(true)}
+        moreLabel="Report this post"
       />
-      <p className="mt-4 text-body t-sub">{p.body || p.caption}</p>
-      {/* A photo post carries an image; a plain note does not. Both are
-          kind 'post' — the media is what separates them, not a fourth kind. */}
-      {p.mediaUrl && (
-        <img
-          src={p.mediaUrl}
-          alt=""
-          className="mt-4 max-h-[26rem] w-full rounded-lg object-cover"
-        />
+
+      {p.mediaUrl && <img src={p.mediaUrl} alt="" className="max-h-[32rem] w-full object-cover" />}
+      {tile && (
+        <div
+          className="flex aspect-square w-full items-center justify-center px-8 text-center"
+          style={{
+            background: 'linear-gradient(145deg, #fff4ea 0%, #ffe4cc 55%, #e3f5ec 100%)',
+          }}
+        >
+          <p className="text-lead font-semibold leading-snug text-t1">{text}</p>
+        </div>
       )}
 
-      <Acts
-        className="mt-5"
-        items={[
-          {
-            label: 'Like',
-            onLabel: 'Liked',
-            on: liked,
-            count: (p.likes + (liked ? 1 : 0)).toLocaleString('en-IN'),
-            onClick: () => toggleFlag(`like:${p.id}`),
-          },
-          { label: 'Reply', onClick: () => showToast('Replies — prototype only') },
-          { label: 'Share', onClick: () => showToast('Note copied') },
-          {
-            label: 'Save',
-            onLabel: 'Saved',
-            on: hasFlag(`save:${p.id}`),
-            onClick: () =>
-              toggleFlag(`save:${p.id}`, {
-                on: 'Saved to your reading list',
-                off: 'Removed from your reading list',
-              }),
-          },
-        ]}
+      <ActionRow
+        id={p.id}
+        onComment={() => showToast('Replies — prototype only')}
+        onShare={() => showToast('Note copied')}
+      />
+      <Caption
+        id={p.id}
+        likes={p.likes}
+        name={p.consultant}
+        to={authorHref(p)}
+        text={tile ? null : text}
       />
 
-      <ReportSheet
-        open={reporting}
-        onClose={() => setReporting(false)}
-        contentId={p.id}
-      />
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} contentId={p.id} />
     </article>
   )
 }
 
 function ReelCard({ reel: r }) {
-  return (
-    <article className="pop-card p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <Byline initials={r.initials} name={r.consultant} to={authorHref(r)} />
-        <PopTag>Reel</PopTag>
-      </div>
+  const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
 
-      <Link to={`/reels/${r.id}`} className="group block">
-        <Plate seed={r.id} className="aspect-[4/5] w-full">
+  return (
+    <article className="border-b border-rule bg-white">
+      <PostHead initials={r.initials} name={r.consultant} time={r.time} to={authorHref(r)} />
+
+      <Link to={`/reels/${r.id}`} className="group relative block">
+        <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
           {/* A video's cover is its own frame at half a second: the `#t=` fragment
               seeks there and `preload="metadata"` fetches just enough to paint it.
               ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
-          {r.mediaUrl?.match(/\.(mp4|webm|mov)$/i) && (
+          {isVideo && (
             <video
               src={`${r.mediaUrl}#t=0.5`}
               preload="metadata"
               muted
               playsInline
-              className="absolute inset-0 h-full w-full rounded-[inherit] object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           )}
-          {r.mediaUrl && !r.mediaUrl.match(/\.(mp4|webm|mov)$/i) && (
-            <img
-              src={r.mediaUrl}
-              alt=""
-              className="absolute inset-0 h-full w-full rounded-[inherit] object-cover"
-            />
+          {r.mediaUrl && !isVideo && (
+            <img src={r.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           )}
+          {/* Instagram marks a reel with a glyph in the corner, not a badge. */}
+          <span className="absolute right-3 top-3 text-white drop-shadow">
+            <Icon name="play" size={22} filled />
+          </span>
           <span className="absolute inset-0 flex items-center justify-center">
-            <span
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-ink text-white shadow-lg transition-transform duration-200 group-hover:scale-105"
-            >
-              <span className="caps-sm leading-none">▶</span>
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
+              <Icon name="play" size={28} filled />
             </span>
           </span>
         </Plate>
-        <p className="mt-3 text-body t-heading">{r.caption}</p>
       </Link>
-      {/* No duration and no audio credit. Both were mock strings on a Plate
-          that plays nothing; there is no upload path yet, so there is nothing
-          to state a length for. The view count is real, which is why it is
-          usually 0 — nothing server-side increments it (020's `view_count`). */}
-      <p className="mt-1.5 caps-sm t-faint tnum">{r.time}</p>
+
+      {/* No duration and no audio credit: both were mock strings on a Plate
+          that plays nothing. No Share either — a reel never had one, and a
+          toast claiming a copied link that was not copied would be a lie. */}
+      <ActionRow id={r.id} />
+      <Caption
+        id={r.id}
+        likes={r.likes}
+        name={r.consultant}
+        to={authorHref(r)}
+        text={r.caption}
+      />
     </article>
   )
 }
@@ -490,77 +674,72 @@ export function readMins(body) {
 }
 
 function ArticleCard({ read: b }) {
-  const { hasFlag, toggleFlag } = useStore()
-
   return (
-    <article className="pop-card p-4">
-      <Byline
+    <article className="border-b border-rule bg-white">
+      <PostHead
         initials={b.initials}
         name={b.consultant}
+        time={b.time}
         note="published an article"
-        meta={b.time}
         to={authorHref(b)}
       />
 
-      <Link to={`/read/${b.id}`} className="mt-4 block transition-opacity hover:opacity-80">
-        <div className="pop-inset flex gap-4 p-3">
-          <Plate seed={b.id} className="h-[72px] w-[72px] flex-none" />
-          <span className="min-w-0 flex-1">
-            <span className="mt-1 block text-body t-heading">{b.title}</span>
-            {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
-                one goes stale the first time the article is edited. */}
-            <span className="mt-1.5 block caps-sm t-faint tnum">{readMins(b.body)} min</span>
+      {/* The cover: the plate, with the title set over a scrim at its foot. */}
+      <Link to={`/read/${b.id}`} className="relative block">
+        <Plate seed={b.id} className="aspect-[16/10] w-full !rounded-none">
+          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-4 pb-4 pt-12">
+            <span className="block text-lead font-semibold leading-snug text-white">{b.title}</span>
           </span>
-        </div>
+        </Plate>
       </Link>
+      {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
+          one goes stale the first time the article is edited. */}
+      <CtaStrip to={`/read/${b.id}`}>Read article · {readMins(b.body)} min</CtaStrip>
 
-      <Acts
-        className="mt-4"
-        items={[
-          {
-            label: 'Save for later',
-            onLabel: 'Saved for later',
-            on: hasFlag(`save:${b.id}`),
-            onClick: () =>
-              toggleFlag(`save:${b.id}`, {
-                on: 'Saved to your reading list',
-                off: 'Removed from your reading list',
-              }),
-          },
-        ]}
-      />
+      {/* Save only, as before — an article never had a like. */}
+      <ActionRow id={b.id} like={false} />
+      <div className="h-3" />
     </article>
+  )
+}
+
+/** Header for the house's own suggestions: the Namo mark instead of a person. */
+function HouseHead({ name, note, to }) {
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2.5">
+      <Link to={to} className="flex min-w-0 flex-1 items-center gap-2.5">
+        <span className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-gold-fill text-meta font-bold text-white">
+          N
+        </span>
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate text-meta font-semibold text-t1">{name}</span>
+          <span className="block text-[11px] text-t3">{note}</span>
+        </span>
+      </Link>
+    </div>
   )
 }
 
 function CourseCard({ course: c }) {
   return (
-    <article className="pop-card p-4">
-      <Kicker action="Academy" to="/academy">
-        Continue learning
-      </Kicker>
-      <div className="pop-inset mt-4 p-4">
-        <div className="flex items-start gap-3">
-          <Plate seed={c.id} className="h-16 w-16 flex-none" />
-          <div className="min-w-0 flex-1">
-            <p className="text-body t-heading">{c.title}</p>
-            <p className="mt-1 caps-sm t-faint tnum">
-              {c.tutor} · {c.lessons} lessons
-            </p>
-          </div>
+    <article className="border-b border-rule bg-white">
+      <HouseHead name="Namo Academy" note="Continue learning" to="/academy" />
+      <Link to="/academy" className="block">
+        <Plate seed={c.id} className="aspect-[16/10] w-full !rounded-none" />
+      </Link>
+      {c.progress > 0 && (
+        <div className="px-3 pt-3">
+          <PopBar value={c.progress} />
         </div>
-        {c.progress > 0 && (
-          <div className="mt-4">
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className="caps-sm t-faint">Progress</span>
-              <span className="caps-sm gold tnum">{c.progress}%</span>
-            </div>
-            <PopBar value={c.progress} />
-          </div>
-        )}
-        <PopButton size="sm" to="/academy" variant="gold" className="mt-4">
-          {c.progress > 0 ? 'Resume' : 'Start course'}
-        </PopButton>
+      )}
+      <CtaStrip to="/academy" tone="green">
+        {c.progress > 0 ? `Resume · ${c.progress}% done` : 'Start course'}
+      </CtaStrip>
+      <div className="px-3 pb-4 pt-2">
+        <p className="text-meta font-semibold text-t1">{c.title}</p>
+        <p className="mt-0.5 text-meta text-t2 tnum">
+          {c.tutor} · {c.lessons} lessons
+        </p>
       </div>
     </article>
   )
@@ -571,23 +750,20 @@ function ProductCard({ product: p }) {
   const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
 
   return (
-    <article className="pop-card p-4">
-      <Kicker action="Shop" to="/shop">
-        For your chart
-      </Kicker>
-      <div className="pop-inset mt-4 flex gap-4 p-3">
-        <Plate seed={p.id} className="h-24 w-24 flex-none" />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <p className="text-body t-heading">{p.name}</p>
-          <p className="mt-1 text-meta t-faint">{p.subtitle}</p>
-          <p className="mt-2 flex items-baseline gap-2 tnum">
-            <span className="text-lead gold">₹{p.price.toLocaleString('en-IN')}</span>
-            {off > 0 && <span className="caps-sm t-faint">{off}% off</span>}
-          </p>
-          <PopButton onClick={() => addToCart(p)} full={false} className="mt-auto self-start px-4">
-            Add
-          </PopButton>
-        </div>
+    <article className="border-b border-rule bg-white">
+      <HouseHead name="Namo Shop" note="For your chart" to="/shop" />
+      <Link to="/shop" className="block">
+        <Plate seed={p.id} className="aspect-square w-full !rounded-none" />
+      </Link>
+      <CtaStrip onClick={() => addToCart(p)} tone="green">
+        Add to cart · ₹{p.price.toLocaleString('en-IN')}
+      </CtaStrip>
+      <div className="px-3 pb-4 pt-2">
+        <p className="text-meta">
+          <span className="font-semibold text-t1">{p.name}</span>
+          {off > 0 && <span className="ml-2 font-semibold text-gold tnum">{off}% off</span>}
+        </p>
+        <p className="mt-0.5 text-meta text-t2">{p.subtitle}</p>
       </div>
     </article>
   )
