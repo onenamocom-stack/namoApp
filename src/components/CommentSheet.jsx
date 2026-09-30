@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { fetchComments, postComment, removeComment } from '../lib/content.js'
 import { PopAvatar } from './Pop.jsx'
@@ -12,9 +13,12 @@ import { useStore } from '../store.jsx'
  * the real thing, on `content_comments` (docs/05 §5.2c). You can remove your
  * own comment, and anything on your own post; there is no editing.
  *
- * Same frame as `Sheet` (Chrome.jsx) — absolute over the phone frame, dimmed
- * page behind — but with its own layout, because a sheet whose input scrolls
- * away with the thread is a sheet you cannot type into.
+ * Portalled to <body> and fixed, not absolute like `Sheet` (Chrome.jsx).
+ * Mounted inside the feed's scroller, an absolute sheet sat UNDER the fixed
+ * tab bar, which covered the composer — found in the first browser test.
+ * Its own layout too, because a sheet whose input scrolls away with the
+ * thread is a sheet you cannot type into. Capped at the phone frame's
+ * 420px so it lines up with the app on a wide screen.
  *
  * `onCount` tells the caller the thread's length after every change, so the
  * count under the icon moves with it.
@@ -82,8 +86,8 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
     }
   }
 
-  return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+  return createPortal(
+    <div className="fixed inset-y-0 left-1/2 z-[60] flex w-full max-w-[420px] -translate-x-1/2 flex-col justify-end">
       <button
         type="button"
         aria-label="Close comments"
@@ -176,6 +180,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
