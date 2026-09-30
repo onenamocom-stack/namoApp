@@ -235,8 +235,8 @@ keys and URLs unchanged). No stories strip, no dates on posts. In
 `/reels/:id` there is no position counter, and the chips under the author are
 the reel's tagged products — "Book a session" was removed from there.
 `/bhakti` has no header tag and its search sits above the tiles.
-| Reading | *Read all* → horoscope overlay |
-| Panchang | *Full chart* → `/chart` |
+| Panchang | First on the आज का पंचांग tab. No links (the *Full chart* link was removed 30 Sep) |
+| Reading | Under the panchang: the date, the day's mood and its windows. No heading and no *Read all* since 30 Sep — `/horoscope` is reached from Consult's Horoscope tile |
 | Article | → `/read/:id` · Save |
 | Live | → `/live/:id` |
 | Course | → `/academy` |

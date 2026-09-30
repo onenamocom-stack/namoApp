@@ -155,8 +155,10 @@ export default function Home() {
             {/* Both fetch for themselves rather than being handed data, and
                 both memoise through `cachedAstro`, so mounting them here costs
                 nothing a hoisted card was not already costing. */}
-            <ReadingCard />
+            {/* Panchang first, the day's reading and windows under it
+                (30 Sep, owner's call). */}
             <PanchangCard />
+            <ReadingCard />
           </div>
         ) : (
           <>
@@ -560,13 +562,10 @@ function ReadingCard() {
 
   return (
     <article className="pop-card p-4">
-      {/* Was a slide-over. Inside the Today tab that overlay showed the same
-          card it was launched from; `/horoscope` is the one view with
-          yesterday and tomorrow on it, which is what "read all" means. */}
-      <Kicker action="Read all" to="/horoscope">
-        Today&apos;s reading
-      </Kicker>
-      <div className="pop-inset mt-4 p-4">
+      {/* No heading and no "Read all" since 30 Sep (owner's call) — the tab
+          is already called आज का पंचांग, and `/horoscope` stays reachable
+          from Consult's Horoscope tile. */}
+      <div className="pop-inset p-4">
         {horoscope.loading && <p className="text-meta t-faint">Reading the sky.</p>}
 
         {/* Signed out, or with no birth details, this says which. It does not
@@ -642,9 +641,9 @@ function PanchangCard() {
 
   return (
     <article className="pop-card p-4">
-      <Kicker action="Full chart" to="/chart">
-        Today&apos;s panchang
-      </Kicker>
+      {/* No "Full chart" link since 30 Sep (owner's call); the chart is on
+          Profile and Consult. */}
+      <Kicker>Today&apos;s panchang</Kicker>
 
       {got.loading && <p className="mt-3 text-meta t-faint">Working out the day.</p>}
       {got.refusal && <p className="mt-3 text-meta t-body">{got.refusal.reason}</p>}
