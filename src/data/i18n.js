@@ -122,14 +122,6 @@ export const strings = {
   },
   'tarot.reading': { en: 'Reading the card', hi: 'कार्ड पढ़ा जा रहा है' },
 
-  // ── Chart systems ────────────────────────────────────────────────────────
-  'chart.vedic': { en: 'Vedic', hi: 'वैदिक' },
-  'chart.table': { en: 'Table', hi: 'सूची' },
-  'chart.northNote': {
-    en: 'Houses are fixed; the number in each is its sign. House 1 is the top diamond.',
-    hi: 'भाव स्थिर हैं; हर भाव में लिखी संख्या उसकी राशि है। पहला भाव ऊपर का कोण है।',
-  },
-
   // ── Settings ─────────────────────────────────────────────────────────────
   'set.language': { en: 'Language', hi: 'भाषा' },
   'set.langNote': {
