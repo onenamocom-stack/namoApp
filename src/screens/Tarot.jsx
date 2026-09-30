@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { tarotDecks } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
-import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
+import { Kicker, PopButton, PopCard } from '../components/Pop.jsx'
 import { Stub } from '../components/Primitives.jsx'
 import { priceLabel, pullCard, tarotState } from '../lib/tarot.js'
 import { useStore } from '../store.jsx'
@@ -101,7 +101,6 @@ export default function Tarot() {
             reading={result}
             verdict={result.card.verdict}
             deck={deck}
-            tradition={tradition}
           />
         ) : (
           /* The face-down deck, waiting behind whichever dialog is open. It
@@ -240,7 +239,7 @@ function Dialog({ title, note, onBack, children }) {
  * cannot do. The shloka is not a reading at all: it belongs to the card and
  * it is the tradition's words (`src/data/bhaktamar.js` — never rewritten).
  */
-function Card({ card, reading, verdict, deck, tradition }) {
+function Card({ card, reading, verdict, deck }) {
   const { t } = useStore()
   const [artFailed, setArtFailed] = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -270,25 +269,13 @@ function Card({ card, reading, verdict, deck, tradition }) {
               onError={() => setArtFailed(true)}
               className="h-full w-full object-cover"
             />
-            <span className="absolute left-3 top-3">
-              <PopTag>{tradition(deck)}</PopTag>
-            </span>
-            {card.no && (
-              <span className="absolute right-3 top-3">
-                <PopTag tone="gold">{card.no}</PopTag>
-              </span>
-            )}
           </div>
         ) : (
           <Plate
             seed={card.id}
             variant="engraving"
             className="!rounded-none aspect-[3/4] w-full !shadow-none"
-          >
-            <span className="absolute left-3 top-3">
-              <PopTag>{tradition(deck)}</PopTag>
-            </span>
-          </Plate>
+          />
         )}
       </PopCard>
 
@@ -325,21 +312,21 @@ function Card({ card, reading, verdict, deck, tradition }) {
         </PopButton>
       ) : (
         <div className="animate-fade">
-          {/* The yes/no deck's answer leads the reading — the CARD's, off the
-              deck sheet; the model never gets to overturn it. */}
+          {/* The card's meaning first, THEN the result (30 Sep 2026, owner's
+              call): what the card is, before what it says to you. */}
+          {meaning && (
+            <div className="mt-6">
+              <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
+              <p className="mt-2 whitespace-pre-line text-read t-heading">{meaning}</p>
+            </div>
+          )}
+
+          {/* The yes/no deck's result — the CARD's, off the deck sheet; the
+              model never gets to overturn it. */}
           {(verdict || card.verdictLine) && (
             <div className="pop-inset mt-6 p-5 text-center">
               {verdict && <p className="text-title font-semibold">{verdict}</p>}
               {card.verdictLine && <p className="mt-1.5 text-meta t-sub">{card.verdictLine}</p>}
-            </div>
-          )}
-
-          {/* What was asked, quoted back small. */}
-
-          {meaning && (
-            <div className="mt-4">
-              <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
-              <p className="mt-2 whitespace-pre-line text-read t-heading">{meaning}</p>
             </div>
           )}
 

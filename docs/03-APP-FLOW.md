@@ -475,8 +475,9 @@ it and may not argue with it. The Vedic Kipper six are written down but
 unreachable until their faces are drawn. Rider-Waite, Sufi Path and Lotus Path
 were deleted outright — six authored lines each and no art.
 
-Card order, fixed since 30 Sep 2026 (owner's): **face → name → shloka →
-*Reveal my reading* → the verdict (yes/no deck) → what the card says → where it lands → what to do.** The card and its verse are
+Card order, fixed since 30 Sep 2026 (owner's): **face (no tradition tag, no
+number on it) → name → shloka → *Reveal my reading* → what the card says → the
+result (the yes/no verdict and its sentence) → where it lands → what to do.** The card and its verse are
 looked at before anything explains them; the reading waits behind one tap. This
 reverses the order that put the shloka below the reading.
 
