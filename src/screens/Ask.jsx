@@ -2,27 +2,27 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
-import { Button, Section } from '../components/Primitives.jsx'
+import Icon from '../components/Icon.jsx'
 import useAskAi from '../components/useAskAi.js'
 import SubjectForm from '../components/SubjectForm.jsx'
 import { rupees } from '../store.jsx'
 
 /**
- * Namo AI as a full screen — the reading column, not the chat bubble.
+ * Namo AI — a plain chat, like every chat assistant (30 Sep 2026, owner's
+ * call). Messages in bubbles, the composer pinned to the bottom, Enter sends.
+ * It was a reading column with section labels; that read as a form.
  *
- * Its own page since 30 Sep 2026 — it was also a tab in the messages
- * panel. The quota, the price and the send path live in `useAskAi`.
+ * The chart is the seeker's own by default — no "who is this about?" step
+ * before the first message. Somebody else's is one tap above the composer.
  *
- * Priced per QUESTION since 23 Sep 2026 — five free on arrival, one a day
- * after that, then ₹9 an answer (docs/01-PRD.md §4.4). Before that it was
- * a per-minute meter with a clock in this header, and before that question
- * packs. Nothing here prices anything: `pricePaise` is the server's.
+ * Priced per question (docs/01-PRD.md §4.4): the free count, the price and
+ * the send path are the server's, through `useAskAi`.
  */
 export default function Ask() {
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, pricePaise, outOfFree, boostFrom,
-    who, subject, asking, setAsking, askAbout,
+    subject, asking, setAsking, askAbout,
   } = useAskAi()
   const endRef = useRef(null)
 
@@ -30,165 +30,134 @@ export default function Ask() {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [messages, thinking])
 
+  const price = pricePaise ? `₹${rupees(pricePaise)}` : ''
+  const empty = !loading && messages.length === 0
+
   return (
-    <>
-      {/* Namo AI's own page since 30 Sep 2026 — it left the messages panel —
-          so it has a way back. The right slot carries the quota. */}
+    <div className="flex min-h-full flex-col">
       <TopBar
         title="Namo AI"
-        sub="Reads your chart"
         back
         backTo="/consult"
         right={
-          <span
-            className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${
-              outOfFree ? 'text-t1' : 'text-t2'
-            }`}
-          >
-            {loading
-              ? '—'
-              : outOfFree
-                ? pricePaise ? `₹${rupees(pricePaise)} each` : ''
-                : `${freeLeft} free`}
+          <span className="whitespace-nowrap text-micro uppercase tracking-label tnum text-t2">
+            {loading ? '' : outOfFree ? `${price} each` : `${freeLeft} free`}
           </span>
         }
       />
 
-      {/* Said once, pinned, and never repeated per message — a warning on
-          every bubble is a warning nobody reads. It names the real limit
-          rather than only the legal one: a chart is not a life, and the
-          model does not know one. The link is the honest next step and
-          the business's, which is why it sits inside the sentence rather
-          than under a separate heading. */}
-      <p className="border-b border-rule px-5 py-3 text-micro t-faint">
-        An AI expert reads your chart here. It might be wrong, and it does not know your
-        life. For anything that matters,{' '}
-        <Link to="/consult" className="underline hover:text-t1">
-          ask our pros
-        </Link>
-        .
-      </p>
+      <div className="flex-1 px-4 pt-4">
+        {loading && <p className="py-10 text-center text-meta t-faint">Opening…</p>}
 
-      <div className="section-tight">
-        {messages.map((m) => (
-          <div key={m.id} className="border-b border-rule py-5 last:border-b-0">
-            <p className="label text-left mb-2">{m.role === 'model' ? 'Namo' : 'You'}</p>
-            <p className={`text-read ${m.role === 'model' ? 'text-t1' : 'text-t2'}`}>{m.text}</p>
-          </div>
-        ))}
-
-        {/* Asked once, before the first question. A chart answers about one
-            person, and which person is the thing the model cannot guess —
-            "will I get the job" and "will she get the job" are the same
-            sentence to it if nobody says whose chart is loaded. */}
-        {who === null && messages.length === 0 && !loading && (
-          <div className="pop-card p-4 text-center">
-            <p className="caps t-heading">Who is this about?</p>
-            <p className="mt-2 text-meta t-body">
-              A chart reads one person. Say whose.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => askAbout(null)} className="pop-btn flex-1 caps-sm">
-                Myself
-              </button>
-              <button type="button" onClick={() => setAsking(true)} className="pill flex-1 caps-sm justify-center">
-                Someone else
-              </button>
+        {empty && (
+          <div className="flex flex-col items-center pt-16 text-center">
+            <p className="text-title font-semibold t-heading">Ask about your chart</p>
+            <p className="mt-2 text-meta t-faint">Answers read from the minute you were born.</p>
+            <div className="mt-8 flex w-full flex-col gap-2">
+              {askSuggestions.slice(0, 4).map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => send(s.text)}
+                  className="rounded-2xl border border-rule px-4 py-3 text-left text-meta t-body transition-colors hover:bg-surface2"
+                >
+                  {s.text}
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {asking && <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />}
-
-        {/* Whose chart is loaded, and the way out of it. Shown while a
-            subject is set because the alternative is a seeker forgetting
-            and reading an answer about their mother as one about them. */}
-        {subject && !asking && (
-          <p className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2 text-micro t-sub">
-            <span>Reading {subject.name}&apos;s chart</span>
-            <span className="flex gap-3">
-              <button type="button" onClick={() => setAsking(true)} className="underline">
-                someone else
-              </button>
-              <button type="button" onClick={() => askAbout(null)} className="underline">
-                back to mine
-              </button>
-            </span>
-          </p>
-        )}
-
-        {(loading || thinking) && (
-          <div className="animate-breathe py-5">
-            <p className="label text-left">{loading ? 'Opening' : 'Reading your chart'}</p>
-          </div>
-        )}
-        <div ref={endRef} />
+        <ul className="space-y-3">
+          {messages.map((m) => (
+            <li key={m.id} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'}`}>
+              <p
+                className={`max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-body ${
+                  m.role === 'model'
+                    ? 'rounded-bl-md bg-surface2 t-body'
+                    : 'rounded-br-md bg-gold-fill text-ink'
+                }`}
+              >
+                {m.text}
+              </p>
+            </li>
+          ))}
+          {thinking && (
+            <li className="flex justify-start">
+              <p className="animate-breathe rounded-2xl rounded-bl-md bg-surface2 px-4 py-2.5 text-body t-faint">
+                …
+              </p>
+            </li>
+          )}
+        </ul>
+        <div ref={endRef} className="h-4" />
       </div>
 
-      {/* A boost that is earned but not yet open. Without this the
-          seeker sees the same number as before and reads their reward as
-          nothing having happened — which is the complaint that moved the
-          window to start tomorrow in the first place. */}
-      {boostFrom && (
-        <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
-          Your referral is in. <b>3 free questions a day</b> start tomorrow.
-        </p>
-      )}
-
-      {outOfFree && (
-        /* A price, not a wall. Asking still works. */
-        <Section label="Free questions used" tight>
-          <p className="horoscope">
-            The next answer costs {pricePaise ? `₹${rupees(pricePaise)}` : '—'} from your
-            wallet, and one more free one arrives tomorrow.
-          </p>
-          <Button to="/consult" variant="quiet" className="mt-5">
-            Or ask a person instead
-          </Button>
-        </Section>
-      )}
-
-      <>
-        <Section label="If you cannot phrase it" tight>
-            <ul>
-              {askSuggestions.map((s) => (
-                <li key={s.id}>
-                  <button type="button" onClick={() => send(s.text)} className="act-row">
-                    <span className="min-w-0">
-                      <span className="block text-body text-t1">{s.text}</span>
-                      <span className="mt-1 block text-micro uppercase tracking-caps text-t3">
-                        {s.label}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <Section label="Your question" last>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={3}
-              placeholder="Ask plainly. Vague questions get vague charts."
-              aria-label="Your question"
-              className="w-full resize-none border border-rule bg-transparent p-4 text-body text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
-            />
-            <Button
-              className="mt-5"
-              variant="solid"
-              onClick={() => send()}
-              disabled={!draft.trim() || thinking || (who === null && messages.length === 0)}
+      {/* Pinned to the bottom of the scroll, like every chat. */}
+      <div className="sticky bottom-0 border-t border-rule bg-bg px-4 pb-4 pt-3">
+        {asking ? (
+          <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />
+        ) : (
+          <p className="mb-2 flex items-center justify-between text-micro t-faint">
+            <span>{subject ? `Reading ${subject.name}'s chart` : 'Reading your chart'}</span>
+            <button
+              type="button"
+              onClick={() => (subject ? askAbout(null) : setAsking(true))}
+              className="underline"
             >
-              {outOfFree
-                ? `Send · ${pricePaise ? `₹${rupees(pricePaise)}` : ''}`
-                : 'Send · uses one free'}
-            </Button>
-          </Section>
-      </>
+              {subject ? 'Back to mine' : 'Someone else'}
+            </button>
+          </p>
+        )}
 
-      <div className="h-8" />
-    </>
+        {boostFrom && (
+          <p className="mb-2 text-micro t-sub">
+            Your referral is in. 3 free questions a day start tomorrow.
+          </p>
+        )}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            send()
+          }}
+          className="flex items-end gap-2 rounded-3xl border border-rule bg-white px-3 py-2"
+        >
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                send()
+              }
+            }}
+            rows={1}
+            placeholder="Message Namo AI"
+            aria-label="Message Namo AI"
+            className="max-h-32 min-h-[2.25rem] flex-1 resize-none bg-transparent py-1.5 text-body text-t1 outline-none placeholder:text-t4"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || thinking}
+            aria-label={outOfFree ? `Send, ${price}` : 'Send'}
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-ink transition-opacity disabled:opacity-40"
+          >
+            <Icon name="send" size={16} />
+          </button>
+        </form>
+
+        <p className="mt-2 text-center text-micro t-faint">
+          {outOfFree
+            ? `${price} a question from your wallet. `
+            : `${freeLeft ?? '—'} free questions left. `}
+          Namo AI can be wrong —{' '}
+          <Link to="/consult" className="underline">
+            ask our pros
+          </Link>
+          .
+        </p>
+      </div>
+    </div>
   )
 }

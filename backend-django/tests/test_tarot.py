@@ -130,12 +130,17 @@ class TestDraw:
         assert wallet_services.balance_of(SEEKER) == 10000
         assert _ledger_rows(SEEKER) == 0  # refused before the ledger
 
-    def test_an_empty_question_is_refused(self):
+    def test_an_unspoken_question_is_read_as_one(self, monkeypatch):
+        # 30 Sep 2026: nothing is typed — the person thinks of a yes-or-no
+        # question. The model is told exactly that, never an empty string.
+        sent = []
+        monkeypatch.setattr(providers, "read_card",
+                            lambda block, q: sent.append(q) or {"text": "MEANING: Yes."})
         _wallet(SEEKER, 10000)
         result = services.tarot_pull(SEEKER, "bhaktamar", "   ")
-        assert result["ok"] is False
-        assert result["reason"] == services.REFUSAL_EMPTY
-        assert wallet_services.balance_of(SEEKER) == 10000
+        assert result["ok"] is True
+        assert sent == [tarot.UNSPOKEN]
+        assert tarot.UNSPOKEN in tarot.SYSTEM
 
 
 @pytest.mark.django_db
@@ -298,8 +303,6 @@ class TestEndpoint:
                                format="json").status_code == 401
         for payload in (
             {"question": "no deck named"},
-            {"deck": "bhaktamar"},
-            {"deck": "bhaktamar", "question": ""},
             {"deck": "bhaktamar", "question": "x" * 201},
         ):
             response = authed_client.post(self.URL, payload, format="json")

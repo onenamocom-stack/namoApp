@@ -435,9 +435,11 @@ reads as more of the same screen, and these are questions the screen is asking.
 The face-down deck sits behind them; it is the subject of the dialogs, not an
 empty state. `deck` has no dismiss: there is no screen behind it to return to.
 
-**The question dialog asks for a yes-or-no question** (30 Sep 2026): *Think of
-a question you want to ask, one that can be answered yes or no*, and the box
-under it is still typed, because the reading is written for it.
+**The question dialog has no box** (30 Sep 2026, owner's call): *Think of a
+question* — *one that can be answered yes or no; hold it in your mind, then
+pull.* The server reads the card as the answer to an unspoken yes-or-no
+question (`apps/ai/tarot.py`, UNSPOKEN) and never guesses what it was. This
+reverses the typed question of 24 Sep, described below.
 
 **The question is typed, as of 24 Sep 2026.** This reverses the rule this screen
 was built on — "nothing is typed, the seeker holds it in their head until the
@@ -474,8 +476,7 @@ unreachable until their faces are drawn. Rider-Waite, Sufi Path and Lotus Path
 were deleted outright — six authored lines each and no art.
 
 Card order, fixed since 30 Sep 2026 (owner's): **face → name → shloka →
-*Reveal my reading* → the verdict (yes/no deck) → the question quoted back →
-what the card says → where it lands → what to do.** The card and its verse are
+*Reveal my reading* → the verdict (yes/no deck) → what the card says → where it lands → what to do.** The card and its verse are
 looked at before anything explains them; the reading waits behind one tap. This
 reverses the order that put the shloka below the reading.
 
@@ -916,7 +917,14 @@ next rather than showing an empty list.
 ## Namo AI — `/ask` (21 Sep 2026, repriced 23 Sep, own page 30 Sep)
 
 One surface since 30 Sep 2026 — the chat panel's Ask AI tab is gone. `useAskAi`
-holds the state and `/ask` draws a reading column; neither owns a number.
+holds the state; neither it nor the screen owns a number.
+
+**`/ask` is a plain chat since 30 Sep 2026** (owner's call — it was a reading
+column with section labels): bubbles, a composer pinned to the bottom, Enter
+sends, four suggestions on an empty conversation. It reads the seeker's own
+chart by default — no "who is this about?" step first; *Someone else* above the
+composer opens the subject form. The free count or the price sits in the header
+and under the composer, with the one-line disclaimer.
 
 | State | What the seeker sees |
 |---|---|

@@ -12,13 +12,10 @@ import { useStore } from '../store.jsx'
  *
  *   deck → question → (pull) → the reading
  *
- * **The question is typed now, and that reverses the rule this screen was
- * built on.** It used to say: "Nothing is typed: the question stays in
- * their head, which is the whole ritual." That was right while a card
- * answered with a line written months earlier — asking somebody to type
- * into a box that changed nothing would have been theatre. It is wrong
- * now. The reading is written for the question, so the question has to
- * reach the reader (24 Sep 2026, and the partner's flow).
+ * **The question is held in the head again, not typed** (30 Sep 2026, the
+ * owner's call — it was typed from 24 to 30 Sep). The dialog asks the person
+ * to think of a yes-or-no question and has no box; the server reads the card
+ * as the answer to an unspoken question (`apps/ai/tarot.py`, UNSPOKEN).
  *
  * **The card is dealt by the server** (`apps/ai/tarot_decks.py`). This
  * screen sends a deck and a question; what comes back is a card id, the
@@ -33,12 +30,10 @@ import { useStore } from '../store.jsx'
  * Kipper six, and twenty-two cards that answer yes or no. A deck with no
  * art yet falls back to a plate, so adding faces is a file copy.
  */
-const MAX_QUESTION = 200
 
 export default function Tarot() {
   const { showToast, session, sessionReady, lang, t } = useStore()
   const [deck, setDeck] = useState(null)
-  const [question, setQuestion] = useState('')
   const [step, setStep] = useState('deck')
   const [pulling, setPulling] = useState(false)
   const [result, setResult] = useState(null)
@@ -60,7 +55,7 @@ export default function Tarot() {
   const pull = async () => {
     setPulling(true)
     setRefusal(null)
-    const res = await pullCard({ deck: deck.key, question: question.trim() })
+    const res = await pullCard({ deck: deck.key, question: '' })
     setPulling(false)
 
     if (!res.ok) {
@@ -105,7 +100,6 @@ export default function Tarot() {
             card={drawn}
             reading={result}
             verdict={result.card.verdict}
-            question={question}
             deck={deck}
             tradition={tradition}
           />
@@ -162,23 +156,10 @@ export default function Tarot() {
           note={t('tarot.askNote')}
           onBack={() => setStep('deck')}
         >
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value.slice(0, MAX_QUESTION))}
-            rows={3}
-            autoFocus
-            placeholder={t('tarot.askPlaceholder')}
-            aria-label={t('tarot.askTitle')}
-            className="w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
-          />
-          <p className="mt-2 text-right caps-sm t-faint tnum">
-            {question.length}/{MAX_QUESTION}
-          </p>
-
           <PopButton
             variant="gold"
-            className="mt-4"
-            disabled={!question.trim() || pulling}
+            className="mt-2"
+            disabled={pulling}
             onClick={pull}
           >
             {pulling
@@ -255,7 +236,7 @@ function Dialog({ title, note, onBack, children }) {
  * cannot do. The shloka is not a reading at all: it belongs to the card and
  * it is the tradition's words (`src/data/bhaktamar.js` — never rewritten).
  */
-function Card({ card, reading, verdict, question, deck, tradition }) {
+function Card({ card, reading, verdict, deck, tradition }) {
   const { t } = useStore()
   const [artFailed, setArtFailed] = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -346,7 +327,6 @@ function Card({ card, reading, verdict, question, deck, tradition }) {
           )}
 
           {/* What was asked, quoted back small. */}
-          {question && <p className="mt-5 text-center text-meta t-faint">“{question}”</p>}
 
           {meaning && (
             <div className="mt-4">

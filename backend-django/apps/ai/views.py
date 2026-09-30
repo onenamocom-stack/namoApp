@@ -91,8 +91,10 @@ class TarotInput(serializers.Serializer):
     """
 
     deck = serializers.CharField(max_length=32, trim_whitespace=True)
+    # Optional since 30 Sep 2026 — the screen asks the person to think of
+    # it, not type it. Blank is read as an unspoken yes-or-no question.
     question = serializers.CharField(
-        max_length=200, allow_blank=False, trim_whitespace=True
+        max_length=200, required=False, allow_blank=True, default="", trim_whitespace=True
     )
 
 

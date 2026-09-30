@@ -106,6 +106,8 @@ const PATHS = {
       <path d="M8 2.8v4.2M16 2.8v4.2M3.4 9.8h17.2" />
     </>
   ),
+  /* Send — an arrow up, the chat composer's button (30 Sep 2026). */
+  send: <path d="M12 19.2V5.2M6.4 10.8 12 5.2l5.6 5.6" />,
   plus: <path d="M12 5.2v13.6M5.2 12h13.6" />,
   rupee: <path d="M7.6 4.4h8.8M7.6 8.6h8.8M15 4.4a4.2 4.2 0 0 1 0 8.4H7.6l7.4 6.8" />,
   check: <path d="m4.6 12.6 5 5 9.8-11" />,

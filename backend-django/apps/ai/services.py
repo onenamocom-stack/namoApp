@@ -505,9 +505,10 @@ def tarot_pull(profile_id, deck_key, question):
 
     **The card is drawn here, not sent by the client** (tarot_decks.draw).
     """
-    question = (question or "").strip()
-    if not question:
-        return {"ok": False, "reason": REFUSAL_EMPTY}
+    # Blank is the normal case since 30 Sep 2026: the screen asks the person
+    # to THINK of a yes-or-no question and has no box. The model is told so
+    # in words it has a rule for (tarot.SYSTEM, "THE UNSPOKEN QUESTION").
+    question = (question or "").strip() or tarot.UNSPOKEN
     if deck_key not in tarot_decks.DECKS:
         return {"ok": False, "reason": REFUSAL_DECK}
 

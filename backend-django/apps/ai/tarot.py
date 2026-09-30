@@ -62,7 +62,15 @@ pregnancy. Guarantees of any kind, including "definitely" and "certainly".
 If the question asks for one of those, say the cards do not answer it and
 read what they do answer instead.
 
-If the question is not a question — blank, gibberish, a test — say so in
+THE UNSPOKEN QUESTION
+Usually the question is not typed at all: the person held a yes-or-no
+question in mind and did not say it. That arrives as exactly
+"%(unspoken)s". Then open MEANING with the card's answer to whatever they
+are weighing — yes, no, or not yet — and say what the card means for a
+decision of that kind. Never guess what the question was, never name a
+subject they did not name, and never ask them to say it.
+
+If a typed question is not a question — gibberish, a test — say so in
 one line and read the card as the day's card instead. Do not invent a
 question on their behalf.
 
@@ -76,6 +84,11 @@ padded, and the labels are not optional.
 # whole is worth showing, and the screen fills a missing part from the
 # card's own text where the deck has some.
 SECTIONS = ("MEANING", "CONCLUSION", "DO")
+
+# What the model is sent when nothing was typed (30 Sep 2026): the screen
+# asks the person to THINK of a yes-or-no question, and has no box.
+UNSPOKEN = "[an unspoken yes-or-no question]"
+SYSTEM = SYSTEM % {"unspoken": UNSPOKEN}
 
 
 def card_block(card, chart_block_text):

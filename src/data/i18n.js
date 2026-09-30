@@ -113,20 +113,12 @@ export const strings = {
     en: 'Every tradition reads the same moment differently. Pick the one you keep.',
     hi: 'हर परंपरा एक ही क्षण को अलग ढंग से पढ़ती है। वह चुनें जो आपकी है।',
   },
-  /* The card is read against what is typed here, so it is still typed.
-     Asked as a yes-or-no question since 30 Sep 2026 (owner's wording): a
-     single card answers a closed question far better than an open one. */
-  'tarot.askTitle': {
-    en: 'Think of a question you want to ask, one that can be answered yes or no',
-    hi: 'कोई ऐसा प्रश्न सोचें जो आप पूछना चाहते हैं, जिसका उत्तर हाँ या ना में हो',
-  },
+  /* Thought, not typed, since 30 Sep 2026 (owner's call): the dialog has
+     no box. A single card answers a closed question, so it asks for one. */
+  'tarot.askTitle': { en: 'Think of a question', hi: 'एक प्रश्न सोचें' },
   'tarot.askNote': {
-    en: 'Type it below. The card is read against it.',
-    hi: 'इसे नीचे लिखें। कार्ड उसी के सामने पढ़ा जाता है।',
-  },
-  'tarot.askPlaceholder': {
-    en: 'Will I get the job in Pune?',
-    hi: 'क्या मुझे पुणे वाली नौकरी मिलेगी?',
+    en: 'One that can be answered yes or no. Hold it in your mind, then pull.',
+    hi: 'ऐसा प्रश्न जिसका उत्तर हाँ या ना में हो। उसे मन में रखें, फिर कार्ड निकालें।',
   },
   'tarot.reading': { en: 'Reading the card', hi: 'कार्ड पढ़ा जा रहा है' },
 
