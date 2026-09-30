@@ -90,6 +90,54 @@ class Content(models.Model):
         ]
 
 
+MAX_TAGGED_PRODUCTS = 3
+
+
+class ContentProduct(models.Model):
+    """A shop product tagged on a post or reel (30 Sep 2026).
+
+    The consultant says "this is the stone I mean" and the seeker taps
+    through to it in the shop, carrying the consultant's A code — so the
+    tag IS an affiliate link, credited exactly as a link from "Your links"
+    is. Three rules, enforced in services.publish_content:
+
+    1. **Approved consultants only.** An A code is theirs alone, and a
+       seeker tagging products would be advertising with no one to credit.
+    2. **Active products only**, at most MAX_TAGGED_PRODUCTS per post. The
+       read side filters `active` again: a product retired after the post
+       went out quietly drops off it rather than linking to a dead page.
+    3. **Set at publish, never edited.** There is no edit path for a post
+       either; a tag that changes under a published post is a bait and
+       switch the reader never agreed to.
+
+    A through table rather than a bare M2M because the order the author
+    picked is the order the strip shows (`sort`), and because the name
+    `content_products` is what a SQL reader will look for.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content = models.ForeignKey(
+        Content, on_delete=models.CASCADE, db_column="content_id",
+        related_name="product_tags",
+    )
+    # DO_NOTHING like every other pointer at `products`: a product is never
+    # deleted, only made inactive (shop/models.py).
+    product = models.ForeignKey(
+        "shop.Product", on_delete=models.DO_NOTHING, db_column="product_id",
+        related_name="content_tags",
+    )
+    sort = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "content_products"
+        ordering = ("sort",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content", "product"], name="content_products_once",
+            ),
+        ]
+
+
 class ReviewStatus(models.TextChoices):
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"

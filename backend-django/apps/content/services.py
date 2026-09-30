@@ -40,13 +40,13 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, F
 from django.db.models.expressions import RawSQL
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from apps.profiles import services as profile_services
 from apps.reactions.models import Reaction
 
 from . import gateway
-from .models import Content, Report, Review
+from .models import MAX_TAGGED_PRODUCTS, Content, ContentProduct, Report, Review
 
 # The two refusal sentences src/lib/content.js already shows. The server's
 # job is to make the interface's string true (INSTRUCTIONS §2, Errors) — the
@@ -56,6 +56,9 @@ DUPLICATE_REFUSAL = "You have already reviewed this session"
 REEL_REFUSAL = "Only a consultant can post a reel"
 VIDEO_REFUSAL = "Video posting is not switched on for your account"
 BLOCKED_REFUSAL = "Your account cannot post"
+TAG_REFUSAL = "Only an approved consultant can tag products"
+TAG_LIMIT_REFUSAL = f"Tag at most {MAX_TAGGED_PRODUCTS} products"
+TAG_MISSING_REFUSAL = "One of those products is not in the shop"
 SELF_REPORT_REFUSAL = "You cannot report your own post"
 DUPLICATE_REPORT_REFUSAL = "You have already reported this"
 
@@ -240,27 +243,101 @@ def _assert_kind_allowed(author_id, role, kind):
         raise PermissionDenied(VIDEO_REFUSAL)
 
 
+def _checked_products(author_id, role, product_ids):
+    """The products a post may carry, in the order the author picked them.
+
+    Refuses rather than trims: silently dropping the fourth tag, or a
+    retired product, would publish a post the author did not write."""
+    from apps.shop.models import Product
+
+    ids = list(dict.fromkeys(str(p) for p in product_ids))  # de-dup, keep order
+    if not ids:
+        return []
+    if role != "admin" and not gateway.is_approved_consultant(author_id):
+        raise PermissionDenied(TAG_REFUSAL)
+    if len(ids) > MAX_TAGGED_PRODUCTS:
+        raise ValidationError({"product_ids": TAG_LIMIT_REFUSAL})
+    found = {str(p.id): p for p in Product.objects.filter(id__in=ids, active=True)}
+    if len(found) != len(ids):
+        raise ValidationError({"product_ids": TAG_MISSING_REFUSAL})
+    return [found[i] for i in ids]
+
+
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
-                    media_url=None, status=Content.Status.LIVE):
+                    media_url=None, status=Content.Status.LIVE, product_ids=()):
     """Insert one content row as the caller. author_id is forced (rule 3);
     published_at is the server's clock, never the client's (rule 3 again —
     a timestamp the client picks is a number the user benefits from).
-    `legacy_id` is accepted only on the seed path, never from a URL."""
+    `legacy_id` is accepted only on the seed path, never from a URL.
+
+    `product_ids` tags shop products on the post (ContentProduct). The post
+    and its tags are one write: a post that published and then lost its
+    tags would be a different post from the one the author sent."""
     _assert_kind_allowed(author_id, role, kind)
     if status not in (Content.Status.LIVE, Content.Status.DRAFT):
         raise PermissionDenied("Removed content cannot be republished.")
-    row = Content(
-        author_id=author_id,
-        kind=kind,
-        title=title,
-        body=body,
-        caption=caption,
-        media_url=media_url,
-        status=status,
-        published_at=timezone.now() if status == Content.Status.LIVE else None,
-    )
-    row.save()
+    products = _checked_products(author_id, role, product_ids)
+    with transaction.atomic():
+        row = Content(
+            author_id=author_id,
+            kind=kind,
+            title=title,
+            body=body,
+            caption=caption,
+            media_url=media_url,
+            status=status,
+            published_at=timezone.now() if status == Content.Status.LIVE else None,
+        )
+        row.save()
+        ContentProduct.objects.bulk_create(
+            ContentProduct(content=row, product=p, sort=i) for i, p in enumerate(products)
+        )
+    if products:
+        # Mint the author's A code now, so every reader of this post finds
+        # one to carry — the read side never mints (a GET must not write).
+        from apps.referrals import services as referral_services
+        from apps.referrals.models import CodeKind
+
+        referral_services.code_for(author_id, CodeKind.CONSULTANT)
     return row
+
+
+def attach_products(rows):
+    """Give each public row `_products` (active tags, in order) and
+    `_shop_ref` (the author's A code, when it has products to carry).
+
+    Two queries for a whole page, not two per row: one for the tags, one
+    for the codes of the authors who have any."""
+    from apps.referrals.models import CodeKind, ReferralCode
+
+    rows = list(rows)
+    if not rows:
+        return rows
+    tags = (
+        ContentProduct.objects.filter(
+            content_id__in=[r.id for r in rows], product__active=True
+        )
+        .select_related("product")
+        .order_by("content_id", "sort")
+    )
+    by_content = {}
+    for t in tags:
+        by_content.setdefault(t.content_id, []).append(t.product)
+
+    tagged_authors = {r.author_id for r in rows if by_content.get(r.id)}
+    codes = {
+        c.profile_id: c.code
+        for c in ReferralCode.objects.filter(
+            profile_id__in=tagged_authors, kind=CodeKind.CONSULTANT, active=True
+        )
+    }
+    for r in rows:
+        r._products = by_content.get(r.id, [])
+        # Only an approved consultant's code is worth carrying. Belt and
+        # braces: an unapproved consultant's posts already leave the public
+        # projection, but an admin-authored tag has no consultant behind it.
+        r._shop_ref = codes.get(r.author_id) if r._products and r._approved else None
+    return rows
 
 
 def publish_draft(content_id, actor_id, role):

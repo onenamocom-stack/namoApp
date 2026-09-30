@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { publish, uploadMedia } from '../lib/content.js'
+import { useEffect, useState } from 'react'
+import { apiSupportsTags, publish, uploadMedia } from '../lib/content.js'
+import { fetchProducts } from '../lib/shop.js'
 import Plate from './Plate.jsx'
 import { Kicker, PopButton } from './Pop.jsx'
 import { Field } from './Primitives.jsx'
@@ -59,7 +60,15 @@ const SPEC = {
   },
 }
 
-export default function Composer({ kinds = ['post', 'article'], onPublished }) {
+/** Must match MAX_TAGGED_PRODUCTS in backend-django/apps/content/models.py. */
+const MAX_TAGS = 3
+
+/**
+ * `tagProducts` — the consultant studio's composer can tag shop products on
+ * a photo or a reel (not a blog post), and the server refuses anyone else,
+ * so the prop only decides whether the picker is shown.
+ */
+export default function Composer({ kinds = ['post', 'article'], onPublished, tagProducts = false }) {
   const { showToast } = useStore()
   const [tab, setTab] = useState(kinds[0])
   const [caption, setCaption] = useState('')
@@ -68,9 +77,11 @@ export default function Composer({ kinds = ['post', 'article'], onPublished }) {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [media, setMedia] = useState(null)
+  const [tagged, setTagged] = useState([])
 
   const spec = SPEC[tab]
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
+  const canTag = tagProducts && tab !== 'article'
 
   /* Switching tabs clears the composer. A video chosen for a reel is not a
      cover image for a blog post, and carrying it across is how the wrong file
@@ -81,6 +92,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished }) {
     setCaption('')
     setTitle('')
     setBody('')
+    setTagged([])
   }
 
   async function onFile(e) {
@@ -106,11 +118,17 @@ export default function Composer({ kinds = ['post', 'article'], onPublished }) {
         tab === 'article'
           ? { title: title.trim(), body: body.trim() }
           : { caption: caption.trim() }
-      await publish({ kind: tab, mediaUrl: media?.url, ...fields })
+      await publish({
+        kind: tab,
+        mediaUrl: media?.url,
+        productIds: canTag ? tagged.map((p) => p.id) : [],
+        ...fields,
+      })
       setCaption('')
       setTitle('')
       setBody('')
       setMedia(null)
+      setTagged([])
       showToast('Published to your feed')
       onPublished?.()
     } catch (err) {
@@ -216,6 +234,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished }) {
               <div className="mt-4">
                 <Field k="Characters" v={caption.trim().length.toLocaleString('en-IN')} />
               </div>
+              {canTag && <ProductPicker tagged={tagged} onChange={setTagged} />}
             </>
           )}
 
@@ -230,6 +249,115 @@ export default function Composer({ kinds = ['post', 'article'], onPublished }) {
         </section>
       </div>
     </>
+  )
+}
+
+/**
+ * Tag up to three shop products. The whole catalogue, searchable — it is
+ * the house's shop, not the consultant's, and it is small enough to load in
+ * one request. A seeker who taps a tag lands on that product in the shop
+ * with this consultant's code, so the tag earns the same 10% a link from
+ * "Your links" does; the note under the field says so.
+ */
+function ProductPicker({ tagged, onChange }) {
+  const [all, setAll] = useState(null)
+  const [query, setQuery] = useState('')
+  const [supported, setSupported] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    apiSupportsTags().then((ok) => alive && setSupported(ok))
+    fetchProducts()
+      .then((rows) => alive && setAll(rows))
+      .catch(() => alive && setAll([]))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  /* Said, not hidden: a consultant told about the feature will look for it,
+     and an absent field reads as a bug. Nothing tagged can be lost this way,
+     because nothing can be tagged. */
+  if (supported === false) {
+    return (
+      <p className="mt-6 text-meta t-faint">
+        Product tagging switches on with the next server update.
+      </p>
+    )
+  }
+
+  const q = query.trim().toLowerCase()
+  const picked = new Set(tagged.map((p) => p.id))
+  const full = tagged.length >= MAX_TAGS
+  const matches = (all ?? [])
+    .filter((p) => !picked.has(p.id))
+    .filter((p) => !q || `${p.name} ${p.subtitle ?? ''} ${p.category ?? ''}`.toLowerCase().includes(q))
+    .slice(0, 6)
+
+  return (
+    <div className="mt-6">
+      <p className="label text-left">Tag products · {tagged.length}/{MAX_TAGS}</p>
+      <p className="mt-1 text-meta t-body">
+        Seekers tap through to the shop. You earn 10% on what they buy, as with your links.
+      </p>
+
+      {tagged.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {tagged.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onChange(tagged.filter((t) => t.id !== p.id))}
+              aria-label={`Remove ${p.name}`}
+              className="pill"
+              data-active="true"
+            >
+              {p.name} <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!full && (
+        <>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search the shop"
+            aria-label="Search products to tag"
+            className="field-line mt-4"
+          />
+          {all === null ? (
+            <p className="mt-3 text-meta t-faint">Loading the shop.</p>
+          ) : matches.length === 0 ? (
+            <p className="mt-3 text-meta t-faint">Nothing in the shop matches that.</p>
+          ) : (
+            <ul className="mt-2">
+              {matches.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => onChange([...tagged, p])}
+                    className="flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left transition-colors hover:bg-surface"
+                  >
+                    {p.image ? (
+                      <img src={p.image} alt="" className="h-10 w-10 flex-none rounded-md object-cover" />
+                    ) : (
+                      <Plate seed={p.id} className="h-10 w-10 flex-none" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-meta t-heading">{p.name}</span>
+                      <span className="block text-meta gold tnum">₹{p.price.toLocaleString('en-IN')}</span>
+                    </span>
+                    <span className="caps-sm gold">Tag</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 

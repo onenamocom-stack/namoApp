@@ -1050,6 +1050,38 @@ a *key of `days`*, not an ID, and `Home.jsx` already hoists the reading and
 panchang cards in the component rather than reordering `feed`. Those two stay
 client-side.
 
+### 5.2a `content_products` — shop products tagged on a post (30 Sep 2026)
+
+```sql
+create table content_products (
+  id          uuid primary key,
+  content_id  uuid not null references content(id) on delete cascade,
+  product_id  uuid not null references products(id),
+  sort        smallint not null default 0,
+  constraint content_products_once unique (content_id, product_id)
+);
+alter table content_products enable row level security;  -- no policies
+```
+
+Django migration `content/0003_content_products`. An approved consultant (or
+an admin) tags **at most three active** products at publish; the post and its
+tags are one transaction, and a refused tag refuses the whole post. **No edit
+path** — a tag that changes under a published post is a bait and switch.
+
+The read side (`feed`, `by-author`, `detail`) embeds `products[]` — id, name,
+image_url, price_paise, mrp_paise, active products only, in `sort` order —
+and `shop_ref`, the author's A code from `referral_codes`, so the tap-through
+is the same affiliate link "Your links" builds and credits the same 10%.
+Tagging mints the code; a GET never writes. An unapproved consultant's posts
+leave the public projection, taking their tags with them.
+
+**RLS on, no policies**, because Supabase grants `anon` and `authenticated`
+on every new table in `public` — without it the table is readable and
+writable through PostgREST with the key that ships in the app. Django
+connects as the owner, which RLS does not bind. No earlier Django migration
+does this; whether the tables they created are open to PostgREST is
+unchecked, and HANDOFF carries it as an open finding.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

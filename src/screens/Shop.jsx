@@ -76,7 +76,7 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady } =
+  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast } =
     useStore()
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
@@ -95,6 +95,11 @@ export default function Shop() {
      credited. Sign-up codes (N…) are deliberately ignored: those are
      claimed once at onboarding, not at a till. */
   const referral = useReferralFromLink()
+
+  /* `?p=<id>` — a product tapped on a post or reel, or an affiliate link
+     for one product. The shop opens on All with that product scrolled into
+     view and ringed in saffron; there is no separate product page. */
+  const focusId = useFocusedProduct()
 
   // One banner's worth of scroll, measured off the DOM rather than derived
   // from the percentage width — the gap and the rail padding are in there too.
@@ -132,6 +137,19 @@ export default function Shop() {
   }, [])
 
   useEffect(loadProducts, [loadProducts])
+
+  /* Once the grid exists, bring the linked product to the middle of the
+     screen. A product retired since the post went out says so, rather than
+     leaving somebody to hunt the grid for a thing that is not in it. */
+  useEffect(() => {
+    if (loadingShop || shopError || !focusId) return
+    const el = document.getElementById(`product-${focusId}`)
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    else showToast('That product is no longer in the shop')
+    // Once per arrival, not on every later reload of the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingShop, focusId])
+  const focusRing = 'ring-2 ring-gold-fill ring-offset-2 ring-offset-bg'
 
   const filters = ['All', ...shopCategories]
   const q = query.trim().toLowerCase()
@@ -292,9 +310,13 @@ export default function Shop() {
 
       {/* ── Chart-matched hero ────────────────────────────────────────── */}
       {hero && (
-        <section className="px-4 pb-2 pt-2">
+        <section id={`product-${hero.id}`} className="px-4 pb-2 pt-2">
           <Kicker>Matched to your chart</Kicker>
-          <PopCard raised tap className="mt-3 overflow-hidden">
+          <PopCard
+            raised
+            tap
+            className={`mt-3 overflow-hidden ${focusId === hero.id ? focusRing : ''}`}
+          >
             <Plate seed={hero.id} className="aspect-[16/10] w-full">
               <span className="absolute left-3 top-3">
                 <PopTag tone="gold">{hero.category}</PopTag>
@@ -363,9 +385,17 @@ export default function Shop() {
             {rest.map((p) => {
               const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
               return (
-                <li key={p.id}>
-                  <PopCard tap className="flex h-full flex-col overflow-hidden">
+                <li key={p.id} id={`product-${p.id}`}>
+                  <PopCard
+                    tap
+                    className={`flex h-full flex-col overflow-hidden ${focusId === p.id ? focusRing : ''}`}
+                  >
                     <Plate seed={p.id} className="aspect-square w-full">
+                      {focusId === p.id && (
+                        <span className="caps-sm absolute right-2 top-2 rounded-full bg-btn-deep px-2 py-1 text-white shadow-sm">
+                          Linked
+                        </span>
+                      )}
                       {off > 0 && !p.soldOut && (
                         <span className="caps-sm absolute left-2 top-2 rounded-full bg-gold-fill px-2 py-1 text-ink shadow-sm tnum">
                           {off}% off
@@ -444,6 +474,21 @@ export default function Shop() {
       <div className="h-28" />
     </>
   )
+}
+
+/**
+ * The product a link points at (`?p=<uuid>`), read once on arrival — the
+ * same hash-query parsing as the referral below, for the same HashRouter
+ * reason. Anything that is not a UUID is ignored rather than looked up.
+ */
+function useFocusedProduct() {
+  const [id] = useState(() => {
+    const hash = window.location.hash
+    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : ''
+    const found = new URLSearchParams(q).get('p')
+    return found && /^[0-9a-f-]{36}$/i.test(found) ? found.toLowerCase() : null
+  })
+  return id
 }
 
 /**

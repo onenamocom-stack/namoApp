@@ -28,6 +28,12 @@ class PublishInput(serializers.Serializer):
         required=False,
         default=Content.Status.LIVE,
     )
+    # Shop products to tag (ContentProduct). The limit and the "approved
+    # consultants only" rule are the service's, so the refusal sentence is
+    # the same whichever door the request came through.
+    product_ids = serializers.ListField(
+        child=serializers.UUIDField(), required=False, default=list
+    )
 
 
 class FeedQuery(serializers.Serializer):
@@ -54,6 +60,19 @@ def _public_row(row):
         "published_at": row.published_at,
         "like_count": row.like_count,
         "save_count": row.save_count,
+        # Tagged shop products, and the author's A code for the link to carry
+        # (services.attach_products). Empty and null on an untagged post.
+        "products": [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "image_url": p.image_url,
+                "price_paise": p.price_paise,
+                "mrp_paise": p.mrp_paise,
+            }
+            for p in getattr(row, "_products", [])
+        ],
+        "shop_ref": getattr(row, "_shop_ref", None),
     }
 
 
@@ -82,6 +101,7 @@ def feed(request):
     rows, next_after = services.feed_page(
         kinds=kinds, after_id=data["after"], limit=data["limit"]
     )
+    rows = services.attach_products(rows)
     return Response({"results": [_public_row(r) for r in rows], "next_after": next_after})
 
 
@@ -100,6 +120,7 @@ def by_author(request):
     query.is_valid(raise_exception=True)
     data = query.validated_data
     rows, _ = services.by_author_page(data["author_id"], limit=data["limit"])
+    rows = services.attach_products(rows)
     return Response([_public_row(r) for r in rows])
 
 
@@ -109,6 +130,7 @@ def detail(request, content_id):
     """One live post. A draft or removed row is a 404, not a 403 — the
     public projection cannot see it, so ids do not leak existence."""
     row = services.public_detail(content_id)
+    services.attach_products([row])
     return Response(_public_row(row))
 
 
@@ -130,6 +152,7 @@ def publish(request):
         caption=data["caption"],
         media_url=data["media_url"],
         status=data["status"],
+        product_ids=data["product_ids"],
     )
     return Response({"id": str(row.id)}, status=201)
 

@@ -45,7 +45,7 @@ export default function ProStudio() {
     <>
       <TabHeader />
 
-      <Composer kinds={KINDS} onPublished={() => setReload((n) => n + 1)} />
+      <Composer kinds={KINDS} tagProducts onPublished={() => setReload((n) => n + 1)} />
 
       {/* The way in to affiliate links, above the composer's output rather
           than buried in the profile tab. A screen reachable only by typing

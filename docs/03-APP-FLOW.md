@@ -227,8 +227,8 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 
 | Card | Actions |
 |---|---|
-| Post | Like · Reply (toast) · Share (toast) · Save. Byline → consultant |
-| Reel | → `/reels/:id` |
+| Post | Like · Reply (toast) · Share (toast) · Save. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
+| Reel | → `/reels/:id` · Like · Save. A tagged product → `/shop?p=<id>&ref=…` |
 | Reading | *Read all* → horoscope overlay |
 | Panchang | *Full chart* → `/chart` |
 | Article | → `/read/:id` · Save |
@@ -1017,6 +1017,8 @@ pay for a call that still would not connect.
 | `/profile` → Settings, **first section** | The seeker's own `N…` code, tap to copy, and a box for somebody else's — which disappears once used |
 | `/pro/affiliate` | The consultant's `A…` code, a per-product **Get link**, and what it pays. Reached from a row at the top of the studio |
 | `/shop` arrived at with `?ref=A…` | A line under the header naming the code, before anything is tapped |
+| `/shop` arrived at with `?p=<product id>` | That product scrolled to the middle of the screen, ringed, tagged *Linked*. A product no longer in the shop says so in a toast. There is no separate product page (owner's call, 30 Sep) |
+| `/pro/studio` composer, Reel or Photo | **Tag products · n/3** — search the shop, tap *Tag*, remove with ×. Seekers tapping a tag arrive at `/shop?p=…&ref=…`, credited as a "Your links" link |
 | Chat panel → **Alerts** | Real rows since today. Opening the tab marks them read |
 
 **The Shop banner says cashback, and says it first.** *You pay the full

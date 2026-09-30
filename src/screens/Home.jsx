@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
-import { fetchFeed } from '../lib/content.js'
+import { fetchFeed, productHref } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
@@ -413,6 +413,49 @@ function CtaStrip({ to, onClick, children, tone = 'orange' }) {
   )
 }
 
+/**
+ * The products the author tagged, under the media: a row of small cards,
+ * each opening that product in the shop with the author's code attached
+ * (`productHref`). Nothing renders for an untagged post.
+ */
+function ProductStrip({ tagged = [], shopRef }) {
+  if (!tagged.length) return null
+  return (
+    <div className="border-t border-rule bg-surface/60 px-3 py-2.5">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gold">
+        <Icon name="cart" size={14} weight={2} />
+        {tagged.length === 1 ? 'Product in this post' : `${tagged.length} products in this post`}
+      </p>
+      <div className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3">
+        {tagged.map((pr) => {
+          const off = pr.mrp ? Math.round((1 - pr.price / pr.mrp) * 100) : null
+          return (
+            <Link
+              key={pr.id}
+              to={productHref(pr, shopRef)}
+              className="flex w-[210px] flex-none items-center gap-2.5 rounded-xl border border-stroke bg-white p-2 shadow-sm transition-transform active:scale-[0.98]"
+            >
+              {pr.image ? (
+                <img src={pr.image} alt="" className="h-12 w-12 flex-none rounded-lg object-cover" />
+              ) : (
+                <Plate seed={pr.id} className="h-12 w-12 flex-none !rounded-lg" />
+              )}
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="block truncate text-meta font-semibold text-t1">{pr.name}</span>
+                <span className="mt-0.5 block text-meta tnum">
+                  <span className="font-semibold text-gold">₹{pr.price.toLocaleString('en-IN')}</span>
+                  {off > 0 && <span className="ml-1.5 text-[11px] text-t3">{off}% off</span>}
+                </span>
+              </span>
+              <span aria-hidden="true" className="flex-none text-lead text-t3">›</span>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function PostCard({ post: p }) {
   const { showToast } = useStore()
   const [reporting, setReporting] = useState(false)
@@ -447,6 +490,7 @@ function PostCard({ post: p }) {
           <p className="text-lead font-semibold leading-snug text-t1">{text}</p>
         </div>
       )}
+      <ProductStrip tagged={p.products} shopRef={p.shopRef} />
 
       <ActionRow
         id={p.id}
@@ -501,6 +545,7 @@ function ReelCard({ reel: r }) {
           </span>
         </Plate>
       </Link>
+      <ProductStrip tagged={r.products} shopRef={r.shopRef} />
 
       {/* No duration and no audio credit: both were mock strings on a Plate
           that plays nothing. No Share either — a reel never had one, and a

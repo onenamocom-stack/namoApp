@@ -83,7 +83,11 @@ async function api(path, { method = 'GET', body, token } = {}) {
   if (!response.ok) {
     // { ok, reason, message } envelope — throw the message, like the old
     // `throw error` did with supabase-js.
-    throw new Error(data?.message || `Request failed (${response.status})`)
+    // A 400 carries its real sentence in `errors` ("Tag at most 3 products")
+    // under a generic "Check the highlighted fields" — and a composer has no
+    // highlighted field to point at, so the specific sentence wins.
+    const fieldError = data?.errors && Object.values(data.errors).flat().find((e) => typeof e === 'string')
+    throw new Error(fieldError || data?.message || `Request failed (${response.status})`)
   }
   return data
 }
@@ -117,7 +121,29 @@ function shape(row) {
     saves: row.save_count,
     publishedAt: row.published_at,
     time: ago(row.published_at),
+    // Shop products the author tagged, and the author's A code for the link.
+    // Defaulted, not assumed: an API deployed before tagging sends neither.
+    products: (row.products ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      image: p.image_url || null,
+      price: p.price_paise / 100,
+      mrp: p.mrp_paise ? p.mrp_paise / 100 : null,
+    })),
+    shopRef: row.shop_ref ?? null,
   }
+}
+
+/**
+ * Where a tagged product's tap goes: the shop, with that product picked out
+ * (`p`) and the author's code (`ref`) riding along — the same two params the
+ * affiliate links in "Your links" carry, so a purchase credits the author
+ * exactly as one of those does.
+ */
+export function productHref(product, shopRef) {
+  const q = new URLSearchParams({ p: product.id })
+  if (shopRef) q.set('ref', shopRef)
+  return `/shop?${q}`
 }
 
 /** "2h", "5d". Short by design — the cards have room for two characters. */
@@ -153,6 +179,23 @@ export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
   return rows
 }
 
+/**
+ * Whether the deployed API knows about tagged products yet. The API ships by
+ * hand, separately from this app; an API from before tagging silently drops
+ * `product_ids`, and the post would go out without the tags the author
+ * picked. A feed row carries a `products` key once it does. An empty feed
+ * proves nothing either way, so it answers yes.
+ */
+export async function apiSupportsTags() {
+  try {
+    const body = await api('/content/feed/?limit=1')
+    const row = body?.results?.[0]
+    return !row || 'products' in row
+  } catch {
+    return false
+  }
+}
+
 /** One person's published work — their profile tab and the studio list. */
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const rows = await api(`/content/by-author/?author_id=${authorId}&limit=${limit}`)
@@ -165,7 +208,7 @@ export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
  * an identity at all (rule 3). The kind gate's refusal arrives with the
  * same sentence the old 42501 mapping produced.
  */
-export async function publish({ kind, title, body, caption, mediaUrl }) {
+export async function publish({ kind, title, body, caption, mediaUrl, productIds = [] }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to publish')
 
@@ -177,6 +220,9 @@ export async function publish({ kind, title, body, caption, mediaUrl }) {
       body: body ?? null,
       caption: caption ?? null,
       media_url: mediaUrl ?? null,
+      // Only sent when there are some, so a post from an ordinary account
+      // is byte-identical to the request it made before tagging existed.
+      ...(productIds.length ? { product_ids: productIds } : {}),
     },
     token,
   })
