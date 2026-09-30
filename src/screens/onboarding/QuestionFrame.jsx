@@ -32,7 +32,7 @@ export default function QuestionFrame({
       </button>
 
       <div className="mt-16 animate-fade-rise">
-        <h1 className="mx-auto max-w-[14ch] text-center text-display font-light">{question}</h1>
+        <h1 className="mx-auto max-w-[14ch] text-center text-display font-semibold">{question}</h1>
         {hint && <p className="prose-c mt-5">{hint}</p>}
       </div>
 
@@ -71,7 +71,7 @@ export function Slot({ value, onChange, placeholder, size = 4, inputMode = 'nume
         maxLength={max}
         aria-label={label}
         size={size}
-        className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-light text-t1 tnum outline-none transition-colors placeholder:text-t4 focus:border-t1"
+        className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-semibold text-t1 tnum outline-none transition-colors placeholder:text-t4 focus:border-t1"
       />
       <span className="text-micro uppercase tracking-caps text-t3">{label}</span>
     </label>

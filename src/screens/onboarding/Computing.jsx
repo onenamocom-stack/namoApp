@@ -169,7 +169,7 @@ export default function Computing() {
     return (
       <div className="flex min-h-full animate-fade flex-col justify-center px-6 pb-10 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Not saved</p>
-        <h1 className="mx-auto mt-5 max-w-[16ch] text-display font-light">
+        <h1 className="mx-auto mt-5 max-w-[16ch] text-display font-semibold">
           Your details didn&apos;t reach us.
         </h1>
         <p className="prose-c mt-6">
@@ -221,7 +221,7 @@ export default function Computing() {
     return (
       <div className="flex min-h-full animate-fade flex-col px-6 pb-10 pt-12 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Chart ready</p>
-        <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-light">{name ? `Here you are, ${name}.` : 'Here you are.'}</h1>
+        <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-semibold">{name ? `Here you are, ${name}.` : 'Here you are.'}</h1>
 
         <Stub className="my-10" />
         <ChartNorth size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />

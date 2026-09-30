@@ -37,7 +37,7 @@ export default function AskName() {
           placeholder="Ananya"
           aria-label="Your name"
           autoComplete="given-name"
-          className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-light text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
+          className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-semibold text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
         />
         <span className="text-micro uppercase tracking-caps text-t3">Name</span>
       </label>

@@ -152,12 +152,12 @@ function Result({ match, names, onReset }) {
         <p className="text-center text-micro uppercase tracking-caps text-t3">
           {names.person1} × {names.person2}
         </p>
-        <p className="mt-6 text-center text-title font-light tnum">
+        <p className="mt-6 text-center text-title font-semibold tnum">
           {match.score}
           <span className="text-t3"> / {match.max}</span>
         </p>
         {match.verdict && (
-          <p className="mt-3 text-center text-lead font-light">{match.verdict}</p>
+          <p className="mt-3 text-center text-lead font-semibold">{match.verdict}</p>
         )}
         <Stub className="my-8" />
         <p className="prose-c">

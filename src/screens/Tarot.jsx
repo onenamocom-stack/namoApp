@@ -313,7 +313,7 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
           whole reason that deck exists, so it leads. The verdict is the
           CARD's, off the deck sheet; the model never gets to overturn it. */}
       <div className="pop-inset mt-4 p-5 text-center">
-        {verdict && <p className="text-title font-light">{verdict}</p>}
+        {verdict && <p className="text-title font-semibold">{verdict}</p>}
         {card.verdictLine && (
           <p className="mt-1.5 text-meta t-sub">{card.verdictLine}</p>
         )}

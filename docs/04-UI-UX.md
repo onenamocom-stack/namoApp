@@ -15,16 +15,16 @@ the code.
 
 ## 1. What this looks like
 
-A near-white page, cream cards, navy ink, one orange accent, and
-**skeuomorphic surfaces lit from directly above.** Rounded, physical, tactile —
-buttons that depress, switches that stay down, wells that recess.
+**The Sri Mandir look.** A light grey page, flat white cards, charcoal type,
+one saffron accent, green for the main action, and bold Poppins headings.
+Rounded and tactile — buttons still depress, switches stay down, wells recess.
 
-**Repalette, 20 Sep 2026.** This replaces the warm off-white canvas with white
-cards, near-black ink and a gold accent. Only the hues moved: the light
-source, the elevation model, the radius scale, the type scale and the
-pressed-state mechanic are all unchanged, which is why the change is a token
-edit and not a redesign. Cards are now *warmer* than the page, inverting the
-old model where white cards floated on a warm ground.
+**Repalette, 30 Sep 2026.** This replaces the 20 Sep set (near-white page,
+cream cards, navy ink, a dark tab bar, Plus Jakarta Sans). The reference is
+the Sri Mandir app: orange and white everywhere, green on the button you are
+meant to press. Only hues, weights and the font moved — the light source,
+the radius scale, the type scale and the pressed-state mechanic are
+unchanged, and no screen's behaviour changed.
 
 ---
 
@@ -38,21 +38,32 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 
 | Token | Value | Role |
 |---|---|---|
-| Token | Value | Role |
-|---|---|---|
-| `--bg` | `#fffffb` | Page. Also the browser theme colour |
-| `--surface` | `#fff1dc` | Card — cream, one step warmer than the page |
-| `--surface-2` | `#ffd2a6` | A block inside a card — wells, inactive tracks |
-| `--stroke` | `rgba(61,64,91,0.1)` | Hairline on a raised surface |
-| `--rule` | `#e8dcc4` | Divider on the page itself |
-| `--ink` | `#3d405b` | Tab bar, primary button |
-| `--ink-2` | `#4a4e6e` | A block sitting on ink |
-| `--ink-lit` | `#585c80` | The lit top of an ink gradient |
+| `--bg` | `#f6f6f8` | Page — a cool light grey. The browser theme colour is `#ffffff` |
+| `--surface` | `#fff4ea` | Peach tint — highlighted blocks, wells on white. Cards themselves are white (`.pop-card`) |
+| `--surface-2` | `#ffe4cc` | One step deeper — inactive tracks, chip wells |
+| `--stroke` | `rgba(17,17,17,0.08)` | Hairline on a raised surface |
+| `--rule` | `#ebebef` | Divider on the page itself |
+| `--ink` | `#262626` | Dark slabs — toasts, scrims, reel backdrop, sent chat bubble — and the logo |
+| `--ink-2` | `#363636` | A block sitting on ink |
+| `--ink-lit` | `#444444` | The lit top of an ink gradient |
+| `--btn` / `--btn-deep` / `--btn-edge` | `#2e9e66` / `#18804e` / `#136b41` | The green main-action button |
 | `--hi` | `rgba(255,255,255,0.9)` | Specular highlight, light surface |
 | `--hi-ink` | `rgba(255,255,255,0.14)` | Specular highlight, dark surface |
-| `--lo` | `rgba(61,64,91,0.1)` | Shade under a lip |
-| `--live` | `#cf3a25` | Live badge, liked heart, unread dot |
-| `--ok` | `#0b8b50` | Online dot |
+| `--lo` | `rgba(17,17,17,0.1)` | Shade under a lip |
+| `--live` | `#d93025` | Live badge, liked heart, unread dot |
+| `--ok` | `#1e9e5a` | Online dot — green, matching the button |
+
+**Buttons.** `.pop-btn-gold` (the `gold` variant of `PopButton`, and
+`Button variant="solid"`) is the ONE main action on a screen — pay, buy,
+book, add money, begin — and is **green**. The class name is historical: it
+means "the voltage CTA". Plain `.pop-btn` is a secondary filled action and
+is **saffron**. `.pop-btn-ghost` is the white third. White on the green deep
+end is 4.7:1; white on the saffron deep end is 3.6:1, which is the trade Sri
+Mandir makes for bold caps on a button that is never the only way through.
+
+**Selected state is saffron.** Pills, sub-nav thumbs and tile faces fill
+orange with a white label; the segmented control's thumb stays white with an
+orange label; the tab bar is white with the active tab in `--gold`.
 
 **The three ink steps must stay in this lightness order.** `--ink-lit` is the
 top of a raised gradient and `--ink-2` the bottom of a pressed one, so both sit
@@ -64,30 +75,27 @@ against*:
 
 | Token | Value | On the page | Use |
 |---|---|---|---|
-| `--text` | `#3d405b` | 10.1:1 | Headings |
-| `--text-2` | `#5a5d75` | 6.4:1 | Body |
-| `--text-3` | `#6e7189` | 4.8:1 | The readable floor |
-| `--text-4` | `#a9abbd` | 2.4:1 | **Non-text only** — ticks, rules, spokes, placeholders |
+| `--text` | `#1f1f1f` | 15.5:1 | Headings |
+| `--text-2` | `#4a4a4a` | 8.2:1 | Body |
+| `--text-3` | `#6b6b6b` | 4.9:1 | The readable floor |
+| `--text-4` | `#b3b3b8` | 2.0:1 | **Non-text only** — ticks, rules, spokes, placeholders |
 
-**Orange**, which is the only accent and appears on two surfaces. The token
-names stay `--gold*`: they are read by 62 text call sites, 12 fills and three
-rules in `index.css`, and the name has meant "the one voltage" since the first
-build.
+**Saffron**, the only accent. The token names stay `--gold*`: they are read
+by dozens of call sites, and the name has meant "the one voltage" since the
+first build, whatever its hue.
 
 | Token | Value | Note |
 |---|---|---|
-| `--gold` | `#a85400` | Text and borders. **5.3:1 on the page, 4.9:1 on a card** |
-| `--gold-fill` | `#ff8500` | **Backgrounds only.** See the rule below |
-| `--gold-dim` | `#8a4500` | |
-| `--gold-wash` | `rgba(255,133,0,0.18)` | |
+| `--gold` | `#b84a0a` | Text and borders. **4.9:1 on the page, 5.2:1 on white** |
+| `--gold-fill` | `#f26a1b` | Fills, icons, bars. **No small text.** See the rule below |
+| `--gold-dim` | `#963c06` | |
+| `--gold-wash` | `rgba(242,106,27,0.14)` | |
 
-**Nothing readable sits on `--gold-fill`, at any size.** White on `#ff8500` is
-2.4:1 and `--ink` on it is 4.13:1 — the second clears large text and fails the
-11px caps a button actually carries. `.pop-btn-gold` therefore labels itself
-`#2a2d42` (5.6:1 on the fill), which is also its border colour, so the face
-stays one material. This is why the two-token split is load-bearing rather
-than tidy: pointing `--gold` at the fill value would drop 62 readable strings
-below AA in one line, and no build step checks contrast.
+**No small text sits on `--gold-fill`.** It is 3.0:1 against the page, so
+pointing `--gold` at it would drop every orange label below AA in one line,
+and no build step checks contrast. Badges on the fill use `text-ink`
+(charcoal, well above AA); filled orange buttons use a deeper gradient
+(`#ff7b2c`→`#e2560f`) with white bold caps.
 
 Two rules that survive from the old design doc and still hold:
 
@@ -102,34 +110,38 @@ Two rules that survive from the old design doc and still hold:
 
 ### 2.2 Type
 
-**Plus Jakarta Sans** (300–800) and **Noto Sans Devanagari** (400–700), one font
-request. No Inter, no serif, no mono — `sans`, `display` and `mono` all resolve
-to the same stack.
+**Poppins** (300–800) and **Noto Sans Devanagari** (400–700), one font request
+(30 Sep 2026; it replaced Plus Jakarta Sans to match Sri Mandir's rounded
+geometric sans). No serif, no mono — `sans`, `display` and `mono` all resolve
+to the same stack. The canvas that draws Bhakti status images (`lib/bhakti.js`)
+names Poppins too.
 
-**Devanagari sits *after* Jakarta in the stack, deliberately.** The browser walks
-the stack per glyph, so Latin stays Jakarta and only Indic falls through. Putting
-Devanagari first would restyle every Latin character it happens to cover.
+**Poppins carries Devanagari itself**, so Hindi and English set in one face;
+Noto sits after it as the fallback for any glyph Poppins lacks.
 
-Nine named sizes, so a screen cannot invent a tenth:
+Nine named sizes, so a screen cannot invent a tenth. Poppins is wide, so text
+sizes carry no negative tracking and display sizes pull in half as hard as
+Jakarta needed:
 
 | Token | px | Line height | Tracking |
 |---|---|---|---|
-| `micro` | 10 | 1.3 | 0.1em |
-| `label` | 11 | 1.3 | 0.08em |
-| `meta` | 13 | 1.45 | −0.005em |
-| `body` | 15 | 1.6 | −0.01em |
-| `read` | 17 | 1.6 | −0.011em |
-| `lead` | 20 | 1.35 | −0.02em |
-| `title` | 26 | 1.2 | −0.03em |
-| `display` | 34 | 1.1 | −0.035em |
-| `huge` | 44 | 1.05 | −0.04em |
+| `micro` | 10 | 1.3 | 0.08em |
+| `label` | 11 | 1.3 | 0.06em |
+| `meta` | 13 | 1.5 | 0 |
+| `body` | 15 | 1.6 | 0 |
+| `read` | 17 | 1.6 | 0 |
+| `lead` | 20 | 1.4 | −0.01em |
+| `title` | 26 | 1.25 | −0.015em |
+| `display` | 34 | 1.15 | −0.02em |
+| `huge` | 44 | 1.1 | −0.025em |
 
 Tracking tokens: `label` 0.10em, `caps` 0.18em.
 Measures: `measure` 34ch, `prose2` 44ch.
 
-**Weight is a primary hierarchy lever** — caps labels are 700, display type is
-800, the active tab is extrabold. The old doc's "hierarchy almost never from
-weight" is dead.
+**Weight is a primary hierarchy lever** — caps labels are 700, `.font-display`
+is 700, and large headings are **semibold (600)**: every `font-light` heading
+became `font-semibold` on 30 Sep, because Sri Mandir's headlines are bold. The
+active tab is bold.
 
 ### 2.3 Spacing
 
@@ -146,20 +158,18 @@ segmented controls fully round.
 
 ### 2.5 Elevation
 
-Every shadow is tuned to the **ink**, `rgba(61,64,91,…)`, never pure black.
-**Shadow hue follows the ink token**, which is what made this survive the
-repalette unchanged in reasoning: a `#000` blur went muddy on the old warm
-canvas, and a warm-black blur would go muddy on this cool page for the same
-reason.
+Every shadow is a neutral near-black at low alpha, `rgba(17,17,17,…)`. A
+white card on a grey page is lifted mostly by the contrast between the two;
+the shadow is a whisper, as it is in Sri Mandir.
 
 | Name | Value |
 |---|---|
-| `sm` | `0 1px 2px rgba(61,64,91,.04), 0 3px 8px -5px rgba(61,64,91,.12)` |
-| default | `0 1px 2px rgba(61,64,91,.04), 0 6px 16px -8px rgba(61,64,91,.10)` |
-| `lg` | `0 2px 4px rgba(61,64,91,.04), 0 16px 32px -12px rgba(61,64,91,.16)` |
-| `xl` | `0 4px 8px rgba(61,64,91,.05), 0 28px 48px -16px rgba(61,64,91,.22)` |
-| `nav` | `0 -2px 6px rgba(61,64,91,.06), 0 -12px 28px -12px rgba(61,64,91,.22)` — casts **upward** |
-| `gold` | `0 1px 2px rgba(194,100,0,.22), 0 8px 18px -8px rgba(194,100,0,.52)` |
+| `sm` | `0 1px 2px rgba(17,17,17,.04), 0 3px 8px -5px rgba(17,17,17,.12)` |
+| default | `0 1px 2px rgba(17,17,17,.04), 0 6px 16px -8px rgba(17,17,17,.10)` |
+| `lg` | `0 2px 4px rgba(17,17,17,.04), 0 16px 32px -12px rgba(17,17,17,.16)` |
+| `xl` | `0 4px 8px rgba(17,17,17,.05), 0 28px 48px -16px rgba(17,17,17,.22)` |
+| `nav` | `0 -2px 6px rgba(17,17,17,.06), 0 -12px 28px -12px rgba(17,17,17,.22)` — casts **upward** |
+| `gold` | `0 1px 2px rgba(242,106,27,.22), 0 8px 18px -8px rgba(242,106,27,.52)` |
 
 ### 2.6 Motion
 
@@ -204,28 +214,30 @@ Three consequences worth stating outright:
 2. **A press is a change in light direction, never a change in colour.** Nothing
    darkens on tap; the gradient inverts.
 3. **Grey comes from the gradient, not from lightening the token.** A flat
-   mid-grey reads as paint. `#3d405b` graded up to `#585c80` reads as dark
-   material with light falling on it.
+   mid-grey reads as paint. `#262626` graded up to `#444444` reads as dark
+   material with light falling on it. Cards and the two bars are the
+   exception since 30 Sep: they are flat white, Sri Mandir's paper, with no
+   gradient at all.
 
 Spheres are the one exception to the angle: circular tile faces use a 145°
 gradient, because a sphere catches light off-axis.
 
-### The two bars are different materials, deliberately
+### Both bars are white
 
-The **top bar is white and continuous with the page** — which means it needs no
-scoped text overrides, a whole block of CSS that stops existing.
+Since 30 Sep the **tab bar is white too**, with a hairline top border — Sri
+Mandir's bottom bar. It was the one slab of ink in the app. Tab labels are
+`text-t3` at rest and `text-gold` when active, with the orange indicator bar
+and a heavier icon stroke; those classes are in `Tab` in `Chrome.jsx`.
 
-The **tab bar is the only slab of ink in the app**, and it is what anchors a pale
-canvas.
-
-Both backgrounds are declared together, after the feature query. Source order
-beat specificity once: one bar set its background before an `@supports` block and
+Both backgrounds are declared after the feature query. Source order beat
+specificity once: one bar set its background before an `@supports` block and
 the other after, and identical intent produced one opaque bar and one
 translucent.
 
 **Frosting goes on chrome only.** A translucent card on a flat canvas has nothing
 behind it to refract and just reads as a weaker card. The tab bar's frost is
-`rgba(14,14,16,0.9)` — not 0.72, which composited to mid-grey.
+`rgba(255,255,255,0.94)` — nearly opaque, so busy imagery does not bleed
+through the labels.
 
 ---
 
@@ -235,7 +247,7 @@ behind it to refract and just reads as a weaker card. The tab bar's frost is
 
 **Type roles** — `.label` · `.label-c` · `.horoscope` (17px centred, 34ch) ·
 `.prose-c` (15px centred, 44ch) · `.tnum` (tabular figures) · `.font-display`
-(800 / −0.035em — the Tailwind utility only sets family, the *look* lives here) ·
+(700 / −0.02em — the Tailwind utility only sets family, the *look* lives here) ·
 `.caps` (11px/700/0.1em) · `.caps-sm` (10px/700/0.1em)
 
 **Ink ladder**, opacity rather than extra colours — `.t-heading` .95 · `.t-sub`

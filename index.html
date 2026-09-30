@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#fffffb" />
+    <meta name="theme-color" content="#ffffff" />
     <meta
       name="description"
       content="Namo — a premium astrology app. Front-end prototype, no backend."
@@ -11,21 +11,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
-      One family, seven weights. CRED runs on Gilroy, which is licensed — Plus
-      Jakarta Sans is the closest free geometric sans to it: same low contrast
-      and open apertures, and it holds up at 10px caps, which is where most
-      geometric sans fall apart and where this UI spends most of its type.
-    -->
-    <!--
-      Noto Sans Devanagari beside it, because Plus Jakarta Sans has no Indic
-      coverage at all. Without this every Hindi string silently falls back to
-      whatever the OS has — Nirmala UI on Windows, something else on Android —
-      and a bilingual screen renders in two unrelated typefaces. Loaded in the
-      same request; the stack in tailwind.config.js puts Jakarta first so Latin
-      is unaffected and only Devanagari resolves to Noto.
+      Poppins, six weights — the rounded geometric sans Sri Mandir's look is
+      set in (30 Sep 2026; it replaced Plus Jakarta Sans). Poppins ships
+      Devanagari, so Hindi and English share one face. Noto Sans Devanagari
+      stays in the same request as the fallback for any glyph Poppins lacks.
     -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <title>Namo</title>

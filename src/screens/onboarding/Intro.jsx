@@ -8,7 +8,7 @@ export default function Intro() {
       <div className="animate-fade-slow text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Namo</p>
         <Stub className="my-8" />
-        <h1 className="mx-auto max-w-[12ch] text-huge font-light">
+        <h1 className="mx-auto max-w-[12ch] text-huge font-semibold">
           Your chart is not a personality test.
         </h1>
         <p className="prose-c mt-8">

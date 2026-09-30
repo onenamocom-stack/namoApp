@@ -14,7 +14,7 @@ export default function Invite() {
       <TopBar title="Invite" back backTo="/match" />
 
       <section className="section pt-14">
-        <h1 className="mx-auto max-w-[13ch] text-center text-display font-light">
+        <h1 className="mx-auto max-w-[13ch] text-center text-display font-semibold">
           Send them one link.
         </h1>
         <Stub className="my-8" />

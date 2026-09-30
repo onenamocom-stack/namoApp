@@ -149,7 +149,7 @@ export default function Numerology() {
                   key={n.label}
                   className="flex items-baseline gap-4 border-b border-rule py-4 last:border-b-0"
                 >
-                  <span className="w-10 flex-none text-title font-light tnum gold">{n.value}</span>
+                  <span className="w-10 flex-none text-title font-semibold tnum gold">{n.value}</span>
                   <span className="min-w-0">
                     <span className="block text-body text-t1">{n.label}</span>
                     <span className="mt-1 block text-meta text-t3">{n.note}</span>

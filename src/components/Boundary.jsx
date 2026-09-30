@@ -50,7 +50,7 @@ export default class Boundary extends Component {
     return (
       <div className="flex min-h-full flex-col justify-center px-6 py-16 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">This screen broke</p>
-        <h1 className="mx-auto mt-5 max-w-[18ch] text-title font-light">
+        <h1 className="mx-auto mt-5 max-w-[18ch] text-title font-semibold">
           Something here did not load.
         </h1>
         <p className="prose-c mt-6">

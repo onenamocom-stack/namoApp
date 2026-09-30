@@ -198,7 +198,7 @@ export default function Horoscope() {
               </p>
             )}
 
-            <h1 className="mx-auto max-w-[16ch] text-center text-title font-light">
+            <h1 className="mx-auto max-w-[16ch] text-center text-title font-semibold">
               {day.headline}
             </h1>
             <Stub className="my-8" />
@@ -227,7 +227,7 @@ export default function Horoscope() {
               for something, so it gets a section to itself. */}
           {day.focus && (
             <Section label={day.focusLabel}>
-              <p className="mx-auto max-w-[20ch] text-center text-lead font-light">{day.focus}</p>
+              <p className="mx-auto max-w-[20ch] text-center text-lead font-semibold">{day.focus}</p>
             </Section>
           )}
 
@@ -363,7 +363,7 @@ export default function Horoscope() {
                 {day.transits.map((t) => (
                   <li key={t.id} className="border-b border-rule pb-6 pt-1 last:border-b-0">
                     <div className="mb-2 flex items-baseline justify-between gap-4">
-                      <h3 className="text-lead font-light">{t.title}</h3>
+                      <h3 className="text-lead font-semibold">{t.title}</h3>
                       <span className="flex-none text-micro uppercase tracking-caps text-t3">
                         {t.weight}
                       </span>
@@ -382,7 +382,7 @@ export default function Horoscope() {
                 {day.sections.map((s) => (
                   <li key={s.key} className="border-b border-rule pb-6 pt-1 last:border-b-0">
                     <div className="mb-2 flex items-baseline justify-between gap-4">
-                      <h3 className="text-lead font-light">{s.title}</h3>
+                      <h3 className="text-lead font-semibold">{s.title}</h3>
                       <span className="flex-none text-micro uppercase tracking-caps text-t3 tnum">
                         {s.score}
                       </span>

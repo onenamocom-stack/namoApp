@@ -11,7 +11,7 @@ export default function Premium() {
       <TopBar title="Premium" back backTo="/profile" />
 
       <section className="section pt-14">
-        <h1 className="mx-auto max-w-[13ch] text-center text-display font-light">
+        <h1 className="mx-auto max-w-[13ch] text-center text-display font-semibold">
           Pay for the longer answer.
         </h1>
         <Stub className="my-8" />
@@ -36,7 +36,7 @@ export default function Premium() {
             ))}
           </ul>
 
-          <p className="mt-8 text-center text-lead font-light tnum">
+          <p className="mt-8 text-center text-lead font-semibold tnum">
             ₹{t.price}
             <span className="ml-2 text-micro uppercase tracking-caps text-t3">{t.unit}</span>
           </p>

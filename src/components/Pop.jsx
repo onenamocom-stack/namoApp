@@ -30,10 +30,11 @@ export function PopCard({ raised = false, tap = false, className = '', as: As = 
 /**
  * The elevated button. Renders as <button>, <Link> or <a>.
  *
- * Default is the ink one — a grey-black fill with white caps, which is where
- * "black primary" lives on a light canvas. `gold` is the voltage CTA, one per
- * screen. `ghost` is a white pill for the quiet third, because three loud
- * buttons on one screen reads as noise rather than hierarchy.
+ * `gold` is the voltage CTA, one per screen — green since 30 Sep, Sri
+ * Mandir's main-action colour; the name is historical. Default is the
+ * secondary filled button, in saffron. `ghost` is a white pill for the quiet
+ * third, because three loud buttons on one screen reads as noise rather than
+ * hierarchy.
  */
 export function PopButton({
   to,
@@ -123,7 +124,7 @@ export function Stat({ label, value, sub, className = '' }) {
   return (
     <div className={className}>
       <p className="caps-sm t-faint">{label}</p>
-      <p className="mt-1.5 text-lead font-light tnum t-heading">{value}</p>
+      <p className="mt-1.5 text-lead font-semibold tnum t-heading">{value}</p>
       {sub && <p className="mt-0.5 caps-sm t-faint">{sub}</p>}
     </div>
   )

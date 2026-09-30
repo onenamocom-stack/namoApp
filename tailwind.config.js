@@ -1,10 +1,11 @@
 /**
- * CRED-light token set.
+ * Sri Mandir token set (30 Sep 2026; it replaced the CRED-light navy set).
  *
  * Three rules encoded here rather than left to discipline:
- *   1. Near-neutral. A warm canvas, white surfaces, a grey-black ink and one
- *      gold voltage. Colour beyond that is reachable only through the banner
- *      gradients, which are named below and nowhere else.
+ *   1. Orange and white, green for buttons. A light grey page, white cards, a
+ *      charcoal ink and one saffron voltage. The green lives only on
+ *      `.pop-btn` in index.css. Colour beyond that is reachable only through
+ *      the banner gradients.
  *   2. Radius is the default, not the exception — the scale starts at 8px and
  *      `rounded-full` actually rounds.
  *   3. Elevation is a soft shadow tuned to the ink, never a generic black
@@ -74,34 +75,31 @@ export default {
       '3xl': '28px',
       full: '9999px',
     },
-    // Tuned to the ink, not to pure black. The reason survives the repalette
-    // and only the hue moves: the ink is navy now, so a warm-black blur is
-    // what would go muddy on this near-white page, exactly as a #000 blur did
-    // on the warm canvas before it. Shadow hue follows the ink token.
+    // Neutral and faint. Since 30 Sep the ink is a charcoal rather than navy,
+    // so the shadow is a near-black at low alpha — the flat, white-card look
+    // of Sri Mandir, where a card is lifted by a whisper, not a slab of blur.
     boxShadow: {
       none: 'none',
-      sm: '0 1px 2px rgba(61,64,91,0.04), 0 3px 8px -5px rgba(61,64,91,0.12)',
-      DEFAULT: '0 1px 2px rgba(61,64,91,0.04), 0 6px 16px -8px rgba(61,64,91,0.10)',
-      md: '0 1px 2px rgba(61,64,91,0.04), 0 6px 16px -8px rgba(61,64,91,0.10)',
-      lg: '0 2px 4px rgba(61,64,91,0.04), 0 16px 32px -12px rgba(61,64,91,0.16)',
-      xl: '0 4px 8px rgba(61,64,91,0.05), 0 28px 48px -16px rgba(61,64,91,0.22)',
+      sm: '0 1px 2px rgba(17,17,17,0.04), 0 3px 8px -5px rgba(17,17,17,0.12)',
+      DEFAULT: '0 1px 2px rgba(17,17,17,0.04), 0 6px 16px -8px rgba(17,17,17,0.10)',
+      md: '0 1px 2px rgba(17,17,17,0.04), 0 6px 16px -8px rgba(17,17,17,0.10)',
+      lg: '0 2px 4px rgba(17,17,17,0.04), 0 16px 32px -12px rgba(17,17,17,0.16)',
+      xl: '0 4px 8px rgba(17,17,17,0.05), 0 28px 48px -16px rgba(17,17,17,0.22)',
       // Cast upward — the bottom bar throws its shadow onto the content above.
-      nav: '0 -2px 6px rgba(61,64,91,0.06), 0 -12px 28px -12px rgba(61,64,91,0.22)',
-      gold: '0 1px 2px rgba(194,100,0,0.22), 0 8px 18px -8px rgba(194,100,0,0.52)',
+      nav: '0 -2px 6px rgba(17,17,17,0.06), 0 -12px 28px -12px rgba(17,17,17,0.22)',
+      gold: '0 1px 2px rgba(242,106,27,0.22), 0 8px 18px -8px rgba(242,106,27,0.52)',
     },
     extend: {
       fontFamily: {
-        // ONE family. CRED sets its whole interface in a single geometric sans
-        // and gets hierarchy from weight, size and case — no serif anywhere,
-        // and no separate mono. `display` and `mono` stay mapped to it so the
-        // existing `font-display` call sites keep working; what makes a
-        // display heading a display heading is the weight rule in index.css.
-        // Devanagari sits *after* Jakarta on purpose: a browser walks the
-        // stack per glyph, so Latin keeps Jakarta and only Indic characters
-        // fall through to Noto. Reversing these two would restyle the whole
-        // English UI.
+        // ONE family, Poppins, since 30 Sep (it replaced Plus Jakarta Sans to
+        // match Sri Mandir's rounded geometric sans). Hierarchy comes from
+        // weight, size and case. `display` and `mono` stay mapped to it so the
+        // existing `font-display` call sites keep working; the weight rule in
+        // index.css is what makes a display heading one.
+        // Poppins carries Devanagari itself, so Hindi and English set in one
+        // face. Noto stays behind it as the fallback for any glyph it lacks.
         sans: [
-          '"Plus Jakarta Sans"',
+          'Poppins',
           '"Noto Sans Devanagari"',
           '-apple-system',
           'Segoe UI',
@@ -109,27 +107,28 @@ export default {
           'sans-serif',
         ],
         display: [
-          '"Plus Jakarta Sans"',
+          'Poppins',
           '"Noto Sans Devanagari"',
           '-apple-system',
           'Segoe UI',
           'sans-serif',
         ],
-        mono: ['"Plus Jakarta Sans"', '-apple-system', 'Segoe UI', 'sans-serif'],
+        mono: ['Poppins', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       fontSize: {
         // Named to the role, so a screen cannot invent a nineteenth size.
-        // A geometric sans needs the negative tracking pulled in harder than a
-        // serif did — it sets loose by default at display sizes.
-        micro: ['10px', { lineHeight: '1.3', letterSpacing: '0.1em' }],
-        label: ['11px', { lineHeight: '1.3', letterSpacing: '0.08em' }],
-        meta: ['13px', { lineHeight: '1.45', letterSpacing: '-0.005em' }],
-        body: ['15px', { lineHeight: '1.6', letterSpacing: '-0.01em' }],
-        read: ['17px', { lineHeight: '1.6', letterSpacing: '-0.011em' }],
-        lead: ['20px', { lineHeight: '1.35', letterSpacing: '-0.02em' }],
-        title: ['26px', { lineHeight: '1.2', letterSpacing: '-0.03em' }],
-        display: ['34px', { lineHeight: '1.1', letterSpacing: '-0.035em' }],
-        huge: ['44px', { lineHeight: '1.05', letterSpacing: '-0.04em' }],
+        // Poppins is wide and round; the tight negative tracking Jakarta
+        // needed crushes it, so text sizes set at zero and only display
+        // sizes pull in, and by half as much.
+        micro: ['10px', { lineHeight: '1.3', letterSpacing: '0.08em' }],
+        label: ['11px', { lineHeight: '1.3', letterSpacing: '0.06em' }],
+        meta: ['13px', { lineHeight: '1.5', letterSpacing: '0' }],
+        body: ['15px', { lineHeight: '1.6', letterSpacing: '0' }],
+        read: ['17px', { lineHeight: '1.6', letterSpacing: '0' }],
+        lead: ['20px', { lineHeight: '1.4', letterSpacing: '-0.01em' }],
+        title: ['26px', { lineHeight: '1.25', letterSpacing: '-0.015em' }],
+        display: ['34px', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+        huge: ['44px', { lineHeight: '1.1', letterSpacing: '-0.025em' }],
       },
       letterSpacing: {
         label: '0.10em',

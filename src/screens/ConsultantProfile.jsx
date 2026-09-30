@@ -347,7 +347,7 @@ export default function ConsultantProfile() {
           which is the difference between a profile and a brochure. */}
       <div className="flex flex-none items-center gap-4 border-t border-rule bg-bg px-6 py-4">
         <div className="min-w-0">
-          <p className="text-lead font-light tnum">₹{rupees(c.pricePaise ?? 0)}</p>
+          <p className="text-lead font-semibold tnum">₹{rupees(c.pricePaise ?? 0)}</p>
           <p className="mt-0.5 text-micro uppercase tracking-caps text-t3">
             {SESSION.label}
             {c.perMinutePaise != null && ` · ₹${rupees(c.perMinutePaise)}/min live`}
@@ -576,7 +576,7 @@ function Reviews({ c }) {
           rating is a consensus or a fight. */}
       <div className="flex items-center gap-6 border-b border-rule pb-8">
         <div className="flex-none text-center">
-          <p className="text-display font-light tnum">{avg}</p>
+          <p className="text-display font-semibold tnum">{avg}</p>
           <Ticks value={Math.round(avg)} className="mt-2 w-16" />
         </div>
         <ul className="min-w-0 flex-1">

@@ -54,6 +54,9 @@ export function Stub({ className = '' }) {
 export function Button({ to, href, onClick, variant = 'default', className = '', children, ...rest }) {
   const cls = [
     'pop-btn caps w-full',
+    // `solid` is the one commit on its screen (Begin, Send code, Verify,
+    // Enter Namo), so it takes the main-action green.
+    variant === 'solid' && 'pop-btn-gold',
     variant !== 'solid' && 'pop-btn-ghost',
     variant === 'quiet' && 't-faint',
     className,

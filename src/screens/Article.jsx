@@ -98,7 +98,7 @@ export default function Article() {
           <span className="text-micro uppercase tracking-caps text-t3 tnum">{mins}</span>
         </div>
 
-        <h1 className="text-title font-light">{b.title}</h1>
+        <h1 className="text-title font-semibold">{b.title}</h1>
 
         <Link
           to={authorHref(b)}

@@ -153,7 +153,7 @@ export default function AskPlace() {
         aria-label="Place of birth"
         autoCapitalize="words"
         autoComplete="off"
-        className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-light text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
+        className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-semibold text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
       />
 
       {query.length < 2 && (

@@ -250,13 +250,13 @@ export async function composeStatus(artworkSrc, { photoSrc, name, dateLabel, log
   ctx.fillStyle = '#ffffff'
   const middle = stripTop + strip / 2
   if (name && dateLabel) {
-    ctx.font = '700 46px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.font = '700 46px Poppins, system-ui, sans-serif'
     ctx.fillText(name, textLeft, middle - 6)
-    ctx.font = '500 34px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.font = '500 34px Poppins, system-ui, sans-serif'
     ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'
     ctx.fillText(dateLabel, textLeft, middle + 44)
   } else if (name || dateLabel) {
-    ctx.font = '600 42px "Plus Jakarta Sans", system-ui, sans-serif'
+    ctx.font = '600 42px Poppins, system-ui, sans-serif'
     ctx.fillText(name || dateLabel, textLeft, middle + 14)
   }
 

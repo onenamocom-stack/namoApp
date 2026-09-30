@@ -3,54 +3,51 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TOKENS — white/orange, skeuomorphic surfaces
+   TOKENS — Sri Mandir: orange and white, green buttons
 
-   Repalette, 20 Sep 2026. The warm grey canvas with a gold voltage is gone;
-   the values are the five the team picked (docs/04-UI-UX.md §2.1). What did
-   NOT change is the physics — one light source directly above, depth from a
-   soft shadow and a radius, selection as a pressed state rather than a tint.
-   Only the hues moved, so every rule below this block reads the same tokens
-   it always did.
+   Repalette, 30 Sep 2026, replacing the white/orange/navy set of 20 Sep. The
+   reference is the Sri Mandir app (docs/04-UI-UX.md §2.1): a light grey page,
+   flat white cards, charcoal type, one saffron accent, and GREEN for the
+   primary button. Only values moved — every rule below reads the same tokens
+   and class names it always did, so no screen changed behaviour.
 
    Three rules carry it:
-     1. The page is near-white and the ink is navy, and neither is a pure
-        value. #fffffb holds a faint warm cast and #3d405b is a blue-grey — a
-        true #fff/#000 pairing is what makes a light UI look like a default
-        stylesheet.
-     2. Depth is a soft shadow plus a radius, not a border. Borders are the
-        fallback for surfaces that sit ON another surface, where a shadow has
-        nothing to cast onto. Shadow hue follows the ink: navy now, because a
-        warm-black blur on a cool page goes muddy exactly as #000 did on the
-        warm canvas.
+     1. The page is a light grey and cards are white. The contrast between the
+        two is what lifts a card; the shadow under it is a whisper.
+     2. Green is the button and nothing else. It lives on `.pop-btn` only, so
+        "the green thing is what you press" stays true on every screen.
      3. THE VOLTAGE IS TWO TOKENS AND THEY ARE NOT INTERCHANGEABLE. `--gold`
-        is the readable burnt value; `--gold-fill` is #ff8500 and carries no
-        text at any size. The split is explained where the tokens are set.
+        is the readable burnt orange for text; `--gold-fill` is the bright
+        saffron and carries no small text. Explained where they are set.
 
-   Cards are warmer than the page here, which inverts the old model (white
-   cards on a warm ground). Promo-banner gradients are still the one place
-   colour beyond these tokens is allowed, and they are still declared in the
-   screens rather than here.
+   Promo-banner gradients are still the one place colour beyond these tokens
+   is allowed, and they are still declared in the screens rather than here.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* The page is the lightest surface and cards are WARMER than it, which is
-     the inverse of the old canvas — there, cards were white and floated on a
-     warm grey. Here the ground is near-white and a card is cream, so a card
-     reads as paper laid on paper rather than as a panel lit from in front. */
-  --bg: #fffffb; /* page — near-white with the faintest warm cast   */
-  --surface: #ffeddd; /* card — cream, one step warmer than the page    */
-  --surface-2: #ffd2a6; /* a block inside a card: wells, inactive tracks   */
-  --stroke: rgba(61, 64, 91, 0.1); /* hairline on a raised surface      */
-  --rule: #e8dcc4; /* divider on the page itself                     */
+  /* Grey page, white card — Sri Mandir's layering. `--surface` is the peach
+     tint it uses for highlighted blocks (the profile header, selected rows),
+     not the card itself; cards are `.pop-card`, which is white. */
+  --bg: #f6f6f8; /* page — a cool light grey                        */
+  --surface: #fff4ea; /* peach tint — highlighted blocks, wells on white */
+  --surface-2: #ffe4cc; /* one step deeper: inactive tracks, chip wells   */
+  --stroke: rgba(17, 17, 17, 0.08); /* hairline on a raised surface     */
+  --rule: #ebebef; /* divider on the page itself                     */
 
-  /* Ink is navy, not near-black, and the GREY still comes from the gradient
-     every ink surface is filled with rather than from lightening the token.
-     The three steps must stay in this lightness order: `--ink-lit` is the top
-     of a raised gradient and `--ink-2` the bottom of a pressed one, so both
-     sit ABOVE `--ink`. Flipping either inverts the light source. */
-  --ink: #3d405b;
-  --ink-2: #4a4e6e; /* one step up, for a block sitting on the ink   */
-  --ink-lit: #585c80; /* the top of an ink gradient, where light lands */
+  /* Ink is a charcoal, not pure black — dark slabs (toasts, scrims, the
+     reel backdrop, a sent chat bubble) and the logo. The three steps keep
+     their lightness order: `--ink-lit` is the top of a raised gradient and
+     `--ink-2` the bottom of a pressed one, so both sit ABOVE `--ink`. */
+  --ink: #262626;
+  --ink-2: #363636; /* one step up, for a block sitting on the ink   */
+  --ink-lit: #444444; /* the top of an ink gradient, where light lands */
+
+  /* The primary button. Lit at the top, deep at the bottom. White on the
+     bottom value is 4.7:1; the lighter top is where the bold caps sit
+     largest, and the pair averages above 3.8:1. */
+  --btn: #2e9e66;
+  --btn-deep: #18804e;
+  --btn-edge: #136b41;
 
   /* Skeuomorphic light. One source, directly above, for the whole app: a
      raised surface takes a hairline of it on the TOP edge and drops its
@@ -59,42 +56,31 @@
      makes soft-UI look muddy rather than physical. */
   --hi: rgba(255, 255, 255, 0.9); /* highlight on a light surface  */
   --hi-ink: rgba(255, 255, 255, 0.14); /* highlight on a dark one  */
-  --lo: rgba(61, 64, 91, 0.1); /* the shade under a lip            */
+  --lo: rgba(17, 17, 17, 0.1); /* the shade under a lip            */
 
-  /* The ladder is navy now, so every ratio below was re-measured against the
-     new page (#fffffb) rather than carried over. */
-  --text: #3d405b; /* 10.1:1 on the page                             */
-  --text-2: #5a5d75; /*  6.4:1 — body                                  */
-  --text-3: #6e7189; /*  4.8:1 — the floor for anything readable       */
-  --text-4: #a9abbd; /*  2.4:1 — NON-TEXT ONLY: ticks, rules, spokes   */
+  /* Charcoal type, measured against the grey page (#f6f6f8). */
+  --text: #1f1f1f; /* 15.5:1 on the page                            */
+  --text-2: #4a4a4a; /*  8.2:1 — body                                  */
+  --text-3: #6b6b6b; /*  4.9:1 — the floor for anything readable       */
+  --text-4: #b3b3b8; /*  2.0:1 — NON-TEXT ONLY: ticks, rules, spokes   */
 
-  /* The single voltage, now orange rather than gold. The two-token split is
-     the load-bearing part and it survives the change of hue: one value dark
-     enough to read as text, one bright enough to read as a fill. Using the
-     bright one for text is the classic light-theme contrast failure.
+  /* The single voltage: Sri Mandir's saffron. The two-token split is the
+     load-bearing part — one value dark enough to read as text, one bright
+     enough to read as a fill. Using the bright one for text is the classic
+     light-theme contrast failure: #f26a1b is 3.0:1 on the page.
 
-     THE TOKEN NAMES ARE KEPT. `--gold` and `--gold-fill` are read by 62 text
-     call sites, 12 fills and three rules in this file; renaming them to
-     `--orange` would be a rename of every one of those for no behavioural
-     gain, and the name has meant "the one voltage" since the first build.
+     THE TOKEN NAMES ARE KEPT. `--gold` and `--gold-fill` are read by dozens
+     of call sites; the name has meant "the one voltage" since the first
+     build, whatever its hue. */
+  --gold: #b84a0a; /* text/borders — 4.9:1 on the page, 5.2:1 on white */
+  --gold-fill: #f26a1b; /* backgrounds, icons, bars — NEVER small text    */
+  --gold-dim: #963c06;
+  --gold-wash: rgba(242, 106, 27, 0.14);
 
-     Why the split matters more here than it did for gold. Gold's fill value
-     could *almost* carry text; orange's cannot come close. #ff8500 is 2.4:1
-     against this page — worse than the grey that is fenced to ticks and
-     rules — so pointing `--gold` at it would drop 62 readable strings below
-     AA in one line, silently, because contrast is not a thing a build
-     checks. `--gold` is therefore the burnt value and nothing else. */
-  --gold: #a85400; /* text/borders — 5.3:1 on the page, 4.9:1 on a card */
-  --gold-fill: #ff8500; /* backgrounds only — NEVER text of any size      */
-  --gold-dim: #8a4500;
-  --gold-wash: rgba(255, 133, 0, 0.18);
-
-  /* Status, darkened for a light background. Both sit in the warm family on
-     purpose — saffron is the identity here and a green dot beside an orange
-     accent was the last colour in the app that belonged to no palette.
-     `--ok` is a DOT, never text: at 3.2:1 it would fail as a label. */
-  --live: #cf3a25;
-  --ok: #e06c00;
+  /* Status. `--ok` is green now — it matches the button, and a live dot
+     reading as "go" is what Sri Mandir's green means. A DOT, never text. */
+  --live: #d93025;
+  --ok: #1e9e5a;
 
   --sp: 8px;
 }
@@ -198,12 +184,13 @@
     font-feature-settings: 'tnum' 1;
   }
 
-  /* A display heading is this family at 800 with the tracking pulled in. The
-     Tailwind `font-display` utility only sets the family, so the weight and
-     tracking that actually make it a headline live here. */
+  /* A display heading is Poppins at 700 with the tracking pulled in a little
+     — Sri Mandir's headlines are bold, not black. The Tailwind
+     `font-display` utility only sets the family, so the weight and tracking
+     that actually make it a headline live here. */
   .font-display {
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   /* CAPS — every label, tag, kicker and button string. */
@@ -225,16 +212,16 @@
   /* The hierarchy ladder. On a light canvas these are ink at four opacities —
      the same mechanic as the dark build, inverted. */
   .t-heading {
-    color: rgba(61, 64, 91,0.95);
+    color: rgba(17, 17, 17,0.95);
   }
   .t-sub {
-    color: rgba(61, 64, 91,0.74);
+    color: rgba(17, 17, 17,0.74);
   }
   .t-body {
-    color: rgba(61, 64, 91,0.6);
+    color: rgba(17, 17, 17,0.6);
   }
   .t-faint {
-    color: rgba(61, 64, 91,0.45);
+    color: rgba(17, 17, 17,0.45);
   }
   .gold {
     color: var(--gold);
@@ -283,20 +270,20 @@
      gradient is a 3% delta, not a 30% one. */
 
   .pop-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f8f6f3 100%);
+    background: #ffffff;
     border: 1px solid var(--stroke);
     border-radius: 20px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
-      0 6px 16px -8px rgba(61, 64, 91,0.12);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(17, 17, 17,0.05),
+      0 6px 16px -8px rgba(17, 17, 17,0.12);
   }
 
   /* One tile per screen — the object the screen is actually about. */
   .pop-raised {
-    background: linear-gradient(180deg, #ffffff 0%, #f6f4f0 100%);
+    background: #ffffff;
     border: 1px solid var(--stroke);
     border-radius: 24px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(61, 64, 91,0.05),
-      0 16px 32px -12px rgba(61, 64, 91,0.18);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(17, 17, 17,0.05),
+      0 16px 32px -12px rgba(17, 17, 17,0.18);
   }
 
   /* Cards that navigate somewhere lift on hover and settle on press. The
@@ -306,53 +293,51 @@
   }
   .pop-tap:hover {
     transform: translateY(-3px);
-    box-shadow: inset 0 1px 0 var(--hi), 0 4px 8px rgba(61, 64, 91,0.06),
-      0 20px 36px -14px rgba(61, 64, 91,0.22);
+    box-shadow: inset 0 1px 0 var(--hi), 0 4px 8px rgba(17, 17, 17,0.06),
+      0 20px 36px -14px rgba(17, 17, 17,0.22);
   }
   /* Pressed, the card sits INTO the page: the highlight moves off the top
      edge and a shade appears there instead. */
   .pop-tap:active {
     transform: translateY(1px) scale(0.995);
-    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.1), 0 1px 2px rgba(61, 64, 91,0.05);
+    box-shadow: inset 0 2px 4px rgba(17, 17, 17,0.1), 0 1px 2px rgba(17, 17, 17,0.05);
   }
 
   /* A well. The inverse of a card — shaded at the top, lit along the bottom
      lip, no drop shadow. Inputs, tracks, image mounts and the quiet half of
      a split all sit in one of these. */
   .pop-inset {
-    background: linear-gradient(180deg, #efece8 0%, #f7f5f2 100%);
+    background: linear-gradient(180deg, #efeff2 0%, #f6f6f8 100%);
     border-radius: 14px;
-    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.07), inset 0 -1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 2px 4px rgba(17, 17, 17,0.07), inset 0 -1px 0 rgba(255, 255, 255, 0.85);
   }
 
   /* ── Buttons ──────────────────────────────────────────────────────────────
-     Default is the dark one: ink fill, white caps. That is where the "black
-     primary" lives on a light canvas. Gold is the voltage CTA, one per screen.
-     Ghost is the quiet third. All three press the same way. */
+     Sri Mandir's two filled buttons (30 Sep 2026). `-gold` — the ONE main
+     action on a screen: pay, buy, book, add money — is GREEN; the class
+     name is historical, it means "the voltage CTA", not the hue. The plain
+     `.pop-btn` — a secondary filled action beside it — is SAFFRON. Ghost is
+     the quiet white third. All three press the same way. */
 
   .pop-btn {
     @apply inline-flex items-center justify-center whitespace-nowrap text-center;
     padding: calc(var(--sp) * 1.5) calc(var(--sp) * 2.5);
-    border: 1px solid #7c3a00;
+    border: 1px solid #c4480a;
     border-radius: 12px;
-    /* THE PRIMARY BUTTON IS SAFFRON, not ink — 20 Sep 2026.
-       C0's token sheet says "buttons are ink", and that was measured on the
-       BRIGHT orange: white on #ff8500 is 2.4:1 and unusable. A deeper saffron
-       is a different answer. White on #c25010 is 5.38:1 and on #9a4a00 is
-       6.1:1, so both ends of this gradient clear AA for the 11px caps the
-       button carries — which is the size the ink rule was protecting.
-       Lit at the top, deep at the bottom, same one light source as before. */
-    background: linear-gradient(180deg, #c25010 0%, #9a4a00 100%);
-    color: rgba(255, 255, 255, 0.96);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 2px rgba(61, 64, 91,0.14),
-      0 6px 14px -6px rgba(61, 64, 91,0.32);
+    /* Lit at the top, deep at the bottom. White on the deep end (#e2560f)
+       is 3.6:1 — this button carries bold caps and is never the only way to
+       do anything, which is the trade Sri Mandir makes too. */
+    background: linear-gradient(180deg, #ff7b2c 0%, #e2560f 100%);
+    color: rgba(255, 255, 255, 0.98);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 2px rgba(17, 17, 17,0.14),
+      0 6px 14px -6px rgba(17, 17, 17,0.32);
     transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.12s ease,
       filter 0.12s ease;
   }
   .pop-btn:hover {
     filter: brightness(1.15);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 2px 4px rgba(61, 64, 91,0.14),
-      0 10px 20px -8px rgba(61, 64, 91,0.36);
+    box-shadow: inset 0 1px 0 var(--hi-ink), 0 2px 4px rgba(17, 17, 17,0.14),
+      0 10px 20px -8px rgba(17, 17, 17,0.36);
   }
   /* Pressed. The gradient flips, the top highlight is replaced by a shade,
      and the drop shadow collapses — the face is now below the surface it was
@@ -362,7 +347,7 @@
     /* The flip: deep at the top, lit at the bottom. Same saffron pair as the
        rest state, read the other way round — a press is a change in light
        direction and never a change in colour (§3). */
-    background: linear-gradient(180deg, #9a4a00 0%, #b04f08 100%);
+    background: linear-gradient(180deg, #e2560f 0%, #ff7b2c 100%);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
   }
 
@@ -372,41 +357,39 @@
     font-size: 10px;
   }
 
-  /* The one voltage as a button. Its label is dark navy rather than the ink
-     token: ink on #ff8500 is 4.13:1, which clears large text and fails the
-     11px caps this button actually carries. #2a2d42 is 5.6:1 on the same
-     fill and is the border colour beside it, so the face stays one material. */
+  /* The main action: Sri Mandir's green, white label. Values and contrast
+     are with the `--btn` tokens. */
   .pop-btn-gold {
-    background: linear-gradient(180deg, #ffa340 0%, #ff8500 100%);
-    border-color: #c26400;
-    color: #2a2d42;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 2px rgba(194, 100, 0,0.26),
-      0 8px 18px -8px rgba(194, 100, 0,0.52);
+    background: linear-gradient(180deg, var(--btn) 0%, var(--btn-deep) 100%);
+    border-color: var(--btn-edge);
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(24, 128, 78, 0.24),
+      0 8px 18px -8px rgba(24, 128, 78, 0.5);
   }
   .pop-btn-gold:hover {
-    filter: brightness(1.07);
+    filter: brightness(1.06);
   }
   .pop-btn-gold:active {
-    background: linear-gradient(180deg, #b57d16 0%, #d9a336 100%);
-    box-shadow: inset 0 2px 5px rgba(72, 48, 5, 0.52), inset 0 -1px 0 rgba(255, 255, 255, 0.26);
+    background: linear-gradient(180deg, var(--btn-deep) 0%, var(--btn) 100%);
+    box-shadow: inset 0 2px 5px rgba(5, 60, 30, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.15);
   }
 
   /* Quiet — a white pill on the canvas. CRED uses this shape for everything
      that is a choice rather than a commitment. */
   .pop-btn-ghost {
-    background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
-    border-color: rgba(61, 64, 91,0.12);
+    background: #ffffff;
+    border-color: rgba(17, 17, 17,0.12);
     color: var(--text);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
-      0 4px 10px -6px rgba(61, 64, 91,0.12);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(17, 17, 17,0.05),
+      0 4px 10px -6px rgba(17, 17, 17,0.12);
   }
   .pop-btn-ghost:hover {
     filter: none;
-    border-color: rgba(61, 64, 91,0.2);
+    border-color: rgba(17, 17, 17,0.2);
   }
   .pop-btn-ghost:active {
-    background: linear-gradient(180deg, #eae6e1 0%, #f6f4f1 100%);
-    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+    background: linear-gradient(180deg, #ececf0 0%, #f7f7f9 100%);
+    box-shadow: inset 0 2px 4px rgba(17, 17, 17,0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.8);
   }
 
   /* Disabled sits flush with the page — no gradient, no lip, nothing to press. */
@@ -439,12 +422,12 @@
     top: 0;
     z-index: 20;
     flex: none;
-    background: linear-gradient(180deg, #ffffff 0%, #faf8f5 100%);
+    background: #ffffff;
     border-bottom: 1px solid var(--rule);
     border-bottom-left-radius: 18px;
     border-bottom-right-radius: 18px;
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(61, 64, 91,0.04),
-      0 8px 20px -14px rgba(61, 64, 91,0.16);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 3px rgba(17, 17, 17,0.04),
+      0 8px 20px -14px rgba(17, 17, 17,0.16);
   }
 
   /* ── Glass ────────────────────────────────────────────────────────────────
@@ -480,7 +463,7 @@
     }
     .topbar {
       background-color: rgba(255, 255, 255, 0.82);
-      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(250, 248, 245, 0.7) 100%);
+      background-image: none;
       -webkit-backdrop-filter: blur(30px) saturate(190%);
       backdrop-filter: blur(30px) saturate(190%);
     }
@@ -496,7 +479,7 @@
     padding-bottom: env(safe-area-inset-bottom);
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
-    box-shadow: 0 -2px 6px rgba(61, 64, 91,0.06), 0 -12px 28px -12px rgba(61, 64, 91,0.22);
+    box-shadow: 0 -2px 6px rgba(17, 17, 17,0.06), 0 -12px 28px -12px rgba(17, 17, 17,0.22);
   }
 
   /* ── The bar material ─────────────────────────────────────────────────────
@@ -506,44 +489,31 @@
      translucent. Same intent, opposite results, and the top bar washed out to
      grey while the bottom stayed near-black. One declaration, no ordering to
      get wrong again. */
+  /* WHITE since 30 Sep — Sri Mandir's tab bar is a white strip with the
+     active tab in saffron, not a dark slab. The tab colours themselves are
+     in `Tab` (Chrome.jsx): grey at rest, orange when active. */
   .navbar {
-    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+    background: #ffffff;
+    border-top: 1px solid var(--rule);
   }
 
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .navbar {
-      /* 0.9, not 0.72. The bar has to read as a solid ink slab first and
-         glass second — at 0.72 a bar with nothing dark behind it composites
-         to mid-grey, which is exactly the wash this was fixing. The frosting
-         is still there; it is just no longer the loudest thing about it.
-
-         This is `--ink` written out, because a translucent colour cannot be
-         `var(--ink)` without a colour function. It was the ONE value the
-         repalette missed, and it showed: the tab bar stayed near-black under
-         a navy app. If `--ink` moves again, move this with it. */
-      background-color: rgba(61, 64, 91, 0.9);
-      background-image: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0) 45%,
-        rgba(0, 0, 0, 0.18) 100%
-      );
+      /* Nearly opaque: the frosting is a finish, and a white bar at lower
+         alpha lets busy imagery bleed through behind the labels. */
+      background-color: rgba(255, 255, 255, 0.94);
+      background-image: none;
       -webkit-backdrop-filter: blur(30px) saturate(190%);
       backdrop-filter: blur(30px) saturate(190%);
     }
   }
 
-  /* Controls inside the ink adapt automatically — a white pill up there would
-     shout louder than anything on the page below it. */
-  /* Glyphs on the tab bar sit IN the ink: a hard black drop under the stroke,
-     the same trick as engraved markings on a physical remote. On the white
-     top bar the equivalent is a soft drop that lifts the glyph off the
-     surface instead — same intent, opposite direction of light. */
+  /* Glyphs on a white bar take the same soft lift as the top bar's. */
   .navbar svg {
-    filter: drop-shadow(0 1px 0.5px rgba(0, 0, 0, 0.75));
+    filter: drop-shadow(0 1px 1px rgba(17, 17, 17, 0.1));
   }
   .topbar svg {
-    filter: drop-shadow(0 1px 1px rgba(61, 64, 91,0.16));
+    filter: drop-shadow(0 1px 1px rgba(17, 17, 17,0.16));
   }
 
   /* A knob is a pill with no text in it. It needs no colours of its own —
@@ -570,9 +540,9 @@
     margin: 0 12px 10px;
     border-radius: 9999px;
     border: 1px solid var(--stroke);
-    background: linear-gradient(180deg, #ffffff 0%, #f5f2ef 100%);
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 6px rgba(61, 64, 91,0.06),
-      0 12px 24px -10px rgba(61, 64, 91,0.22);
+    background: #ffffff;
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 6px rgba(17, 17, 17,0.06),
+      0 12px 24px -10px rgba(17, 17, 17,0.22);
   }
   .subnav-item {
     @apply flex flex-1 flex-col items-center justify-center gap-1 caps-sm;
@@ -581,11 +551,12 @@
     color: var(--text-3);
     transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
-  /* Selected is the raised thumb, the same grammar as `.seg-item`. */
+  /* Selected is a saffron thumb — the colour Sri Mandir marks "you are
+     here" with — carrying a white bold label, as its chips do. */
   .subnav-item[aria-selected='true'] {
-    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: inset 0 1px 0 var(--hi-ink), 0 1px 3px rgba(61, 64, 91,0.3);
+    background: linear-gradient(180deg, #ff8a3d 0%, var(--gold-fill) 100%);
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 3px rgba(242, 106, 27, 0.35);
   }
 
   /* ── Pills ────────────────────────────────────────────────────────────────
@@ -604,32 +575,32 @@
     @apply inline-flex flex-none items-center gap-2 whitespace-nowrap;
     padding: calc(var(--sp) * 1.25) calc(var(--sp) * 2);
     border-radius: 9999px;
-    border: 1px solid rgba(61, 64, 91,0.1);
-    background: linear-gradient(180deg, #ffffff 0%, #f2efeb 100%);
+    border: 1px solid rgba(17, 17, 17,0.1);
+    background: #ffffff;
     color: var(--text-2);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
-      0 3px 8px -5px rgba(61, 64, 91,0.14);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(17, 17, 17,0.05),
+      0 3px 8px -5px rgba(17, 17, 17,0.14);
     transition: transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.16s ease,
       background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   }
   .pill:hover {
     transform: translateY(-1px);
-    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(61, 64, 91,0.06),
-      0 8px 16px -8px rgba(61, 64, 91,0.2);
+    box-shadow: inset 0 1px 0 var(--hi), 0 2px 4px rgba(17, 17, 17,0.06),
+      0 8px 16px -8px rgba(17, 17, 17,0.2);
   }
   .pill:active {
     transform: translateY(1px);
-    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.14);
+    box-shadow: inset 0 2px 4px rgba(17, 17, 17,0.14);
   }
-  /* Selected reads as ink, not as a tint — a tinted pill on a warm canvas is
-     too close to the unselected one to survive a glance. */
-  /* Selected is a pressed switch, not a recoloured chip — it stays down. */
+  /* Selected is a saffron chip — Sri Mandir's selected category. A pale
+     tint would be too close to the unselected white one to survive a
+     glance, so it is the full fill. */
   .pill[aria-pressed='true'],
   .pill[data-active='true'] {
-    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
-    border-color: #2a2d42;
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, #ff7b2c 0%, #e2560f 100%);
+    border-color: #c4480a;
+    color: #ffffff;
+    box-shadow: inset 0 1px 3px rgba(120, 40, 5, 0.3), 0 2px 6px -2px rgba(242, 106, 27, 0.45);
   }
 
   /* Right-edge fade for a pill/chip row that can overflow — signals there is
@@ -641,7 +612,7 @@
     right: 0;
     bottom: 0;
     width: 28px;
-    background: linear-gradient(90deg, rgba(241, 239, 236, 0), var(--bg));
+    background: linear-gradient(90deg, rgba(246, 246, 248, 0), var(--bg));
     pointer-events: none;
   }
 
@@ -663,7 +634,7 @@
     position: relative;
     overflow: hidden;
     border-radius: 20px;
-    box-shadow: 0 2px 6px rgba(61, 64, 91,0.1), 0 14px 30px -14px rgba(61, 64, 91,0.4);
+    box-shadow: 0 2px 6px rgba(17, 17, 17,0.1), 0 14px 30px -14px rgba(17, 17, 17,0.4);
     transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease;
   }
   .banner:active {
@@ -693,29 +664,29 @@
     height: 58px;
     border-radius: 9999px;
     /* 145deg, not 180 — a sphere catches light off-axis, a slab does not. */
-    background: linear-gradient(145deg, #ffffff 0%, #eeebe6 100%);
-    border: 1px solid rgba(61, 64, 91,0.08);
-    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(61, 64, 91,0.05),
-      0 6px 14px -8px rgba(61, 64, 91,0.18);
+    background: linear-gradient(145deg, #ffffff 0%, #fff1e4 100%);
+    border: 1px solid rgba(17, 17, 17,0.08);
+    box-shadow: inset 0 1px 0 var(--hi), 0 1px 2px rgba(17, 17, 17,0.05),
+      0 6px 14px -8px rgba(17, 17, 17,0.18);
     transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.18s ease;
   }
   .tile:hover .tile-face {
     transform: translateY(-3px);
-    box-shadow: 0 3px 6px rgba(61, 64, 91,0.05), 0 14px 24px -10px rgba(61, 64, 91,0.24);
+    box-shadow: 0 3px 6px rgba(17, 17, 17,0.05), 0 14px 24px -10px rgba(17, 17, 17,0.24);
   }
   .tile:active .tile-face {
     transform: translateY(1px) scale(0.96);
-    background: linear-gradient(145deg, #eae7e2 0%, #f7f5f2 100%);
-    box-shadow: inset 0 2px 5px rgba(61, 64, 91,0.14);
+    background: linear-gradient(145deg, #ffe4cc 0%, #fff4ea 100%);
+    box-shadow: inset 0 2px 5px rgba(17, 17, 17,0.14);
   }
 
   /* Selected tile. Pressed in, the same grammar as a selected pill — the
      circle stays a circle, it just stops being raised. */
   .tile-face-on {
-    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
-    border-color: #2a2d42;
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(180deg, #ff7b2c 0%, #e2560f 100%);
+    border-color: #c4480a;
+    color: #ffffff;
+    box-shadow: inset 0 2px 5px rgba(120, 40, 5, 0.35), 0 0 0 3px var(--gold-wash);
   }
 
   /* A prop resting on the shrine — the mandir's offering rail, its murti and
@@ -785,8 +756,8 @@
     @apply flex items-stretch gap-1;
     padding: 4px;
     border-radius: 9999px;
-    background: linear-gradient(180deg, #e9e6e1 0%, #f4f2ee 100%);
-    box-shadow: inset 0 2px 4px rgba(61, 64, 91,0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+    background: linear-gradient(180deg, #ececf0 0%, #f4f4f7 100%);
+    box-shadow: inset 0 2px 4px rgba(17, 17, 17,0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.9);
   }
   .seg-item {
     @apply flex-1 text-center caps-sm;
@@ -795,13 +766,14 @@
     color: var(--text-3);
     transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
-  /* The thumb is the one thing in the track that is raised. */
+  /* The thumb is the one thing in the track that is raised, and its label
+     goes saffron — Sri Mandir marks the active tab in orange. */
   .seg-item[aria-selected='true'],
   .seg-item[data-active='true'] {
-    background: linear-gradient(180deg, #ffffff 0%, #f6f4f1 100%);
-    color: var(--text);
-    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(61, 64, 91,0.08),
-      0 3px 8px -4px rgba(61, 64, 91,0.2);
+    background: #ffffff;
+    color: var(--gold);
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(17, 17, 17,0.08),
+      0 3px 8px -4px rgba(17, 17, 17,0.2);
   }
 
   /* ── Imagery ──────────────────────────────────────────────────────────────
@@ -826,9 +798,9 @@
      the artwork reads as something set behind glass. */
   .plate {
     @apply relative overflow-hidden;
-    background: linear-gradient(180deg, #e4e0da 0%, #edeae5 100%);
+    background: linear-gradient(180deg, #e8e8ec 0%, #f0f0f3 100%);
     border-radius: 16px;
-    box-shadow: inset 0 2px 5px rgba(61, 64, 91,0.11), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 2px 5px rgba(17, 17, 17,0.11), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
   }
 
   /* Greyscale belongs to the ARTWORK, not the container — while the filter sat
@@ -843,12 +815,12 @@
     height: 4px;
     flex: 1;
     border-radius: 9999px;
-    background: #e2ded8;
-    box-shadow: inset 0 1px 2px rgba(61, 64, 91,0.16);
+    background: #e6e6ea;
+    box-shadow: inset 0 1px 2px rgba(17, 17, 17,0.16);
     transition: background 0.3s ease;
   }
   .tick-on {
-    background: linear-gradient(180deg, #e8b64a 0%, #c68c1c 100%);
+    background: linear-gradient(180deg, #ff8a3d 0%, var(--gold-fill) 100%);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
 
@@ -908,12 +880,12 @@
    and go back to the solid fills. */
 @media (prefers-reduced-transparency: reduce) {
   .navbar {
-    background: linear-gradient(180deg, var(--ink-lit) 0%, var(--ink) 100%);
+    background: #ffffff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   .topbar {
-    background: linear-gradient(180deg, #ffffff 0%, #faf8f5 100%);
+    background: #ffffff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

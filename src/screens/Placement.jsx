@@ -54,8 +54,8 @@ export default function Placement() {
       <TopBar title={p.body} back backTo="/chart" />
 
       <section className="section pt-12">
-        <p className="text-center text-huge font-light text-t2">{p.glyph}</p>
-        <h1 className="mx-auto mt-6 max-w-[14ch] text-center text-title font-light">
+        <p className="text-center text-huge font-semibold text-t2">{p.glyph}</p>
+        <h1 className="mx-auto mt-6 max-w-[14ch] text-center text-title font-semibold">
           {p.body} in {p.sign}
         </h1>
         <p className="mt-3 text-center text-micro uppercase tracking-caps text-t3 tnum">

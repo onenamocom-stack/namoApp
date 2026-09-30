@@ -96,7 +96,7 @@ export default function AskPhone() {
     >
       <label className="mx-auto flex max-w-[19rem] flex-col items-center gap-2">
         <div className="flex w-full items-baseline justify-center gap-2 border-b border-rule pb-3 focus-within:border-t1">
-          <span className="text-display font-light text-t3">+91</span>
+          <span className="text-display font-semibold text-t3">+91</span>
           <input
             value={digits}
             onChange={(e) => setDigits(e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -104,7 +104,7 @@ export default function AskPhone() {
             aria-label="Phone number"
             inputMode="numeric"
             autoComplete="tel-national"
-            className="w-full bg-transparent text-center text-display font-light text-t1 tnum outline-none placeholder:text-t4"
+            className="w-full bg-transparent text-center text-display font-semibold text-t1 tnum outline-none placeholder:text-t4"
           />
         </div>
         <span className="text-micro uppercase tracking-caps text-t3">Mobile number</span>
@@ -124,7 +124,7 @@ export default function AskPhone() {
             autoComplete="email"
             autoCapitalize="none"
             spellCheck="false"
-            className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-light text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
+            className="w-full border-b border-rule bg-transparent pb-3 text-center text-lead font-semibold text-t1 outline-none transition-colors placeholder:text-t4 focus:border-t1"
           />
           <span className="text-micro uppercase tracking-caps text-t3">Email</span>
         </label>

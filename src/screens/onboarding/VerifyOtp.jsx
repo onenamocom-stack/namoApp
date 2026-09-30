@@ -144,7 +144,7 @@ export default function VerifyOtp() {
           aria-label="Six-digit code"
           inputMode="numeric"
           autoComplete="one-time-code"
-          className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-light tracking-[0.4em] text-t1 tnum outline-none transition-colors placeholder:text-t4 focus:border-t1"
+          className="w-full border-b border-rule bg-transparent pb-3 text-center text-display font-semibold tracking-[0.4em] text-t1 tnum outline-none transition-colors placeholder:text-t4 focus:border-t1"
         />
         <span className="text-micro uppercase tracking-caps text-t3">Code</span>
       </label>

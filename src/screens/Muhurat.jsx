@@ -174,7 +174,7 @@ export default function Muhurat() {
               {result.moment ? (
                 <PopCard raised className="p-5">
                   <p className="caps-sm gold">Best moment</p>
-                  <p className="mt-3 text-title font-light tnum">{result.moment.time}</p>
+                  <p className="mt-3 text-title font-semibold tnum">{result.moment.time}</p>
                   <p className="mt-1 text-body t-sub">{longDate(result.moment.date)}</p>
                   <Stub className="my-5" />
                   <p className="text-read t-sub">{result.moment.line}</p>

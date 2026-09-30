@@ -65,14 +65,14 @@ function Tab({ to, label, icon }) {
       <NavLink
         to={to}
         className={({ isActive }) =>
-          // A thin glass bar cannot hold a bright/dim colour hierarchy — gold
-          // caps on it measure 2.8:1. The active signal is the indicator bar
-          // plus icon weight; both labels stay bright enough to read.
-          // Padding is the whole height budget here — 5/4 made a 74px bar,
-          // which is a lot of near-black under a shrine. 3.5/2.5 brings it to
-          // ~57px and the row is still a 44px-plus tap target.
+          // The bar is white (30 Sep), so the hierarchy is Sri Mandir's:
+          // grey at rest, saffron when active — `text-gold`, the readable
+          // orange, since these are 10px caps. The indicator bar and icon
+          // weight still mark it too.
+          // Padding is the whole height budget here — 3.5/2.5 makes ~57px
+          // and the row is still a 44px-plus tap target.
           `relative flex flex-col items-center gap-1 pb-3.5 pt-2.5 text-center caps-sm transition-colors duration-200 ${
-            isActive ? 'font-extrabold text-white' : 'font-semibold text-white/55 hover:text-white/80'
+            isActive ? 'font-bold text-gold' : 'font-semibold text-t3 hover:text-t1'
           }`
         }
       >
@@ -98,9 +98,8 @@ function Tab({ to, label, icon }) {
 }
 
 /**
- * The dark bar. On a light canvas the nav is the one persistent slab of ink —
- * it anchors the page the way CRED's does, and it is why the canvas can stay
- * as pale as it is without the screen floating away at the bottom.
+ * The tab bar: a white strip with the active tab in saffron, as Sri Mandir's
+ * is (30 Sep 2026; it was a dark ink slab).
  *
  * Nothing in the row gets a louder shape than its neighbours. A raised circle
  * breaking the top edge was tried and oversold what sat in it.

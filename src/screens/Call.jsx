@@ -134,7 +134,7 @@ export default function Call() {
     return (
       <div className="flex min-h-full animate-fade flex-col items-center justify-center bg-ink px-6 text-center">
         <span className="block h-2.5 w-2.5 animate-pulse rounded-full bg-live" />
-        <p className="mt-6 text-lead font-light on-ink">Ringing</p>
+        <p className="mt-6 text-lead font-semibold on-ink">Ringing</p>
         <p className="mt-3 max-w-measure text-meta text-white/60">
           Waiting for them to answer. Nothing is charged until they do.
         </p>
@@ -161,7 +161,7 @@ export default function Call() {
     return (
       <div className="flex min-h-full flex-col justify-center px-6 pb-10 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Not connected</p>
-        <h1 className="mx-auto mt-5 max-w-[16ch] text-display font-light">
+        <h1 className="mx-auto mt-5 max-w-[16ch] text-display font-semibold">
           The call did not open.
         </h1>
         {/* The server's sentence. Every refusal it gives names the

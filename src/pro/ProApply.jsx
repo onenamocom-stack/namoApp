@@ -60,7 +60,7 @@ export default function ProApply() {
 function CouldNotCheck({ onRetry }) {
   return (
     <>
-      <h1 className="mx-auto mt-10 max-w-[16ch] text-center text-display font-light">
+      <h1 className="mx-auto mt-10 max-w-[16ch] text-center text-display font-semibold">
         We could not reach your practice.
       </h1>
       <p className="mx-auto mt-4 max-w-measure text-center text-meta t-sub">
@@ -79,7 +79,7 @@ function CouldNotCheck({ onRetry }) {
 function SignUp() {
   return (
     <>
-      <h1 className="mx-auto mt-6 max-w-[16ch] text-center text-display font-light">
+      <h1 className="mx-auto mt-6 max-w-[16ch] text-center text-display font-semibold">
         Your practice needs an account.
       </h1>
       <p className="mx-auto mt-4 max-w-measure text-center text-meta t-sub">
@@ -134,7 +134,7 @@ function UnderReview({ status }) {
   const blocked = status === 'blocked'
   return (
     <>
-      <h1 className="mx-auto mt-10 max-w-[16ch] text-center text-display font-light">
+      <h1 className="mx-auto mt-10 max-w-[16ch] text-center text-display font-semibold">
         {blocked ? 'Your practice is closed.' : 'We are reading your application.'}
       </h1>
       <p className="mx-auto mt-4 max-w-measure text-center text-meta t-sub">
@@ -238,7 +238,7 @@ function Application({ onDone, toast }) {
 
   return (
     <>
-      <h1 className="mx-auto mt-4 max-w-[18ch] text-center text-display font-light">
+      <h1 className="mx-auto mt-4 max-w-[18ch] text-center text-display font-semibold">
         Tell us what you practise.
       </h1>
       <p className="mx-auto mt-3 max-w-measure text-center text-meta t-sub">

@@ -50,7 +50,7 @@ export default function AskTime() {
       >
         <div className="mx-auto grid max-w-[13rem] grid-cols-[1fr_auto_1fr] items-end gap-3">
           <Slot value={h} onChange={setH} placeholder="04" label="Hour" max={2} />
-          <span className="pb-9 text-display font-light text-t3">:</span>
+          <span className="pb-9 text-display font-semibold text-t3">:</span>
           <Slot value={min} onChange={setMin} placeholder="35" label="Minute" max={2} />
         </div>
 
