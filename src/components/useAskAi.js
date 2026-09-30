@@ -1,12 +1,10 @@
 /**
  * The Namo AI conversation, once.
  *
- * Two screens render it — the floating panel's Ask AI tab and the /ask
- * route — and they look nothing alike: one is chat bubbles, the other is a
- * reading column. What they must not have two of is the money: the quota
- * ladder, the meter and the clock. A second copy of that logic is a second
- * place for it to drift, and the thing it would drift about is what people
- * are charged.
+ * One screen renders it now — the /ask route. The messages panel had an
+ * Ask AI tab until 30 Sep 2026. It stays a hook because the money must
+ * never have two copies: the quota ladder and the price are the server's,
+ * and a second rendering would need exactly this again.
  *
  * So this owns the state and the calls, and returns what either rendering
  * needs. It decides nothing itself — every number here arrived from the

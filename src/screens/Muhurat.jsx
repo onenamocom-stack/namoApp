@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
+import Paywall from '../components/Paywall.jsx'
 import PlaceField, { placeLabel } from '../components/PlaceField.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
 import { Button, Row, Section, Segmented, Stub } from '../components/Primitives.jsx'
@@ -55,6 +56,8 @@ export default function Muhurat() {
   const [place, setPlace] = useState(null)
   const [changingPlace, setChangingPlace] = useState(false)
   const [mine, setMine] = useState(false)
+  // Bumped after a purchase, so the refused personal search runs again.
+  const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState({ loading: true, result: null, refusal: null })
 
   /* The birth place is the starting point, not the answer: it is the one
@@ -85,10 +88,13 @@ export default function Muhurat() {
       )
     })
     return () => { live = false }
-  }, [purpose, month, place, mine, sessionReady, session?.user?.id])
+  }, [purpose, month, place, mine, sessionReady, session?.user?.id, attempt])
 
   const chosen = PURPOSES.find((p) => p.key === purpose)
   const result = state.result
+  /* ₹49 a purpose a month since 30 Sep 2026. The server refuses with the
+     price until it is bought; the shared windows stay free. */
+  const locked = state.refusal?.code === 'needs_purchase'
 
   return (
     <>
@@ -154,7 +160,27 @@ export default function Muhurat() {
         <p className="section text-meta text-t3">Reading {chosen.label.toLowerCase()} windows.</p>
       )}
 
-      {state.refusal && (
+      {locked && (
+        <section className="section">
+          <Paywall
+            title={`${chosen.label}, judged against your chart`}
+            note={`The ${monthTabs.find((m) => m.key === month).label} windows ranked for your birth, and the one best moment when there is one. Yours to reopen any time.`}
+            sku="muhurat"
+            refKey={`${purpose}:${month}`}
+            pricePaise={state.refusal.pricePaise}
+            onBought={() => setAttempt((a) => a + 1)}
+          />
+          <button
+            type="button"
+            onClick={() => setMine(false)}
+            className="mx-auto mt-5 block text-meta text-t2 underline"
+          >
+            Show the windows without it
+          </button>
+        </section>
+      )}
+
+      {state.refusal && !locked && (
         <div className="section">
           <p className="text-body text-t1">{state.refusal.reason}</p>
           {state.refusal.code === 'no_birth' && (

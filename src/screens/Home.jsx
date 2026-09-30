@@ -10,7 +10,8 @@ import ReportSheet from '../components/ReportSheet.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
-import { longDate, panchangFrom, readingFrom, useAstro } from '../lib/astro.js'
+import { longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
+import { SignPicker } from './Horoscope.jsx'
 
 /**
  * Where an author's name links to.
@@ -551,55 +552,48 @@ function ReelCard({ reel: r }) {
   )
 }
 
-/** The daily reading, inline. The product's core content, in the stream. */
+/**
+ * The day's reading for a sign — free, the same for everybody with the Moon
+ * there (30 Sep 2026). Opens on the reader's own moon sign, off their chart;
+ * the other eleven are one tap. The reader's OWN reading is paid and lives on
+ * /chart's Prediction tab, which the last line names.
+ *
+ * It was the reader's own from 22 to 30 Sep, and between 9 and 22 Sep a
+ * canonical-birth reading cut down to its mood line because a sign was not
+ * named on it. The sign IS named now, which is what makes showing the whole
+ * reading honest: it says whose it is.
+ */
 function ReadingCard() {
   const { session, sessionReady } = useStore()
-  const horoscope = useAstro('horoscope', {
-    ready: sessionReady,
-    who: session?.user?.id ?? null,
+  const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
+  const [picked, setPicked] = useState(null)
+  const sign = picked ?? mine.rashi ?? 'Aries'
+  const reading = useAstro('rashifal', {
+    sign,
+    ready: Boolean(sessionReady && (!mine.loading || picked)),
   })
-  const day = readingFrom(horoscope.payload, 'today', null)
+  const day = readingFrom(reading.payload, 'today', null)
 
   return (
     <article className="pop-card p-4">
       {/* No heading and no "Read all" since 30 Sep (owner's call) — the tab
-          is already called आज का पंचांग, and `/horoscope` stays reachable
-          from Consult's Horoscope tile. */}
-      <div className="pop-inset p-4">
-        {horoscope.loading && <p className="text-meta t-faint">Reading the sky.</p>}
+          is already called आज का पंचांग. */}
+      <SignPicker value={sign} onChange={setPicked} />
+      <div className="pop-inset mt-3 p-4">
+        {reading.loading && <p className="text-meta t-faint">Reading the sky.</p>}
+        {reading.refusal && <p className="text-meta t-body">{reading.refusal.reason}</p>}
 
-        {/* Signed out, or with no birth details, this says which. It does not
-            show somebody else's reading and it does not go blank — a card that
-            is empty for no stated reason is the same bug as a card that is
-            confidently wrong. */}
-        {horoscope.refusal && <p className="text-meta t-body">{horoscope.refusal.reason}</p>}
-
-        {day && (
+        {day && !reading.loading && (
           <>
             <p className="caps-sm gold">
-              {longDate(day.date)}
-              {/* NO RASHI LABEL HERE ANY MORE, 9 Sep, and removing it is the
-                honest move rather than a retreat. What is left of this reading
-                after the canonical-birth fields came out is the panchang mood
-                and the day's clock windows — and those are byte-identical
-                across all twelve signs, checked. Naming a sign beside content
-                that does not vary by sign claims a personalisation that is not
-                there, which is the same failure as the fields we just removed.
-                The reader's own moon sign still appears where it is true: in
-                the header, off their own chart. */}
+              {sign} · {longDate(day.date)}
             </p>
-            {/* THE HEADLINE, THE SUMMARY AND THE 0-100 SCORE ARE GONE, 9 Sep.
-                All three were computed from the canonical birth this reading
-                comes from rather than from the reader — the score is weighted
-                by that invented person's dasha, and the headline named it out
-                loud. What is left is the day itself, which is the same day for
-                everybody and true for all of them. `readingFrom()` has the
-                field-by-field reasoning. */}
-            <p className="mt-3 text-body t-body">{day.dayMood}</p>
+            {day.headline && <p className="mt-3 text-body font-semibold t-heading">{day.headline}</p>}
+            <p className="mt-2 text-body t-body">{day.body || day.dayMood}</p>
 
             {day.windows.length > 0 && (
               <div className="mt-5 border-t border-stroke pt-4">
-                <span className="caps-sm t-faint">Windows</span>
+                <span className="caps-sm t-faint">Windows · Ujjain</span>
                 <ul className="mt-2">
                   {day.windows.map((w) => (
                     <li key={w.key} className="flex items-baseline justify-between py-1">
@@ -615,6 +609,9 @@ function ReadingCard() {
           </>
         )}
       </div>
+      <Link to="/chart?tab=prediction" className="mt-3 block text-center text-meta t-body underline">
+        Your own predictions, from your birth
+      </Link>
     </article>
   )
 }

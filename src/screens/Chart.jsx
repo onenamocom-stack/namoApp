@@ -1,52 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { ChartNorth } from '../components/ChartSquare.jsx'
+import Paywall from '../components/Paywall.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
-import { housesFrom, placementsFrom, useAstro } from '../lib/astro.js'
-import { Field, Section, Segmented, Stub, firstName } from '../components/Primitives.jsx'
+import {
+  housesFrom,
+  istDate,
+  longDate,
+  panchangFrom,
+  useAstro,
+  vargasFrom,
+} from '../lib/astro.js'
+import { entitlement } from '../lib/wallet.js'
+import { Field, Section, Segmented, firstName } from '../components/Primitives.jsx'
+import { DAY_OFFSET, DAY_TABS, ReadingView, dayFrom } from './Horoscope.jsx'
+
+const TABS = [
+  { key: 'chart', label: 'Chart' },
+  { key: 'prediction', label: 'Prediction' },
+]
 
 /**
- * Table view is the default, not the diagram.
+ * The full chart — where Consult's Horoscope tile lands (30 Sep 2026).
  *
- * A wheel is beautiful and illegible to anyone who has not been taught to read
- * one. The table carries the same data in a form you can scan, and the wheel is
- * one tap away for people who want it. Every row drills into a placement page.
+ * Two tabs, as the owner laid them out: **Chart** on the left, where Table
+ * used to be, and **Prediction** on the right.
  *
- * Since phase 7 every number here is computed from the signed-in person's own
- * birth row rather than seeded. Three things follow, and all three are on
- * screen rather than in a comment:
+ * - **Chart** is Vedic only. The placement table is gone. D1 leads, drawn;
+ *   under it every divisional chart the vendor computes (D2…D60), each one
+ *   a row that opens to its own diagram. All of it was computed once at
+ *   sign-up (`Computing.jsx`) and is cached forever, on the server and in
+ *   this browser — opening this screen computes nothing.
+ * - **Prediction** is the reader's own yesterday / today / tomorrow, from
+ *   their birth. ₹99 for 30 days; the price is the server's and arrives on
+ *   the refusal. The free reading is by sign, on Home and /horoscope.
  *
- * - **It can be loading, and it can fail.** A chart service that is down is not
- *   a person with no birth details, and the two never render as one sentence.
- * - **It can be incomplete.** Without a birth time there is no ascendant and no
- *   house has a cusp, so the houses and the diagrams are withheld and said to be
- *   withheld. Planets are unaffected and still shown.
- * - **The ayanamsa and house system are printed under Birth data.** A wrong one
- *   is wrong silently (docs/02-TRD.md §8); the only defence a reader has is
- *   being told which was used.
+ * Without a birth time there is no ascendant, so every diagram is drawn
+ * empty and says why — every division is measured from its own ascendant.
  */
 export default function Chart() {
-  const [view, setView] = useState('table')
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'prediction' ? 'prediction' : 'chart'
+  const setTab = (next) => setParams(next === 'chart' ? {} : { tab: next }, { replace: true })
   const { t, session, sessionReady } = useStore()
   const me = useProfileFields()
-  const [params] = useSearchParams()
+  const who = session?.user?.id ?? null
 
-  const chart = useAstro('chart', {
-    ready: sessionReady,
-    who: session?.user?.id ?? null,
-  })
+  const chart = useAstro('chart', { ready: sessionReady, who })
 
-  const placements = placementsFrom(chart.payload, chart.timeKnown)
-  const houses = housesFrom(chart.payload, chart.timeKnown)
-
-  /* A consultant's booking row (ProConsult.jsx) can open this with a client's
-     birth date/time in the query string, so the header and "Birth data" fields
-     below prefill for them. What does NOT change: the diagram and the placement
-     table are still the SIGNED-IN user's own. The chart op derives from the
-     caller's row by design (rule 3) and there is no consultant-reads-a-client
-     path yet, so this is flagged on screen rather than quietly passed off as a
-     real reading for somebody else. */
+  /* A consultant's booking row (ProConsult.jsx) opens this with a client's
+     birth details in the query string, for the header only. The diagrams are
+     still the SIGNED-IN account's — the chart op reads the caller's own row
+     (rule 3) — and the screen says so rather than passing one off as the
+     other. */
   const viewingOther = params.has('name')
   const display = {
     name: params.get('name') || me.name,
@@ -56,37 +63,166 @@ export default function Chart() {
 
   return (
     <>
-      {/* `back` without `hardBack`: /chart is reached from Profile, from the
-          horoscope's Go deeper rows, from a placement page and from the
-          panchang card, so the right answer is wherever you came from. It fell
-          back to /home on a cold load, which is also right — a deep link has
-          nothing behind it. It had no back control at all until now, which on a
-          screen with no bottom nav meant the only way out was the browser. */}
       <TopBar
         title={viewingOther ? `${firstName(display.name)}’s chart` : 'Your chart'}
         sub={[display.date, display.time].filter(Boolean).join(' · ')}
         back
-        backTo="/home"
+        backTo="/consult"
       />
 
       {viewingOther && (
         <p className="mx-5 mt-4 rounded-xl bg-live/10 px-4 py-3 text-meta text-live">
-          The diagram and placements below are still {firstName(me.name)}’s own. Charts are computed
-          from the signed-in account, so this is not {firstName(display.name)}’s.
+          The diagrams below are still {firstName(me.name)}’s own. Charts are computed from the
+          signed-in account, so this is not {firstName(display.name)}’s.
         </p>
       )}
 
-      {/* Loading and refusal come before the tabs. Showing an empty table under
-          a working switcher is the failure mode this project keeps paying for:
-          it looks like an answer. */}
-      {chart.loading && (
-        <p className="mx-5 mt-6 text-meta text-t3">Working out where everything was.</p>
+      <Segmented items={TABS} value={tab} onChange={setTab} />
+
+      {tab === 'chart' ? (
+        <ChartTab chart={chart} who={who} ready={sessionReady} display={display} me={me} t={t} />
+      ) : (
+        <PredictionTab who={who} ready={sessionReady} me={me} />
       )}
 
-      {chart.refusal && (
-        <div className="mx-5 mt-6 border-t border-rule pt-6">
-          <p className="text-body text-t1">{chart.refusal.reason}</p>
-          {chart.refusal.code === 'no_birth' && (
+      <div className="h-8" />
+    </>
+  )
+}
+
+function ChartTab({ chart, who, ready, display, me, t }) {
+  const vargas = useAstro('vargas', { ready, who })
+  const divisions = vargasFrom(vargas.payload, vargas.timeKnown).filter((v) => v.division !== 1)
+  const houses = housesFrom(chart.payload, chart.timeKnown)
+  const [open, setOpen] = useState(null)
+
+  /* Loading and refusal before anything else: an empty diagram under a
+     working header looks like an answer. */
+  if (chart.loading) {
+    return <p className="mx-5 mt-6 text-meta text-t3">Opening your chart.</p>
+  }
+  if (chart.refusal) {
+    return (
+      <div className="mx-5 mt-6 border-t border-rule pt-6">
+        <p className="text-body text-t1">{chart.refusal.reason}</p>
+        {chart.refusal.code === 'no_birth' && (
+          <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
+            Add them in your profile
+          </Link>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="animate-fade">
+      <Section label="D1 · Rashi · Lahiri, whole sign">
+        <ChartNorth size={280} houses={houses} />
+        {!houses && (
+          <p className="prose-c mt-8">
+            Empty, because there is no birth time. Every line in this diagram is measured from the
+            ascendant, and the ascendant is the one thing a rough time does not survive.
+          </p>
+        )}
+        {houses && <p className="prose-c mt-8">{t('chart.northNote')}</p>}
+      </Section>
+
+      <Section label="Divisional charts">
+        {vargas.loading && <p className="text-meta text-t3">Working out the divisions.</p>}
+        {vargas.refusal && <p className="text-meta text-t2">{vargas.refusal.reason}</p>}
+        <ul>
+          {divisions.map((v) => (
+            <li key={v.key} className="border-b border-rule">
+              <button
+                type="button"
+                onClick={() => setOpen(open === v.key ? null : v.key)}
+                aria-expanded={open === v.key}
+                className="flex w-full items-baseline justify-between gap-4 py-4 text-left"
+              >
+                <span className="min-w-0">
+                  <span className="text-body font-semibold text-t1">{v.key}</span>
+                  <span className="ml-2 text-meta text-t2">{v.name}</span>
+                </span>
+                <span className="flex-none text-meta text-t3" aria-hidden>
+                  {open === v.key ? '▴' : '▾'}
+                </span>
+              </button>
+              {open === v.key && (
+                <div className="animate-fade pb-6">
+                  <ChartNorth size={260} houses={v.houses} />
+                  {v.ascendant && v.houses && (
+                    <p className="mt-4 text-center text-meta text-t3">{v.ascendant} ascendant</p>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section label="Birth data" last>
+        <Field k="Date" v={display.date} />
+        <Field k="Time" v={chart.timeKnown ? display.time : 'Not known'} />
+        <Field k="Place" v={me.birthPlace} />
+        {/* Printed, not assumed: a chart on the wrong ayanamsa renders
+            perfectly and belongs to nobody. */}
+        <Field k="Ayanamsa" v="Lahiri" />
+        <Field k="Houses" v="Whole sign" />
+      </Section>
+    </div>
+  )
+}
+
+function PredictionTab({ who, ready, me }) {
+  const [key, setKey] = useState('today')
+  // Bumped after a purchase, so the refused reading is asked for again.
+  const [attempt, setAttempt] = useState(0)
+  const [until, setUntil] = useState(null)
+  const date = useMemo(() => istDate(DAY_OFFSET[key]), [key])
+
+  const reading = useAstro('horoscope', { date, ready, who, attempt })
+  const almanac = useAstro('panchang', { date, ready })
+  const day = dayFrom(reading.payload, key)
+  const locked = reading.refusal?.code === 'needs_purchase'
+
+  /* How long the plan runs, said once under the tabs — a monthly plan whose
+     end date is nowhere on screen is one people find out about by losing. */
+  useEffect(() => {
+    if (!ready || !who || locked || reading.loading) return
+    entitlement('prediction').then((s) => setUntil(s.owned ? s.expires_at : null))
+  }, [ready, who, locked, reading.loading, attempt])
+
+  return (
+    <div className="animate-fade">
+      <Segmented items={DAY_TABS} value={key} onChange={setKey} />
+
+      {until && (
+        <p className="mt-3 text-center caps-sm t-faint">Your plan runs to {longDate(until)}</p>
+      )}
+
+      {reading.loading && (
+        <p className="section text-meta text-t3">Reading the sky for {longDate(date)}.</p>
+      )}
+
+      {locked && (
+        <section className="section">
+          <Paywall
+            title="Your own predictions"
+            note="Yesterday, today and tomorrow, read from the minute and place you were born — not your sign's. Thirty days."
+            sku="prediction"
+            pricePaise={reading.refusal.pricePaise}
+            onBought={() => setAttempt((a) => a + 1)}
+          />
+          <Link to="/horoscope" className="mt-5 block text-center text-meta text-t2 underline">
+            Read your sign&apos;s free reading instead
+          </Link>
+        </section>
+      )}
+
+      {reading.refusal && !locked && (
+        <div className="section">
+          <p className="text-body text-t1">{reading.refusal.reason}</p>
+          {reading.refusal.code === 'no_birth' && (
             <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
               Add them in your profile
             </Link>
@@ -94,124 +230,15 @@ export default function Chart() {
         </div>
       )}
 
-      {chart.payload && (
-        <>
-          {/* One switch now, and it is the only one there ever should have
-              been: the numbers or the diagram. The second chose between three
-              traditions' diagrams and is gone with two of them. */}
-          <Segmented
-            items={[
-              { key: 'table', label: t('chart.table') },
-              { key: 'chart', label: t('chart.vedic') },
-            ]}
-            value={view}
-            onChange={setView}
-          />
-
-          {view === 'table' ? (
-            <div key="table" className="animate-fade">
-              <Section label="Placements">
-                {/* Column headers, so the four numbers are not a guessing game. */}
-                <div className="grid grid-cols-[2.5rem_1fr_4.5rem_2rem] items-baseline gap-3 border-b border-rule pb-2">
-                  <span className="label text-left">Body</span>
-                  <span className="label text-left">Sign</span>
-                  <span className="label text-left">Degree</span>
-                  <span className="label text-left">Hs</span>
-                </div>
-
-                <ul>
-                  {placements.map((p) => (
-                    <li key={p.id}>
-                      <Link
-                        to={`/chart/${p.id}`}
-                        className="grid grid-cols-[2.5rem_1fr_4.5rem_2rem] items-baseline gap-3 border-b border-rule py-4 transition-opacity hover:opacity-60"
-                      >
-                        <span className="text-body text-t2">{p.glyph}</span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-body text-t1">
-                            {p.body} in {p.sign}
-                            {p.retrograde && <span className="text-t3"> ℞</span>}
-                          </span>
-                          <span className="mt-1 block text-meta text-t3">
-                            {p.nakshatra ? `${p.nakshatra} · pada ${p.pada}` : ''}
-                          </span>
-                        </span>
-                        <span className="text-meta text-t2 tnum">{p.degree}</span>
-                        <span className="text-meta text-t2 tnum">
-                          {chart.timeKnown ? p.house : '—'}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="mt-6 text-meta text-t3">Tap any row for the long version.</p>
-              </Section>
-
-              {houses ? (
-                <Section label="Houses" last>
-                  <ul className="grid grid-cols-2 gap-x-6">
-                    {houses.map((h) => (
-                      <li
-                        key={h.house}
-                        className="flex items-baseline justify-between gap-3 border-b border-rule py-3"
-                      >
-                        <span className="text-meta text-t3 tnum">{h.house}</span>
-                        <span className="flex-1 text-meta text-t2">{h.sign}</span>
-                        <span className="text-meta text-t1 tnum">{h.planets.join(' ') || '—'}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Section>
-              ) : (
-                <Section label="Houses" last>
-                  <p className="prose-c">
-                    Your houses need the minute you were born. The ascendant moves a whole sign
-                    every two hours, so twelve houses drawn from a guess are precise and wrong.
-                  </p>
-                  <Link to="/profile" className="mt-4 inline-block text-meta text-t2 underline">
-                    Add your birth time
-                  </Link>
-                </Section>
-              )}
-            </div>
-          ) : (
-            <div key="chart" className="animate-fade">
-              <Section label="Whole sign · Lahiri ayanamsa">
-                {/* `houses` is null without a birth time, and this draws its
-                    empty frame in that case — the diagram is the diagram, it
-                    just has nobody in it. */}
-                <ChartNorth size={280} houses={houses} />
-
-                {!houses && (
-                  <p className="prose-c mt-8">
-                    Empty, because there is no birth time. Every line in this diagram is measured
-                    from the ascendant, and the ascendant is the one thing a rough time does not
-                    survive.
-                  </p>
-                )}
-
-                <Stub className="mt-8" />
-                <p className="prose-c mt-8">{t('chart.northNote')}</p>
-              </Section>
-
-              <Section label="Birth data" last>
-                <Field k="Date" v={display.date} />
-                <Field k="Time" v={chart.timeKnown ? display.time : 'Not known'} />
-                <Field k="Place" v={me.birthPlace} />
-                {/* Printed, not assumed. A chart on the wrong ayanamsa renders
-                    perfectly and belongs to nobody, and the only way a reader
-                    can catch that is by being told which one was used. */}
-                <Field k="Ayanamsa" v="Lahiri" />
-                <Field k="Houses" v="Whole sign" />
-                <Field k="Source" v="freeastroapi.com" />
-              </Section>
-            </div>
-          )}
-        </>
+      {day && !reading.loading && (
+        <ReadingView
+          key={key}
+          day={day}
+          sky={panchangFrom(almanac.payload)}
+          city={almanac.city}
+          windowsAt={me.birthPlace ? `${me.birthPlace}, where you were born` : null}
+        />
       )}
-
-      <div className="h-8" />
-    </>
+    </div>
   )
 }

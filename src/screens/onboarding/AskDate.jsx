@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame, { Slot } from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
 
@@ -9,6 +9,10 @@ export default function AskDate() {
   const [d, setD] = useState('')
   const [m, setM] = useState('')
   const [y, setY] = useState('')
+  // `?edit=1`: changing them from Profile. Same three steps, then the place
+  // step saves straight away — no phone, no code (30 Sep 2026).
+  const [params] = useSearchParams()
+  const edit = params.get('edit') === '1'
 
   /* A real calendar check, not a range check. `31/02/1997` passed the old one
      and reached Postgres as `1997-02-31`, which a `date` column rejects — and
@@ -32,7 +36,7 @@ export default function AskDate() {
       canContinue={valid}
       onNext={() => {
         setBirthField('date', `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`)
-        navigate('/onboarding/time')
+        navigate(`/onboarding/time${edit ? '?edit=1' : ''}`)
       }}
     >
       <div className="mx-auto grid max-w-[19rem] grid-cols-[1fr_1fr_1.5fr] gap-5">

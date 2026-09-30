@@ -235,6 +235,7 @@ create table profiles (
   birth_lat       numeric(9,6),
   birth_lon       numeric(9,6),
   birth_zone      text,               -- IANA, e.g. 'Asia/Kolkata'
+  gender          text check (gender in ('male','female','other')),  -- 30 Sep 2026, asked at sign-up; NULL before
   admin           boolean not null default false,
   legacy_id       text,
   created_at      timestamptz not null default now()
@@ -1102,6 +1103,40 @@ number is people, not plays. The author is not counted, anonymous viewers are
 not counted, hidden content is a 404. The app sends it after a reel has been
 on screen for two seconds.
 
+### 5.2c `entitlements` — things bought from the wallet and kept (30 Sep 2026)
+
+```sql
+create table entitlements (
+  id          uuid primary key,
+  profile_id  uuid not null,
+  sku         varchar(16) not null check (sku in ('ebook','muhurat','prediction')),
+  ref         text not null default '',   -- ebook: bhakti_assets.id · muhurat: '<purpose>:<YYYY-MM>' · prediction: ''
+  price_paise integer not null check (price_paise > 0),
+  starts_at   timestamptz not null default now(),
+  expires_at  timestamptz,                -- NULL = forever
+  created_at  timestamptz not null default now()
+);
+create unique index entitlements_once_forever
+  on entitlements (profile_id, sku, ref) where expires_at is null;
+create index entitlements_lookup_idx on entitlements (profile_id, sku, ref);
+alter table entitlements enable row level security;  -- no policies: the API only
+```
+
+Migration `wallet/0002_entitlements`. Written only by `apps.wallet.services.buy`,
+in one transaction with the ledger row that paid for it — that row's `ref_id`
+is the entitlement's id, `ref_type` `order`. The wallet row lock serialises one
+person's taps; the partial unique index is the backstop for forever-things. A
+`prediction` row is 30 days; one bought while another runs starts at its end.
+Active means `expires_at is null` or `starts_at <= now() < expires_at`.
+
+**RLS is enabled in the migration itself**, unlike the earlier Django
+migrations (HANDOFF's open finding): a table that says who has paid for what
+must not be writable through PostgREST with the anon key.
+
+A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
+(`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;
+`GET /v1/bhakti/assets/<id>/file/` signs a ten-minute link for an owner.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.
@@ -1173,8 +1208,7 @@ all. Same `NOT NULL` rule applies and someone has to say where they came from.
 ### 5.6 Remaining
 
 `tarot_pulls` (the real rolling-seven-day window, replacing two booleans in a
-browser `Set`) · `entitlements` (what was bought and can now be used;
-`questionsLeft` becomes a SUM over it) · `notifications` · `referrals` ·
+browser `Set`) · ~~`entitlements`~~ (built 30 Sep 2026, §5.2c) · `notifications` · `referrals` ·
 `payouts` · `kyc_documents` · `products` · `courses` · `academy_events` ·
 `downloads` · `deities` · `tarot_decks` · `tarot_cards` · `ask_messages` ·
 `sessions` (joined_at, left_at, actual_mins — what admin item 9 measures).

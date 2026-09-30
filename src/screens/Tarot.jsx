@@ -108,8 +108,6 @@ export default function Tarot() {
             question={question}
             deck={deck}
             tradition={tradition}
-            onAgain={() => { setResult(null); setQuestion(''); setStep('question') }}
-            onChangeDeck={() => { setResult(null); setQuestion(''); setStep('deck') }}
           />
         ) : (
           /* The face-down deck, waiting behind whichever dialog is open. It
@@ -246,29 +244,26 @@ function Dialog({ title, note, onBack, children }) {
 /**
  * The card that came up, then what it says about the question.
  *
- * Six steps, and the last three are this component: **meaning → conclusion
- * → what to do** (agreed with the partner, 24 Sep 2026). The layout is the
- * same for every deck, so a seeker who learns one learns all of them.
+ * **In this order since 30 Sep 2026, the owner's:** the card, its name, its
+ * shloka — and only then "Reveal my reading", behind which sit the answer
+ * and the three parts (meaning → conclusion → what to do). The card is
+ * looked at before it is explained. "Ask a reader", "Pull again" and
+ * "Change deck" are gone from under it: a pull is one question, answered.
  *
  * **A deck whose cards carry their own words wins the last two.** The
- * Bhaktamar cards have a remedy written in the tradition, and a conclusion
- * column is coming; where the card has text, the card's text is what shows,
- * and the model's fills the gap until then. The meaning is always written
- * for the question — that is the part a pre-written line cannot do.
- *
- * The shloka is not a reading at all: it belongs to the card and it is the
- * tradition's words (`src/data/bhaktamar.js` — never rewritten).
+ * meaning is always written for the question — the part a pre-written line
+ * cannot do. The shloka is not a reading at all: it belongs to the card and
+ * it is the tradition's words (`src/data/bhaktamar.js` — never rewritten).
  */
-function Card({ card, reading, verdict, question, deck, tradition, onAgain, onChangeDeck }) {
+function Card({ card, reading, verdict, question, deck, tradition }) {
   const { t } = useStore()
   const [artFailed, setArtFailed] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const hasArt = Boolean(card.img) && !artFailed
 
-  /* Where each of the three parts comes from. The card wins wherever the
-     deck has words of its own — both decks carry a meaning now, and
-     Bhaktamar carries its action — and the model fills what is left. The
-     CONCLUSION is the model's on every deck: it is the only part that can
-     turn on what was typed, and it is why the question is asked at all. */
+  /* The card wins wherever the deck has words of its own; the model fills
+     the rest. The CONCLUSION is the model's on every deck — the only part
+     that can turn on what was typed. */
   const meaning = card.meaning || reading.meaning
   const conclusion = reading.conclusion || card.conclusion
   const todo = card.todo || reading.todo
@@ -277,9 +272,8 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
     <>
       <PopCard raised className="overflow-hidden">
         {hasArt ? (
-          /* The file sits in public/, so BASE_URL resolves it — this app is
-             served from a sub-path on GitHub Pages. A deck whose art has
-             not been added yet falls back to the plate below. */
+          /* The file sits in public/, so BASE_URL resolves it. A deck whose
+             art has not been added yet falls back to the plate below. */
           <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#e8e2d8]">
             <img
               src={`${import.meta.env.BASE_URL}cards/${card.img}`}
@@ -309,70 +303,23 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
         )}
       </PopCard>
 
-      {/* The card's name, and for the yes/no deck its answer — which is the
-          whole reason that deck exists, so it leads. The verdict is the
-          CARD's, off the deck sheet; the model never gets to overturn it. */}
-      <div className="pop-inset mt-4 p-5 text-center">
-        {verdict && <p className="text-title font-semibold">{verdict}</p>}
-        {card.verdictLine && (
-          <p className="mt-1.5 text-meta t-sub">{card.verdictLine}</p>
-        )}
-        <p className={`caps-sm gold ${verdict ? 'mt-4' : ''}`}>{card.name}</p>
+      {/* The name, directly under the card. */}
+      <div className="mt-4 text-center">
+        <p className="caps-sm gold">{card.name}</p>
         {card.sub && <p className="mt-1.5 text-meta t-faint">{card.sub}</p>}
       </div>
 
-      {/* What was asked, quoted back small. Without it a reading read later
-          is a paragraph with no question attached to it. */}
-      {question && (
-        <p className="mt-5 text-center text-meta t-faint">“{question}”</p>
-      )}
-
-      {/* 4 · what the card means */}
-      {meaning && (
-        <div className="mt-4">
-          <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
-          <p className="mt-2 whitespace-pre-line text-read t-heading">{meaning}</p>
-        </div>
-      )}
-
-      {/* 5 · where it lands */}
-      {conclusion && (
-        <div className="mt-6">
-          <p className="caps-sm t-faint">{t('tarot.conclusion')}</p>
-          <p className="mt-2 whitespace-pre-line text-read t-sub">{conclusion}</p>
-        </div>
-      )}
-
-      {/* 6 · the one thing to do. Raised, because it is the only part that
-             asks for something. */}
-      {todo && (
-        <div className="pop-inset mt-6 p-4">
-          <p className="caps-sm t-faint">{t('tarot.todo')}</p>
-          <p className="mt-1.5 whitespace-pre-line text-meta t-body">{todo}</p>
-          {/* The Jain deck also carries a recitation, written in the
-              tradition. It belongs to this step rather than to a fourth
-              one — the layout is six steps on every deck. */}
-          {card.remedy && (
-            <p className="mt-3 whitespace-pre-line text-meta t-sub">{card.remedy}</p>
-          )}
-        </div>
-      )}
-
-      {/* The verse comes off the face of the card itself, after the reading:
-          the shloka is the card, the reading is what it says today. */}
+      {/* The shloka, under the name — the card's own verse, before any reading. */}
       {card.sa && (
-        <PopCard className="mt-5 p-5">
+        <PopCard className="mt-4 p-5">
           <p className="caps-sm t-faint">
-            {/* The number is the VERSE number, and only Bhaktamar has one —
-                its 48 cards are the 48 shlokas of the stotra. On any other
-                deck a number here would claim a verse that does not exist. */}
+            {/* Only Bhaktamar's cards are numbered verses of the stotra; on any
+                other deck a number here would claim a verse that does not exist. */}
             {t('tarot.shloka')}{deck.key === 'bhaktamar' ? ` ${card.no}` : ''}
           </p>
           <p lang="sa" className="mt-2 text-read leading-relaxed t-body">
             {card.sa}
           </p>
-          {/* The yes/no deck's cards carry the verse alone; only Bhaktamar
-              has a transliteration and an English rendering beside it. */}
           {card.iast && <p className="mt-2 text-meta italic t-faint">{card.iast}</p>}
           {card.en && (
             <>
@@ -383,20 +330,51 @@ function Card({ card, reading, verdict, question, deck, tradition, onAgain, onCh
         </PopCard>
       )}
 
-      <PopButton variant="gold" className="mt-6" to="/consult">
-        {t('tarot.askReader')}
-      </PopButton>
-
-      <div className="mt-3 flex items-center gap-2">
-        <PopButton variant="ghost" className="flex-1" full={false} onClick={onAgain}>
-          {t('tarot.pullAgain')}
+      {!revealed ? (
+        <PopButton variant="gold" className="mt-6" onClick={() => setRevealed(true)}>
+          {t('tarot.reveal')}
         </PopButton>
-        <PopButton variant="ghost" className="flex-1" full={false} onClick={onChangeDeck}>
-          {t('tarot.changeDeck')}
-        </PopButton>
-      </div>
+      ) : (
+        <div className="animate-fade">
+          {/* The yes/no deck's answer leads the reading — the CARD's, off the
+              deck sheet; the model never gets to overturn it. */}
+          {(verdict || card.verdictLine) && (
+            <div className="pop-inset mt-6 p-5 text-center">
+              {verdict && <p className="text-title font-semibold">{verdict}</p>}
+              {card.verdictLine && <p className="mt-1.5 text-meta t-sub">{card.verdictLine}</p>}
+            </div>
+          )}
 
-      <p className="mt-6 text-center text-meta t-faint">{t('tarot.prompt')}</p>
+          {/* What was asked, quoted back small. */}
+          {question && <p className="mt-5 text-center text-meta t-faint">“{question}”</p>}
+
+          {meaning && (
+            <div className="mt-4">
+              <p className="caps-sm t-faint">{t('tarot.meaning')}</p>
+              <p className="mt-2 whitespace-pre-line text-read t-heading">{meaning}</p>
+            </div>
+          )}
+
+          {conclusion && (
+            <div className="mt-6">
+              <p className="caps-sm t-faint">{t('tarot.conclusion')}</p>
+              <p className="mt-2 whitespace-pre-line text-read t-sub">{conclusion}</p>
+            </div>
+          )}
+
+          {todo && (
+            <div className="pop-inset mt-6 p-4">
+              <p className="caps-sm t-faint">{t('tarot.todo')}</p>
+              <p className="mt-1.5 whitespace-pre-line text-meta t-body">{todo}</p>
+              {card.remedy && (
+                <p className="mt-3 whitespace-pre-line text-meta t-sub">{card.remedy}</p>
+              )}
+            </div>
+          )}
+
+          <p className="mt-6 text-center text-meta t-faint">{t('tarot.prompt')}</p>
+        </div>
+      )}
     </>
   )
 }

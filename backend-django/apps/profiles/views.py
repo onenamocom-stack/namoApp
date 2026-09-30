@@ -45,7 +45,7 @@ from apps.core.fields import CoordinateField
 from apps.core.views import refusal_body
 
 from . import services
-from .models import EMAIL_SHAPE, Profile
+from .models import EMAIL_SHAPE, GENDERS, Profile
 
 
 class OnboardingInput(serializers.Serializer):
@@ -69,6 +69,7 @@ class OnboardingInput(serializers.Serializer):
     birth_lat = CoordinateField(90, required=False, allow_null=True)
     birth_lon = CoordinateField(180, required=False, allow_null=True)
     birth_zone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    gender = serializers.ChoiceField(choices=GENDERS, required=False, allow_null=True)
 
 
 class AvatarInput(serializers.Serializer):

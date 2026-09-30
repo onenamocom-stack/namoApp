@@ -12,6 +12,7 @@ import Reports from './screens/Reports.jsx'
 
 import Intro from './screens/onboarding/Intro.jsx'
 import AskName from './screens/onboarding/AskName.jsx'
+import AskGender from './screens/onboarding/AskGender.jsx'
 import AskDate from './screens/onboarding/AskDate.jsx'
 import AskTime from './screens/onboarding/AskTime.jsx'
 import AskPlace from './screens/onboarding/AskPlace.jsx'
@@ -303,6 +304,7 @@ function Frame() {
               <>
                 <Route path="/onboarding" element={<Intro />} />
                 <Route path="/onboarding/name" element={<AskName />} />
+                <Route path="/onboarding/gender" element={<AskGender />} />
                 <Route path="/onboarding/date" element={<AskDate />} />
                 <Route path="/onboarding/time" element={<AskTime />} />
                 <Route path="/onboarding/place" element={<AskPlace />} />

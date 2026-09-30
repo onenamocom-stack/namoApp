@@ -394,65 +394,75 @@ Three rules it follows, each for a reason:
 `localStorage` rather than `sessionStorage` because `sessionStorage` dies with
 the tab, and a new tab would then refetch a chart that cannot have changed.
 
-### The daily reading is the reader's own — reversed back, 22 Sep 2026
+### The daily reading: free by sign, paid for yourself — 30 Sep 2026
 
-**This replaces the 7 Sep decision that the reading should come from twelve
-canonical births, one per rashi, and the 9 Sep correction that followed it.**
-Both are gone, and the reasoning is kept here because the shape of the mistake
-is worth remembering.
+**Both readings exist now, and which is which is a price.** This replaces the
+22 Sep section that made the reader's own reading the only one and deleted the
+twelve canonical births; the owner asked for the twelve back.
 
-What 7 Sep bought was cost: a rashifal keyed on janma rashi meant twelve
-readings answered everybody at any user count, against one per reader per day.
-What it cost was the reading. 9 Sep read a live payload and found the invented
-birth contaminating nearly all of it — the headline, the summary, every score,
-every section, the remedy, the asserted lagna and Moon nakshatra, and every
-influence, all of them functions of that person's dasha. The honest response
-was to delete those fields, which left a mood sentence and four clock windows
-that were **identical across all twelve signs**. A whole screen of the product
-had become one shared paragraph.
+| | Free — by sign | Paid — your own |
+|---|---|---|
+| Endpoint | `GET /v1/astro/rashifal/?sign=&date=`, anonymous | `GET /v1/astro/horoscope/?date=`, signed in, **402 until bought** |
+| Computed from | a fixed birth whose Moon sits mid-sign, born at Ujjain | the reader's own birth |
+| Cache key | `rashifal:<Sign>:<date>`, and `canon-chart:<Sign>` once ever | `horoscope:<user id>:<birth digest>:<date>` |
+| Where | Home's Today card (twelve sign chips) and `/horoscope` | `/chart`, Prediction tab |
+| Price | free | ₹99 for 30 days (`01-PRD.md` §4.11) |
 
-So the reading is computed from the reader's own birth again, cached as
-`horoscope:<user id>:<birth digest>:<date>`. Everything on it is theirs: the
-headline, the six domain scores, the Vimshottari period, the transits, the
-sections, the remedy.
+**What the history taught, kept because the mistake has a shape.** 7 Sep made
+the canonical-birth reading the ONLY reading and showed it as the reader's.
+9 Sep read a live payload and found the invented birth running through nearly
+all of it — headline, summary, scores, sections, remedy, the asserted lagna,
+all functions of that birth's dasha — and cut the reading down to a mood line
+that was identical across all twelve signs. 22 Sep made every reading the
+reader's own.
 
-**The cost is stated rather than avoided.** One upstream call per reader per
-day. Entry's 50,000 a month is about 1,600 daily readers of the horoscope —
-not 1,600 users, since a user who does not open it costs nothing. Past that the
-High tier is $40 for 500,000, which is the answer; there is no third option
-worth engineering around, and a per-rashi reading has now been tried twice.
+**Why it is honest to bring the twelve back.** The failure was never that a
+sign's reading is generic — a rashifal in a newspaper is generic — it was that
+a generic reading was presented as personal. So: every surface that shows one
+**names the sign**, says it is the same for everyone with the Moon there, and
+drops the dasha "Period" line, which belongs to the invented birth; its clock
+windows are named as Ujjain's. What remains true is that the text is that
+birth's day. The reader who wants their own pays for it, one tab over.
 
-| | Per day |
+**The canonical births are guarded again.** Each Moon sits within 0.05° of the
+middle of its sign (the table is in `apps/astro/services.py`, recovered from
+the retired `canonical.json`); the function fetches each canonical chart once
+and refuses — logging `CANONICAL BIRTH IS WRONG` — if its Moon is not where
+the table says, rather than serve the neighbouring rashi's reading.
+`tests/test_entitlements.py` checks all twelve by arithmetic on every run.
+
+**Cost.** Usage no longer grows with free readers.
+
+| | Upstream calls |
 |---|---|
-| Daily reading | one call per reader who opens it |
+| Reading by sign | twelve a day at most, total; twelve canonical charts ever |
+| Your own reading | one per paying reader per day who opens it |
 | Natal chart | one per account, ever |
-| Panchang | one, total |
+| Divisional charts D1–D60 | one per account, ever — all seventeen in one call, fetched at sign-up |
+| Panchang | one a day, total |
 | Match | one per distinct pair of births, ever |
-| Muhurat | one per purpose × place cell × month |
+| Muhurat | one per purpose × place cell × month; judged against a chart, one per paying reader per purpose × month |
 
-**What has not changed is the vendor.** There is still no sidereal sign-based
-daily endpoint: every Vedic spelling of the path returns 404, and the sign
-endpoint that does exist (`/api/v2/horoscope/daily/sign`) says in its own
-documentation *"Western/tropical zodiac only. This is not compatible with
-Vedic/sidereal systems."* **Adopting it is still refused** — a tropical sign
-printed beside a Lahiri sidereal chart names two different signs for one person
-on two screens, which is the silent wrongness this section exists to prevent.
+**The tropical sign endpoint is still refused.** There is still no sidereal
+sign-based daily endpoint: every Vedic spelling returns 404, and
+`/api/v2/horoscope/daily/sign` says in its own documentation *"Western/tropical
+zodiac only."* A tropical sign beside a Lahiri sidereal chart names two
+different signs for one person on two screens.
 
-**Gochara computed here is no longer the named successor.** It was, while the
-reading had to serve twelve signs from one call. A per-reader reading does not
-need it, and the vendor's own ruleset is better than one we would write.
+**Timing windows name their place.** The paid reading's windows are computed
+at the reader's birth place; the free reading's at Ujjain; the panchang card is
+Ujjain for everybody. Each is named on screen. The reading's own panchang
+block is still discarded: two tithis for one day on two screens.
 
-**One consequence reaches the screen.** The reading's timing windows are
-computed at the reader's BIRTH place, while the panchang card beside them is
-Ujjain for everybody. Both are named on `/horoscope` — sunrise moves about two
-hours across India, and an unnamed clock from somewhere you have never been is
-wrong without looking wrong. The reading's own panchang block is still
-discarded, for the reason 4 Sep gave: two tithis for one day on two screens.
+### Divisional charts — 30 Sep 2026
 
-**The twelve canonical births are deleted**, along with their charts, the
-`canon-chart:` and `rashifal:` cache keys and the moon-drift check that guarded
-them. `backend/functions/astro/` still contains them, commented out with the
-rest of the retired JavaScript backend.
+`POST /api/v2/vedic/vargas` returns all seventeen divisions the vendor
+supports (D1 2 3 4 5 7 9 10 12 16 20 24 27 30 40 45 60) in one call, each with
+its own ascendant, planets and whole-sign houses. `GET /v1/astro/vargas/`
+caches it as `vargas:<user id>:<birth digest>` with no date — a pure function
+of the birth, like the chart. Onboarding fetches both at sign-up, so `/chart`
+draws immediately. Lahiri is passed and comes back in `metadata`; the shape
+was checked against the live vendor on 30 Sep.
 
 ### A second vendor, and what was NOT taken from it — 24 Sep 2026
 

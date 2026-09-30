@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../../components/Chrome.jsx'
 import { Button } from '../../components/Primitives.jsx'
 
 /**
@@ -18,14 +18,14 @@ export default function QuestionFrame({
   canContinue = true,
   onNext,
 }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/onboarding')
 
   return (
     <div className="flex min-h-full flex-col px-6 pb-10 pt-6">
       <button
         type="button"
         aria-label="Back"
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="self-start text-body text-t3"
       >
         ←

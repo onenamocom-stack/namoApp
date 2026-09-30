@@ -625,3 +625,145 @@ def reconcile(client=None):
         else:
             report["abandoned"].append(order_id)
     return report
+
+
+# ── entitlements: things bought from the wallet that stay bought ─────────────
+# (30 Sep 2026) An e-book, one muhurat judged against your chart, a month of
+# personal predictions. Same money rules as everything above: the price is
+# the server's, the ledger row and the entitlement row are one transaction,
+# and the wallet row lock serialises one person's taps.
+
+REFUSAL_UNKNOWN_SKU = "That is not something we sell."
+
+
+def _now_utc():
+    from django.utils import timezone
+
+    return timezone.now()
+
+
+def sku_price(sku, ref=""):
+    """What `sku` costs, in paise, or None when it is not for sale. The
+    e-book's price is its own catalogue row's — a book can be free (NULL),
+    and a free book is not something to buy."""
+    from .models import Sku
+
+    if sku == Sku.PREDICTION:
+        return settings.PREDICTION_PRICE_PAISE
+    if sku == Sku.MUHURAT:
+        return settings.MUHURAT_ME_PRICE_PAISE
+    if sku == Sku.EBOOK:
+        from django.core.exceptions import ValidationError
+
+        from apps.bhakti.models import BhaktiAsset
+
+        try:
+            return (
+                BhaktiAsset.objects.filter(pk=ref, kind="ebook", active=True)
+                .values_list("price_paise", flat=True)
+                .first()
+            )
+        except (ValueError, ValidationError):  # not a uuid — nothing to sell
+            return None
+    return None
+
+
+def active_entitlement(profile_id, sku, ref=""):
+    """The row that grants `sku`/`ref` right now, or None: a forever row,
+    or a dated one whose window contains now. A prediction bought ahead
+    (starting when the current one ends) is not active until it starts."""
+    from django.db.models import Q
+
+    from .models import Entitlement
+
+    now = _now_utc()
+    return (
+        Entitlement.objects.filter(profile_id=profile_id, sku=sku, ref=ref or "")
+        .filter(Q(expires_at__isnull=True) | Q(starts_at__lte=now, expires_at__gt=now))
+        .first()
+    )
+
+
+def owns(profile_id, sku, ref=""):
+    return active_entitlement(profile_id, sku, ref) is not None
+
+
+def _paid_until(profile_id, sku, ref=""):
+    """The furthest expiry of any dated row still to run — what "until"
+    means to somebody who bought twice."""
+    from .models import Entitlement
+
+    return (
+        Entitlement.objects.filter(profile_id=profile_id, sku=sku, ref=ref or "",
+                                   expires_at__gt=_now_utc())
+        .order_by("-expires_at").values_list("expires_at", flat=True).first()
+    )
+
+
+def entitlement_state(profile_id, sku, ref=""):
+    """What the screen needs before it offers a button: owned or not, until
+    when, and the price if not."""
+    row = active_entitlement(profile_id, sku, ref)
+    until = _paid_until(profile_id, sku, ref) if row and row.expires_at else None
+    return {
+        "owned": row is not None,
+        "expires_at": until.isoformat() if until else None,
+        "price_paise": sku_price(sku, ref),
+    }
+
+
+def buy(profile_id, sku, ref=""):
+    """Charge the wallet and grant `sku`/`ref`. Returns debit's own shape
+    — {ok, reason?, balance_paise?} — plus `expires_at` on success.
+
+    Buying a forever-thing you already own charges nothing and says so
+    (`already: True`); a double tap lands here, not on a second charge.
+    A prediction bought while one is running starts where it ends.
+    """
+    from datetime import timedelta
+
+    from .models import Entitlement, Sku
+
+    ref = ref or ""
+    if sku not in Sku.values:
+        return {"ok": False, "reason": REFUSAL_UNKNOWN_SKU}
+    price = sku_price(sku, ref)
+    if not price:
+        return {"ok": False, "reason": REFUSAL_UNKNOWN_SKU}
+
+    with transaction.atomic():
+        # The lock first: two taps by the same person queue here, so the
+        # second sees the first one's row below.
+        if lock_wallet_balance(profile_id) is None:
+            return {"ok": False, "reason": REFUSAL_NO_WALLET}
+        current = active_entitlement(profile_id, sku, ref)
+        if current is not None and current.expires_at is None:
+            return {"ok": True, "already": True, "expires_at": None,
+                    "balance_paise": balance_of(profile_id)}
+
+        now = _now_utc()
+        starts = now
+        expires = None
+        if sku == Sku.PREDICTION:
+            starts = _paid_until(profile_id, sku, ref) or now
+            expires = starts + timedelta(days=settings.PREDICTION_DAYS)
+
+        row = Entitlement(profile_id=profile_id, sku=sku, ref=ref, price_paise=price,
+                          starts_at=starts, expires_at=expires)
+        balance = balance_of(profile_id)
+        if price > balance:
+            return {"ok": False, "reason": REFUSAL_SHORT_BALANCE, "balance_paise": balance}
+        row.save()
+        insert_ledger(profile_id, -price, _sku_label(sku), ref_type=RefType.ORDER, ref_id=row.id)
+    return {"ok": True, "already": False,
+            "expires_at": expires.isoformat() if expires else None,
+            "balance_paise": balance - price}
+
+
+def _sku_label(sku):
+    """The ledger line, in the statement's own words."""
+    return {
+        "ebook": "E-book",
+        "muhurat": "Muhurat · judged against your chart",
+        "prediction": "Predictions · 30 days",
+    }.get(sku, sku)

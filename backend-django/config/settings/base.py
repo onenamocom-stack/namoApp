@@ -317,6 +317,12 @@ AI_FREE_WINDOW_SECONDS = int(os.environ.get("AI_FREE_WINDOW_SECONDS", "0"))
 TAROT_PRICE_PAISE = int(os.environ.get("TAROT_PRICE_PAISE", "1100"))
 TAROT_FREE_WEEKLY = int(os.environ.get("TAROT_FREE_WEEKLY", "2"))
 
+# ── things bought once and kept (30 Sep 2026, apps.wallet Entitlement) ──────
+# Amounts are docs/01-PRD.md §4.8's; an e-book's price is its own row's.
+PREDICTION_PRICE_PAISE = int(os.environ.get("PREDICTION_PRICE_PAISE", "9900"))  # ₹99
+PREDICTION_DAYS = int(os.environ.get("PREDICTION_DAYS", "30"))
+MUHURAT_ME_PRICE_PAISE = int(os.environ.get("MUHURAT_ME_PRICE_PAISE", "4900"))  # ₹49
+
 # --- Razorpay (module 8; rule 7 — server-side only, never a response body)
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")

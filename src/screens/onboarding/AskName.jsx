@@ -27,7 +27,7 @@ export default function AskName() {
       canContinue={valid}
       onNext={() => {
         setBirthField('name', name.trim())
-        navigate(pro ? '/onboarding/phone?next=pro' : '/onboarding/date')
+        navigate(pro ? '/onboarding/phone?next=pro' : '/onboarding/gender')
       }}
     >
       <label className="mx-auto flex max-w-[19rem] flex-col items-center gap-2">

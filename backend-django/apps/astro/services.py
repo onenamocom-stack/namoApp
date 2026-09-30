@@ -432,3 +432,90 @@ def muhurat(purpose, month_string, lat, lng, zone, user_id=None, birth=None):
         f"muhurat-me:{user_id}:{birth_digest(birth)}:{place_key}",
         lambda: get_provider().muhurat_personal(body),
     )
+
+
+# ── divisional charts (30 Sep 2026) ──────────────────────────────────────────
+
+# Every division the vendor computes. One call returns all of them, so the
+# whole set is fetched once per birth and cached forever beside the chart.
+VARGA_DIVISIONS = (1, 2, 3, 4, 5, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60)
+
+
+def user_vargas(user_id, birth):
+    """D1…D60 for the caller's own birth — a pure function of the birth, so
+    no date in the key, exactly like `user_chart`. Fetched at sign-up (the
+    onboarding screen asks for it) so /chart never waits on it."""
+    return memo(
+        f"vargas:{user_id}:{birth_digest(birth)}",
+        lambda: get_provider().vargas({**birth_body(birth), "divisions": list(VARGA_DIVISIONS)}),
+    )
+
+
+# ── the twelve generic readings, one per rashi (30 Sep 2026) ─────────────────
+#
+# BACK, on the owner's call, as the FREE reading — the reader's own reading
+# (`horoscope` above) is the paid one now. The vendor still has no sidereal
+# sign endpoint, so each sign's reading is the personal endpoint run on a
+# fixed birth whose Moon sits mid-sign, born at Ujjain like the panchang.
+# Its text is that birth's day: a sign's reading, not the reader's, and the
+# screens say so. Cost: twelve calls a day at most, whatever the user count.
+#
+# Each Moon sits within 0.05° of the middle of its sign. The Moon crosses a
+# sign every 2.2 days, so a birth near a boundary would hand one rashi's
+# readers the next one's reading, forever and silently — which is why
+# `rashifal` checks the canonical chart's Moon before it trusts a reading.
+# (Recovered from backend/functions/astro/canonical.json, 9 Sep 2026.)
+
+RASHIS = (
+    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+)
+
+CANONICAL_BIRTHS = {
+    "Aries":       (1995, 6, 23, 10, 40),
+    "Taurus":      (1995, 6, 25, 23, 30),
+    "Gemini":      (1995, 6, 28, 12, 10),
+    "Cancer":      (1995, 6, 3, 18, 10),
+    "Leo":         (1995, 6, 6, 3, 50),
+    "Virgo":       (1995, 6, 8, 10, 20),
+    "Libra":       (1995, 6, 10, 13, 10),
+    "Scorpio":     (1995, 6, 12, 13, 20),
+    "Sagittarius": (1995, 6, 14, 12, 30),
+    "Capricorn":   (1995, 6, 16, 12, 50),
+    "Aquarius":    (1995, 6, 18, 16, 10),
+    "Pisces":      (1995, 6, 20, 23, 40),
+}
+
+
+class CanonicalBirthWrong(Exception):
+    """A canonical birth's Moon is not in the sign it stands for. Refusing
+    beats serving the neighbouring rashi's reading under this one's name."""
+
+
+def canonical_body(sign):
+    year, month, day, hour, minute = CANONICAL_BIRTHS[sign]
+    return {
+        "year": year, "month": month, "day": day, "hour": hour, "minute": minute,
+        "lat": PANCHANG_ANCHOR["lat"], "lng": PANCHANG_ANCHOR["lng"],
+        "tz_str": PANCHANG_ANCHOR["zone"], **RECKONING,
+    }
+
+
+def rashifal(sign, date_string):
+    """The generic daily reading for one rashi. Twelve rows a day for the
+    whole user base, keyed `rashifal:<Sign>:<date>`.
+
+    The canonical chart is fetched once ever (`canon-chart:<Sign>`, no date)
+    and its Moon checked before any reading is trusted."""
+    body = canonical_body(sign)
+    chart_payload, _ = memo(f"canon-chart:{sign}", lambda: get_provider().chart(body))
+    if moon_sign(chart_payload) != sign:
+        logger.error("CANONICAL BIRTH IS WRONG: %s has its Moon in %s", sign, moon_sign(chart_payload))
+        raise CanonicalBirthWrong(sign)
+    return memo(
+        f"rashifal:{sign}:{date_string}",
+        lambda: get_provider().daily_horoscope({
+            **body, "target_date": date_string,
+            "include_evidence": False, "include_raw_facts": False,
+        }),
+    )

@@ -145,6 +145,16 @@ def provider(monkeypatch):
 
 
 @pytest.fixture
+def paid(monkeypatch):
+    """The caller owns every paid thing. The personal reading and a muhurat
+    judged against your chart are paid since 30 Sep 2026; these tests are
+    about what they compute, and test_entitlements.py is about the gate."""
+    from apps.wallet import services as wallet_services
+
+    monkeypatch.setattr(wallet_services, "owns", lambda *a, **k: True)
+
+
+@pytest.fixture
 def profiles_table():
     """`profiles` is a real Django table now — module 9 (the profile module)
     owns it, and astro reads the caller's own birth row through
@@ -560,6 +570,7 @@ class TestChart:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("paid")
 class TestHoroscope:
     def test_the_reading_is_computed_from_the_readers_own_birth(
         self, api_client, provider, user_token, profiles_table, frozen_utcnow
@@ -797,6 +808,7 @@ class TestMatch:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("paid")
 class TestMuhurat:
     """A purpose, a month and a place — shared by everybody in the same cell,
     unless it is judged against the caller's own chart."""
@@ -890,6 +902,7 @@ class TestMuhurat:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("paid")
 class TestServiceRoleOnly:
     """019's core invariant ported: astro_cache is reachable only through the
     service layer — no endpoint exposes a raw row, and no cache route exists."""

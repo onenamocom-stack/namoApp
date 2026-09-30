@@ -147,10 +147,65 @@ def chart(request):
     })
 
 
+def _needs_purchase(request, sku, ref, message):
+    """402 with the price, when the caller has not bought `sku`/`ref`. The
+    screen offers the purchase from `price_paise` rather than knowing it."""
+    from apps.wallet import services as wallet
+
+    if wallet.owns(request.user.pk, sku, ref):
+        return None
+    return Response(
+        refusal_body("needs_purchase", message, sku=sku, ref=ref,
+                     price_paise=wallet.sku_price(sku, ref)),
+        status=402,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vargas(request):
+    """D1…D60 for the caller's own birth, cached forever (services.user_vargas)."""
+    birth, refusal = _birth_or_refusal(request)
+    if refusal is not None:
+        return refusal
+    try:
+        payload, cached = services.user_vargas(request.user.pk, birth)
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "vargas")
+    return Response({
+        "ok": True, "data": payload, "time_known": services.time_known(birth), "cached": cached,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])  # a sign's reading is nobody's — twelve rows a day for everybody
+def rashifal(request):
+    """The free generic reading for one rashi: `?sign=Leo&date=`."""
+    sign = (request.query_params.get("sign") or "").strip().capitalize()
+    if sign not in services.RASHIS:
+        return _refusal(400, "invalid", "Pick a sign.")
+    date_string, refusal = _resolve_date(request)
+    if refusal is not None:
+        return refusal
+    try:
+        payload, cached = services.rashifal(sign, date_string)
+    except services.CanonicalBirthWrong:
+        return _refusal(500, "unavailable", "This sign's reading is not available today.")
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "rashifal")
+    return Response({"ok": True, "data": payload, "date": date_string, "rashi": sign, "cached": cached})
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def horoscope(request):
+    """The reader's OWN daily reading — paid since 30 Sep 2026 (₹99 for 30
+    days, apps.wallet `prediction`). The free reading is `rashifal`."""
     date_string, refusal = _resolve_date(request)
+    if refusal is not None:
+        return refusal
+    refusal = _needs_purchase(request, "prediction", "",
+                              "Your own predictions are part of the monthly plan.")
     if refusal is not None:
         return refusal
     birth, refusal = _birth_or_refusal(request)
@@ -243,6 +298,12 @@ def muhurat(request):
     mine = request.query_params.get("mine") in ("1", "true")
     birth = None
     if mine:
+        # ₹49 per purpose per month (30 Sep 2026). Checked before the birth
+        # row, so an unpaid tap costs no upstream call.
+        refusal = _needs_purchase(request, "muhurat", f"{purpose}:{month}",
+                                  "Judging against your chart is paid.")
+        if refusal is not None:
+            return refusal
         birth, refusal = _birth_or_refusal(request)
         if refusal is not None:
             return refusal

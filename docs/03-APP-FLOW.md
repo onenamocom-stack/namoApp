@@ -51,6 +51,7 @@ In file order, which is also resolution order.
 | `/onboarding` | Intro | Plain |
 | `/onboarding/side` | AskSide — **the fork** | Plain |
 | `/onboarding/name` | AskName | Plain |
+| `/onboarding/gender` | AskGender | Plain |
 | `/onboarding/date` | AskDate | Plain |
 | `/onboarding/time` | AskTime | Plain |
 | `/onboarding/place` | AskPlace | Plain |
@@ -116,13 +117,16 @@ In file order, which is also resolution order.
 |---|---|---|---|---|
 | 1 | `/onboarding` | Intro. *"Two ways in. Pick yours."* | — | `/onboarding/side` |
 | 2 | `/onboarding/side` | **The fork.** Two cards, no continue button | — | *"I want a reading"* → `/onboarding/name`, *"I give readings"* → `/pro/studio` |
-| 3 | `/onboarding/name` | What to call you | non-empty | `/onboarding/date` |
+| 3 | `/onboarding/name` | What to call you | non-empty | `/onboarding/gender` |
+| 3a | `/onboarding/gender` | Male / Female / Other — added 30 Sep 2026 | one picked | `/onboarding/date` |
 | 4 | `/onboarding/date` | Birth date — D / M / Y | 1–31, 1–12, ≥ 1900 | `/onboarding/time` |
 | 5 | `/onboarding/time` | Birth time — H : M, AM/PM, **or "I do not know"** | 1–12, 0–59 — *or* the checkbox ticked, which disables the fields and continues | `/onboarding/place` |
 | 6 | `/onboarding/place` | Birth place — worldwide search, debounced 300ms | a result must be **picked**, not typed; the pick carries lat, lon and IANA zone | `/onboarding/phone` |
 | 7 | `/onboarding/phone` | Mobile number and email, together | number matches `[6-9]` + 9 digits; email matches a shape check. **Both required** | `/onboarding/verify` |
 | 8 | `/onboarding/verify` | Six-digit code, with a resend | six digits, accepted by Supabase | `/onboarding/computing` |
-| 9 | `/onboarding/computing` | Two beats: loading lines, then the reveal. Writes the profile | — | `/home` |
+| 9 | `/onboarding/computing` | One line, *Setting up your chart.* Writes the profile, computes the chart and all divisional charts, then leaves. **No reveal since 30 Sep 2026** (owner's call) | — | `/home` |
+
+**Editing birth details (30 Sep 2026)** is steps 4–6 with `?edit=1`: date, time, place, and the place step's button reads *Save* and writes the three straight to the profile, clears the browser's chart cache, recomputes, and returns to `/profile`. **No phone step and no code.** It used to run the whole chain — a fresh OTP, then Computing, which refuses to overwrite a stored birth date — so an edit asked for a code and then never saved.
 
 The four questions share one frame — one question per screen, large type, and
 **no progress bar**, deliberately: a bar turns three questions into a form.
@@ -236,7 +240,7 @@ keys and URLs unchanged). No stories strip, no dates on posts. In
 the reel's tagged products — "Book a session" was removed from there.
 `/bhakti` has no header tag and its search sits above the tiles.
 | Panchang | First on the आज का पंचांग tab. No links (the *Full chart* link was removed 30 Sep) |
-| Reading | Under the panchang: the date, the day's mood and its windows. No heading and no *Read all* since 30 Sep — `/horoscope` is reached from Consult's Horoscope tile |
+| Reading | Under the panchang: **the free reading by sign** (30 Sep) — twelve sign chips, opening on the reader's own moon sign; the sign and date, headline, summary and Ujjain's windows; a last line to *Your own predictions* on `/chart`. No heading and no *Read all* |
 | Article | → `/read/:id` · Save |
 | Live | → `/live/:id` |
 | Course | → `/academy` |
@@ -247,8 +251,9 @@ component**, not by reordering the feed data, so the feed stays a list of
 content.
 
 ### `/consult`
-**Free-tools row of six circles, above the search field** — Ask AI opens an
-overlay; Horoscope, Tarot, Matching, Muhurat and Numerology navigate. Muhurat
+**Free-tools row of six circles, above the search field** — all six navigate.
+**Horoscope opens `/chart`** and **Ask AI opens `/ask`**, both since 30 Sep 2026
+(the first went to `/horoscope`, the second opened the chat panel). Muhurat
 joined on 22 Sep 2026 and Numerology on 25 Sep; at six the row **scrolls** rather
 than shrinking further, because a seventh 56px circle has an unreadable label
 and dropping one makes the choice for the seeker. It sat on `/home`
@@ -415,18 +420,24 @@ which is where somebody looking for one goes. The list is still a prototype
 and says so; the real books arrive with the Academy's own materials.
 
 ### `/tarot`
-A guided pull, as a three-state machine rather than one laid-out screen:
+A guided pull, as a state machine rather than one laid-out screen:
 
 ```
-deck ──pick a tradition──▶ question ──pull──▶ reading
- ▲                            │                  │
- └────── change deck ─────────┴─── pull again ───┘
+deck --pick a tradition--> question --pull--> card --Reveal my reading--> reading
 ```
+
+**No way back out of a pull since 30 Sep 2026** (owner's call): *Ask a reader*,
+*Pull again* and *Change deck* are gone from under the card. A pull is one
+question, answered; another pull is another visit.
 
 `deck` and `question` are **centred modal dialogs**, not bottom sheets — a sheet
 reads as more of the same screen, and these are questions the screen is asking.
 The face-down deck sits behind them; it is the subject of the dialogs, not an
 empty state. `deck` has no dismiss: there is no screen behind it to return to.
+
+**The question dialog asks for a yes-or-no question** (30 Sep 2026): *Think of
+a question you want to ask, one that can be answered yes or no*, and the box
+under it is still typed, because the reading is written for it.
 
 **The question is typed, as of 24 Sep 2026.** This reverses the rule this screen
 was built on — "nothing is typed, the seeker holds it in their head until the
@@ -462,11 +473,11 @@ it and may not argue with it. The Vedic Kipper six are written down but
 unreachable until their faces are drawn. Rider-Waite, Sufi Path and Lotus Path
 were deleted outright — six authored lines each and no art.
 
-Card order, fixed: **face → name (the verdict first, for the yes/no deck) → the
-question quoted back → what the card says → where it lands → what to do → the
-shloka.** The verse sits BELOW the reading, deliberately: it is the card, and
-the reading is what the card says about today's question — the gloss follows
-the thing it glosses, but the answer somebody paid for leads.
+Card order, fixed since 30 Sep 2026 (owner's): **face → name → shloka →
+*Reveal my reading* → the verdict (yes/no deck) → the question quoted back →
+what the card says → where it lands → what to do.** The card and its verse are
+looked at before anything explains them; the reading waits behind one tap. This
+reverses the order that put the shloka below the reading.
 
 Two free pulls a week, then **the wallet is charged for real** (price in
 `01-PRD.md` §4.2). Both the count and the price are the server's and arrive on
@@ -475,16 +486,23 @@ the server writes, rendered as-is with a way to the wallet. **The price appears
 nowhere until the free pulls are gone** — not in the header, not on the button.
 
 ### `/chart`
-One switch: **Table or Chart**. The table leads, because a diagram is
-illegible to anyone who has not been taught to read one and the table carries
-the same placements in a form you can scan; every row drills into `/chart/:id`.
+**Where Consult's Horoscope tile lands, since 30 Sep 2026.** Two tabs: **Chart**
+on the left, where Table was, and **Prediction** on the right (`?tab=prediction`).
 
-**A second switch used to choose between three traditions' diagrams and is gone
-with two of them** — 7 Sep 2026. There is one chart form now
-(`04-UI-UX.md` §4), so the tradition switch had nothing left to choose. The
-ayanamsa and house system stay printed under *Birth data*, because a wrong one
-is wrong silently and being told which was used is the only defence a reader
-has.
+**Chart is Vedic only; the placement table is gone.** D1 leads, drawn. Under it,
+every other divisional chart the vendor computes — D2, D3, D4, D5, D7, D9, D10,
+D12, D16, D20, D24, D27, D30, D40, D45, D60 — each a row with its name that
+opens to its own diagram. All of it was computed at sign-up and is cached
+forever, so opening the tab computes nothing. Without a birth time every
+diagram is drawn empty with the reason. The ayanamsa and house system stay
+printed under *Birth data*.
+
+**Prediction** is the reader's own yesterday / today / tomorrow — the full
+reading that was `/horoscope` from 22 to 30 Sep. **₹99 for 30 days**
+(`01-PRD.md` §4.11): unbought, the server answers 402 with the price and the tab
+shows the offer, with a link to the free reading by sign; bought, it shows when
+the plan runs to. `/chart/:id` placement pages still exist but nothing on
+`/chart` links to them now.
 
 ### `/match`
 **Two slots, and the first defaults to you.** Slot one is the signed-in
@@ -515,8 +533,11 @@ built from sunrise, and where you were born is rarely where you are buying a
 car. The place is named on screen for the same reason the panchang names
 Ujjain.
 
-**For my chart** appears only when a birth row exists, and switches to the
-personalised search, which ranks the same windows against that chart and may
+**Judge against your chart** appears only when a birth row exists, and is paid
+since 30 Sep 2026: **₹49 for one purpose in one month** (`01-PRD.md` §4.11).
+Unbought, the server answers 402 with the price and the screen shows the offer
+with a way back to the free windows; bought, reopening it is free. It switches
+to the personalised search, which ranks the same windows against that chart and may
 promote one exact moment. **It often promotes none and explains why**, and that
 sentence is then the whole answer — the screen renders it rather than an empty
 list.
@@ -589,26 +610,15 @@ stamped with the IST day. What that changes on screen:
   the same almanac either way, so a signed-out reader on `/horoscope` gets the
   entry `/home` already wrote.
 
-**The daily reading is the reader's own again — 22 Sep**, and this replaces
-the 9 Sep entry that stood here saying it was the day itself. Between those
-dates the reading came from one of twelve invented births, one per rashi, so
-`/horoscope` showed the panchang mood sentence and four clock windows and
-nothing else — everything richer described somebody who does not exist.
+**The daily reading is two readings since 30 Sep 2026** (`02-TRD.md` §8 owns
+the decision). **Free, by sign**: Home's Today card and `/horoscope`, twelve
+sign chips opening on the reader's own moon sign, the sign named on every
+surface, the dasha line dropped and the windows named as Ujjain's. **Paid, your
+own**: `/chart`'s Prediction tab, computed from the reader's birth, windows at
+the birth place.
 
-Computed from the reader's birth, all of it is theirs, and `/horoscope` carries
-the full set again: headline, summary, the 0–100 score, six area ratings, the
-one instruction, Do/Don't, the dasha period, what is moving, the long sections
-and the reflection. `02-TRD.md` §8 has the cost, which is one upstream call per
-reader per day.
-
-**Two places appear on `/horoscope` and both are named.** The almanac line
-under the date is Ujjain, shared by everybody; the timing windows come from the
-reading and are computed at the reader's birth place. Sunrise moves about two
-hours across India, so an unnamed clock is wrong without looking wrong.
-
-**No surface names a rashi**, and that survives the change for a different
-reason than before: the reading is not a sign's reading at all now. The
-reader's own moon sign appears in the headers, off their own chart.
+**`/horoscope` names its places.** The almanac line under the date is Ujjain,
+shared by everybody, and so are a sign reading's windows.
 
 The reading still depends on the chart having loaded once, for that header
 line. That costs one request per account, ever, and nothing daily.
@@ -694,15 +704,14 @@ is the point: they open from any tab without losing the screen underneath.
 
 | Overlay | Opened from |
 |---|---|
-| **ChatPanel** | The header chat knob on every tab; Home's Ask AI circle; Consult, Live and ConsultantProfile message knobs; a consultant's chat channel button |
+| **ChatPanel** | The header chat knob on every tab; Consult, Live and ConsultantProfile message knobs; a consultant's chat channel button |
 | **HoroscopePanel** | The header horoscope knob, Home's horoscope circle, the reading card's *Read all* |
 | **CartSheet** | **Only** Shop's cart knob and Shop's view-cart button |
 | **Toast** | Every `showToast` and every flag toggle carrying messages |
 
-ChatPanel's tabs differ by side: a seeker gets Consultant / Ask AI / Alerts with
-Ask AI default; a consultant gets Clients / Alerts. Ask AI is a seeker product —
-a consultant is the person being asked, and a chart oracle in her inbox is the
-app talking to itself.
+ChatPanel's tabs differ by side: a seeker gets Consultant / Alerts, a consultant
+Clients / Alerts, and both open on the first. **Ask AI left the panel on 30 Sep
+2026** for its own page, `/ask` — messages are people.
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.
 
@@ -904,10 +913,10 @@ next rather than showing an empty list.
 | Sun, moon and rising are the mock's for every account, on four screens — `Computing.jsx`, `HoroscopePanel.jsx`, `Shop.jsx` and via `useProfileFields()` | Open by design — they need the ephemeris service. **Phase 7 must change all four**, not just the hook |
 | Two Bhaktamar cards carry incomplete verses | Flagged in data; needs a verified source |
 
-## Namo AI — the Ask AI tab and `/ask` (21 Sep 2026, repriced 23 Sep)
+## Namo AI — `/ask` (21 Sep 2026, repriced 23 Sep, own page 30 Sep)
 
-Two surfaces, one state machine. `useAskAi` holds it; the panel draws chat
-bubbles and `/ask` draws a reading column, and neither owns a number.
+One surface since 30 Sep 2026 — the chat panel's Ask AI tab is gone. `useAskAi`
+holds the state and `/ask` draws a reading column; neither owns a number.
 
 | State | What the seeker sees |
 |---|---|

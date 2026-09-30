@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame, { Slot } from './QuestionFrame.jsx'
 import { Segmented } from '../../components/Primitives.jsx'
 import { useStore } from '../../store.jsx'
@@ -26,6 +26,8 @@ export default function AskTime() {
   const [min, setMin] = useState('')
   const [ampm, setAmpm] = useState('AM')
   const [unknown, setUnknown] = useState(false)
+  const [params] = useSearchParams()
+  const edit = params.get('edit') === '1'
 
   const valid = +h >= 1 && +h <= 12 && min.length === 2 && +min >= 0 && +min <= 59
 
@@ -41,7 +43,7 @@ export default function AskTime() {
         // a minute somebody estimated.
         setBirthField('timeKnown', !unknown)
         setBirthField('time', unknown ? '' : `${h.padStart(2, '0')}:${min} ${ampm}`)
-        navigate('/onboarding/place')
+        navigate(`/onboarding/place${edit ? '?edit=1' : ''}`)
       }}
     >
       <div

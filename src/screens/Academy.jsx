@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { academyEvents, courses } from '../data/mock.js'
-import { fetchAssets } from '../lib/bhakti.js'
+import { assetFile, fetchAssets } from '../lib/bhakti.js'
 import { TabHeader } from '../components/Chrome.jsx'
+import Paywall from '../components/Paywall.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
-import { useStore } from '../store.jsx'
+import { rupees, useStore } from '../store.jsx'
 
 const TABS = [
   { key: 'ebooks', label: 'E-book' },
@@ -232,30 +233,87 @@ function Ebooks() {
       <ul className="mt-4 space-y-4">
         {books.map((d) => (
           <li key={d.id}>
-            <PopCard className="overflow-hidden">
-              {d.previewUrl ? (
-                <img src={d.previewUrl} alt="" loading="lazy" className="aspect-[21/9] w-full object-cover" />
-              ) : (
-                <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full" />
-              )}
-
-              <div className="flex items-center gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-meta t-heading">{d.title}</p>
-                  <p className="mt-1 caps-sm t-faint">PDF · {d.artist}</p>
-                </div>
-                <PopButton
-                  href={d.url}
-                  full={false}
-                  className="flex-none px-4"
-                >
-                  Read
-                </PopButton>
-              </div>
-            </PopCard>
+            <Ebook book={d} />
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+/**
+ * One book. A free one opens straight from its public URL. A priced one —
+ * the first is 30 Sep 2026's ₹99 guide — has no URL in the list at all: the
+ * first tap asks the server, which answers a ten-minute link to somebody who
+ * bought it and the price to anybody else.
+ *
+ * The link is shown as a second button rather than opened for them, because
+ * a phone blocks a window opened after a network round trip as a popup.
+ */
+function Ebook({ book: d }) {
+  const { showToast } = useStore()
+  const [link, setLink] = useState(null)
+  const [offer, setOffer] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const priced = Boolean(d.pricePaise)
+
+  const fetchLink = async () => {
+    setBusy(true)
+    const res = await assetFile(d.id)
+    setBusy(false)
+    if (res.ok) {
+      setLink(res.url)
+      setOffer(null)
+    } else if (res.code === 'needs_purchase') {
+      setOffer(res.pricePaise ?? d.pricePaise)
+    } else {
+      showToast(res.reason)
+    }
+  }
+
+  return (
+    <PopCard className="overflow-hidden">
+      {d.previewUrl ? (
+        <img src={d.previewUrl} alt="" loading="lazy" className="aspect-[21/9] w-full object-cover" />
+      ) : (
+        <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full" />
+      )}
+
+      <div className="flex items-center gap-3 p-4">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-meta t-heading">{d.title}</p>
+          <p className="mt-1 caps-sm t-faint">
+            PDF · {d.artist}
+            {priced && ` · ₹${rupees(d.pricePaise)}`}
+          </p>
+        </div>
+        {!priced ? (
+          <PopButton href={d.url} full={false} className="flex-none px-4">
+            Read
+          </PopButton>
+        ) : link ? (
+          <PopButton href={link} full={false} className="flex-none px-4" variant="gold">
+            Open PDF
+          </PopButton>
+        ) : (
+          <PopButton onClick={fetchLink} full={false} className="flex-none px-4" disabled={busy}>
+            {busy ? '…' : 'Read'}
+          </PopButton>
+        )}
+      </div>
+
+      {offer && (
+        <div className="px-4 pb-4">
+          <Paywall
+            title={d.title}
+            note="Yours to read on any device you sign in on."
+            sku="ebook"
+            refKey={d.id}
+            pricePaise={offer}
+            onBought={fetchLink}
+          />
+        </div>
+      )}
+    </PopCard>
   )
 }

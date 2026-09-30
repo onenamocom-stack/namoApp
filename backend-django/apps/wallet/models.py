@@ -213,3 +213,55 @@ class Payment(models.Model):
             ),
             models.Index(fields=["provider_order_id"], name="payments_order_idx"),
         ]
+
+
+class Sku(models.TextChoices):
+    """What the wallet can buy that stays bought (30 Sep 2026). Prices are
+    settings, not constants here — docs/01-PRD.md §4.8 owns the amounts."""
+
+    EBOOK = "ebook", "E-book"            # ref = the bhakti_assets id; forever
+    MUHURAT = "muhurat", "Muhurat"       # ref = "<purpose>:<YYYY-MM>"; forever
+    PREDICTION = "prediction", "Prediction"  # ref = ""; 30 days a purchase
+
+
+class Entitlement(models.Model):
+    """One purchase from the wallet that unlocks something.
+
+    Written only by `services.buy`, in the same transaction as the ledger
+    row that paid for it — the ledger row's ref_id is this row's id, so a
+    charge can always be traced to what it bought.
+
+    `expires_at` NULL means forever (an e-book, one muhurat). A prediction
+    purchase is a row per 30 days; buying again while one is running starts
+    the new row where the old one ends, so no paid day is lost.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField()
+    sku = models.CharField(max_length=16, choices=Sku.choices)
+    ref = models.TextField(default="", blank=True)
+    price_paise = models.IntegerField()
+    starts_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "entitlements"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(sku__in=Sku.values), name="entitlements_sku_check"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price_paise__gt=0), name="entitlements_price_positive"
+            ),
+            # A forever-purchase is bought once. The wallet lock in `buy`
+            # already serialises one person's taps; this is the backstop.
+            models.UniqueConstraint(
+                fields=["profile_id", "sku", "ref"],
+                condition=models.Q(expires_at__isnull=True),
+                name="entitlements_once_forever",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["profile_id", "sku", "ref"], name="entitlements_lookup_idx"),
+        ]

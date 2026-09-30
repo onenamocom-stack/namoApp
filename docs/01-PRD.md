@@ -283,6 +283,8 @@ sold out by seats rather than by a flag.
 Consultant-uploaded course material — PDFs and video links, free or paid — is a
 requested capability with **no upload path in the app today**.
 
+E-books are free unless priced; the first priced one is **₹99** (§4.11).
+
 ### 4.8 Wallet
 
 Everything is paid from a wallet rather than per transaction.
@@ -320,6 +322,23 @@ there is a payment behind it.
 
 Everything else that displays a price charges nothing — including **every booking
 flow**, which is the primary revenue line.
+
+### 4.11 Unlocks — bought once, kept (30 Sep 2026)
+
+Three things the wallet buys that stay bought. The price is the server's
+(`PREDICTION_PRICE_PAISE`, `MUHURAT_ME_PRICE_PAISE`, and an e-book's own
+`price_paise`); a double tap cannot charge twice.
+
+| Unlock | Price | Keeps |
+|---|---|---|
+| **Your own predictions** — yesterday, today, tomorrow, read from your birth (`/chart`, Prediction tab) | **₹99** | 30 days; buying again early starts where the last ends. No auto-renewal |
+| **Muhurat judged against your chart** | **₹49** | One purpose for one month, forever — reopening it is free, another purpose or month is another ₹49 |
+| **A priced e-book** — the first is *A Complete Guide to Beej Mantra* | **₹99** | Forever, on any device the account signs in on |
+
+**What stays free:** the natal chart and every divisional chart (D1–D60),
+the daily reading **by sign** (twelve a day, the same for everyone with the
+Moon in that sign — `02-TRD.md` §8), the shared muhurat windows, and every
+unpriced e-book.
 
 ---
 

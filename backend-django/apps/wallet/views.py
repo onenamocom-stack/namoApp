@@ -170,3 +170,32 @@ def razorpay_webhook(request):
     return HttpResponse(
         outcome["body"], status=outcome["status"], content_type="text/plain"
     )
+
+
+class BuyInput(serializers.Serializer):
+    """{sku, ref} — WHAT to buy, never what it costs (rule 3). The price is
+    the server's, read inside `services.buy`."""
+
+    sku = serializers.CharField(max_length=16)
+    ref = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def entitlement(request):
+    """Owned or not, until when, and the price — `?sku=&ref=`."""
+    form = BuyInput(data=request.query_params)
+    form.is_valid(raise_exception=True)
+    return Response(services.entitlement_state(
+        request.user.pk, form.validated_data["sku"], form.validated_data["ref"]))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def buy(request):
+    """Charge the wallet and unlock the thing. The 200 body is debit's own
+    shape, so the screens toast `reason` exactly as they do for a spend."""
+    form = BuyInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    return Response(services.buy(
+        request.user.pk, form.validated_data["sku"], form.validated_data["ref"]))

@@ -42,6 +42,11 @@ class AstroProvider(abc.ABC):
         """POST /api/v2/vedic/chart — natal chart for one birth."""
 
     @abc.abstractmethod
+    def vargas(self, body):
+        """POST /api/v2/vedic/vargas — the divisional charts (D1…D60) for one
+        birth, every division asked for in `divisions`, in one call."""
+
+    @abc.abstractmethod
     def panchang(self, body):
         """POST /api/v2/vedic/panchang — the day's almanac for one place."""
 
@@ -104,6 +109,9 @@ class FreeAstroApiProvider(AstroProvider):
 
     def chart(self, body):
         return self._post("/api/v2/vedic/chart", body)
+
+    def vargas(self, body):
+        return self._post("/api/v2/vedic/vargas", body)
 
     def panchang(self, body):
         return self._post("/api/v2/vedic/panchang", body)
@@ -364,6 +372,37 @@ class MockProvider(AstroProvider):
                 {"house": n, "sign": SIGNS[(asc_sign + n - 1) % 12]} for n in range(1, 13)
             ],
         }
+
+    def vargas(self, body):
+        """The vendor's shape — {"vargas": {"D9": {division, name, ascendant,
+        planets, houses}}} — off the mock chart's own longitudes. A varga
+        here is the plain N-fold multiple of the longitude, not Parashara's
+        per-division rules; it only has to be deterministic and well-shaped."""
+        chart = MockProvider.chart(self, body)
+        lons = {p["name"]: SIGNS.index(p["sign"]) * 30 + p["degree_in_sign"] for p in chart["planets"]}
+        asc = chart["ascendant"]["degree"]
+        out = {}
+        for n in body.get("divisions") or [1, 9]:
+            asc_sign = int(asc * n % 360 // 30)
+            out[f"D{n}"] = {
+                "division": n,
+                "name": f"D{n}",
+                "calibrated": True,
+                "house_basis": "whole_sign",
+                "ascendant": {"degree": None, "sign": SIGNS[asc_sign], "sign_id": asc_sign + 1, "house": 1},
+                "planets": [
+                    {"name": name, "sign": SIGNS[int(lon * n % 360 // 30)],
+                     "sign_id": int(lon * n % 360 // 30) + 1,
+                     "house": (int(lon * n % 360 // 30) - asc_sign) % 12 + 1}
+                    for name, lon in lons.items()
+                ],
+                "houses": [
+                    {"house": h, "sign": SIGNS[(asc_sign + h - 1) % 12],
+                     "sign_id": (asc_sign + h - 1) % 12 + 1, "degree_cusp": None}
+                    for h in range(1, 13)
+                ],
+            }
+        return {"vargas": out, "metadata": {"ayanamsha": body.get("ayanamsha")}}
 
     def panchang(self, body):
         seed = _seed("panchang", json.dumps(body, sort_keys=True, default=str))

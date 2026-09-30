@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useGoBack } from '../components/Chrome.jsx'
 import ReelFeed from '../components/ReelFeed.jsx'
 
 /**
@@ -12,7 +13,9 @@ import ReelFeed from '../components/ReelFeed.jsx'
  */
 export default function ReelViewer() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  // A reel opened from a shared link has nothing behind it in the app; Back
+  // lands on Home instead of closing the tab (30 Sep 2026).
+  const goBack = useGoBack('/home')
 
   return (
     <div className="relative h-full bg-ink">
@@ -20,7 +23,7 @@ export default function ReelViewer() {
 
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         aria-label="Back"
         className="absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-transform active:scale-90"
       >

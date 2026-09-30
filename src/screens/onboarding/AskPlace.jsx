@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import QuestionFrame from './QuestionFrame.jsx'
-import { useStore } from '../../store.jsx'
-import { callAstro } from '../../lib/astro.js'
+import { birthFields, warmCharts } from './Computing.jsx'
+import { clearBirthDraft, useStore } from '../../store.jsx'
+import { callAstro, clearAstroCache } from '../../lib/astro.js'
 
 /**
  * Anywhere on earth, not four cities.
@@ -72,7 +73,15 @@ function coordLabel(r) {
 
 export default function AskPlace() {
   const navigate = useNavigate()
-  const { setBirthField } = useStore()
+  const { birth, setBirthField, saveProfile, refreshProfile, session, showToast } = useStore()
+  /* `?edit=1` is Profile's "Edit birth details". It used to run the whole
+     sign-up chain — phone, a fresh OTP, then Computing — and Computing
+     refuses to overwrite a stored birth date, so the new details were never
+     written and the chart never moved (reported 30 Sep 2026). Now the last
+     step saves them itself. */
+  const [params] = useSearchParams()
+  const edit = params.get('edit') === '1'
+  const [saving, setSaving] = useState(false)
   const [q, setQ] = useState('')
   const [picked, setPicked] = useState(null)
   const [results, setResults] = useState(null)
@@ -132,15 +141,38 @@ export default function AskPlace() {
     <QuestionFrame
       question="And where?"
       hint="The city fixes your horizon. Everything angular in the chart is measured from it."
-      canContinue={Boolean(picked)}
-      nextLabel="Continue"
-      onNext={() => {
-        setBirthField('place', placeLabel(picked))
-        setBirthField('lat', picked.lat)
-        setBirthField('lon', picked.lng)
-        // The whole reason this geocoder was chosen. Never defaulted.
-        setBirthField('zone', picked.timezone)
-        navigate('/onboarding/phone')
+      canContinue={Boolean(picked) && !saving}
+      nextLabel={edit ? (saving ? 'Saving…' : 'Save') : 'Continue'}
+      onNext={async () => {
+        const place = {
+          place: placeLabel(picked),
+          lat: picked.lat,
+          lon: picked.lng,
+          // The whole reason this geocoder was chosen. Never defaulted.
+          zone: picked.timezone,
+        }
+        if (!edit) {
+          for (const [field, value] of Object.entries(place)) setBirthField(field, value)
+          navigate('/onboarding/phone')
+          return
+        }
+        setSaving(true)
+        setError('')
+        try {
+          await saveProfile(birthFields({ ...birth, ...place }))
+          /* The browser keeps the chart under the account, not the birth,
+             so the old one would keep showing until sign-out. */
+          clearAstroCache()
+          clearBirthDraft()
+          await refreshProfile(session.user.id)
+          warmCharts(session.user.id)
+          showToast('Birth details saved')
+          navigate('/profile', { replace: true })
+        } catch (e) {
+          setError(e.message)
+        } finally {
+          setSaving(false)
+        }
       }}
     >
       <input

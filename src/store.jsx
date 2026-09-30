@@ -332,9 +332,9 @@ export function AppProvider({ children }) {
   /* The chat panel — a right-side overlay rather than a route, so it can be
      opened from any tab and from the floating button without navigating. */
   const [chatOpen, setChatOpen] = useState(false)
-  // Ask AI is the default surface. It is the one that always answers —
-  // consultants only reply inside a session window.
-  const [chatTab, setChatTab] = useState('ai')
+  // Consultant threads first. Ask AI left this panel on 30 Sep 2026 for its
+  // own page, /ask.
+  const [chatTab, setChatTab] = useState('live')
 
   /* The cart, as real line items rather than a bare count, so the cart sheet
      has something to show and the total is computed rather than typed. */
@@ -582,7 +582,7 @@ export function AppProvider({ children }) {
     [walletApi],
   )
 
-  const openChat = useCallback((tab = 'ai') => {
+  const openChat = useCallback((tab = 'live') => {
     setChatTab(tab)
     setChatOpen(true)
   }, [])

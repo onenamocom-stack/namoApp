@@ -289,3 +289,21 @@ export function loadCheckout() {
   }
   return checkoutLoad
 }
+
+/* ── things bought once and kept (30 Sep 2026) ───────────────────────────────
+   An e-book, a muhurat judged against your chart, a month of predictions.
+   The client names WHAT to buy; the price is the server's and comes back in
+   `entitlement()` so a button can say it. `buy()` answers debit's shape —
+   {ok, reason?, balance_paise?} — and the screens toast `reason` as is. */
+export async function entitlement(sku, ref = '') {
+  const token = await getToken()
+  const q = new URLSearchParams({ sku, ref }).toString()
+  const { body } = await call(`/entitlement/?${q}`, { token })
+  return body ?? { owned: false, expires_at: null, price_paise: null }
+}
+
+export async function buy(sku, ref = '') {
+  const token = await getToken()
+  const { body } = await call('/buy/', { method: 'POST', token, body: { sku, ref } })
+  return body ?? { ok: false, reason: 'Could not reach the wallet. Try again.' }
+}

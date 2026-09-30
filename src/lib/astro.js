@@ -78,6 +78,8 @@ async function accessToken() {
 const OP_PATH = {
   chart: '/astro/chart/',
   horoscope: '/astro/horoscope/',
+  vargas: '/astro/vargas/',
+  rashifal: '/astro/rashifal/',
   panchang: '/astro/panchang/',
   geo: '/astro/geo/',
   match: '/astro/match/',
@@ -127,7 +129,16 @@ export async function callAstro(op, params = {}, body = null) {
     // 401 'unauthenticated' is the edge function's 'signed_out'; every other
     // refusal reason already IS the code the screens branch on.
     const code = response.status === 401 ? 'signed_out' : (answer?.reason ?? 'unavailable')
-    return { ok: false, code, reason: answer?.message ?? UNREACHABLE.reason }
+    /* `needs_purchase` (402) carries what to buy and its price, so the
+       screen offers the purchase without knowing either (30 Sep 2026). */
+    return {
+      ok: false,
+      code,
+      reason: answer?.message ?? UNREACHABLE.reason,
+      sku: answer?.sku,
+      ref: answer?.ref,
+      pricePaise: answer?.price_paise ?? null,
+    }
   }
 
   return answer ?? UNREACHABLE
@@ -155,21 +166,23 @@ const inFlight = new Map()
  *  The chart's stamp is a generation, not a date: change it and every phone
  *  refetches. 'provider-1' retired the charts the API computed on the mock
  *  provider from 21 to 22 Sep 2026 (HANDOFF, "The astro API ran on the mock"). */
-const cacheStamp = (op) => (op === 'chart' ? 'provider-1' : istDate())
+const BIRTH_ONLY = (op) => op === 'chart' || op === 'vargas'
+const cacheStamp = (op) => (BIRTH_ONLY(op) ? 'provider-1' : istDate())
 
-/* THE PANCHANG CARRIES NO USER: it is computed at Ujjain for everybody. */
-const PER_USER = (op) => op !== 'panchang'
+/* THE PANCHANG AND THE TWELVE SIGN READINGS CARRY NO USER: they are the same
+   for everybody. A sign reading is keyed by its sign instead. */
+const PER_USER = (op) => op !== 'panchang' && op !== 'rashifal'
 
 /* THE DATE IS RESOLVED, NEVER LEFT AS THE WORD "today"; a chart carries no
  * date at all. The server clamps to the same three days either way. */
-const keyDate = (op, date) => (op === 'chart' ? 'birth' : (date ?? istDate()))
+const keyDate = (op, date) => (BIRTH_ONLY(op) ? 'birth' : (date ?? istDate()))
 
-const cacheKey = (op, date, who) =>
-  `astro:${op}:${PER_USER(op) ? (who ?? 'anon') : 'all'}:${keyDate(op, date)}`
+const cacheKey = (op, date, who, sign) =>
+  `astro:${op}${sign ? `:${sign}` : ''}:${PER_USER(op) ? (who ?? 'anon') : 'all'}:${keyDate(op, date)}`
 
-function readCache(op, date, who) {
+function readCache(op, date, who, sign) {
   try {
-    const raw = localStorage.getItem(cacheKey(op, date, who))
+    const raw = localStorage.getItem(cacheKey(op, date, who, sign))
     if (!raw) return null
     const entry = JSON.parse(raw)
     return entry?.stamp === cacheStamp(op) ? entry.value : null
@@ -178,10 +191,10 @@ function readCache(op, date, who) {
   }
 }
 
-function writeCache(op, date, who, value) {
+function writeCache(op, date, who, sign, value) {
   try {
     localStorage.setItem(
-      cacheKey(op, date, who),
+      cacheKey(op, date, who, sign),
       JSON.stringify({ stamp: cacheStamp(op), value }),
     )
   } catch {
@@ -195,17 +208,17 @@ function writeCache(op, date, who, value) {
  * Not folded into `callAstro` itself, because `geo` goes through that one on
  * every keystroke and must never be cached.
  */
-function cachedAstro(op, { date, who }) {
-  const hit = readCache(op, date, who)
+export function cachedAstro(op, { date, who, sign } = {}) {
+  const hit = readCache(op, date, who, sign)
   if (hit) return Promise.resolve(hit)
 
-  const key = cacheKey(op, date, who)
+  const key = cacheKey(op, date, who, sign)
   const running = inFlight.get(key)
   if (running) return running
 
-  const promise = callAstro(op, date ? { date } : {})
+  const promise = callAstro(op, { date, sign })
     .then((res) => {
-      if (res.ok) writeCache(op, date, who, res)
+      if (res.ok) writeCache(op, date, who, sign, res)
       return res
     })
     .finally(() => inFlight.delete(key))
@@ -235,7 +248,7 @@ export function clearAstroCache() {
  * Returns four things and expects all four to be handled:
  * `loading`, `payload` (what the API computed), `timeKnown`, `refusal`.
  */
-export function useAstro(op, { date, ready = true, who = null } = {}) {
+export function useAstro(op, { date, ready = true, who = null, sign = null, attempt = 0 } = {}) {
   const [state, setState] = useState({
     loading: true, payload: null, timeKnown: true, city: null, rashi: null, refusal: null,
   })
@@ -249,7 +262,7 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
     let live = true
     setState((s) => ({ ...s, loading: true }))
 
-    cachedAstro(op, { date, who }).then((res) => {
+    cachedAstro(op, { date, who, sign }).then((res) => {
       if (!live) return
       setState(
         res.ok
@@ -268,7 +281,9 @@ export function useAstro(op, { date, ready = true, who = null } = {}) {
     return () => {
       live = false
     }
-  }, [op, date, ready, who])
+    /* `attempt` refetches on demand — after a purchase, when the last
+       answer was a refusal (refusals are never cached, so it goes upstream). */
+  }, [op, date, ready, who, sign, attempt])
 
   return state
 }
@@ -633,4 +648,45 @@ export function panchangFrom(p) {
     lunarMonth: p.lunar_month?.name ?? '',
     samvat: p.lunar_month?.vikram_samvat ?? null,
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The twelve rashis and the divisional charts, 30 Sep 2026.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** The twelve sidereal signs, in order — what the sign picker shows. */
+export const RASHIS = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+]
+
+/** What each division is read for — the names every Vedic almanac uses. */
+const VARGA_NAMES = {
+  1: 'Rashi · the whole life', 2: 'Hora · wealth', 3: 'Drekkana · siblings',
+  4: 'Chaturthamsha · home and property', 5: 'Panchamsha · fame and power',
+  7: 'Saptamsha · children', 9: 'Navamsha · marriage and dharma',
+  10: 'Dashamsha · career', 12: 'Dwadashamsha · parents',
+  16: 'Shodashamsha · vehicles and comforts', 20: 'Vimshamsha · spiritual practice',
+  24: 'Chaturvimshamsha · learning', 27: 'Saptavimshamsha · strength',
+  30: 'Trimshamsha · misfortune', 40: 'Khavedamsha · maternal line',
+  45: 'Akshavedamsha · paternal line', 60: 'Shashtiamsha · past karma',
+}
+
+/**
+ * The divisional charts as a list, D1 first, each in the `housesFrom` shape
+ * the diagram draws. Null houses without a birth time, as with D1 — every
+ * division is measured from its own ascendant.
+ */
+export function vargasFrom(payload, timeKnown = true) {
+  const vargas = payload?.vargas
+  if (!vargas) return []
+  return Object.values(vargas)
+    .sort((a, b) => a.division - b.division)
+    .map((v) => ({
+      key: `D${v.division}`,
+      division: v.division,
+      name: VARGA_NAMES[v.division] ?? v.name ?? `D${v.division}`,
+      ascendant: v.ascendant?.sign ?? null,
+      houses: housesFrom(v, timeKnown),
+    }))
 }

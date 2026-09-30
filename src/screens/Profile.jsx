@@ -154,7 +154,7 @@ function AvatarPicker() {
 /* ── Overview ────────────────────────────────────────────────────────────── */
 
 function Overview() {
-  const { showToast, cartCount, lang, setLang, t, session, sessionReady } =
+  const { showToast, cartCount, lang, setLang, t, session, sessionReady, profile } =
     useStore()
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
@@ -180,6 +180,10 @@ function Overview() {
             // so a birth with no known time says so instead of showing one.
             ['Time', me.birthTimeKnown ? me.birthTime : 'Not known'],
             ['Place', me.birthPlace],
+            // Asked at sign-up since 30 Sep 2026; older accounts have none.
+            ...(profile?.gender
+              ? [['Gender', profile.gender[0].toUpperCase() + profile.gender.slice(1)]]
+              : []),
           ].map(([k, v]) => (
             <div key={k} className="flex items-baseline justify-between gap-6 border-b border-rule py-3">
               <dt className="caps-sm t-faint">{k}</dt>
@@ -187,7 +191,10 @@ function Overview() {
             </div>
           ))}
         </dl>
-        <PopButton to="/onboarding/date" className="mt-5">
+        {/* `?edit=1`: date, time, place, then saved — no phone and no code.
+            It used to run the whole sign-up chain, OTP included, and the
+            last step refused to overwrite what was stored (30 Sep 2026). */}
+        <PopButton to="/onboarding/date?edit=1" className="mt-5">
           Edit birth details
         </PopButton>
       </section>

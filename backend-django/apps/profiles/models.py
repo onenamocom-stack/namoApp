@@ -52,6 +52,8 @@ from django.utils import timezone
 # at the trust boundary without pretending to prove the address exists.
 EMAIL_SHAPE = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
+GENDERS = ("male", "female", "other")
+
 
 class Profile(models.Model):
     """One row of `profiles` — one person. The primary key IS the Supabase
@@ -77,6 +79,9 @@ class Profile(models.Model):
     birth_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     birth_lon = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     birth_zone = models.TextField(null=True, blank=True)  # IANA name, never an offset
+    # Asked at sign-up since 30 Sep 2026. NULL for every account made before
+    # that, and for anybody who skips it — nothing reads it as a default.
+    gender = models.TextField(null=True, blank=True)
     admin = models.BooleanField(default=False)
 
     # Posting video is a FLAG, not a role. An approved consultant gets it
@@ -109,6 +114,10 @@ class Profile(models.Model):
     class Meta:
         db_table = "profiles"
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(gender__in=GENDERS) | models.Q(gender__isnull=True),
+                name="profiles_gender_check",
+            ),
             # 002's named CHECK, carried home (profiles_email_shape).
             models.CheckConstraint(
                 condition=models.Q(email__iregex=EMAIL_SHAPE) | models.Q(email__isnull=True),

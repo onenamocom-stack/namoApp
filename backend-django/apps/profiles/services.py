@@ -64,6 +64,7 @@ CLIENT_WRITABLE = (
     "birth_lat",
     "birth_lon",
     "birth_zone",
+    "gender",
 )
 
 EMAIL_PATTERN = EMAIL_SHAPE
@@ -119,6 +120,7 @@ def serialize_profile(profile):
         "birth_lat": float(profile.birth_lat) if profile.birth_lat is not None else None,
         "birth_lon": float(profile.birth_lon) if profile.birth_lon is not None else None,
         "birth_zone": profile.birth_zone,
+        "gender": profile.gender,
         "admin": profile.admin,
         # The video flag reaches the client so the composer can draw a Reel
         # tab. It GRANTS nothing — the server's kind gate is the permission

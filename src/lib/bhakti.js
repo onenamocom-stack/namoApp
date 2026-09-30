@@ -30,6 +30,8 @@
  *     browser APIs, not backend calls.
  */
 
+import { supabase } from './supabase.js'
+
 /** The Django API's base, e.g. https://api.example.com/v1 */
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL
 
@@ -348,5 +350,32 @@ export function rememberStatusPhoto(who, dataUrl) {
   } catch {
     /* Quota full, or storage denied. The picture is still on the status
        being composed right now; it just will not be there next time. */
+  }
+}
+
+/**
+ * The file behind one catalogue row (30 Sep 2026). A free row answers its
+ * public URL; a PRICED one — the first is a ₹99 e-book — answers a link that
+ * dies in ten minutes, and only to somebody who bought it. Anybody else gets
+ * `{ok: false, code: 'needs_purchase', pricePaise}` and the screen offers it.
+ */
+export async function assetFile(id) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  try {
+    const response = await fetch(`${API_BASE}/bhakti/assets/${id}/file/`, {
+      headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+    })
+    const body = await response.json()
+    if (response.ok && body.ok) return { ok: true, url: body.url }
+    return {
+      ok: false,
+      code: response.status === 401 ? 'signed_out' : body.reason,
+      reason: body.message ?? 'Could not open that book. Try again.',
+      pricePaise: body.price_paise ?? null,
+    }
+  } catch {
+    return { ok: false, code: 'unavailable', reason: 'Could not reach the library. Try again.' }
   }
 }

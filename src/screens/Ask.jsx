@@ -10,10 +10,8 @@ import { rupees } from '../store.jsx'
 /**
  * Namo AI as a full screen — the reading column, not the chat bubble.
  *
- * Shares every number with the panel through `useAskAi`: the quota, the
- * price and the send path are one implementation, because two copies of
- * the money would be two places for it to drift. What differs is only how
- * it is drawn.
+ * Its own page since 30 Sep 2026 — it was also a tab in the messages
+ * panel. The quota, the price and the send path live in `useAskAi`.
  *
  * Priced per QUESTION since 23 Sep 2026 — five free on arrival, one a day
  * after that, then ₹9 an answer (docs/01-PRD.md §4.4). Before that it was
@@ -34,13 +32,13 @@ export default function Ask() {
 
   return (
     <>
-      {/* A tab, so no back arrow. The right slot carries the quota — or, once
-          a session is running, the clock, because a per-minute meter the
-          seeker cannot see is the complaint every app in this category
-          already has. */}
+      {/* Namo AI's own page since 30 Sep 2026 — it left the messages panel —
+          so it has a way back. The right slot carries the quota. */}
       <TopBar
-        title="Ask AI"
+        title="Namo AI"
         sub="Reads your chart"
+        back
+        backTo="/consult"
         right={
           <span
             className={`whitespace-nowrap text-micro uppercase tracking-label tnum ${

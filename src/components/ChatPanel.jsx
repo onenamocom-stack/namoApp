@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { askSuggestions } from '../data/mock.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -20,8 +18,6 @@ import {
   markRead as markAlertsRead,
   subscribeToAlerts,
 } from '../lib/notifications.js'
-import useAskAi from './useAskAi.js'
-import SubjectForm from './SubjectForm.jsx'
 
 
 /**
@@ -31,9 +27,9 @@ import SubjectForm from './SubjectForm.jsx'
  * opens from any tab and from the floating button without losing the screen
  * underneath — which is the whole point of a side panel over a page.
  *
- * Three tabs: Live Consultant, Ask AI and Alerts. Ask AI opens by default —
- * it is the one that always answers, where a consultant only replies inside a
- * session window. All three are mock flows; nothing leaves the browser.
+ * Two tabs: Consultant and Alerts. Ask AI was a third until 30 Sep 2026 and
+ * is its own page now (`/ask`, Namo AI) — a chart oracle in the same inbox
+ * as the people you pay read as one more person to message.
  */
 export default function ChatPanel() {
   const { isPro, chatOpen, setChatOpen, chatTab, setChatTab } =
@@ -78,7 +74,6 @@ export default function ChatPanel() {
                 ]
               : [
                   { key: 'live', label: 'Consultant' },
-                  { key: 'ai', label: 'Ask AI' },
                   { key: 'alerts', label: 'Alerts' },
                 ]
             ).map((t) => (
@@ -99,9 +94,6 @@ export default function ChatPanel() {
         </header>
 
         {chatTab === 'live' && <LiveConsultant isPro={isPro} />}
-        {chatTab === 'ai' && (
-          <AskAi />
-        )}
         {chatTab === 'alerts' && <Alerts />}
       </aside>
     </div>
@@ -424,180 +416,6 @@ function initialsOf(name) {
     .toUpperCase()
 }
 
-
-/* ── Ask AI ──────────────────────────────────────────────────────────────── */
-
-/**
- * Namo AI, against the real model.
- *
- * Everything that costs anything is the server's answer, not this
- * component's: how many questions are still free, what a minute costs,
- * whether a clock is running and how much of it is left. The panel renders
- * what it is told. The previous build kept `questionsLeft` in React state,
- * which meant a page reload handed out five more — that number is gone from
- * the client entirely, and `free_left` from the server replaces it.
- *
- * THE LADDER
- *   five free on arrival, once per account
- *   then one free message a day, from the NEXT day
- *   then a metered session at the server's rate, ended by the seeker or by
- *   the wallet running out
- *
- * THE CLOCK IS VISIBLE ON PURPOSE. Per-minute billing is the loudest
- * complaint against every app in this category — "the timer never stops"
- * while you think and type. It still runs while you think here; what it
- * does not do is run where you cannot see it.
- */
-function AskAi() {
-  const {
-    messages, draft, setDraft, send, thinking, loading,
-    freeLeft, pricePaise, outOfFree, boostFrom,
-    who, subject, asking, setAsking, askAbout,
-  } = useAskAi()
-  const endRef = useRef(null)
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, thinking])
-
-  return (
-    <>
-      <div className="flex flex-none items-center justify-between gap-3 border-b border-rule px-4 py-3">
-        <p className="caps-sm t-body">Namo AI · reads your chart</p>
-        {/* What the NEXT question costs, said before anybody is charged.
-            A debit nobody was warned about is a support ticket. */}
-        <span className="caps-sm tnum gold">
-          {loading
-            ? '—'
-            : outOfFree
-              ? pricePaise ? `₹${rupees(pricePaise)} each` : ''
-              : `${freeLeft} free`}
-        </span>
-      </div>
-
-      {/* Said once, pinned, and never repeated per message — a warning on
-          every bubble is a warning nobody reads. It names the real limit
-          rather than only the legal one: a chart is not a life, and the
-          model does not know one. The link is the honest next step and
-          the business's, which is why it sits inside the sentence rather
-          than under a separate heading. */}
-      <p className="flex-none border-b border-rule px-4 py-2.5 text-micro t-faint">
-        An AI expert reads your chart here. It might be wrong, and it does not know your
-        life. For anything that matters,{' '}
-        <Link to="/consult" className="underline hover:text-t1">
-          ask our pros
-        </Link>
-        .
-      </p>
-
-      <div className="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {loading ? (
-          <p className="animate-breathe caps-sm t-faint">Opening</p>
-        ) : messages.length === 0 ? (
-          <Bubble
-            mine={false}
-            text="Ask about your chart. A real question gets a better answer than a general one."
-          />
-        ) : (
-          messages.map((m) => <Bubble key={m.id} mine={m.role === 'user'} text={m.text} />)
-        )}
-
-        {/* Asked once, before the first question. A chart answers about one
-            person, and which person is the thing the model cannot guess —
-            "will I get the job" and "will she get the job" are the same
-            sentence to it if nobody says whose chart is loaded. */}
-        {who === null && messages.length === 0 && !loading && (
-          <div className="pop-card p-4 text-center">
-            <p className="caps t-heading">Who is this about?</p>
-            <p className="mt-2 text-meta t-body">
-              A chart reads one person. Say whose.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => askAbout(null)} className="pop-btn flex-1 caps-sm">
-                Myself
-              </button>
-              <button type="button" onClick={() => setAsking(true)} className="pill flex-1 caps-sm justify-center">
-                Someone else
-              </button>
-            </div>
-          </div>
-        )}
-
-        {asking && <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />}
-
-        {/* Whose chart is loaded, and the way out of it. Shown while a
-            subject is set because the alternative is a seeker forgetting
-            and reading an answer about their mother as one about them. */}
-        {subject && !asking && (
-          <p className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2 text-micro t-sub">
-            <span>Reading {subject.name}&apos;s chart</span>
-            <span className="flex gap-3">
-              <button type="button" onClick={() => setAsking(true)} className="underline">
-                someone else
-              </button>
-              <button type="button" onClick={() => askAbout(null)} className="underline">
-                back to mine
-              </button>
-            </span>
-          </p>
-        )}
-
-        {thinking && <p className="animate-breathe caps-sm t-faint">Reading your chart</p>}
-
-        {/* A boost that is earned but not yet open. Without this the
-            seeker sees the same number as before and reads their reward as
-            nothing having happened — which is the complaint that moved the
-            window to start tomorrow in the first place. */}
-          {boostFrom && (
-          <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
-            Your referral is in. <b>3 free questions a day</b> start tomorrow.
-          </p>
-        )}
-
-        {outOfFree && (
-          /* Not a wall. The free ones are gone and the next answer costs
-             ₹9 — asking still works, so this is a price, not a lock. The
-             card the meter needed had a BUTTON because a session had to
-             be started; nothing has to be started now. */
-          <p className="rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">
-            Your free questions are used. The next answer costs{' '}
-            <b>{pricePaise ? `₹${rupees(pricePaise)}` : '—'}</b> from your wallet, and
-            one more free one arrives tomorrow.{' '}
-            <Link to="/consult" className="underline">
-              A consultant
-            </Link>{' '}
-            reads the same chart and argues back.
-          </p>
-        )}
-        <div ref={endRef} />
-      </div>
-
-      {/* Always shown. It used to vanish behind the meter's wall, which
-          hid the one thing that helps somebody who cannot phrase a
-          question — and hid it exactly when they were being asked to pay. */}
-      <div className="no-scrollbar flex flex-none gap-2 overflow-x-auto border-t border-rule px-4 py-3">
-        {askSuggestions.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => send(s.text)}
-            className="pill caps-sm flex-none !px-3.5 !py-2"
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      <Composer
-        value={draft}
-        onChange={setDraft}
-        onSend={() => send()}
-        disabled={thinking || (who === null && messages.length === 0)}
-        placeholder="Ask about your chart"
-      />
-    </>
-  )
-}
 
 /* ── Alerts ──────────────────────────────────────────────────────────────── */
 

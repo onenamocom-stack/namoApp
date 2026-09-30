@@ -149,6 +149,8 @@ class TestMeRead:
             # composer draws a Reel tab off the first and the app tells a
             # blocked person why their posts are refused off the second.
             "video_enabled", "blocked",
+            # 30 Sep: asked at sign-up.
+            "gender",
         }
         assert body["id"] == TEST_USER
         assert body["phone"] == "+919999900001"

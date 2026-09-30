@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
 import PresenceToggle from './PresenceToggle.jsx'
@@ -142,7 +142,7 @@ export function BottomNav({ tabs = TABS }) {
  * ProConsult its waiting count. Everything else passes nothing.
  */
 export function TabHeader({ action = null }) {
-  const { openChat, me, isPro, t, balance } = useStore()
+  const { openChat, me, t, balance } = useStore()
 
   return (
     <header className="topbar flex items-center gap-2 px-4 py-2">
@@ -197,9 +197,9 @@ export function TabHeader({ action = null }) {
 
       <button
         type="button"
-        /* Ask AI is a seeker product. A consultant tapping messages wants his
-           client threads, not a chart oracle. */
-        onClick={() => openChat(isPro ? 'live' : 'ai')}
+        /* Messages are people. Namo AI has its own page (/ask) since
+           30 Sep 2026, so both sides open on their threads. */
+        onClick={() => openChat('live')}
         aria-label={t('a.messages')}
         className="pill knob relative !h-9 !w-9 justify-center"
       >
@@ -223,6 +223,28 @@ export function TabHeader({ action = null }) {
 }
 
 /**
+ * Back, without ever leaving the app.
+ *
+ * `navigate(-1)` on the first page of a visit goes to whatever the browser had
+ * before — WhatsApp, a search result, nothing — which is the app closing. That
+ * is exactly what a shared reel link did (30 Sep 2026): open it from a message,
+ * tap Back, and you were out.
+ *
+ * React Router keeps the position in its own stack as `history.state.idx`: 0 on
+ * the first entry of the visit, unchanged by a `replace`. The old check read
+ * `location.key !== 'default'`, which a `replace` also changes — so a reel
+ * feed rewriting its URL as you swiped made a cold visit look like it had
+ * somewhere to go back to.
+ */
+export function useGoBack(fallback = '/home') {
+  const navigate = useNavigate()
+  return () => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1)
+    else navigate(fallback, { replace: true })
+  }
+}
+
+/**
  * Top bar. Left slot is either a back arrow or nothing; the title is the tiny
  * tracked caps label, centered; right slot is one optional action.
  *
@@ -242,18 +264,13 @@ export function TopBar({
   sub = null,
 }) {
   const navigate = useNavigate()
-  const location = useLocation()
-
-  // React Router stamps 'default' on the key when this is the first entry in
-  // the session — i.e. nothing to go back to.
-  const hasHistory = location.key !== 'default'
+  const historyBack = useGoBack(backTo || '/home')
 
   // `hardBack` always lands on `backTo`, ignoring history. Profile uses it:
   // "back" there means Home, not whichever screen happened to precede it.
   const goBack = () => {
     if (hardBack && backTo) navigate(backTo)
-    else if (hasHistory) navigate(-1)
-    else navigate(backTo || '/home', { replace: true })
+    else historyBack()
   }
 
   return (

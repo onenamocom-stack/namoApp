@@ -33,8 +33,12 @@ import { leaveReview, reviewableBookings } from '../lib/content.js'
 const FREE_TOOLS = [
   /* A page, not a slide-over, since 10 Sep 2026. The overlay showed the same
      reading `/horoscope` does with less of it and no address. */
-  { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/horoscope' },
-  { key: 'ai', label: 'tool.ai', icon: 'ai', act: ({ openChat }) => openChat('ai') },
+  /* Straight to the full chart since 30 Sep 2026 — the chart is computed at
+     sign-up, and the reader's own predictions are its second tab. The free
+     sign-by-sign reading is /horoscope, reached from Home. */
+  { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/chart' },
+  /* Its own page since 30 Sep 2026, out of the messages panel. */
+  { key: 'ai', label: 'tool.ai', icon: 'ai', to: '/ask' },
   { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
   { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match' },
   { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat' },

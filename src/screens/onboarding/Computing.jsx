@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/signout.js'
-import { loadingLines } from '../../data/mock.js'
-import { ChartNorth } from '../../components/ChartSquare.jsx'
-import { Button, Field, Stub } from '../../components/Primitives.jsx'
+import { Button, Stub } from '../../components/Primitives.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
-import { housesFrom, signOf, useAstro } from '../../lib/astro.js'
+import { cachedAstro } from '../../lib/astro.js'
 
 /** '14/11/1996' -> '1996-11-14'. The onboarding Slot fields are already
  * zero-padded, so this is a reorder, not a parse. */
@@ -25,145 +23,112 @@ function to24Hour(hhmmAmpm) {
 }
 
 /**
- * Two beats on one screen: the compute, then the reveal.
+ * The draft as the profile row's birth columns. Shared by sign-up (below) and
+ * by editing them from Profile, which saves straight from the place step.
+ */
+export function birthFields(birth) {
+  return {
+    birth_date: toIsoDate(birth.date),
+    // NULL rather than midnight when nobody knows it. The column exists so
+    // the two are distinguishable (05-BACKEND-SCHEMA.md §4.1).
+    birth_time: birth.timeKnown === false ? null : to24Hour(birth.time),
+    birth_time_known: birth.timeKnown !== false,
+    birth_place: birth.place,
+    birth_lat: birth.lat,
+    birth_lon: birth.lon,
+    // The birth place's zone, carried from AskPlace. Never defaulted: India's
+    // zone against a London birth shifts every cusp with no error anywhere.
+    birth_zone: birth.zone,
+  }
+}
+
+/**
+ * The chart and every divisional chart, computed now so no screen waits on
+ * them later. Both are cached forever on the server and in this browser. A
+ * failure here is not the person's problem — /chart asks again.
+ */
+export function warmCharts(who) {
+  return Promise.all([
+    cachedAstro('chart', { who }),
+    cachedAstro('vargas', { who }),
+  ]).catch(() => {})
+}
+
+/**
+ * Where the birth details stop being a draft and become the `profiles` row,
+ * and where the chart is computed — then straight into the app.
  *
- * The loading state does real brand work — naming the data source turns a
- * spinner into a credibility signal. The reveal that follows is the payoff for
- * the four questions, and it does not auto-advance: dumping someone straight
- * into a tab bar throws away the only moment the chart is the whole screen.
+ * **No reveal since 30 Sep 2026.** This used to hold a loading list and then
+ * a full-screen chart before "Enter Namo"; the owner asked for it gone. The
+ * chart is still computed here, once, at sign-up, so /chart opens already
+ * drawn.
  *
- * It is also where the birth details stop being a draft in `birth` and become
- * the real `profiles` row — the account already exists (phone verified the
- * step before this one, which is what created it via the auth.users trigger),
- * so this is an UPDATE, not an insert.
+ * The account already exists (the phone step created it), so the write is an
+ * UPDATE. A returning account that signs in arrives with an empty draft and a
+ * stored birth date, and nothing is written for it.
  */
 export default function Computing() {
   const { birth, session, profile, profileLoading, refreshProfile, saveProfile } = useStore()
   const navigate = useNavigate()
-  const [step, setStep] = useState(0)
   const [saveError, setSaveError] = useState('')
   // Bumped by the retry button. The write effect keys off it, because clearing
-  // the error alone changes none of its other dependencies — the retry would
-  // dismiss the message and land on the reveal without writing anything.
+  // the error alone changes none of its other dependencies.
   const [attempt, setAttempt] = useState(0)
   const written = useRef(false)
 
-  /* Every field the write needs, not just the date. Two reasons: `to24Hour('')`
-     returns the string '00:undefined:00', which Postgres rejects as a `time`;
-     and a draft saved before the place search carried zones has no `zone`, which
-     would write a null birth_zone and quietly cost the chart its offset. Both
-     route back to re-answer instead.
-
-     An unknown birth time is COMPLETE, not missing. `timeKnown === false` is an
-     answer somebody gave; an absent `timeKnown` is a draft from before the
-     checkbox existed, and that one still needs a time. */
+  /* Every field the write needs. An unknown birth time is COMPLETE, not
+     missing: `timeKnown === false` is an answer somebody gave. */
   const timeAnswered = Boolean(birth.time) || birth.timeKnown === false
   const draftComplete = Boolean(birth.date && timeAnswered && birth.place && birth.zone)
 
-  /* The reveal's three lines and its wheel, computed rather than seeded.
-     Gated on the profile actually carrying a birth date, because the chart is
-     derived server-side FROM that row — asking before the write below lands
-     returns 'no_birth', which is true for a moment and wrong afterwards. */
-  const chart = useAstro('chart', {
-    ready: Boolean(session && profile?.birth_date),
-    who: session?.user?.id ?? null,
-  })
-
-  /* The account exists but there is nothing complete to write and nothing
-     already stored — the draft was lost between the questions and the code.
-     Send them back to re-answer rather than reveal a chart built from seed
-     data, which is the same screen as a real one and gives no sign anything
-     went wrong. */
+  /* A session with nothing to write and nothing stored: the draft was lost
+     between the questions and the code. Back to the questions. */
   useEffect(() => {
     if (!session || profileLoading || draftComplete || profile?.birth_date) return
     navigate('/onboarding/date', { replace: true })
   }, [session, profile, profileLoading, draftComplete, navigate])
 
-  const done = step >= loadingLines.length
-  // Signing in types no name, so the draft is empty and the stored profile is
-  // the answer. The mock user's name was the fallback, which greeted every
-  // returning account as "Ananya".
-  const name = birth.name || profile?.name || ''
-
   useEffect(() => {
-    if (done) return undefined
-    const t = setTimeout(() => setStep((s) => s + 1), 780)
-    return () => clearTimeout(t)
-  }, [step, done])
-
-  useEffect(() => {
-    if (written.current || !session || !draftComplete) return
-
-    /* Decide nothing until the profile has actually loaded. `profile` is null
-       while it is in flight, which is indistinguishable from "nothing stored"
-       — and guessing wrong here overwrites a real birth record. */
+    if (written.current || !session) return
+    /* Decide nothing until the profile has loaded: null while in flight looks
+       exactly like "nothing stored", and guessing wrong overwrites a real
+       birth record. */
     if (profileLoading) return
-    /* A missing profile is WRITTEN, not refused.
-    
-       This used to say the trigger guarantees a row for every session, so
-       a null profile had to be a failed read. That stopped being true:
-       a profile can be deleted while its Supabase auth user survives —
-       `reset_test_account` does exactly that, and so does any account
-       erasure — and the app then had a session, no row, and no way out
-       but a Try Again that re-raised the same error forever.
-    
-       Writing is the right answer and always was. `save_onboarding` calls
-       `ensure_profile`, so the PATCH below creates the row when it is
-       missing and updates it when it is not. And we only reach here with
-       a COMPLETE draft — the effect above sends an incomplete one back to
-       the questions — so there is nothing to write blind. */
 
-    /* A returning user must not lose what is already stored. There is no
-       sign-in-only route yet — onboarding is the only way back to a session,
-       and it arrives here with a freshly typed draft every time. Writing it
-       would replace a real birth record with whatever was retyped to get past
-       the questions, and every downstream cusp with it. Sign them in and
-       leave the row alone. */
-    /* Optional chaining, because `profile` can now be null here — the
-       guard above it used to make that impossible and no longer does.
-       A null profile falls through to the write, which is the point. */
+    const who = session.user.id
+    const enter = () => navigate('/home', { replace: true })
+
+    /* A returning account keeps what is stored. Onboarding is also the way
+       back into a session, and it arrives here with whatever was retyped to
+       get past the questions — writing that would replace a real record.
+       Changing birth details is Profile's job, and it saves directly. */
     if (profile?.birth_date) {
       written.current = true
+      warmCharts(who).then(enter)
       return
     }
+    if (!draftComplete) return
 
     written.current = true
-
-    /* No `.eq('id', ...)` any more: the JWT is the identity and the client
-       never sends one (backend/INSTRUCTIONS.md rule 3). Same keys, same
-       shape — the server's allow-list is this exact set and nothing else. */
     saveProfile({
       name: birth.name,
       email: (birth.email ?? '').trim() || null,
-      birth_date: toIsoDate(birth.date),
-      // NULL rather than midnight when nobody knows it. The column exists so
-      // the two are distinguishable (05-BACKEND-SCHEMA.md §4.1), and this was
-      // hardcoded `true` until phase 7 — which is why four production
-      // accounts are marked certain about a minute somebody estimated.
-      birth_time: birth.timeKnown === false ? null : to24Hour(birth.time),
-      birth_time_known: birth.timeKnown !== false,
-      birth_place: birth.place,
-      birth_lat: birth.lat,
-      birth_lon: birth.lon,
-      // The birth place's zone, carried from AskPlace. Hardcoding this was
-      // survivable only while the place list was four Indian cities; with
-      // worldwide search it would store India's zone against a London birth
-      // and shift every cusp with no error raised anywhere.
-      birth_zone: birth.zone,
+      gender: birth.gender || null,
+      ...birthFields(birth),
     })
       .then(() => {
         clearBirthDraft()
-        return refreshProfile(session.user.id)
+        return refreshProfile(who)
       })
-      // Never swallow this. A failed write here still lands on the reveal,
-      // which looks identical to a real one — the account then exists with
-      // no birth details and nothing on screen ever said so. A refusal
-      // arrives as a thrown Error carrying the server's own sentence.
+      .then(() => warmCharts(who))
+      .then(enter)
+      // Never swallow this: the account would exist with no birth details and
+      // nothing on screen would say so.
       .catch((error) => {
         written.current = false
         setSaveError(error.message)
       })
-  }, [session, birth, draftComplete, profile, profileLoading, refreshProfile, saveProfile, attempt])
+  }, [session, birth, draftComplete, profile, profileLoading, refreshProfile, saveProfile, navigate, attempt])
 
   if (saveError) {
     return (
@@ -180,9 +145,8 @@ export default function Computing() {
           <Button
             onClick={async () => {
               setSaveError('')
-              // Refetch first. When the failure was the profile read rather
-              // than the write, nothing else refreshes it, and retrying the
-              // effect alone just re-raises the same error forever.
+              // Refetch first: when the failure was the profile read, retrying
+              // the write alone re-raises the same error forever.
               if (session) await refreshProfile(session.user.id)
               setAttempt((a) => a + 1)
             }}
@@ -191,20 +155,15 @@ export default function Computing() {
             Try again
           </Button>
 
-          {/* A WAY OUT, because Try again cannot always work. When the
-              failure is the same one every time — and it was, for a
-              session whose profile had been deleted — a lone retry button
-              is a dead end that looks like a live one. Starting over
-              signs out first, because the stuck session IS the problem
-              and carrying it into a fresh attempt reproduces it. */}
+          {/* A way out, because Try again cannot always work — a stuck
+              session is itself the problem, so starting over signs out. */}
           <button
             type="button"
             onClick={async () => {
               try {
                 await signOut()
               } catch {
-                /* Already signed out, or the network is gone. Either way
-                   the next screen is the one to be on. */
+                /* Already signed out, or offline. The next screen is right either way. */
               }
               navigate('/onboarding', { replace: true })
             }}
@@ -217,86 +176,10 @@ export default function Computing() {
     )
   }
 
-  if (done) {
-    return (
-      <div className="flex min-h-full animate-fade flex-col px-6 pb-10 pt-12 text-center">
-        <p className="text-micro uppercase tracking-caps text-t3">Chart ready</p>
-        <h1 className="mx-auto mt-5 max-w-[12ch] text-display font-semibold">{name ? `Here you are, ${name}.` : 'Here you are.'}</h1>
-
-        <Stub className="my-10" />
-        <ChartNorth size={240} houses={housesFrom(chart.payload, chart.timeKnown)} />
-
-        {/* Four states, and the last two must not read alike. A chart service
-            that is down is not a person with no birth details — this project
-            has already sent a working consultant to a signup form by treating
-            those as the same answer. */}
-        {chart.loading && (
-          <p className="mt-12 text-meta text-t3">Working out where everything was.</p>
-        )}
-
-        {chart.refusal && (
-          <p className="mx-auto mt-12 max-w-measure text-meta text-live">{chart.refusal.reason}</p>
-        )}
-
-        {chart.payload && (
-          <>
-            <div className="mx-auto mt-12 w-full max-w-[18rem] text-left">
-              <Field k="Sun" v={`${signOf(chart.payload, 'Sun')} — how you push`} />
-              <Field k="Moon" v={`${signOf(chart.payload, 'Moon')} — how you feel`} />
-              {chart.timeKnown ? (
-                <Field
-                  k="Rising"
-                  v={`${chart.payload.ascendant?.sign ?? '—'} — how you land`}
-                />
-              ) : (
-                <Field k="Rising" v="Needs your birth time" />
-              )}
-            </div>
-
-            <p className="prose-c mt-10">
-              {chart.timeKnown
-                ? 'Three positions out of nine. The rest are in your chart, and none of them are a verdict.'
-                : 'Two positions out of nine. Rising and the houses need the minute you were born — add it in your profile and they appear.'}
-            </p>
-          </>
-        )}
-
-        {/* Both routes land in the tabbed app shell. Sending someone
-            straight to /horoscope or /chart dropped them on a screen with no
-            bottom nav and no way back — the stranded flow this fixes. */}
-        <div className="mt-auto pt-12">
-          <Button to="/home" variant="solid">
-            Enter Namo
-          </Button>
-          <p className="mt-4 text-center text-meta text-t3">
-            Your chart and today&apos;s reading are both waiting inside.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-6">
       <Stub />
-      <ul className="mt-10 w-full max-w-measure">
-        {loadingLines.map((line, i) => (
-          <li
-            key={line}
-            className="flex items-center justify-between gap-4 py-3 transition-opacity duration-500"
-            style={{ opacity: i < step ? 1 : i === step ? 0.55 : 0.18 }}
-          >
-            <span className="text-meta text-t2">{line}</span>
-            <span className="flex-none text-micro uppercase tracking-caps text-t3">
-              {i < step ? 'Done' : i === step ? '···' : ''}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <Stub className="mt-10" />
-      <p className="mt-10 text-center text-micro uppercase tracking-caps text-t3">
-        Positions from NASA JPL ephemerides
-      </p>
+      <p className="mt-8 text-center text-meta text-t2">Setting up your chart.</p>
     </div>
   )
 }
