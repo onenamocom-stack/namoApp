@@ -1162,7 +1162,7 @@ No editing. A blocked person's comments leave the thread and the count.
 lists. The post's author gets a `content.comment` notification for other
 people's comments, never their own.
 
-### 5.2d Reshare — a `reactions` kind, not a table (30 Sep 2026)
+### 5.2e Reshare — a `reactions` kind, not a table (30 Sep 2026)
 
 `reactions.kind` gains **`repost`** (migration `reactions/0002`, applied to
 production: `reactions_kind_check` dropped and re-added with the new value).

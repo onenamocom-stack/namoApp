@@ -10,7 +10,7 @@ import { useStore } from '../store.jsx'
  * scrolling above a composer pinned to the bottom edge.
  *
  * Until 30 Sep the comment icon toasted "Replies — prototype only"; this is
- * the real thing, on `content_comments` (docs/05 §5.2c). You can remove your
+ * the real thing, on `content_comments` (docs/05 §5.2d). You can remove your
  * own comment, and anything on your own post; there is no editing.
  *
  * Portalled to <body> and fixed, not absolute like `Sheet` (Chrome.jsx).
