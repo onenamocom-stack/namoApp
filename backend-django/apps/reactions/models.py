@@ -18,6 +18,8 @@ class Kind(models.TextChoices):
     SAVE = "save", "Save"
     LIKE = "like", "Like"
     REMIND = "remind", "Remind"
+    # Reshare a post or reel to your own profile and the feed (30 Sep 2026).
+    REPOST = "repost", "Repost"
 
 
 class Reaction(models.Model):
@@ -51,6 +53,8 @@ class Reaction(models.Model):
         SAVE = "save", "Save"
         LIKE = "like", "Like"
         REMIND = "remind", "Remind"
+        # Reshare a post or reel to your own profile and the feed (30 Sep 2026).
+        REPOST = "repost", "Repost"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor_id = models.UUIDField()  # auth.users id; FK deferred to the profile module

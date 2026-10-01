@@ -1162,6 +1162,21 @@ No editing. A blocked person's comments leave the thread and the count.
 lists. The post's author gets a `content.comment` notification for other
 people's comments, never their own.
 
+### 5.2d Reshare — a `reactions` kind, not a table (30 Sep 2026)
+
+`reactions.kind` gains **`repost`** (migration `reactions/0002`, applied to
+production: `reactions_kind_check` dropped and re-added with the new value).
+A reshare is a row `(actor, 'content', content_id, 'repost')`, so the app's
+durable-flag toggle handles it like a like. Unlike the other kinds it is
+checked like publishing, in `content.services.assert_repostable`: the post is
+publicly visible, the actor is not blocked, and it is not their own post.
+The author gets one `content.repost` notification when the row is created.
+
+`GET /v1/content/reposts/[?by=<profile>]` lists reshares newest first with
+the post embedded as a feed row; a post that stops being public, or a
+blocked resharer, drops out. Who reshared is public — resharing is saying so
+in public. `repost_count` is on every public content row.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

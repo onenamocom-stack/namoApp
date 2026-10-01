@@ -69,6 +69,16 @@ const PATHS = {
     </>
   ),
   bookmark: <path d="M6.5 3.9h11a.9.9 0 0 1 .9.9v15.4L12 16.3l-6.4 3.9V4.8a.9.9 0 0 1 .9-.9Z" />,
+  /* Reshare — two arrows chasing round a loop, Instagram's repost mark. A
+     stroke-only glyph: "on" is shown by colour, not by filling it. */
+  repost: (
+    <>
+      <path d="M4.5 10.5V9a3.5 3.5 0 0 1 3.5-3.5h11" />
+      <path d="m16 2.5 3 3-3 3" />
+      <path d="M19.5 13.5V15a3.5 3.5 0 0 1-3.5 3.5H5" />
+      <path d="m8 21.5-3-3 3-3" />
+    </>
+  ),
   /* Reaching a person. Call sits beside message everywhere one appears. */
   phone: <path d="M7.3 3.6h3.2l1.6 4-2 1.2a11.4 11.4 0 0 0 5.1 5.1l1.2-2 4 1.6v3.2a1.8 1.8 0 0 1-2 1.8A16.5 16.5 0 0 1 5.5 5.6a1.8 1.8 0 0 1 1.8-2Z" />,
   bell: (

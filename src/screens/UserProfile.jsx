@@ -4,6 +4,7 @@ import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName, Row } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
+import ResharedList from '../components/ResharedList.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
 
@@ -147,6 +148,8 @@ export default function UserProfile() {
           ))}
           {!posts.length && <p className="prose-c">Nothing published yet.</p>}
         </div>
+
+        <ResharedList by={id} className="mt-8" />
 
         <Link to="/home" className="act-link mt-6 inline-block text-meta">
           Back to the feed

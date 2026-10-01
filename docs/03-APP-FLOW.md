@@ -231,8 +231,11 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 
 | Card | Actions |
 |---|---|
-| Post | Like · Comments (sheet) · Share (share sheet / copy) · Save. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
-| Reel | → `/reels/:id` · Like · Comments (sheet) · Share (share sheet / copy) · Save · views. A tagged product → `/shop?p=<id>&ref=…` |
+| Post | Like · Comments (sheet) · Reshare (not on your own) · Share (share sheet / copy) · Save. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
+| Reel | → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save · views. A tagged product → `/shop?p=<id>&ref=…` |
+
+A reshared post appears in the feed after every third post under "↻ Name
+reshared", and in a **Reshared** list on the resharer's Profile and `/u/:id`.
 
 Home's three tabs are labelled **Reels · आज का पंचांग · आज के दर्शन** (30 Sep;
 keys and URLs unchanged). No stories strip, no dates on posts. In

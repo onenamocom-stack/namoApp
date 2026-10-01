@@ -61,6 +61,7 @@ def _public_row(row):
         "like_count": row.like_count,
         "save_count": row.save_count,
         "comment_count": row.comment_count,
+        "repost_count": row.repost_count,
         # Tagged shop products, and the author's A code for the link to carry
         # (services.attach_products). Empty and null on an untagged post.
         "products": [
@@ -156,6 +157,32 @@ def publish(request):
         product_ids=data["product_ids"],
     )
     return Response({"id": str(row.id)}, status=201)
+
+
+class RepostsQuery(serializers.Serializer):
+    by = serializers.UUIDField(required=False, allow_null=True, default=None)
+    limit = serializers.IntegerField(required=False, default=50, min_value=1, max_value=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def reposts(request):
+    """Reshares, newest first — the feed's "X reshared" items, or one
+    person's profile with `by`. Anonymous, like the feed. Who reshared is
+    public by design: resharing is saying so in public."""
+    query = RepostsQuery(data=request.query_params)
+    query.is_valid(raise_exception=True)
+    data = query.validated_data
+    rows = services.list_reposts(by=data["by"], limit=data["limit"])
+    return Response([
+        {
+            "reposted_by": str(event.actor_id),
+            "reposted_by_name": event.actor_name,
+            "reposted_at": event.created_at,
+            "post": _public_row(post),
+        }
+        for event, post in rows
+    ])
 
 
 def _comment_row(c):

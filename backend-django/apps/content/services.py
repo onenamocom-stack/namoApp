@@ -152,6 +152,13 @@ def public_content():
                 [],
                 output_field=models.IntegerField(),
             ),
+            repost_count=RawSQL(
+                "select count(*) from reactions r"
+                " where r.target_type = 'content' and r.target_id = content.id"
+                " and r.kind = 'repost'",
+                [],
+                output_field=models.IntegerField(),
+            ),
             # Live comments by people who are not blocked — the same rows
             # the comment sheet lists, so the number and the list agree.
             comment_count=RawSQL(
@@ -341,6 +348,80 @@ def record_view(content_id, viewer_id):
     except IntegrityError:
         pass  # already counted
     return Content.objects.values_list("view_count", flat=True).get(pk=row.id)
+
+
+# ── reposts ──────────────────────────────────────────────────────────────────
+# A repost is a `reactions` row of kind 'repost' (apps/reactions), so the
+# app's durable-flag machinery toggles it like a like. These are its rules
+# and its read side.
+
+REPOST_OWN_REFUSAL = "You cannot reshare your own post"
+
+
+def assert_repostable(target_type, target_id, actor_id):
+    """Called by reactions.add_reaction before a repost row is written."""
+    if target_type != Reaction.TargetType.CONTENT:
+        raise ValidationError({"target_type": "Only posts and reels can be reshared"})
+    _assert_not_blocked(actor_id)
+    post = public_content().filter(pk=target_id).only("id", "author_id").first()
+    if post is None:
+        raise NotFound("That post is not available.")
+    if str(post.author_id).replace("-", "") == str(actor_id).replace("-", ""):
+        raise PermissionDenied(REPOST_OWN_REFUSAL)
+
+
+def notify_repost(content_id, actor_id):
+    """Tell the author. After the write and never raising (notify.push)."""
+    from apps.notifications import services as notify
+
+    post = Content.objects.filter(pk=content_id).only("author_id").first()
+    if post is None:
+        return
+    from apps.profiles.models import Profile
+
+    name = Profile.objects.filter(pk=actor_id).values_list("name", flat=True).first()
+    notify.push(
+        post.author_id,
+        kind="content.repost",
+        title=f"{name or 'Someone'} reshared your post",
+        ref_type="content",
+        ref_id=str(content_id),
+    )
+
+
+def list_reposts(*, by=None, limit=50):
+    """Reshares, newest first: who reshared what, and when, with the post as
+    the feed renders it. `by` narrows to one person's profile. A post that
+    is no longer public drops out, and so does a blocked resharer."""
+    qs = Reaction.objects.filter(
+        kind=Reaction.Kind.REPOST, target_type=Reaction.TargetType.CONTENT
+    )
+    if by is not None:
+        qs = qs.filter(actor_id=by)
+    blocked = RawSQL(
+        "select count(*) from profiles p"
+        f" where {_xid('p.id', 'reactions.actor_id')} and p.blocked_at is not null",
+        [],
+        output_field=models.IntegerField(),
+    )
+    events = list(
+        qs.annotate(_blocked=blocked)
+        .filter(_blocked=0)
+        .annotate(actor_name=profile_services.name_subquery("actor_id"))
+        .order_by("-created_at")[: limit * 2]  # headroom for posts that drop out
+    )
+    posts = {
+        str(p.id).replace("-", ""): p
+        for p in attach_products(public_content().filter(pk__in=[e.target_id for e in events]))
+    }
+    out = []
+    for e in events:
+        post = posts.get(str(e.target_id).replace("-", ""))
+        if post is not None:
+            out.append((e, post))
+        if len(out) == limit:
+            break
+    return out
 
 
 # ── comments ─────────────────────────────────────────────────────────────────

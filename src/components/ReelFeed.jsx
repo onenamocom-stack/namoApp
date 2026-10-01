@@ -121,17 +121,23 @@ function RailAct({ icon, label, count, on, tone = 'default', onClick }) {
       aria-label={label}
       aria-pressed={on === undefined ? undefined : on}
       className={`flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90 ${
-        on && tone === 'like' ? 'text-live' : 'text-white'
+        on && tone === 'like' ? 'text-live' : on && tone === 'repost' ? 'text-[#5fe0a0]' : 'text-white'
       }`}
     >
-      <Icon name={icon} size={27} weight={1.8} filled={!!on && tone !== 'plain'} />
+      {/* The reshare glyph is strokes only, so "on" is its colour, not a fill. */}
+      <Icon
+        name={icon}
+        size={27}
+        weight={on && tone === 'repost' ? 2.4 : 1.8}
+        filled={!!on && tone !== 'plain' && tone !== 'repost'}
+      />
       {count != null && <span className="text-[11px] font-semibold tnum">{count}</span>}
     </button>
   )
 }
 
 function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMuted, isLast }) {
-  const { showToast, hasFlag, toggleFlag } = useStore()
+  const { showToast, hasFlag, toggleFlag, session } = useStore()
   const video = useRef(null)
   const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
@@ -162,6 +168,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   }, [active, paused, muted])
   const liked = hasFlag(`like:${c.id}`)
   const saved = hasFlag(`save:${c.id}`)
+  const reshared = hasFlag(`repost:${c.id}`)
   const following = hasFlag(`follow:${c.consultantId}`)
 
   /* A view is two seconds on screen, not a frame. Opening a reel link makes
@@ -262,6 +269,23 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           count={comments.toLocaleString('en-IN')}
           onClick={() => setCommenting(true)}
         />
+        {/* Reshare to your profile and the feed — not on your own reel,
+            which the server refuses anyway. */}
+        {session && String(c.authorId).replace(/-/g, '') !== String(session.user.id).replace(/-/g, '') && (
+          <RailAct
+            icon="repost"
+            label={reshared ? 'Reshared' : 'Reshare'}
+            tone="repost"
+            on={reshared}
+            count={c.reposts ? c.reposts.toLocaleString('en-IN') : null}
+            onClick={() =>
+              toggleFlag(`repost:${c.id}`, {
+                on: 'Reshared to your profile and the feed',
+                off: 'Reshare removed',
+              })
+            }
+          />
+        )}
         <RailAct
           icon="share"
           label="Share"

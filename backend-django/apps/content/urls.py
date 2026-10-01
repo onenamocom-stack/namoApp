@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("feed/", views.feed, name="content-feed"),
     path("by-author/", views.by_author, name="content-by-author"),
+    path("reposts/", views.reposts, name="content-reposts"),
     path("publish/", views.publish, name="content-publish"),
     path("reviews/", views.reviews, name="content-reviews"),
     path("reviews/reviewable/", views.reviewable, name="content-reviewable"),

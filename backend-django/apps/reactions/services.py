@@ -27,7 +27,25 @@ def add_reaction(actor_id, target_type, target_id, kind):
     idempotency backstop: a racing double-react loses the constraint race
     and reads the winner instead — one row, one truth, no read-before-write.
     Returns (reaction, created).
+
+    A REPOST is the one kind with rules of its own (30 Sep 2026): it puts
+    somebody else's post on your profile and in the feed under your name,
+    so it is checked like publishing — the post must be publicly visible,
+    you must not be blocked, and it must not be your own. Its author hears
+    about it once, when the row is first created.
     """
+    if kind == Reaction.Kind.REPOST:
+        from apps.content import services as content_services
+
+        content_services.assert_repostable(target_type, target_id, actor_id)
+
+    reaction, created = _insert(actor_id, target_type, target_id, kind)
+    if created and kind == Reaction.Kind.REPOST:
+        content_services.notify_repost(target_id, actor_id)
+    return reaction, created
+
+
+def _insert(actor_id, target_type, target_id, kind):
     with transaction.atomic():
         try:
             with transaction.atomic():  # savepoint: the losing race only rolls back the insert

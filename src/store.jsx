@@ -359,16 +359,28 @@ export function AppProvider({ children }) {
    * durable.
    */
   const [flags, setFlags] = useState(() => new Set())
+  /* The Set as of the last toggle, read synchronously. `next` used to be
+     assigned INSIDE the setFlags updater — but React 18 may run an updater
+     later, at render, so `next` was still undefined when setReaction ran and
+     a tap that turned a heart ON sent a DELETE. The heart looked liked and
+     nothing was saved (found 30 Sep, testing reshare). Deciding from this
+     ref, before any setState, makes the write and the screen agree. */
+  const flagsRef = useRef(flags)
+  flagsRef.current = flags
 
   const hasFlag = useCallback((key) => flags.has(key), [flags])
 
   const toggleFlag = useCallback((key, messages) => {
-    let next
+    const next = !flagsRef.current.has(key)
+    // Kept current for a second tap before the next render.
+    const now = new Set(flagsRef.current)
+    if (next) now.add(key)
+    else now.delete(key)
+    flagsRef.current = now
     setFlags((prev) => {
       const copy = new Set(prev)
-      if (copy.has(key)) copy.delete(key)
-      else copy.add(key)
-      next = copy.has(key)
+      if (next) copy.add(key)
+      else copy.delete(key)
       return copy
     })
     if (messages) {

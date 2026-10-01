@@ -120,6 +120,7 @@ function shape(row) {
     likes: row.like_count,
     saves: row.save_count,
     comments: row.comment_count ?? 0,
+    reposts: row.repost_count ?? 0,
     publishedAt: row.published_at,
     time: ago(row.published_at),
     // Shop products the author tagged, and the author's A code for the link.
@@ -194,6 +195,29 @@ export async function apiSupportsTags() {
     return !row || 'products' in row
   } catch {
     return false
+  }
+}
+
+/**
+ * Reshares, newest first: `{ id, byId, byName, at, time, post }` where `post`
+ * is shaped like a feed row. `by` narrows to one person's profile. An API
+ * from before reshares 404s here; that reads as "none", not as an error.
+ */
+export async function fetchReposts({ by = null, limit = 50 } = {}) {
+  let path = `/content/reposts/?limit=${limit}`
+  if (by) path += `&by=${by}`
+  try {
+    const rows = await api(path)
+    return (rows ?? []).map((r) => ({
+      id: `${r.reposted_by}:${r.post.id}`,
+      byId: r.reposted_by,
+      byName: r.reposted_by_name || 'Someone',
+      at: r.reposted_at,
+      time: ago(r.reposted_at),
+      post: shape(r.post),
+    }))
+  } catch {
+    return []
   }
 }
 

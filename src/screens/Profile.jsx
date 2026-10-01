@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import ResharedList from '../components/ResharedList.jsx'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { sessionHistory } from '../data/mock.js'
 import Composer from '../components/Composer.jsx'
@@ -375,6 +376,8 @@ function MyPosts() {
           </p>
         )}
       </div>
+
+      <ResharedList by={me} className="mt-8" />
     </section>
   )
 }

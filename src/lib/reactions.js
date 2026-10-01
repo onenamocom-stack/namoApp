@@ -37,6 +37,9 @@ const KINDS = {
   followp: 'profile',
   save: 'content',
   like: 'content',
+  // Reshare to your profile and the feed (30 Sep 2026). The server checks
+  // it like publishing: a public post, not blocked, not your own.
+  repost: 'content',
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

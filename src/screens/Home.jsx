@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
-import { fetchFeed, productHref } from '../lib/content.js'
+import { fetchFeed, fetchReposts, productHref } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -106,7 +106,34 @@ export default function Home() {
     }
   }, [])
 
-  const real = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
+  /* Reshares: somebody else's post, again, under "X reshared". Woven in one
+     after every three posts rather than appended, so they read as part of
+     the stream; the stream is already dealt at random, so this is not a
+     rank either. */
+  const [reshares, setReshares] = useState([])
+  useEffect(() => {
+    let active = true
+    fetchReposts({ limit: 50 }).then((rows) => active && setReshares(rows))
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const posts = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
+  const reshared = reshares
+    .filter((r) => CARD_FOR_KIND[r.post.kind] !== 'article')
+    .map((r) => ({
+      id: `rp:${r.id}`,
+      kind: CARD_FOR_KIND[r.post.kind],
+      data: r.post,
+      by: { id: r.byId, name: r.byName },
+    }))
+  const real = []
+  posts.forEach((p, i) => {
+    real.push(p)
+    if ((i + 1) % 3 === 0 && reshared.length) real.push(reshared.shift())
+  })
+  real.push(...reshared)
 
   /* What is left of the hand-ordered mock: courses and products.
      They sit AFTER the real content rather than interleaved, because
@@ -171,9 +198,9 @@ export default function Home() {
               {items.map((item) => {
                 switch (item.kind) {
                   case 'post':
-                    return <PostCard key={item.id} post={item.data} />
+                    return <PostCard key={item.id} post={item.data} resharedBy={item.by} />
                   case 'reel':
-                    return <ReelCard key={item.id} reel={item.data} />
+                    return <ReelCard key={item.id} reel={item.data} resharedBy={item.by} />
                   case 'article':
                     return <ArticleCard key={item.id} read={item.data} />
                   case 'course':
@@ -285,11 +312,16 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
 }
 
 /**
- * Heart, comment, share — and save on the right. Like and Save are the
- * durable flags; Comment opens the thread and Share shares. `like` is left out for items that never had one.
+ * Heart, comment, reshare, share — and save on the right. Like, Reshare and
+ * Save are durable flags; Comment opens the thread and Share shares. `like`
+ * is left out for items that never had one. Reshare needs `authorId` and is
+ * hidden on your own post — the server refuses it there anyway.
  */
-function ActionRow({ id, like = true, onComment, onShare }) {
-  const { hasFlag, toggleFlag } = useStore()
+function ActionRow({ id, like = true, onComment, onShare, authorId }) {
+  const { hasFlag, toggleFlag, session } = useStore()
+  const me = session?.user?.id
+  const canReshare =
+    authorId && me && String(authorId).replace(/-/g, '') !== String(me).replace(/-/g, '')
   return (
     <div className="flex items-center gap-4 px-3 pt-2.5">
       {like && (
@@ -303,6 +335,21 @@ function ActionRow({ id, like = true, onComment, onShare }) {
         />
       )}
       {onComment && <ActIcon icon="chat" label="Reply" onClick={onComment} />}
+      {canReshare && (
+        <ActIcon
+          icon="repost"
+          label="Reshare"
+          onLabel="Reshared"
+          on={hasFlag(`repost:${id}`)}
+          tone="text-[#1f7a4d]"
+          onClick={() =>
+            toggleFlag(`repost:${id}`, {
+              on: 'Reshared to your profile and the feed',
+              off: 'Reshare removed',
+            })
+          }
+        />
+      )}
       {onShare && <ActIcon icon="share" label="Share" onClick={onShare} />}
       <span className="flex-1" />
       <ActIcon
@@ -327,7 +374,7 @@ function ActionRow({ id, like = true, onComment, onShare }) {
  * "more". The count is the view's aggregate plus your own un-saved tap, so it
  * moves the instant you press and still agrees with the database on reload.
  */
-function Caption({ id, likes, views, name, to, text, comments = 0, onComments }) {
+function Caption({ id, likes, views, reposts = 0, name, to, text, comments = 0, onComments }) {
   const { hasFlag } = useStore()
   const [open, setOpen] = useState(false)
   const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
@@ -339,6 +386,9 @@ function Caption({ id, likes, views, name, to, text, comments = 0, onComments })
   const counts = [
     count > 0 && `${count.toLocaleString('en-IN')} ${count === 1 ? 'like' : 'likes'}`,
     views > 0 && `${views.toLocaleString('en-IN')} ${views === 1 ? 'view' : 'views'}`,
+    // The server's number as it stands — no optimistic +1, which would count
+    // your own reshare twice once the server's count already includes it.
+    reposts > 0 && `${reposts.toLocaleString('en-IN')} ${reposts === 1 ? 'reshare' : 'reshares'}`,
   ].filter(Boolean)
 
   return (
@@ -438,7 +488,22 @@ function ProductStrip({ tagged = [], shopRef }) {
   )
 }
 
-function PostCard({ post: p }) {
+/** "↻ Tara reshared" above a post that is in the feed because somebody
+ *  reshared it. Nothing for an ordinary post. */
+function ResharedLine({ by }) {
+  if (!by) return null
+  return (
+    <Link
+      to={`/u/${by.id}`}
+      className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3"
+    >
+      <Icon name="repost" size={14} weight={2} />
+      {by.name} reshared
+    </Link>
+  )
+}
+
+function PostCard({ post: p, resharedBy }) {
   const { showToast } = useStore()
   const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
@@ -451,6 +516,7 @@ function PostCard({ post: p }) {
 
   return (
     <article className="border-b border-rule bg-white">
+      <ResharedLine by={resharedBy} />
       {/* Report stays under the ⋯, not in the action row: it is the one action
           nobody looks for until they need it, and beside Like it gets pressed
           by accident — a false report costs a real person an admin's time. */}
@@ -477,6 +543,7 @@ function PostCard({ post: p }) {
 
       <ActionRow
         id={p.id}
+        authorId={p.authorId}
         onComment={() => setCommenting(true)}
         // A post has no page of its own, so Share sends the author's —
         // until 30 Sep this toasted "Note copied" and copied nothing.
@@ -488,6 +555,7 @@ function PostCard({ post: p }) {
       <Caption
         id={p.id}
         likes={p.likes}
+        reposts={p.reposts}
         name={p.consultant}
         to={authorHref(p)}
         text={tile ? null : text}
@@ -507,7 +575,7 @@ function PostCard({ post: p }) {
   )
 }
 
-function ReelCard({ reel: r }) {
+function ReelCard({ reel: r, resharedBy }) {
   const { showToast } = useStore()
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(r.comments ?? 0)
@@ -515,6 +583,7 @@ function ReelCard({ reel: r }) {
 
   return (
     <article className="border-b border-rule bg-white">
+      <ResharedLine by={resharedBy} />
       <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} />
 
       <Link to={`/reels/${r.id}`} className="group relative block">
@@ -551,6 +620,7 @@ function ReelCard({ reel: r }) {
           that plays nothing. */}
       <ActionRow
         id={r.id}
+        authorId={r.authorId}
         onComment={() => setCommenting(true)}
         onShare={async () => {
           const said = await shareLink(`/reels/${r.id}`, { title: r.consultant })
@@ -561,6 +631,7 @@ function ReelCard({ reel: r }) {
         id={r.id}
         likes={r.likes}
         views={r.views}
+        reposts={r.reposts}
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
