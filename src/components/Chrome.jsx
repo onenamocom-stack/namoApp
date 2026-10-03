@@ -157,10 +157,14 @@ export function TabHeader({ action = null }) {
           a mark that appears on every screen would spend it everywhere and
           therefore signal nothing. The Link carries the accessible name, so
           the span is decorative. */}
-      <Link to={me.homeTo} aria-label="Namo" className="transition-opacity hover:opacity-70">
+      {/* The mark is what gives way when the bar is full — the consultant's
+          has five controls. The pills take `!px-3` because `.pill.knob`
+          zeroes padding and outranks a plain `px-*`; until 3 Oct "Online"
+          and the balance ran edge to edge in their pills. */}
+      <Link to={me.homeTo} aria-label="Namo" className="min-w-[56px] shrink transition-opacity hover:opacity-70">
         <span
           aria-hidden="true"
-          className="block h-5 w-[90px] bg-ink"
+          className="block h-5 w-[90px] max-w-full bg-ink"
           style={{
             WebkitMaskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
             maskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
@@ -188,7 +192,7 @@ export function TabHeader({ action = null }) {
       <Link
         to="/wallet"
         aria-label={t('a.wallet')}
-        className="pill knob !h-9 justify-center px-2.5"
+        className="pill knob !h-9 justify-center !px-3"
       >
         <span className="caps-sm tnum t-body">
           {balance === null ? '—' : `₹${rupees(balance)}`}
@@ -214,7 +218,7 @@ export function TabHeader({ action = null }) {
       <Link
         to={me.profileTo}
         aria-label={t('a.yourProfile')}
-        className="transition-opacity hover:opacity-70"
+        className="flex-none transition-opacity hover:opacity-70"
       >
         <PopAvatar initials={me.initials} src={me.avatarUrl} size={30} />
       </Link>

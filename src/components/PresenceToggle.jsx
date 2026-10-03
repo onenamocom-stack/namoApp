@@ -97,14 +97,14 @@ export default function PresenceToggle() {
       disabled={busy}
       aria-pressed={on}
       aria-label={on ? 'You are online. Go offline.' : 'You are offline. Go online.'}
-      className="pill knob !h-9 items-center gap-1.5 px-2.5"
+      className="pill knob !h-9 items-center gap-1.5 !px-3"
     >
       {/* The dot is the whole message; the word is there for anybody who
           cannot tell the colours apart, which is why both are present and
           neither is decorative. */}
       <span
         aria-hidden="true"
-        className={`block h-2 w-2 rounded-full ${on ? 'bg-live' : 'bg-t4'}`}
+        className={`block h-2 w-2 rounded-full ${on ? 'bg-ok' : 'bg-t4'}`}
       />
       <span className="caps-sm t-body">{on ? 'Online' : 'Offline'}</span>
     </button>
