@@ -48,16 +48,10 @@ In file order, which is also resolution order.
 | Path | Screen | Layout |
 |---|---|---|
 | `/` | → `/onboarding` | — |
-| `/onboarding` | Intro | Plain |
-| `/onboarding/side` | AskSide — **the fork** | Plain |
-| `/onboarding/name` | AskName | Plain |
-| `/onboarding/gender` | AskGender | Plain |
-| `/onboarding/date` | AskDate | Plain |
-| `/onboarding/time` | AskTime | Plain |
-| `/onboarding/place` | AskPlace | Plain |
-| `/onboarding/phone` | AskPhone — number **and** email | Plain |
-| `/onboarding/verify` | VerifyOtp | Plain |
-| `/onboarding/computing` | Computing | Plain |
+| `/onboarding` | Welcome — language, what the app does, phone, code | Plain |
+| `/onboarding/details` | AboutYou — every birth detail on one page | Plain |
+| `/onboarding/computing` | Computing — writes the profile, plays the reveal | Plain |
+| `/onboarding/{name,gender,date,time,place,phone,verify}` | → `/onboarding` (old links). The **pro** build keeps `name`, `phone`, `verify` as real screens for `?next=pro` | — |
 | `/profile` · `/profile/:tab` | Profile | Plain |
 | `/wallet` | Wallet | Plain |
 | `/horoscope` | Horoscope | Plain |
@@ -113,25 +107,28 @@ In file order, which is also resolution order.
 
 ## 3. Onboarding
 
+Two pages since 3 Oct 2026, replacing nine one-question screens (Intro, the
+side fork, name, gender, date, time, place, phone + email, code). Owner's call:
+the phone first, so a returning number signs straight in, and everything else
+on one page.
+
 | Step | Route | Asks | Validation | Next |
 |---|---|---|---|---|
-| 1 | `/onboarding` | Intro. *"Two ways in. Pick yours."* | — | `/onboarding/side` |
-| 2 | `/onboarding/side` | **The fork.** Two cards, no continue button | — | *"I want a reading"* → `/onboarding/name`, *"I give readings"* → `/pro/studio` |
-| 3 | `/onboarding/name` | What to call you | non-empty | `/onboarding/gender` |
-| 3a | `/onboarding/gender` | Male / Female / Other — added 30 Sep 2026 | one picked | `/onboarding/date` |
-| 4 | `/onboarding/date` | Birth date — D / M / Y | 1–31, 1–12, ≥ 1900 | `/onboarding/time` |
-| 5 | `/onboarding/time` | Birth time — H : M, AM/PM, **or "I do not know"** | 1–12, 0–59 — *or* the checkbox ticked, which disables the fields and continues | `/onboarding/place` |
-| 6 | `/onboarding/place` | Birth place — worldwide search, debounced 300ms | a result must be **picked**, not typed; the pick carries lat, lon and IANA zone | `/onboarding/phone` |
-| 7 | `/onboarding/phone` | Mobile number and email, together | number matches `[6-9]` + 9 digits; email matches a shape check. **Both required** | `/onboarding/verify` |
-| 8 | `/onboarding/verify` | Six-digit code, with a resend | six digits, accepted by Supabase | `/onboarding/computing` |
-| 9 | `/onboarding/computing` | One line, *Setting up your chart.* Writes the profile, computes the chart and all divisional charts, then leaves. **No reveal since 30 Sep 2026** (owner's call) | — | `/home` |
+| 1 | `/onboarding` | Language (English / हिन्दी, remembered on the device), four lines on what the app does, then the mobile number. *Get code* sends the OTP and the same page turns into a six-digit field with resend after 30s and *Change number*. The code auto-fills where the browser offers it (WebOTP) and verifies itself at six digits | number matches `[6-9]` + 9 digits; code accepted by Supabase | account has a birth date → `/home`; otherwise `/onboarding/details` |
+| 2 | `/onboarding/details` | Name, gender, birth date, birth time (or *I don't know*), birth place, email (optional), referral code (behind a link) | name non-empty; gender picked; a real calendar date 1900–today; a 12-hour time *or* the box ticked; a place **picked** from the search, carrying lat, lon and IANA zone; email, if given, shape-checked. Missing fields are named above the button | `/onboarding/computing` |
+| 3 | `/onboarding/computing` | Writes the profile, computes the charts, and plays the **reveal** once: a turning zodiac ring, then *Welcome, {name}* with Sun, Moon and Lagna. 4.2s, a tap skips. Restored 3 Oct (it was removed 30 Sep) at the owner's request, as a one-time moment | — | `/home` |
 
-**Editing birth details (30 Sep 2026)** is steps 4–6 with `?edit=1`: date, time, place, and the place step's button reads *Save* and writes the three straight to the profile, clears the browser's chart cache, recomputes, and returns to `/profile`. **No phone step and no code.** It used to run the whole chain — a fresh OTP, then Computing, which refuses to overwrite a stored birth date — so an edit asked for a code and then never saved.
+The date and time fields format themselves: digits only, on the number
+keypad, with `/` and `:` inserted as you type (`BirthInputs.jsx`). The same
+fields serve *Someone else* in Namo AI and Matching, where the keypad had no
+`/` or `:` to type.
 
-The four questions share one frame — one question per screen, large type, and
-**no progress bar**, deliberately: a bar turns three questions into a form.
+**Editing birth details** is step 2 with `?edit=1`, prefilled from the profile.
+Its button reads *Save*; it writes straight to the profile, clears the
+browser's chart cache, recomputes, and returns to `/profile`. **No phone step,
+no code, no reveal.**
 
-Back is `navigate(-1)` on every step.
+Edit mode has a back arrow (`useGoBack`, falling back to `/profile`); sign-up has none.
 
 ### Two things the fork gets right, and one it does not
 
@@ -201,13 +198,12 @@ and said nothing.
 Two failures on step 9 are surfaced rather than swallowed, both because the
 reveal screen looks identical whether or not the write landed:
 
-- **Draft lost and no details already stored** → back to step 4 to re-answer.
+- **Draft lost and no details already stored** → back to step 2 to re-answer.
 - **The write itself fails** → a "not saved" screen carrying the error, with a
   retry. Never the reveal.
 
 Re-entry points: *Run onboarding again* restarts at step 1; *Edit birth details*
-jumps to step 4 and continues through the rest of the flow, so there is no
-single-field edit.
+opens step 2 in edit mode.
 
 ---
 

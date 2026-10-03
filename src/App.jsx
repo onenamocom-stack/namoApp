@@ -10,12 +10,9 @@ import CartSheet from './components/CartSheet.jsx'
 import Icon from './components/Icon.jsx'
 import Reports from './screens/Reports.jsx'
 
-import Intro from './screens/onboarding/Intro.jsx'
+import Welcome from './screens/onboarding/Welcome.jsx'
+import AboutYou from './screens/onboarding/AboutYou.jsx'
 import AskName from './screens/onboarding/AskName.jsx'
-import AskGender from './screens/onboarding/AskGender.jsx'
-import AskDate from './screens/onboarding/AskDate.jsx'
-import AskTime from './screens/onboarding/AskTime.jsx'
-import AskPlace from './screens/onboarding/AskPlace.jsx'
 import AskPhone from './screens/onboarding/AskPhone.jsx'
 import VerifyOtp from './screens/onboarding/VerifyOtp.jsx'
 import Computing from './screens/onboarding/Computing.jsx'
@@ -199,12 +196,11 @@ function SessionGate() {
 
     if (session) {
       /* A signed-in account never sees the welcome screen. Opening the bare
-         site (`/`) routes to `/onboarding`, which is Intro's "Begin / Sign
-         in" — so until 30 Sep a person whose session had survived closing
+         site (`/`) routes to `/onboarding`, the phone screen — so until 30 Sep a person whose session had survived closing
          the tab still looked signed out, and signed in again. Only once the
          profile has arrived and carries a birth date: an account whose
-         sign-up stopped before the birth details still needs the questions,
-         and Intro's Begin is how it gets back to them. */
+         sign-up stopped before the birth details still needs them, and
+         Welcome forwards it to /onboarding/details. */
       if (pathname === '/onboarding' && !profileLoading && profile?.birth_date) {
         navigate('/home', { replace: true })
       }
@@ -302,15 +298,16 @@ function Frame() {
                 the deployed seeker site. */}
             {!isPro && (
               <>
-                <Route path="/onboarding" element={<Intro />} />
-                <Route path="/onboarding/name" element={<AskName />} />
-                <Route path="/onboarding/gender" element={<AskGender />} />
-                <Route path="/onboarding/date" element={<AskDate />} />
-                <Route path="/onboarding/time" element={<AskTime />} />
-                <Route path="/onboarding/place" element={<AskPlace />} />
-                <Route path="/onboarding/phone" element={<AskPhone />} />
-                <Route path="/onboarding/verify" element={<VerifyOtp />} />
+                {/* Sign-up is two pages since 3 Oct 2026: Welcome (phone and
+                    code — the one door in) and About you (every birth detail).
+                    The old one-question paths land on Welcome, so a stale link
+                    or a half-finished tab still finds the door. */}
+                <Route path="/onboarding" element={<Welcome />} />
+                <Route path="/onboarding/details" element={<AboutYou />} />
                 <Route path="/onboarding/computing" element={<Computing />} />
+                {['name', 'gender', 'date', 'time', 'place', 'phone', 'verify'].map((old) => (
+                  <Route key={old} path={`/onboarding/${old}`} element={<Navigate to="/onboarding" replace />} />
+                ))}
 
                 {/* Profile carries its tab in the URL so it stays deep-linkable. */}
                 <Route path="/profile" element={<Profile />} />

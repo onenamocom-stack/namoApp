@@ -172,7 +172,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
             </div>
           ) : (
             <Link
-              to="/onboarding/phone?mode=signin"
+              to="/onboarding"
               className="block py-2 text-center text-meta font-semibold text-gold"
             >
               Sign in to comment

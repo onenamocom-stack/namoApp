@@ -453,6 +453,10 @@ credit appears.** If that sheet goes, the images have to go with it.
 ## 8. Language
 
 English and Hindi, toggled in the store, which also sets the document language.
+The choice is offered on the first screen of sign-up and remembered on the
+device (`localStorage` `namo:lang`); before 3 Oct it reset to English on every
+reload. Interface strings live in `src/data/i18n.js`; a key missing in Hindi
+falls back to English rather than showing the key.
 
 **Content carries its own twin** rather than going through the interface
 dictionary — deity names, tarot traditions and similar hold both forms as data.

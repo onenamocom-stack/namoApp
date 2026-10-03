@@ -44,7 +44,7 @@ const EMPTY_BIRTH = {
   place: '',
   lat: null,
   lon: null,
-  // IANA name of the birth place's zone, from the geocoder in AskPlace. Never
+  // IANA name of the birth place's zone, from the geocoder (PlaceField). Never
   // defaulted and never an offset — docs/05-BACKEND-SCHEMA.md §4.1.
   zone: '',
   phone: '',
@@ -316,10 +316,25 @@ export function AppProvider({ children }) {
   }, [refreshProfile, refreshWallet, refreshConsultant])
 
 
-  /* Language. A value, not a boolean, so it cannot live on `flags` — this is
-     the first slice that genuinely needed one. Not persisted, like everything
-     else here; it resets on reload with the rest of the app. */
-  const [lang, setLang] = useState('en')
+  /* Language. A value, not a boolean, so it cannot live on `flags`.
+     REMEMBERED since 3 Oct 2026 — it is chosen on the first screen now, and
+     a Hindi reader sent back to English on every reload was the complaint.
+     localStorage, guarded: a private window still works, it just forgets. */
+  const [lang, setLangState] = useState(() => {
+    try {
+      return localStorage.getItem('namo:lang') === 'hi' ? 'hi' : 'en'
+    } catch {
+      return 'en'
+    }
+  })
+  const setLang = useCallback((next) => {
+    setLangState(next)
+    try {
+      localStorage.setItem('namo:lang', next)
+    } catch {
+      /* private window — this visit only */
+    }
+  }, [])
 
   /* Keeps the document in step, which is not decoration: it is what a screen
      reader picks a voice from and what the browser hyphenates by. */
@@ -819,6 +834,7 @@ export function AppProvider({ children }) {
       toast,
       showToast,
       lang,
+      setLang,
       t,
     ],
   )

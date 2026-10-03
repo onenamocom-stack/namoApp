@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PlaceField, { placeLabel } from './PlaceField.jsx'
+import { DateField, TimeField, isValidDate, isValidTime, to24 } from './BirthInputs.jsx'
 
 /**
  * Three questions about somebody else, asked inside the conversation.
@@ -29,16 +30,20 @@ export default function SubjectForm({
   cta = 'Read their chart',
 }) {
   const [form, setForm] = useState({
-    name: '', date: '', time: '', timeKnown: true, place: null,
+    name: '', date: '', time: '', ampm: 'AM', timeKnown: true, place: null,
   })
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const put = (k) => (v) => setForm((f) => ({ ...f, [k]: v }))
 
+  /* Date and time fill their own "/" and ":" (BirthInputs) — the number pad
+     has neither. The time is 12-hour with AM/PM: a 24-hour box read "04:35"
+     typed for an evening birth as the morning, with nothing to say so. */
   const valid =
     form.name.trim() &&
-    /^\d{2}\/\d{2}\/\d{4}$/.test(form.date) &&
+    isValidDate(form.date) &&
     form.place &&
-    (!form.timeKnown || /^\d{2}:\d{2}$/.test(form.time))
+    (!form.timeKnown || isValidTime(form.time))
 
   const submit = () => {
     if (!valid) return
@@ -46,7 +51,7 @@ export default function SubjectForm({
     onDone({
       name: form.name.trim(),
       birth_date: `${y}-${m}-${d}`,
-      birth_time: form.timeKnown ? `${form.time}:00` : null,
+      birth_time: form.timeKnown ? `${to24(form.time, form.ampm)}:00` : null,
       birth_time_known: form.timeKnown,
       birth_place: placeLabel(form.place),
       birth_lat: form.place.lat,
@@ -69,23 +74,16 @@ export default function SubjectForm({
       </Field>
 
       <Field label="Date of birth">
-        <input
-          value={form.date}
-          onChange={set('date')}
-          placeholder="DD/MM/YYYY"
-          inputMode="numeric"
-          className="field-line"
-        />
+        <DateField value={form.date} onChange={put('date')} />
       </Field>
 
       <Field label="Time of birth">
-        <input
+        <TimeField
           value={form.time}
-          onChange={set('time')}
-          placeholder="HH:MM"
-          inputMode="numeric"
+          onChange={put('time')}
+          ampm={form.ampm}
+          onAmpm={put('ampm')}
           disabled={!form.timeKnown}
-          className="field-line disabled:opacity-40"
         />
         {/* The houses are unreliable without a time and the answer says so.
             Offering "not known" beats a guessed time that looks certain. */}

@@ -128,6 +128,79 @@ export const strings = {
     en: 'Readings and card meanings stay in English for now.',
     hi: 'पाठ और कार्ड के अर्थ फ़िलहाल अंग्रेज़ी में ही रहेंगे।',
   },
+
+  // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
+  'w.title': {
+    en: 'Your kundli, horoscope and astrologers — in one place',
+    hi: 'आपकी कुंडली, राशिफल और ज्योतिषी — एक ही जगह',
+  },
+  'w.p.consult': { en: 'Talk to an astrologer', hi: 'ज्योतिषी से बात करें' },
+  'w.p.horoscope': { en: 'Daily horoscope', hi: 'आज का राशिफल' },
+  'w.p.darshan': { en: 'Darshan & aarti', hi: 'दर्शन और आरती' },
+  'w.p.shop': { en: 'Puja samagri', hi: 'पूजा सामग्री' },
+  'w.phone': { en: 'Mobile number', hi: 'मोबाइल नंबर' },
+  'w.phoneHint': {
+    en: 'New here or coming back — same number, same door. We text you a 6-digit code.',
+    hi: 'नए हों या पुराने — बस अपना नंबर डालें। हम 6 अंकों का कोड भेजेंगे।',
+  },
+  'w.send': { en: 'Get code', hi: 'कोड पाएं' },
+  'w.sending': { en: 'Sending…', hi: 'भेज रहे हैं…' },
+  'w.codeTo': { en: 'Enter the code sent to {phone}', hi: '{phone} पर भेजा गया कोड डालें' },
+  'w.code': { en: '6-digit code', hi: '6 अंकों का कोड' },
+  'w.verify': { en: 'Verify & continue', hi: 'पुष्टि करें और आगे बढ़ें' },
+  'w.verifying': { en: 'Checking…', hi: 'जांच रहे हैं…' },
+  'w.change': { en: 'Change number', hi: 'नंबर बदलें' },
+  'w.resendIn': { en: 'Resend code in {s}s', hi: '{s} सेकंड में दोबारा भेजें' },
+  'w.resend': { en: 'Resend code', hi: 'कोड दोबारा भेजें' },
+  'w.resent': { en: 'Sent again.', hi: 'दोबारा भेज दिया।' },
+  'w.terms': {
+    en: 'By continuing you agree to our',
+    hi: 'आगे बढ़कर आप हमारी इन शर्तों से सहमत हैं:',
+  },
+  'w.termsLink': { en: 'Terms', hi: 'शर्तें' },
+  'w.privacyLink': { en: 'Privacy', hi: 'गोपनीयता' },
+  'w.consultant': { en: 'Are you an astrologer? Join as a consultant', hi: 'क्या आप ज्योतिषी हैं? परामर्शदाता के रूप में जुड़ें' },
+
+  // ── About you: every birth detail on one page (3 Oct 2026) ───────────────
+  'd.title': { en: 'A little about you', hi: 'अपने बारे में बताएं' },
+  'd.hint': {
+    en: 'Your kundli is made from these. You can change them later in Profile.',
+    hi: 'आपकी कुंडली इन्हीं से बनती है। बाद में प्रोफ़ाइल से बदल सकते हैं।',
+  },
+  'd.editHint': {
+    en: 'Your kundli is made from these. Change one and every chart is redrawn.',
+    hi: 'आपकी कुंडली इन्हीं से बनती है। कुछ भी बदलें, हर चार्ट फिर से बनेगा।',
+  },
+  'd.editTitle': { en: 'Edit birth details', hi: 'जन्म विवरण बदलें' },
+  'd.name': { en: 'Your name', hi: 'आपका नाम' },
+  'd.namePh': { en: 'Full name', hi: 'पूरा नाम' },
+  'd.gender': { en: 'Gender', hi: 'लिंग' },
+  'd.male': { en: 'Male', hi: 'पुरुष' },
+  'd.female': { en: 'Female', hi: 'महिला' },
+  'd.other': { en: 'Other', hi: 'अन्य' },
+  'd.date': { en: 'Date of birth', hi: 'जन्म तिथि' },
+  'd.time': { en: 'Time of birth', hi: 'जन्म समय' },
+  'd.timeUnknown': { en: "I don't know my birth time", hi: 'मुझे जन्म का समय नहीं पता' },
+  'd.timeUnknownNote': {
+    en: 'You still get your planets and moon sign. Lagna and houses appear once you add the time.',
+    hi: 'ग्रह और चंद्र राशि फिर भी मिलेंगे। लग्न और भाव समय जोड़ने पर दिखेंगे।',
+  },
+  'd.place': { en: 'Place of birth', hi: 'जन्म स्थान' },
+  'd.placePh': { en: 'Search city, town or village', hi: 'शहर, कस्बा या गाँव खोजें' },
+  'd.email': { en: 'Email · optional', hi: 'ईमेल · वैकल्पिक' },
+  'd.referral': { en: 'Have a referral code?', hi: 'रेफ़रल कोड है?' },
+  'd.save': { en: 'Make my kundli', hi: 'मेरी कुंडली बनाएं' },
+  'd.saveEdit': { en: 'Save', hi: 'सेव करें' },
+  'd.saving': { en: 'Saving…', hi: 'सेव हो रहा है…' },
+  'd.missing': { en: 'Fill in: {list}', hi: 'भरें: {list}' },
+
+  // ── The one-time reveal after sign-up ────────────────────────────────────
+  'r.making': { en: 'Making your kundli…', hi: 'आपकी कुंडली बन रही है…' },
+  'r.ready': { en: 'Welcome, {name}', hi: 'स्वागत है, {name}' },
+  'r.readySub': { en: 'Your kundli is ready', hi: 'आपकी कुंडली तैयार है' },
+  'r.sun': { en: 'Sun', hi: 'सूर्य' },
+  'r.moon': { en: 'Moon', hi: 'चंद्र' },
+  'r.rising': { en: 'Lagna', hi: 'लग्न' },
 }
 
 /**

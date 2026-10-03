@@ -195,7 +195,7 @@ function Overview() {
         {/* `?edit=1`: date, time, place, then saved — no phone and no code.
             It used to run the whole sign-up chain, OTP included, and the
             last step refused to overwrite what was stored (30 Sep 2026). */}
-        <PopButton to="/onboarding/date?edit=1" className="mt-5">
+        <PopButton to="/onboarding/details?edit=1" className="mt-5">
           Edit birth details
         </PopButton>
       </section>
