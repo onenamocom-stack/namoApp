@@ -69,7 +69,9 @@ export default function ChatPanel() {
               asked; putting a chart oracle in her inbox is the app talking to
               itself. Her tabs are clients and alerts, and "Consultant" becomes
               "Clients" because she is not messaging one. */}
-          <div className="flex" role="tablist">
+          {/* Padded and centred (4 Oct 2026): the labels sat flush on the
+              panel's left edge. Same row on both sides of the app. */}
+          <div className="flex gap-2 px-4" role="tablist">
             {(isPro
               ? [
                   { key: 'live', label: 'Clients' },
@@ -86,7 +88,7 @@ export default function ChatPanel() {
                 type="button"
                 aria-selected={chatTab === t.key}
                 onClick={() => setChatTab(t.key)}
-                className={`caps-sm flex-1 border-b-2 py-3 transition-colors ${
+                className={`caps-sm flex-1 border-b-2 py-3 text-center transition-colors ${
                   chatTab === t.key ? 'border-gold gold' : 'border-transparent t-faint'
                 }`}
               >
