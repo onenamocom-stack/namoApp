@@ -92,6 +92,13 @@ class Profile(models.Model):
     # console, granted per person, revoked the same way.
     video_enabled = models.BooleanField(default=False)
 
+    # An influencer (3 Oct 2026): a person, usually not a consultant, paid
+    # for the people their invite code brings — signups and those who go on
+    # to pay. Like `video_enabled`, a flag the console grants, not a role:
+    # it adds the Influencer tab and its numbers (apps/referrals/influencer.py)
+    # and nothing else. Their code is their ordinary N invite code.
+    influencer = models.BooleanField(default=False)
+
     # Set when an admin blocks this person after reviewing reports. A
     # timestamp rather than a boolean because "when" is the first question
     # asked in an appeal, and a boolean cannot answer it. Null is the

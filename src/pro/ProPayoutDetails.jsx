@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopButton } from '../components/Pop.jsx'
@@ -67,7 +68,7 @@ export default function ProPayoutDetails() {
       {failed && (
         <p className="px-5 pt-6 text-meta t-body">Could not load your payout details. Open this page again.</p>
       )}
-      {!failed && !saved && <p className="px-5 pt-6 text-meta t-faint">Loading.</p>}
+      {!failed && !saved && <Loader />}
 
       {saved && saved.status !== 'missing' && !editing && (
         <Summary details={saved} onChange={() => setEditing(true)} />

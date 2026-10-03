@@ -12,7 +12,7 @@ import {
 } from '../../components/BirthInputs.jsx'
 import { Button } from '../../components/Primitives.jsx'
 import { clearAstroCache } from '../../lib/astro.js'
-import { claimCode } from '../../lib/referrals.js'
+import { SIGNUP_REF_KEY, claimCode } from '../../lib/referrals.js'
 import { clearBirthDraft, useStore } from '../../store.jsx'
 import { birthFields, warmCharts } from './Computing.jsx'
 
@@ -77,8 +77,15 @@ export default function AboutYou() {
     )
     setEmail(profile.email ?? '')
   }, [edit, profile])
-  const [referral, setReferral] = useState('')
-  const [showReferral, setShowReferral] = useState(false)
+  // A code carried in by a sign-up link (Welcome stores it) arrives filled in.
+  const [referral, setReferral] = useState(() => {
+    try {
+      return sessionStorage.getItem(SIGNUP_REF_KEY) || ''
+    } catch {
+      return ''
+    }
+  })
+  const [showReferral, setShowReferral] = useState(() => Boolean(referral))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -149,6 +156,13 @@ export default function AboutYou() {
       claimCode(code)
         .then(() => showToast('Referral applied. Three free questions a day from tomorrow.'))
         .catch((e) => showToast(e.message))
+        .finally(() => {
+          try {
+            sessionStorage.removeItem(SIGNUP_REF_KEY)
+          } catch {
+            /* nothing to clear */
+          }
+        })
     }
     navigate('/onboarding/computing', { replace: true })
   }

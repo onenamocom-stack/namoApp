@@ -43,6 +43,18 @@ async function api(path, { method = 'GET', body, token } = {}) {
   return data
 }
 
+/** An influencer's numbers (3 Oct 2026): `{code, link, periods: {this_month,
+ *  last_month, lifetime: {signups, buyers}}, recent: [{joined_on, bought_on}]}`.
+ *  Throws — a 403 means the account is not an influencer. */
+export async function influencerStats() {
+  const token = await accessToken()
+  return api('/referrals/influencer/', { token })
+}
+
+/** Where a sign-up link's `?ref=` code waits until the details page claims
+ *  it. Session-scoped: it should not outlive the visit that carried it. */
+export const SIGNUP_REF_KEY = 'namo.signupRef'
+
 /** The caller's own codes, minted on first ask. */
 export async function myCodes() {
   const token = await accessToken()

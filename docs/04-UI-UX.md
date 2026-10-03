@@ -91,6 +91,16 @@ against*:
 | `--text-3` | `#687080` | 4.8:1 | The readable floor |
 | `--text-4` | `#b5bac4` | 2.0:1 | **Non-text only** — ticks, rules, spokes, placeholders |
 
+**The kundli sky** (3 Oct 2026). The sign-up reveal's saffron-to-maroon
+palette and turning ring, carried into the waiting and talking moments: every
+loader is `Loader` (the turning ring, `components/Cosmos.jsx`); both chats sit
+on `.cosmic-dawn` with your own messages in `.bubble-mine` (saffron gradient,
+white text) and the other side's in `.bubble-theirs` (white, hairline);
+Namo AI adds faint stars and thinks with the ring. Text pages stay plain so
+the effect stays special. `.glass-panel` is no longer used for anything over
+the dark scrim — the Tarot dialog, the chat panel and `Sheet` are solid white,
+because frosted white over a 40% ink scrim reads as grey and disabled.
+
 **Milestone tiers** (3 Oct 2026) have their own five hues, used only for the
 ring around a consultant's avatar, the badge, and the ladder:
 `--tier-1` green · `--tier-10` blue · `--tier-100` saffron · `--tier-500`

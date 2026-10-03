@@ -315,7 +315,7 @@ function Settings({ me }) {
           {/* Switching sides is a plain link — the URL is what decides which
               app you are in, so there is no state to flip. */}
           <Row to="/home" title="Switch to seeking" note="Browse Namo as a client" />
-          <Row onClick={() => showToast('Help — prototype only')} title="Help & support" />
+          <Row to="/support" title="Help & support" note="+91 99580 40508 · support@1namo.com" />
         </div>
 
         {/* Last, alone, and it takes the green dot down on the way out.

@@ -129,6 +129,7 @@ def serialize_profile(profile):
         # with the 025 policy: it decides which tabs are drawn, not who may
         # publish.
         "video_enabled": profile.video_enabled,
+        "influencer": profile.influencer,
         # Blocked people are told so rather than left to discover it by
         # having every post refused with no explanation.
         "blocked": profile.blocked_at is not None,
@@ -253,6 +254,13 @@ def video_enabled(profile_id):
     return Profile.objects.filter(
         pk=profile_id, video_enabled=True, blocked_at__isnull=True
     ).exists()
+
+
+def set_influencer(profile_id, on):
+    """The console's influencer switch; True when a row actually changed."""
+    return Profile.objects.filter(pk=profile_id).exclude(
+        influencer=on
+    ).update(influencer=on) == 1
 
 
 def set_video_enabled(profile_id, on):

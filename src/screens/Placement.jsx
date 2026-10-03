@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { Navigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
@@ -27,7 +28,7 @@ export default function Placement() {
     return (
       <>
         <TopBar title="Placement" back backTo="/chart" />
-        <p className="section text-meta text-t3">Working out where everything was.</p>
+        <Loader label="Working out where everything was" />
       </>
     )
   }

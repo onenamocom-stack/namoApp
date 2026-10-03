@@ -11,6 +11,24 @@ from .models import Cashback, ReferralCode
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+def influencer_stats(request):
+    """The Influencer tab: the caller's code and link, signups and buyers
+    this month, last month and in all, and the latest joins (dates only).
+    Refused unless the console has made the caller an influencer."""
+    from apps.profiles.models import Profile
+
+    from . import influencer
+
+    if not Profile.objects.filter(pk=request.user.pk, influencer=True).exists():
+        return Response(
+            refusal_body("not_influencer", "This account is not set up as an influencer."),
+            status=403,
+        )
+    return Response(influencer.stats(request.user.pk))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def my_codes(request):
     """The caller's code, minted on first ask.
 

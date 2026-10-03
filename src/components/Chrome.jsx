@@ -351,10 +351,12 @@ export function Sheet({ open, onClose, title, children }) {
         onClick={onClose}
         className="absolute inset-0 animate-fade bg-ink opacity-40"
       />
-      <div className="glass-panel no-scrollbar relative max-h-[82%] animate-sheet-in overflow-y-auto rounded-t-3xl shadow-xl">
+      {/* Solid white (3 Oct 2026): the frosted `glass-panel` over the dark
+          scrim read as grey, like the Tarot dialog and the chat panel. */}
+      <div className="no-scrollbar relative max-h-[82%] animate-sheet-in overflow-y-auto rounded-t-3xl bg-white shadow-xl">
         {/* The grab handle. It does nothing — it says which edge this came
             from, which is the only thing a sheet has to communicate. */}
-        <div className="glass-panel sticky top-0 z-10 pt-3">
+        <div className="sticky top-0 z-10 bg-white pt-3">
           <span className="mx-auto block h-1 w-9 rounded-full bg-black/15" aria-hidden="true" />
           <div className="mt-3 flex items-center justify-between border-b border-rule px-6 pb-4">
             <p className="caps t-body">{title}</p>

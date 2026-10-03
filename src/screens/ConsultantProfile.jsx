@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -116,7 +117,7 @@ export default function ConsultantProfile() {
     return (
       <div className="flex h-full flex-col">
         <TopBar title="Consultant" back backTo="/consult" />
-        <p className="p-10 text-center text-meta text-t3">Loading.</p>
+        <Loader />
       </div>
     )
   }
@@ -497,7 +498,7 @@ function Work({ c }) {
   if (items === null) {
     return (
       <Section label="Work">
-        <p className="prose-c">Loading.</p>
+        <Loader />
       </Section>
     )
   }
@@ -553,7 +554,7 @@ function Reviews({ c }) {
   if (reviews === null) {
     return (
       <Section label="Reviews">
-        <p className="prose-c">Loading.</p>
+        <Loader />
       </Section>
     )
   }

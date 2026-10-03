@@ -1,3 +1,4 @@
+import InfluencerTab from '../components/InfluencerTab.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ResharedList from '../components/ResharedList.jsx'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -33,7 +34,7 @@ const SETTINGS = [
   { key: 'prof.set.language', value: 'prof.set.languageVal' },
   { key: 'prof.set.notifications', value: 'prof.set.notificationsVal' },
   { key: 'prof.set.privacy', value: 'prof.set.privacyVal' },
-  { key: 'prof.set.help', value: null },
+  { key: 'prof.set.help', value: null, to: '/support' },
 ]
 
 /**
@@ -52,10 +53,18 @@ export default function Profile() {
   const { tab = 'overview' } = useParams()
   const navigate = useNavigate()
   const me = useProfileFields()
-  const { session, sessionReady, t } = useStore()
+  const { session, sessionReady, t, profile } = useStore()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
+  /* Influencer is a third tab for accounts the console made influencers
+     (3 Oct 2026). Until the profile arrives an /profile/influencer link is
+     left alone rather than bounced, so a reload lands where it was. */
+  const tabs = profile?.influencer
+    ? [...TABS, { key: 'influencer', label: 'prof.tab.influencer' }]
+    : TABS
 
-  if (!TABS.some((tb) => tb.key === tab)) return <Navigate to="/profile" replace />
+  if (!tabs.some((tb) => tb.key === tab) && !(tab === 'influencer' && profile === null)) {
+    return <Navigate to="/profile" replace />
+  }
 
   return (
     <>
@@ -78,7 +87,7 @@ export default function Profile() {
       </section>
 
       <Segmented
-        items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
+        items={tabs.map((tb) => ({ ...tb, label: t(tb.label) }))}
         value={tab}
         onChange={(k) => navigate(k === 'overview' ? '/profile' : `/profile/${k}`)}
       />
@@ -86,6 +95,7 @@ export default function Profile() {
       <div key={tab} className="animate-fade">
         {tab === 'overview' && <Overview />}
         {tab === 'settings' && <SettingsTab />}
+        {tab === 'influencer' && profile?.influencer && <InfluencerTab />}
       </div>
 
       <div className="h-24" />
@@ -448,7 +458,8 @@ function SettingsTab() {
           {SETTINGS.map((s) => (
             <Row
               key={s.key}
-              onClick={() => showToast(t('prof.protoOnly', { what: t(s.key) }))}
+              to={s.to}
+              onClick={s.to ? undefined : () => showToast(t('prof.protoOnly', { what: t(s.key) }))}
               title={t(s.key)}
               meta={s.value && t(s.value)}
             />

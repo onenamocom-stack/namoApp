@@ -573,8 +573,11 @@ past midnight is marked `+1d`, and sunrise-to-sunrise windows print their
 length, because their two clock times are identical.
 
 ### `/profile/:tab`
-**Two tabs in the URL — overview, settings.** Back always means Home here,
-regardless of history.
+**Two tabs in the URL — overview, settings — and a third, influencer, for
+accounts the console made influencers** (3 Oct 2026): the code and the sign-up
+link with a Share button, joined and paid for this month / last month / all
+time, and the latest joins as dates. Settings → Help and support →
+`/support`. Back always means Home here, regardless of history.
 
 Horoscope and Wallet were the third and fourth until 9 Sep 2026. Both were
 summaries whose only real control was a button to the full screen — a tab that
@@ -584,6 +587,19 @@ bar on every screen.
 Overview holds the chart, birth data, language pills and a row list into
 most of the app. Settings holds **Switch to consultant → `/pro/feed`**, which is
 an ordinary link because the side is not state.
+
+### `/support`
+Both apps, signed in or out (the session gates let it through). Call, WhatsApp
+and email; *Report a problem* — topic chips, an optional order or session ID,
+what happened — then **Send by email** or **Send on WhatsApp**, each pre-filled
+with the topic, the account and the app, enabled once something is written;
+five FAQs. Linked from Profile → Settings in both apps and from the sign-up
+screen's footer.
+
+### Sign-up links
+`/#/onboarding?ref=N…` stores the code for the visit; the details page opens its
+referral field already filled, and claims it on submit. Only N (invite) codes —
+an A code is a shop coupon and belongs to the cart.
 
 ### `/wallet`
 Balance and history, both read from the server. Since phase 3 *Add money* opens
@@ -753,7 +769,7 @@ is the point: they open from any tab without losing the screen underneath.
 
 | Overlay | Opened from |
 |---|---|
-| **ChatPanel** | The header chat knob on every tab; Consult, Live and ConsultantProfile message knobs; a consultant's chat channel button |
+| **ChatPanel** | The header chat knob on every tab; Consult, Live and ConsultantProfile message knobs; a consultant's chat channel button. **Mounted in both builds** — it was seeker-only from the build split (19 Sep) to 3 Oct 2026, so nothing opened it in the consultant app |
 | **HoroscopePanel** | The header horoscope knob, Home's horoscope circle, the reading card's *Read all* |
 | **CartSheet** | Shop's cart button (beside search), Shop's view-cart button, Reports' top-bar Cart |
 | **Toast** | Every `showToast` and every flag toggle carrying messages |

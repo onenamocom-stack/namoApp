@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
@@ -138,7 +139,7 @@ function ChartTab({ chart, who, ready, display, me }) {
         <p className="-mt-2 mb-3 text-meta text-t2">
           Each one looks closely at one part of life: D9 at marriage, D10 at work, D7 at children.
         </p>
-        {vargas.loading && <p className="text-meta text-t3">Working out the divisions.</p>}
+        {vargas.loading && <Loader label="Working out the divisions" className="py-6" />}
         {vargas.refusal && <p className="text-meta text-t2">{vargas.refusal.reason}</p>}
         <ul>
           {divisions.map((v) => (

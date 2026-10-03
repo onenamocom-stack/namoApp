@@ -1,3 +1,4 @@
+import { Loader } from './Cosmos.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -108,7 +109,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
         </div>
 
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-3">
-          {items === null && <p className="py-8 text-center text-meta t-faint">Loading.</p>}
+          {items === null && <Loader className="py-8" />}
           {items?.length === 0 && (
             <div className="py-10 text-center">
               <p className="text-body font-semibold text-t1">No comments yet</p>

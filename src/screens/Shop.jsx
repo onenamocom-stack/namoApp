@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { shopCategories, shopSubcategories } from '../data/mock.js'
 import { fetchProducts } from '../lib/shop.js'
@@ -379,9 +380,7 @@ export default function Shop() {
         <Kicker>{t(rest.length === 1 ? 'shop.item' : 'shop.items', { n: rest.length })}</Kicker>
 
         {loadingShop ? (
-          <p className="animate-breathe py-12 text-center text-meta t-faint">
-            {t('shop.opening')}
-          </p>
+          <Loader label={t('shop.opening')} className="py-12" />
         ) : shopError ? (
           /* Says it cannot reach the shop rather than showing an empty one.
              "Nothing matches that" under a failed request sends somebody

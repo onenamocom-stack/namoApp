@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
@@ -64,7 +65,7 @@ export default function UserProfile() {
     return (
       <>
         <TopBar title="Profile" back backTo="/home" />
-        <p className="prose-c">Loading.</p>
+        <Loader />
       </>
     )
   }

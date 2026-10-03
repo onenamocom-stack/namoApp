@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { affiliateLink, myCodes } from '../lib/referrals.js'
 import { fetchProducts } from '../lib/shop.js'
@@ -84,7 +85,7 @@ export default function ProAffiliate() {
 
       <Section label="Your code" tight>
         {code === null ? (
-          <p className="prose-c">Loading.</p>
+          <Loader />
         ) : (
           <>
             <button

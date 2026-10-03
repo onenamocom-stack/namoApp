@@ -23,6 +23,7 @@
 -- any Django migration that touches `profiles`. Passing is silence.
 
 alter table public.profiles alter column video_enabled  set default false;
+alter table public.profiles alter column influencer     set default false;  -- 4 Oct 2026, profiles/0004
 alter table public.profiles alter column admin          set default false;
 alter table public.profiles alter column birth_time_known set default false;
 alter table public.profiles alter column created_at     set default now();

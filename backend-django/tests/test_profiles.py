@@ -151,6 +151,8 @@ class TestMeRead:
             "video_enabled", "blocked",
             # 30 Sep: asked at sign-up.
             "gender",
+            # 3 Oct: the Influencer tab is drawn off it.
+            "influencer",
         }
         assert body["id"] == TEST_USER
         assert body["phone"] == "+919999900001"

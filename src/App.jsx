@@ -30,6 +30,7 @@ import ProStudio from './pro/ProStudio.jsx'
 import ProConsult from './pro/ProConsult.jsx'
 import ProProfile from './pro/ProProfile.jsx'
 import ProApply from './pro/ProApply.jsx'
+import Support from './screens/Support.jsx'
 import ProPayoutDetails from './pro/ProPayoutDetails.jsx'
 import ProAffiliate from './pro/ProAffiliate.jsx'
 
@@ -169,6 +170,8 @@ function SessionGate() {
       // opens /chart?name=… for a booking, ProProfile previews /consult/:id.
       // Bounced to the studio from 20 Sep until 29 Sep.
       if (pathname === '/chart' || pathname.startsWith('/consult/')) return
+      // Help and support, shared with the seeker app (3 Oct 2026).
+      if (pathname === '/support') return
 
       const authStep =
         pathname.startsWith('/onboarding/name') ||
@@ -208,7 +211,9 @@ function SessionGate() {
       return
     }
     const fromPro = pathname === '/chart' || pathname.startsWith('/consult/')
-    if (pathname.startsWith('/onboarding') || fromPro) return
+    // Support stays open signed out: the person who cannot sign in is the
+    // one who most needs the phone number.
+    if (pathname.startsWith('/onboarding') || fromPro || pathname === '/support') return
     navigate('/onboarding', { replace: true })
   }, [
     session,
@@ -274,6 +279,7 @@ function Frame() {
                 <Route path="/profile/:tab" element={<Profile />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="/horoscope" element={<Horoscope />} />
                 <Route path="/ask" element={<Ask />} />
                 <Route path="/chart" element={<Chart />} />
@@ -323,6 +329,7 @@ function Frame() {
                 <Route path="/onboarding/verify" element={<VerifyOtp />} />
                 <Route path="/chart" element={<Chart />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
+                <Route path="/support" element={<Support />} />
               </>
             )}
           </Route>
@@ -375,10 +382,12 @@ function Frame() {
         </Routes>
 
         {/* Global overlays — above every screen, inside the phone frame.
-            The ask drawer, cart sheet and cart button are seeker-only; a
-            consultant build never opens them, and they self-gate on store
-            state nothing on that side sets. */}
-        {!isPro && <ChatPanel />}
+            The chat panel mounts in BOTH builds: it is the consultant's only
+            chat screen too (Consult → Chat, the header's Messages button and
+            "Open chat" all call openChat). It was seeker-only from the build
+            split on 19 Sep until 3 Oct 2026, so in the consultant app every
+            one of those did nothing. The cart sheet stays seeker-only. */}
+        <ChatPanel />
         {!isPro && <CartSheet />}
         <Toast message={toast} />
       </div>

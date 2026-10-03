@@ -1,3 +1,4 @@
+import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
@@ -48,7 +49,9 @@ export default function ChatPanel() {
 
       {/* The panel itself. Full height, hard left edge, no blur — the sheet
           slides on one axis and stops, per the linear-motion rule. */}
-      <aside className="glass-panel relative flex h-full w-[88%] max-w-[380px] animate-slide-in flex-col border-l border-stroke">
+      {/* Solid white since 3 Oct 2026: `glass-panel` over the dark scrim read
+          as grey, the same failure the Tarot dialog had. */}
+      <aside className="relative flex h-full w-[88%] max-w-[380px] animate-slide-in flex-col border-l border-stroke bg-white shadow-xl">
         <header className="flex-none border-b border-stroke">
           <div className="flex items-center justify-between px-4 py-3">
             <p className="caps t-heading">Messages</p>
@@ -370,7 +373,7 @@ function Thread({ thread, myId, onBack }) {
         </div>
       )}
 
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="cosmic-dawn no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {messages.map((m) => (
           <Bubble
             key={m.id}
@@ -444,7 +447,7 @@ function Alerts() {
   }, [items])
 
   if (items === null) {
-    return <p className="animate-breathe px-4 py-6 text-meta t-faint">Loading.</p>
+    return <Loader />
   }
 
   if (!items.length) {
@@ -502,8 +505,8 @@ function Bubble({ mine, text, time }) {
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <div className="max-w-[85%]">
         <div
-          className={`border px-3 py-2.5 text-meta ${
-            mine ? 'rounded-2xl rounded-br-md bg-ink on-ink shadow-sm' : 'rounded-2xl rounded-bl-md bg-surface t-sub shadow-sm'
+          className={`px-3 py-2.5 text-meta ${
+            mine ? 'bubble-mine rounded-2xl rounded-br-md' : 'bubble-theirs rounded-2xl rounded-bl-md'
           }`}
         >
           {text}

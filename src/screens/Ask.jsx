@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
+import { Loader, Orbit, Stars } from '../components/Cosmos.jsx'
 import useAskAi from '../components/useAskAi.js'
 import SubjectForm from '../components/SubjectForm.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -34,8 +35,11 @@ export default function Ask() {
   const price = pricePaise ? `₹${rupees(pricePaise)}` : ''
   const empty = !loading && messages.length === 0
 
+  /* The dawn wash and a few stars behind the conversation, and your own
+     messages in saffron: the sign-up reveal's palette, softened (3 Oct). */
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="cosmic-dawn relative flex min-h-full flex-col">
+      <Stars />
       <TopBar
         title={t('tool.ai')}
         back
@@ -47,11 +51,12 @@ export default function Ask() {
         }
       />
 
-      <div className="flex-1 px-4 pt-4">
-        {loading && <p className="py-10 text-center text-meta t-faint">{t('ask.opening')}</p>}
+      <div className="relative flex-1 px-4 pt-4">
+        {loading && <Loader label={t('ask.opening')} />}
 
         {empty && (
-          <div className="flex flex-col items-center pt-16 text-center">
+          <div className="flex flex-col items-center pt-12 text-center">
+            <Orbit size={72} className="mb-6" />
             <p className="text-title font-semibold t-heading">{t('ask.title')}</p>
             <p className="mt-2 text-meta t-faint">{t('ask.sub')}</p>
             <div className="mt-8 flex w-full flex-col gap-2">
@@ -60,7 +65,7 @@ export default function Ask() {
                   key={s.id}
                   type="button"
                   onClick={() => send(s.text)}
-                  className="rounded-2xl border border-rule px-4 py-3 text-left text-meta t-body transition-colors hover:bg-surface2"
+                  className="bubble-theirs rounded-2xl px-4 py-3 text-left text-meta transition-colors hover:bg-surface"
                 >
                   {s.text}
                 </button>
@@ -74,9 +79,7 @@ export default function Ask() {
             <li key={m.id} className={`flex ${m.role === 'model' ? 'justify-start' : 'justify-end'}`}>
               <p
                 className={`max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-body ${
-                  m.role === 'model'
-                    ? 'rounded-bl-md bg-surface2 t-body'
-                    : 'rounded-br-md bg-gold-fill text-ink'
+                  m.role === 'model' ? 'bubble-theirs rounded-bl-md' : 'bubble-mine rounded-br-md'
                 }`}
               >
                 {m.text}
@@ -85,8 +88,9 @@ export default function Ask() {
           ))}
           {thinking && (
             <li className="flex justify-start">
-              <p className="animate-breathe rounded-2xl rounded-bl-md bg-surface2 px-4 py-2.5 text-body t-faint">
-                …
+              <p className="bubble-theirs flex items-center gap-2.5 rounded-2xl rounded-bl-md px-4 py-2.5 text-meta t-faint">
+                <Orbit size={22} />
+                {t('ask.thinking')}
               </p>
             </li>
           )}

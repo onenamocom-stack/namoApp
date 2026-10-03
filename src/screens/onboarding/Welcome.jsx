@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon.jsx'
 import { Button } from '../../components/Primitives.jsx'
 import { LANGS } from '../../data/i18n.js'
+import { SIGNUP_REF_KEY, looksLikeReferral } from '../../lib/referrals.js'
 import { supabase } from '../../lib/supabase.js'
 import { PRO_APP_URL } from '../../lib/urls.js'
 import { useStore } from '../../store.jsx'
@@ -37,8 +38,23 @@ const PROMISES = [
 export default function Welcome() {
   const navigate = useNavigate()
   const { t, lang, setLang, session, profile, profileLoading, setBirthField } = useStore()
+  const [params] = useSearchParams()
   const [digits, setDigits] = useState('')
   const [phone, setPhone] = useState('') // set once a code has been sent
+
+  /* A sign-up link (`/#/onboarding?ref=N…`, what an influencer or a friend
+     shares) carries their code. Kept for this visit and filled in on the
+     details page, where it is claimed (3 Oct 2026). Only seeker codes: an A
+     code is a shop coupon and belongs to the cart. */
+  useEffect(() => {
+    const ref = (params.get('ref') || '').trim().toUpperCase()
+    if (!looksLikeReferral(ref) || !ref.startsWith('N')) return
+    try {
+      sessionStorage.setItem(SIGNUP_REF_KEY, ref)
+    } catch {
+      /* storage off: the code can still be typed */
+    }
+  }, [params])
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -277,6 +293,10 @@ export default function Welcome() {
         <a href={PRO_APP_URL} className="mt-3 inline-block text-[12px] text-t3 underline">
           {t('w.consultant')}
         </a>
+        {/* Before an account exists is when a phone number helps most. */}
+        <Link to="/support" className="mt-2 block text-[12px] text-t3 underline">
+          {t('sup.title')}
+        </Link>
       </div>
     </div>
   )

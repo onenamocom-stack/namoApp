@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
@@ -282,7 +283,7 @@ export default function Bhakti() {
 
       <section className="px-4 pb-4 pt-5">
         {assets === null ? (
-          <p className="animate-breathe py-10 text-center caps-sm t-faint">Loading</p>
+          <Loader />
         ) : failed ? (
           <PopCard className="p-5">
             <p className="text-body t-heading">Could not reach the library.</p>

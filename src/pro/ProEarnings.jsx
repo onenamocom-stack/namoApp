@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { answerRatePct, earningsSeries, insights, proMetrics, referrals, warnings } from '../data/mock.js'
@@ -188,7 +189,7 @@ function Earnings() {
           {failed ? (
             <p className="text-meta t-body">Could not load your earnings. Open this tab again to retry.</p>
           ) : !sum ? (
-            <p className="text-meta t-faint">Adding it up.</p>
+            <Loader label="Adding it up" className="py-4" />
           ) : (
             <>
               <p className="caps-sm t-faint">{title}</p>

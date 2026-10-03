@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { ago, fetchAlerts } from '../lib/notifications.js'
 import { TopBar } from '../components/Chrome.jsx'
@@ -31,7 +32,7 @@ export default function Notifications() {
       <TopBar title="Notifications" back backTo="/profile" sub="History" />
 
       <Section label="Everything so far" last>
-        {items === null && <p className="animate-breathe text-meta text-t3">Loading.</p>}
+        {items === null && <Loader />}
 
         {items && !items.length && (
           <p className="prose-c">

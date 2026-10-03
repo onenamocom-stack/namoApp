@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchOrders } from '../lib/shop.js'
@@ -42,7 +43,7 @@ export default function Orders() {
     <>
       <TopBar title={t('prof.orders')} sub={t('ord.sub')} back backTo="/profile" />
 
-      {orders === null && <p className="animate-breathe prose-c">{t('ord.loading')}</p>}
+      {orders === null && <Loader label={t('ord.loading')} />}
 
       {orders?.length === 0 && (
         <div className="px-5 py-10 text-center">

@@ -96,6 +96,8 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Muhurat | **Real** | `/muhurat`. Six purposes, a month at a time, optionally judged against your own chart. Free |
 | Numerology | **Real** | `/numerology`. The numbers in a name and a birth date, from a second vendor. Free, and the name is the reader's to correct |
 | Notifications | UI | No read state, no deep links |
+| Help and support | **Built** 3 Oct 2026 | `/support` in both apps, signed in or not: call and WhatsApp **+91 99580 40508**, **support@1namo.com**, a "Report a problem" form that writes a pre-filled email or WhatsApp message (topic, account, app, order or session ID), five FAQs. **No ticket system of our own**: the mailbox goes into a helpdesk (Zoho Desk or Freshdesk) for ticket counts and replies — not set up yet |
+| Influencers | **Built** 3 Oct 2026 | A profile flag the console grants. The influencer's ordinary invite code (N…) and a sign-up link `/#/onboarding?ref=N…` that fills it in. A Profile → Influencer tab: people who joined with the code, and of them how many have **paid** (a captured wallet top-up) — this month, last month, all time — plus the latest joins as dates only, never names. **Paid per signup and per paying person, at rates still to be set; views not counted for pay** (owner's call, 3 Oct). Payout itself is not built |
 
 ### Consultant
 

@@ -20,13 +20,17 @@ from .models import Profile
 
 @dj.register(Profile, site=site)
 class ProfileAdmin(dj.ModelAdmin):
-    list_display = ("name", "phone", "video", "standing", "complaints", "created_at")
-    list_filter = ("video_enabled", "admin", "created_at")
+    list_display = (
+        "name", "phone", "video", "is_influencer", "brought", "standing", "complaints", "created_at",
+    )
+    list_filter = ("video_enabled", "influencer", "admin", "created_at")
     search_fields = ("name", "phone", "email")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     list_per_page = 40
-    actions = ("enable_video", "disable_video", "block", "unblock")
+    actions = (
+        "enable_video", "disable_video", "make_influencer", "remove_influencer", "block", "unblock",
+    )
 
     # Everything except the two switches. See the module docstring.
     readonly_fields = (
@@ -60,6 +64,25 @@ class ProfileAdmin(dj.ModelAdmin):
     def video(self, obj):
         return obj.video_enabled
 
+    @dj.display(description="Influencer", boolean=True)
+    def is_influencer(self, obj):
+        return obj.influencer
+
+    @dj.display(description="Brought (this month)")
+    def brought(self, obj):
+        """An influencer's numbers, the same ones their tab shows: people who
+        joined with their code, and how many of those have paid. Filter the
+        list by Influencer to see them all."""
+        if not obj.influencer:
+            return "—"
+        from apps.referrals.influencer import totals_for
+
+        t = totals_for([obj.pk])[obj.pk]
+        return (
+            f"{t['signups']} joined · {t['buyers']} paid "
+            f"({t['month_signups']} · {t['month_buyers']})"
+        )
+
     @dj.display(description="Standing")
     def standing(self, obj):
         return "Blocked" if obj.blocked_at else "OK"
@@ -90,6 +113,19 @@ class ProfileAdmin(dj.ModelAdmin):
         them in the astrologer list, and gives them no rate card."""
         self._switch(request, queryset, "video enabled",
                      lambda r: services.set_video_enabled(r.pk, True))
+
+    @dj.action(description="Make influencer — adds the Influencer tab and its numbers")
+    def make_influencer(self, request, queryset):
+        """Owner's request, 3 Oct 2026: an influencer sees how many people
+        joined with their code and how many of those paid. Their code is the
+        N invite code they already have; this flag only turns on the tab."""
+        self._switch(request, queryset, "made influencer",
+                     lambda r: services.set_influencer(r.pk, True))
+
+    @dj.action(description="Remove influencer")
+    def remove_influencer(self, request, queryset):
+        self._switch(request, queryset, "influencer removed",
+                     lambda r: services.set_influencer(r.pk, False))
 
     @dj.action(description="Revoke video")
     def disable_video(self, request, queryset):

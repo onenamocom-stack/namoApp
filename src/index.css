@@ -895,6 +895,60 @@
   }
 }
 
+/* ── The kundli sky, beyond sign-up (3 Oct 2026) ──────────────────────────
+   The one-time reveal (onboarding/Computing.jsx) was the screen the owner
+   liked most, so its palette and motion now carry the app's waiting and
+   talking moments: the turning ring is every loader (components/Cosmos.jsx),
+   the dawn wash sits behind both chats, and your own messages are saffron.
+   Text pages stay plain so it stays special. */
+@keyframes namo-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes namo-orbit-back {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes namo-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Behind a chat: the reveal's saffron, thinned to a morning wash. */
+.cosmic-dawn {
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 160, 94, 0.22) 0%, rgba(255, 160, 94, 0) 70%),
+    radial-gradient(80% 40% at 100% 100%, rgba(142, 68, 173, 0.07) 0%, rgba(142, 68, 173, 0) 70%),
+    var(--bg);
+}
+
+/* The reveal's sky itself, for the few dark moments. */
+.cosmic-night {
+  background: radial-gradient(130% 90% at 50% 20%, #f5782c 0%, #c2410c 38%, #7c2d12 72%, #431407 100%);
+  color: #fff;
+}
+
+/* Your own message: saffron, lit at the top like the buttons. */
+.bubble-mine {
+  background: linear-gradient(160deg, #ffa05e 0%, #f5782c 100%);
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(245, 120, 44, 0.7);
+}
+/* Theirs, or Namo AI's: white paper with a hairline. */
+.bubble-theirs {
+  background: #fff;
+  color: var(--text-2);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 4px 12px -8px rgba(17, 17, 17, 0.18);
+}
+
 @keyframes rise {
   from {
     opacity: 0;

@@ -1,3 +1,4 @@
+import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { fetchFeed } from '../lib/content.js'
@@ -49,7 +50,7 @@ export default function Article() {
     return (
       <>
         <TopBar title="Article" back backTo="/home" />
-        <p className="prose-c">Loading.</p>
+        <Loader />
       </>
     )
   }

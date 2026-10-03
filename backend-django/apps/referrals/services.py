@@ -189,6 +189,13 @@ def claim_signup(referee_id, code, now=None):
         return {"ok": False, "reason": REFUSAL_ALREADY_REFERRED}
 
     _notify_referrer(referral, referrer)
+    # First touch, so "how many came by referral" has an answer. Nothing
+    # wrote attribution before 3 Oct 2026; get_or_create keeps the first
+    # source if anything ever recorded one earlier.
+    from apps.analytics.models import Source
+    from apps.analytics.services import remember_first_touch
+
+    remember_first_touch(referee_id, Source.REFERRAL, referrer_id=row.profile_id)
     return {"ok": True, "referral_id": str(referral.id), "you": referee,
             "them": referrer}
 
