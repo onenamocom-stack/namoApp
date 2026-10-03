@@ -1,3 +1,4 @@
+import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
@@ -194,10 +195,13 @@ export default function ConsultantProfile() {
             intro clip. The identity block leads instead. */}
         <section className="px-5 pb-6 pt-6">
           <div className="flex items-start gap-4">
-            <Avatar initials={c.initials} size={76} />
+            <TierRing count={c.sessionsDone} size={76}>
+              <Avatar initials={c.initials} size={76} />
+            </TierRing>
             <div className="min-w-0 flex-1 pt-1">
               <h1 className="truncate text-lead font-semibold t-heading">{c.name}</h1>
               <p className="mt-0.5 truncate text-meta t-body">{c.specialization}</p>
+              <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
 
               {/* Rating, reviews, experience and followers as one small line
                   under the name, the way a social profile reads them. They

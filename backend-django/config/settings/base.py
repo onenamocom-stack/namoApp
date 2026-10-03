@@ -171,6 +171,14 @@ R2_PRIVATE_BUCKET = os.environ.get("R2_PRIVATE_BUCKET", "")
 MEDIA_PROVIDER = os.environ.get("MEDIA_PROVIDER", "local")
 MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.example.com")
 
+# --- Payout details at rest (3 Oct 2026) ---
+# A Fernet key (32 url-safe base64 bytes) that encrypts consultants' PAN and
+# bank account numbers in `payout_details`. Its own secret, never derived
+# from DJANGO_SECRET_KEY: rotating that one must not make bank details
+# unreadable. Unset, payout details cannot be SAVED (the API refuses with a
+# 503) — nothing is ever written in the clear.
+PAYOUT_ENCRYPTION_KEY = os.environ.get("PAYOUT_ENCRYPTION_KEY", "")
+
 # --- Astro provider (docs/07 §6 step 3; the upstream key is server-side only,
 # rule 7 — it never appears in a response body) ---
 # "freeastroapi" in prod (needs FREE_ASTRO_API_KEY); "mock" elsewhere — a

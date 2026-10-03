@@ -611,6 +611,17 @@ A weekday derived in the browser is the trap here: an IST-anchored midnight is
 half past six the previous evening in UTC, so reading the day off it is a day
 early. Anchor at noon.
 
+### Personal financial data
+
+A consultant's PAN and bank account number are encrypted at rest (Fernet,
+`PAYOUT_ENCRYPTION_KEY`, set on both `namo-api` and `namo-console`; never
+derived from `DJANGO_SECRET_KEY`, so rotating that does not lose them).
+Without the key the API refuses to save rather than store plaintext. The app
+gets the last four characters only; the console decrypts for the Finance tier
+alone. The PAN card and cheque photos are private-bucket documents, opened
+through ten-minute signed links. **Losing the key loses every stored number**,
+so it is kept outside Cloud Run as well.
+
 ### Text and i18n
 
 `utf8` throughout. Devanagari and IAST-with-diacritics are stored verbatim and

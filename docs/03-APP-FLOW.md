@@ -726,6 +726,23 @@ are still `mock.js`.
 ### `/pro/profile`
 Mirrors the public consultant page and links to it rather than rebuilding it.
 Content grid, insights, reviews, settings. **Switch to seeking → `/home`.**
+Under the bio, the milestone ladder: paid sessions given and how many more to
+the next tier and to 1000. Settings → **Payout details** → `/pro/payout-details`.
+
+### `/pro/payout-details`
+PAN and bank account. With nothing saved, the form: PAN, name on PAN, PAN card
+photo, account holder, account number twice, IFSC (the bank and branch are
+looked up and shown under it), cheque or passbook photo, optional UPI ID.
+**Send for checking** saves and shows the summary: last four digits only,
+status (sent, verified, or sent back with Finance's reason). **Change details**
+opens the form again with both numbers and both photos empty — they never come
+back from the server, and a change is checked again.
+
+### Milestone congratulation (consultant app)
+When the consultant's paid sessions cross a tier this device has not
+celebrated, a dialog over whatever screen is open: the tier, "Congratulations",
+what was reached and what is next. **Keep going** closes it for good on that
+device. Only the highest tier crossed is shown.
 
 ---
 

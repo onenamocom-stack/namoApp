@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from rest_framework import serializers
@@ -9,9 +10,12 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_409_CONFLICT
 from apps.core.views import refusal_body
 
 from . import earnings as earnings_reads
+from . import payout_details
 from . import services
 from .models import Booking
 from .services import AlreadyApplied
+
+logger = logging.getLogger(__name__)
 
 
 class ServiceRow(serializers.Serializer):
@@ -58,6 +62,8 @@ def _consultant_row(consultant, service_rows):
         "online": bool(getattr(consultant, "online", False)),
         "rating_avg_cache": consultant.rating_avg_cache,
         "rating_count_cache": consultant.rating_count_cache,
+        # Paid sessions given — the milestone badges read it (3 Oct 2026).
+        "sessions_done": getattr(consultant, "sessions_done", 0),
         "services": service_rows,
     }
 
@@ -222,9 +228,36 @@ def me(request):
             "verified": consultant.verified,
             "rating_avg_cache": consultant.rating_avg_cache,
             "rating_count_cache": consultant.rating_count_cache,
+            "sessions_done": services.sessions_done(consultant.profile_id),
             "created_at": consultant.created_at,
         }
     )
+
+
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def my_payout_details(request):
+    """The caller's PAN and bank account (payouts P2). GET never returns a
+    full number; PUT replaces the details and sends them back for a check.
+    The input is validated field by field so the form can point at the one
+    that is wrong."""
+    consultant = services.my_consultant(request.user.pk)
+    if consultant is None:
+        return Response(
+            refusal_body("not_consultant", "No practice on this account."), status=404
+        )
+    if request.method == "GET":
+        return Response(payout_details.read(consultant.profile_id))
+    try:
+        return Response(payout_details.save(consultant, request.data))
+    except payout_details.Refused as exc:
+        return Response(refusal_body("invalid", str(exc), field=exc.field), status=400)
+    except payout_details.NotOpen:
+        logger.error("payout details refused: PAYOUT_ENCRYPTION_KEY is not set")
+        return Response(
+            refusal_body("not_open", "Payout details cannot be saved yet. Try again later."),
+            status=503,
+        )
 
 
 class ApplyInput(serializers.Serializer):

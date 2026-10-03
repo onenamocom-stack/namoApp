@@ -1,3 +1,4 @@
+import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { categories, SESSION } from '../data/mock.js'
@@ -530,9 +531,12 @@ export default function Consult() {
         <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
           {featured.map((c) => (
             <div key={c.id} className="pop-card w-36 flex-none p-3.5 text-center">
-              <PopAvatar initials={c.initials} size={64} online={c.online} className="mx-auto" />
+              <TierRing count={c.sessionsDone} size={64} className="mx-auto">
+                <PopAvatar initials={c.initials} size={64} online={c.online} />
+              </TierRing>
               <p className="mt-2.5 truncate text-meta t-heading">{c.name}</p>
               <p className="mt-0.5 truncate caps-sm t-faint">{c.specialization.split(' · ')[0]}</p>
+              <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
               <div className="mt-2 flex items-center justify-between">
                 <span className="caps-sm gold tnum">{c.rating}</span>
                 <span className="text-meta t-heading tnum">₹{rupees(c.pricePaise)}</span>
@@ -565,7 +569,9 @@ export default function Consult() {
                 to={`/consult/${c.id}`}
                 className="flex items-start gap-4 transition-opacity hover:opacity-60"
               >
-                <PopAvatar initials={c.initials} size={56} online={c.online} />
+                <TierRing count={c.sessionsDone} size={56}>
+                  <PopAvatar initials={c.initials} size={56} online={c.online} />
+                </TierRing>
 
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
@@ -580,6 +586,9 @@ export default function Consult() {
                     </span>
                   </span>
                   <span className="mt-0.5 block truncate text-meta text-t3">{c.specialization}</span>
+                  {c.sessionsDone > 0 && (
+                    <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
+                  )}
                   <span className="mt-1.5 flex items-center gap-2 text-micro uppercase tracking-caps text-t3 tnum">
                     <span className="gold">{c.rating ?? t('con.new')}</span>
                     <span aria-hidden="true">·</span>

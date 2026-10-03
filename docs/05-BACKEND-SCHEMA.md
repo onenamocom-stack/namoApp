@@ -1249,11 +1249,43 @@ that legally have to be deleted along with anything derived from them.
 **Open:** the 48 Bhaktamar card faces in `public/cards/` carry no attribution at
 all. Same `NOT NULL` rule applies and someone has to say where they came from.
 
+### 5.2f `payout_details` — a consultant's PAN and bank account (3 Oct 2026)
+
+```sql
+create table payout_details (
+  consultant_id     uuid primary key references consultants(profile_id) on delete cascade,
+  pan_cipher        text not null,        -- Fernet, PAYOUT_ENCRYPTION_KEY
+  pan_last4         varchar(4) not null,
+  pan_name          text not null,
+  account_holder    text not null,
+  account_cipher    text not null,        -- Fernet, PAYOUT_ENCRYPTION_KEY
+  account_last4     varchar(4) not null,
+  ifsc              varchar(11) not null,
+  upi_id            text not null default '',
+  pan_doc_asset_id  uuid,                 -- media_assets, kind 'document' (private bucket)
+  bank_doc_asset_id uuid,                 -- cancelled cheque or passbook page
+  status            varchar(16) not null default 'submitted'
+                    check (status in ('submitted','verified','rejected')),
+  review_note       text not null default '',
+  submitted_at      timestamptz not null default now(),
+  reviewed_at       timestamptz,
+  reviewed_by       text not null default ''
+);
+alter table payout_details enable row level security;  -- no policies
+```
+
+Migration `consultants/0004_payout_details`. One row per consultant, replaced
+whole by `PUT /v1/consultants/me/payout-details/`, which sends it back to
+`submitted`; only Finance moves it on, in the console. The PAN and account
+number exist only as ciphertext plus their last four. `sessions_done` on the
+consultant rows is not a column: it is a count of `sessions` that ended with
+`charged_paise > 0`, computed per read.
+
 ### 5.6 Remaining
 
 `tarot_pulls` (the real rolling-seven-day window, replacing two booleans in a
 browser `Set`) · ~~`entitlements`~~ (built 30 Sep 2026, §5.2c) · `notifications` · `referrals` ·
-`payouts` · `kyc_documents` · `products` · `courses` · `academy_events` ·
+`payouts` · ~~`kyc_documents`~~ (PAN and bank photos are `payout_details`, §5.2f) · `products` · `courses` · `academy_events` ·
 `downloads` · `deities` · `tarot_decks` · `tarot_cards` · `ask_messages` ·
 `sessions` (joined_at, left_at, actual_mins — what admin item 9 measures).
 

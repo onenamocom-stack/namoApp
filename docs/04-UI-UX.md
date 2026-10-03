@@ -91,6 +91,13 @@ against*:
 | `--text-3` | `#687080` | 4.8:1 | The readable floor |
 | `--text-4` | `#b5bac4` | 2.0:1 | **Non-text only** — ticks, rules, spokes, placeholders |
 
+**Milestone tiers** (3 Oct 2026) have their own five hues, used only for the
+ring around a consultant's avatar, the badge, and the ladder:
+`--tier-1` green · `--tier-10` blue · `--tier-100` saffron · `--tier-500`
+purple · `--tier-1000` gold, the top and the only gradient ring. Each has an
+`-ink` twin dark enough for 11px badge text on its own 14% wash. No ring at
+all below the first paid session.
+
 The opacity ladder is solid slate now: `.t-heading` = `--text`, `.t-sub`
 `#3f4653`, `.t-body` = `--text-2`, `.t-faint` `#858c99` (3.3:1, asides only).
 A `Kicker` (a section heading like "Today's reading") is `.t-heading`;

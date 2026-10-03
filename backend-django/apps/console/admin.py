@@ -8,16 +8,18 @@ analytics all have workarounds; this one does not.
 """
 
 from django.contrib import admin as dj, messages
+from django.utils import timezone
 from django.utils.html import format_html
 
-from apps.consultants.models import Consultant
+from apps.consultants import payout_details as payout_crypto
+from apps.consultants.models import Consultant, PayoutDetails, PayoutDetailsStatus
 from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
 
 from .audit import AuditedAdmin, record
 from .models import AdminAction, AdminUser, Tier
-from .site import at_least, site
+from .site import admin_row, at_least, site
 
 
 @dj.register(Consultant, site=site)
@@ -134,6 +136,126 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         if not at_least(request, Tier.FULFILMENT):
             return self.message_user(request, "Not your tier.", messages.ERROR)
         self._set_status(request, queryset, Consultant.Status.APPROVED, "unblock")
+
+
+def _signed_document(asset_id, label):
+    """A ten-minute link to a private-bucket document, or why there is none
+    — the certificate's rule, for any document."""
+    if not asset_id:
+        return "—"
+    asset = MediaAsset.objects.filter(pk=asset_id).first()
+    if asset is None:
+        return "the file is gone"
+    try:
+        url = get_provider().presign_get(asset.bucket_key, bucket_for(asset.kind))
+    except Exception as exc:  # noqa: BLE001 — a broken link is not a broken page
+        return f"cannot sign a link right now ({type(exc).__name__})"
+    return format_html(
+        '<a href="{}" target="_blank" rel="noopener">Open the {}</a>'
+        "<br><small>expires in ten minutes · {}</small>",
+        url, label, asset.mime,
+    )
+
+
+@dj.register(PayoutDetails, site=site)
+class PayoutDetailsAdmin(AuditedAdmin, dj.ModelAdmin):
+    """Payout details waiting for a check (payouts P2, 3 Oct 2026).
+
+    Finance only: this page shows the PAN and account number in full,
+    decrypted on view, because checking them against the photos is the job.
+    Nothing else in the console or the app ever shows them. To verify,
+    compare the typed details with both photos and use the action; to send
+    them back, write the reason in the review note, save, then use Reject.
+    """
+
+    audit_target = "payout_details"
+    list_display = ("who", "status", "pan_name", "account_holder", "bank", "submitted_at")
+    list_filter = ("status",)
+    ordering = ("-submitted_at",)
+    fields = (
+        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "ifsc",
+        "upi_id", "pan_document", "bank_document", "review_note",
+        "submitted_at", "reviewed_at", "reviewed_by",
+    )
+    readonly_fields = (
+        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "ifsc",
+        "upi_id", "pan_document", "bank_document", "submitted_at", "reviewed_at", "reviewed_by",
+    )
+    actions = ("verify", "reject")
+    list_per_page = 50
+
+    @dj.display(description="Consultant")
+    def who(self, obj):
+        p = Profile.objects.filter(pk=obj.consultant_id).only("name", "phone").first()
+        if p is None:
+            return str(obj.consultant_id)
+        return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
+
+    @dj.display(description="Bank")
+    def bank(self, obj):
+        return f"{obj.ifsc} ••{obj.account_last4}"
+
+    @dj.display(description="PAN")
+    def pan_full(self, obj):
+        return payout_crypto.decrypt(obj.pan_cipher) or f"cannot decrypt (ends {obj.pan_last4})"
+
+    @dj.display(description="Account number")
+    def account_full(self, obj):
+        return payout_crypto.decrypt(obj.account_cipher) or f"cannot decrypt (ends {obj.account_last4})"
+
+    @dj.display(description="PAN card photo")
+    def pan_document(self, obj):
+        return _signed_document(obj.pan_doc_asset_id, "PAN card")
+
+    @dj.display(description="Cheque or passbook photo")
+    def bank_document(self, obj):
+        return _signed_document(obj.bank_doc_asset_id, "cheque or passbook")
+
+    def _review(self, request, queryset, status, verb):
+        if not at_least(request, Tier.FINANCE):
+            return self.message_user(request, "Not your tier.", messages.ERROR)
+        who = getattr(admin_row(request), "profile_id", "") or request.user.get_username()
+        moved = 0
+        for details in queryset:
+            if status == PayoutDetailsStatus.REJECTED and not details.review_note.strip():
+                self.message_user(
+                    request,
+                    "Write the reason in the review note and save before rejecting.",
+                    messages.ERROR,
+                )
+                continue
+            was = details.status
+            PayoutDetails.objects.filter(pk=details.pk).update(
+                status=status, reviewed_at=timezone.now(), reviewed_by=str(who)
+            )
+            record(request, f"payout_details.{verb}", "payout_details",
+                   target_id=details.consultant_id, was=was, now=status)
+            moved += 1
+        if moved:
+            self.message_user(request, f"{moved} {verb}.", messages.SUCCESS)
+
+    @dj.action(description="Verify — details match both photos")
+    def verify(self, request, queryset):
+        self._review(request, queryset, PayoutDetailsStatus.VERIFIED, "verified")
+
+    @dj.action(description="Reject — send back with the review note")
+    def reject(self, request, queryset):
+        self._review(request, queryset, PayoutDetailsStatus.REJECTED, "rejected")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
 
 
 @dj.register(AdminUser, site=site)

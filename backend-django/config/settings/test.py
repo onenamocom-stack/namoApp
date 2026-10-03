@@ -43,3 +43,7 @@ CACHES = {
         "LOCATION": "namo-test",
     }
 }
+
+
+# A fixed throwaway key so payout-details tests can encrypt (never used anywhere real).
+PAYOUT_ENCRYPTION_KEY = "dGVzdC1vbmx5LWtleS1mb3ItcGF5b3V0cy0xMjM0NTY="

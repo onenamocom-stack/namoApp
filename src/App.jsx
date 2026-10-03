@@ -1,3 +1,4 @@
+import { MilestoneCelebration } from './components/Milestones.jsx'
 import { useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
@@ -29,6 +30,7 @@ import ProStudio from './pro/ProStudio.jsx'
 import ProConsult from './pro/ProConsult.jsx'
 import ProProfile from './pro/ProProfile.jsx'
 import ProApply from './pro/ProApply.jsx'
+import ProPayoutDetails from './pro/ProPayoutDetails.jsx'
 import ProAffiliate from './pro/ProAffiliate.jsx'
 
 import Profile from './screens/Profile.jsx'
@@ -234,6 +236,8 @@ function Frame() {
     <div className="flex min-h-[100dvh] w-full justify-center bg-ink">
       <div className="relative flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden bg-bg text-t1">
         <SessionGate />
+        {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
+        {isPro && <MilestoneCelebration />}
         <Routes>
           <Route
             path="/"
@@ -348,6 +352,7 @@ function Frame() {
               <Route path="/pro/earnings" element={<ProEarnings />} />
               <Route path="/pro/studio" element={<ProStudio />} />
               <Route path="/pro/affiliate" element={<ProAffiliate />} />
+              <Route path="/pro/payout-details" element={<ProPayoutDetails />} />
               <Route path="/pro/consult" element={<ProConsult />} />
               {/* Profile carries its tab in the URL too, same reason as the
                   seeker's — Earnings needs to stay deep-linkable now that it

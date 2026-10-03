@@ -242,6 +242,37 @@ def _name_expr(outer_field):
     return profile_services.name_subquery(outer_field)
 
 
+def _paid_sessions(consultant_ref):
+    from apps.chat.models import Session, SessionStatus
+
+    return Session.objects.filter(
+        consultant_id=consultant_ref, status=SessionStatus.ENDED, charged_paise__gt=0
+    )
+
+
+def sessions_done_expr(outer_field="profile_id"):
+    """How many paid sessions this consultant has given — chat, call and
+    video alike, the one `sessions` table both meters write (3 Oct 2026, for
+    the milestone badges). A session counts once it ended with a charge:
+    declined, expired and never-connected rows have no charge. Bookings are
+    not counted, because nothing marks one completed yet."""
+    from django.db.models import Count, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    counted = (
+        _paid_sessions(OuterRef(outer_field))
+        .order_by()
+        .values("consultant_id")
+        .annotate(n=Count("id"))
+        .values("n")[:1]
+    )
+    return Coalesce(Subquery(counted), 0)
+
+
+def sessions_done(consultant_id):
+    return _paid_sessions(consultant_id).count()
+
+
 def public_consultants():
     """`consultants_public` (007) as a queryset: the approved rows with the
     profile name joined. The view's own WHERE is the access control — an
@@ -249,7 +280,11 @@ def public_consultants():
     safe columns plus the name."""
     return (
         Consultant.objects.filter(status=ConsultantStatus.APPROVED)
-        .annotate(name=_name_expr("profile_id"), online=online_expr())
+        .annotate(
+            name=_name_expr("profile_id"),
+            online=online_expr(),
+            sessions_done=sessions_done_expr(),
+        )
         .order_by(F("rating_avg_cache").desc(nulls_last=True), "-created_at")
     )
 

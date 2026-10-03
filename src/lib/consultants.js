@@ -135,6 +135,8 @@ function shape(row, services = []) {
     online: row.online === true,
     rating: row.rating_avg_cache,
     reviewCount: row.rating_count_cache,
+    // Paid sessions given — the milestone tier (lib/milestones.js).
+    sessionsDone: row.sessions_done ?? 0,
     fixed,
     perMinute,
     pricePaise: base?.price_paise ?? null,
@@ -347,6 +349,21 @@ export async function earningsSummary(consultantId, range) {
 export async function earningsPage(consultantId, range, offset = 0) {
   const token = await accessToken()
   return api(`/consultants/${consultantId}/earnings/?range=${range}&offset=${offset}&limit=30`, { token })
+}
+
+/** The caller's PAN and bank details (payouts P2, 3 Oct 2026). Never the
+ *  full numbers — `pan_last4`, `account_last4` — and `{status: 'missing'}`
+ *  before the first save. Throws on failure. */
+export async function payoutDetails() {
+  const token = await accessToken()
+  return api('/consultants/me/payout-details/', { token })
+}
+
+/** Replace the details and send them for a check. A refusal carries the
+ *  field it is about on `error.body.field`, so the form can point at it. */
+export async function savePayoutDetails(details) {
+  const token = await accessToken()
+  return api('/consultants/me/payout-details/', { method: 'PUT', token, body: details })
 }
 
 /* ── The caller's own consultant row (this module's cutover additions) ────── */

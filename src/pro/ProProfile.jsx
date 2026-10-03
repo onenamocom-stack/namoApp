@@ -1,3 +1,4 @@
+import { MilestoneBadge, MilestoneLadder, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { TabHeader } from '../components/Chrome.jsx'
@@ -71,10 +72,13 @@ export default function ProProfile() {
           same inline stats line — so the consultant recognises his own page. */}
       <section className="px-5 pb-6 pt-6">
         <div className="flex items-start gap-4">
-          <Avatar initials={me.initials} size={76} />
+          <TierRing count={me.sessionsDone} size={76}>
+            <Avatar initials={me.initials} size={76} />
+          </TierRing>
           <div className="min-w-0 flex-1 pt-1">
             <h1 className="truncate text-lead font-semibold t-heading">{me.name}</h1>
             <p className="mt-0.5 truncate text-meta t-body">{me.specialization}</p>
+            <MilestoneBadge count={me.sessionsDone} side="pro" className="mt-1.5" />
             {/* Every number on this line is now yours. Rating and review count
                 come off the two `_cache` columns a trigger maintains over
                 `reviews`; the follower count is a COUNT of `reactions`. A
@@ -100,6 +104,15 @@ export default function ProProfile() {
         </div>
 
         <p className="mt-4 text-meta leading-relaxed t-sub">{me.bio}</p>
+
+        {/* The ladder to 1000 paid sessions. The ring above and the badge a
+            client sees change colour at each stop (lib/milestones.js). */}
+        <div className="pop-card mt-5 p-4">
+          <p className="caps-sm t-faint">Milestones</p>
+          <div className="mt-2">
+            <MilestoneLadder count={me.sessionsDone} />
+          </div>
+        </div>
 
         <div className="mt-2 flex flex-wrap gap-1.5">
           {me.credentials.map((cr) => (
@@ -290,11 +303,9 @@ function Settings({ me }) {
             title="Languages"
             note={me.languages.join(' · ') || 'Not set'}
           />
-          <Row
-            onClick={() => showToast('Payout settings — prototype only')}
-            title="Payout account"
-            note="HDFC ••4412"
-          />
+          {/* Real since 3 Oct 2026 (payouts P2). It said "HDFC ••4412" to
+              everyone and toasted "prototype only". */}
+          <Row to="/pro/payout-details" title="Payout details" note="PAN and bank account" />
         </div>
       </section>
 

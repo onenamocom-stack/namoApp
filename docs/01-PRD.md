@@ -107,11 +107,13 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Channels — chat / live / call per booking | UI | Chat opens the panel; call toasts |
 | Studio — publish reel / article / go live | UI | Publishes to a toast. **No upload path exists anywhere in the app** |
 | Earnings | `earnings_ledger`, payouts P1 (3 Oct 2026) | Real totals by period: this month, last month, this and last financial year, lifetime; by source; the last seven days. No withdrawing |
-| Payouts | **None** | Monthly on the 7th, designed (see §8), not built |
+| Payouts | **None** | Monthly on the 7th, designed (see §8), not built. The app names no payout date until it is |
+| Payout details — PAN and bank | `payout_details`, 3 Oct 2026 | PAN, name on PAN, account holder, account number, IFSC, optional UPI ID, a photo of the PAN card and of a cancelled cheque or passbook page. Checked by hand by Finance in the console. No Aadhaar: payouts do not need it |
+| Milestone badges | `sessions_done`, 3 Oct 2026 | Paid sessions given — chat, call and video sessions that ended with a charge. Tiers at **1, 10, 100, 500 and 1000**: a coloured ring on the avatar and a badge, seen by clients on cards and the public page and by the consultant on their profile, with a ladder to 1000 and a one-time congratulation at each tier. Bookings do not count until something marks one completed |
 | Performance metrics | UI | Real numbers in mock; needs deriving from sessions and messages |
 | Insights | UI | Fixed |
 | Referrals | UI | Header total disagrees with its own list |
-| KYC | **None** | Legal gate on payouts |
+| KYC | Partial — PAN and bank collected and checked by hand (row above) | Legal gate on payouts. No automatic PAN or bank verification yet |
 | Approval before going live | `consultants.status`, phase 4 | Was: anyone typing a `/pro` URL was a consultant |
 
 ### Admin

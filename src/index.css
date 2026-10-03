@@ -92,6 +92,21 @@
   --live: #d93025;
   --ok: #1e9e5a;
 
+  /* Milestone tiers (3 Oct 2026): a consultant's paid sessions — 1, 10, 100,
+     500, 1000. `--tier-*` rings the avatar and fills the ladder; `-ink` is the
+     same hue dark enough for 11px text on its own wash. Gold is the top and
+     the only gradient. */
+  --tier-1: #2ea56b;
+  --tier-1-ink: #1b7a4c;
+  --tier-10: #2f7fd1;
+  --tier-10-ink: #1f5f9e;
+  --tier-100: #f5782c;
+  --tier-100-ink: #b5500f;
+  --tier-500: #8e44ad;
+  --tier-500-ink: #6d2f88;
+  --tier-1000: #d4a017;
+  --tier-1000-ink: #8a6508;
+
   --sp: 8px;
 }
 

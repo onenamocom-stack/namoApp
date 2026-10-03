@@ -425,3 +425,53 @@ class EarningsLedger(models.Model):
 
     def delete(self, *args, **kwargs):
         self._refuse_mutation()
+
+
+class PayoutDetailsStatus(models.TextChoices):
+    SUBMITTED = "submitted", "Submitted — waiting for a check"
+    VERIFIED = "verified", "Verified"
+    REJECTED = "rejected", "Rejected — consultant must fix"
+
+
+class PayoutDetails(models.Model):
+    """`payout_details` — one row per consultant: PAN and the bank account
+    payouts will go to (3 Oct 2026). The PAN and account number are stored
+    only as Fernet ciphertext plus their last four characters; see
+    `payout_details.py`. The two photos are private-bucket MediaAssets."""
+
+    consultant = models.OneToOneField(
+        Consultant,
+        to_field="profile_id",
+        db_column="consultant_id",
+        primary_key=True,
+        on_delete=models.CASCADE,
+        related_name="payout_details",
+    )
+    pan_cipher = models.TextField()
+    pan_last4 = models.CharField(max_length=4)
+    pan_name = models.TextField()
+    account_holder = models.TextField()
+    account_cipher = models.TextField()
+    account_last4 = models.CharField(max_length=4)
+    ifsc = models.CharField(max_length=11)
+    upi_id = models.TextField(blank=True, default="")
+    pan_doc_asset_id = models.UUIDField(null=True, blank=True)
+    bank_doc_asset_id = models.UUIDField(null=True, blank=True)
+    status = models.CharField(
+        max_length=16, choices=PayoutDetailsStatus.choices, default=PayoutDetailsStatus.SUBMITTED
+    )
+    review_note = models.TextField(blank=True, default="")
+    submitted_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "payout_details"
+        verbose_name = "payout details"
+        verbose_name_plural = "payout details"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=PayoutDetailsStatus.values),
+                name="payout_details_status_valid",
+            ),
+        ]

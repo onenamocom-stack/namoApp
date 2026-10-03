@@ -939,6 +939,8 @@ export function useConsultantFields(services = []) {
        this hook has no consultant id to ask with until `consultant` lands. */
     rating: consultant?.rating_avg_cache ?? null,
     reviewCount: consultant?.rating_count_cache ?? 0,
+    // Paid sessions given — the milestone tier (lib/milestones.js).
+    sessionsDone: consultant?.sessions_done ?? 0,
   }
 }
 

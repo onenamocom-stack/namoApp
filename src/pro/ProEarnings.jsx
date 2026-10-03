@@ -82,13 +82,18 @@ function monthName(iso) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' })
 }
 
-/** What the big number is, in words, and the line under it. */
+/** What the big number is, in words, and the line under it.
+ *
+ *  No payout date until payouts exist (3 Oct 2026). "Payout day 7 Oct"
+ *  four days before anything could pay anyone was a promise the app could
+ *  not keep; `pays_on` comes back from the API and is shown again once a
+ *  payout has actually been made. */
 function heading(s) {
   switch (s.range) {
     case 'this_month':
-      return ['Earned this month', `Payout day ${day(s.pays_on)}, for everything up to ${day(s.to)}.`]
+      return ['Earned this month', `${day(s.from)} to ${day(s.to)}.`]
     case 'last_month':
-      return [`Earned in ${monthName(s.from)}`, `Payout day ${day(s.pays_on)}.`]
+      return [`Earned in ${monthName(s.from)}`, `${day(s.from)} to ${day(s.to)}.`]
     case 'fy':
       return ['Earned this financial year', `${day(s.from, true)} to ${day(s.to, true)}.`]
     case 'last_fy':
@@ -372,13 +377,17 @@ function Earnings() {
 
       {/* ── Payouts ──────────────────────────────────────────────────────
           Nothing is paid yet: sending money is P3. This says how it will
-          work rather than listing transfers that never happened. */}
+          work, without a date, rather than listing transfers that never
+          happened. */}
       <section className="px-5 py-6">
         <Kicker>Payouts</Kicker>
         <p className="mt-3 text-meta t-body">
-          You are paid on the 7th of every month for everything you earned the month before, with
-          TDS deducted. Your payout history appears here from the first payout.
+          Payouts have not started yet. When they do, you are paid once a month for everything you
+          earned the month before, with TDS deducted, into the bank account in your payout details.
         </p>
+        <PopButton variant="ghost" size="sm" className="mt-4" to="/pro/payout-details">
+          Add payout details
+        </PopButton>
       </section>
     </>
   )
