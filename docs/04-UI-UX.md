@@ -305,10 +305,10 @@ banners keep the taller four-part shape — halve them only on the same
 instruction, not for consistency's sake.
 
 **Tiles** — `.tile` · `.tile-face` (58px circle) · `.tile-face-on` ·
-`.plinth` / `.plinth-on`, the puja controls: a white 44px disc with a saffron
-line icon, filled saffron with a white icon when lit or ringing (3 Oct 2026 —
-it was a smoked-glass dark disc over the painting, the one dark control in a
-white app). The bar of them sits under the shrine, not on it.
+`.plinth` / `.plinth-on`, a smoked-glass 44px disc for props sitting **on the
+shrine painting**, where a near-white disc would vanish. Its lit state goes gold
+rather than ink, because the surround is already dark. (A white version in a bar
+under the shrine was tried on 3 Oct 2026 and reverted the same day.)
 
 **Rows and links** — `.act-row` (full-bleed, hover shifts 3px, and its trailing
 arrow is drawn by CSS so no row can ship without one) · `.act-link` (gold,

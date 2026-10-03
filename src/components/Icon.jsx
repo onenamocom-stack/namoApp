@@ -153,58 +153,6 @@ const PATHS = {
       <path d="M18.6 16.4l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7.7-2.2Z" />
     </>
   ),
-  /* ── The puja bar (3 Oct 2026). Same grid, same stroke as the rest, so the
-     shrine's controls read as this app's controls and not as stickers. ── */
-  /* Ghanti — the temple bell: a handle on top, a flared body, the clapper. */
-  ghanti: (
-    <>
-      <path d="M12 2.6v2.6" />
-      <path d="M10.4 5.2h3.2" />
-      <path d="M12 5.2c-3.3 0-5.1 2.9-5.1 6.8v2.4c0 1.3-.8 2.4-1.9 3.2h14c-1.1-.8-1.9-1.9-1.9-3.2V12c0-3.9-1.8-6.8-5.1-6.8Z" />
-      <path d="M12 17.6v1.4" />
-      <circle cx="12" cy="20.3" r="1.1" />
-    </>
-  ),
-  /* Phool — six petals round a centre, the marigold seen from above. */
-  flower: (
-    <>
-      <circle cx="12" cy="12" r="2.3" />
-      {[0, 60, 120, 180, 240, 300].map((a) => (
-        <path key={a} d="M12 9.5c-1.6-2-1.6-4.3 0-6 1.6 1.7 1.6 4 0 6Z" transform={`rotate(${a} 12 12)`} />
-      ))}
-    </>
-  ),
-  /* Diya — the bowl and its flame. */
-  diya: (
-    <>
-      <path d="M3.4 13.6h17.2c0 3.5-3.8 5.9-8.6 5.9s-8.6-2.4-8.6-5.9Z" />
-      <path d="M12 10.8c1.5-1.2 1.4-3.1 0-5.6-1.4 2.5-1.5 4.4 0 5.6Z" />
-    </>
-  ),
-  /* Dhoop — three sticks in a holder, one curl of smoke. */
-  dhoop: (
-    <>
-      <path d="M6.6 20.6h10.8" />
-      <path d="M8.4 20.6l.9-3h5.4l.9 3" />
-      <path d="M12 17.6V7.4M9.8 17.6 8.2 8.2M14.2 17.6l1.6-9.4" />
-      <path d="M12 5.4c-1-.8-1-1.7 0-2.6" />
-    </>
-  ),
-  /* Aarti — a thali with the lamp lit on it. */
-  aarti: (
-    <>
-      <path d="M2.8 16.2c0-1.5 4.1-2.7 9.2-2.7s9.2 1.2 9.2 2.7-4.1 2.7-9.2 2.7-9.2-1.2-9.2-2.7Z" />
-      <path d="M9.2 13.6c0-.9 1.3-1.5 2.8-1.5s2.8.6 2.8 1.5" />
-      <path d="M12 10.2c1.3-1 1.2-2.7 0-4.8-1.2 2.1-1.3 3.8 0 4.8Z" />
-    </>
-  ),
-  music: (
-    <>
-      <path d="M9 18V6l10-2v12" />
-      <circle cx="6.5" cy="18" r="2.5" />
-      <circle cx="16.5" cy="16" r="2.5" />
-    </>
-  ),
   cart: (
     <>
       <path d="M3.2 4.4h2.3l2.4 10.9a1.5 1.5 0 0 0 1.5 1.2h8a1.5 1.5 0 0 0 1.5-1.15l1.6-6.75H6.4" />

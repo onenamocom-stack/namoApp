@@ -365,9 +365,9 @@ A swipe is refused when it starts on a control, because every prop is a button
 and two own gestures already. Under 44px is a tap; an ambiguous diagonal is
 ignored rather than guessed.
 
-Five actions in a white bar under the shrine — Bell, Flowers, Diya, Dhoop,
-Aarti — each an animation and a toast (3 Oct 2026; they were a dark rail on top
-of the painting). The brass on the shrine (bells, diyas, dhoop, thali) is
+Four offerings on a rail down the left of the shrine, each an animation and a
+toast (a white bar under the image was tried on 3 Oct 2026 and taken out the
+same day, the owner's call). The brass on the shrine (bells, diyas, dhoop, thali) is
 photographic since 3 Oct 2026: `public/puja/{ghanti,diya,diya-lit,dhoop,thali}.webp`,
 generated in the owner's Canva account (Canva media MAHW7lUtQCA, MAHW7vzRMhQ,
 MAHW7rZ-rtc, MAHW7g2EYF0, MAHW7pzOLRA — the background-removed cut-outs) and
