@@ -7,6 +7,8 @@ is an affiliate link. A retired product drops off; an unapproved
 consultant's tagged posts leave the feed with the rest of their posts.
 """
 
+from datetime import timedelta
+
 import pytest
 
 from apps.content.models import Content, ContentProduct
@@ -192,7 +194,7 @@ class TestReading:
         assert api_client.get("/v1/content/feed/").json()["results"] == []
 
 
-# ── views (ContentView, once per person) ───────────────────────────────────────────
+# ── views (ContentView, once per person per IST day) ───────────────────────────────────────────
 
 
 @pytest.mark.django_db
@@ -217,6 +219,34 @@ class TestViews:
         assert self._view(api_client, second_seeker_token, cid).json() == {"views": 2}
         row = api_client.get("/v1/content/feed/").json()["results"][0]
         assert row["view_count"] == 2
+
+    def test_the_same_person_counts_again_the_next_day(
+        self, api_client, consultant_token, seeker_token, roster
+    ):
+        from apps.content.models import ContentView
+
+        cid = self._reel(api_client, consultant_token)
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
+        # Yesterday's view, as if this one had been made then.
+        row = ContentView.objects.get(content_id=cid)
+        row.day = row.day - timedelta(days=1)
+        row.save(update_fields=["day"])
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 2}
+        # And today's is still counted once.
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 2}
+
+    def test_the_day_is_ist(self, monkeypatch):
+        from datetime import datetime, timezone as dt_tz
+
+        from django.utils import timezone
+
+        from apps.content.models import ist_today
+
+        # 20:00 UTC is 01:30 the next day in India.
+        monkeypatch.setattr(
+            timezone, "now", lambda: datetime(2026, 10, 3, 20, 0, tzinfo=dt_tz.utc)
+        )
+        assert str(ist_today()) == "2026-10-04"
 
     def test_author_does_not_count(self, api_client, consultant_token, roster):
         cid = self._reel(api_client, consultant_token)

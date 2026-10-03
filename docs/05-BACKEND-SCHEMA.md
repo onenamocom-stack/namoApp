@@ -1090,16 +1090,20 @@ create table content_views (
   id          uuid primary key,
   content_id  uuid not null references content(id) on delete cascade,
   viewer_id   uuid not null,
+  day         date not null,          -- the IST calendar day of the view
   created_at  timestamptz not null default now(),
-  constraint content_views_once unique (content_id, viewer_id)
+  constraint content_views_once_a_day unique (content_id, viewer_id, day)
 );
 alter table content_views enable row level security;  -- no policies
 ```
 
-Migration `content/0004_content_views`. `POST /v1/content/<id>/view/`
-(signed in) inserts a row and bumps `content.view_count` in one transaction —
-the owner that column was waiting for. **One per person per reel, ever**: the
-number is people, not plays. The author is not counted, anonymous viewers are
+Migrations `content/0004_content_views`, then `0006_content_views_per_day`
+(adds `day`, backfilled from `created_at` in IST, and swaps the unique rule).
+`POST /v1/content/<id>/view/` (signed in) inserts a row and bumps
+`content.view_count` in one transaction — the owner that column was waiting
+for. **One per person per reel per IST day** since 3 Oct 2026, owner's call;
+it was once per person ever, which grew too slowly to read as alive. Within
+a day a replay or reload is not a new view. The author is not counted, anonymous viewers are
 not counted, hidden content is a 404. The app sends it after a reel has been
 on screen for two seconds.
 

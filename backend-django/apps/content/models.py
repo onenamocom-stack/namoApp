@@ -138,16 +138,26 @@ class ContentProduct(models.Model):
         ]
 
 
+def ist_today():
+    """Today on the IST calendar (docs/02-TRD.md §10). IST has no DST, so the
+    shift is a constant."""
+    return (timezone.now() + timezone.timedelta(hours=5, minutes=30)).date()
+
+
 class ContentView(models.Model):
-    """One signed-in person has watched this reel (30 Sep 2026).
+    """One signed-in person watched this reel on this IST day.
 
     `content.view_count` is the count of these rows, kept by the server in
     the same transaction as the insert — which is what finally gives that
     column an owner (020 left it at 0 "until something server-side owns
-    it"). One row per person per reel, ever: replaying, scrolling back and
-    reloading are not new views, so the number is people, not plays, and
-    nobody can raise it by sitting on a reel. The author watching their own
-    reel is not recorded. Anonymous viewers are not counted — there is no
+    it").
+
+    **Once per person per reel per day, since 3 Oct 2026** (owner's call).
+    It was once per person ever (30 Sep), which made the count grow too
+    slowly to read as alive. Within a day, replaying, scrolling back and
+    reloading are still not new views, so nobody can raise it by sitting
+    on a reel; coming back tomorrow is. The author watching their own reel
+    is not recorded. Anonymous viewers are not counted — there is no
     identity to de-duplicate on.
     """
 
@@ -156,12 +166,15 @@ class ContentView(models.Model):
         Content, on_delete=models.CASCADE, db_column="content_id", related_name="views",
     )
     viewer_id = models.UUIDField()
+    day = models.DateField(default=ist_today)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "content_views"
         constraints = [
-            models.UniqueConstraint(fields=["content", "viewer_id"], name="content_views_once"),
+            models.UniqueConstraint(
+                fields=["content", "viewer_id", "day"], name="content_views_once_a_day",
+            ),
         ]
 
 

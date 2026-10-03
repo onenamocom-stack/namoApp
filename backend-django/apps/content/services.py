@@ -55,6 +55,7 @@ from .models import (
     ContentView,
     Report,
     Review,
+    ist_today,
 )
 
 # The two refusal sentences src/lib/content.js already shows. The server's
@@ -329,7 +330,8 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
 
 
 def record_view(content_id, viewer_id):
-    """Count this person once for this post; return the post's view count.
+    """Count this person once per IST day for this post; return the post's
+    view count.
 
     Only live, publicly visible content — a draft or a blocked author's reel
     is a 404 here exactly as it is on the detail view. The author's own
@@ -343,7 +345,7 @@ def record_view(content_id, viewer_id):
         return row.view_count
     try:
         with transaction.atomic():
-            ContentView.objects.create(content_id=row.id, viewer_id=viewer_id)
+            ContentView.objects.create(content_id=row.id, viewer_id=viewer_id, day=ist_today())
             Content.objects.filter(pk=row.id).update(view_count=F("view_count") + 1)
     except IntegrityError:
         pass  # already counted

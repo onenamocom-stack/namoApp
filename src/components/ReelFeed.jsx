@@ -174,8 +174,8 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   /* A view is two seconds on screen, not a frame. Opening a reel link makes
      the FIRST reel active for an instant before the scroll lands on the
      tapped one, and a swipe passes through reels nobody watched — counting
-     on `active` alone recorded both. The server counts a person once, ever,
-     so a later visit re-sending is harmless; the ref saves the request while
+     on `active` alone recorded both. The server counts a person once per
+     reel per day, so a re-send the same day is harmless; the ref saves the request while
      the reel stays mounted. */
   const [views, setViews] = useState(c.views ?? 0)
   const counted = useRef(false)
