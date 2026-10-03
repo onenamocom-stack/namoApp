@@ -106,7 +106,8 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Availability grid | UI | 7 × 6, closures held in a browser Set |
 | Channels — chat / live / call per booking | UI | Chat opens the panel; call toasts |
 | Studio — publish reel / article / go live | UI | Publishes to a toast. **No upload path exists anywhere in the app** |
-| Earnings, ledger, payouts | UI | Withdraw toasts; the balance never moves |
+| Earnings | `earnings_ledger`, payouts P1 (3 Oct 2026) | Real totals by period: this month, last month, this and last financial year, lifetime; by source; the last seven days. No withdrawing |
+| Payouts | **None** | Monthly on the 7th, designed (see §8), not built |
 | Performance metrics | UI | Real numbers in mock; needs deriving from sessions and messages |
 | Insights | UI | Fixed |
 | Referrals | UI | Header total disagrees with its own list |
@@ -729,8 +730,14 @@ consultants.
 
 - **KYC gates the first payout.** Not a feature — a legal gate. It blocks the
   entire payout capability.
-- **Marketplace tax.** GST, and TDS on consultant payouts. Talk to a CA before
-  writing payout code, not after.
+- **Payout schedule** (owner's call, 3 Oct 2026). Everything a consultant
+  earns in an IST calendar month is paid on the 7th of the next month. There
+  is no withdraw-on-demand. A booking's earning belongs to the month of the
+  session, not the month it was booked.
+- **Marketplace tax** (owner's call, 3 Oct 2026). **No GST is applied to
+  consultant payouts for now; TDS is deducted at payout.** The rate and
+  section are still the CA's to confirm before the first payout, which is
+  why the payout design stores them per statement rather than in code.
 - **Astrology advertising is regulated.** Disclaimers required; no medical claims
   and no financial-advice claims. The existing copy voice already refuses to
   promise outcomes, which helps.

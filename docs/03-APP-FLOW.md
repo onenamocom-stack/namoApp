@@ -708,11 +708,20 @@ Compose a reel, an article, or start a live room. Publishing fires a toast.
 **There is no upload control anywhere** — all artwork is generated procedurally.
 
 ### `/pro/earnings`
-Available and clearing balances, a weekly bar chart, performance metrics, a
-per-session ledger showing gross minus fee equals net, referrals, and payouts.
+Earnings for a period, chosen from five chips: this month, last month, this
+financial year, last financial year, lifetime. For the period: the net total,
+gross less the platform fee, the payout day (months only), what is booked for
+sessions not yet held, a split by source (chat/call/video, booked sessions,
+shop commission, reversals), and every entry behind it, paged. Under it, the
+last seven days as bars. Real since 3 Oct 2026; the API is
+`GET /consultants/<id>/earnings/summary/?range=` and
+`GET /consultants/<id>/earnings/?range=&offset=`.
 
-The withdraw sheet reuses the seeker's top-up presets, shows a fee breakdown, and
-**changes nothing** — the available balance never moves.
+**There is no withdraw.** The sample balance card and its sheet were removed
+on 3 Oct: money is paid monthly on the 7th, and the sheet charged the fee a
+second time. The Payouts section says how payment works until there is a
+payout history to list. Performance metrics, referrals and the Insights tab
+are still `mock.js`.
 
 ### `/pro/profile`
 Mirrors the public consultant page and links to it rather than rebuilding it.

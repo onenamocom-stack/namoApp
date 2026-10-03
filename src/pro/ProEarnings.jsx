@@ -1,22 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  answerRatePct,
-  earnings,
-  earningsSeries,
-  insights,
-  payouts,
-  proMetrics,
-  referrals,
-  topUpAmounts,
-  warnings,
-} from '../data/mock.js'
-import { Sheet, TabHeader } from '../components/Chrome.jsx'
+import { answerRatePct, earningsSeries, insights, proMetrics, referrals, warnings } from '../data/mock.js'
+import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
 import { Field, Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
-import { listEarnings } from '../lib/consultants.js'
+import { earningsPage, earningsSummary } from '../lib/consultants.js'
 
 /**
  * Earnings — the money and the reach that drives it, one tab. The two used
@@ -54,35 +44,106 @@ export default function ProEarnings() {
 }
 
 /* ── Earnings ─────────────────────────────────────────────────────────────
-   Structurally the mirror of the seeker's Wallet screen: a balance card,
-   figures, a ledger, a sheet. Where it differs is that every row carries
-   gross, the platform's cut and net — a consultant ledger whose rows are all
-   credits of the sticker price is the one thing that makes this look fake. */
+   Real since 3 Oct 2026 (payouts P1). Every figure is a sum the API makes
+   over `earnings_ledger` for a period — IST months and Indian financial
+   years, because a consultant is paid by month and files tax by year. The
+   sample card ("₹38,420 available", "Next payout 12 Aug") and the Withdraw
+   sheet are gone: there is no withdrawing, the month's earnings are paid on
+   the 7th of the next (owner's call), and the sheet took the 18% fee a
+   second time from money already net of it. Every row still carries gross,
+   the platform's cut and net. */
+
+const RANGES = [
+  { key: 'this_month', label: 'This month' },
+  { key: 'last_month', label: 'Last month' },
+  { key: 'fy', label: 'This FY' },
+  { key: 'last_fy', label: 'Last FY' },
+  { key: 'lifetime', label: 'Lifetime' },
+]
+
+const SOURCE_LABEL = {
+  sessions: 'Chat, call and video',
+  bookings: 'Booked sessions',
+  shop: 'Shop commission · 10%',
+  reversals: 'Reversals',
+}
+
+/** "2026-11-07" → "7 Nov"; with `year`, "7 Nov 2026". */
+function day(iso, year = false) {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    ...(year ? { year: 'numeric' } : {}),
+    timeZone: 'UTC',
+  })
+}
+
+function monthName(iso) {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' })
+}
+
+/** What the big number is, in words, and the line under it. */
+function heading(s) {
+  switch (s.range) {
+    case 'this_month':
+      return ['Earned this month', `Payout day ${day(s.pays_on)}, for everything up to ${day(s.to)}.`]
+    case 'last_month':
+      return [`Earned in ${monthName(s.from)}`, `Payout day ${day(s.pays_on)}.`]
+    case 'fy':
+      return ['Earned this financial year', `${day(s.from, true)} to ${day(s.to, true)}.`]
+    case 'last_fy':
+      return ['Earned last financial year', `${day(s.from, true)} to ${day(s.to, true)}.`]
+    default:
+      return ['Earned since you joined', 'Every session, booking and commission.']
+  }
+}
 
 function Earnings() {
-  const { showToast, consultant } = useStore()
-  const [sheet, setSheet] = useState(false)
-  const [amount, setAmount] = useState(earnings.available)
-
-  /* The real book, from phase 5. Every row carries gross, the platform's cut
-     and net, and a declined session shows as two rows that cancel rather than
-     as a row that vanished — the ledger is append-only.
-     `mock.js`'s `proLedger` is gone from this screen: fabricated rupees beside
-     real ones is a demo worse than no demo. The card above and the figures
-     below are still the prototype's, and stay that way until phase 12 has
-     payouts to draw a "clearing" number from. */
+  const { consultant, showToast } = useStore()
+  const id = consultant?.profile_id
+  const [range, setRange] = useState('this_month')
+  const [sum, setSum] = useState(null)
+  const [failed, setFailed] = useState(false)
   const [rows, setRows] = useState([])
+  const [next, setNext] = useState(null)
+  const [more, setMore] = useState(false)
+
   useEffect(() => {
+    if (!id) return undefined
     let live = true
-    if (consultant?.profile_id) {
-      listEarnings(consultant.profile_id).then((r) => live && setRows(r))
-    } else setRows([])
+    setSum(null)
+    setFailed(false)
+    setRows([])
+    setNext(null)
+    Promise.all([earningsSummary(id, range), earningsPage(id, range)])
+      .then(([s, page]) => {
+        if (!live) return
+        setSum(s)
+        setRows(page.rows)
+        setNext(page.next_offset)
+      })
+      .catch((err) => {
+        console.error('[earnings] load failed:', err?.message)
+        if (live) setFailed(true)
+      })
     return () => {
       live = false
     }
-  }, [consultant])
+  }, [id, range])
 
-  const fee = Math.round((amount * earnings.commissionPct) / 100)
+  async function loadMore() {
+    if (next === null || more) return
+    setMore(true)
+    try {
+      const page = await earningsPage(id, range, next)
+      setRows((r) => [...r, ...page.rows])
+      setNext(page.next_offset)
+    } catch (err) {
+      showToast(err.message)
+    } finally {
+      setMore(false)
+    }
+  }
 
   const missed = proMetrics.callsRequested - proMetrics.callsAttended
   // `Bars` wants {label, value}; the reply series is seven bare minutes.
@@ -90,51 +151,85 @@ function Earnings() {
     label: earningsSeries[i].label,
     value,
   }))
+  const week = (sum?.last_7_days ?? []).map((d) => ({
+    label: new Date(`${d.date}T12:00:00Z`).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      timeZone: 'UTC',
+    }),
+    value: d.net_paise,
+  }))
+  const [title, line] = sum ? heading(sum) : ['', '']
+  const sources = (sum?.by_source ?? []).filter((x) => x.count > 0)
 
   return (
     <>
-      {/* ── The balance ────────────────────────────────────────────────── */}
-      <section className="px-5 pb-2 pt-5">
-        <PopCard raised className="p-5">
-          <p className="caps-sm t-faint">Available to withdraw</p>
-          <p className="mt-2 font-display text-huge leading-none tnum t-heading">
-            ₹{earnings.available.toLocaleString('en-IN')}
-          </p>
-          <p className="mt-2 text-meta t-body">
-            ₹{earnings.pending.toLocaleString('en-IN')} still clearing. Next payout{' '}
-            {earnings.nextPayoutOn}.
-          </p>
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pt-5">
+        {RANGES.map((r) => (
+          <button
+            key={r.key}
+            type="button"
+            aria-pressed={range === r.key}
+            onClick={() => setRange(r.key)}
+            className="pill flex-none text-meta"
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
 
-          <div className="mt-5 flex items-center gap-2">
-            <PopButton variant="gold" className="flex-1" full={false} onClick={() => setSheet(true)}>
-              Withdraw
-            </PopButton>
-            <PopButton
-              variant="ghost"
-              className="flex-1"
-              full={false}
-              onClick={() => showToast('Statement — prototype only')}
-            >
-              Statement
-            </PopButton>
-          </div>
+      {/* ── The total ──────────────────────────────────────────────────── */}
+      <section className="px-5 pb-2 pt-4">
+        <PopCard raised className="p-5">
+          {failed ? (
+            <p className="text-meta t-body">Could not load your earnings. Open this tab again to retry.</p>
+          ) : !sum ? (
+            <p className="text-meta t-faint">Adding it up.</p>
+          ) : (
+            <>
+              <p className="caps-sm t-faint">{title}</p>
+              <p className="mt-2 font-display text-huge leading-none tnum t-heading">
+                ₹{rupees(sum.net_paise)}
+              </p>
+              <p className="mt-2 text-meta t-body">{line}</p>
+              {sum.count > 0 && (
+                <p className="mt-1 text-meta tnum t-faint">
+                  ₹{rupees(sum.gross_paise)} earned, less ₹{rupees(sum.fee_paise)} platform fee.
+                </p>
+              )}
+              {sum.upcoming_paise > 0 && (range === 'this_month' || range === 'lifetime') && (
+                <p className="mt-3 rounded-xl bg-surface2 px-3 py-2 text-meta t-body">
+                  ₹{rupees(sum.upcoming_paise)} more is booked for sessions that have not happened
+                  yet. Each counts in the month it takes place.
+                </p>
+              )}
+            </>
+          )}
         </PopCard>
       </section>
 
-      {/* ── Figures ────────────────────────────────────────────────────── */}
-      <section className="border-b border-rule px-5 py-6">
-        <div className="grid grid-cols-3 gap-3">
-          <Stat label="This month" value={`₹${(earnings.thisMonth / 1000).toFixed(1)}k`} />
-          <Stat label="Clearing" value={`₹${(earnings.pending / 1000).toFixed(1)}k`} />
-          <Stat label="Lifetime" value={`₹${(earnings.lifetime / 100000).toFixed(1)}L`} />
-        </div>
-      </section>
+      {/* ── Where it came from ─────────────────────────────────────────── */}
+      {sources.length > 0 && (
+        <section className="border-b border-rule px-5 py-6">
+          <Kicker>Where it came from</Kicker>
+          <div className="mt-3">
+            {sources.map((x) => (
+              <Field
+                key={x.source}
+                k={`${SOURCE_LABEL[x.source]} · ${x.count}`}
+                v={`${x.net_paise < 0 ? '−' : ''}₹${rupees(Math.abs(x.net_paise))}`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Last seven days ────────────────────────────────────────────── */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>Last 7 days</Kicker>
-        <Bars data={earningsSeries} />
-      </section>
+      {week.length > 0 && (
+        <section className="border-b border-rule px-5 py-6">
+          <Kicker>Last 7 days</Kicker>
+          <Bars data={week} money />
+        </section>
+      )}
 
       {/* ── How she is performing ───────────────────────────────────────
           Answer rate and reply speed live with the money because that is what
@@ -175,9 +270,9 @@ function Earnings() {
         </p>
       </section>
 
-      {/* ── Per-session ledger ─────────────────────────────────────────── */}
+      {/* ── The entries behind the total ───────────────────────────────── */}
       <section className="border-b border-rule px-5 py-6">
-        <Kicker>Sessions</Kicker>
+        <Kicker>Entries</Kicker>
         <ul className="mt-3">
           {rows.map((r) => (
             <li
@@ -187,7 +282,7 @@ function Earnings() {
               <span className="min-w-0">
                 <span className="block truncate text-meta t-sub">{r.kind}</span>
                 <span className="mt-0.5 block caps-sm t-faint tnum">
-                  {new Date(r.created_at).toLocaleDateString('en-IN', {
+                  {new Date(r.effective_at).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                     timeZone: 'Asia/Kolkata',
@@ -207,10 +302,13 @@ function Earnings() {
             </li>
           ))}
         </ul>
-        {rows.length === 0 && (
-          <p className="mt-3 text-meta t-faint">
-            Nothing earned yet. A session pays into this list the moment it is booked.
-          </p>
+        {sum && rows.length === 0 && (
+          <p className="mt-3 text-meta t-faint">Nothing earned in this period.</p>
+        )}
+        {next !== null && (
+          <PopButton variant="ghost" size="sm" className="mt-4" onClick={loadMore} disabled={more}>
+            {more ? 'Loading' : 'Show more'}
+          </PopButton>
         )}
       </section>
 
@@ -272,65 +370,16 @@ function Earnings() {
         </ul>
       </section>
 
-      {/* ── Payouts ────────────────────────────────────────────────────── */}
+      {/* ── Payouts ──────────────────────────────────────────────────────
+          Nothing is paid yet: sending money is P3. This says how it will
+          work rather than listing transfers that never happened. */}
       <section className="px-5 py-6">
         <Kicker>Payouts</Kicker>
-        <ul className="mt-3">
-          {payouts.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between gap-4 border-b border-rule py-3.5 last:border-b-0"
-            >
-              <span className="min-w-0">
-                <span className="block text-meta tnum t-heading">
-                  ₹{p.amount.toLocaleString('en-IN')}
-                </span>
-                <span className="mt-0.5 block caps-sm t-faint">
-                  {p.date} · {p.method}
-                </span>
-              </span>
-              <PopTag>{p.status}</PopTag>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <Sheet open={sheet} onClose={() => setSheet(false)} title="Withdraw">
-        <p className="label mb-4 text-left">Amount</p>
-        <div className="mb-8 grid grid-cols-3 gap-2">
-          {[...topUpAmounts, earnings.available].map((a) => (
-            <button
-              key={a}
-              type="button"
-              aria-pressed={amount === a}
-              onClick={() => setAmount(a)}
-              className="pill caps-sm justify-center tnum"
-            >
-              ₹{a.toLocaleString('en-IN')}
-            </button>
-          ))}
-        </div>
-
-        <Field k="Gross" v={`₹${amount.toLocaleString('en-IN')}`} />
-        <Field k={`Platform fee · ${earnings.commissionPct}%`} v={`−₹${fee.toLocaleString('en-IN')}`} />
-        <Field k="You receive" v={`₹${(amount - fee).toLocaleString('en-IN')}`} />
-        <Field k="To" v="HDFC ••4412" />
-
-        <PopButton
-          variant="gold"
-          className="mt-8"
-          disabled={amount > earnings.available}
-          onClick={() => {
-            setSheet(false)
-            showToast(`Withdrawal requested · ₹${(amount - fee).toLocaleString('en-IN')}`)
-          }}
-        >
-          {amount > earnings.available ? 'More than you have' : 'Request withdrawal'}
-        </PopButton>
-        <p className="mt-5 text-center text-meta t-faint">
-          Prototype — no money moves and no account is debited.
+        <p className="mt-3 text-meta t-body">
+          You are paid on the 7th of every month for everything you earned the month before, with
+          TDS deducted. Your payout history appears here from the first payout.
         </p>
-      </Sheet>
+      </section>
     </>
   )
 }
@@ -339,33 +388,40 @@ function Earnings() {
  * Seven bars. Heights go through `style`, never an interpolated class —
  * Tailwind scans source text, so `h-[${n}px]` is a class that is never
  * generated and a bar that never renders. `PopBar` and `Ruler` do the same.
+ *
+ * `money`: values are paise, and the line under the bars names the best day.
+ * Without it (reply minutes) there is no line — it used to print "Best day
+ * was Mon at ₹6" under a chart of minutes, and "Weekends carry this
+ * practice" under any week at all.
  */
-function Bars({ data }) {
-  const max = Math.max(...data.map((d) => d.value))
+function Bars({ data, money = false }) {
+  const max = Math.max(0, ...data.map((d) => d.value))
   const best = data.find((d) => d.value === max)
 
   return (
     <>
       <div className="mt-4 flex h-24 items-end gap-2" aria-hidden="true">
-        {data.map((d) => (
-          <span key={d.label} className="flex flex-1 flex-col items-center gap-1.5">
+        {data.map((d, i) => (
+          <span key={`${d.label}${i}`} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
             <span
               className="w-full rounded-t-md bg-gold-fill"
-              style={{ height: `${Math.max(6, (d.value / max) * 100)}%` }}
+              style={{ height: `${max > 0 ? Math.max(6, (Math.max(0, d.value) / max) * 100) : 6}%` }}
             />
           </span>
         ))}
       </div>
       <div className="mt-2 flex gap-2">
-        {data.map((d) => (
-          <span key={d.label} className="flex-1 text-center text-[11px] t-faint">
+        {data.map((d, i) => (
+          <span key={`${d.label}${i}`} className="flex-1 text-center text-[11px] t-faint">
             {d.label}
           </span>
         ))}
       </div>
-      <p className="mt-4 text-meta t-body">
-        Best day was {best.label} at ₹{max.toLocaleString('en-IN')}. Weekends carry this practice.
-      </p>
+      {money && (
+        <p className="mt-4 text-meta t-body">
+          {max > 0 ? `Best day was ${best.label} at ₹${rupees(max)}.` : 'Nothing earned in the last seven days.'}
+        </p>
+      )}
     </>
   )
 }

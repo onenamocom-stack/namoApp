@@ -38,4 +38,9 @@ urlpatterns = [
         views.earnings,
         name="consultants-earnings",
     ),
+    path(
+        "<uuid:consultant_id>/earnings/summary/",
+        views.earnings_summary,
+        name="consultants-earnings-summary",
+    ),
 ]

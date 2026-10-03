@@ -8,6 +8,7 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_409_CONFLICT
 
 from apps.core.views import refusal_body
 
+from . import earnings as earnings_reads
 from . import services
 from .models import Booking
 from .services import AlreadyApplied
@@ -373,12 +374,52 @@ def decide(request, booking_id):
 @permission_classes([IsAuthenticated])
 def earnings(request, consultant_id):
     """The consultant's own book, newest first (012's read policy). A
-    declined session reads as two rows that cancel, never zero rows."""
+    declined session reads as two rows that cancel, never zero rows.
+
+    With `?range=` it is one page of a period (`earnings.rows`) —
+    `{rows, next_offset}`; without, the newest fifty as a bare list, which
+    is what apps built before 3 Oct still read."""
     if not _owns(request, consultant_id):
         return Response(
             refusal_body("forbidden", "That is not your practice."), status=403
         )
-    return Response(services.list_earnings(consultant_id))
+    q = request.query_params
+    if "range" not in q:
+        return Response(services.list_earnings(consultant_id))
+    try:
+        return Response(
+            earnings_reads.rows(
+                consultant_id,
+                q["range"],
+                q.get("from"),
+                q.get("to"),
+                offset=q.get("offset", 0),
+                limit=q.get("limit", earnings_reads.PAGE),
+            )
+        )
+    except (earnings_reads.BadRange, ValueError) as exc:
+        return Response(refusal_body("bad_range", str(exc)), status=400)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def earnings_summary(request, consultant_id):
+    """Totals for a period — this month, last month, this or last financial
+    year, lifetime, or `custom` with `from` and `to` — by source, plus what
+    is booked but not yet earned and the last seven days."""
+    if not _owns(request, consultant_id):
+        return Response(
+            refusal_body("forbidden", "That is not your practice."), status=403
+        )
+    q = request.query_params
+    try:
+        return Response(
+            earnings_reads.summary(
+                consultant_id, q.get("range", "this_month"), q.get("from"), q.get("to")
+            )
+        )
+    except earnings_reads.BadRange as exc:
+        return Response(refusal_body("bad_range", str(exc)), status=400)
 
 
 # ── presence ────────────────────────────────────────────────────────────────

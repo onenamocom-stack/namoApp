@@ -333,6 +333,22 @@ export async function listEarnings(consultantId) {
   }
 }
 
+/** Totals for a period (payouts P1, 3 Oct 2026): `range` is this_month,
+ *  last_month, fy, last_fy or lifetime. By source, plus money booked for
+ *  sessions not yet held (`upcoming_paise`), the last seven IST days, and
+ *  the pay day for a month. Throws, so the screen can say it failed rather
+ *  than show a zero that is not true. Paise. */
+export async function earningsSummary(consultantId, range) {
+  const token = await accessToken()
+  return api(`/consultants/${consultantId}/earnings/summary/?range=${range}`, { token })
+}
+
+/** One page of the rows behind a summary, newest first: `{rows, next_offset}`. */
+export async function earningsPage(consultantId, range, offset = 0) {
+  const token = await accessToken()
+  return api(`/consultants/${consultantId}/earnings/?range=${range}&offset=${offset}&limit=30`, { token })
+}
+
 /* ── The caller's own consultant row (this module's cutover additions) ────── */
 
 /** The signed-in user's `consultants` row, or null — the read store.jsx's
