@@ -106,7 +106,14 @@ ring around a consultant's avatar, the badge, and the ladder:
 `--tier-1` green · `--tier-10` blue · `--tier-100` saffron · `--tier-500`
 purple · `--tier-1000` gold, the top and the only gradient ring. Each has an
 `-ink` twin dark enough for 11px badge text on its own 14% wash. No ring at
-all below the first paid session.
+all below the first paid session. On the ladder every tier shows its colour
+from the start, at 40% until reached, and the sentence names the next ring
+("5 more to 10 sessions and a blue ring") — something to look forward to,
+not a row of grey circles (owner's call, 4 Oct).
+
+**Required fields** carry a red asterisk (`text-live`) after the label, with a
+"* Required" key at the top of a long form — sign-up details, payout details,
+the support report (4 Oct 2026).
 
 The opacity ladder is solid slate now: `.t-heading` = `--text`, `.t-sub`
 `#3f4653`, `.t-body` = `--text-2`, `.t-faint` `#858c99` (3.3:1, asides only).

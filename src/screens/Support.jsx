@@ -107,7 +107,12 @@ export default function Support() {
           />
         </label>
         <label className="mt-5 block">
-          <span className="mb-1.5 block text-meta font-semibold t-heading">{t('sup.what')}</span>
+          <span className="mb-1.5 block text-meta font-semibold t-heading">
+            {t('sup.what')}
+            <span className="ml-0.5 text-live" aria-hidden="true">
+              *
+            </span>
+          </span>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

@@ -214,23 +214,28 @@ function Form({ prior, onSaved, onCancel }) {
         see them in full.
       </p>
 
-      <Kicker className="mt-7">PAN</Kicker>
+      <p className="mt-3 text-meta t-faint">
+        <Req /> Required
+      </p>
+
+      <Kicker className="mt-5">PAN</Kicker>
       <div className="mt-3 space-y-5">
-        <Input label="PAN number" value={v.pan} onChange={put('pan')} placeholder="ABCDE1234F" maxLength={10} autoCapitalize="characters" />
+        <Input required label="PAN number" value={v.pan} onChange={put('pan')} placeholder="ABCDE1234F" maxLength={10} autoCapitalize="characters" />
         {err('pan')}
-        <Input label="Name as on your PAN card" value={v.pan_name} onChange={put('pan_name')} autoComplete="name" />
+        <Input required label="Name as on your PAN card" value={v.pan_name} onChange={put('pan_name')} autoComplete="name" />
         {err('pan_name')}
-        <Upload label="Photo of your PAN card" value={panDoc} onChange={setPanDoc} />
+        <Upload required label="Photo of your PAN card" value={panDoc} onChange={setPanDoc} />
         {err('pan_doc')}
       </div>
 
       <Kicker className="mt-8">Bank account</Kicker>
       <div className="mt-3 space-y-5">
-        <Input label="Account holder name" value={v.account_holder} onChange={put('account_holder')} />
+        <Input required label="Account holder name" value={v.account_holder} onChange={put('account_holder')} />
         {err('account_holder')}
-        <Input label="Account number" value={v.account_number} onChange={put('account_number')} inputMode="numeric" maxLength={18} autoComplete="off" />
+        <Input required label="Account number" value={v.account_number} onChange={put('account_number')} inputMode="numeric" maxLength={18} autoComplete="off" />
         {err('account_number')}
         <Input
+          required
           label="Account number again"
           value={v.account_number_confirm}
           onChange={put('account_number_confirm')}
@@ -244,11 +249,11 @@ function Form({ prior, onSaved, onCancel }) {
         )}
         {err('account_number_confirm')}
         <div>
-          <Input label="IFSC" value={v.ifsc} onChange={put('ifsc')} placeholder="HDFC0001234" maxLength={11} autoCapitalize="characters" />
+          <Input required label="IFSC" value={v.ifsc} onChange={put('ifsc')} placeholder="HDFC0001234" maxLength={11} autoCapitalize="characters" />
           {bank && <p className="mt-1.5 text-meta t-faint">{bank}</p>}
         </div>
         {err('ifsc')}
-        <Upload label="Photo of a cancelled cheque or your passbook's first page" value={bankDoc} onChange={setBankDoc} />
+        <Upload required label="Photo of a cancelled cheque or your passbook's first page" value={bankDoc} onChange={setBankDoc} />
         {err('bank_doc')}
         <Input label="UPI ID · optional" value={v.upi_id} onChange={put('upi_id')} placeholder="name@bank" autoCapitalize="none" />
         {err('upi_id')}
@@ -268,17 +273,29 @@ function Form({ prior, onSaved, onCancel }) {
   )
 }
 
-function Input({ label, ...rest }) {
+/** A red asterisk after a required field's label (owner's request, 4 Oct). */
+export function Req() {
+  return (
+    <span className="ml-0.5 text-live" aria-hidden="true">
+      *
+    </span>
+  )
+}
+
+function Input({ label, required = false, ...rest }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-meta font-semibold t-heading">{label}</span>
-      <input spellCheck="false" className="field-line" {...rest} />
+      <span className="mb-1.5 block text-meta font-semibold t-heading">
+        {label}
+        {required && <Req />}
+      </span>
+      <input spellCheck="false" className="field-line" required={required} {...rest} />
     </label>
   )
 }
 
 /** A private upload: PDF, JPG or PNG, up to 5 MB (the server's rule). */
-function Upload({ label, value, onChange }) {
+function Upload({ label, value, onChange, required = false }) {
   const ref = useRef(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -301,7 +318,10 @@ function Upload({ label, value, onChange }) {
 
   return (
     <div>
-      <span className="mb-1.5 block text-meta font-semibold t-heading">{label}</span>
+      <span className="mb-1.5 block text-meta font-semibold t-heading">
+        {label}
+        {required && <Req />}
+      </span>
       <button
         type="button"
         onClick={() => ref.current?.click()}

@@ -181,7 +181,7 @@ export default function AboutYou() {
       </div>
 
       <div className="mt-7 space-y-6">
-        <Group label={t('d.name')}>
+        <Group label={t('d.name')} required>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -192,7 +192,7 @@ export default function AboutYou() {
           />
         </Group>
 
-        <Group label={t('d.gender')}>
+        <Group label={t('d.gender')} required>
           <div className="grid grid-cols-3 gap-2">
             {GENDERS.map((g) => (
               <button
@@ -208,11 +208,11 @@ export default function AboutYou() {
           </div>
         </Group>
 
-        <Group label={t('d.date')}>
+        <Group label={t('d.date')} required>
           <DateField value={date} onChange={setDate} className="field-line !text-lead" />
         </Group>
 
-        <Group label={t('d.time')}>
+        <Group label={t('d.time')} required>
           <TimeField
             value={time}
             onChange={setTime}
@@ -238,7 +238,7 @@ export default function AboutYou() {
           </label>
         </Group>
 
-        <Group label={t('d.place')}>
+        <Group label={t('d.place')} required>
           <PlaceField place={place} onPick={setPlace} placeholder={t('d.placePh')} />
         </Group>
 
@@ -286,10 +286,18 @@ export default function AboutYou() {
   )
 }
 
-function Group({ label, children }) {
+function Group({ label, required = false, children }) {
   return (
     <div>
-      <p className="mb-2 text-meta font-semibold text-t1">{label}</p>
+      <p className="mb-2 text-meta font-semibold text-t1">
+        {label}
+        {/* Red asterisk on required fields (owner's request, 4 Oct). */}
+        {required && (
+          <span className="ml-0.5 text-live" aria-hidden="true">
+            *
+          </span>
+        )}
+      </p>
       {children}
     </div>
   )

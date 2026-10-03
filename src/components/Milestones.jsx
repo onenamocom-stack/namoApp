@@ -66,7 +66,7 @@ export function MilestoneLadder({ count = 0 }) {
         <span className="font-semibold t-heading tnum">{count.toLocaleString('en-IN')}</span>{' '}
         paid {count === 1 ? 'session' : 'sessions'} given.{' '}
         {next
-          ? `${(next.at - count).toLocaleString('en-IN')} more to ${next.pro.toLowerCase()}.`
+          ? `${(next.at - count).toLocaleString('en-IN')} more to ${next.pro.toLowerCase()} and a ${next.colour} ring.`
           : 'You have reached the top tier.'}
       </p>
       {next && next.at !== 1000 && (
@@ -92,8 +92,12 @@ export function MilestoneLadder({ count = 0 }) {
               className="absolute top-1/2 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white"
               style={{
                 left: `${(i / (TIERS.length - 1)) * 100}%`,
-                borderColor: reached ? t.color : 'var(--rule)',
-                color: reached ? t.color : 'var(--text-4)',
+                // Every tier shows its colour from the start, faded until it
+                // is reached — the owner's call, so the next ring is
+                // something to look forward to rather than a grey circle.
+                borderColor: t.color,
+                color: t.color,
+                opacity: reached ? 1 : 0.4,
               }}
             >
               <Icon name="award" size={13} weight={2.2} />
@@ -108,7 +112,8 @@ export function MilestoneLadder({ count = 0 }) {
             className="absolute -translate-x-1/2 text-[11px] font-semibold tnum"
             style={{
               left: `${(i / (TIERS.length - 1)) * 100}%`,
-              color: count >= t.at ? t.ink : 'var(--text-3)',
+              color: t.ink,
+              opacity: count >= t.at ? 1 : 0.55,
             }}
           >
             {t.at === 1000 ? '1000+' : t.at}

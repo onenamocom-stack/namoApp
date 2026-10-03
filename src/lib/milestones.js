@@ -14,6 +14,7 @@
 export const TIERS = [
   {
     at: 1,
+    colour: 'green',
     seeker: 'Rising',
     pro: 'First customer',
     congrats: 'You served your first customer.',
@@ -22,6 +23,7 @@ export const TIERS = [
   },
   {
     at: 10,
+    colour: 'blue',
     seeker: '10+ sessions',
     pro: '10 sessions',
     congrats: 'You have given 10 paid sessions.',
@@ -30,6 +32,7 @@ export const TIERS = [
   },
   {
     at: 100,
+    colour: 'saffron',
     seeker: '100+ sessions',
     pro: '100 sessions',
     congrats: 'You have given 100 paid sessions.',
@@ -38,6 +41,7 @@ export const TIERS = [
   },
   {
     at: 500,
+    colour: 'purple',
     seeker: '500+ sessions',
     pro: '500 sessions',
     congrats: 'You have given 500 paid sessions.',
@@ -46,6 +50,7 @@ export const TIERS = [
   },
   {
     at: 1000,
+    colour: 'gold',
     seeker: '1000+ sessions',
     pro: '1000 sessions',
     congrats: 'You have given 1000 paid sessions. Few readers on Namo get here.',
