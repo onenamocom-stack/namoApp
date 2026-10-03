@@ -176,7 +176,7 @@ function Content() {
                 </span>
               </Plate>
               <p className="mt-1.5 line-clamp-2 text-[11px] leading-tight t-sub">{p.title}</p>
-              <p className="mt-0.5 text-[10px] t-faint tnum">{p.meta}</p>
+              <p className="mt-0.5 text-[11px] t-faint tnum">{p.meta}</p>
             </Link>
           </li>
         ))}

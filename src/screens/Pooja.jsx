@@ -248,7 +248,7 @@ export default function Pooja() {
                   setDeity(d)
                   setPic(0)
                 }}
-                className="tile w-[68px]"
+                className="tile w-[72px]"
               >
                 {/* The face is the murti, so the pressed-in "on" state cannot
                     show through it. Selection reads as full colour against
@@ -264,7 +264,7 @@ export default function Pooja() {
                   />
                 </span>
                 <span
-                  className={`caps-sm leading-tight ${deity.id === d.id ? 't-heading' : 't-body'}`}
+                  className={`text-center text-[12px] font-semibold leading-tight ${deity.id === d.id ? 't-heading' : 't-body'}`}
                 >
                   {lang === 'hi' ? d.nameHi : d.name}
                 </span>

@@ -139,13 +139,16 @@ export default function Tarot() {
                 <button
                   type="button"
                   onClick={() => { setDeck(d); setStep('question') }}
-                  className="pop-tap w-full rounded-2xl px-4 py-3.5 text-left"
+                  className="pop-tap flex w-full items-center gap-3 rounded-2xl border border-rule bg-white px-4 py-3.5 text-left shadow-sm active:bg-surface2"
                 >
-                  <span className="flex items-baseline gap-3">
-                    <span className="caps-sm flex-none gold">{tradition(d)}</span>
-                    <span className="min-w-0 flex-1 text-meta t-body">{d.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline gap-3">
+                      <span className="caps-sm flex-none gold">{tradition(d)}</span>
+                      <span className="min-w-0 flex-1 text-body font-semibold text-t1">{d.name}</span>
+                    </span>
+                    <span className="mt-1 block text-meta text-t2">{d.line}</span>
                   </span>
-                  <span className="mt-1.5 block caps-sm t-faint">{d.line}</span>
+                  <span aria-hidden="true" className="flex-none text-lead text-gold">›</span>
                 </button>
               </li>
             ))}
@@ -207,7 +210,9 @@ function Dialog({ title, note, onBack, children }) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center px-5">
       <div className="absolute inset-0 animate-fade bg-ink opacity-40" />
-      <div className="glass-panel no-scrollbar relative max-h-[86%] w-full animate-fade-rise overflow-y-auto rounded-3xl p-6 shadow-xl">
+      {/* Solid white, not `glass-panel`: over the scrim the frosted panel
+          read as grey, and the choices in it looked switched off (3 Oct). */}
+      <div className="no-scrollbar relative max-h-[86%] w-full animate-fade-rise overflow-y-auto rounded-3xl bg-white p-6 shadow-xl">
         <p className="caps t-heading">{title}</p>
         {note && <p className="mt-2 text-meta t-faint">{note}</p>}
         <div className="mt-5">{children}</div>

@@ -209,14 +209,14 @@
   /* CAPS — every label, tag, kicker and button string. */
   .caps {
     @apply uppercase;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.3;
     font-weight: 700;
     letter-spacing: 0.1em;
   }
   .caps-sm {
     @apply uppercase;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.3;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -364,10 +364,13 @@
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
   }
 
+  /* Small, not tiny: 36px tall at least, so a thumb finds it (it measured
+     24px when the audit of 3 Oct counted Shop's undersized targets). */
   .pop-btn-sm {
-    padding: calc(var(--sp) * 1) calc(var(--sp) * 1.75);
+    min-height: 36px;
+    padding: calc(var(--sp) * 1) calc(var(--sp) * 2);
     border-radius: 10px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   /* The main action: Sri Mandir's green, white label. Values and contrast

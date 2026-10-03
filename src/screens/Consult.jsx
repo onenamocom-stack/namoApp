@@ -56,18 +56,18 @@ function FreeTools() {
         {FREE_TOOLS.map((f) => (
           <li key={f.key} className="flex-none">
             {f.to ? (
-              <Link to={f.to} className="tile w-[68px]">
+              <Link to={f.to} className="tile w-[72px]">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>
-                <span className="caps-sm leading-tight t-body">{t(f.label)}</span>
+                <span className="text-center text-[12px] font-semibold leading-tight t-body">{t(f.label)}</span>
               </Link>
             ) : (
-              <button type="button" onClick={() => f.act(bag)} className="tile w-[68px]">
+              <button type="button" onClick={() => f.act(bag)} className="tile w-[72px]">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>
-                <span className="caps-sm leading-tight t-body">{t(f.label)}</span>
+                <span className="text-center text-[12px] font-semibold leading-tight t-body">{t(f.label)}</span>
               </button>
             )}
           </li>
@@ -584,7 +584,7 @@ export default function Consult() {
                   </span>
                   <span className="mt-2 flex flex-wrap gap-1.5">
                     {c.languages.map((lang) => (
-                      <span key={lang} className="rounded-md border border-stroke bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-t2">
+                      <span key={lang} className="rounded-md border border-stroke bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-t2">
                         {lang}
                       </span>
                     ))}

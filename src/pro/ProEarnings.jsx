@@ -358,7 +358,7 @@ function Bars({ data }) {
       </div>
       <div className="mt-2 flex gap-2">
         {data.map((d) => (
-          <span key={d.label} className="flex-1 text-center text-[10px] t-faint">
+          <span key={d.label} className="flex-1 text-center text-[11px] t-faint">
             {d.label}
           </span>
         ))}

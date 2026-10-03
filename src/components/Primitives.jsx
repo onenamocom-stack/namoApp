@@ -305,10 +305,10 @@ export function Acts({ items, className = '' }) {
  * as a card, just short. It gains a gold ring on focus rather than an outline,
  * so the field itself reports focus instead of the browser drawing over it.
  */
-export function Search({ value, onChange, placeholder, label = 'Search' }) {
+export function Search({ value, onChange, placeholder, label = 'Search', trailing, className = 'px-4 pt-4' }) {
   return (
-    <div className="px-4 pt-4">
-      <div className="pop-inset flex items-center gap-3 border border-stroke px-4 py-3 transition-colors focus-within:border-gold">
+    <div className={`${className} flex items-center gap-2`}>
+      <div className="pop-inset flex min-w-0 flex-1 items-center gap-3 border border-stroke px-4 py-3 transition-colors focus-within:border-gold">
         <span aria-hidden="true" className="flex-none text-body t-faint">
           ⌕
         </span>
@@ -329,6 +329,7 @@ export function Search({ value, onChange, placeholder, label = 'Search' }) {
           </button>
         )}
       </div>
+      {trailing}
     </div>
   )
 }

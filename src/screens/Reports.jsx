@@ -36,11 +36,11 @@ export default function Reports() {
 
       <section className="border-b border-rule px-5 py-6">
         <p className="font-display text-title leading-tight t-heading">
-          Written once, properly.
+          Your reading, written down.
         </p>
         <p className="mt-3 text-meta t-body">
-          A session is an hour and a memory. A report is the same reading you can go back to in
-          March, when you have forgotten what was said.
+          A session ends when the call does. A report stays with you: read it again whenever you
+          need it.
         </p>
         <p className="mt-4 caps-sm t-faint tnum">
           Wallet · {balance === null ? '—' : `₹${rupees(balance)}`}

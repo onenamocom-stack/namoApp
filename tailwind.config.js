@@ -124,8 +124,10 @@ export default {
         // Poppins is wide and round; the tight negative tracking Jakarta
         // needed crushes it, so text sizes set at zero and only display
         // sizes pull in, and by half as much.
-        micro: ['10px', { lineHeight: '1.3', letterSpacing: '0.08em' }],
-        label: ['11px', { lineHeight: '1.3', letterSpacing: '0.06em' }],
+        // micro and label were 10px and 11px until 3 Oct: an audit counted 144
+        // elements under 11px on Consult alone. Nothing renders under 11px now.
+        micro: ['11px', { lineHeight: '1.35', letterSpacing: '0.06em' }],
+        label: ['12px', { lineHeight: '1.35', letterSpacing: '0.05em' }],
         meta: ['13px', { lineHeight: '1.5', letterSpacing: '0' }],
         body: ['15px', { lineHeight: '1.6', letterSpacing: '0' }],
         read: ['17px', { lineHeight: '1.6', letterSpacing: '0' }],

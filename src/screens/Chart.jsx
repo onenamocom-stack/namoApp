@@ -121,17 +121,23 @@ function ChartTab({ chart, who, ready, display, me }) {
 
   return (
     <div className="animate-fade">
-      <Section label="D1 · Rashi · Lahiri, whole sign">
+      {/* Plain words on the headings since 3 Oct. "D1 · Rashi · Lahiri, whole
+          sign" was the first thing a new account read; the method is still
+          printed, under Birth data. */}
+      <Section label="Your birth chart">
         <ChartNorth size={280} houses={houses} />
         {!houses && (
           <p className="prose-c mt-8">
-            Empty, because there is no birth time. Every line in this diagram is measured from the
-            ascendant, and the ascendant is the one thing a rough time does not survive.
+            Add your birth time to see this chart. Every line in it is drawn from the ascendant,
+            and the ascendant needs the time.
           </p>
         )}
       </Section>
 
       <Section label="Divisional charts">
+        <p className="-mt-2 mb-3 text-meta text-t2">
+          Each one looks closely at one part of life: D9 at marriage, D10 at work, D7 at children.
+        </p>
         {vargas.loading && <p className="text-meta text-t3">Working out the divisions.</p>}
         {vargas.refusal && <p className="text-meta text-t2">{vargas.refusal.reason}</p>}
         <ul>
@@ -170,8 +176,7 @@ function ChartTab({ chart, who, ready, display, me }) {
         <Field k="Place" v={me.birthPlace} />
         {/* Printed, not assumed: a chart on the wrong ayanamsa renders
             perfectly and belongs to nobody. */}
-        <Field k="Ayanamsa" v="Lahiri" />
-        <Field k="Houses" v="Whole sign" />
+        <Field k="Method" v="Lahiri ayanamsa, whole-sign houses" />
       </Section>
     </div>
   )
@@ -237,7 +242,7 @@ function DashaTab({ who, ready }) {
         </section>
       )}
 
-      <Section label="Mahadashas · Vimshottari">
+      <Section label="Your life periods">
         {dasha.nakshatra && (
           <p className="mb-4 text-meta t-faint">
             From your Moon in {dasha.nakshatra.name}

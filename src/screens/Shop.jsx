@@ -5,6 +5,7 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
+import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
 import { looksLikeReferral } from '../lib/referrals.js'
 import { useMyChart } from '../lib/astro.js'
@@ -168,11 +169,8 @@ export default function Shop() {
 
   return (
     <>
-      {/* The cart was a knob in this slot until 10 Sep 2026. The header now
-          carries wallet, messages and profile on every screen, and a fourth
-          control fought them for width at 360px. It is a floating button
-          instead — see `CartFab` in App.jsx, which is mounted against the
-          phone frame rather than this scroller so it cannot scroll away. */}
+      {/* The cart was a knob in the header until 10 Sep 2026, then a
+          floating button until 3 Oct; it now sits beside the search. */}
       <TabHeader />
 
       {/* Said BEFORE anything is tapped, and said as cashback.
@@ -189,7 +187,31 @@ export default function Shop() {
         </p>
       )}
 
-      <Search value={query} onChange={setQuery} placeholder="Search stones, maalas and kits" />
+      {/* Search and the cart, pinned under the header (3 Oct). The cart was
+          a floating button over the grid from 10 Sep, and wherever it
+          floated it sat on some product's Buy. Here it covers nothing and
+          never scrolls away. */}
+      <Search
+        value={query}
+        onChange={setQuery}
+        placeholder="Search stones, maalas and kits"
+        className="sticky top-[52px] z-10 bg-bg px-4 pb-2 pt-3"
+        trailing={
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
+            className="pop-tap relative inline-flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-ink shadow-md"
+          >
+            <Icon name="cart" size={22} />
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
+                {cartCount}
+              </span>
+            )}
+          </button>
+        }
+      />
 
       {/* ── Banners ─────────────────────────────────────────────────────── */}
       <div className="pt-4">
@@ -467,7 +489,7 @@ export default function Shop() {
         )}
 
         <p className="mt-8 text-center text-meta t-faint">
-          A stone does not fix a transit. It is a reminder you paid for. Buy it knowing that.
+          A stone is a reminder of your intention, not a cure. Choose the one that speaks to you.
         </p>
       </section>
 

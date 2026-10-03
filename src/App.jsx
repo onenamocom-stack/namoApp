@@ -7,7 +7,6 @@ import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
-import Icon from './components/Icon.jsx'
 import Reports from './screens/Reports.jsx'
 
 import Welcome from './screens/onboarding/Welcome.jsx'
@@ -224,49 +223,6 @@ function SessionGate() {
   return null
 }
 
-/**
- * The cart, floating over Shop.
- *
- * It lives here rather than in `Shop.jsx` for one reason: a button rendered
- * inside a screen is positioned against the scrolling `<main>`, so it scrolls
- * away with the grid. Every persistent floating thing in this app — the toast,
- * the panels, the sheet — is mounted against the phone frame instead, which is
- * the `relative` box below. `Toast` is the precedent.
- *
- * Right-inset while the toast stays centred, so the two never sit on top of
- * each other; `z-40` puts it over the nav (30) and under the toast (50), which
- * is the order you want when a purchase toast fires with the cart on screen.
- *
- * Hidden when the cart is empty. A cart button that opens an empty sheet is
- * the affordance confusion `BarAction` already refuses elsewhere.
- */
-function CartFab() {
-  const { cartCount, setCartOpen } = useStore()
-  const { pathname } = useLocation()
-
-  /* On /shop, always — 25 Sep 2026. It used to appear only once something
-     was in the cart, so the one control people look for was absent exactly
-     when they went looking for it. An empty cart opens a sheet that says it
-     is empty, which is an answer; a missing button is not. */
-  if (pathname !== '/shop') return null
-
-  return (
-    <button
-      type="button"
-      onClick={() => setCartOpen(true)}
-      aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
-      className="pop-tap absolute bottom-24 right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-gold-fill text-ink shadow-lg"
-    >
-      <Icon name="cart" size={22} />
-      {cartCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
-          {cartCount}
-        </span>
-      )}
-    </button>
-  )
-}
-
 function Frame() {
   const { toast } = useStore()
 
@@ -419,7 +375,6 @@ function Frame() {
             state nothing on that side sets. */}
         {!isPro && <ChatPanel />}
         {!isPro && <CartSheet />}
-        {!isPro && <CartFab />}
         <Toast message={toast} />
       </div>
     </div>

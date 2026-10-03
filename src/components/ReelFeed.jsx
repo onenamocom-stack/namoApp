@@ -336,7 +336,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
                 off: `Unfollowed ${firstName(c.consultant)}`,
               })
             }
-            className={`flex-none rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] transition-colors ${
+            className={`flex-none rounded-lg border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
               following
                 ? 'border-white/40 text-white/80'
                 : 'border-white bg-white/10 text-white'
@@ -384,7 +384,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           </div>
         )}
         {isLast && (
-          <p className="mt-2 text-[10px] uppercase tracking-[0.08em] text-white/45">Last reel</p>
+          <p className="mt-2 text-[11px] uppercase tracking-[0.08em] text-white/45">Last reel</p>
         )}
       </div>
 

@@ -12,11 +12,11 @@ export default function Premium() {
 
       <section className="section pt-14">
         <h1 className="mx-auto max-w-[13ch] text-center text-display font-semibold">
-          Pay for the longer answer.
+          Go deeper when you want to.
         </h1>
         <Stub className="my-8" />
         <p className="horoscope">
-          The daily reading stays free. What is behind this is length, not accuracy.
+          Your daily reading stays free. Premium gives you the full reading, at length.
         </p>
       </section>
 

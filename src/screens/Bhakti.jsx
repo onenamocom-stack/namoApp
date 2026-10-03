@@ -191,23 +191,23 @@ export default function Bhakti() {
                   it. A link and a button, because they do different things
                   and one of them belongs in browser history. */}
               {k.to ? (
-                <Link to={k.to} className="tile w-[68px]">
+                <Link to={k.to} className="tile w-[72px]">
                   <span className="tile-face">
                     <Icon name={k.icon} size={22} />
                   </span>
-                  <span className="caps-sm leading-tight t-body">{k.label}</span>
+                  <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
                 </Link>
               ) : (
                 <button
                   type="button"
                   onClick={() => setKind(k.key)}
                   aria-pressed={kind === k.key}
-                  className="tile w-[68px]"
+                  className="tile w-[72px]"
                 >
                   <span className={`tile-face ${kind === k.key ? 'tile-face-on' : ''}`}>
                     <Icon name={k.icon} size={22} />
                   </span>
-                  <span className="caps-sm leading-tight t-body">{k.label}</span>
+                  <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
                 </button>
               )}
             </li>

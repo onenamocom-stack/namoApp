@@ -142,8 +142,8 @@ Jakarta needed:
 
 | Token | px | Line height | Tracking |
 |---|---|---|---|
-| `micro` | 10 | 1.3 | 0.08em |
-| `label` | 11 | 1.3 | 0.06em |
+| `micro` | 11 | 1.35 | 0.06em |
+| `label` | 12 | 1.35 | 0.05em |
 | `meta` | 13 | 1.5 | 0 |
 | `body` | 15 | 1.6 | 0 |
 | `read` | 17 | 1.6 | 0 |
@@ -265,7 +265,12 @@ through the labels.
 **Type roles** — `.label` · `.label-c` · `.horoscope` (17px centred, 34ch) ·
 `.prose-c` (15px centred, 44ch) · `.tnum` (tabular figures) · `.font-display`
 (700 / −0.02em — the Tailwind utility only sets family, the *look* lives here) ·
-`.caps` (11px/700/0.1em) · `.caps-sm` (10px/700/0.1em)
+`.caps` (12px/700/0.1em) · `.caps-sm` (11px/700/0.1em) · `.pop-btn-sm` (11px,
+at least 36px tall)
+
+**Nothing renders under 11px** since 3 Oct 2026. An audit that day counted 144
+elements under 11px on Consult and Shop buttons 24px tall; every size above
+went up one pixel and `text-[10px]` literals went to 11.
 
 **Text ladder** (§2.1) — `.t-heading` · `.t-sub` · `.t-body` · `.t-faint` ·
 `.gold`

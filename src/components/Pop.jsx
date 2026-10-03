@@ -112,7 +112,7 @@ export function PopTag({ children, tone = 'default', className = '' }) {
   }
   return (
     <span
-      className={`caps-sm inline-block rounded-full px-2.5 py-1 shadow-sm ${tones[tone]} ${className}`}
+      className={`caps-sm inline-block whitespace-nowrap rounded-full px-2.5 py-1 shadow-sm ${tones[tone]} ${className}`}
     >
       {children}
     </span>

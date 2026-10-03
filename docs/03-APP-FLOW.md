@@ -376,12 +376,11 @@ be removed without removing the images.
 No money anywhere. Nothing books a pandit.
 
 ### `/shop`
-**A floating cart button, bottom right, whenever this screen is open** — since
-25 Sep 2026. It carried a count badge and appeared only once something was in
-the cart, which meant the one control people go looking for was missing
-exactly when they went looking for it. The badge still appears only with a
-count; an empty cart opens a sheet that says it is empty, which is an answer
-where a missing button is not.
+**The cart button sits beside the search box, and that row stays pinned under
+the header** — since 3 Oct 2026. It was a floating button, bottom right, from
+10 Sep, and over a two-column grid it always covered some product's Buy. It
+is there whenever this screen is open; the badge appears only with a count,
+and an empty cart opens a sheet that says it is empty.
 
 Promo banners that set a category filter. Category pills revealing subcategory
 pills. A chart-matched hero when unfiltered.
@@ -724,7 +723,7 @@ is the point: they open from any tab without losing the screen underneath.
 |---|---|
 | **ChatPanel** | The header chat knob on every tab; Consult, Live and ConsultantProfile message knobs; a consultant's chat channel button |
 | **HoroscopePanel** | The header horoscope knob, Home's horoscope circle, the reading card's *Read all* |
-| **CartSheet** | **Only** Shop's cart knob and Shop's view-cart button |
+| **CartSheet** | Shop's cart button (beside search), Shop's view-cart button, Reports' top-bar Cart |
 | **Toast** | Every `showToast` and every flag toggle carrying messages |
 
 ChatPanel's tabs differ by side: a seeker gets Consultant / Alerts, a consultant
@@ -881,8 +880,8 @@ Server-backed, and therefore surviving a reload: the session, the profile, and
 the **wallet balance and ledger**.
 
 Still local, still evaporating: cart lines · questions remaining · chat panel
-open state and tab · horoscope panel state · cart sheet state · language ·
-toast · and the flag set. The birth draft is the one exception — it survives in
+open state and tab · horoscope panel state · cart sheet state ·
+toast · and the flag set. The language survives on the device (`localStorage`). The birth draft is the other exception — it survives in
 `sessionStorage` for the length of the signup.
 
 ### The flag set
