@@ -367,8 +367,14 @@ ignored rather than guessed.
 
 Five actions in a white bar under the shrine — Bell, Flowers, Diya, Dhoop,
 Aarti — each an animation and a toast (3 Oct 2026; they were a dark rail on top
-of the painting). The brass on the shrine (bells, diyas, dhoop, thali) loads
-photographs from `public/puja/` and falls back to drawings until they exist.
+of the painting). The brass on the shrine (bells, diyas, dhoop, thali) is
+photographic since 3 Oct 2026: `public/puja/{ghanti,diya,diya-lit,dhoop,thali}.webp`,
+generated in the owner's Canva account (Canva media MAHW7lUtQCA, MAHW7vzRMhQ,
+MAHW7rZ-rtc, MAHW7g2EYF0, MAHW7pzOLRA — the background-removed cut-outs) and
+falling back to the old drawings if a file is missing. The files are Canva's
+preview size for now; the thali (the widest) is the one worth replacing with a
+full-size download. There is one thali photo: lit, it glows from behind, because
+a lit version could not be generated (Canva credit quota, 3 Oct).
 The thali still rotates under a finger and settles to the nearest whole turn. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.

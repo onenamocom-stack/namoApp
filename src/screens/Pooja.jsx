@@ -363,25 +363,25 @@ export default function Pooja() {
             only exists once you light it makes the shrine look half-built. */}
         <span
           aria-hidden="true"
-          className="absolute bottom-6 left-[27%]"
+          className="absolute bottom-5 left-[22%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={48} fallback={<Diya size={40} lit={lit.diya} />} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={44} fallback={<Diya size={40} lit={lit.diya} />} />
         </span>
         <span
           aria-hidden="true"
-          className="absolute bottom-6 right-[27%]"
+          className="absolute bottom-5 right-[22%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={48} fallback={<Diya size={40} lit={lit.diya} />} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={44} fallback={<Diya size={40} lit={lit.diya} />} />
         </span>
 
         <span
           aria-hidden="true"
-          className="absolute bottom-6 left-[15%]"
+          className="absolute bottom-5 left-[14%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name="dhoop" width={36} fallback={<Dhoop size={44} lit={lit.incense} />} />
+          <PujaPhoto name="dhoop" width={30} fallback={<Dhoop size={44} lit={lit.incense} />} />
           {lit.incense &&
             [0, 1.2, 2.4].map((d) => (
               <span
@@ -426,7 +426,7 @@ export default function Pooja() {
           className="group absolute bottom-3 left-1/2 -translate-x-1/2 touch-none"
         >
           <span
-            className="block"
+            className="relative isolate block"
             style={{
               filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))',
               transform: `rotate(${turn}deg)`,
@@ -435,7 +435,15 @@ export default function Pooja() {
               transition: turning ? 'none' : 'transform .5s cubic-bezier(.2,.7,.3,1)',
             }}
           >
-            <PujaPhoto name={aarti ? 'thali-lit' : 'thali'} width={120} fallback={<Thali size={104} lit={aarti} />} />
+            {/* One photograph for both states; lit, it glows from behind. */}
+            {aarti && (
+              <span
+                aria-hidden="true"
+                className="animate-halo absolute inset-[-30%] -z-10 rounded-full"
+                style={{ background: 'radial-gradient(circle, rgba(255,196,92,.65) 0%, rgba(255,196,92,0) 65%)' }}
+              />
+            )}
+            <PujaPhoto name="thali" width={120} fallback={<Thali size={104} lit={aarti} />} />
           </span>
         </button>
       </section>
