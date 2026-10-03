@@ -3,17 +3,20 @@ import { creditLine, deities, offerings } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { PopTag } from '../components/Pop.jsx'
-import { Dhoop, Diya, Ghanti, Marigold, Thali } from '../components/PujaProps.jsx'
+import { Dhoop, Diya, Ghanti, PujaPhoto, Thali } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
  *
  * That is the whole layout rule. You cannot perform an aarti while hunting for
- * the thali, so the shrine takes every pixel between the deity row and the tab
- * bar, and every prop — bells, offerings, thali, sangeet — sits on the image
- * rather than under it. Nothing on this screen is below the fold because there
- * is no fold.
+ * the thali, so the shrine takes every pixel between the deity row and the puja
+ * bar. The brass — bells, diyas, dhoop, thali — stands on the image; the
+ * actions are one white bar under it (3 Oct 2026, it was a dark rail over the
+ * painting). Nothing on this screen is below the fold because there is no fold.
+ *
+ * The brass is photographed: `public/puja/*.webp`, each falling back to its
+ * drawing in PujaProps.jsx until the file exists.
  *
  * Consequence worth knowing before you add anything: this is the one screen in
  * the app whose root is a fixed-height flex column instead of a scrolling
@@ -207,6 +210,12 @@ export default function Pooja() {
     showToast(t(says))
   }
 
+  const toggleAarti = () => {
+    setAarti((a) => !a)
+    ripple()
+    showToast(t(aarti ? 'puja.aartiEnded' : 'puja.aartiBegun'))
+  }
+
   const image = deity.images[pic]
 
   return (
@@ -329,26 +338,6 @@ export default function Pooja() {
         <HangingBell side="left" ringing={ringing} />
         <HangingBell side="right" ringing={ringing} />
 
-        {/* ── The offering rail ───────────────────────────────────────── */}
-        <ul className="absolute left-3 top-1/2 flex -translate-y-1/2 flex-col gap-2.5">
-          {offerings.map((o) => {
-            const on = o.key === 'diya' ? lit.diya : o.key === 'incense' ? lit.incense : false
-            return (
-              <li key={o.id}>
-                <button
-                  type="button"
-                  onClick={() => offer(o.key, o.says)}
-                  aria-pressed={on || undefined}
-                  aria-label={t(o.label)}
-                  className={`plinth ${on ? 'plinth-on' : ''}`}
-                >
-                  <OfferingProp kind={o.key} on={on} />
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-
         {/* Which murti. A knob rather than a caption, because a caption under
             the image is the one thing this screen is not allowed to have. */}
         <button
@@ -366,7 +355,7 @@ export default function Pooja() {
           aria-label={t('puja.sangeet')}
           className="plinth absolute bottom-4 right-3"
         >
-          <SangeetGlyph />
+          <Icon name="music" size={19} />
         </button>
 
         {/* The altar. These stand on the step whether or not they are lit —
@@ -377,14 +366,14 @@ export default function Pooja() {
           className="absolute bottom-6 left-[27%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <Diya size={40} lit={lit.diya} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={48} fallback={<Diya size={40} lit={lit.diya} />} />
         </span>
         <span
           aria-hidden="true"
           className="absolute bottom-6 right-[27%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <Diya size={40} lit={lit.diya} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={48} fallback={<Diya size={40} lit={lit.diya} />} />
         </span>
 
         <span
@@ -392,7 +381,7 @@ export default function Pooja() {
           className="absolute bottom-6 left-[15%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <Dhoop size={44} lit={lit.incense} />
+          <PujaPhoto name="dhoop" width={36} fallback={<Dhoop size={44} lit={lit.incense} />} />
           {lit.incense &&
             [0, 1.2, 2.4].map((d) => (
               <span
@@ -429,12 +418,11 @@ export default function Pooja() {
             // circle would put the aarti out. The flag is reset on the next
             // pointerdown, not here — see startTurn.
             if (turned.current) return
-            setAarti((a) => !a)
-            ripple()
-            showToast(t(aarti ? 'puja.aartiEnded' : 'puja.aartiBegun'))
+            toggleAarti()
           }}
           onPointerDown={startTurn}
           aria-pressed={aarti}
+          aria-label={t(aarti ? 'puja.endAarti' : 'puja.aarti')}
           className="group absolute bottom-3 left-1/2 -translate-x-1/2 touch-none"
         >
           <span
@@ -447,21 +435,44 @@ export default function Pooja() {
               transition: turning ? 'none' : 'transform .5s cubic-bezier(.2,.7,.3,1)',
             }}
           >
-            <Thali size={104} lit={aarti} />
-          </span>
-          {/* The colours here are inline because every one of this app's
-              palette entries is a CSS variable, and Tailwind silently drops an
-              opacity modifier it cannot resolve — `bg-ink/70` painted nothing
-              at all and left white caps on a cream wall. */}
-          <span
-            className="mx-auto mt-1 block w-fit rounded-full px-2.5 py-0.5 caps-sm text-white backdrop-blur-[2px]"
-            style={{ background: 'rgba(14, 14, 16, 0.72)' }}
-          >
-            {t(aarti ? 'puja.endAarti' : 'puja.aarti')}
+            <PujaPhoto name={aarti ? 'thali-lit' : 'thali'} width={120} fallback={<Thali size={104} lit={aarti} />} />
           </span>
         </button>
-
       </section>
+
+      {/* ── The puja bar (3 Oct 2026) ──────────────────────────────────────
+          Every action in one white row under the shrine, labelled, in the
+          app's own buttons — it was a rail of dark discs on top of the
+          painting. Under the image rather than on it, so the murti is not
+          covered and every target is a full 44px with its name beside it. */}
+      <nav aria-label={t('nav.pooja')} className="flex-none border-t border-rule bg-white px-2 pb-3 pt-2.5">
+        <ul className="flex justify-around">
+          {[
+            ...offerings.map((o) => ({
+              key: o.key,
+              label: t(o.label),
+              icon: { bell: 'ghanti', flower: 'flower', diya: 'diya', incense: 'dhoop' }[o.key],
+              on: o.key === 'diya' ? lit.diya : o.key === 'incense' ? lit.incense : o.key === 'bell' && ringing,
+              act: () => offer(o.key, o.says),
+            })),
+            { key: 'aarti', label: t(aarti ? 'puja.endAarti' : 'puja.aarti'), icon: 'aarti', on: aarti, act: toggleAarti },
+          ].map((b) => (
+            <li key={b.key}>
+              <button
+                type="button"
+                onClick={b.act}
+                aria-pressed={b.key === 'bell' || b.key === 'flower' ? undefined : b.on}
+                className="flex w-16 flex-col items-center gap-1"
+              >
+                <span className={`plinth ${b.on ? 'plinth-on' : ''}`}>
+                  <Icon name={b.icon} size={22} />
+                </span>
+                <span className={`caps-sm leading-tight ${b.on ? 'gold' : 't-body'}`}>{b.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       {sheet && (
         <MurtiSheet
@@ -541,25 +552,7 @@ function HangingBell({ side, ringing }) {
       }`}
       style={{ filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))' }}
     >
-      <Ghanti size={86} hanging />
+      <PujaPhoto name="ghanti" width={44} fallback={<Ghanti size={86} hanging />} />
     </span>
   )
-}
-
-function SangeetGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-      <path d="M9 18V6l10-2v12" />
-      <circle cx="6.5" cy="18" r="2.5" />
-      <circle cx="16.5" cy="16" r="2.5" />
-    </svg>
-  )
-}
-
-/** What the rail shows: the samagri itself, not a symbol for it. */
-function OfferingProp({ kind, on }) {
-  if (kind === 'bell') return <Ghanti size={26} />
-  if (kind === 'flower') return <Marigold size={25} />
-  if (kind === 'diya') return <Diya size={26} lit={on} />
-  return <Dhoop size={26} lit={on} />
 }

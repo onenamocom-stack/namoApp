@@ -369,8 +369,11 @@ A swipe is refused when it starts on a control, because every prop is a button
 and two own gestures already. Under 44px is a tap; an ambiguous diagonal is
 ignored rather than guessed.
 
-Four offerings on a rail, each an animation and a toast. The thali rotates under
-a finger and settles to the nearest whole turn. A knob opens the murti picker,
+Five actions in a white bar under the shrine — Bell, Flowers, Diya, Dhoop,
+Aarti — each an animation and a toast (3 Oct 2026; they were a dark rail on top
+of the painting). The brass on the shrine (bells, diyas, dhoop, thali) loads
+photographs from `public/puja/` and falls back to drawings until they exist.
+The thali still rotates under a finger and settles to the nearest whole turn. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.
 

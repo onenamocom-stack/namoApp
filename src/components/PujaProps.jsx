@@ -1,4 +1,36 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
+
+/* Photos that 404'd this session, so a missing one is asked for once and not
+   on every render — and the drawing shows at once instead of after a flash. */
+const missing = new Set()
+
+/**
+ * A photographed prop from `public/puja/<name>.webp`, or the drawn one until
+ * that file exists (3 Oct 2026). The owner chose realistic brass for the
+ * shrine; the drawings below stay as the fallback, so the screen is never a
+ * broken image while the photographs are being found.
+ *
+ * Photos are sized by WIDTH and keep their own proportions — a real bell on
+ * its chain is not the drawing's shape, and forcing it into the drawing's box
+ * would squash it.
+ */
+export function PujaPhoto({ name, width, fallback }) {
+  const [failed, setFailed] = useState(missing.has(name))
+  if (failed) return fallback
+  return (
+    <img
+      src={`${import.meta.env.BASE_URL}puja/${name}.webp`}
+      alt=""
+      draggable={false}
+      onError={() => {
+        missing.add(name)
+        setFailed(true)
+      }}
+      style={{ width, height: 'auto' }}
+      className="pointer-events-none block select-none"
+    />
+  )
+}
 
 /**
  * The puja samagri, drawn as objects rather than icons.
