@@ -9,20 +9,25 @@ import { Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 const TABS = [
-  { key: 'ebooks', label: 'E-book' },
-  { key: 'courses', label: 'Courses' },
-  { key: 'events', label: 'Events' },
+  { key: 'ebooks', label: 'ac.tab.ebooks' },
+  { key: 'courses', label: 'ac.tab.courses' },
+  { key: 'events', label: 'ac.tab.events' },
 ]
 
 /** Academy — e-books, courses and live events. */
 export default function Academy() {
   const [tab, setTab] = useState('ebooks') // leads: the only tab with real content (28 Sep 2026)
+  const { t } = useStore()
 
   return (
     <>
       <TabHeader />
 
-      <Segmented items={TABS} value={tab} onChange={setTab} />
+      <Segmented
+        items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
+        value={tab}
+        onChange={setTab}
+      />
 
       <div key={tab} className="animate-fade">
         {tab === 'courses' && <Courses />}
@@ -36,14 +41,14 @@ export default function Academy() {
 }
 
 function Courses() {
-  const { showToast } = useStore()
+  const { showToast, t } = useStore()
   const inProgress = courses.filter((c) => c.progress > 0)
 
   return (
     <>
       {inProgress.length > 0 && (
         <section className="border-b border-rule px-5 py-6">
-          <Kicker>Continue</Kicker>
+          <Kicker>{t('ac.continue')}</Kicker>
           <ul className="mt-4 space-y-3">
             {inProgress.map((c) => (
               <li key={c.id}>
@@ -57,13 +62,13 @@ function Courses() {
                   </div>
                   <div className="mt-4">
                     <div className="mb-2 flex items-baseline justify-between">
-                      <span className="caps-sm t-faint">Progress</span>
+                      <span className="caps-sm t-faint">{t('ac.progress')}</span>
                       <span className="caps-sm gold tnum">{c.progress}%</span>
                     </div>
                     <PopBar value={c.progress} />
                   </div>
                   <PopButton size="sm" href={c.url} variant="gold" className="mt-4">
-                    Resume · watch now
+                    {t('ac.resume')}
                   </PopButton>
                 </PopCard>
               </li>
@@ -73,7 +78,7 @@ function Courses() {
       )}
 
       <section className="px-5 py-6">
-        <Kicker>All courses</Kicker>
+        <Kicker>{t('ac.allCourses')}</Kicker>
         <ul className="mt-4 space-y-4">
           {courses.map((c) => (
             <li key={c.id}>
@@ -107,14 +112,14 @@ function Courses() {
                       ₹{c.price.toLocaleString('en-IN')}
                     </p>
                     <PopButton
-                      onClick={() => showToast(`Enrolled · ${c.title}`)}
+                      onClick={() => showToast(t('ac.enrolledIn', { title: c.title }))}
                       full={false}
                       className="px-4"
                     >
-                      Enrol
+                      {t('ac.enrol')}
                     </PopButton>
                     <PopButton size="sm" href={c.url} variant="gold" full={false} className="px-4">
-                      Watch
+                      {t('ac.watch')}
                     </PopButton>
                   </div>
                 </div>
@@ -128,11 +133,11 @@ function Courses() {
 }
 
 function Events() {
-  const { showToast, hasFlag, toggleFlag } = useStore()
+  const { showToast, hasFlag, toggleFlag, t } = useStore()
 
   return (
     <section className="px-5 py-6">
-      <Kicker>Webinars &amp; seminars</Kicker>
+      <Kicker>{t('ac.webinars')}</Kicker>
       <ul className="mt-4 space-y-4">
         {academyEvents.map((e) => {
           const full = e.taken >= e.seats
@@ -148,7 +153,7 @@ function Events() {
                 <Plate seed={`${e.id}-cover`} variant="orbit" className="aspect-[21/9] w-full">
                   <span className="absolute left-3 top-3">
                     <PopTag tone={e.price === 0 ? 'gold' : 'default'}>
-                      {e.price === 0 ? 'Free' : e.kind}
+                      {e.price === 0 ? t('ac.free') : e.kind}
                     </PopTag>
                   </span>
                   <span className="caps-sm absolute bottom-3 left-3 rounded-full bg-surface/90 px-2.5 py-1 shadow-sm t-sub tnum">
@@ -171,7 +176,7 @@ function Events() {
                   <PopAvatar initials={e.initials} size={28} />
                   <span className="min-w-0 flex-1 truncate caps-sm t-faint">{e.host}</span>
                   <span className="flex-none caps-sm tnum t-faint">
-                    {full ? 'Sold out' : `${left} seats left`}
+                    {full ? t('ac.full') : t('ac.seatsLeft', { n: left })}
                   </span>
                 </div>
 
@@ -180,23 +185,23 @@ function Events() {
 
                 <div className="mt-4 flex items-center gap-3">
                   <p className="flex-1 text-meta tnum t-sub">
-                    {e.price === 0 ? 'No charge' : `₹${e.price.toLocaleString('en-IN')}`}
+                    {e.price === 0 ? t('ac.noCharge') : `₹${e.price.toLocaleString('en-IN')}`}
                   </p>
                   <PopButton
                     variant={joined ? 'default' : 'gold'}
                     disabled={full && !joined}
                     onClick={() =>
                       full
-                        ? showToast('That one is full')
+                        ? showToast(t('ac.isFull'))
                         : toggleFlag(`event:${e.id}`, {
-                            on: `Enrolled · ${e.title}`,
-                            off: 'Enrolment cancelled',
+                            on: t('ac.enrolledIn', { title: e.title }),
+                            off: t('ac.cancelled'),
                           })
                     }
                     full={false}
                     className="px-5"
                   >
-                    {full && !joined ? 'Sold out' : joined ? 'Enrolled' : 'Enrol'}
+                    {full && !joined ? t('ac.full') : joined ? t('ac.enrolled') : t('ac.enrol')}
                   </PopButton>
                 </div>
                 </div>
@@ -214,6 +219,7 @@ function Events() {
    request. A PDF opens in the browser's own viewer, which is also where it
    saves from. */
 function Ebooks() {
+  const { t } = useStore()
   const [books, setBooks] = useState(null)
   const [failed, setFailed] = useState(false)
 
@@ -223,13 +229,13 @@ function Ebooks() {
       .catch(() => setFailed(true))
   }, [])
 
-  if (failed) return <p className="px-5 py-10 text-center text-meta t-faint">Could not reach the library. Try again.</p>
-  if (!books) return <p className="px-5 py-10 text-center text-meta t-faint">Loading…</p>
-  if (!books.length) return <p className="px-5 py-10 text-center text-meta t-faint">No e-books yet.</p>
+  if (failed) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.libErr')}</p>
+  if (!books) return <p className="px-5 py-10 text-center text-meta t-faint">{t('a.loading')}</p>
+  if (!books.length) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.noBooks')}</p>
 
   return (
     <section className="px-5 py-6">
-      <Kicker>Yours to read</Kicker>
+      <Kicker>{t('ac.yoursToRead')}</Kicker>
       <ul className="mt-4 space-y-4">
         {books.map((d) => (
           <li key={d.id}>
@@ -251,7 +257,7 @@ function Ebooks() {
  * a phone blocks a window opened after a network round trip as a popup.
  */
 function Ebook({ book: d }) {
-  const { showToast } = useStore()
+  const { showToast, t } = useStore()
   const [link, setLink] = useState(null)
   const [offer, setOffer] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -289,15 +295,15 @@ function Ebook({ book: d }) {
         </div>
         {!priced ? (
           <PopButton href={d.url} full={false} className="flex-none px-4">
-            Read
+            {t('ac.read')}
           </PopButton>
         ) : link ? (
           <PopButton href={link} full={false} className="flex-none px-4" variant="gold">
-            Open PDF
+            {t('ac.openPdf')}
           </PopButton>
         ) : (
           <PopButton onClick={fetchLink} full={false} className="flex-none px-4" disabled={busy}>
-            {busy ? '…' : 'Read'}
+            {busy ? '…' : t('ac.read')}
           </PopButton>
         )}
       </div>
@@ -306,7 +312,7 @@ function Ebook({ book: d }) {
         <div className="px-4 pb-4">
           <Paywall
             title={d.title}
-            note="Yours to read on any device you sign in on."
+            note={t('ac.paywallNote')}
             sku="ebook"
             refKey={d.id}
             pricePaise={offer}

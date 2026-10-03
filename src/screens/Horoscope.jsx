@@ -41,6 +41,7 @@ export function dayFrom(payload, key) {
  * shown.
  */
 export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
+  const { t } = useStore()
   const glance = generic ? day.glance.filter((g) => g.key !== 'Period') : day.glance
   return (
     <>
@@ -74,7 +75,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {(glance.length > 0 || day.intensity !== null) && (
-        <Section label="Day at a glance">
+        <Section label={t('hs.glance')}>
           <dl className="mx-auto max-w-[18rem]">
             {glance.map((g) => (
               <div key={g.key} className="flex items-baseline justify-between gap-6 py-3 rule-b">
@@ -86,7 +87,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
           {day.intensity !== null && (
             <div className="mx-auto mt-10 max-w-[18rem]">
               <div className="mb-3 flex items-baseline justify-between">
-                <span className="label text-left">Overall</span>
+                <span className="label text-left">{t('hs.overall')}</span>
                 <span className="text-body text-t1 tnum">{day.intensity}</span>
               </div>
               <Ruler value={day.intensity} />
@@ -96,21 +97,21 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {(day.do.length > 0 || day.dont.length > 0) && (
-        <Section label="Do / Don't">
+        <Section label={t('hs.doDont')}>
           <div className="grid grid-cols-2 gap-x-5">
             <div>
-              <p className="label border-b border-rule pb-2 text-left">Do</p>
+              <p className="label border-b border-rule pb-2 text-left">{t('hs.do')}</p>
               <ul className="mt-3">
-                {day.do.map((t) => (
-                  <li key={t} className="py-2.5 text-body text-t1">{t}</li>
+                {day.do.map((x) => (
+                  <li key={x} className="py-2.5 text-body text-t1">{x}</li>
                 ))}
               </ul>
             </div>
             <div className="border-l border-rule pl-5">
-              <p className="label border-b border-rule pb-2 text-left">Don&apos;t</p>
+              <p className="label border-b border-rule pb-2 text-left">{t('hs.dont')}</p>
               <ul className="mt-3">
-                {day.dont.map((t) => (
-                  <li key={t} className="py-2.5 text-body text-t2">{t}</li>
+                {day.dont.map((x) => (
+                  <li key={x} className="py-2.5 text-body text-t2">{x}</li>
                 ))}
               </ul>
             </div>
@@ -120,7 +121,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
 
       {/* Named with its place: sunrise moves about two hours across India. */}
       {day.windows.length > 0 && (
-        <Section label="Windows">
+        <Section label={t('hs.windows')}>
           <ul>
             {day.windows.map((w) => (
               <li
@@ -135,23 +136,23 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
             ))}
           </ul>
           <p className="mt-4 text-meta text-t3">
-            Auspicious first, then the three to work around.
-            {windowsAt && ` Clock times for ${windowsAt}.`}
+            {t('hs.windowsNote')}
+            {windowsAt && ` ${t('hs.clockFor', { place: windowsAt })}`}
           </p>
         </Section>
       )}
 
       {(day.power || day.pressure) && (
-        <Section label="Power &amp; pressure">
+        <Section label={t('hs.powerPressure')}>
           {day.power && (
             <div className="border-b border-rule pb-6">
-              <p className="label mb-2 text-left">Power</p>
+              <p className="label mb-2 text-left">{t('hs.power')}</p>
               <p className="text-read text-t1">{day.power}</p>
             </div>
           )}
           {day.pressure && (
             <div className="pt-6">
-              <p className="label mb-2 text-left">Pressure</p>
+              <p className="label mb-2 text-left">{t('hs.pressure')}</p>
               <p className="text-read text-t2">{day.pressure}</p>
             </div>
           )}
@@ -159,7 +160,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {day.ratings.length > 0 && (
-        <Section label={`Read across ${day.ratings.length} areas`}>
+        <Section label={t('hs.areas', { n: day.ratings.length })}>
           <ul className="mx-auto max-w-[18rem]">
             {day.ratings.map((r) => (
               <li key={r.area} className="border-b border-rule py-4">
@@ -175,17 +176,17 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {day.transits.length > 0 && (
-        <Section label="What is moving">
+        <Section label={t('hs.moving')}>
           <ul>
-            {day.transits.map((t) => (
-              <li key={t.id} className="border-b border-rule pb-6 pt-1 last:border-b-0">
+            {day.transits.map((tr) => (
+              <li key={tr.id} className="border-b border-rule pb-6 pt-1 last:border-b-0">
                 <div className="mb-2 flex items-baseline justify-between gap-4">
-                  <h3 className="text-lead font-semibold">{t.title}</h3>
+                  <h3 className="text-lead font-semibold">{tr.title}</h3>
                   <span className="flex-none text-micro uppercase tracking-caps text-t3">
-                    {t.weight}
+                    {tr.weight}
                   </span>
                 </div>
-                <p className="text-body text-t2">{t.body}</p>
+                <p className="text-body text-t2">{tr.body}</p>
               </li>
             ))}
           </ul>
@@ -193,7 +194,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {day.sections.length > 0 && (
-        <Section label="At length">
+        <Section label={t('hs.atLength')}>
           <ul>
             {day.sections.map((s) => (
               <li key={s.key} className="border-b border-rule pb-6 pt-1 last:border-b-0">
@@ -212,7 +213,7 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
       )}
 
       {day.reflections.length > 0 && (
-        <Section label="Sit with this">
+        <Section label={t('hs.sitWith')}>
           {day.reflections.map((r, i) => (
             <div key={r}>
               {i > 0 && <Stub className="my-7" />}
@@ -227,12 +228,13 @@ export function ReadingView({ day, sky, city, windowsAt, generic = false }) {
 
 /** Twelve chips, one per rashi, in a row that scrolls sideways. */
 export function SignPicker({ value, onChange, className = '' }) {
+  const { t } = useStore()
   return (
     <ul className={`no-scrollbar flex gap-2 overflow-x-auto ${className}`}>
       {RASHIS.map((s) => (
         <li key={s} className="flex-none">
           <button type="button" onClick={() => onChange(s)} className="pill caps-sm" aria-pressed={value === s}>
-            {s}
+            {t(`sign.${s}`)}
           </button>
         </li>
       ))}
@@ -252,10 +254,11 @@ export function SignPicker({ value, onChange, className = '' }) {
  */
 export default function Horoscope() {
   const [key, setKey] = useState('today')
-  const { session, sessionReady } = useStore()
+  const { session, sessionReady, t } = useStore()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   const [picked, setPicked] = useState(null)
   const sign = picked ?? mine.rashi ?? 'Aries'
+  const signName = t(`sign.${sign}`)
 
   const date = useMemo(() => istDate(DAY_OFFSET[key]), [key])
   // Waits for the chart only while it can still name the reader's sign.
@@ -266,8 +269,8 @@ export default function Horoscope() {
   return (
     <>
       <TopBar
-        title="Daily horoscope"
-        sub={`${sign} moon${sign === mine.rashi ? ' · yours' : ''}`}
+        title={t('hs.title')}
+        sub={`${t('hs.moonSign', { sign: signName })}${sign === mine.rashi ? ` · ${t('hs.yours')}` : ''}`}
         back
         backTo="/home"
       />
@@ -276,10 +279,16 @@ export default function Horoscope() {
         <SignPicker value={sign} onChange={setPicked} />
       </section>
 
-      <Segmented items={DAY_TABS} value={key} onChange={setKey} />
+      <Segmented
+        items={DAY_TABS.map((d) => ({ ...d, label: t(`hs.day.${d.key}`) }))}
+        value={key}
+        onChange={setKey}
+      />
 
       {reading.loading && (
-        <p className="section text-meta text-t3">Reading {sign} for {longDate(date)}.</p>
+        <p className="section text-meta text-t3">
+          {t('hs.reading', { sign: signName, date: longDate(date) })}
+        </p>
       )}
       {reading.refusal && (
         <div className="section">
@@ -298,18 +307,15 @@ export default function Horoscope() {
         />
       )}
 
-      <Section label="Your own" last>
-        <p className="prose-c">
-          This is {sign}&apos;s reading, the same for everyone born with the Moon there. Yours,
-          from the minute and place you were born, is in your chart.
-        </p>
+      <Section label={t('hs.yourOwn')} last>
+        <p className="prose-c">{t('hs.yourOwnNote', { sign: signName })}</p>
         <Button to="/chart?tab=prediction" variant="solid" className="mt-8">
-          Your predictions
+          {t('hs.predictions')}
         </Button>
-        <Row to="/chart" title="Your full chart" note="D1 and every divisional chart" />
-        <Row to="/muhurat" title="Muhurat" note="When to start something that matters" />
+        <Row to="/chart" title={t('row.chart')} note={t('hs.chartNote')} />
+        <Row to="/muhurat" title={t('tool.muhurat')} note={t('row.muhuratNote')} />
         <Link to="/consult" className="mt-6 block text-center text-meta text-t2 underline">
-          Or ask an astrologer
+          {t('hs.askAstrologer')}
         </Link>
       </Section>
 

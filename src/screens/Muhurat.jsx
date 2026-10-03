@@ -25,31 +25,36 @@ import { useStore } from '../store.jsx'
  * **An empty month is a real answer, not a failure.** Griha pravesh returns
  * nothing through Chaturmas, and saying so is the correct screen.
  */
+/* `label` and `note` are i18n keys. */
 const PURPOSES = [
-  { key: 'general_work', label: 'General work', note: 'Any start that has no rite of its own' },
-  { key: 'vehicle_purchase', label: 'Vehicle', note: 'Taking delivery of a vehicle' },
-  { key: 'property_purchase', label: 'Property', note: 'Registering or buying' },
-  { key: 'griha_pravesh', label: 'Griha pravesh', note: 'Entering a new home' },
-  { key: 'namkaran', label: 'Naming', note: 'Namkaran, the naming ceremony' },
-  { key: 'mundan', label: 'Mundan', note: 'The first tonsure' },
+  { key: 'general_work', label: 'mu.p.general', note: 'mu.p.generalNote' },
+  { key: 'vehicle_purchase', label: 'mu.p.vehicle', note: 'mu.p.vehicleNote' },
+  { key: 'property_purchase', label: 'mu.p.property', note: 'mu.p.propertyNote' },
+  { key: 'griha_pravesh', label: 'mu.p.griha', note: 'mu.p.grihaNote' },
+  { key: 'namkaran', label: 'mu.p.naming', note: 'mu.p.namingNote' },
+  { key: 'mundan', label: 'mu.p.mundan', note: 'mu.p.mundanNote' },
 ]
 
-/** This month and the next two, as the API clamps them. */
-function months() {
+/** This month and the next two, as the API clamps them. Named in the
+ *  reader's language; the key is the same either way. */
+function months(lang = 'en') {
   const today = istDate()
   const [year, month] = [Number(today.slice(0, 4)), Number(today.slice(5, 7))]
   return Array.from({ length: 3 }, (_, i) => {
     const date = new Date(Date.UTC(year, month - 1 + i, 1))
     return {
       key: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`,
-      label: date.toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' }),
+      label: date.toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-GB', {
+        month: 'long',
+        timeZone: 'UTC',
+      }),
     }
   })
 }
 
 export default function Muhurat() {
-  const { profile, session, sessionReady } = useStore()
-  const monthTabs = useMemo(months, [])
+  const { profile, session, sessionReady, t, lang } = useStore()
+  const monthTabs = useMemo(() => months(lang), [lang])
 
   const [purpose, setPurpose] = useState('general_work')
   const [month, setMonth] = useState(monthTabs[0].key)
@@ -90,7 +95,8 @@ export default function Muhurat() {
     return () => { live = false }
   }, [purpose, month, place, mine, sessionReady, session?.user?.id, attempt])
 
-  const chosen = PURPOSES.find((p) => p.key === purpose)
+  const found = PURPOSES.find((p) => p.key === purpose)
+  const chosen = { ...found, label: t(found.label), note: t(found.note) }
   const result = state.result
   /* ₹49 a purpose a month since 30 Sep 2026. The server refuses with the
      price until it is bought; the shared windows stay free. */
@@ -98,9 +104,9 @@ export default function Muhurat() {
 
   return (
     <>
-      <TopBar title="Muhurat" sub={chosen.note} back backTo="/consult" />
+      <TopBar title={t('tool.muhurat')} sub={chosen.note} back backTo="/consult" />
 
-      <Section label="What for" tight>
+      <Section label={t('mu.whatFor')} tight>
         <ul className="flex flex-wrap gap-2">
           {PURPOSES.map((p) => (
             <li key={p.key}>
@@ -110,7 +116,7 @@ export default function Muhurat() {
                 className="pill caps-sm"
                 aria-pressed={purpose === p.key}
               >
-                {p.label}
+                {t(p.label)}
               </button>
             </li>
           ))}
@@ -119,12 +125,12 @@ export default function Muhurat() {
 
       <Segmented items={monthTabs} value={month} onChange={setMonth} />
 
-      <Section label="Where" tight>
+      <Section label={t('mu.where')} tight>
         {changingPlace || !place ? (
           <PlaceField
             place={null}
             onPick={(picked) => { if (picked) { setPlace(picked); setChangingPlace(false) } }}
-            placeholder="City"
+            placeholder={t('mu.city')}
           />
         ) : (
           <div className="flex items-baseline justify-between gap-4">
@@ -134,12 +140,12 @@ export default function Muhurat() {
               onClick={() => setChangingPlace(true)}
               className="flex-none caps-sm text-t2 underline"
             >
-              Change
+              {t('mu.change')}
             </button>
           </div>
         )}
         <p className="mt-3 text-meta text-t3">
-          Sunrise moves about two hours across India, and every window below is built from it.
+          {t('mu.sunriseNote')}
         </p>
 
         {/* Only offered when there is a chart to judge against. An empty
@@ -151,20 +157,22 @@ export default function Muhurat() {
             className="pill caps-sm mt-5"
             aria-pressed={mine}
           >
-            {mine ? 'Judged against your chart' : 'Judge against your chart'}
+            {mine ? t('mu.judged') : t('mu.judge')}
           </button>
         )}
       </Section>
 
       {state.loading && (
-        <p className="section text-meta text-t3">Reading {chosen.label.toLowerCase()} windows.</p>
+        <p className="section text-meta text-t3">
+          {t('mu.loading', { label: chosen.label.toLowerCase() })}
+        </p>
       )}
 
       {locked && (
         <section className="section">
           <Paywall
-            title={`${chosen.label}, judged against your chart`}
-            note={`The ${monthTabs.find((m) => m.key === month).label} windows ranked for your birth, and the one best moment when there is one. Yours to reopen any time.`}
+            title={t('mu.payTitle', { label: chosen.label })}
+            note={t('mu.payNote', { month: monthTabs.find((m) => m.key === month).label })}
             sku="muhurat"
             refKey={`${purpose}:${month}`}
             pricePaise={state.refusal.pricePaise}
@@ -175,7 +183,7 @@ export default function Muhurat() {
             onClick={() => setMine(false)}
             className="mx-auto mt-5 block text-meta text-t2 underline"
           >
-            Show the windows without it
+            {t('mu.without')}
           </button>
         </section>
       )}
@@ -185,7 +193,7 @@ export default function Muhurat() {
           <p className="text-body text-t1">{state.refusal.reason}</p>
           {state.refusal.code === 'no_birth' && (
             <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
-              Add your birth details
+              {t('a.addBirth')}
             </Link>
           )}
         </div>
@@ -199,7 +207,7 @@ export default function Muhurat() {
             <section className="section">
               {result.moment ? (
                 <PopCard raised className="p-5">
-                  <p className="caps-sm gold">Best moment</p>
+                  <p className="caps-sm gold">{t('mu.best')}</p>
                   <p className="mt-3 text-title font-semibold tnum">{result.moment.time}</p>
                   <p className="mt-1 text-body t-sub">{longDate(result.moment.date)}</p>
                   <Stub className="my-5" />
@@ -212,16 +220,16 @@ export default function Muhurat() {
           )}
 
           {result.windows.length === 0 ? (
-            <Section label="Nothing this month" last>
+            <Section label={t('mu.nothing')} last>
               <p className="prose-c">
-                No {chosen.label.toLowerCase()} window in{' '}
-                {monthTabs.find((m) => m.key === month).label}. This is the answer, not a
-                failure — whole months are closed to some rites, and the tradition would rather
-                you waited than picked a bad one. Try the next month.
+                {t('mu.nothingNote', {
+                  label: chosen.label.toLowerCase(),
+                  month: monthTabs.find((m) => m.key === month).label,
+                })}
               </p>
             </Section>
           ) : (
-            <Section label={mine ? 'Windows, ranked for you' : 'Windows'}>
+            <Section label={mine ? t('mu.ranked') : t('mu.windows')}>
               <ul>
                 {result.windows.map((w) => (
                   <li key={w.id} className="border-b border-rule py-5 last:border-b-0">
@@ -234,8 +242,8 @@ export default function Muhurat() {
                     </div>
                     {w.hours !== null && (
                       <p className="mt-1 caps-sm t-faint tnum">
-                        {w.hours} hours
-                        {w.hours >= 23 && ' · sunrise to sunrise'}
+                        {t('mu.hours', { n: w.hours })}
+                        {w.hours >= 23 && ` · ${t('mu.sunToSun')}`}
                       </p>
                     )}
                     {w.reasons.length > 0 && (
@@ -248,21 +256,17 @@ export default function Muhurat() {
                 ))}
               </ul>
               <p className="mt-4 text-meta text-t3">
-                Times are local to {placeLabel(place)}. A window that ends after midnight is
-                marked +1.
+                {t('mu.localTimes', { place: placeLabel(place) })}
               </p>
             </Section>
           )}
 
-          <Section label="Before you act on this" last>
-            <p className="prose-c">
-              A muhurat is a ruleset over tithi, nakshatra and the weekday. It says when the day
-              is clean, not whether the thing itself is wise.
-            </p>
-            <Kicker className="mt-10">Take it further</Kicker>
-            <Row to="/consult" title="Ask an astrologer" note="A person, on your own chart" />
-            <Row to="/horoscope" title="Today's reading" note="The day you are in now" />
-            <Button to="/consult" variant="solid" className="mt-8">Book fifteen minutes</Button>
+          <Section label={t('mu.before')} last>
+            <p className="prose-c">{t('mu.beforeNote')}</p>
+            <Kicker className="mt-10">{t('a.further')}</Kicker>
+            <Row to="/consult" title={t('mu.askAstrologer')} note={t('mu.askAstrologerNote')} />
+            <Row to="/horoscope" title={t('mu.todayReading')} note={t('mu.todayReadingNote')} />
+            <Button to="/consult" variant="solid" className="mt-8">{t('mu.book15')}</Button>
           </Section>
         </>
       )}

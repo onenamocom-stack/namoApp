@@ -22,7 +22,7 @@ import { rupees, useStore } from '../store.jsx'
  * discount promise must not be on screen the day real money starts moving.
  */
 export default function Wallet() {
-  const { balance, ledger, showToast, topup, toppingUp } = useStore()
+  const { balance, ledger, showToast, topup, toppingUp, t } = useStore()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [custom, setCustom] = useState('')
 
@@ -41,17 +41,17 @@ export default function Wallet() {
 
   return (
     <>
-      <TopBar title="Wallet" back backTo="/home" />
+      <TopBar title={t('a.wallet')} back backTo="/home" />
 
       {/* ── Balance ───────────────────────────────────────────────────── */}
       <section className="px-5 py-6">
         <PopCard raised className="p-5">
-          <p className="caps-sm t-faint">Available balance</p>
+          <p className="caps-sm t-faint">{t('wal.available')}</p>
           <p className="mt-2 font-display text-huge leading-none tnum t-heading">
             {balance === null ? '—' : `₹${rupees(balance)}`}
           </p>
           <p className="mt-3 text-meta t-body">
-            Sessions, question packs and course fees are drawn from here.
+            {t('wal.drawn')}
           </p>
 
           <div className="mt-6 flex gap-3">
@@ -61,10 +61,10 @@ export default function Wallet() {
               disabled={toppingUp}
               onClick={() => setSheetOpen(true)}
             >
-              {toppingUp ? 'Working…' : 'Add money'}
+              {toppingUp ? t('wal.working') : t('a.addMoney')}
             </PopButton>
-            <PopButton onClick={() => showToast('Statement — not built yet')}>
-              Statement
+            <PopButton onClick={() => showToast(t('wal.statementProto'))}>
+              {t('wal.statement')}
             </PopButton>
           </div>
         </PopCard>
@@ -72,32 +72,32 @@ export default function Wallet() {
 
       {/* ── Transactions ──────────────────────────────────────────────── */}
       <section className="border-t border-rule px-5 py-6">
-        <Kicker action="All" onAction={() => showToast('Full history — not built yet')}>
-          Recent transactions
+        <Kicker action={t('a.all')} onAction={() => showToast(t('wal.historyProto'))}>
+          {t('wal.recent')}
         </Kicker>
 
         <ul className="mt-4">
-          {ledger.map((t) => (
+          {ledger.map((tx) => (
             <li
-              key={t.id}
+              key={tx.id}
               className="flex items-center gap-3 border-b border-rule py-3.5 last:border-b-0"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-meta t-heading">{t.label}</span>
+                <span className="block truncate text-meta t-heading">{tx.label}</span>
                 <span className="mt-1 block caps-sm t-faint tnum">
-                  {t.date} · {t.method}
+                  {tx.date} · {tx.method}
                 </span>
               </span>
               <span
-                className={`flex-none text-meta tnum ${t.kind === 'credit' ? 'text-ok' : 't-sub'}`}
+                className={`flex-none text-meta tnum ${tx.kind === 'credit' ? 'text-ok' : 't-sub'}`}
               >
-                {t.kind === 'credit' ? '+' : '−'}₹{rupees(t.amountPaise)}
+                {tx.kind === 'credit' ? '+' : '−'}₹{rupees(tx.amountPaise)}
               </span>
             </li>
           ))}
           {ledger.length === 0 && (
             <li className="py-4 text-meta t-faint">
-              Nothing has moved through this wallet yet.
+              {t('wal.empty')}
             </li>
           )}
         </ul>
@@ -105,14 +105,13 @@ export default function Wallet() {
 
       <section className="border-t border-rule px-5 py-6">
         <p className="text-center text-meta t-faint">
-          Every figure here is the server's. The balance is a sum of the
-          entries below it, and neither can be edited from this device.
+          {t('wal.serverNote')}
         </p>
       </section>
 
       <div className="h-8" />
 
-      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Add money">
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={t('a.addMoney')}>
         <div className="grid grid-cols-2 gap-3">
           {topUpAmounts.map((a) => (
             <PopButton key={a} disabled={toppingUp} onClick={() => add(a)}>
@@ -121,7 +120,7 @@ export default function Wallet() {
           ))}
         </div>
 
-        <p className="mt-7 caps-sm t-faint">Or another amount</p>
+        <p className="mt-7 caps-sm t-faint">{t('wal.other')}</p>
         <div className="mt-3 flex items-center gap-2">
           <span className="text-body t-heading">₹</span>
           <input
@@ -129,7 +128,7 @@ export default function Wallet() {
             inputMode="numeric"
             min="100"
             max="100000"
-            placeholder="100 to 1,00,000"
+            placeholder={t('wal.range')}
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
             className="w-full rounded-lg border border-stroke bg-surface px-3 py-2 text-body tnum placeholder-t-faint focus:border-ink focus:outline-none"
@@ -142,12 +141,11 @@ export default function Wallet() {
           disabled={!valid || toppingUp}
           onClick={() => add(amount)}
         >
-          {toppingUp ? 'Opening checkout…' : 'Continue'}
+          {toppingUp ? t('wal.opening') : t('wal.continue')}
         </PopButton>
 
         <p className="mt-5 text-meta t-faint">
-          Payment is handled by Razorpay. Your balance updates when they confirm
-          it, which is a moment after you pay.
+          {t('wal.razorpay')}
         </p>
       </Sheet>
     </>

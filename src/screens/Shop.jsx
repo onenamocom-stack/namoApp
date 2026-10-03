@@ -21,10 +21,10 @@ import { useMyChart } from '../lib/astro.js'
 const BANNERS = [
   {
     id: 'bn-stones',
-    kicker: 'Certified',
-    title: 'Stones that ship with the lab report',
-    note: 'Every gem, its certificate. No exceptions.',
-    cta: 'See gemstones',
+    kicker: 'shop.bn.stones.k',
+    title: 'shop.bn.stones.t',
+    note: 'shop.bn.stones.n',
+    cta: 'shop.bn.stones.c',
     cat: 'Gemstones',
     art: 'orbit',
     from: '#7c2d12',
@@ -32,10 +32,10 @@ const BANNERS = [
   },
   {
     id: 'bn-rudraksha',
-    kicker: 'Nepali origin',
-    title: 'Rudraksha, counted by hand',
-    note: '108 beads, knotted one at a time.',
-    cta: 'See rudraksha',
+    kicker: 'shop.bn.rudraksha.k',
+    title: 'shop.bn.rudraksha.t',
+    note: 'shop.bn.rudraksha.n',
+    cta: 'shop.bn.rudraksha.c',
     cat: 'Rudraksha',
     art: 'contour',
     from: '#6b3410',
@@ -43,10 +43,10 @@ const BANNERS = [
   },
   {
     id: 'bn-remedies',
-    kicker: 'Weekly ritual',
-    title: 'Remedy kits under ₹1,500',
-    note: 'Oil, cloth, mantra card. Nothing you cannot pronounce.',
-    cta: 'See remedies',
+    kicker: 'shop.bn.remedies.k',
+    title: 'shop.bn.remedies.t',
+    note: 'shop.bn.remedies.n',
+    cta: 'shop.bn.remedies.c',
     cat: 'Remedies',
     art: 'halftone',
     from: '#8a3a00',
@@ -70,14 +70,14 @@ const CAT_GRADIENT = {
 }
 
 const CAT_LINE = {
-  Gemstones: 'Certified, or we do not list it',
-  Maalas: 'Counted by hand, knotted one at a time',
-  Rudraksha: 'Nepali and Java origin, lab checked',
-  Remedies: 'Everything the ritual needs, in one box',
+  Gemstones: 'shop.cat.Gemstones',
+  Maalas: 'shop.cat.Maalas',
+  Rudraksha: 'shop.cat.Rudraksha',
+  Remedies: 'shop.cat.Remedies',
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast } =
+  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast, t } =
     useStore()
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
@@ -146,7 +146,7 @@ export default function Shop() {
     if (loadingShop || shopError || !focusId) return
     const el = document.getElementById(`product-${focusId}`)
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    else showToast('That product is no longer in the shop')
+    else showToast(t('shop.gone'))
     // Once per arrival, not on every later reload of the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingShop, focusId])
@@ -181,9 +181,8 @@ export default function Shop() {
           it is first order only. */}
       {referral && (
         <p className="border-b border-rule bg-surface-2 px-5 py-3 text-micro t-sub">
-          Code <b className="tnum">{referral}</b> is saved and goes in at
-          checkout. You pay the full price and get <b>10% back</b> in your
-          wallet seven days after delivery — on your first order only.
+          {t('shop.ref.a')} <b className="tnum">{referral}</b> {t('shop.ref.b')}{' '}
+          <b>{t('shop.ref.c')}</b> {t('shop.ref.d')}
         </p>
       )}
 
@@ -194,7 +193,7 @@ export default function Shop() {
       <Search
         value={query}
         onChange={setQuery}
-        placeholder="Search stones, maalas and kits"
+        placeholder={t('shop.searchPh')}
         className="sticky top-[52px] z-10 bg-bg px-4 pb-2 pt-3"
         trailing={
           <button
@@ -245,13 +244,13 @@ export default function Shop() {
                   line-box descender, 11px of dead space under the CTA that no
                   padding rule accounts for. */}
               <span className="relative flex flex-col items-start">
-                <span className="caps-sm text-white/70">{b.kicker}</span>
+                <span className="caps-sm text-white/70">{t(b.kicker)}</span>
                 <span className="mt-1.5 block max-w-[16ch] text-lead font-medium leading-tight text-white">
-                  {b.title}
+                  {t(b.title)}
                 </span>
-                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{b.note}</span>
+                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{t(b.note)}</span>
                 <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 caps-sm text-ink shadow-md">
-                  {b.cta} <span aria-hidden="true">→</span>
+                  {t(b.cta)} <span aria-hidden="true">→</span>
                 </span>
               </span>
             </button>
@@ -287,7 +286,7 @@ export default function Shop() {
             }}
             className="pill caps-sm"
           >
-            {f}
+            {f === 'All' ? t('a.all') : f}
           </button>
         ))}
       </div>
@@ -308,7 +307,7 @@ export default function Shop() {
               <span className="relative block">
                 <span className="caps-sm text-white/70">{cat}</span>
                 <span className="mt-1.5 block text-lead font-medium leading-tight text-white">
-                  {CAT_LINE[cat]}
+                  {CAT_LINE[cat] && t(CAT_LINE[cat])}
                 </span>
               </span>
             </div>
@@ -333,7 +332,7 @@ export default function Shop() {
       {/* ── Chart-matched hero ────────────────────────────────────────── */}
       {hero && (
         <section id={`product-${hero.id}`} className="px-4 pb-2 pt-2">
-          <Kicker>Matched to your chart</Kicker>
+          <Kicker>{t('shop.matched')}</Kicker>
           <PopCard
             raised
             tap
@@ -351,9 +350,7 @@ export default function Shop() {
                   and the sentence drops the personal half rather than naming
                   somebody else's. */}
               <p className="mt-3 text-meta t-body">
-                {mine.sun
-                  ? `Commonly named for a ${mine.sun} sun with Saturn in the 12th. Commonly named is not the same as proven.`
-                  : 'Commonly named for a Saturn in the 12th. Commonly named is not the same as proven.'}
+                {mine.sun ? t('shop.heroSun', { sun: mine.sun }) : t('shop.hero')}
               </p>
 
               <div className="mt-5 flex items-center gap-2">
@@ -361,7 +358,7 @@ export default function Shop() {
                   ₹{hero.price.toLocaleString('en-IN')}
                 </p>
                 <PopButton size="sm" full={false} onClick={() => addToCart(hero)}>
-                  Add to cart
+                  {t('shop.addToCart')}
                 </PopButton>
                 <PopButton
                   size="sm"
@@ -369,7 +366,7 @@ export default function Shop() {
                   variant="gold"
                   onClick={() => buyNow(hero)}
                 >
-                  Review &amp; buy
+                  {t('shop.reviewBuy')}
                 </PopButton>
               </div>
             </div>
@@ -379,28 +376,26 @@ export default function Shop() {
 
       {/* ── Grid ──────────────────────────────────────────────────────── */}
       <section className="px-4 py-4">
-        <Kicker>{`${rest.length} ${rest.length === 1 ? 'item' : 'items'}`}</Kicker>
+        <Kicker>{t(rest.length === 1 ? 'shop.item' : 'shop.items', { n: rest.length })}</Kicker>
 
         {loadingShop ? (
           <p className="animate-breathe py-12 text-center text-meta t-faint">
-            Opening the shop
+            {t('shop.opening')}
           </p>
         ) : shopError ? (
           /* Says it cannot reach the shop rather than showing an empty one.
              "Nothing matches that" under a failed request sends somebody
              to clear a search that was never the problem. */
           <div className="py-12 text-center">
-            <p className="text-meta t-body">We could not reach the shop.</p>
-            <p className="mt-1 text-micro t-faint">
-              Nothing is wrong with your search.
-            </p>
+            <p className="text-meta t-body">{t('shop.err')}</p>
+            <p className="mt-1 text-micro t-faint">{t('shop.errNote')}</p>
             <PopButton size="sm" full={false} className="mt-5" onClick={loadProducts}>
-              Try again
+              {t('shop.retry')}
             </PopButton>
           </div>
         ) : rest.length === 0 ? (
           <p className="py-12 text-center text-meta t-faint">
-            Nothing matches that. Clear the search, or drop the subcategory.
+            {t('shop.noMatch')}
           </p>
         ) : (
           <ul className="mt-3 grid grid-cols-2 gap-3">
@@ -415,18 +410,18 @@ export default function Shop() {
                     <Plate seed={p.id} className="aspect-square w-full">
                       {focusId === p.id && (
                         <span className="caps-sm absolute right-2 top-2 rounded-full bg-btn-deep px-2 py-1 text-white shadow-sm">
-                          Linked
+                          {t('shop.linked')}
                         </span>
                       )}
                       {off > 0 && !p.soldOut && (
                         <span className="caps-sm absolute left-2 top-2 rounded-full bg-gold-fill px-2 py-1 text-ink shadow-sm tnum">
-                          {off}% off
+                          {t('home.off', { n: off })}
                         </span>
                       )}
                       {p.soldOut && (
                         <span className="absolute inset-0 flex items-center justify-center bg-surface/70 backdrop-blur-[1px]">
                           <span className="caps-sm rounded-full bg-live px-2.5 py-1 text-white shadow-sm">
-                            Sold out
+                            {t('shop.soldOut')}
                           </span>
                         </span>
                       )}
@@ -446,7 +441,7 @@ export default function Shop() {
                       </p>
 
                       {p.recommendedBy && (
-                        <p className="mt-2 caps-sm t-faint">Named by {p.recommendedBy}</p>
+                        <p className="mt-2 caps-sm t-faint">{t('shop.namedBy', { name: p.recommendedBy })}</p>
                       )}
 
                       {/* Two actions per listing, both compact. A sold-out
@@ -460,7 +455,7 @@ export default function Shop() {
                           className="flex-1"
                           full={false}
                         >
-                          {p.soldOut ? 'Sold out' : 'Add'}
+                          {p.soldOut ? t('shop.soldOut') : t('shop.add')}
                         </PopButton>
                         {!p.soldOut && (
                           <PopButton
@@ -470,7 +465,7 @@ export default function Shop() {
                             onClick={() => buyNow(p)}
                             className="flex-1"
                           >
-                            Buy
+                            {t('shop.buy')}
                           </PopButton>
                         )}
                       </div>
@@ -484,12 +479,12 @@ export default function Shop() {
 
         {cartCount > 0 && (
           <PopButton size="sm" variant="gold" onClick={() => setCartOpen(true)} className="mt-8">
-            View cart · {cartCount} {cartCount === 1 ? 'item' : 'items'}
+            {t('shop.viewCart')} · {t(cartCount === 1 ? 'shop.item' : 'shop.items', { n: cartCount })}
           </PopButton>
         )}
 
         <p className="mt-8 text-center text-meta t-faint">
-          A stone is a reminder of your intention, not a cure. Choose the one that speaks to you.
+          {t('shop.disclaimer')}
         </p>
       </section>
 

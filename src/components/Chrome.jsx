@@ -337,6 +337,7 @@ export function BarAction({ to, onClick, children, badge = null, label }) {
  * have nothing to round against.
  */
 export function Sheet({ open, onClose, title, children }) {
+  const { t } = useStore()
   if (!open) return null
   return (
     <div className="absolute inset-0 z-40 flex flex-col justify-end">
@@ -354,7 +355,7 @@ export function Sheet({ open, onClose, title, children }) {
           <div className="mt-3 flex items-center justify-between border-b border-rule px-6 pb-4">
             <p className="caps t-body">{title}</p>
             <button type="button" onClick={onClose} className="caps-sm gold" aria-label="Close">
-              Close
+              {t('a.close')}
             </button>
           </div>
         </div>

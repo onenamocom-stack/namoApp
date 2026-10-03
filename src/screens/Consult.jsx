@@ -84,33 +84,36 @@ function FreeTools() {
  * BANNERS array lives in the screen file), and there is no banner data
  * anywhere in mock.js to be consistent with instead.
  */
+/* Text fields are i18n keys; `SV` fills their `{label}` / `{promise}`. */
+const SV = { label: SESSION.label, mins: SESSION.mins, promise: SESSION.promise }
+
 const BANNERS = [
   {
     id: 'bn-verified',
-    kicker: 'Verified',
-    title: 'Astrologers you can trust',
-    note: 'Every expert screened and credential-checked. No exceptions.',
-    cta: 'See astrologers',
+    kicker: 'con.bn.verified.k',
+    title: 'con.bn.verified.t',
+    note: 'con.bn.verified.n',
+    cta: 'con.bn.verified.c',
     art: 'orbit',
     from: '#7c2d12',
     to: '#c2410c',
   },
   {
     id: 'bn-first',
-    kicker: 'Today only',
-    title: `First session at ${SESSION.label}`,
-    note: `${SESSION.promise}, any astrologer online.`,
-    cta: 'Claim offer',
+    kicker: 'con.bn.first.k',
+    title: 'con.bn.first.t',
+    note: 'con.bn.first.n',
+    cta: 'con.bn.first.c',
     art: 'halftone',
     from: '#6b3410',
     to: '#a85400',
   },
   {
     id: 'bn-refer',
-    kicker: 'Refer a friend',
-    title: 'Earn credit per referral',
-    note: 'They get a discount. You get credit toward your next call.',
-    cta: 'Refer now',
+    kicker: 'con.bn.refer.k',
+    title: 'con.bn.refer.t',
+    note: 'con.bn.refer.n',
+    cta: 'con.bn.refer.c',
     art: 'contour',
     from: '#8a3a00',
     to: '#b45309',
@@ -129,7 +132,7 @@ const BANNERS = [
  * instead is show the server's refusal in the app's voice.
  */
 function ReviewSheet({ booking, onClose, onDone }) {
-  const { showToast } = useStore()
+  const { showToast, t } = useStore()
   const [rating, setRating] = useState(0)
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
@@ -152,7 +155,7 @@ function ReviewSheet({ booking, onClose, onDone }) {
         rating,
         body: body.trim() || null,
       })
-      showToast('Review posted')
+      showToast(t('con.reviewPosted'))
       onDone()
     } catch (err) {
       showToast(err.message)
@@ -162,9 +165,9 @@ function ReviewSheet({ booking, onClose, onDone }) {
   }
 
   return (
-    <Sheet open onClose={onClose} title={`Review ${firstName(booking.consultant_name)}`}>
+    <Sheet open onClose={onClose} title={t('con.reviewTitle', { name: firstName(booking.consultant_name) })}>
       <div className="px-5 pb-6">
-        <p className="prose-c">Rate the session, not the news in it.</p>
+        <p className="prose-c">{t('con.rateNote')}</p>
 
         <div className="mt-5 flex justify-center gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -187,7 +190,7 @@ function ReviewSheet({ booking, onClose, onDone }) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={4}
-          placeholder="What did they actually help you decide? Optional."
+          placeholder={t('con.reviewPh')}
           aria-label="Your review"
           className="mt-5 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
         />
@@ -198,7 +201,7 @@ function ReviewSheet({ booking, onClose, onDone }) {
           disabled={!rating || busy}
           onClick={submit}
         >
-          {busy ? 'Posting' : rating ? 'Post review' : 'Pick a rating first'}
+          {busy ? t('con.posting') : rating ? t('con.postReview') : t('con.pickRating')}
         </PopButton>
       </div>
     </Sheet>
@@ -213,23 +216,23 @@ function ReviewSheet({ booking, onClose, onDone }) {
  * `03-APP-FLOW.md` §8.1 is the machine; this is its vocabulary.
  */
 const STATUS = {
-  pending: { label: 'Awaiting reply', tone: 't-faint' },
-  confirmed: { label: 'Confirmed', tone: 'text-ok' },
-  completed: { label: 'Done', tone: 'text-ok' },
-  declined: { label: 'Declined · refunded', tone: 't-faint' },
-  cancelled: { label: 'Cancelled', tone: 't-faint' },
-  rescheduled: { label: 'Moved', tone: 't-faint' },
-  no_show: { label: 'Missed', tone: 't-faint' },
+  pending: { label: 'con.st.pending', tone: 't-faint' },
+  confirmed: { label: 'con.st.confirmed', tone: 'text-ok' },
+  completed: { label: 'con.st.completed', tone: 'text-ok' },
+  declined: { label: 'con.st.declined', tone: 't-faint' },
+  cancelled: { label: 'con.st.cancelled', tone: 't-faint' },
+  rescheduled: { label: 'con.st.rescheduled', tone: 't-faint' },
+  no_show: { label: 'con.st.noShow', tone: 't-faint' },
 }
 
 /** How each channel is actually delivered. */
 const CHANNELS = {
-  call: { icon: 'phone', label: 'Call' },
-  chat: { icon: 'chat', label: 'Chat' },
+  call: { icon: 'phone', label: 'con.call' },
+  chat: { icon: 'chat', label: 'con.chat' },
 }
 
 export default function Consult() {
-  const { showToast, session } = useStore()
+  const { showToast, session, t } = useStore()
   const { start, asking } = useStartSession()
   /* Real consultants from phase 4, read through `consultants_public` — the
      view is the access control, so an unapproved practice is missing from
@@ -363,7 +366,7 @@ export default function Consult() {
       {/* Search leads. Somebody arriving here already has a question, and the
           tiles below are the free answers to it — furniture above the field
           they came to type in was the wrong order. */}
-      <Search value={query} onChange={setQuery} placeholder="Search by name, concern or language" />
+      <Search value={query} onChange={setQuery} placeholder={t('con.searchPh')} />
 
       <FreeTools />
 
@@ -376,8 +379,8 @@ export default function Consult() {
               type="button"
               onClick={() => {
                 if (b.id === 'bn-verified') scrollToList()
-                else if (b.id === 'bn-refer') showToast('Opening invite — prototype only')
-                else showToast('Offer — prototype only')
+                else if (b.id === 'bn-refer') showToast(t('con.inviteProto'))
+                else showToast(t('con.offerProto'))
               }}
               className="banner w-[86%] p-3 text-left"
               style={{
@@ -402,13 +405,13 @@ export default function Consult() {
                   inline and the last one carries a line-box descender, 11px
                   of dead space under the CTA that no padding rule explains. */}
               <span className="relative flex flex-col items-start">
-                <span className="caps-sm text-white/70">{b.kicker}</span>
+                <span className="caps-sm text-white/70">{t(b.kicker, SV)}</span>
                 <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
-                  {b.title}
+                  {t(b.title, SV)}
                 </span>
-                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.note}</span>
+                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{t(b.note, SV)}</span>
                 <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
-                  {b.cta} <span aria-hidden="true">→</span>
+                  {t(b.cta, SV)} <span aria-hidden="true">→</span>
                 </span>
               </span>
             </button>
@@ -439,7 +442,7 @@ export default function Consult() {
           to see where it went. */}
       {mine.length > 0 && (
         <section className="px-5 pt-6">
-          <Kicker>Your sessions</Kicker>
+          <Kicker>{t('con.yourSessions')}</Kicker>
           <ul className="mt-3 space-y-2">
             {shown.map((b) => (
               <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
@@ -453,7 +456,7 @@ export default function Consult() {
                       minute: '2-digit',
                       timeZone: 'Asia/Kolkata',
                     })}{' '}
-                    · {b.duration_mins} min
+                    · {t('a.min', { n: b.duration_mins })}
                   </span>
                 </span>
                 <span className="flex-none text-right">
@@ -468,11 +471,11 @@ export default function Consult() {
                       onClick={() => setReviewing(b)}
                       className="act-link mt-0.5 block caps-sm"
                     >
-                      Review
+                      {t('con.review')}
                     </button>
                   ) : (
                     <span className={`mt-0.5 block caps-sm ${STATUS[b.status]?.tone ?? 't-faint'}`}>
-                      {STATUS[b.status]?.label ?? b.status}
+                      {STATUS[b.status] ? t(STATUS[b.status].label) : b.status}
                     </span>
                   )}
                 </span>
@@ -504,7 +507,7 @@ export default function Consult() {
                 onClick={() => setCat(f)}
                 className="pill caps-sm tnum"
               >
-                {f} · {count}
+                {f === 'All' ? t('a.all') : f} · {count}
               </button>
             )
           })}
@@ -520,9 +523,9 @@ export default function Consult() {
       <section className="pt-6">
         <div className="mb-3 flex items-baseline justify-between px-4">
           <p className="font-display text-lead t-heading">
-            {SESSION.promise} in {SESSION.label}
+            {t('con.railTitle', SV)}
           </p>
-          <span className="flex-none caps-sm text-ok">{featured.length} verified</span>
+          <span className="flex-none caps-sm text-ok">{t('con.verified', { n: featured.length })}</span>
         </div>
         <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
           {featured.map((c) => (
@@ -535,7 +538,7 @@ export default function Consult() {
                 <span className="text-meta t-heading tnum">₹{rupees(c.pricePaise)}</span>
               </div>
               <PopButton variant="gold" size="sm" className="mt-2.5" to={`/consult/${c.id}`}>
-                Book
+                {t('con.book')}
               </PopButton>
             </div>
           ))}
@@ -546,12 +549,12 @@ export default function Consult() {
       {/* ── Available now — the full roster ───────────────────────────── */}
       <section ref={listRef} className="px-5 pt-8">
         <p className="mb-3 caps-sm t-faint">
-          Every session is {SESSION.label} · {SESSION.promise.toLowerCase()}
+          {t('con.everySession', { ...SV, promise: SESSION.promise.toLowerCase() })}
         </p>
 
         <Kicker>
-          {`${list.length} ${list.length === 1 ? 'person' : 'people'}${
-            featured.length > 0 ? ` · ${featured.length} verified` : ''
+          {`${t(list.length === 1 ? 'con.person' : 'con.people', { n: list.length })}${
+            featured.length > 0 ? ` · ${t('con.verified', { n: featured.length })}` : ''
           }`}
         </Kicker>
 
@@ -573,14 +576,14 @@ export default function Consult() {
                           more — that division was the browser inventing a
                           price, which is the shape rule 3 exists to stop. */}
                       ₹{c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}
-                      <span className="text-meta text-t3">/min</span>
+                      <span className="text-meta text-t3">{t('con.perMin')}</span>
                     </span>
                   </span>
                   <span className="mt-0.5 block truncate text-meta text-t3">{c.specialization}</span>
                   <span className="mt-1.5 flex items-center gap-2 text-micro uppercase tracking-caps text-t3 tnum">
-                    <span className="gold">{c.rating ?? 'New'}</span>
+                    <span className="gold">{c.rating ?? t('con.new')}</span>
                     <span aria-hidden="true">·</span>
-                    <span>{c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}</span>
+                    <span>{c.experienceYrs ? t('con.yrs', { n: c.experienceYrs }) : t('con.practising')}</span>
                   </span>
                   <span className="mt-2 flex flex-wrap gap-1.5">
                     {c.languages.map((lang) => (
@@ -614,7 +617,7 @@ export default function Consult() {
                     onClick={() => start(c, kind)}
                   >
                     <Icon name={CHANNELS[kind].icon} size={15} />
-                    <span className="ml-1.5">{CHANNELS[kind].label}</span>
+                    <span className="ml-1.5">{t(CHANNELS[kind].label)}</span>
                   </PopButton>
                 ))}
               </div>
@@ -623,7 +626,7 @@ export default function Consult() {
                   and that is the sentence's real job. */}
               {!c.online && (
                 <p className="mt-2 text-micro t-faint">
-                  Offline right now · you can still book a time
+                  {t('con.offline')}
                 </p>
               )}
             </li>
@@ -631,7 +634,7 @@ export default function Consult() {
         </ul>
 
         {consultants === null && (
-          <p className="py-10 text-center text-meta text-t3">Reading the roster.</p>
+          <p className="py-10 text-center text-meta text-t3">{t('con.loading')}</p>
         )}
 
         {/* `consultants !== null` matters: while the fetch is in flight both
@@ -640,7 +643,7 @@ export default function Consult() {
             as a search that found nobody. */}
         {consultants !== null && list.length === 0 && (
           <p className="py-10 text-center text-meta text-t3">
-            Nobody matches that. Clear the search or pick another category.
+            {t('con.noMatch')}
           </p>
         )}
       </section>
@@ -666,25 +669,20 @@ export default function Consult() {
  * the cashback label, and that one got deleted rather than deferred.
  */
 function NobodyYet() {
+  const { t } = useStore()
   return (
     <div className="pop-card mt-4 overflow-hidden">
       <Plate seed="consult-empty" variant="orbit" className="!rounded-none h-32 w-full !shadow-none" />
       <div className="p-5">
-        <Kicker>Nobody is reading yet</Kicker>
-        <p className="mt-3 text-meta t-sub">
-          No astrologer has been approved. Nothing is hidden from you and no filter is on — the
-          list is empty because the practice is new.
-        </p>
-        <p className="mt-3 text-meta t-sub">
-          We approve one at a time and read every application. Until somebody clears that, there
-          is nothing here to book.
-        </p>
+        <Kicker>{t('con.empty.title')}</Kicker>
+        <p className="mt-3 text-meta t-sub">{t('con.empty.p1')}</p>
+        <p className="mt-3 text-meta t-sub">{t('con.empty.p2')}</p>
         {/* The consultant app is a separate deployment — an absolute link,
             not a route this build carries. */}
         <PopButton variant="gold" className="mt-5" href={PRO_APP_URL}>
-          Apply to take sessions
+          {t('con.empty.apply')}
         </PopButton>
-        <p className="mt-3 caps-sm t-faint">For astrologers, tarot readers and coaches</p>
+        <p className="mt-3 caps-sm t-faint">{t('con.empty.for')}</p>
       </div>
     </div>
   )

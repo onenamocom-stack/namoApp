@@ -463,6 +463,14 @@ device (`localStorage` `namo:lang`); before 3 Oct it reset to English on every
 reload. Interface strings live in `src/data/i18n.js`; a key missing in Hindi
 falls back to English rather than showing the key.
 
+**What is translated** (3 Oct 2026, about 400 keys): the tab bar, sign-up,
+Home (all three tabs), Horoscope and the reading layout Chart shares, Profile,
+Consult, Shop, Academy, Matching, Muhurat, Namo AI, Premium, Orders, Wallet,
+Tarot. Sign names use the `sign.*` keys; the English name is still what goes
+to the API. **What is not:** anything from the API or `mock.js` (readings,
+product and consultant names, categories, dates), aria-labels, and the
+consultant app.
+
 **Content carries its own twin** rather than going through the interface
 dictionary — deity names, tarot traditions and similar hold both forms as data.
 Only genuinely interface-level strings are keyed.

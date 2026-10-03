@@ -26,7 +26,7 @@ import { rupees, useStore } from '../store.jsx'
  * order look like it was supposed to.
  */
 export default function Orders() {
-  const { session, sessionReady } = useStore()
+  const { session, sessionReady, t } = useStore()
   const [orders, setOrders] = useState(null)
 
   useEffect(() => {
@@ -40,15 +40,15 @@ export default function Orders() {
 
   return (
     <>
-      <TopBar title="Your orders" sub="What you have bought" back backTo="/profile" />
+      <TopBar title={t('prof.orders')} sub={t('ord.sub')} back backTo="/profile" />
 
-      {orders === null && <p className="animate-breathe prose-c">Loading.</p>}
+      {orders === null && <p className="animate-breathe prose-c">{t('ord.loading')}</p>}
 
       {orders?.length === 0 && (
         <div className="px-5 py-10 text-center">
-          <p className="prose-c">Nothing yet.</p>
+          <p className="prose-c">{t('ord.empty')}</p>
           <Button to="/shop" variant="quiet" className="mt-6">
-            Go to the shop
+            {t('ord.toShop')}
           </Button>
         </div>
       )}
@@ -58,7 +58,7 @@ export default function Orders() {
           <li key={o.id} className="border-b border-rule py-5 last:border-b-0">
             <div className="flex items-baseline justify-between gap-3">
               <span className="caps-sm t-faint tnum">{placed(o.placedAt)}</span>
-              <span className={`caps-sm ${toneOf(o)}`}>{whereItIs(o)}</span>
+              <span className={`caps-sm ${toneOf(o)}`}>{whereItIs(o, t)}</span>
             </div>
 
             <ul className="mt-3 space-y-1">
@@ -77,7 +77,7 @@ export default function Orders() {
 
             <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-rule pt-3">
               <span className="caps-sm t-faint">
-                {o.status === 'refunded' || o.status === 'cancelled' ? 'Returned' : 'Paid'}
+                {o.status === 'refunded' || o.status === 'cancelled' ? t('ord.moneyBack') : t('ord.paid')}
               </span>
               <span className="text-meta t-heading tnum">₹{rupees(o.totalPaise)}</span>
             </div>
@@ -85,14 +85,14 @@ export default function Orders() {
             {/* Only when there is one. */}
             {o.cashback && (
               <p className={`mt-2 text-micro ${cashbackTone(o.cashback)}`}>
-                {cashbackLine(o.cashback)}
+                {cashbackLine(o.cashback, t)}
               </p>
             )}
 
             {/* The tracking number, once there is a parcel to track. */}
             {o.shipment?.awb && (
               <p className="mt-2 text-micro t-faint">
-                {o.shipment.courier || 'Courier'} · {o.shipment.awb}
+                {o.shipment.courier || t('ord.courier')} · {o.shipment.awb}
               </p>
             )}
           </li>
@@ -101,11 +101,11 @@ export default function Orders() {
 
       {orders?.length > 0 && (
         <p className="px-5 pb-8 pt-2 text-micro t-faint">
-          Sessions and questions are not orders — those are in your{' '}
+          {t('ord.notOrders')}{' '}
           <Link to="/wallet" className="underline">
-            wallet
+            {t('ord.wallet')}
           </Link>
-          .
+          {t('ord.notOrdersEnd')}
         </p>
       )}
 
@@ -115,15 +115,15 @@ export default function Orders() {
 }
 
 /** "Paid" is the least interesting true thing about a parcel. */
-function whereItIs(order) {
-  if (order.status === 'cancelled') return 'Cancelled'
-  if (order.status === 'refunded') return 'Refunded'
+function whereItIs(order, t) {
+  if (order.status === 'cancelled') return t('ord.st.cancelled')
+  if (order.status === 'refunded') return t('ord.st.refunded')
   const shipped = order.shipment?.status
-  if (shipped === 'delivered') return 'Delivered'
-  if (shipped === 'shipped') return 'On its way'
-  if (shipped === 'returned') return 'Returned'
-  if (shipped === 'ready') return 'Packed'
-  return 'Confirmed'
+  if (shipped === 'delivered') return t('ord.st.delivered')
+  if (shipped === 'shipped') return t('ord.st.shipped')
+  if (shipped === 'returned') return t('ord.st.returned')
+  if (shipped === 'ready') return t('ord.st.packed')
+  return t('ord.st.confirmed')
 }
 
 function toneOf(order) {
@@ -136,16 +136,16 @@ function toneOf(order) {
  * Four states, and they must not read alike — "coming" and "arrived" are
  * the two a person actually distinguishes.
  */
-function cashbackLine(cashback) {
+function cashbackLine(cashback, t) {
   const amount = `₹${rupees(cashback.amount_paise)}`
-  if (cashback.status === 'paid') return `${amount} cashback is in your wallet.`
+  if (cashback.status === 'paid') return t('ord.cb.paid', { amount })
   if (cashback.status === 'cancelled') {
-    return `${amount} cashback was cancelled when this order came back.`
+    return t('ord.cb.cancelled', { amount })
   }
   if (cashback.matures_at) {
-    return `${amount} cashback lands on ${onDay(cashback.matures_at)}.`
+    return t('ord.cb.on', { amount, day: onDay(cashback.matures_at, t) })
   }
-  return `${amount} cashback, seven days after this is delivered.`
+  return t('ord.cb.later', { amount })
 }
 
 function cashbackTone(cashback) {
@@ -160,8 +160,8 @@ function placed(iso) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function onDay(iso) {
+function onDay(iso, t) {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return 'delivery'
+  if (Number.isNaN(d.getTime())) return t('ord.delivery')
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }

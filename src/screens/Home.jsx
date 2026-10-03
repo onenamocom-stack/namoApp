@@ -45,9 +45,9 @@ const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
    Hindi. The keys, and so the URLs, are unchanged. "Reels" stays English
    because that is the word Hindi speakers use for them. */
 const TABS = [
-  { key: 'feed', label: 'Reels' },
-  { key: 'today', label: 'आज का पंचांग' },
-  { key: 'darshan', label: 'आज के दर्शन' },
+  { key: 'feed', label: 'home.tab.feed' },
+  { key: 'today', label: 'home.tab.today' },
+  { key: 'darshan', label: 'home.tab.darshan' },
 ]
 
 /**
@@ -76,10 +76,11 @@ const TABS = [
 export default function Home() {
   const { tab = 'feed' } = useParams()
   const navigate = useNavigate()
+  const { t } = useStore()
 
   /* Guard against a hand-typed segment, same as Profile. `darshan` is not in
      here: it is a destination, and the effect below leaves before this runs. */
-  const known = TABS.some((t) => t.key === tab)
+  const known = TABS.some((tb) => tb.key === tab)
 
   /* The third tab is a doorway. Redirecting in an effect rather than
      rendering `<Navigate>` keeps `/home/darshan` out of the history stack, so
@@ -170,7 +171,7 @@ export default function Home() {
 
       <section className="px-4 pt-3">
         <Segmented
-          items={TABS}
+          items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
           value={tab}
           onChange={(k) => navigate(k === 'feed' ? '/home' : `/home/${k}`)}
         />
@@ -214,7 +215,7 @@ export default function Home() {
             </div>
 
             <div className="px-5 py-10 text-center">
-              <p className="caps-sm t-faint">End of today&apos;s feed</p>
+              <p className="caps-sm t-faint">{t('home.end')}</p>
             </div>
           </>
         )}
@@ -318,7 +319,7 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
  * hidden on your own post — the server refuses it there anyway.
  */
 function ActionRow({ id, like = true, onComment, onShare, authorId }) {
-  const { hasFlag, toggleFlag, session } = useStore()
+  const { hasFlag, toggleFlag, session, t } = useStore()
   const me = session?.user?.id
   const canReshare =
     authorId && me && String(authorId).replace(/-/g, '') !== String(me).replace(/-/g, '')
@@ -344,8 +345,8 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
           tone="text-[#1f7a4d]"
           onClick={() =>
             toggleFlag(`repost:${id}`, {
-              on: 'Reshared to your profile and the feed',
-              off: 'Reshare removed',
+              on: t('home.reshared'),
+              off: t('home.reshareRemoved'),
             })
           }
         />
@@ -360,8 +361,8 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
         tone="text-t2"
         onClick={() =>
           toggleFlag(`save:${id}`, {
-            on: 'Saved to your reading list',
-            off: 'Removed from your reading list',
+            on: t('home.saved'),
+            off: t('home.unsaved'),
           })
         }
       />
@@ -375,7 +376,7 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
  * moves the instant you press and still agrees with the database on reload.
  */
 function Caption({ id, likes, views, reposts = 0, name, to, text, comments = 0, onComments }) {
-  const { hasFlag } = useStore()
+  const { hasFlag, t } = useStore()
   const [open, setOpen] = useState(false)
   const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
   const long = (text || '').length > 110
@@ -384,11 +385,12 @@ function Caption({ id, likes, views, reposts = 0, name, to, text, comments = 0, 
      every reel would have been a statement about the counter, not the
      reel. */
   const counts = [
-    count > 0 && `${count.toLocaleString('en-IN')} ${count === 1 ? 'like' : 'likes'}`,
-    views > 0 && `${views.toLocaleString('en-IN')} ${views === 1 ? 'view' : 'views'}`,
+    count > 0 && t(count === 1 ? 'home.like1' : 'home.likes', { n: count.toLocaleString('en-IN') }),
+    views > 0 && t(views === 1 ? 'home.view1' : 'home.views', { n: views.toLocaleString('en-IN') }),
     // The server's number as it stands — no optimistic +1, which would count
     // your own reshare twice once the server's count already includes it.
-    reposts > 0 && `${reposts.toLocaleString('en-IN')} ${reposts === 1 ? 'reshare' : 'reshares'}`,
+    reposts > 0 &&
+      t(reposts === 1 ? 'home.reshare1' : 'home.reshares', { n: reposts.toLocaleString('en-IN') }),
   ].filter(Boolean)
 
   return (
@@ -406,12 +408,14 @@ function Caption({ id, likes, views, reposts = 0, name, to, text, comments = 0, 
       )}
       {long && !open && (
         <button type="button" onClick={() => setOpen(true)} className="mt-0.5 text-meta text-t3">
-          more
+          {t('home.more')}
         </button>
       )}
       {comments > 0 && onComments && (
         <button type="button" onClick={onComments} className="mt-1 block text-meta text-t3">
-          {comments === 1 ? 'View 1 comment' : `View all ${comments.toLocaleString('en-IN')} comments`}
+          {comments === 1
+            ? t('home.comment1')
+            : t('home.comments', { n: comments.toLocaleString('en-IN') })}
         </button>
       )}
     </div>
@@ -451,12 +455,13 @@ function CtaStrip({ to, onClick, children, tone = 'orange' }) {
  * (`productHref`). Nothing renders for an untagged post.
  */
 function ProductStrip({ tagged = [], shopRef }) {
+  const { t } = useStore()
   if (!tagged.length) return null
   return (
     <div className="border-t border-rule bg-surface/60 px-3 py-2.5">
       <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gold">
         <Icon name="cart" size={14} weight={2} />
-        {tagged.length === 1 ? 'Product in this post' : `${tagged.length} products in this post`}
+        {tagged.length === 1 ? t('home.product1') : t('home.products', { n: tagged.length })}
       </p>
       <div className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3">
         {tagged.map((pr) => {
@@ -476,7 +481,7 @@ function ProductStrip({ tagged = [], shopRef }) {
                 <span className="block truncate text-meta font-semibold text-t1">{pr.name}</span>
                 <span className="mt-0.5 block text-meta tnum">
                   <span className="font-semibold text-gold">₹{pr.price.toLocaleString('en-IN')}</span>
-                  {off > 0 && <span className="ml-1.5 text-[11px] text-t3">{off}% off</span>}
+                  {off > 0 && <span className="ml-1.5 text-[11px] text-t3">{t('home.off', { n: off })}</span>}
                 </span>
               </span>
               <span aria-hidden="true" className="flex-none text-lead text-t3">›</span>
@@ -491,6 +496,7 @@ function ProductStrip({ tagged = [], shopRef }) {
 /** "↻ Tara reshared" above a post that is in the feed because somebody
  *  reshared it. Nothing for an ordinary post. */
 function ResharedLine({ by }) {
+  const { t } = useStore()
   if (!by) return null
   return (
     <Link
@@ -498,7 +504,7 @@ function ResharedLine({ by }) {
       className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3"
     >
       <Icon name="repost" size={14} weight={2} />
-      {by.name} reshared
+      {t('home.resharedBy', { name: by.name })}
     </Link>
   )
 }
@@ -661,7 +667,7 @@ function ReelCard({ reel: r, resharedBy }) {
  * reading honest: it says whose it is.
  */
 function ReadingCard() {
-  const { session, sessionReady } = useStore()
+  const { session, sessionReady, t } = useStore()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   const [picked, setPicked] = useState(null)
   const sign = picked ?? mine.rashi ?? 'Aries'
@@ -677,20 +683,20 @@ function ReadingCard() {
           is already called आज का पंचांग. */}
       <SignPicker value={sign} onChange={setPicked} />
       <div className="pop-inset mt-3 p-4">
-        {reading.loading && <p className="text-meta t-faint">Reading the sky.</p>}
+        {reading.loading && <p className="text-meta t-faint">{t('home.readingSky')}</p>}
         {reading.refusal && <p className="text-meta t-body">{reading.refusal.reason}</p>}
 
         {day && !reading.loading && (
           <>
             <p className="caps-sm gold">
-              {sign} · {longDate(day.date)}
+              {t(`sign.${sign}`)} · {longDate(day.date)}
             </p>
             {day.headline && <p className="mt-3 text-body font-semibold t-heading">{day.headline}</p>}
             <p className="mt-2 text-body t-body">{day.body || day.dayMood}</p>
 
             {day.windows.length > 0 && (
               <div className="mt-5 border-t border-stroke pt-4">
-                <span className="caps-sm t-faint">Windows · Ujjain</span>
+                <span className="caps-sm t-faint">{t('home.windowsUjjain')}</span>
                 <ul className="mt-2">
                   {day.windows.map((w) => (
                     <li key={w.key} className="flex items-baseline justify-between py-1">
@@ -707,7 +713,7 @@ function ReadingCard() {
         )}
       </div>
       <Link to="/chart?tab=prediction" className="mt-3 block text-center text-meta t-body underline">
-        Your own predictions, from your birth
+        {t('home.ownPredictions')}
       </Link>
     </article>
   )
@@ -729,7 +735,7 @@ function ReadingCard() {
  * replace did, a week apart.
  */
 function PanchangCard() {
-  const { session, sessionReady } = useStore()
+  const { session, sessionReady, t } = useStore()
   const got = useAstro('panchang', { ready: sessionReady, who: session?.user?.id ?? null })
   const p = panchangFrom(got.payload)
 
@@ -737,9 +743,9 @@ function PanchangCard() {
     <article className="pop-card p-4">
       {/* No "Full chart" link since 30 Sep (owner's call); the chart is on
           Profile and Consult. */}
-      <Kicker>Today&apos;s panchang</Kicker>
+      <Kicker>{t('home.panchang')}</Kicker>
 
-      {got.loading && <p className="mt-3 text-meta t-faint">Working out the day.</p>}
+      {got.loading && <p className="mt-3 text-meta t-faint">{t('home.workingDay')}</p>}
       {got.refusal && <p className="mt-3 text-meta t-body">{got.refusal.reason}</p>}
 
       {p && (
@@ -747,7 +753,7 @@ function PanchangCard() {
           <p className="mt-2 caps-sm t-faint tnum">
             {longDate(p.date)}
             {p.lunarMonth && ` · ${p.lunarMonth}`}
-            {p.samvat && ` · VS ${p.samvat}`}
+            {p.samvat && ` · ${t('home.samvat', { n: p.samvat })}`}
           </p>
           {/* Named, not implied. One almanac serves every user and it is
               computed at Ujjain — the classical meridian of Indian astronomy —
@@ -755,20 +761,20 @@ function PanchangCard() {
               from their own. Saying so is the difference between a simplifying
               choice and a quiet inaccuracy. */}
           {got.city && (
-            <p className="mt-1 caps-sm t-faint">Computed at {got.city}</p>
+            <p className="mt-1 caps-sm t-faint">{t('home.computedAt', { city: got.city })}</p>
           )}
 
           <dl className="mt-4 grid grid-cols-3 gap-y-4">
             {[
-              ['Tithi', p.tithi],
-              ['Nakshatra', p.nakshatra],
-              ['Yoga', p.yoga],
-              ['Karana', p.karana],
-              ['Moon', p.moonSign],
-              ['Paksha', p.paksha],
+              ['pc.tithi', p.tithi],
+              ['pc.nakshatra', p.nakshatra],
+              ['pc.yoga', p.yoga],
+              ['pc.karana', p.karana],
+              ['pc.moon', p.moonSign],
+              ['pc.paksha', p.paksha],
             ].map(([k, v]) => (
               <div key={k}>
-                <dt className="caps-sm t-faint">{k}</dt>
+                <dt className="caps-sm t-faint">{t(k)}</dt>
                 <dd className="mt-1 text-meta t-heading">{v || '—'}</dd>
               </div>
             ))}
@@ -776,15 +782,15 @@ function PanchangCard() {
 
           {p.rahuKaal && (
             <div className="pop-inset mt-4 p-3">
-              <p className="caps-sm text-live">Rahu kaal</p>
+              <p className="caps-sm text-live">{t('pc.rahuKaal')}</p>
               <p className="mt-1 text-meta tnum t-heading">{p.rahuKaal}</p>
             </div>
           )}
 
           <div className="mt-3 flex items-center gap-3 caps-sm t-faint tnum">
-            <span>Sunrise {p.sunrise}</span>
+            <span>{t('pc.sunrise', { time: p.sunrise })}</span>
             <span aria-hidden="true">·</span>
-            <span>Sunset {p.sunset}</span>
+            <span>{t('pc.sunset', { time: p.sunset })}</span>
           </div>
         </>
       )}
@@ -799,12 +805,13 @@ export function readMins(body) {
 }
 
 function ArticleCard({ read: b }) {
+  const { t } = useStore()
   return (
     <article className="border-b border-rule bg-white">
       <PostHead
         initials={b.initials}
         name={b.consultant}
-        note="published an article"
+        note={t('home.publishedArticle')}
         to={authorHref(b)}
       />
 
@@ -818,7 +825,7 @@ function ArticleCard({ read: b }) {
       </Link>
       {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
           one goes stale the first time the article is edited. */}
-      <CtaStrip to={`/read/${b.id}`}>Read article · {readMins(b.body)} min</CtaStrip>
+      <CtaStrip to={`/read/${b.id}`}>{t('home.readArticle', { n: readMins(b.body) })}</CtaStrip>
 
       {/* Save only, as before — an article never had a like. */}
       <ActionRow id={b.id} like={false} />
@@ -845,9 +852,10 @@ function HouseHead({ name, note, to }) {
 }
 
 function CourseCard({ course: c }) {
+  const { t } = useStore()
   return (
     <article className="border-b border-rule bg-white">
-      <HouseHead name="Namo Academy" note="Continue learning" to="/academy" />
+      <HouseHead name={t('home.namoAcademy')} note={t('home.continueLearning')} to="/academy" />
       <Link to="/academy" className="block">
         <Plate seed={c.id} className="aspect-[16/10] w-full !rounded-none" />
       </Link>
@@ -857,12 +865,12 @@ function CourseCard({ course: c }) {
         </div>
       )}
       <CtaStrip to="/academy" tone="green">
-        {c.progress > 0 ? `Resume · ${c.progress}% done` : 'Start course'}
+        {c.progress > 0 ? t('home.resume', { n: c.progress }) : t('home.startCourse')}
       </CtaStrip>
       <div className="px-3 pb-4 pt-2">
         <p className="text-meta font-semibold text-t1">{c.title}</p>
         <p className="mt-0.5 text-meta text-t2 tnum">
-          {c.tutor} · {c.lessons} lessons
+          {c.tutor} · {t('home.lessons', { n: c.lessons })}
         </p>
       </div>
     </article>
@@ -870,22 +878,22 @@ function CourseCard({ course: c }) {
 }
 
 function ProductCard({ product: p }) {
-  const { addToCart } = useStore()
+  const { addToCart, t } = useStore()
   const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
 
   return (
     <article className="border-b border-rule bg-white">
-      <HouseHead name="Namo Shop" note="For your chart" to="/shop" />
+      <HouseHead name={t('home.namoShop')} note={t('home.forChart')} to="/shop" />
       <Link to="/shop" className="block">
         <Plate seed={p.id} className="aspect-square w-full !rounded-none" />
       </Link>
       <CtaStrip onClick={() => addToCart(p)} tone="green">
-        Add to cart · ₹{p.price.toLocaleString('en-IN')}
+        {t('home.addToCart', { price: p.price.toLocaleString('en-IN') })}
       </CtaStrip>
       <div className="px-3 pb-4 pt-2">
         <p className="text-meta">
           <span className="font-semibold text-t1">{p.name}</span>
-          {off > 0 && <span className="ml-2 font-semibold text-gold tnum">{off}% off</span>}
+          {off > 0 && <span className="ml-2 font-semibold text-gold tnum">{t('home.off', { n: off })}</span>}
         </p>
         <p className="mt-0.5 text-meta text-t2">{p.subtitle}</p>
       </div>

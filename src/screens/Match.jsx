@@ -26,7 +26,7 @@ import { useProfileFields, useStore } from '../store.jsx'
  * carrying a dosha that matters more than the total does.
  */
 export default function Match() {
-  const { session, sessionReady } = useStore()
+  const { session, sessionReady, t } = useStore()
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
 
@@ -53,22 +53,22 @@ export default function Match() {
   }
 
   const names = {
-    person1: first?.name || me.name || 'You',
-    person2: second?.name || 'Them',
+    person1: first?.name || me.name || t('match.you'),
+    person2: second?.name || t('match.them'),
   }
 
   return (
     <>
-      <TopBar title="Matching" sub="Ashtakoota, out of 36" back backTo="/consult" />
+      <TopBar title={t('tool.match')} sub={t('match.sub')} back backTo="/consult" />
 
       {!state.result && !state.loading && (
         <>
           {/* ── Slot one ─────────────────────────────────────────────────── */}
-          <Section label="First chart">
+          <Section label={t('match.first')}>
             {editingFirst ? (
               <SubjectForm
-                title="Whose chart is first?"
-                cta="Use these details"
+                title={t('match.whoseFirst')}
+                cta={t('match.useDetails')}
                 onDone={(person) => { setFirst(person); setEditingFirst(false) }}
                 onCancel={() => setEditingFirst(false)}
               />
@@ -77,25 +77,27 @@ export default function Match() {
                 name={names.person1}
                 note={first
                   ? [first.birth_place, first.birth_date].filter(Boolean).join(' · ')
-                  : [mine.rashi && `${mine.rashi} moon`, me.birthPlace].filter(Boolean).join(' · ')}
-                action={first ? 'Use my own chart' : 'Somebody else'}
+                  : [mine.rashi && t('hs.moonSign', { sign: t(`sign.${mine.rashi}`) }), me.birthPlace]
+                      .filter(Boolean)
+                      .join(' · ')}
+                action={first ? t('match.useMine') : t('match.someoneElse')}
                 onAction={() => (first ? setFirst(null) : setEditingFirst(true))}
               />
             )}
             {!first && !mine.loading && mine.refusal?.code === 'no_birth' && (
               <p className="mt-4 text-meta text-t3">
-                Your own birth details are missing.{' '}
-                <Link to="/profile" className="underline">Add them</Link>, or match two other
-                people.
+                {t('match.missing')}{' '}
+                <Link to="/profile" className="underline">{t('match.addThem')}</Link>
+                {t('match.orTwo')}
               </p>
             )}
           </Section>
 
           {/* ── Slot two ─────────────────────────────────────────────────── */}
-          <Section label="Second chart" last>
+          <Section label={t('match.second')} last>
             <SubjectForm
-              title="Whose chart is second?"
-              cta="Read the match"
+              title={t('match.whoseSecond')}
+              cta={t('match.read')}
               onDone={run}
               onCancel={reset}
             />
@@ -104,7 +106,7 @@ export default function Match() {
       )}
 
       {state.loading && (
-        <p className="section text-meta text-t3">Reading the two charts against each other.</p>
+        <p className="section text-meta text-t3">{t('match.loading')}</p>
       )}
 
       {state.refusal && (
@@ -112,10 +114,10 @@ export default function Match() {
           <p className="text-body text-t1">{state.refusal.reason}</p>
           {state.refusal.code === 'no_birth' && (
             <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
-              Add your birth details
+              {t('a.addBirth')}
             </Link>
           )}
-          <Button onClick={reset} variant="quiet" className="mt-6">Start again</Button>
+          <Button onClick={reset} variant="quiet" className="mt-6">{t('match.again')}</Button>
         </div>
       )}
 
@@ -141,6 +143,7 @@ function PersonCard({ name, note, action, onAction }) {
 }
 
 function Result({ match, names, onReset }) {
+  const { t } = useStore()
   const unknownTime = [
     match.timeKnown?.person1 === false && names.person1,
     match.timeKnown?.person2 === false && names.person2,
@@ -162,24 +165,23 @@ function Result({ match, names, onReset }) {
         <Stub className="my-8" />
         <p className="prose-c">
           {match.passes
-            ? `Above the traditional pass mark of ${match.threshold}.`
-            : `Below the traditional pass mark of ${match.threshold}.`}{' '}
-          The total is eight separate tests added together, and they are worth reading one by
-          one — a pair can clear the mark and still carry the one dosha that matters.
+            ? t('match.above', { n: match.threshold })
+            : t('match.below', { n: match.threshold })}{' '}
+          {t('match.totalNote')}
         </p>
 
         {/* The Moon is the whole of this method, and a guessed noon can put
             somebody in the next nakshatra. Said here rather than buried. */}
         {unknownTime.length > 0 && (
           <p className="mt-6 text-meta text-t3">
-            {unknownTime.join(' and ')} {unknownTime.length > 1 ? 'have' : 'has'} no birth time, so
-            noon was used. Every koota below is read off the Moon, which crosses a nakshatra in
-            about a day — with the real time these numbers can change.
+            {t(unknownTime.length > 1 ? 'match.noTimeN' : 'match.noTime1', {
+              names: unknownTime.join(t('match.and')),
+            })}
           </p>
         )}
       </section>
 
-      <Section label="The eight kootas">
+      <Section label={t('match.kootas')}>
         <ul>
           {match.kootas.map((k) => (
             <li key={k.id} className="border-b border-rule py-5 last:border-b-0">
@@ -197,19 +199,19 @@ function Result({ match, names, onReset }) {
         </ul>
       </Section>
 
-      <Section label="Doshas">
+      <Section label={t('match.doshas')}>
         <ul>
           {match.manglik.map((m, index) => (
             <li key={m.who} className="border-b border-rule py-4">
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-body text-t1">
-                  Manglik · {index === 0 ? names.person1 : names.person2}
+                  {t('match.manglik')} · {index === 0 ? names.person1 : names.person2}
                 </span>
-                <span className="flex-none caps-sm t-faint">{m.active ? m.severity : 'None'}</span>
+                <span className="flex-none caps-sm t-faint">{m.active ? m.severity : t('match.none')}</span>
               </div>
               {m.cancellations.length > 0 && (
                 <p className="mt-2 text-meta text-t2">
-                  Cancelled by {m.cancellations.map((c) => c.reason ?? c).join(', ')}.
+                  {t('match.cancelledBy', { list: m.cancellations.map((c) => c.reason ?? c).join(', ') })}
                 </p>
               )}
             </li>
@@ -218,7 +220,7 @@ function Result({ match, names, onReset }) {
             <li key={d.name} className="border-b border-rule py-4 last:border-b-0">
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-body text-t1">{d.name}</span>
-                <span className="flex-none caps-sm t-faint">{d.active ? 'Present' : 'None'}</span>
+                <span className="flex-none caps-sm t-faint">{d.active ? t('match.present') : t('match.none')}</span>
               </div>
               {d.note && <p className="mt-2 text-meta text-t2">{d.note}</p>}
             </li>
@@ -229,15 +231,12 @@ function Result({ match, names, onReset }) {
         )}
       </Section>
 
-      <Section label="Where this stops" last>
-        <p className="prose-c">
-          This is a ruleset comparing two Moons. It is the first question an astrologer asks and
-          not the last one they answer, and it says nothing about what either of you wants.
-        </p>
-        <Kicker className="mt-10">Take it further</Kicker>
-        <Row to="/consult" title="Take this to a person" note="A human reads the same two charts" />
-        <Row to="/ask" title="Ask about it" note="Namo AI, on your own chart" />
-        <Button onClick={onReset} variant="quiet" className="mt-8">Match someone else</Button>
+      <Section label={t('match.stops')} last>
+        <p className="prose-c">{t('match.stopsNote')}</p>
+        <Kicker className="mt-10">{t('a.further')}</Kicker>
+        <Row to="/consult" title={t('match.toPerson')} note={t('match.toPersonNote')} />
+        <Row to="/ask" title={t('match.askAbout')} note={t('match.askAboutNote')} />
+        <Button onClick={onReset} variant="quiet" className="mt-8">{t('match.another')}</Button>
       </Section>
     </>
   )
