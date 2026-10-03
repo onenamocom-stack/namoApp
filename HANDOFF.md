@@ -3420,7 +3420,18 @@ but it is the no-chart branch leaking into a case that has one.
 
 ## 22. The admin console — all five stages — 22 Sep 2026
 
-**https://namo-console-499026166575.asia-south1.run.app/console/**
+**https://console.1namo.com/console/** (since 3 Oct 2026)
+
+The console now runs as `namo-console` in **`asia-southeast1` (Singapore)**,
+because Cloud Run refuses custom domains in `asia-south1` ("Creating domain
+mappings is not allowed in asia-south1"). Same image and env as the Mumbai
+service, plus `CSRF_TRUSTED_ORIGINS=https://console.1namo.com`; DNS is a
+GoDaddy CNAME `console` → `ghs.googlehosted.com`, certificate issued by Google.
+**Deploy the console with `--region=asia-southeast1` from now on.** The old
+Mumbai service (`namo-console-499026166575.asia-south1.run.app`) still runs and
+still works; delete it once the new address has been used for a few days —
+`gcloud.cmd run services delete namo-console --region asia-south1`. The API
+(`namo-api`) stays in Mumbai.
 
 Built overnight, in the order chosen: approval, shop, reels, analytics,
 Shiprocket. 546 tests.
