@@ -28,6 +28,69 @@ import { fetchAssets } from '../lib/bhakti.js'
  * Nothing books a pandit and nothing is charged. Sangeet plays Bhakti's
  * bhajans and mantras (4 Oct 2026).
  */
+/* ── The ghanti's voice (4 Oct 2026) ─────────────────────────────────────
+   Synthesised, not a recording: a cast bell is a handful of INHARMONIC sine
+   partials (hum, prime, tierce, quint, nominal — the ratios below), each
+   struck at once and dying away on its own time, the low ones longest. Two
+   of them are doubled a hair apart so they beat, which is the shimmer a
+   brass bell has and a pure tone does not. No file to download, nothing to
+   license, and it plays on the first tap.
+
+   It must be called from inside the tap: a phone only lets a page make
+   sound from the gesture itself. One AudioContext for the page — browsers
+   cap how many can exist. */
+let bellCtx = null
+const BELL = [
+  // [ratio to the strike note, loudness, seconds to die away]
+  [0.5, 0.5, 3.4],
+  [1, 0.9, 2.8],
+  [1.004, 0.4, 2.8],
+  [1.19, 0.45, 2.1],
+  [1.5, 0.3, 1.7],
+  [2, 0.42, 1.5],
+  [2.006, 0.2, 1.5],
+  [2.74, 0.22, 0.9],
+  [3.76, 0.14, 0.6],
+]
+function ringGhanti() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return
+    bellCtx = bellCtx || new Ctx()
+    if (bellCtx.state === 'suspended') bellCtx.resume()
+    const now = bellCtx.currentTime
+    const out = bellCtx.createGain()
+    out.gain.value = 0.28
+    out.connect(bellCtx.destination)
+    for (const [ratio, amp, decay] of BELL) {
+      const osc = bellCtx.createOscillator()
+      osc.type = 'sine'
+      osc.frequency.value = 560 * ratio
+      const env = bellCtx.createGain()
+      env.gain.setValueAtTime(0.0001, now)
+      env.gain.exponentialRampToValueAtTime(amp, now + 0.004)
+      env.gain.exponentialRampToValueAtTime(0.0001, now + decay)
+      osc.connect(env)
+      env.connect(out)
+      osc.start(now)
+      osc.stop(now + decay + 0.05)
+    }
+  } catch {
+    /* No audio on this device. The bells still swing. */
+  }
+}
+
+/* Where the five wicks of the thali's lamp are, as a fraction of the photo
+   (`public/puja/thali.webp`), so the aarti's flames stand on them. Measured
+   off the photo; move these if the photo is replaced. */
+const THALI_WICKS = [
+  [0.496, 0.114],
+  [0.347, 0.197],
+  [0.614, 0.177],
+  [0.354, 0.374],
+  [0.636, 0.379],
+]
+
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
@@ -199,6 +262,7 @@ export default function Pooja() {
   const offer = (key, says) => {
     ripple()
     if (key === 'bell') {
+      ringGhanti()
       setRinging(true)
       setTimeout(() => setRinging(false), 1400)
     }
@@ -255,6 +319,10 @@ export default function Pooja() {
   }
 
   const toggleAarti = () => {
+    // Beginning the aarti lights everything on the altar (4 Oct 2026): the
+    // thali's lamp, both diyas and the agarbatti. Ending it leaves the diyas
+    // and agarbatti burning — they go out from their own buttons.
+    if (!aarti) setLit({ diya: true, incense: true })
     setAarti((a) => !a)
     ripple()
     showToast(t(aarti ? 'puja.aartiEnded' : 'puja.aartiBegun'))
@@ -522,6 +590,18 @@ export default function Pooja() {
                 />
               )}
               <PujaPhoto name="thali" width={120} fallback={<Thali size={104} lit={aarti} />} />
+              {/* The lamp on the thali, lit for the aarti: a flame on each of
+                  its five wicks, travelling with the plate. */}
+              {aarti &&
+                THALI_WICKS.map(([x, y]) => (
+                  <span
+                    key={`${x}-${y}`}
+                    className="absolute"
+                    style={{ left: `${x * 100}%`, top: `${y * 100}%`, transform: 'translate(-50%, -92%)' }}
+                  >
+                    <LampFlame height={17} />
+                  </span>
+                ))}
             </span>
           </span>
           {/* The colours here are inline because every one of this app's

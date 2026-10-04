@@ -384,7 +384,11 @@ turn. Flowers fall the full height of the shrine, twelve petals a tap.
 and mantras, in two tabs. Tapping one plays it over the puja — a mantra loops,
 a bhajan plays once — the knob goes gold while anything plays, and the sheet
 shows what is playing with a Stop. Leaving the shrine stops it. Lit, each diya
-carries a larger flickering flame over the photo's own; the pair face the thali. A knob opens the murti picker,
+carries a larger flickering flame over the photo's own; the pair face the thali.
+
+Beginning the aarti lights everything on the altar: five flames on the thali's
+lamp, both diyas and the agarbatti. Ending it leaves the diyas and agarbatti
+lit. The Bell offering rings a ghanti — a synthesised bell, no audio file. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.
 
