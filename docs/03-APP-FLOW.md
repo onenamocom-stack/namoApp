@@ -60,7 +60,6 @@ In file order, which is also resolution order.
 | `/chart/:id` | Placement | Plain |
 | `/match` | Match — Ashtakoota for two births | Plain |
 | `/muhurat` | Muhurat — auspicious windows | Plain |
-| `/numerology` | Numerology — the numbers in a name | Plain |
 | `/people/invite` | Invite | Plain |
 | `/people` · `/people/:id` | → `/match` (redirect) | Plain |
 | `/read/:id` | Article | Plain |
@@ -250,6 +249,13 @@ component**, not by reordering the feed data, so the feed stays a list of
 content.
 
 ### `/consult`
+**Four options on every card** (5 Oct 2026): **Video**, **Audio**, **Chat** and
+**Book**. The first three are the per-minute session — an audio call is the
+same call joined with cameras off (`sessions.audio_only`). Book opens the
+consultant's booking sheet (`/consult/:id?book=1`) and works offline; a slot is
+20% under the meter (`01-PRD.md` §4.1), said once above the list and, with the
+saving in rupees, in the sheet. The profile page carries the same four.
+
 **Free-tools row of six circles, above the search field** — all six navigate.
 **Horoscope opens `/chart`** and **Ask AI opens `/ask`**, both since 30 Sep 2026
 (the first went to `/horoscope`, the second opened the chat panel). Muhurat
@@ -407,24 +413,6 @@ pills. A chart-matched hero when unfiltered.
 **Add** goes to the cart; **Buy now** charges the wallet immediately. Sold-out
 products keep their row with both controls dead.
 
-### `/numerology`
-**A name, a birth date and the numbers in them.** The name is a field, and
-that is the design: numerology counts the name as it was GIVEN, and a married
-name or another spelling is a different set of numbers that only the reader
-can choose between. The profile's name is the first thing tried, not the last
-word. The birth DATE is not editable — it is on file, a date has no spelling,
-and a screen that let you try dates would be a screen for trying other
-people's.
-
-Numbers first, lucky things second: the vendor is strongest at colour, day,
-metal, stone, deity and mantra, but somebody came for a number and leading
-with a gemstone reads as a shop. The vendor's `evil_num` is printed as
-**Harder** — a number nobody chose is not evil, and saying so to a seeker is
-not what this product means.
-
-This is the one screen reading a SECOND vendor (`02-TRD.md` §8), and it needs
-a birth date but no birthplace, so its 409 asks for a date and never sends
-somebody off to fix a chart.
 
 ### `/academy`
 E-book / Courses / Events. E-book leads and opens by default (28 Sep 2026) — it is the only tab reading real content.
@@ -562,14 +550,18 @@ read off the Moon, which crosses a nakshatra in about a day, so a substituted
 noon can move the score.
 
 ### `/muhurat`
-**A purpose, a month and a place.** Six purposes (general work, vehicle,
-property, griha pravesh, namkaran, mundan), this month or the next two, and a
+**A purpose, a month and a place.** Six purposes as circle tiles (general work,
+vehicle, property, griha pravesh, namkaran, mundan — 5 Oct 2026, they were
+pills), this month or the next two, and a
 place prefilled from the birth row and changeable in one tap — a muhurat is
 built from sunrise, and where you were born is rarely where you are buying a
 car. The place is named on screen for the same reason the panchang names
 Ujjain.
 
-**Judge against your chart** appears only when a birth row exists, and is paid
+**Judge against your zodiac** is a card at the foot of the screen, where *Before
+you act on this* was until 5 Oct 2026. Judged, only the **best quarter** of the
+month's windows is shown, ranked by the vendor's score for this chart and listed
+by date — fewer and more accurate, the owner's ask. It appears only when a birth row exists, and is paid
 since 30 Sep 2026: **₹49 for one purpose in one month** (`01-PRD.md` §4.11).
 Unbought, the server answers 402 with the price and the screen shows the offer
 with a way back to the free windows; bought, reopening it is free. It switches

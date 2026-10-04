@@ -257,12 +257,13 @@ class TestPriceBandArithmetic:
     @pytest.mark.parametrize(
         "tier,rupees,fixed15,fixed20,fixed30,per_minute",
         [
-            (1, 749, 56000, 74900, 112000, 3700),
-            (2, 899, 67000, 89900, 135000, 4500),
-            (3, 999, 75000, 99900, 150000, 5000),
-            (4, 1299, 97000, 129900, 195000, 6500),
-            (5, 1499, 112000, 149900, 225000, 7500),
-            (6, 2200, 165000, 220000, 330000, 11000),
+            # per-minute x minutes, less 20% (5 Oct 2026)
+            (1, 749, 44400, 59200, 88800, 3700),
+            (2, 899, 54000, 72000, 108000, 4500),
+            (3, 999, 60000, 80000, 120000, 5000),
+            (4, 1299, 78000, 104000, 156000, 6500),
+            (5, 1499, 90000, 120000, 180000, 7500),
+            (6, 2200, 132000, 176000, 264000, 11000),
         ],
     )
     def test_derive_band_price_matches_011(self, tier, rupees, fixed15, fixed20,
@@ -283,19 +284,19 @@ class TestPriceBandArithmetic:
 
     def test_seeded_catalogue_carries_011_prices(self, catalogue):
         band = PriceBand.objects.get(tier=5, billing="fixed", duration_mins=30)
-        assert band.price_paise == 225000  # not 007's exact 224850
+        assert band.price_paise == 180000  # ₹75/min x 30, less 20%
         band = PriceBand.objects.get(tier=1, billing="per_minute", duration_mins=1)
         assert band.price_paise == 3700  # not 007's exact 3745
 
     def test_reseed_refreshes_a_drifted_price(self, catalogue):
         band = PriceBand.objects.get(tier=5, billing="fixed", duration_mins=30)
-        band.price_paise = 224850  # 007's un-rounded number, as if 011 never ran
+        band.price_paise = 224850  # an old price, as if the catalogue never moved
         band.active = False
         band.save()
         created, refreshed = services.seed_price_bands()
         assert created == 0 and refreshed == 1
         band.refresh_from_db()
-        assert band.price_paise == 225000
+        assert band.price_paise == 180000
         assert band.active is True
 
     def test_price_bands_endpoint_is_anonymous(self, api_client, catalogue):
@@ -477,7 +478,7 @@ class TestListings:
         assert row["rating_count_cache"] == 0
         by_duration = {s["duration_mins"]: s["price_paise"] for s in row["services"]
                        if s["billing"] == "fixed"}
-        assert by_duration == {20: 74900}  # tier 1, the PRD's price, not 75000
+        assert by_duration == {20: 59200}  # tier 1: ₹37/min x 20, less 20%
 
     def test_ordering_is_rating_desc_nulls_last(self, api_client, money_tables, catalogue):
         from django.db import connection
@@ -624,9 +625,9 @@ class TestApply:
         prices = {(s.billing, s.duration_mins): s.price_paise for s in services_rows}
         # Assertion 9: priced off the band, never the typed 100.
         assert prices == {
-            ("fixed", 15): 112000,
-            ("fixed", 20): 149900,
-            ("fixed", 30): 225000,
+            ("fixed", 15): 90000,
+            ("fixed", 20): 120000,
+            ("fixed", 30): 180000,
             ("per_minute", 1): 7500,
         }
 
@@ -1297,3 +1298,25 @@ class TestBookingRace:
         assert sorted(r.status_code for r in results) == [200, 403]
         assert Booking.objects.get(pk=booking_id).status == "confirmed"
         assert EarningsLedger.objects.filter(booking_id=booking_id).count() == 1
+
+
+@pytest.mark.django_db
+class TestSlotDiscount:
+    """A booked slot is 20% under the same minutes on the meter, and moving
+    the catalogue moves every approved consultant's services with it."""
+
+    def test_a_slot_is_twenty_percent_under_the_meter(self):
+        for rupees in (749, 899, 999, 1299, 1499, 2200):
+            per_minute = services.derive_band_price(rupees, "per_minute", 1)
+            for mins in (15, 20, 30):
+                slot = services.derive_band_price(rupees, "fixed", mins)
+                assert abs(slot - per_minute * mins * 0.8) < 100  # within ₹1 of rounding
+
+    def test_reprice_moves_services_onto_their_bands(self, roster):
+        _, service = roster
+        # As if the consultant applied under the old catalogue.
+        type(service).objects.filter(pk=service.pk).update(price_paise=74900)
+        assert services.reprice_services() == 1
+        service.refresh_from_db()
+        assert service.price_paise == 59200
+        assert services.reprice_services() == 0  # idempotent

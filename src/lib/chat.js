@@ -126,11 +126,13 @@ async function api(path, { method = 'GET', body, idempotencyKey } = {}) {
  * words the server chose, exactly as under PostgREST. */
 
 /** Ask for a chat. Costs nothing — the meter starts when the consultant joins. */
-export async function requestChat(consultantId, serviceId) {
+export async function requestChat(consultantId, serviceId, { audioOnly = false } = {}) {
   try {
     return await api('/chat/sessions/request/', {
       method: 'POST',
-      body: { consultant_id: consultantId, service_id: serviceId },
+      // audio_only: an audio call — the same metered call, cameras off
+      // for both (5 Oct 2026).
+      body: { consultant_id: consultantId, service_id: serviceId, audio_only: audioOnly },
     })
   } catch (err) {
     console.error('[chat] request failed:', err.message)

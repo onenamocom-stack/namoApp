@@ -32,6 +32,8 @@ class RequestInput(serializers.Serializer):
 
     consultant_id = serializers.UUIDField()
     service_id = serializers.UUIDField()
+    # "Audio call" on /consult: the call joins with cameras off (5 Oct 2026).
+    audio_only = serializers.BooleanField(required=False, default=False)
 
 
 class SendInput(serializers.Serializer):
@@ -66,7 +68,8 @@ def request(request):
     data = serializer.validated_data
     return Response(
         services.request_chat(
-            request.user.pk, data["consultant_id"], data["service_id"]
+            request.user.pk, data["consultant_id"], data["service_id"],
+            audio_only=data["audio_only"],
         )
     )
 

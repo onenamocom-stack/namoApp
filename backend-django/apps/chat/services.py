@@ -167,7 +167,7 @@ def _touch_thread(thread_id, created_at, body):
 # ── ask for a session (014; 018 fixes 2 and 3) ───────────────────────────────
 
 
-def request_chat(seeker_id, consultant_id, service_id, now=None):
+def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=False):
     """The knock on the door. NO MONEY MOVES HERE — a consultant who never
     answers has cost the seeker nothing, which is the opposite of a booking
     (that charges up front because it claims a slot somebody else wanted).
@@ -224,6 +224,7 @@ def request_chat(seeker_id, consultant_id, service_id, now=None):
                 mode=service.mode,
                 rate_paise=service.price_paise,
                 status=Session.Status.REQUESTED,
+                audio_only=bool(audio_only),
             )
     except IntegrityError:
         # 23505 on sessions_one_open_request — the same ask. The index is

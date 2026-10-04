@@ -765,6 +765,7 @@ create table sessions (
   order_id       uuid references orders(id),
   mode           text not null check (mode in ('chat','call','live')),
   rate_paise     integer not null check (rate_paise > 0),   -- frozen copy
+  audio_only     boolean not null default false,  -- 5 Oct 2026, chat/0002: an audio call — both join with the camera off
   status         text not null default 'requested'
                  check (status in ('requested','live','ended','declined','expired')),
   requested_at   timestamptz not null default now(),

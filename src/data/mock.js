@@ -71,7 +71,7 @@ export const notifications = [
    CONSULT
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const categories = ['Astrologer', 'Tarot', 'Life Coach', 'Therapist', 'Numerologist']
+export const categories = ['Astrologer', 'Tarot', 'Life Coach', 'Therapist'] // Numerologist removed 5 Oct 2026
 
 export const consultants = [
   {

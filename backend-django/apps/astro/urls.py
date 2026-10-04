@@ -12,5 +12,4 @@ urlpatterns = [
     path("rashifal/", views.rashifal, name="astro-rashifal"),
     path("match/", views.match, name="astro-match"),
     path("muhurat/", views.muhurat, name="astro-muhurat"),
-    path("numerology/", views.numerology, name="astro-numerology"),
 ]

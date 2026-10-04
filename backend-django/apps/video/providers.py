@@ -89,7 +89,7 @@ def create_room(name, expires_at):
     })
 
 
-def meeting_token(room_name, user_name, is_owner, expires_at):
+def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False):
     """One token per person per session. Private rooms cannot be joined
     without one, so a forwarded link is a link to a locked door.
 
@@ -102,5 +102,9 @@ def meeting_token(room_name, user_name, is_owner, expires_at):
         "is_owner": bool(is_owner),
         "exp": int(expires_at.timestamp()),
     }}
+    if audio_only:
+        # An audio call: the camera starts off for this person. They can
+        # still turn it on from the call's own controls.
+        payload["properties"]["start_video_off"] = True
     data = _call("POST", "/meeting-tokens", payload)
     return (data or {}).get("token")

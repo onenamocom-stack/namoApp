@@ -92,6 +92,9 @@ class Session(models.Model):
     )
     order_id = models.UUIDField(null=True, blank=True)  # orders.id; module 8
     mode = models.CharField(max_length=16, choices=SessionMode.choices)
+    # An audio call (5 Oct 2026): the same metered call, joined with the
+    # camera off by both people. Chat ignores it.
+    audio_only = models.BooleanField(default=False)
     rate_paise = models.IntegerField()
     status = models.CharField(
         max_length=16, choices=SessionStatus.choices, default=SessionStatus.REQUESTED

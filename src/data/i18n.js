@@ -174,7 +174,6 @@ export const strings = {
   'tool.tarot': { en: 'Tarot', hi: 'टैरो' },
   'tool.match': { en: 'Matching', hi: 'मिलान' },
   'tool.muhurat': { en: 'Muhurat', hi: 'मुहूर्त' },
-  'tool.numerology': { en: 'Numerology', hi: 'अंकशास्त्र' },
 
   // ── Mandir ───────────────────────────────────────────────────────────────
   'puja.tag': { en: 'e-puja', hi: 'ई-पूजा' },
@@ -489,6 +488,12 @@ export const strings = {
   'con.st.noShow': { en: 'Missed', hi: 'छूट गया' },
   'con.call': { en: 'Call', hi: 'कॉल' },
   'con.chat': { en: 'Chat', hi: 'चैट' },
+  'con.video': { en: 'Video', hi: 'वीडियो' },
+  'con.audio': { en: 'Audio', hi: 'ऑडियो' },
+  'con.bookSaves': {
+    en: 'Booking a slot costs 20% less than the per-minute rate.',
+    hi: 'स्लॉट बुक करना प्रति मिनट दर से 20% सस्ता है।',
+  },
   'con.searchPh': { en: 'Search by name, concern or language', hi: 'नाम, समस्या या भाषा से खोजें' },
   'con.yourSessions': { en: 'Your sessions', hi: 'आपके सत्र' },
   'con.review': { en: 'Review', hi: 'रिव्यू दें' },
@@ -700,8 +705,14 @@ export const strings = {
     en: 'Sunrise moves about two hours across India, and every window below is built from it.',
     hi: 'पूरे भारत में सूर्योदय का समय लगभग दो घंटे तक बदलता है, और नीचे का हर शुभ समय उसी से बनता है।',
   },
-  'mu.judged': { en: 'Judged against your chart', hi: 'आपकी कुंडली के हिसाब से' },
-  'mu.judge': { en: 'Judge against your chart', hi: 'अपनी कुंडली के हिसाब से देखें' },
+  'mu.judged': { en: 'Judged against your zodiac', hi: 'आपकी राशि के हिसाब से' },
+  'mu.judge': { en: 'Judge against your zodiac', hi: 'अपनी राशि के हिसाब से देखें' },
+  'mu.judgeNote': {
+    en: 'Ranks the {label} windows against your own birth chart and keeps only the best quarter of them.',
+    hi: '{label} के शुभ समय को आपकी अपनी कुंडली से परखकर केवल सबसे अच्छे एक-चौथाई रखता है।',
+  },
+  'mu.showAll': { en: 'Show every window', hi: 'सभी शुभ समय दिखाएं' },
+  'mu.bestForYou': { en: 'The best {n} for you', hi: 'आपके लिए सबसे अच्छे {n}' },
   'mu.loading': { en: 'Reading {label} windows.', hi: '{label} के शुभ समय देखे जा रहे हैं।' },
   'mu.payTitle': { en: '{label}, judged against your chart', hi: '{label}, आपकी कुंडली के हिसाब से' },
   'mu.payNote': {
@@ -715,7 +726,6 @@ export const strings = {
     en: 'No {label} window in {month}. This is the answer, not a failure — whole months are closed to some rites, and the tradition would rather you waited than picked a bad one. Try the next month.',
     hi: '{month} में {label} का कोई शुभ समय नहीं है। यही जवाब है, कोई गड़बड़ी नहीं — कुछ संस्कारों के लिए पूरे महीने बंद रहते हैं, और परंपरा चाहती है कि आप ग़लत समय चुनने के बजाय इंतज़ार करें। अगला महीना देखें।',
   },
-  'mu.ranked': { en: 'Windows, ranked for you', hi: 'शुभ समय, आपके लिए क्रम में' },
   'mu.windows': { en: 'Windows', hi: 'शुभ समय' },
   'mu.hours': { en: '{n} hours', hi: '{n} घंटे' },
   'mu.sunToSun': { en: 'sunrise to sunrise', hi: 'सूर्योदय से सूर्योदय तक' },
@@ -723,16 +733,6 @@ export const strings = {
     en: 'Times are local to {place}. A window that ends after midnight is marked +1.',
     hi: 'समय {place} के स्थानीय हैं। आधी रात के बाद ख़त्म होने वाले समय पर +1 लिखा है।',
   },
-  'mu.before': { en: 'Before you act on this', hi: 'इस पर अमल करने से पहले' },
-  'mu.beforeNote': {
-    en: 'A muhurat is a ruleset over tithi, nakshatra and the weekday. It says when the day is clean, not whether the thing itself is wise.',
-    hi: 'मुहूर्त तिथि, नक्षत्र और वार पर बने नियमों का समूह है। यह बताता है कि दिन कब शुभ है, यह नहीं कि वह काम ख़ुद समझदारी है या नहीं।',
-  },
-  'mu.askAstrologer': { en: 'Ask an astrologer', hi: 'ज्योतिषी से पूछें' },
-  'mu.askAstrologerNote': { en: 'A person, on your own chart', hi: 'एक इंसान, आपकी अपनी कुंडली पर' },
-  'mu.todayReading': { en: "Today's reading", hi: 'आज का राशिफल' },
-  'mu.todayReadingNote': { en: 'The day you are in now', hi: 'आज का दिन' },
-  'mu.book15': { en: 'Book fifteen minutes', hi: 'पंद्रह मिनट बुक करें' },
 
   // ── Namo AI ──────────────────────────────────────────────────────────────
   'ask.each': { en: '{price} each', hi: '{price} प्रति सवाल' },

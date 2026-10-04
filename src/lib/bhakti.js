@@ -31,6 +31,8 @@
  */
 
 import { supabase } from './supabase.js'
+import { myCodes } from './referrals.js'
+import { SEEKER_APP_URL } from './urls.js'
 
 /** The Django API's base, e.g. https://api.example.com/v1 */
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL
@@ -377,5 +379,49 @@ export async function assetFile(id) {
     }
   } catch {
     return { ok: false, code: 'unavailable', reason: 'Could not reach the library. Try again.' }
+  }
+}
+
+/* ── Sharing with an invitation (5 Oct 2026) ────────────────────────────────
+   Everything shared from Bhakti carries one short line, the app's link and the
+   sharer's own referral code — the link is the sign-up page with `?ref=`,
+   which Welcome already keeps and fills in. Signed out, there is no code and
+   the link is the bare app. The code is asked for once per visit. */
+let inviteCode = null
+
+function myInviteCode() {
+  inviteCode = inviteCode || myCodes().then((row) => row?.codes?.seeker ?? null).catch(() => null)
+  return inviteCode
+}
+
+const LISTENED = new Set(['bhajan', 'mantra', 'tune'])
+
+export async function inviteMessage(asset) {
+  const code = await myInviteCode()
+  const link = code ? `${SEEKER_APP_URL}#/onboarding?ref=${code}` : SEEKER_APP_URL
+  const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on Namo` : `“${asset.title}”, from Namo`
+  return [
+    `${what}: bhajans, mantras and daily darshan in one app.`,
+    code ? `Join with my code ${code}: ${link}` : link,
+  ].join('\n')
+}
+
+/** Share one asset's invitation: the phone's share sheet, or the clipboard.
+ *  Returns the sentence to toast, or null when there is nothing to say. */
+export async function shareAsset(asset) {
+  const text = await inviteMessage(asset)
+  if (navigator.share) {
+    try {
+      await navigator.share({ text })
+      return null
+    } catch (err) {
+      if (err?.name === 'AbortError') return null
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    return 'Message copied'
+  } catch {
+    return 'Could not copy that.'
   }
 }

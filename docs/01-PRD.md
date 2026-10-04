@@ -94,7 +94,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Payments | **None** | Payment-method tags are decorative |
 | Matching — Ashtakoota | **Real** | `/match`. 36 gunas and the doshas, from two births. Free, and nothing typed is saved. Replaced the mock friend list and its synastry, 22 Sep 2026 |
 | Muhurat | **Real** | `/muhurat`. Six purposes, a month at a time, optionally judged against your own chart. Free |
-| Numerology | **Real** | `/numerology`. The numbers in a name and a birth date, from a second vendor. Free, and the name is the reader's to correct |
+| Numerology | **Removed 5 Oct 2026** | The owner's call. Screen, route, endpoint and vendor client are gone |
 | Notifications | UI | No read state, no deep links |
 | Help and support | **Built** 3 Oct 2026 | `/support` in both apps, signed in or not: call and WhatsApp **+91 99580 40508**, **support@1namo.com**, a "Report a problem" form that writes a pre-filled email or WhatsApp message (topic, account, app, order or session ID), five FAQs. **No ticket system of our own**: the mailbox goes into a helpdesk (Zoho Desk or Freshdesk) for ticket counts and replies — not set up yet |
 | Influencers | **Built** 3 Oct 2026 | A profile flag the console grants. The influencer's ordinary invite code (N…) and a sign-up link `/#/onboarding?ref=N…` that fills it in. A Profile → Influencer tab: people who joined with the code, and of them how many have **paid** (a captured wallet top-up) — this month, last month, all time — plus the latest joins as dates only, never names. **Paid per signup and per paying person, at rates still to be set; views not counted for pay** (owner's call, 3 Oct). Payout itself is not built |
@@ -139,6 +139,12 @@ Current consultant prices, which become the seed bands:
 
 | ₹749 | ₹899 | ₹999 | ₹1,299 | ₹1,499 | ₹2,200 |
 |---|---|---|---|---|---|
+
+**A booked slot costs 20% less than the same minutes on the meter** (5 Oct 2026).
+The per-minute rate is the band over 20, rounded to ₹1 (₹749 → ₹37/min); a 15,
+20 or 30-minute slot is that rate times its minutes, less 20%, rounded to ₹1 —
+₹444 / ₹592 / ₹888 at ₹37/min. It replaced slot prices that equalled the meter,
+so nothing rewarded booking ahead. Video, audio and chat all run on the meter.
 
 **Platform commission: 18%**, expressed in basis points everywhere it is stored.
 A ₹1,499 session pays the consultant ₹1,229 and the platform ₹270.
@@ -337,7 +343,7 @@ Three things the wallet buys that stay bought. The price is the server's
 | Unlock | Price | Keeps |
 |---|---|---|
 | **Your own predictions** — yesterday, today, tomorrow, read from your birth (`/chart`, Prediction tab) | **₹99** | 30 days; buying again early starts where the last ends. No auto-renewal |
-| **Muhurat judged against your chart** | **₹49** | One purpose for one month, forever — reopening it is free, another purpose or month is another ₹49 |
+| **Muhurat judged against your zodiac** | **₹49** | One purpose for one month, forever — reopening it is free, another purpose or month is another ₹49. Shows only the best quarter of that month's windows for the reader's chart (5 Oct 2026) |
 | **A priced e-book** — the first is *A Complete Guide to Beej Mantra* | **₹99** | Forever, on any device the account signs in on |
 
 **What stays free:** the natal chart and every divisional chart (D1–D60),

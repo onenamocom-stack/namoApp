@@ -1,7 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -60,10 +60,12 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
+  // `?book=1`: arrived from a card's Book button — open the sheet at once.
+  const [params] = useSearchParams()
   const { start, asking } = useStartSession()
   const { showToast, hasFlag, toggleFlag, bookSession, spending } = useStore()
   const [tab, setTab] = useState('about')
-  const [sheet, setSheet] = useState(false)
+  const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
   const [service, setService] = useState(null)
   const [c, setC] = useState(undefined)
@@ -144,7 +146,8 @@ export default function ConsultantProfile() {
      roster on /consult, which kept a "prototype only" toast on its own
      Call button for a week after this screen got a working one. Two
      copies of the same button is how that happens. */
-  const askForCall = () => start(c, 'call')
+  const askForCall = () => start(c, 'video')
+  const askForAudio = () => start(c, 'audio')
   const askForChat = () => start(c, 'chat')
 
   /* One call, one transaction. The sheet sends the consultant, the service and
@@ -296,6 +299,17 @@ export default function ConsultantProfile() {
               disabled={asking || !c.online}
               className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
             >
+              <Icon name="video" size={18} />
+            </button>
+            <button
+              type="button"
+              aria-label={
+                c.online ? `Audio call ${firstName(c.name)}` : `${firstName(c.name)} is offline`
+              }
+              onClick={askForAudio}
+              disabled={asking || !c.online}
+              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
+            >
               <Icon name="phone" size={18} />
             </button>
           </div>
@@ -420,6 +434,14 @@ export default function ConsultantProfile() {
         <Field k="Length" v={`${duration} min`} />
         <Field k="Questions" v={SESSION.promise} />
         <Field k="Total" v={`₹${rupees(total)}`} />
+        {/* Both numbers are the server's: the slot's price and the meter's
+            rate. The difference is only said, never sent (rule 3). */}
+        {c.perMinute && service && c.perMinute.price_paise * duration > total && (
+          <p className="mt-2 text-meta gold">
+            Saves ₹{rupees(c.perMinute.price_paise * duration - total)} against calling now at ₹
+            {rupees(c.perMinute.price_paise)}/min.
+          </p>
+        )}
 
         <Button
           className="mt-10"

@@ -273,7 +273,7 @@ bulk actions. See `04-UI-UX.md`.
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
 | Namo AI | **Gemini Flash**, behind the API — *reversed from Claude, 21 Sep 2026* | The key cannot ship to a browser and the quota is money. Gemini won on cost at this shape: short answers over structured chart data, ~₹0.02 a question against ~₹0.06. `AI_PROVIDER` selects it, so the reversal costs one env var, not a rewrite |
 | Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
-| Numerology | **`astrologyapi.com`**, trial — *added 24 Sep 2026* | A second astrology vendor, for the one thing the first does not compute. Basic auth, `json.astrologyapi.com/v1`, credentials env-only. Its tarot and palmistry were looked at and not taken — see below |
+| Numerology | **Removed 5 Oct 2026** | `apps/astro/numerology.py`, `GET /v1/astro/numerology/` and the `NUMEROLOGY_PROVIDER` / `ASTROLOGY_API_*` settings are deleted; the section below is kept as history |
 | Place search | **`freeastroapi.com`** geo endpoint — *replaced Open-Meteo, 2 Sep 2026* | Same tier, commercially licensed, returns the IANA zone. Open-Meteo's free geocoder was non-commercial and sat on the signup path |
 
 ### Charts come from a third-party API — decided 1 Sep 2026

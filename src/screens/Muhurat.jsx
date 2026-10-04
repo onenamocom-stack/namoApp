@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import Paywall from '../components/Paywall.jsx'
 import PlaceField, { placeLabel } from '../components/PlaceField.jsx'
-import { Kicker, PopCard } from '../components/Pop.jsx'
-import { Button, Row, Section, Segmented, Stub } from '../components/Primitives.jsx'
+import Icon from '../components/Icon.jsx'
+import { PopButton, PopCard } from '../components/Pop.jsx'
+import { Section, Segmented, Stub } from '../components/Primitives.jsx'
 import { findMuhurat, istDate, longDate, muhuratFrom } from '../lib/astro.js'
 import { useStore } from '../store.jsx'
 
@@ -27,13 +28,28 @@ import { useStore } from '../store.jsx'
  */
 /* `label` and `note` are i18n keys. */
 const PURPOSES = [
-  { key: 'general_work', label: 'mu.p.general', note: 'mu.p.generalNote' },
-  { key: 'vehicle_purchase', label: 'mu.p.vehicle', note: 'mu.p.vehicleNote' },
-  { key: 'property_purchase', label: 'mu.p.property', note: 'mu.p.propertyNote' },
-  { key: 'griha_pravesh', label: 'mu.p.griha', note: 'mu.p.grihaNote' },
-  { key: 'namkaran', label: 'mu.p.naming', note: 'mu.p.namingNote' },
-  { key: 'mundan', label: 'mu.p.mundan', note: 'mu.p.mundanNote' },
+  { key: 'general_work', label: 'mu.p.general', note: 'mu.p.generalNote', icon: 'calendar' },
+  { key: 'vehicle_purchase', label: 'mu.p.vehicle', note: 'mu.p.vehicleNote', icon: 'car' },
+  { key: 'property_purchase', label: 'mu.p.property', note: 'mu.p.propertyNote', icon: 'home' },
+  { key: 'griha_pravesh', label: 'mu.p.griha', note: 'mu.p.grihaNote', icon: 'key' },
+  { key: 'namkaran', label: 'mu.p.naming', note: 'mu.p.namingNote', icon: 'baby' },
+  { key: 'mundan', label: 'mu.p.mundan', note: 'mu.p.mundanNote', icon: 'scissors' },
 ]
+
+/**
+ * Judged against the reader's zodiac, only the best QUARTER of the month's
+ * windows is shown (5 Oct 2026, the owner's call — "fewer, and accurate").
+ * Ranked by the vendor's own score for this chart, at least one kept, then
+ * put back in date order so the list still reads as a calendar.
+ */
+function bestQuarter(windows) {
+  if (windows.length <= 1) return windows
+  const keep = Math.max(1, Math.ceil(windows.length / 4))
+  return [...windows]
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, keep)
+    .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
+}
 
 /** This month and the next two, as the API clamps them. Named in the
  *  reader's language; the key is the same either way. */
@@ -88,7 +104,14 @@ export default function Muhurat() {
       if (!live) return
       setState(
         res.ok
-          ? { loading: false, result: muhuratFrom(res.data), refusal: null }
+          ? (() => {
+              const shaped = muhuratFrom(res.data)
+              return {
+                loading: false,
+                result: mine ? { ...shaped, windows: bestQuarter(shaped.windows) } : shaped,
+                refusal: null,
+              }
+            })()
           : { loading: false, result: null, refusal: res },
       )
     })
@@ -106,17 +129,24 @@ export default function Muhurat() {
     <>
       <TopBar title={t('tool.muhurat')} sub={chosen.note} back backTo="/consult" />
 
+      {/* Circle tiles, not pills (5 Oct 2026) — the same row as Consult's tools
+          and Bhakti's shelves. It scrolls: six tiles are wider than a phone. */}
       <Section label={t('mu.whatFor')} tight>
-        <ul className="flex flex-wrap gap-2">
+        <ul className="no-scrollbar -mx-2 flex gap-1 overflow-x-auto px-1">
           {PURPOSES.map((p) => (
-            <li key={p.key}>
+            <li key={p.key} className="flex-none">
               <button
                 type="button"
                 onClick={() => setPurpose(p.key)}
-                className="pill caps-sm"
+                className="tile w-[72px]"
                 aria-pressed={purpose === p.key}
               >
-                {t(p.label)}
+                <span className={`tile-face ${purpose === p.key ? 'tile-face-on' : ''}`}>
+                  <Icon name={p.icon} size={22} />
+                </span>
+                <span className="text-center text-[12px] font-semibold leading-tight t-body">
+                  {t(p.label)}
+                </span>
               </button>
             </li>
           ))}
@@ -148,18 +178,6 @@ export default function Muhurat() {
           {t('mu.sunriseNote')}
         </p>
 
-        {/* Only offered when there is a chart to judge against. An empty
-            toggle that refuses on tap is worse than no toggle. */}
-        {hasBirth && (
-          <button
-            type="button"
-            onClick={() => setMine((v) => !v)}
-            className="pill caps-sm mt-5"
-            aria-pressed={mine}
-          >
-            {mine ? t('mu.judged') : t('mu.judge')}
-          </button>
-        )}
       </Section>
 
       {state.loading && (
@@ -229,7 +247,7 @@ export default function Muhurat() {
               </p>
             </Section>
           ) : (
-            <Section label={mine ? t('mu.ranked') : t('mu.windows')}>
+            <Section label={mine ? t('mu.bestForYou', { n: result.windows.length }) : t('mu.windows')}>
               <ul>
                 {result.windows.map((w) => (
                   <li key={w.id} className="border-b border-rule py-5 last:border-b-0">
@@ -260,15 +278,30 @@ export default function Muhurat() {
               </p>
             </Section>
           )}
-
-          <Section label={t('mu.before')} last>
-            <p className="prose-c">{t('mu.beforeNote')}</p>
-            <Kicker className="mt-10">{t('a.further')}</Kicker>
-            <Row to="/consult" title={t('mu.askAstrologer')} note={t('mu.askAstrologerNote')} />
-            <Row to="/horoscope" title={t('mu.todayReading')} note={t('mu.todayReadingNote')} />
-            <Button to="/consult" variant="solid" className="mt-8">{t('mu.book15')}</Button>
-          </Section>
         </>
+      )}
+
+      {/* Where "Before you act on this" was (5 Oct 2026). Only offered when
+          there is a chart to judge against — a button that refuses on tap
+          is worse than none. ₹49 per purpose per month, asked by the
+          server on the first tap (the Paywall above). */}
+      {hasBirth && !locked && !state.loading && (
+        <section className="section">
+          <PopCard raised className="p-5 text-center">
+            <p className="caps t-heading">{t(mine ? 'mu.judged' : 'mu.judge')}</p>
+            <p className="mt-2 text-meta t-body">{t('mu.judgeNote', { label: chosen.label.toLowerCase() })}</p>
+            <PopButton
+              variant={mine ? 'default' : 'gold'}
+              className="mt-5"
+              onClick={() => {
+                setMine((v) => !v)
+                document.querySelector('main')?.scrollTo({ top: 0 })
+              }}
+            >
+              {t(mine ? 'mu.showAll' : 'mu.judge')}
+            </PopButton>
+          </PopCard>
+        </section>
       )}
 
       <div className="h-8" />

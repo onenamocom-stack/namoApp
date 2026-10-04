@@ -44,7 +44,6 @@ const FREE_TOOLS = [
   { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
   { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match' },
   { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat' },
-  { key: 'numerology', label: 'tool.numerology', icon: 'reports', to: '/numerology' },
 ]
 
 /** Circles, because a circle reads as a tool and a card reads as content. */
@@ -228,8 +227,12 @@ const STATUS = {
 }
 
 /** How each channel is actually delivered. */
+/* Four ways to reach somebody, on every card (5 Oct 2026, the owner's
+   call): video, audio and chat run on the per-minute meter now; Book takes a
+   slot later at 20% under that rate (docs/01-PRD.md §4.1). */
 const CHANNELS = {
-  call: { icon: 'phone', label: 'con.call' },
+  video: { icon: 'video', label: 'con.video' },
+  audio: { icon: 'phone', label: 'con.audio' },
   chat: { icon: 'chat', label: 'con.chat' },
 }
 
@@ -560,6 +563,8 @@ export default function Consult() {
         <p className="mb-3 caps-sm t-faint">
           {t('con.everySession', { ...SV, promise: SESSION.promise.toLowerCase() })}
         </p>
+        {/* Said once for the list, not under every card. */}
+        <p className="mb-3 text-meta gold">{t('con.bookSaves')}</p>
 
         <Kicker>
           {`${t(list.length === 1 ? 'con.person' : 'con.people', { n: list.length })}${
@@ -615,14 +620,14 @@ export default function Consult() {
                   the only gold one until live video was deleted on 9 Sep 2026;
                   leaving the row all-ghost would have given a card with a
                   working paid action no primary at all. */}
-              <div className="mt-4 flex items-center gap-2 border-t border-rule pt-4">
-                {['call', 'chat'].map((kind) => (
+              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-rule pt-4">
+                {['video', 'audio', 'chat'].map((kind) => (
                   <PopButton
                     key={kind}
                     size="sm"
-                    variant={kind === 'chat' ? 'gold' : 'ghost'}
+                    variant="ghost"
                     full={false}
-                    className="flex-1 disabled:pointer-events-none disabled:opacity-40"
+                    className="!px-1 flex-col gap-1 disabled:pointer-events-none disabled:opacity-40"
                     /* Dead while they are offline — the same rule as the
                        profile page. A card that offers Call to somebody
                        asleep is the card that teaches a seeker the app
@@ -630,10 +635,22 @@ export default function Consult() {
                     disabled={!c.online || asking}
                     onClick={() => start(c, kind)}
                   >
-                    <Icon name={CHANNELS[kind].icon} size={15} />
-                    <span className="ml-1.5">{t(CHANNELS[kind].label)}</span>
+                    <Icon name={CHANNELS[kind].icon} size={16} />
+                    <span className="text-[11px] leading-none">{t(CHANNELS[kind].label)}</span>
                   </PopButton>
                 ))}
+                {/* Book works offline too — a slot is for later. It opens the
+                    booking sheet on the profile. */}
+                <PopButton
+                  size="sm"
+                  variant="gold"
+                  full={false}
+                  className="!px-1 flex-col gap-1"
+                  to={`/consult/${c.id}?book=1`}
+                >
+                  <Icon name="calendar" size={16} />
+                  <span className="text-[11px] leading-none">{t('con.book')}</span>
+                </PopButton>
               </div>
 
               {/* Said, not left to two faded buttons. Booking still works,

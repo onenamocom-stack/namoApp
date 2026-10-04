@@ -33,11 +33,15 @@ export default function useStartSession() {
    * @param to 'call' opens the video screen; 'chat' opens the panel
    */
   const start = useCallback(
-    async (consultant, to = 'call') => {
+    async (consultant, to = 'video') => {
       if (asking) return
-      if (!session) return showToast(`Sign in to ${to === 'call' ? 'call' : 'chat'}.`)
+      /* 'video' and 'audio' are both calls (5 Oct 2026) — the same metered
+         session; an audio one joins with cameras off. 'call' is the old
+         name for video and still works. */
+      const isCall = to !== 'chat'
+      if (!session) return showToast(`Sign in to ${isCall ? 'call' : 'chat'}.`)
       if (!consultant?.perMinute) {
-        return showToast(`${consultant?.name ?? 'They'} are not taking ${to}s.`)
+        return showToast(`${consultant?.name ?? 'They'} are not taking ${isCall ? 'call' : 'chat'}s.`)
       }
       if (!consultant.online) {
         return showToast(`${consultant.name} is offline right now.`)
@@ -45,7 +49,9 @@ export default function useStartSession() {
 
       setAsking(true)
       try {
-        const result = await requestChat(consultant.id, consultant.perMinute.id)
+        const result = await requestChat(consultant.id, consultant.perMinute.id, {
+          audioOnly: to === 'audio',
+        })
         if (!result?.ok) {
           // The server's sentence. Every refusal it gives names the fix —
           // offline, not priced, not enough balance.
@@ -54,7 +60,7 @@ export default function useStartSession() {
         showToast(
           `Asked ${consultant.name} · ₹${rupees(consultant.perMinute.price_paise)}/min once they join`,
         )
-        if (to === 'call') {
+        if (isCall) {
           /* Straight to the call screen rather than waiting here for the
              accept. An empty room with the countdown on it is a truer
              picture of "waiting for them" than a spinner on a list, and

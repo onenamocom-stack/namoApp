@@ -120,6 +120,7 @@ def join(actor_id, session_id, now=None):
             profile_services.profile_name(actor_id) or "Guest",
             is_owner=is_consultant,
             expires_at=session.expires_at,
+            audio_only=session.audio_only,
         )
     except providers.UpstreamError as exc:
         logger.error("[video] daily failed for %s: %s", name, exc)

@@ -171,17 +171,24 @@ def _round_to_grid(price_paise, grid):
     return int(units) * grid
 
 
+# A booked slot costs this much less than the same minutes on the meter
+# (5 Oct 2026, the owner's call; the amount is docs/01-PRD.md §4.1's).
+SLOT_DISCOUNT_PCT = 20
+
+
 def derive_band_price(rupees, billing, duration_mins):
-    """011's arithmetic for one catalogue row: the 20-minute price is the
-    PRD's number restored (rupees * 100), never rounded; 15/30 minutes are
-    the exact ratio rounded to the nearest ₹10; per-minute the exact rate
-    rounded to the nearest ₹1."""
+    """One catalogue row's price. Per-minute is the tier's 20-minute number
+    over 20, rounded to the nearest ₹1 (011). A FIXED slot is that same
+    per-minute rate times its minutes, less SLOT_DISCOUNT_PCT, rounded to
+    the nearest ₹1 — booking ahead is cheaper than calling now.
+
+    This replaced 011's slot prices on 5 Oct 2026, which charged a 20-minute
+    slot the tier's whole number (₹749 for tier 1, against ₹37 × 20 = ₹740
+    on the meter): a slot was never cheaper, so nothing rewarded booking."""
+    per_minute = _round_to_grid(rupees * 100 // 20, 100)
     if billing == ServiceBilling.FIXED:
-        price = rupees * 100 * duration_mins // 20  # 007's exact ratio
-        if duration_mins == 20:
-            return price
-        return _round_to_grid(price, 1000)
-    return _round_to_grid(rupees * 100 // 20, 100)
+        return _round_to_grid(per_minute * duration_mins * (100 - SLOT_DISCOUNT_PCT) // 100, 100)
+    return per_minute
 
 
 def seed_price_bands(tiers=((1, 749), (2, 899), (3, 999), (4, 1299), (5, 1499), (6, 2200))):
@@ -224,6 +231,21 @@ def seed_price_bands(tiers=((1, 749), (2, 899), (3, 999), (4, 1299), (5, 1499), 
                         row.save()
                         refreshed += 1
     return created, refreshed
+
+
+def reprice_services():
+    """Every consultant service takes its band's CURRENT price.
+
+    A service copies its band's price when the consultant applies (assertion
+    9), so a change to the catalogue does not reach anybody already approved
+    until this runs. Bookings are untouched — each holds the price it was
+    charged. Returns how many services changed."""
+    changed = 0
+    for band in PriceBand.objects.all():
+        changed += ConsultantService.objects.filter(band_id=band.id).exclude(
+            price_paise=band.price_paise
+        ).update(price_paise=band.price_paise)
+    return changed
 
 
 def list_price_bands():

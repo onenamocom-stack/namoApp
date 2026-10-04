@@ -53,8 +53,9 @@ def fake_daily(monkeypatch):
         calls["rooms"].append((name, expires_at))
         return {"url": f"https://1namo.daily.co/{name}", "name": name}
 
-    def meeting_token(room_name, user_name, is_owner, expires_at):
+    def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False):
         calls["tokens"].append((room_name, user_name, is_owner, expires_at))
+        calls.setdefault("audio_only", []).append(audio_only)
         return f"token-for-{user_name}"
 
     monkeypatch.setattr(providers, "get_room", get_room)
@@ -100,6 +101,22 @@ class TestWhoMayJoin:
         s = _session()
         assert services.join(PRO, s.id)["is_owner"] is True
         assert services.join(SEEKER, s.id)["is_owner"] is False
+
+    def test_an_audio_call_joins_both_sides_with_the_camera_off(
+        self, people, configured, fake_daily
+    ):
+        """5 Oct 2026: "Audio call" is the same metered call, asked for with
+        audio_only — and both tokens start the camera off."""
+        s = _session()
+        Session.objects.filter(pk=s.pk).update(audio_only=True)
+        services.join(SEEKER, s.id)
+        services.join(PRO, s.id)
+        assert fake_daily["audio_only"] == [True, True]
+
+    def test_a_video_call_keeps_the_camera_on(self, people, configured, fake_daily):
+        s = _session()
+        services.join(SEEKER, s.id)
+        assert fake_daily["audio_only"] == [False]
 
     def test_a_stranger_is_refused(self, people, configured, fake_daily):
         s = _session()

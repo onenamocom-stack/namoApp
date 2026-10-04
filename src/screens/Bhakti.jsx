@@ -15,6 +15,8 @@ import {
   recallStatusPhoto,
   rememberStatusPhoto,
   saveBlob,
+  inviteMessage,
+  shareAsset,
   shareFile,
   shrinkForStatus,
 } from '../lib/bhakti.js'
@@ -379,6 +381,27 @@ export default function Bhakti() {
   )
 }
 
+/**
+ * Share one card — every shelf has one (5 Oct 2026). What goes out is a short
+ * line, the app link and the sharer's own referral code (`inviteMessage`).
+ */
+function ShareButton({ asset }) {
+  const { showToast } = useStore()
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        const said = await shareAsset(asset)
+        if (said) showToast(said)
+      }}
+      aria-label={`Share ${asset.title}`}
+      className="flex-none p-1 text-t2 transition-transform duration-150 hover:text-t1 active:scale-90"
+    >
+      <Icon name="share" size={22} weight={1.8} />
+    </button>
+  )
+}
+
 /** Price badge. `null` is not priced yet, which is not the same as free. */
 function Price({ paise }) {
   if (paise == null) return <span className="caps-sm t-faint">Free</span>
@@ -428,6 +451,7 @@ function PictureCard({ asset, ratio, action, busy, onAction }) {
             <Credit asset={asset} />
           </div>
           {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
+          {action !== 'Share' && <ShareButton asset={asset} />}
           <PopButton
             size="sm"
             variant={action === 'Share' ? 'gold' : 'default'}
@@ -473,6 +497,7 @@ function AudioRow({ asset, busy, onSave }) {
 
         <div className="flex flex-none items-center gap-2">
           <Price paise={asset.pricePaise} />
+          <ShareButton asset={asset} />
           <PopButton size="sm" full={false} disabled={busy} onClick={onSave}>
             {busy ? '…' : 'Save'}
           </PopButton>
@@ -601,6 +626,7 @@ function TrackCard({ asset, counted = false }) {
               <Credit asset={asset} />
             )}
           </div>
+          <ShareButton asset={asset} />
           <button
             type="button"
             onClick={() => toggleFlag(likeKey)}
@@ -719,7 +745,7 @@ function ShareSheet({ asset, onClose }) {
       })
       if (!blob) throw new Error('compose failed')
       const filename = `namo-status-${Date.now()}.jpg`
-      const shared = await shareFile(blob, filename, 'Namo')
+      const shared = await shareFile(blob, filename, await inviteMessage(asset))
       if (!shared) {
         saveBlob(blob, filename)
         showToast('Saved — sharing needs a phone')
