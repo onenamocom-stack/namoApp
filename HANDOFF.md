@@ -5173,9 +5173,15 @@ written just after IST midnight on the 1st counts in the previous month. The
 dashboard's month-to-date charts have the same gap; the fix belongs in
 `apps/analytics/periods` or the series bucketing, not the test.
 
-## 41. Uploads from the browser are blocked by R2 — 4 Oct 2026
+## 41. Uploads from the browser were blocked by R2 — fixed 4 Oct 2026
 
-**Owner action needed in Cloudflare.** A profile picture (and any studio post,
+**Fixed the same day: the owner added the CORS policy below to `namo-media` and
+`namo-docs`.** Re-tested with presigned PUT preflights from `https://1namo.com`,
+`https://pro.1namo.com` and `http://localhost:5260` on both buckets: 204, the
+origin echoed, `PUT, GET, HEAD` allowed. A real avatar upload on a phone has not
+been watched end to end yet.
+
+What was wrong: A profile picture (and any studio post,
 reel or consultant certificate) gets its presigned URL from the API (`presign`
 201) and then dies at the browser's PUT to R2: the bucket answers the CORS
 preflight with **403 and no `Access-Control-Allow-Origin`**, so the browser
