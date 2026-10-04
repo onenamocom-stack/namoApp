@@ -1,7 +1,8 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { fetchFeed } from '../lib/content.js'
+import { fetchByAuthor, fetchFeed, fetchOne } from '../lib/content.js'
+import { isPro } from '../side.js'
 import { authorHref, readMins } from './Home.jsx'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
@@ -22,7 +23,9 @@ import { useStore } from '../store.jsx'
  */
 export default function Article() {
   const { id } = useParams()
-  const { showToast, hasFlag, toggleFlag } = useStore()
+  const { showToast, hasFlag, toggleFlag, session } = useStore()
+  const home = isPro ? '/pro/studio' : '/home'
+  const me = session?.user?.id ?? null
 
   /* Articles are rows now, so this screen loads rather than looks up. It asks
      for the whole article list and picks its own out of it, because the same
@@ -32,7 +35,19 @@ export default function Article() {
 
   useEffect(() => {
     let active = true
-    fetchFeed({ kinds: ['article'] })
+    /* The consultant app reads only the consultant's own blog posts (4 Oct
+       2026); the seeker app reads the newest from everyone. Either way, a
+       post older than the list is fetched on its own rather than bounced. */
+    if (isPro && !me) return undefined
+    const load = isPro
+      ? fetchByAuthor(me, { limit: 200 }).then((rows) => rows.filter((c) => c.kind === 'article'))
+      : fetchFeed({ kinds: ['article'] })
+    load
+      .then(async (rows) => {
+        if (rows.some((r) => r.id === id)) return rows
+        const one = await fetchOne(id)
+        return one && one.kind === 'article' && (!isPro || one.authorId === me) ? [one, ...rows] : rows
+      })
       .then((rows) => active && setArticles(rows))
       .catch((err) => {
         console.error('[article] load failed:', err.message)
@@ -41,7 +56,7 @@ export default function Article() {
     return () => {
       active = false
     }
-  }, [])
+  }, [id, me])
 
   /* Nothing is rendered against a half-loaded list: `null` means still asking,
      `[]` means asked and got nothing. Without the distinction a slow network
@@ -49,14 +64,14 @@ export default function Article() {
   if (articles === null) {
     return (
       <>
-        <TopBar title="Article" back backTo="/home" />
+        <TopBar title="Article" back backTo={home} />
         <Loader />
       </>
     )
   }
 
   const idx = articles.findIndex((b) => b.id === id)
-  if (idx === -1) return <Navigate to="/home" replace />
+  if (idx === -1) return <Navigate to={home} replace />
 
   const b = articles[idx]
   const next = articles[(idx + 1) % articles.length]
@@ -76,7 +91,7 @@ export default function Article() {
       <TopBar
         title="Article"
         back
-        backTo="/home"
+        backTo={home}
         sub={mins}
         right={
           <button

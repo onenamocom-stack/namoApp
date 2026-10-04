@@ -4,7 +4,7 @@ import { fetchByAuthor } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Composer from '../components/Composer.jsx'
 import { Kicker } from '../components/Pop.jsx'
-import { Row } from '../components/Primitives.jsx'
+import { PieceRow } from '../components/Pieces.jsx'
 import { useStore } from '../store.jsx'
 
 /**
@@ -75,13 +75,10 @@ export default function ProStudio() {
           {published.filter((c) => c.kind === 'article').length} blog posts
         </p>
         <div className="mt-3">
+          {/* Your own posts only, each with its thumbnail and views, and a tap
+              that opens it (4 Oct 2026; they were untappable text rows). */}
           {published.map((c) => (
-            <Row
-              key={c.id}
-              title={c.title || c.caption}
-              meta={c.time}
-              note={c.kind === 'clip' ? 'Reel' : c.kind === 'post' ? 'Photo' : 'Blog'}
-            />
+            <PieceRow key={c.id} piece={c} />
           ))}
           {/* An empty studio says so. The counts above are COUNTED, never
               quoted — the mock said three pieces with 12.1k views against

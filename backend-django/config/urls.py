@@ -35,6 +35,7 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/video/", include("apps.video.urls")),
         path("v1/events/", include("apps.analytics.urls")),
         path("v1/shop/", include("apps.shop.urls")),
+        path("v1/appearance/", include("apps.appearance.urls")),
     ]
 
 if settings.ADMIN_ENABLED:

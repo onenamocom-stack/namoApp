@@ -1,3 +1,4 @@
+import { applyTheme, loadAppearance } from './lib/appearance.js'
 import { MilestoneCelebration } from './components/Milestones.jsx'
 import { useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -170,8 +171,9 @@ function SessionGate() {
       // opens /chart?name=… for a booking, ProProfile previews /consult/:id.
       // Bounced to the studio from 20 Sep until 29 Sep.
       if (pathname === '/chart' || pathname.startsWith('/consult/')) return
-      // Help and support, shared with the seeker app (3 Oct 2026).
-      if (pathname === '/support') return
+      // Help and support, shared with the seeker app (3 Oct 2026), and the
+      // consultant's own reels and blog posts (4 Oct 2026).
+      if (pathname === '/support' || pathname.startsWith('/reels/') || pathname.startsWith('/read/')) return
 
       const authStep =
         pathname.startsWith('/onboarding/name') ||
@@ -235,6 +237,11 @@ function Frame() {
 
   useEffect(() => {
     document.title = isPro ? 'Namo — Consultant' : 'Namo'
+  }, [])
+
+  // The console's festive theme, if one is showing now (4 Oct 2026).
+  useEffect(() => {
+    loadAppearance().then((d) => applyTheme(d?.theme ?? null))
   }, [])
 
   return (
@@ -330,6 +337,10 @@ function Frame() {
                 <Route path="/chart" element={<Chart />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
                 <Route path="/support" element={<Support />} />
+                {/* A consultant's own reels and blog posts, opened from Studio
+                    and Insights (4 Oct 2026) — both screens show only theirs. */}
+                <Route path="/reels/:id" element={<ReelViewer />} />
+                <Route path="/read/:id" element={<Article />} />
               </>
             )}
           </Route>

@@ -1,6 +1,7 @@
 import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { categories, SESSION } from '../data/mock.js'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -233,7 +234,10 @@ const CHANNELS = {
 }
 
 export default function Consult() {
-  const { showToast, session, t } = useStore()
+  const { showToast, session, t, lang } = useStore()
+  const navigate = useNavigate()
+  // The console's banners first, then the built-in three (4 Oct 2026).
+  const banners = useBanners('consult', BANNERS, lang)
   const { start, asking } = useStartSession()
   /* Real consultants from phase 4, read through `consultants_public` — the
      view is the access control, so an unapproved practice is missing from
@@ -303,7 +307,7 @@ export default function Consult() {
 
   const onRailScroll = (e) => {
     const i = Math.round(e.currentTarget.scrollLeft / step(e.currentTarget))
-    if (i !== slide) setSlide(Math.min(Math.max(i, 0), BANNERS.length - 1))
+    if (i !== slide) setSlide(Math.min(Math.max(i, 0), banners.length - 1))
   }
 
   const goTo = (i) => {
@@ -374,18 +378,19 @@ export default function Consult() {
       {/* ── Banners ─────────────────────────────────────────────────────── */}
       <div className="pt-4">
         <div ref={rail} onScroll={onRailScroll} className="rail gap-3 px-4">
-          {BANNERS.map((b, i) => (
+          {banners.map((b, i) => (
             <button
               key={b.id}
               type="button"
               onClick={() => {
-                if (b.id === 'bn-verified') scrollToList()
+                if (b.remote) followBanner(b, navigate)
+                else if (b.id === 'bn-verified') scrollToList()
                 else if (b.id === 'bn-refer') showToast(t('con.inviteProto'))
                 else showToast(t('con.offerProto'))
               }}
               className="banner w-[86%] p-3 text-left"
               style={{
-                backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
+                ...bannerStyle(b),
                 animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
               }}
             >
@@ -406,13 +411,13 @@ export default function Consult() {
                   inline and the last one carries a line-box descender, 11px
                   of dead space under the CTA that no padding rule explains. */}
               <span className="relative flex flex-col items-start">
-                <span className="caps-sm text-white/70">{t(b.kicker, SV)}</span>
+                <span className="caps-sm text-white/70">{b.remote ? b.kicker : t(b.kicker, SV)}</span>
                 <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
-                  {t(b.title, SV)}
+                  {b.remote ? b.title : t(b.title, SV)}
                 </span>
-                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{t(b.note, SV)}</span>
+                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.remote ? b.note : t(b.note, SV)}</span>
                 <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
-                  {t(b.cta, SV)} <span aria-hidden="true">→</span>
+                  {b.remote ? b.cta : t(b.cta, SV)} <span aria-hidden="true">→</span>
                 </span>
               </span>
             </button>
@@ -420,7 +425,7 @@ export default function Consult() {
         </div>
 
         <div className="mt-3.5 flex justify-center gap-1.5">
-          {BANNERS.map((b, i) => (
+          {banners.map((b, i) => (
             <button
               key={b.id}
               type="button"
@@ -595,9 +600,9 @@ export default function Consult() {
                     <span>{c.experienceYrs ? t('con.yrs', { n: c.experienceYrs }) : t('con.practising')}</span>
                   </span>
                   <span className="mt-2 flex flex-wrap gap-1.5">
-                    {c.languages.map((lang) => (
-                      <span key={lang} className="rounded-md border border-stroke bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-t2">
-                        {lang}
+                    {c.languages.map((spoken) => (
+                      <span key={spoken} className="rounded-md border border-stroke bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-t2">
+                        {spoken}
                       </span>
                     ))}
                   </span>

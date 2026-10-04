@@ -6,6 +6,8 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Search } from '../components/Primitives.jsx'
+import { useNavigate } from 'react-router-dom'
+import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
 import { looksLikeReferral } from '../lib/referrals.js'
@@ -78,8 +80,11 @@ const CAT_LINE = {
 }
 
 export default function Shop() {
-  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast, t } =
+  const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast, t, lang } =
     useStore()
+  const navigate = useNavigate()
+  // The console's banners first, then the built-in three (4 Oct 2026).
+  const banners = useBanners('shop', BANNERS, lang)
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
@@ -111,7 +116,7 @@ export default function Shop() {
   // The scroller is the source of truth; state only mirrors it for the dots.
   const onRailScroll = (e) => {
     const i = Math.round(e.currentTarget.scrollLeft / step(e.currentTarget))
-    if (i !== slide) setSlide(Math.min(Math.max(i, 0), BANNERS.length - 1))
+    if (i !== slide) setSlide(Math.min(Math.max(i, 0), banners.length - 1))
   }
 
   const goTo = (i) => {
@@ -216,14 +221,14 @@ export default function Shop() {
       {/* ── Banners ─────────────────────────────────────────────────────── */}
       <div className="pt-4">
         <div ref={rail} onScroll={onRailScroll} className="rail gap-3 px-4">
-          {BANNERS.map((b, i) => (
+          {banners.map((b, i) => (
             <button
               key={b.id}
               type="button"
-              onClick={() => setCat(b.cat)}
+              onClick={() => (b.remote ? followBanner(b, navigate) : setCat(b.cat))}
               className="banner w-[86%] p-4 text-left"
               style={{
-                backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
+                ...bannerStyle(b),
                 // `backwards`, not `both` — `both` would pin the transform after
                 // the deal-in and swallow the press travel underneath it.
                 animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
@@ -245,13 +250,13 @@ export default function Shop() {
                   line-box descender, 11px of dead space under the CTA that no
                   padding rule accounts for. */}
               <span className="relative flex flex-col items-start">
-                <span className="caps-sm text-white/70">{t(b.kicker)}</span>
+                <span className="caps-sm text-white/70">{b.remote ? b.kicker : t(b.kicker)}</span>
                 <span className="mt-1.5 block max-w-[16ch] text-lead font-medium leading-tight text-white">
-                  {t(b.title)}
+                  {b.remote ? b.title : t(b.title)}
                 </span>
-                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{t(b.note)}</span>
+                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{b.remote ? b.note : t(b.note)}</span>
                 <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 caps-sm text-ink shadow-md">
-                  {t(b.cta)} <span aria-hidden="true">→</span>
+                  {b.remote ? b.cta : t(b.cta)} <span aria-hidden="true">→</span>
                 </span>
               </span>
             </button>
@@ -260,7 +265,7 @@ export default function Shop() {
 
         {/* Position, not decoration — the dots are tappable. */}
         <div className="mt-3.5 flex justify-center gap-1.5">
-          {BANNERS.map((b, i) => (
+          {banners.map((b, i) => (
             <button
               key={b.id}
               type="button"

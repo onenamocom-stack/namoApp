@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom'
 import { useGoBack } from '../components/Chrome.jsx'
 import ReelFeed from '../components/ReelFeed.jsx'
+import { isPro } from '../side.js'
+import { useStore } from '../store.jsx'
 
 /**
  * Standalone reel route. Full-bleed: no top bar, because a bar here would eat
@@ -15,11 +17,15 @@ export default function ReelViewer() {
   const { id } = useParams()
   // A reel opened from a shared link has nothing behind it in the app; Back
   // lands on Home instead of closing the tab (30 Sep 2026).
-  const goBack = useGoBack('/home')
+  const goBack = useGoBack(isPro ? '/pro/studio' : '/home')
+  // In the consultant app a reel is opened from Studio or Insights, and the
+  // viewer shows only the consultant's own reels (4 Oct 2026).
+  const { session } = useStore()
+  const authorId = isPro ? session?.user?.id ?? null : null
 
   return (
-    <div className="relative h-full bg-ink">
-      <ReelFeed startId={id} syncUrl />
+    <div className="reel-stage relative h-full bg-ink">
+      {(!isPro || authorId) && <ReelFeed startId={id} syncUrl authorId={authorId} />}
 
       <button
         type="button"

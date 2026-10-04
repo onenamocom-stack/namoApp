@@ -351,6 +351,14 @@ export async function earningsPage(consultantId, range, offset = 0) {
   return api(`/consultants/${consultantId}/earnings/?range=${range}&offset=${offset}&limit=30`, { token })
 }
 
+/** The caller's Insights tab (4 Oct 2026): `{week: {views, new_followers,
+ *  saves, comments}, totals, pieces: [...own posts with views], shop:
+ *  {orders, units, products: [{name, image_url, units, buyers}]}}`. */
+export async function myInsights() {
+  const token = await accessToken()
+  return api('/consultants/me/insights/', { token })
+}
+
 /** The caller's PAN and bank details (payouts P2, 3 Oct 2026). Never the
  *  full numbers — `pan_last4`, `account_last4` — and `{status: 'missing'}`
  *  before the first save. Throws on failure. */

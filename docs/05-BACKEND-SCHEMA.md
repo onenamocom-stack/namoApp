@@ -1281,6 +1281,16 @@ number exist only as ciphertext plus their last four. `sessions_done` on the
 consultant rows is not a column: it is a count of `sessions` that ended with
 `charged_paise > 0`, computed per read.
 
+### 5.2g `banners` and `themes` — set from the console (4 Oct 2026)
+
+`appearance/0001`. **`banners`**: `placement` (consult · shop · bhakti), `kicker`,
+`title`, `note`, `cta` and their `_hi` twins, `link` (an app path or https),
+`colour_from`, `colour_to`, `image_url`, `sort`, `replace_defaults`, `active`,
+`starts_at`, `ends_at`. **`themes`**: `name`, `accent`, `button`, `greeting`,
+`greeting_hi`, `active`, `starts_at`, `ends_at`. Live means active and inside the
+window (either end may be open). RLS on, no policies; read through
+`GET /v1/appearance/`, which is public.
+
 ### 5.6 Remaining
 
 `tarot_pulls` (the real rolling-seven-day window, replacing two booleans in a

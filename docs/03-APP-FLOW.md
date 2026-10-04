@@ -599,6 +599,13 @@ with the topic, the account and the app, enabled once something is written;
 five FAQs. Linked from Profile → Settings in both apps and from the sign-up
 screen's footer.
 
+### Banners and the festive theme
+`GET /appearance/` once at start-up. Consult, Shop and Bhakti put the
+console's banners for them before their own three (or instead of them, when one
+says so); a tap follows its link. A live theme repaints the accent and button
+colours and puts its greeting under the top bar. If the read fails, nothing
+changes.
+
 ### Sign-up links
 `/#/onboarding?ref=N…` stores the code for the visit; the details page opens its
 referral field already filled, and claims it on submit. Only N (invite) codes —
@@ -723,8 +730,12 @@ screen applies it only on Thursday, so the two views already disagree. One
 endpoint fixes it.
 
 ### `/pro/studio`
-Compose a reel, an article, or start a live room. Publishing fires a toast.
-**There is no upload control anywhere** — all artwork is generated procedurally.
+Compose a reel, a photo or a blog post. **Already published** lists the
+consultant's own posts only — a thumbnail (a reel's frame at half a second, a
+photo, or a plate for a blog post), views, likes and comments — and a tap opens
+it: a reel in the reel viewer, a blog post at `/read/:id`, a photo full screen.
+In the consultant app both viewers show only the consultant's own reels and
+blog posts; `/reels/:id` and `/read/:id` were seeker-only until 4 Oct 2026.
 
 ### `/pro/earnings`
 Earnings for a period, chosen from five chips: this month, last month, this
@@ -739,8 +750,15 @@ last seven days as bars. Real since 3 Oct 2026; the API is
 **There is no withdraw.** The sample balance card and its sheet were removed
 on 3 Oct: money is paid monthly on the 7th, and the sheet charged the fee a
 second time. The Payouts section says how payment works until there is a
-payout history to list. Performance metrics, referrals and the Insights tab
-are still `mock.js`.
+payout history to list. Performance metrics and referrals are still
+`mock.js`.
+
+**Insights** (the second tab) is real since 4 Oct 2026
+(`GET /consultants/me/insights/`): views, new followers, saves and comments in
+the last seven days; every post of theirs with its views (and this week's), tap
+to open; and the shop products bought with their coupon, units and buyers per
+product. Reach, cities and hour-by-hour audience were the prototype's and are
+gone — nothing measures them.
 
 ### `/pro/profile`
 Mirrors the public consultant page and links to it rather than rebuilding it.

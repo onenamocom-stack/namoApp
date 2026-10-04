@@ -234,6 +234,20 @@ def me(request):
     )
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_insights(request):
+    """The caller's Insights tab (4 Oct 2026): last 7 days, their own posts
+    with views, and products sold with their coupon. Consultants only."""
+    from . import insights
+
+    if services.my_consultant(request.user.pk) is None:
+        return Response(
+            refusal_body("not_consultant", "No practice on this account."), status=404
+        )
+    return Response(insights.insights(request.user.pk))
+
+
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def my_payout_details(request):

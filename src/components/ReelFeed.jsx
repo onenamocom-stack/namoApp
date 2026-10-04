@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { fetchFeed, productHref, recordView } from '../lib/content.js'
+import { fetchByAuthor, fetchFeed, productHref, recordView } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
@@ -22,7 +22,7 @@ import { useStore } from '../store.jsx'
  * fix is a scrim rather than a strip: a dark gradient behind the overlay buys
  * the contrast back without costing half the screen.
  */
-export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
+export default function ReelFeed({ startId, onIndexChange, syncUrl = false, authorId = null }) {
   const navigate = useNavigate()
   const scroller = useRef(null)
 
@@ -46,7 +46,13 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
 
   useEffect(() => {
     let active = true
-    fetchFeed({ kinds: ['clip'], limit: 200, shuffle: true })
+    /* With `authorId` (the consultant app, 4 Oct 2026) only that author's
+       reels, newest first: a consultant opening their own reel from Studio
+       or Insights swipes through their own work, nobody else's. */
+    const load = authorId
+      ? fetchByAuthor(authorId, { limit: 200 }).then((rows) => rows.filter((c) => c.kind === 'clip'))
+      : fetchFeed({ kinds: ['clip'], limit: 200, shuffle: true })
+    load
       .then((rows) => {
         if (!active) return
         setClips(rows)
@@ -56,7 +62,7 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false }) {
     return () => {
       active = false
     }
-  }, [])
+  }, [authorId])
 
   const startIndex = Math.max(
     0,

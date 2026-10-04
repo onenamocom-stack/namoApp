@@ -1,13 +1,14 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { answerRatePct, earningsSeries, insights, proMetrics, referrals, warnings } from '../data/mock.js'
+import { answerRatePct, earningsSeries, proMetrics, referrals } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
 import { Field, Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
-import { earningsPage, earningsSummary } from '../lib/consultants.js'
+import { earningsPage, earningsSummary, myInsights } from '../lib/consultants.js'
+import { PieceRow, fromInsights } from '../components/Pieces.jsx'
+import Plate from '../components/Plate.jsx'
 
 /**
  * Earnings — the money and the reach that drives it, one tab. The two used
@@ -437,130 +438,109 @@ function Bars({ data, money = false }) {
 }
 
 /* ── Insights ─────────────────────────────────────────────────────────────
-   Reach, who it reached, when they are awake, and what is slipping. The last
-   of those is the only part that asks for an action, so it is visually
-   separated and every item links to the screen that fixes it. */
+   Real since 4 Oct 2026. It was the prototype's: "3,12,000 views" on reels
+   this consultant never posted, a city list and an hour-by-hour audience
+   nothing measures. Now three things, all theirs and all counted
+   (apps/consultants/insights.py): the last seven days, every post they have
+   published with its views — tap to open it — and the shop products people
+   bought with their coupon. */
 
 function Insights() {
+  const [data, setData] = useState(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    myInsights()
+      .then((d) => live && setData(d))
+      .catch(() => live && setFailed(true))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  if (failed) return <p className="px-5 py-8 text-meta t-body">Could not load your insights. Open this tab again.</p>
+  if (!data) return <Loader />
+
+  const { week, pieces, shop } = data
+
   return (
     <>
       <section className="border-b border-rule px-5 py-6">
         <Kicker>Last 7 days</Kicker>
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat
-            label="Reach"
-            value={`${(insights.reach / 1000).toFixed(1)}k`}
-            sub={`${insights.reachDeltaPct > 0 ? '↑' : '↓'} ${Math.abs(insights.reachDeltaPct)}%`}
-          />
-          <Stat
-            label="Profile views"
-            value={insights.profileViews.toLocaleString('en-IN')}
-            sub={`${insights.profileViewsDeltaPct > 0 ? '↑' : '↓'} ${Math.abs(insights.profileViewsDeltaPct)}%`}
-          />
-          <Stat label="New followers" value={`+${insights.followersGained}`} sub={`${insights.saves} saves`} />
+          <Stat label="Views" value={week.views.toLocaleString('en-IN')} />
+          <Stat label="New followers" value={`+${week.new_followers}`} />
+          <Stat label="Saves" value={week.saves} sub={`${week.comments} comments`} />
         </div>
       </section>
 
-      {/* ── Who saw it ───────────────────────────────────────────────── */}
       <section className="border-b border-rule px-5 py-6">
-        <Kicker>Who saw your work</Kicker>
-        <ul className="mt-4 space-y-3">
-          {insights.viewers.map((v) => (
-            <li key={v.label} className="flex items-center gap-3">
-              <span className="w-24 flex-none text-meta t-sub">{v.label}</span>
-              <span className="h-2 flex-1 overflow-hidden rounded-full bg-black/10">
-                <span
-                  className="block h-full rounded-full bg-gold-fill"
-                  style={{ width: `${v.pct}%` }}
-                />
-              </span>
-              <span className="w-9 flex-none text-right text-meta tnum t-heading">{v.pct}%</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 caps-sm t-faint">Mostly from {insights.topCities.join(' · ')}</p>
+        <Kicker action={pieces.length ? 'Post more' : null} to="/pro/studio">
+          {`Your posts · ${pieces.length}`}
+        </Kicker>
+        {pieces.length === 0 ? (
+          <p className="mt-3 text-meta t-faint">
+            Nothing published yet. Reels, photos and blog posts you publish in Studio appear here
+            with their views.
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 text-meta t-faint tnum">
+              {data.totals.views.toLocaleString('en-IN')} {data.totals.views === 1 ? 'view' : 'views'} in all. Tap one to open it.
+            </p>
+            <div className="mt-2">
+              {pieces.map((p) => (
+                <PieceRow key={p.id} piece={fromInsights(p)} />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
-      {/* ── When to post ─────────────────────────────────────────────── */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>When they are awake</Kicker>
-        <div className="mt-4 flex h-20 items-end gap-1" aria-hidden="true">
-          {insights.byHour.map((v, i) => {
-            const max = Math.max(...insights.byHour)
-            const peak = v === max
-            return (
-              <span
-                key={i}
-                className={`flex-1 rounded-t-sm ${peak ? 'bg-gold-fill' : 'bg-black/15'}`}
-                style={{ height: `${Math.max(6, (v / max) * 100)}%` }}
-              />
-            )
-          })}
-        </div>
-        <div className="mt-2 flex justify-between caps-sm t-faint tnum">
-          <span>12a</span>
-          <span>6a</span>
-          <span>12p</span>
-          <span>6p</span>
-          <span>12a</span>
-        </div>
-        <p className="mt-4 text-meta t-body">
-          Your audience is on at <span className="gold">{insights.bestWindow}</span>. Posting
-          before six in the evening costs you roughly a third of the reach.
-        </p>
-      </section>
-
-      {/* ── Per piece ────────────────────────────────────────────────── */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>How each piece did</Kicker>
-        <ul className="mt-3">
-          {insights.topContent.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between gap-4 border-b border-rule py-3.5 last:border-b-0"
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-meta t-sub">{c.title}</span>
-                <span className="mt-0.5 flex items-center gap-1.5 caps-sm t-faint tnum">
-                  <Icon name="eye" size={13} />
-                  {c.views.toLocaleString('en-IN')} · {c.kind}
-                </span>
-              </span>
-              <span
-                className={`flex-none text-meta tnum ${c.vsAvgPct >= 0 ? 'text-ok' : 'text-live'}`}
-              >
-                {c.vsAvgPct >= 0 ? '+' : ''}
-                {c.vsAvgPct}%
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 caps-sm t-faint">Against your own average, not the platform's.</p>
-      </section>
-
-      {/* ── What is slipping ─────────────────────────────────────────── */}
       <section className="px-5 py-6">
-        <Kicker>Worth fixing</Kicker>
-        <ul className="mt-4 space-y-3">
-          {warnings.map((w) => (
-            <li key={w.id}>
-              <Link to={w.to} className="pop-card pop-tap block p-4">
-                <span className="flex items-start gap-3">
-                  <span
-                    className={`flex-none ${w.tone === 'bad' ? 'text-live' : 'gold'}`}
-                    aria-hidden="true"
-                  >
-                    <Icon name="alert" size={18} />
+        <Kicker action="Your links" to="/pro/affiliate">
+          Sold with your code
+        </Kicker>
+        {shop.products.length === 0 ? (
+          <p className="mt-3 text-meta t-faint">
+            Nobody has bought with your code yet. Tag products on your posts or share a product
+            link, and every purchase made with it shows here.
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 text-meta t-faint tnum">
+              {shop.units} {shop.units === 1 ? 'item' : 'items'} across {shop.orders}{' '}
+              {shop.orders === 1 ? 'order' : 'orders'}. You earn 10% on each, after delivery.
+            </p>
+            <ul className="mt-2">
+              {shop.products.map((p) => (
+                <li
+                  key={p.product_id}
+                  className="flex items-center gap-3 border-b border-rule py-3 last:border-b-0"
+                >
+                  <span className="h-12 w-12 flex-none overflow-hidden rounded-xl bg-surface">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <Plate seed={p.product_id} className="h-full w-full" />
+                    )}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-meta t-heading">{w.title}</span>
-                    <span className="mt-1 block text-meta t-body">{w.line}</span>
+                    <span className="block truncate text-meta t-heading">{p.name}</span>
+                    <span className="mt-0.5 block text-[12px] t-faint tnum">
+                      {p.buyers} {p.buyers === 1 ? 'buyer' : 'buyers'}
+                    </span>
                   </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <span className="flex-none text-right">
+                    <span className="block font-display text-lead leading-none tnum t-heading">{p.units}</span>
+                    <span className="text-[11px] t-faint">sold</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </section>
     </>
   )

@@ -114,9 +114,9 @@ export default function ProAffiliate() {
         <ul className="space-y-3">
           {(products ?? []).map((p) => (
             <li key={p.id} className="pop-card flex items-center gap-3 p-3">
-              {p.imageUrl ? (
+              {p.image ? (
                 <img
-                  src={p.imageUrl}
+                  src={p.image}
                   alt=""
                   className="h-14 w-14 flex-none rounded-lg object-cover"
                 />
@@ -126,7 +126,7 @@ export default function ProAffiliate() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-body text-t1">{p.name}</span>
                 <span className="mt-0.5 block caps-sm t-faint tnum">
-                  ₹{rupees(p.pricePaise)} · you earn ₹{rupees(Math.floor(p.pricePaise / 10))}
+                  ₹{rupees(Math.round(p.price * 100))} · you earn ₹{rupees(Math.floor((p.price * 100) / 10))}
                 </span>
               </span>
               <PopButton

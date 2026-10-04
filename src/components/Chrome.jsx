@@ -1,3 +1,4 @@
+import { useAppearance } from '../lib/appearance.js'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
@@ -142,9 +143,13 @@ export function BottomNav({ tabs = TABS }) {
  * ProConsult its waiting count. Everything else passes nothing.
  */
 export function TabHeader({ action = null }) {
-  const { openChat, me, t, balance } = useStore()
+  const { openChat, me, t, balance, lang } = useStore()
+  // A festive greeting from the console's live theme, under the bar (4 Oct 2026).
+  const theme = useAppearance()?.theme
+  const greeting = theme ? (lang === 'hi' && theme.greeting_hi) || theme.greeting : ''
 
   return (
+    <>
     <header className="topbar flex items-center gap-2 px-4 py-2">
       {/* The mark is the PNG used as a MASK rather than drawn as an image, so
           its colour is `--ink` and it repalettes with everything else. The
@@ -223,6 +228,15 @@ export function TabHeader({ action = null }) {
         <PopAvatar initials={me.initials} src={me.avatarUrl} size={30} />
       </Link>
     </header>
+    {greeting && (
+      <p
+        className="mx-4 mt-2 rounded-xl px-4 py-2 text-center text-meta font-semibold text-white shadow-sm"
+        style={{ background: 'linear-gradient(135deg, var(--orange-hi), var(--orange-lo))' }}
+      >
+        {greeting}
+      </p>
+    )}
+    </>
   )
 }
 

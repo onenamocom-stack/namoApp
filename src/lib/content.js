@@ -281,6 +281,15 @@ export async function recordView(contentId) {
 }
 
 /** One person's published work — their profile tab and the studio list. */
+/** One live post by id (`GET /content/<id>/`), or null if it is not public. */
+export async function fetchOne(contentId) {
+  try {
+    return shape(await api(`/content/${contentId}/`))
+  } catch {
+    return null
+  }
+}
+
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const rows = await api(`/content/by-author/?author_id=${authorId}&limit=${limit}`)
   return (rows ?? []).map(shape)

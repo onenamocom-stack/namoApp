@@ -101,6 +101,14 @@ the effect stays special. `.glass-panel` is no longer used for anything over
 the dark scrim — the Tarot dialog, the chat panel and `Sheet` are solid white,
 because frosted white over a 40% ink scrim reads as grey and disabled.
 
+**Festive themes** (4 Oct 2026) override exactly twelve tokens at runtime
+(`lib/appearance.js`): the saffron family (`--gold-fill`, `--orange-hi/-lo/
+-edge`, `--gold`, `--gold-dim`, `--gold-wash`, `--surface`, `--surface-2`) is
+mixed from one accent colour and the button family (`--btn`, `--btn-deep`,
+`--btn-edge`) from one button colour. Nothing else changes, so a theme cannot
+make text unreadable — but pick an accent dark enough for 11px `--gold` text,
+which is the accent mixed 28% toward black.
+
 **Milestone tiers** (3 Oct 2026) have their own five hues, used only for the
 ring around a consultant's avatar, the badge, and the ladder:
 `--tier-1` green · `--tier-10` blue · `--tier-100` saffron · `--tier-500`

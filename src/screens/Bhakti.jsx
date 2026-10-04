@@ -1,6 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
@@ -109,7 +110,10 @@ const BANNERS = [
 ]
 
 export default function Bhakti() {
-  const { showToast } = useStore()
+  const { showToast, lang } = useStore()
+  const navigate = useNavigate()
+  // The console's banners first, then the built-in three (4 Oct 2026).
+  const banners = useBanners('bhakti', BANNERS, lang)
   const [assets, setAssets] = useState(null) // null = loading
   const [failed, setFailed] = useState(false)
   const [kind, setKind] = useState('status')
@@ -226,7 +230,7 @@ export default function Bhakti() {
           navigation off the first screen is furniture. */}
       <div className="pt-3">
         <div className="rail gap-3 px-4">
-          {BANNERS.map((b, i) => {
+          {banners.map((b, i) => {
             const inner = (
               <>
                 <Plate
@@ -247,7 +251,7 @@ export default function Bhakti() {
               </>
             )
             const style = {
-              backgroundImage: `linear-gradient(135deg, ${b.from} 0%, ${b.to} 100%)`,
+              ...bannerStyle(b),
               animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
             }
             return b.to_ ? (
@@ -258,7 +262,13 @@ export default function Bhakti() {
               <button
                 key={b.id}
                 type="button"
-                onClick={() => { setKind(b.kind); setQuery('') }}
+                onClick={() => {
+                  if (b.remote) followBanner(b, navigate)
+                  else {
+                    setKind(b.kind)
+                    setQuery('')
+                  }
+                }}
                 className="banner w-[86%] p-3 text-left"
                 style={style}
               >
