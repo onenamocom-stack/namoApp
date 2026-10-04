@@ -234,14 +234,18 @@ def seed_price_bands(tiers=((1, 749), (2, 899), (3, 999), (4, 1299), (5, 1499), 
 
 
 def reprice_services():
-    """Every consultant service takes its band's CURRENT price.
+    """Every booked-slot (FIXED) service takes its band's CURRENT price.
 
     A service copies its band's price when the consultant applies (assertion
     9), so a change to the catalogue does not reach anybody already approved
     until this runs. Bookings are untouched — each holds the price it was
-    charged. Returns how many services changed."""
+    charged. Returns how many services changed.
+
+    Per-minute rates are deliberately left alone: the 5 Oct 2026 change was
+    to slots only, and the first run on production reset a hand-set test
+    rate (Raghu's ₹10/min) to its tier's ₹37 — put back by hand."""
     changed = 0
-    for band in PriceBand.objects.all():
+    for band in PriceBand.objects.filter(billing=ServiceBilling.FIXED):
         changed += ConsultantService.objects.filter(band_id=band.id).exclude(
             price_paise=band.price_paise
         ).update(price_paise=band.price_paise)

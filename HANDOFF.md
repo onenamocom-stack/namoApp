@@ -5213,3 +5213,32 @@ AccessDenied, it is an object-only token — so it is a dashboard change:
 Same origin list as the API's `CORS_ALLOWED_ORIGINS`. Re-test by sending an
 OPTIONS preflight with `Origin: https://1namo.com` to a presigned PUT URL:
 it should answer 200 with the origin echoed.
+
+## 42. Four ways to consult, slots 20% off, sharper muhurat, numerology gone — 5 Oct 2026
+
+**Live:** API `namo-api-00065-pn2`, migration `chat/0002_session_audio_only`
+applied, front end on `main`. Lint, build and the backend suite are clean
+apart from the known Python 3.14 console failures (three new console tests
+from 4–5 Oct fail the same way on clean `main`).
+
+- **Slots are 20% under the meter.** `derive_band_price` prices a FIXED band
+  as per-minute × minutes less `SLOT_DISCOUNT_PCT` (20). `reprice_bands`
+  (management command) refreshed all 18 fixed bands and moved approved
+  consultants' slot services onto them on production. Tier 1: ₹444 / ₹592 /
+  ₹888 for 15 / 20 / 30 min, against ₹37/min. Bookings already made keep
+  their price. **Incident, put right:** the first run also repriced
+  per-minute services and reset Raghu's hand-set ₹10/min test rate to ₹37;
+  it was restored by hand within minutes and `reprice_services` now touches
+  FIXED services only (test added).
+- **Video, Audio, Chat, Book** on every `/consult` card and the profile. An
+  audio call sets `sessions.audio_only`; `video.join` passes it to Daily as
+  `start_video_off` for both people. Not tested on a real call.
+- **Bhakti shares invite**: one line, `https://1namo.com/#/onboarding?ref=<N
+  code>` and the code, from every card. Mantras have categories (`deity`:
+  Universal, Shiva, Gayatri, Lakshmi, Kuber, Durga, Saraswati, Vishnu) —
+  data on production, no code.
+- **Muhurat**: purposes are circle tiles; judged against your zodiac keeps
+  the best quarter of the windows (client-side, by the vendor's score); that
+  card replaced "Before you act on this".
+- **Numerology removed** end to end. The `ASTROLOGY_API_*` /
+  `NUMEROLOGY_PROVIDER` env vars are still on Cloud Run, unused.

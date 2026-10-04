@@ -1320,3 +1320,9 @@ class TestSlotDiscount:
         service.refresh_from_db()
         assert service.price_paise == 59200
         assert services.reprice_services() == 0  # idempotent
+
+    def test_reprice_leaves_a_per_minute_rate_alone(self, roster):
+        per_minute = _service(PRO, billing="per_minute", duration_mins=1, price=1000)
+        services.reprice_services()
+        per_minute.refresh_from_db()
+        assert per_minute.price_paise == 1000  # a hand-set rate is not a slot
