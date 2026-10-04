@@ -316,6 +316,30 @@ export const strings = {
 
   // ── Influencer tab (3 Oct 2026) ──
   'prof.tab.influencer': { en: 'Influencer', hi: 'इन्फ्लुएंसर' },
+  // ── Profile, Instagram-shaped (4 Oct 2026) ──
+  'prof.tab.posts': { en: 'Posts', hi: 'पोस्ट' },
+  'prof.tab.saved': { en: 'Saved', hi: 'सेव किए' },
+  'prof.tab.kundli': { en: 'Kundli', hi: 'कुंडली' },
+  'prof.posts': { en: 'Posts', hi: 'पोस्ट' },
+  'prof.followers': { en: 'Followers', hi: 'फ़ॉलोअर' },
+  'prof.following': { en: 'Following', hi: 'फ़ॉलो कर रहे' },
+  'prof.editProfile': { en: 'Edit profile', hi: 'प्रोफ़ाइल बदलें' },
+  'prof.shareProfile': { en: 'Share profile', hi: 'प्रोफ़ाइल शेयर करें' },
+  'prof.firstPostTitle': { en: 'Share your first post', hi: 'अपनी पहली पोस्ट शेयर करें' },
+  'prof.firstPostNote': {
+    en: 'A photo or a few lines. Tap + above; it shows here and in the feed.',
+    hi: 'एक फ़ोटो या कुछ पंक्तियां। ऊपर + दबाएं; यह यहां और फ़ीड में दिखेगी।',
+  },
+  'prof.savedEmptyTitle': { en: 'Nothing saved yet', hi: 'अभी कुछ सेव नहीं किया' },
+  'prof.savedEmpty': {
+    en: 'Tap the bookmark on any post or reel to keep it here.',
+    hi: 'किसी भी पोस्ट या रील पर बुकमार्क दबाएं, वह यहां रहेगी।',
+  },
+  'prof.openChart': { en: 'Open full chart', hi: 'पूरा चार्ट खोलें' },
+  'prof.tools': { en: 'Your astrology', hi: 'आपकी ज्योतिष' },
+  'prof.settingsTitle': { en: 'Settings', hi: 'सेटिंग्स' },
+  'prof.walletNote': { en: 'Balance, add money, history', hi: 'बैलेंस, पैसे जोड़ें, इतिहास' },
+  'prof.explore': { en: 'More from Namo', hi: 'Namo पर और' },
   'inf.yourCode': { en: 'Your code', hi: 'आपका कोड' },
   'inf.share': { en: 'Share your link', hi: 'अपना लिंक शेयर करें' },
   'inf.how': {

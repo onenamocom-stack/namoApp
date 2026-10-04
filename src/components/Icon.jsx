@@ -153,6 +153,13 @@ const PATHS = {
       <path d="M18.6 16.4l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7.7-2.2Z" />
     </>
   ),
+  // Nine squares: a profile's posts grid (4 Oct 2026).
+  grid: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2.5" />
+      <path d="M9.4 4v16M14.6 4v16M4 9.4h16M4 14.6h16" />
+    </>
+  ),
   // A rosette: the milestone badge (3 Oct 2026).
   award: (
     <>

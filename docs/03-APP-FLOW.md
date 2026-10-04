@@ -576,21 +576,26 @@ past midnight is marked `+1d`, and sunrise-to-sunrise windows print their
 length, because their two clock times are identical.
 
 ### `/profile/:tab`
-**Two tabs in the URL — overview, settings — and a third, influencer, for
-accounts the console made influencers** (3 Oct 2026): the code and the sign-up
-link with a Share button, joined and paid for this month / last month / all
-time, and the latest joins as dates. Settings → Help and support →
-`/support`. Back always means Home here, regardless of history.
+**Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
+saffron ring (tap to change), posts · followers · following, your name, your
+Sun, Moon and Lagna as coloured chips, then **Edit profile**
+(`/onboarding/details?edit=1`), **Share profile** (`/u/<you>`) and **+** (the
+composer, on the Posts tab). Icon tabs, each its own URL: **posts** (a 3-column
+grid — photos open full screen, blog posts and reels open on their pages — then
+what you reshared), **saved** (your bookmarked posts), **kundli** (the chart,
+*Open full chart*, birth data, *Edit birth details*, then chart, matching,
+muhurat and reports), and **influencer** for influencers. Bare `/profile` opens
+posts if you have any, kundli if not.
 
-Horoscope and Wallet were the third and fourth until 9 Sep 2026. Both were
-summaries whose only real control was a button to the full screen — a tab that
-exists to be left. The reading is Home's Today tab; the wallet is in the top
-bar on every screen.
+**☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
+then Account (wallet, orders, notification history, phone), More from Namo
+(Namo AI, premium, academy, shop), Preferences (language, full deity images,
+help and support), and sign out. Back means Home from the profile and the
+profile from settings.
 
-Overview holds the chart, birth data, language pills and a row list into
-most of the app. **There is no switch to the consultant app** — removed 4 Oct
-2026 (owner's call), with its twin in the consultant app; astrologers reach it
-from the sign-up screen or Consult's *Become a consultant*.
+Gone with the old Overview: the prototype's *Past sessions* (mock data shown to
+real accounts), the Download and Share buttons that toasted without doing
+anything, and the notification and privacy rows that said "prototype only".
 
 ### `/support`
 Both apps, signed in or out (the session gates let it through). Call, WhatsApp

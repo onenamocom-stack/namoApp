@@ -90,23 +90,27 @@ export function PieceRow({ piece }) {
       <button type="button" className={cls} onClick={() => piece.mediaUrl && setPhoto(true)}>
         {body}
       </button>
-      {photo &&
-        createPortal(
-          <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] flex-col bg-black">
-            <button
-              type="button"
-              onClick={() => setPhoto(false)}
-              aria-label="Close"
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white"
-            >
-              <Icon name="close" size={18} />
-            </button>
-            <img src={piece.mediaUrl} alt="" className="m-auto max-h-full w-full object-contain" />
-            {piece.caption && <p className="px-5 pb-6 text-meta text-white/85">{piece.caption}</p>}
-          </div>,
-          document.body,
-        )}
+      {photo && <PhotoViewer src={piece.mediaUrl} caption={piece.caption} onClose={() => setPhoto(false)} />}
     </>
+  )
+}
+
+/** A photo, full screen, over everything; tap ✕ to close. */
+export function PhotoViewer({ src, caption, onClose }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] flex-col bg-black">
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white"
+      >
+        <Icon name="close" size={18} />
+      </button>
+      <img src={src} alt="" className="m-auto max-h-full w-full object-contain" />
+      {caption && <p className="px-5 pb-6 text-meta text-white/85">{caption}</p>}
+    </div>,
+    document.body,
   )
 }
 
