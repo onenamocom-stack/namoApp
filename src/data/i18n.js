@@ -292,12 +292,6 @@ export const strings = {
     en: 'Nothing yet. A photo or something you wrote — it goes in the feed under your name.',
     hi: 'अभी कुछ नहीं। कोई फ़ोटो या आपका लिखा कुछ — वह आपके नाम से फ़ीड में जाएगा।',
   },
-  'prof.consulting': { en: 'Consulting', hi: 'परामर्श' },
-  'prof.switchPro': { en: 'Switch to consultant', hi: 'परामर्शदाता ऐप पर जाएं' },
-  'prof.switchProNote': {
-    en: 'Your studio, your sessions, your page',
-    hi: 'आपका स्टूडियो, आपके सत्र, आपका पेज',
-  },
   'prof.preferences': { en: 'Preferences', hi: 'पसंद' },
   'prof.croppedOn': {
     en: 'Back to the cropped, screen-filling murti',

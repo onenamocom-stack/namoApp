@@ -130,8 +130,8 @@ function PlainLayout() {
  * Two seeker routes the `/pro` side links *out* to stay exempt: ProConsult
  * opens `/chart?name=…` for a booking, and ProProfile opens `/consult/:id` to
  * preview a public page — the second is now a real page, and previewing your
- * own is the point of it. The third cross-link, "Switch to seeking" → `/home`,
- * is NOT exempt: that one is genuinely asking for the seeker app.
+ * own is the point of it. (A third, "Switch to seeking" → `/home`, was removed
+ * on 4 Oct 2026 with its twin in the client app.)
  *
  * In the consultant build (`side.js`) none of the seeker logic below runs at
  * all: any non-`/pro` path goes straight to `/pro/studio`, and the gate takes

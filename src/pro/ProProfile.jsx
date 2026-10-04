@@ -312,9 +312,9 @@ function Settings({ me }) {
       <section className="px-5 py-6">
         <Kicker>Account</Kicker>
         <div className="mt-2">
-          {/* Switching sides is a plain link — the URL is what decides which
-              app you are in, so there is no state to flip. */}
-          <Row to="/home" title="Switch to seeking" note="Browse Namo as a client" />
+          {/* "Switch to seeking" was here until 4 Oct 2026, removed with its
+              twin in the client app (owner's call). It also went nowhere: the
+              consultant build has no /home, so it bounced back to Studio. */}
           <Row to="/support" title="Help & support" note="+91 99580 40508 · support@1namo.com" />
         </div>
 

@@ -588,8 +588,9 @@ exists to be left. The reading is Home's Today tab; the wallet is in the top
 bar on every screen.
 
 Overview holds the chart, birth data, language pills and a row list into
-most of the app. Settings holds **Switch to consultant → `/pro/feed`**, which is
-an ordinary link because the side is not state.
+most of the app. **There is no switch to the consultant app** — removed 4 Oct
+2026 (owner's call), with its twin in the consultant app; astrologers reach it
+from the sign-up screen or Consult's *Become a consultant*.
 
 ### `/support`
 Both apps, signed in or out (the session gates let it through). Call, WhatsApp
@@ -762,7 +763,8 @@ gone — nothing measures them.
 
 ### `/pro/profile`
 Mirrors the public consultant page and links to it rather than rebuilding it.
-Content grid, insights, reviews, settings. **Switch to seeking → `/home`.**
+Content grid, insights, reviews, settings. No switch to the client app since
+4 Oct 2026.
 Under the bio, the milestone ladder: paid sessions given and how many more to
 the next tier and to 1000. Settings → **Payout details** → `/pro/payout-details`.
 

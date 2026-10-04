@@ -11,7 +11,6 @@ import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { uploadAvatar } from '../lib/avatar.js'
-import { PRO_APP_URL } from '../lib/urls.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
 import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Row, Segmented } from '../components/Primitives.jsx'
@@ -426,20 +425,10 @@ function SettingsTab() {
           scrolls to — the thing it needs most is to be seen. */}
       <ReferralCard />
 
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>{t('prof.consulting')}</Kicker>
-        <div className="mt-2">
-          {/* Plain navigation — the URL is what decides which side you are
-              on, so there is no role to toggle. The consultant app is a
-              separate deployment, so this is an absolute link out, not a
-              route this build carries. */}
-          <Row
-            href={PRO_APP_URL}
-            title={t('prof.switchPro')}
-            note={t('prof.switchProNote')}
-          />
-        </div>
-      </section>
+      {/* "Switch to consultant" was here until 4 Oct 2026. Removed (owner's
+          call): a client has no reason to jump into the consultant app, and
+          an astrologer signs up from the welcome screen or Consult's
+          "Become a consultant", not from a client's settings. */}
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.preferences')}</Kicker>
