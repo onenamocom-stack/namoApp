@@ -378,7 +378,13 @@ a lit version could not be generated (Canva credit quota, 3 Oct).
 Tapping the thali begins the aarti: the plate rises off the altar to in front of
 the murti and circles there until tapped again (4 Oct 2026 — it used to light up
 and stay put). It still rotates under a finger and settles to the nearest whole
-turn. Flowers fall the full height of the shrine, twelve petals a tap. A knob opens the murti picker,
+turn. Flowers fall the full height of the shrine, twelve petals a tap.
+
+**Sangeet** (4 Oct 2026): the music knob opens a sheet of Bhakti's own bhajans
+and mantras, in two tabs. Tapping one plays it over the puja — a mantra loops,
+a bhajan plays once — the knob goes gold while anything plays, and the sheet
+shows what is playing with a Stop. Leaving the shrine stops it. Lit, each diya
+carries a larger flickering flame over the photo's own; the pair face the thali. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.
 

@@ -3,8 +3,9 @@ import { creditLine, deities, offerings } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { PopTag } from '../components/Pop.jsx'
-import { Dhoop, Diya, Ghanti, Marigold, PujaPhoto, Thali } from '../components/PujaProps.jsx'
+import { Dhoop, Diya, Ghanti, LampFlame, Marigold, PujaPhoto, Thali } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
+import { fetchAssets } from '../lib/bhakti.js'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -24,7 +25,8 @@ import { useStore } from '../store.jsx'
  * stack. A new section does not go at the bottom, it goes on the image or it
  * goes in the murti sheet. If neither fits, it does not belong here.
  *
- * Nothing books a pandit, nothing is charged, and there is no audio.
+ * Nothing books a pandit and nothing is charged. Sangeet plays Bhakti's
+ * bhajans and mantras (4 Oct 2026).
  */
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
@@ -32,6 +34,13 @@ export default function Pooja() {
   const [deity, setDeity] = useState(deities[0])
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
+  // Sangeet (4 Oct 2026): the bhajans and mantras from Bhakti, played over
+  // the puja. One <audio> for the screen, so starting one stops the other,
+  // and leaving the shrine unmounts it and the music stops with it.
+  const [musicOpen, setMusicOpen] = useState(false)
+  const [library, setLibrary] = useState(null) // null = not fetched yet
+  const [track, setTrack] = useState(null)
+  const player = useRef(null)
   const [lit, setLit] = useState({ diya: false, incense: false })
   const [aarti, setAarti] = useState(false)
   const [ringing, setRinging] = useState(false)
@@ -211,6 +220,40 @@ export default function Pooja() {
     showToast(t(says))
   }
 
+  /* Started INSIDE the tap, not from an effect after a re-render: phones
+     only let a page make sound from the gesture itself, and an autoplay one
+     render later is refused without a word. Mantras repeat until stopped. */
+  const playTrack = (asset) => {
+    const el = player.current
+    if (!el) return
+    el.src = asset.url
+    el.loop = asset.kind === 'mantra'
+    el.play().catch(() => {
+      setTrack(null)
+      showToast(t('puja.cantPlay'))
+    })
+    setTrack(asset)
+  }
+
+  const stopTrack = () => {
+    const el = player.current
+    if (el) {
+      el.pause()
+      el.removeAttribute('src')
+      el.load()
+    }
+    setTrack(null)
+  }
+
+  const openMusic = () => {
+    setMusicOpen(true)
+    if (library === null) {
+      fetchAssets()
+        .then((rows) => setLibrary(rows.filter((a) => (a.kind === 'bhajan' || a.kind === 'mantra') && a.url)))
+        .catch(() => setLibrary([]))
+    }
+  }
+
   const toggleAarti = () => {
     setAarti((a) => !a)
     ripple()
@@ -378,9 +421,10 @@ export default function Pooja() {
 
         <button
           type="button"
-          onClick={() => showToast(t('puja.noAudio'))}
+          onClick={openMusic}
           aria-label={t('puja.sangeet')}
-          className="plinth absolute bottom-4 right-3"
+          aria-pressed={Boolean(track)}
+          className={`plinth absolute bottom-4 right-3 ${track ? 'plinth-on' : ''}`}
         >
           <SangeetGlyph />
         </button>
@@ -391,16 +435,36 @@ export default function Pooja() {
         <span
           aria-hidden="true"
           className="absolute bottom-4 left-[19%]"
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
+          // Mirrored, so the pair face the thali and the left one's flame is
+          // not hidden behind the agarbatti stand.
+          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))', transform: 'scaleX(-1)' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
+          <span className="relative block">
+            <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
+            {/* The photo's flame is a few pixels at this size; this one stands
+                on the same wick (left spout) and flickers (4 Oct 2026). */}
+            {lit.diya && (
+              <span className="absolute" style={{ left: '4%', top: '30%', transform: 'translate(-50%, -96%)' }}>
+                <LampFlame height={36} />
+              </span>
+            )}
+          </span>
         </span>
         <span
           aria-hidden="true"
           className="absolute bottom-4 right-[19%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
+          <span className="relative block">
+            <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
+            {/* The photo's flame is a few pixels at this size; this one stands
+                on the same wick (left spout) and flickers (4 Oct 2026). */}
+            {lit.diya && (
+              <span className="absolute" style={{ left: '4%', top: '30%', transform: 'translate(-50%, -96%)' }}>
+                <LampFlame height={36} />
+              </span>
+            )}
+          </span>
         </span>
 
         <span
@@ -474,6 +538,22 @@ export default function Pooja() {
       </section>
 
 
+      {/* Plays over the puja; unmounts with the screen, so the music stops. */}
+      <audio ref={player} onEnded={() => setTrack(null)} className="hidden" />
+
+      {musicOpen && (
+        <SangeetSheet
+          library={library}
+          playing={track}
+          onPlay={(asset) => {
+            playTrack(asset)
+            setMusicOpen(false)
+          }}
+          onStop={stopTrack}
+          onClose={() => setMusicOpen(false)}
+        />
+      )}
+
       {sheet && (
         <MurtiSheet
           deity={deity}
@@ -537,6 +617,94 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
         <p className="mt-3 text-[11px] leading-snug t-faint">
           {deity.images[pic].label} · {creditLine(deity.images[pic])}
         </p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Sangeet — choose a bhajan or a mantra to play during the puja. The list is
+ * Bhakti's own library (`bhakti_assets`, kinds bhajan and mantra), so a new
+ * file loaded there appears here with no change to this screen.
+ */
+function SangeetSheet({ library, playing, onPlay, onStop, onClose }) {
+  const { t } = useStore()
+  const [tab, setTab] = useState(playing?.kind === 'mantra' ? 'mantra' : 'bhajan')
+  const rows = (library ?? []).filter((a) => a.kind === tab)
+
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col justify-end">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="animate-fade absolute inset-0 bg-black/45"
+      />
+      <div className="animate-fade-rise relative flex max-h-[70%] flex-col rounded-t-3xl bg-surface p-4 shadow-xl">
+        <p className="caps-sm t-faint">{t('puja.sangeet')}</p>
+
+        {playing && (
+          <div className="mt-3 flex items-center gap-3 rounded-2xl bg-white p-3">
+            <span className="min-w-0 flex-1">
+              <span className="block caps-sm gold">{t('puja.nowPlaying')}</span>
+              <span className="mt-0.5 block truncate text-meta t-heading">{playing.title}</span>
+            </span>
+            <button type="button" onClick={onStop} className="pill caps-sm flex-none">
+              {t('puja.stopMusic')}
+            </button>
+          </div>
+        )}
+
+        <div className="mt-3 flex gap-2">
+          {[['bhajan', 'puja.bhajans'], ['mantra', 'puja.mantras']].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={tab === key}
+              onClick={() => setTab(key)}
+              className="pill caps-sm"
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+
+        <div className="no-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto">
+          {library === null && <p className="py-6 text-center text-meta t-faint">{t('puja.loadingMusic')}</p>}
+          {library !== null && rows.length === 0 && (
+            <p className="py-6 text-center text-meta t-faint">{t('puja.noMusic')}</p>
+          )}
+          <ul className="space-y-2">
+            {rows.map((a) => {
+              const on = playing?.id === a.id
+              return (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    onClick={() => (on ? onStop() : onPlay(a))}
+                    aria-pressed={on}
+                    className={`flex w-full items-center gap-3 rounded-2xl border p-2 text-left transition ${
+                      on ? 'border-gold-fill bg-white' : 'border-stroke bg-white/60'
+                    }`}
+                  >
+                    {a.previewUrl ? (
+                      <img src={a.previewUrl} alt="" loading="lazy" className="h-10 w-16 flex-none rounded-lg object-cover" />
+                    ) : (
+                      <span className="h-10 w-16 flex-none rounded-lg bg-surface2" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-meta t-heading">{a.title}</span>
+                      {a.deity && <span className="block truncate text-[12px] t-faint">{a.deity}</span>}
+                    </span>
+                    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-white">
+                      <Icon name={on ? 'pause' : 'play'} size={16} filled={!on} />
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </div>
     </div>
   )

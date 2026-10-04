@@ -71,6 +71,25 @@ function Brass({ id, v = 0 }) {
   )
 }
 
+/**
+ * A flame on its own, for a photographed lamp (4 Oct 2026). The photo's own
+ * flame is a few pixels tall at shrine size; this one sits over it, bottom
+ * centre on the wick, and flickers. `height` in px.
+ */
+export function LampFlame({ height = 26 }) {
+  return (
+    <svg
+      viewBox="-10 -24 20 26"
+      width={(height * 20) / 26}
+      height={height}
+      className="pointer-events-none overflow-visible"
+      aria-hidden="true"
+    >
+      <Flame x={0} y={0} h={22} />
+    </svg>
+  )
+}
+
 /** A flame. The only animated part of any of these. */
 function Flame({ x, y, h = 11, delay = 0, still = false }) {
   return (

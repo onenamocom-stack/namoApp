@@ -193,10 +193,13 @@ export const strings = {
   'puja.dhoopLit': { en: 'Dhoop lit', hi: 'धूप जलाई' },
   'puja.aartiBegun': { en: 'Aarti begun', hi: 'आरती आरंभ' },
   'puja.aartiEnded': { en: 'Aarti ended', hi: 'आरती समाप्त' },
-  'puja.noAudio': {
-    en: 'Sangeet — prototype has no audio',
-    hi: 'संगीत — प्रोटोटाइप में ध्वनि नहीं है',
-  },
+  'puja.bhajans': { en: 'Bhajans', hi: 'भजन' },
+  'puja.mantras': { en: 'Mantras', hi: 'मंत्र' },
+  'puja.nowPlaying': { en: 'Now playing', hi: 'अभी बज रहा है' },
+  'puja.stopMusic': { en: 'Stop', hi: 'बंद करें' },
+  'puja.loadingMusic': { en: 'Loading…', hi: 'लोड हो रहा है…' },
+  'puja.noMusic': { en: 'Nothing here yet.', hi: 'अभी यहाँ कुछ नहीं है।' },
+  'puja.cantPlay': { en: 'Could not play that. Try again.', hi: 'चल नहीं पाया। फिर कोशिश करें।' },
 
   // ── Tarot ────────────────────────────────────────────────────────────────
   'tarot.title': { en: 'Tarot', hi: 'टैरो' },
