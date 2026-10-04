@@ -5172,3 +5172,35 @@ month" is resolved in IST while events land on their UTC date, so an event
 written just after IST midnight on the 1st counts in the previous month. The
 dashboard's month-to-date charts have the same gap; the fix belongs in
 `apps/analytics/periods` or the series bucketing, not the test.
+
+## 41. Uploads from the browser are blocked by R2 — 4 Oct 2026
+
+**Owner action needed in Cloudflare.** A profile picture (and any studio post,
+reel or consultant certificate) gets its presigned URL from the API (`presign`
+201) and then dies at the browser's PUT to R2: the bucket answers the CORS
+preflight with **403 and no `Access-Control-Allow-Origin`**, so the browser
+never sends the file and `confirm` is never called. Reproduced 4 Oct with a
+presigned PUT for `namo-media` and `namo-docs` from both `https://1namo.com`
+and `http://localhost:5260`. The app code is not at fault.
+
+The fix is a CORS policy on both buckets (Cloudflare → R2 → bucket → Settings
+→ CORS Policy). The API's R2 key cannot set it — `PutBucketCors` is
+AccessDenied, it is an object-only token — so it is a dashboard change:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://1namo.com", "https://pro.1namo.com",
+                       "https://onenamocom-stack.github.io",
+                       "http://localhost:5260", "http://localhost:5173"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Same origin list as the API's `CORS_ALLOWED_ORIGINS`. Re-test by sending an
+OPTIONS preflight with `Origin: https://1namo.com` to a presigned PUT URL:
+it should answer 200 with the origin echoed.

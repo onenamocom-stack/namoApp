@@ -172,7 +172,7 @@ export default function Pooja() {
   // the DOM does not fill up over a long session.
   useEffect(() => {
     if (!petals.length) return
-    const timer = setTimeout(() => setPetals((p) => p.slice(8)), 3600)
+    const timer = setTimeout(() => setPetals((p) => p.slice(12)), 5200)
     return () => clearTimeout(timer)
   }, [petals])
 
@@ -198,7 +198,7 @@ export default function Pooja() {
       const base = seq.current
       setPetals((p) => [
         ...p,
-        ...Array.from({ length: 8 }, (_, i) => ({
+        ...Array.from({ length: 12 }, (_, i) => ({
           id: `${base}-${i}`,
           left: 8 + Math.random() * 84,
           delay: Math.random() * 0.7,
@@ -309,17 +309,23 @@ export default function Pooja() {
           {petals.map((p) => (
             /* Marigold petals, not gold confetti — an ellipse tipped off
                axis reads as a petal at 8px where a circle reads as a dot. */
+            /* A full-height lane falls; the petal at its top turns over. */
             <span
               key={p.id}
-              className="animate-petal absolute top-0 block h-3 w-2"
-              style={{
-                left: `${p.left}%`,
-                animationDelay: `${p.delay}s`,
-                transform: `scale(${p.scale}) rotate(${(p.left % 5) * 14 - 28}deg)`,
-                borderRadius: '50% 50% 50% 50% / 62% 62% 38% 38%',
-                background: 'linear-gradient(160deg, #f7b733 0%, #e8871e 62%, #c25e10 100%)',
-              }}
-            />
+              className="animate-petal absolute top-0 block h-full w-2"
+              style={{ left: `${p.left}%`, animationDelay: `${p.delay}s` }}
+            >
+              <span className="block" style={{ transform: `scale(${p.scale})` }}>
+                <span
+                  className="animate-petal-spin block h-3.5 w-2.5"
+                  style={{
+                    animationDelay: `${p.delay}s`,
+                    borderRadius: '50% 50% 50% 50% / 62% 62% 38% 38%',
+                    background: 'linear-gradient(160deg, #f7b733 0%, #e8871e 62%, #c25e10 100%)',
+                  }}
+                />
+              </span>
+            </span>
           ))}
         </span>
 
@@ -384,25 +390,25 @@ export default function Pooja() {
             only exists once you light it makes the shrine look half-built. */}
         <span
           aria-hidden="true"
-          className="absolute bottom-5 left-[22%]"
+          className="absolute bottom-4 left-[19%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={44} fallback={<Diya size={40} lit={lit.diya} />} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
         </span>
         <span
           aria-hidden="true"
-          className="absolute bottom-5 right-[22%]"
+          className="absolute bottom-4 right-[19%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={44} fallback={<Diya size={40} lit={lit.diya} />} />
+          <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
         </span>
 
         <span
           aria-hidden="true"
-          className="absolute bottom-5 left-[14%]"
+          className="absolute bottom-6 left-[13%]"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
         >
-          <PujaPhoto name="dhoop" width={30} fallback={<Dhoop size={44} lit={lit.incense} />} />
+          <PujaPhoto name="dhoop" width={40} fallback={<Dhoop size={58} lit={lit.incense} />} />
           {lit.incense &&
             [0, 1.2, 2.4].map((d) => (
               <span
@@ -413,25 +419,10 @@ export default function Pooja() {
             ))}
         </span>
 
-        {/* The aarti lamp travelling its circle in front of the murti. */}
-        {aarti && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-[42%] block h-4 w-4 -translate-x-1/2 -translate-y-1/2"
-          >
-            <span className="animate-aarti block h-4 w-4">
-              <span
-                className="block h-4 w-4 rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(circle, #fff3cf 0%, #f0a92c 55%, rgba(240,169,44,0) 75%)',
-                }}
-              />
-            </span>
-          </span>
-        )}
-
-        {/* ── The thali. Tap to light it, then drag to circle it. ───────── */}
+        {/* ── The thali. Tap to begin the aarti: it rises off the altar to in
+            front of the murti and circles there, as a thali is moved in an
+            aarti (4 Oct 2026 — it used to light up and stay put). Tap again
+            and it settles back. Dragging still turns it, either way. ───── */}
         <button
           type="button"
           onClick={() => {
@@ -444,27 +435,30 @@ export default function Pooja() {
           onPointerDown={startTurn}
           aria-pressed={aarti}
           aria-label={t(aarti ? 'puja.endAarti' : 'puja.aarti')}
-          className="group absolute bottom-3 left-1/2 -translate-x-1/2 touch-none"
+          className="group absolute left-1/2 -translate-x-1/2 touch-none"
+          style={{ bottom: aarti ? '30%' : '12px', transition: 'bottom .8s cubic-bezier(.2,.7,.3,1)' }}
         >
-          <span
-            className="relative isolate block"
-            style={{
-              filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))',
-              transform: `rotate(${turn}deg)`,
-              // No transition while a finger is on it — an eased follow lags
-              // behind the thumb and feels like the plate is on elastic.
-              transition: turning ? 'none' : 'transform .5s cubic-bezier(.2,.7,.3,1)',
-            }}
-          >
-            {/* One photograph for both states; lit, it glows from behind. */}
-            {aarti && (
-              <span
-                aria-hidden="true"
-                className="animate-halo absolute inset-[-30%] -z-10 rounded-full"
-                style={{ background: 'radial-gradient(circle, rgba(255,196,92,.65) 0%, rgba(255,196,92,0) 65%)' }}
-              />
-            )}
-            <PujaPhoto name="thali" width={120} fallback={<Thali size={104} lit={aarti} />} />
+          <span className={`block ${aarti ? 'motion-safe:animate-aarti' : ''}`}>
+            <span
+              className="relative isolate block"
+              style={{
+                filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))',
+                transform: `rotate(${turn}deg)`,
+                // No transition while a finger is on it — an eased follow lags
+                // behind the thumb and feels like the plate is on elastic.
+                transition: turning ? 'none' : 'transform .5s cubic-bezier(.2,.7,.3,1)',
+              }}
+            >
+              {/* One photograph for both states; lit, it glows from behind. */}
+              {aarti && (
+                <span
+                  aria-hidden="true"
+                  className="animate-halo absolute inset-[-30%] -z-10 rounded-full"
+                  style={{ background: 'radial-gradient(circle, rgba(255,196,92,.65) 0%, rgba(255,196,92,0) 65%)' }}
+                />
+              )}
+              <PujaPhoto name="thali" width={120} fallback={<Thali size={104} lit={aarti} />} />
+            </span>
           </span>
           {/* The colours here are inline because every one of this app's
               palette entries is a CSS variable, and Tailwind silently drops an
@@ -558,7 +552,7 @@ function HangingBell({ side, ringing }) {
       }`}
       style={{ filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))' }}
     >
-      <PujaPhoto name="ghanti" width={44} fallback={<Ghanti size={86} hanging />} />
+      <PujaPhoto name="ghanti" width={60} fallback={<Ghanti size={116} hanging />} />
     </span>
   )
 }

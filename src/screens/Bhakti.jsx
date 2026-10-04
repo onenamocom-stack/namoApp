@@ -184,10 +184,14 @@ export default function Bhakti() {
 
       {/* Circle tiles, not a segmented control — same grammar as Consult's
           free-tools row, because both answer "pick a thing to do". */}
-      <section className="px-2 pb-1 pt-3">
-        <ul className="flex items-start justify-around">
+      {/* Scrolls sideways (4 Oct 2026). Six 72px tiles need ~450px and a
+          phone is 360–412: the row used to spread with `justify-around` and
+          no overflow, so Darshan — and on small phones Mantras — sat cut off
+          past the edge with no way to reach it. Same row as Consult's tools. */}
+      <section className="pb-1 pt-3">
+        <ul className="no-scrollbar flex items-start gap-1 overflow-x-auto px-3">
           {KINDS.map((k) => (
-            <li key={k.key}>
+            <li key={k.key} className="flex-none">
               {/* Darshan leaves the screen; the other four switch shelves on
                   it. A link and a button, because they do different things
                   and one of them belongs in browser history. */}

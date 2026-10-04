@@ -375,7 +375,10 @@ falling back to the old drawings if a file is missing. The files are Canva's
 preview size for now; the thali (the widest) is the one worth replacing with a
 full-size download. There is one thali photo: lit, it glows from behind, because
 a lit version could not be generated (Canva credit quota, 3 Oct).
-The thali still rotates under a finger and settles to the nearest whole turn. A knob opens the murti picker,
+Tapping the thali begins the aarti: the plate rises off the altar to in front of
+the murti and circles there until tapped again (4 Oct 2026 — it used to light up
+and stay put). It still rotates under a finger and settles to the nearest whole
+turn. Flowers fall the full height of the shrine, twelve petals a tap. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.
 

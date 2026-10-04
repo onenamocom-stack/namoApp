@@ -208,11 +208,20 @@ export default {
           '50%': { transform: 'scaleY(0.92) scaleX(1.06) translateX(0.5px)', opacity: '1' },
           '75%': { transform: 'scaleY(1.08) scaleX(0.97) translateX(0.2px)', opacity: '0.95' },
         },
-        // Petals do not drop straight down; they slip sideways and turn over.
+        // Petals fall the WHOLE shrine (4 Oct 2026). The animated element is
+        // a full-height lane, so its own 100% is the shrine's height — the
+        // old keyframe moved the 12px petal by 360% of itself, about 43px,
+        // and every petal faded out near the top. The petal turns over on
+        // its own (petal-spin) while the lane slips sideways.
         petal: {
-          '0%': { transform: 'translateY(-12%) translateX(0) rotate(0deg)', opacity: '0' },
-          '10%': { opacity: '1' },
-          '100%': { transform: 'translateY(360%) translateX(18px) rotate(220deg)', opacity: '0' },
+          '0%': { transform: 'translateY(-3%) translateX(0)', opacity: '0' },
+          '6%': { opacity: '1' },
+          '92%': { opacity: '1' },
+          '100%': { transform: 'translateY(100%) translateX(22px)', opacity: '0' },
+        },
+        'petal-spin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(300deg)' },
         },
         swing: {
           '0%, 100%': { transform: 'rotate(0deg)' },
@@ -221,10 +230,11 @@ export default {
           '55%': { transform: 'rotate(6deg)' },
           '75%': { transform: 'rotate(-3deg)' },
         },
-        // The aarti lamp travels the traditional circle in front of the idol.
+        // The aarti thali travels the traditional circle in front of the
+        // idol — the plate itself since 4 Oct 2026, upright the whole way.
         aarti: {
-          '0%': { transform: 'rotate(0deg) translateX(34px) rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg) translateX(34px) rotate(-360deg)' },
+          '0%': { transform: 'rotate(0deg) translateX(26px) rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg) translateX(26px) rotate(-360deg)' },
         },
         halo: {
           '0%, 100%': { opacity: '0.25', transform: 'scale(1)' },
@@ -261,9 +271,10 @@ export default {
         'grow-y': 'grow-y 0.5s cubic-bezier(.2,.7,.3,1) both',
         float: 'float 5s ease-in-out infinite',
         flicker: 'flicker 1.1s ease-in-out infinite',
-        petal: 'petal 3.4s linear forwards',
+        petal: 'petal 4.2s cubic-bezier(.4,.1,.7,1) forwards',
+        'petal-spin': 'petal-spin 4.2s linear forwards',
         swing: 'swing 1.4s ease-out',
-        aarti: 'aarti 2.6s linear infinite',
+        aarti: 'aarti 3.2s linear infinite',
         halo: 'halo 3s ease-in-out infinite',
         ripple: 'ripple 0.9s ease-out forwards',
         smoke: 'smoke 3.6s ease-out infinite',
