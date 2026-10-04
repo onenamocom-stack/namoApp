@@ -1,0 +1,17 @@
+# Line endings are LF in the repository, whatever writes the file (4 Oct 2026).
+# Without this, edits from Windows tools flipped 55 files to CRLF and every
+# line of each showed as changed, which turned ordinary merges into conflicts.
+* text=auto eol=lf
+
+# Binary, never touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.mp4 binary
+*.mp3 binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
