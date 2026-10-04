@@ -24,7 +24,7 @@ from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
 from django.utils import timezone
 
-from . import shiprocket
+from . import delivery, shiprocket
 
 from .models import (
     Coupon, Order, OrderItem, Product, Shipment, ShippingAddress,
@@ -414,20 +414,28 @@ class OrderAdmin(dj.ModelAdmin):
 
 @dj.register(Shipment, site=site)
 class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
-    """The parcel. This is the one shop table an operator legitimately
-    changes by hand — a courier name, an AWB, a status — because until
-    Shiprocket is wired those facts arrive by email."""
+    """The parcel. A paid order dispatches itself (apps/shop/delivery.py,
+    5 Oct 2026); this is where one that stopped half-way is finished, a
+    label is printed, and — rarely — a status is set by hand."""
 
     audit_target = "shipment"
-    list_display = ("order", "to", "pincode", "status", "courier", "awb", "updated_at")
+    list_display = ("order", "to", "pincode", "status", "tracking_status", "courier", "awb",
+                    "label", "updated_at")
     list_filter = ("status", "courier")
     search_fields = ("awb", "pincode", "provider_order_id")
-    readonly_fields = ("order", "address", "weight_grams", "shipping_paise", "updated_at")
+    readonly_fields = ("order", "address", "weight_grams", "shipping_paise",
+                       "tracking_status", "label_url", "updated_at")
 
     @dj.display(description="To")
     def to(self, obj):
         a = obj.address or {}
         return f"{a.get('name', '—')}, {a.get('city', '')}"
+
+    @dj.display(description="Label")
+    def label(self, obj):
+        if not obj.label_url:
+            return "—"
+        return format_html('<a href="{}" target="_blank" rel="noopener">PDF</a>', obj.label_url)
 
     def has_add_permission(self, request):
         """A shipment is created by an order being paid for, not by an
@@ -446,96 +454,48 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return at_least(request, Tier.FULFILMENT)
 
-    actions = ("push_to_shiprocket", "assign_awb", "refresh_tracking")
+    actions = ("dispatch_now", "refresh_tracking")
 
-    @dj.action(description="Push to Shiprocket")
-    def push_to_shiprocket(self, request, queryset):
-        """Deliberately a button, not a webhook. These are Abzzo's
-        credentials for now: the label carries their pickup address, and a
-        courier collecting a real box from the wrong company because a
-        payment fired at 3am is not undoable with a database update."""
+    @dj.action(description="Dispatch — push, courier, pickup, label")
+    def dispatch_now(self, request, queryset):
+        """The same path a paid order takes on its own. Each step skips
+        itself when done, so this finishes a half-dispatched parcel rather
+        than sending it twice."""
         if not at_least(request, Tier.FULFILMENT):
             return self.message_user(request, "Not your tier.", messages.ERROR)
         if not shiprocket.is_configured():
             return self.message_user(
                 request, "Shiprocket credentials are not set.", messages.ERROR
             )
-        pushed = 0
         for shipment in queryset:
-            if shipment.provider_order_id:
-                self.message_user(
-                    request, f"{shipment.order_id} is already on Shiprocket.",
-                    messages.WARNING,
-                )
-                continue
-            try:
-                provider_id = shiprocket.push(shipment)
-            except shiprocket.ShiprocketError as exc:
-                self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
-                continue
-            Shipment.objects.filter(pk=shipment.pk).update(
-                provider_order_id=provider_id,
-                status=Shipment.Status.READY,
-                updated_at=timezone.now(),
+            result = delivery.dispatch(shipment.order_id, force=True)
+            fresh = Shipment.objects.get(pk=shipment.pk)
+            record(request, "shipment.dispatch", "shipment", target_id=shipment.order_id,
+                   result=result, awb=fresh.awb or "")
+            level = messages.ERROR if result == "failed" else messages.INFO
+            self.message_user(
+                request, f"{shipment.order_id}: {result}"
+                + (f" · {fresh.courier} {fresh.awb}" if fresh.awb else ""), level,
             )
-            record(request, "shipment.pushed", "shipment", target_id=shipment.order_id,
-                   provider_order_id=provider_id, pincode=shipment.pincode)
-            pushed += 1
-        if pushed:
-            self.message_user(request, f"{pushed} pushed to Shiprocket.")
-
-    @dj.action(description="Assign AWB — pick a courier")
-    def assign_awb(self, request, queryset):
-        if not at_least(request, Tier.FULFILMENT):
-            return self.message_user(request, "Not your tier.", messages.ERROR)
-        done = 0
-        for shipment in queryset:
-            if not shipment.provider_order_id:
-                self.message_user(
-                    request, f"{shipment.order_id}: push it to Shiprocket first.",
-                    messages.WARNING,
-                )
-                continue
-            try:
-                result = shiprocket.assign_awb(shipment.provider_order_id)
-            except shiprocket.ShiprocketError as exc:
-                self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
-                continue
-            Shipment.objects.filter(pk=shipment.pk).update(
-                awb=result["awb"], courier=result["courier"],
-                status=Shipment.Status.SHIPPED,
-                shipped_at=shipment.shipped_at or timezone.now(),
-                updated_at=timezone.now(),
-            )
-            record(request, "shipment.awb", "shipment", target_id=shipment.order_id,
-                   awb=result["awb"], courier=result["courier"])
-            done += 1
-        if done:
-            self.message_user(request, f"{done} on their way.")
 
     @dj.action(description="Refresh tracking")
     def refresh_tracking(self, request, queryset):
-        """Read-only against Shiprocket, and it only ever moves a shipment
-        FORWARD to delivered. A tracking blip must not walk a parcel
-        backwards out of a status somebody already acted on."""
+        """Read-only against Shiprocket, forward-only here. Delivery starts
+        the referral cashback's clock exactly as the webhook does — until
+        5 Oct this used a bare update and skipped it."""
         for shipment in queryset.exclude(awb=None).exclude(awb=""):
             try:
-                state = shiprocket.track(shipment.awb)
+                moved = delivery.refresh(shipment)
             except shiprocket.ShiprocketError as exc:
                 self.message_user(request, f"{shipment.order_id}: {exc}", messages.ERROR)
                 continue
-            if "deliver" in (state["status"] or "").lower():
-                Shipment.objects.filter(pk=shipment.pk).update(
-                    status=Shipment.Status.DELIVERED,
-                    delivered_at=shipment.delivered_at or timezone.now(),
-                    updated_at=timezone.now(),
-                )
-                record(request, "shipment.delivered", "shipment",
-                       target_id=shipment.order_id, courier_says=state["status"])
-            else:
-                self.message_user(
-                    request, f"{shipment.order_id}: {state['status'] or 'no update'}"
-                )
+            fresh = Shipment.objects.get(pk=shipment.pk)
+            if moved:
+                record(request, "shipment.tracked", "shipment", target_id=shipment.order_id,
+                       status=fresh.status, courier_says=fresh.tracking_status or "")
+            self.message_user(
+                request, f"{shipment.order_id}: {fresh.status} · {fresh.tracking_status or 'no update'}"
+            )
 
     def save_model(self, request, obj, form, change):
         from django.utils import timezone

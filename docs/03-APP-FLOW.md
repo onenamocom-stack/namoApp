@@ -823,6 +823,17 @@ Clients / Alerts, and both open on the first. **Ask AI left the panel on 30 Sep
 2026** for its own page, `/ask` — messages are people.
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.
+Under the lines sits **Deliver to**: the saved addresses (the last one chosen
+is preselected) or, when there are none, the address form — a six-digit
+pincode fills city and state. Choosing an address asks the server for the
+delivery charge; the sheet then shows Items, Delivery and Total, and **Pay
+stays disabled, reading "Choose an address", until a charge has come back**.
+A refused payment asks for the charge again. After a successful Pay the app
+asks the server to dispatch the parcel and does not wait for the answer.
+
+**Orders** shows each parcel as four steps — Ordered, Packed, Shipped,
+Delivered — with the courier's last status line, the AWB, and a **Track
+parcel** link to the courier's public tracking page.
 
 Local sheets using the shared primitive — Consult booking, ConsultantProfile
 booking, wallet top-up, question packs, withdraw, murti picker — are not global
@@ -837,7 +848,7 @@ arithmetic in the browser any more.
 
 | # | Path | Effect |
 |---|---|---|
-| 1 | Cart checkout | Debits the cart total, clears the cart |
+| 1 | Cart checkout | Debits the cart total plus the quoted delivery charge, clears the cart |
 | 2 | Shop *Buy now* | Debits the product price |
 | 3 | Reports *Buy now* | Debits the report price |
 | 4 | Tarot paid pull | Debits the per-pull price |

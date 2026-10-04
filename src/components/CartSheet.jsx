@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from './Chrome.jsx'
 import CodeField from './CodeField.jsx'
+import DeliveryStep from './DeliveryStep.jsx'
 import Plate from './Plate.jsx'
 import { PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -34,7 +35,13 @@ export default function CartSheet() {
   // Paise against rupees: `cartTotal` is rupees (the catalogue's unit on
   // this screen) and the wallet is paise everywhere. Compared in paise,
   // because that is the one the server uses.
-  const short = balance !== null && balance < cartTotal * 100
+  /* Delivery (5 Oct 2026): the courier's rate for the chosen address,
+     from the server. Pay waits for it — a parcel needs somewhere to go,
+     and the total on the button must be the total charged. */
+  const [delivery, setDelivery] = useState(null)
+  const [nonce, setNonce] = useState(0)
+  const totalPaise = cartTotal * 100 + (delivery?.amountPaise ?? 0)
+  const short = balance !== null && balance < totalPaise
 
   const [coupon, setCoupon] = useState(() => {
     try {
@@ -50,10 +57,13 @@ export default function CartSheet() {
      cart. Still awaited: without it a refusal reads as truthy and clears
      a cart nobody paid for. */
   const checkout = async () => {
-    const result = await checkoutCart(coupon)
+    const result = await checkoutCart(coupon, delivery)
     if (result?.ok) {
       clearCart()
       setCartOpen(false)
+    } else {
+      // A refused payment may have been a stale quote; ask again.
+      setNonce((n) => n + 1)
     }
   }
 
@@ -113,9 +123,27 @@ export default function CartSheet() {
             ))}
           </ul>
 
-          <div className="mt-6 flex items-baseline justify-between border-t border-stroke pt-4">
-            <span className="caps-sm t-faint">Total</span>
-            <span className="text-lead tnum t-heading">₹{cartTotal.toLocaleString('en-IN')}</span>
+          <DeliveryStep
+            lines={cart.map((l) => ({ product_id: l.id, qty: l.qty }))}
+            nonce={nonce}
+            onQuote={setDelivery}
+          />
+
+          <div className="mt-6 space-y-1 border-t border-stroke pt-4">
+            <div className="flex items-baseline justify-between">
+              <span className="caps-sm t-faint">Items</span>
+              <span className="text-meta tnum t-sub">₹{cartTotal.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="caps-sm t-faint">Delivery</span>
+              <span className="text-meta tnum t-sub">
+                {delivery ? `₹${rupees(delivery.amountPaise)}` : '—'}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between pt-1">
+              <span className="caps-sm t-faint">Total</span>
+              <span className="text-lead tnum t-heading">₹{rupees(totalPaise)}</span>
+            </div>
           </div>
 
           {/* What leaves and what is left, before the button that does it.
@@ -130,8 +158,8 @@ export default function CartSheet() {
               {balance === null
                 ? '—'
                 : short
-                  ? `short by ₹${rupees(cartTotal * 100 - balance)}`
-                  : `₹${rupees(balance - cartTotal * 100)}`}
+                  ? `short by ₹${rupees(totalPaise - balance)}`
+                  : `₹${rupees(balance - totalPaise)}`}
             </span>
           </div>
 
@@ -164,20 +192,22 @@ export default function CartSheet() {
             <PopButton
               size="sm"
               variant="gold"
-              disabled={spending || short}
+              disabled={spending || short || !delivery}
               onClick={checkout}
             >
               {spending
                 ? 'Paying…'
-                : short
-                  ? 'Not enough balance'
-                  : `Pay ₹${cartTotal.toLocaleString('en-IN')}`}
+                : !delivery
+                  ? 'Choose an address'
+                  : short
+                    ? 'Not enough balance'
+                    : `Pay ₹${rupees(totalPaise)}`}
             </PopButton>
           </div>
 
           <p className="mt-4 text-center text-meta t-faint">
-            Paid from your wallet. Stock is claimed when you pay, so nothing
-            is held for you until then.
+            Paid from your wallet, delivery included. Stock is claimed when
+            you pay, so nothing is held for you until then.
           </p>
         </>
       )}

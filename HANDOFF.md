@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 3 Oct 2026.
+Updated 5 Oct 2026.
 
 | Phase | State |
 |---|---|
@@ -3510,10 +3510,10 @@ rows. The database won.
   their ids stripped on both sides.
 - **Attribution is first touch, never overwritten.** "How many came by
   referral" is a first-touch question.
-- **Shiprocket pushes are a button, never automatic.** The account is
-  Abzzo's: labels carry their pickup address, and a courier collecting a
-  real box from the wrong company because a payment fired at 3am cannot be
-  undone with an UPDATE.
+- ~~**Shiprocket pushes are a button, never automatic.**~~ Reversed 5 Oct
+  2026: the account is Namo's own now, so a paid order dispatches itself
+  (§43). The reason it was a button — Abzzo's borrowed account and their
+  pickup address on the label — no longer holds.
 
 ### Open, and yours to decide
 
@@ -4080,8 +4080,9 @@ the container exits before it starts, which is how the first run failed.
 
 - **Onboarding does not ask for a code.** It is claimed from the profile
   card instead, which works but means a new seeker has to find it.
-- Shiprocket never sets `DELIVERED` — the console is the only path, so
-  cashback matures only when an admin marks the parcel delivered.
+- ~~Shiprocket never sets `DELIVERED`.~~ It does from 5 Oct 2026: the
+  tracking webhook and the console's Refresh tracking both move a parcel to
+  delivered and start the cashback clock (§43).
 - `REFERRAL_CASHBACK_CAP_PAISE` is 0. Uncapped.
 ### Referrals, the fourth direction — 25 Sep 2026
 **`seeker → consultant` paid both sides and should not have.** The
@@ -5242,3 +5243,72 @@ from 4–5 Oct fail the same way on clean `main`).
   card replaced "Before you act on this".
 - **Numerology removed** end to end. The `ASTROLOGY_API_*` /
   `NUMEROLOGY_PROVIDER` env vars are still on Cloud Run, unused.
+
+## 43. Delivery through Shiprocket — 5 Oct 2026
+
+**Built and tested locally; not yet migrated, deployed or pushed.** The
+Shiprocket account is Namo's own, so a paid parcel now goes out by itself.
+
+What happens, in order:
+
+1. **Cart → Deliver to.** Saved addresses, or the form (pincode fills city
+   and state from Shiprocket). `GET/POST /v1/shop/addresses/`,
+   `DELETE /v1/shop/addresses/<id>/`, `GET /v1/shop/pincode/<pin>/`.
+2. **The charge.** `POST /v1/shop/quote/` asks Shiprocket's serviceability
+   for that pincode at the cart's weight (from the product rows), takes the
+   recommended courier's rate, rounds up to the rupee, and writes a
+   `shipping_quotes` row that lives 30 minutes. Pay is disabled until one
+   comes back.
+3. **Buy** now requires `address_id` and `quote_id`. Inside the one
+   purchase transaction: the quote is checked (own, fresh, unused, same
+   pincode, same weight) and burned, the fee is added after any coupon, a
+   `shipping` order line and the `shipments` row (address snapshot, status
+   `ready`) are written. Referral cashback is computed on the goods only.
+4. **Dispatch.** The app calls `POST /v1/shop/orders/<id>/dispatch/` without
+   waiting: push to Shiprocket → assign AWB (Shiprocket's courier choice) →
+   book pickup → fetch the label. Each step skips itself when done and the
+   row is locked, so a repeat finishes rather than duplicates. Done in the
+   API because the `namo-dispatch-outbox` job runs a pinned old image with
+   no Shiprocket env.
+5. **Tracking.** `POST /v1/shop/parcel-updates/` is the webhook (the path
+   avoids "shiprocket", "sr" and "kr", which their form refuses), checked
+   against `SHIPROCKET_WEBHOOK_TOKEN` in `x-api-key`. Forward only;
+   delivered starts the referral cashback clock, returned or cancelled
+   kills it. `manage.py track_parcels` is the fallback (unscheduled).
+6. **Orders** shows Ordered · Packed · Shipped · Delivered, the courier's
+   last status, the AWB and a Track parcel link (`shiprocket.co/tracking/<awb>`).
+
+Console: Shipments has **Dispatch** (the same path, for one that stopped)
+and **Refresh tracking**, which now also starts the cashback clock — it
+used a bare update before and skipped it. The label PDF is a column.
+
+Migration `shop/0003_shipment_tracking` adds two nullable columns to
+`shipments` (`tracking_status`, `label_url`). Production's `order_items`
+check already allows `shipping` (verified read-only, 5 Oct). 917 tests.
+
+### To make it live
+
+1. Migrate prod, deploy API and console, push the frontend — in that order.
+   **Pushing the frontend first breaks Buy**: the new API requires an
+   address, and the old one ignores it.
+2. Set on **both** `namo-api` and `namo-console`: `SHIPROCKET_EMAIL` (the API
+   user's email), `SHIPROCKET_PASSWORD`, `SHIPROCKET_WEBHOOK_TOKEN` (any long
+   random string), and `SHIPROCKET_PICKUP` if the pickup nickname is not the
+   account's primary one (blank uses the primary).
+3. Shiprocket → Settings → API → Webhooks: URL
+   `https://namo-api-499026166575.asia-south1.run.app/v1/shop/parcel-updates/`,
+   token = the same `SHIPROCKET_WEBHOOK_TOKEN`.
+4. Product weights are what the rate is quoted on. Every product needs a
+   real `weight_grams`; the box is a fixed 15 × 12 × 8 cm.
+
+### Open
+
+- **The API password was pasted into chat on 5 Oct.** Reset it in
+  Shiprocket before setting it on Cloud Run.
+- Not walked against the real Shiprocket API — every call is mocked in
+  tests, and the cart and Orders were walked with faked responses.
+- No cancel or return flow from the app; the console sets those by hand.
+- The 6 old `shipments` rows are September test data; two read `ready`.
+  Nothing automatic dispatches an order placed before 5 Oct 00:00 IST
+  (`AUTO_DISPATCH_FROM`); only the console's Dispatch button can. Cancel
+  those two in the console.

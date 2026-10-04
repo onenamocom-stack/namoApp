@@ -805,6 +805,12 @@ export const strings = {
     hi: '{amount} कैशबैक, डिलीवरी के सात दिन बाद।',
   },
   'ord.delivery': { en: 'delivery', hi: 'डिलीवरी' },
+  'ord.fee': { en: 'Delivery', hi: 'डिलीवरी शुल्क' },
+  'ord.track': { en: 'Track parcel', hi: 'पार्सल ट्रैक करें' },
+  'ord.step.ordered': { en: 'Ordered', hi: 'ऑर्डर हुआ' },
+  'ord.step.packed': { en: 'Packed', hi: 'पैक हुआ' },
+  'ord.step.shipped': { en: 'Shipped', hi: 'भेजा गया' },
+  'ord.step.delivered': { en: 'Delivered', hi: 'पहुँच गया' },
 
   // ── Wallet ───────────────────────────────────────────────────────────────
   'wal.available': { en: 'Available balance', hi: 'उपलब्ध बैलेंस' },

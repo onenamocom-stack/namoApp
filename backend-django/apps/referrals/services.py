@@ -385,7 +385,10 @@ def claim_purchase(buyer_id, order, code):
     if not verdict["ok"]:
         return verdict
 
-    amount = _cashback_paise(order.total_paise)
+    # On the goods, not the courier: delivery is a pass-through cost
+    # (5 Oct 2026), and 10% of it would be paying cashback on Shiprocket.
+    delivery = sum(order.items.filter(item_type="shipping").values_list("unit_price_paise", flat=True))
+    amount = _cashback_paise(order.total_paise - delivery)
     if amount <= 0:
         # A ₹1 order at 10% is zero paise. The order stands; there is just
         # nothing to owe, and a zero-amount cashback row would fail its

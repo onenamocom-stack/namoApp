@@ -1,23 +1,18 @@
 """Shiprocket, for the parcels.
 
-Stage 5, and the last of the console build. Until this existed a courier
-name and an AWB arrived by email and an operator typed them into the
-shipment by hand — which works, and does not scale past a few orders a day.
+Stage 5. Until this existed a courier name and an AWB arrived by email and
+an operator typed them into the shipment by hand.
 
-── THE ACCOUNT IS BORROWED, AND THAT DECIDES THE DESIGN ─────────────────────
-These are Abzzo's credentials, shared for now exactly as Razorpay's were
-(21 Sep). Two consequences, and the second is why nothing here is
-automatic:
+── NAMO'S OWN ACCOUNT, SO DISPATCH IS AUTOMATIC (5 Oct 2026) ────────────────
+Until 5 Oct these were Abzzo's borrowed credentials, so pushing a parcel
+was a button an operator pressed — a courier collecting a box from the
+wrong company's address is not undoable. The account is Namo's now, so a
+paid order dispatches itself: `dispatch` below pushes it, assigns a
+courier and books the pickup (apps/shop/delivery.py calls it). The console
+buttons stay, for the order whose dispatch failed.
 
-  * Namo's shipments appear in Abzzo's Shiprocket dashboard.
-  * The labels carry Abzzo's pickup address and branding.
-
-So pushing a parcel is an ACTION AN OPERATOR TAKES, never a side effect of
-payment. A real courier collecting a real box from the wrong company's
-address, triggered by a webhook at three in the morning, is not a mistake
-that can be undone with a database update. When Namo has its own account
-this can become automatic; the code is the same either way and the
-decision lives in one place.
+The seeker pays for delivery at Shiprocket's own rate for their pincode
+(`quote`), prepaid only: the wallet was debited before any of this runs.
 
 ── AND NOTHING HERE MAY BREAK AN ORDER ──────────────────────────────────────
 Every call is wrapped and every failure returns a reason rather than
@@ -26,6 +21,7 @@ and it must not stop an operator seeing their shipment list.
 """
 
 import logging
+import math
 
 import requests
 from django.conf import settings
@@ -135,7 +131,7 @@ def _order_payload(shipment):
     return {
         "order_id": str(shipment.order_id),
         "order_date": shipment.order.created_at.strftime("%Y-%m-%d %H:%M"),
-        "pickup_location": settings.SHIPROCKET_PICKUP,
+        "pickup_location": pickup()["name"],
         "billing_customer_name": address.get("name", ""),
         "billing_last_name": "",
         "billing_address": address.get("line1", ""),
@@ -188,3 +184,135 @@ def track(awb):
         "status": (payload.get("shipment_track") or [{}])[0].get("current_status", ""),
         "delivered_date": (payload.get("shipment_track") or [{}])[0].get("delivered_date"),
     }
+
+
+# ── before the order: where it goes, and what delivery costs ────────────────
+
+PICKUP_KEY = "shiprocket-pickup"
+
+
+def pickup():
+    """{name, pincode} of the warehouse parcels leave from.
+
+    Read from the account rather than typed into settings twice: the
+    nickname set in Shiprocket (Settings → Pickup Addresses) is what a
+    push must name, and its pincode is what a rate is quoted from. With
+    SHIPROCKET_PICKUP blank, the account's primary address is used.
+    """
+    found = cache.get(PICKUP_KEY)
+    if found:
+        return found
+    data = _call("GET", "/settings/company/pickup")
+    rows = ((data.get("data") or {}).get("shipping_address")) or []
+    wanted = (settings.SHIPROCKET_PICKUP or "").strip().lower()
+    chosen = None
+    for row in rows:
+        if wanted and (row.get("pickup_location") or "").strip().lower() == wanted:
+            chosen = row
+            break
+    if chosen is None and not wanted and rows:
+        chosen = next((r for r in rows if r.get("is_primary_location")), rows[0])
+    if chosen is None:
+        raise ShiprocketError("No pickup address on the Shiprocket account by that name")
+    found = {"name": chosen.get("pickup_location") or "",
+             "pincode": str(chosen.get("pin_code") or "")}
+    cache.set(PICKUP_KEY, found, 6 * 3600)
+    return found
+
+
+def pincode_details(pincode):
+    """{city, state} for an Indian pincode, or None when nobody knows it."""
+    data = _call("GET", f"/open/postcode/details?postcode={pincode}")
+    details = data.get("postcode_details") or {}
+    if not data.get("success", True) or not details.get("city"):
+        return None
+    return {"city": details.get("city") or "", "state": details.get("state") or ""}
+
+
+def quote(delivery_pincode, weight_grams):
+    """What delivery to this pincode costs, prepaid.
+
+    Returns {amount_paise, courier, etd_days} or None when no courier
+    serves the pincode. Shiprocket's recommended courier when it names one
+    — the same choice `assign_awb` makes without a courier id — else the
+    cheapest. Rounded UP to a whole rupee: the courier's ₹67.85 is charged
+    as ₹68, never as ₹67.
+    """
+    origin = pickup()["pincode"]
+    weight = max(weight_grams, 50) / 1000
+    data = _call(
+        "GET",
+        f"/courier/serviceability/?pickup_postcode={origin}"
+        f"&delivery_postcode={delivery_pincode}&weight={weight}&cod=0",
+    )
+    body = data.get("data") or {}
+    couriers = body.get("available_courier_companies") or []
+    if not couriers:
+        return None
+    best = body.get("recommended_courier_company_id")
+    chosen = next((c for c in couriers if c.get("courier_company_id") == best), None)
+    if chosen is None:
+        chosen = min(couriers, key=lambda c: float(c.get("rate") or c.get("freight_charge") or 0))
+    rate = float(chosen.get("rate") or chosen.get("freight_charge") or 0)
+    days = chosen.get("estimated_delivery_days")
+    try:
+        days = int(days) if days not in (None, "") else None
+    except (TypeError, ValueError):
+        days = None
+    return {
+        "amount_paise": math.ceil(rate) * 100,
+        "courier": chosen.get("courier_name") or "",
+        "etd_days": days,
+    }
+
+
+# ── after the order: the courier comes ──────────────────────────────────────
+
+
+def generate_pickup(provider_shipment_id):
+    """Book the courier's visit. A second call for a booked shipment is
+    refused by Shiprocket; that refusal is not an error worth stopping on."""
+    try:
+        _call("POST", "/courier/generate/pickup",
+              {"shipment_id": [str(provider_shipment_id)]})
+        return True
+    except ShiprocketError as exc:
+        logger.warning("[shiprocket] pickup for %s: %s", provider_shipment_id, exc)
+        return False
+
+
+def label(provider_shipment_id):
+    """The PDF to print and tape on the box."""
+    data = _call("POST", "/courier/generate/label",
+                 {"shipment_id": [str(provider_shipment_id)]})
+    url = data.get("label_url")
+    if not url:
+        raise ShiprocketError("Shiprocket made no label")
+    return url
+
+
+def tracking_url(awb):
+    """Shiprocket's public tracking page. No sign-in, safe to hand a seeker."""
+    return f"https://shiprocket.co/tracking/{awb}" if awb else None
+
+
+def classify(raw_status):
+    """A courier's status words to one of ours, or None for "no change".
+
+    Couriers say a great many things ("REACHED AT DESTINATION HUB"); the
+    seeker needs four. RTO — return to origin — is checked before
+    DELIVERED, because "RTO DELIVERED" means the parcel came back.
+    """
+    text = (raw_status or "").upper()
+    if not text:
+        return None
+    if "RTO" in text or "RETURN" in text:
+        return "returned"
+    if "CANCEL" in text:
+        return "cancelled"
+    if "DELIVERED" in text and "UNDELIVERED" not in text and "OUT FOR" not in text:
+        return "delivered"
+    if any(w in text for w in ("PICKED", "TRANSIT", "SHIPPED", "OUT FOR", "REACHED",
+                               "DISPATCH", "UNDELIVERED", "DELAY", "HUB")):
+        return "shipped"
+    return None

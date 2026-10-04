@@ -6,4 +6,11 @@ urlpatterns = [
     path("", views.catalogue, name="shop-catalogue"),
     path("buy/", views.buy, name="shop-buy"),
     path("orders/", views.orders, name="shop-orders"),
+    path("orders/<uuid:order_id>/dispatch/", views.dispatch, name="shop-dispatch"),
+    path("addresses/", views.addresses, name="shop-addresses"),
+    path("addresses/<uuid:address_id>/", views.address, name="shop-address"),
+    path("pincode/<str:code>/", views.pincode, name="shop-pincode"),
+    path("quote/", views.quote, name="shop-quote"),
+    # Shiprocket's form refuses a URL containing "shiprocket", "sr" or "kr".
+    path("parcel-updates/", views.tracking_hook, name="shop-tracking-hook"),
 ]

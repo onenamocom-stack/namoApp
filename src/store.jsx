@@ -16,7 +16,7 @@ import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 import { createWalletApi } from './lib/wallet.js'
 import { createProfileApi } from './lib/profile.js'
-import { buy as buyFromShop } from './lib/shop.js'
+import { buy as buyFromShop, dispatchOrder } from './lib/shop.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -670,7 +670,7 @@ export function AppProvider({ children }) {
    * the only place a coupon can be applied to a multi-item basket.
    */
   const checkoutCart = useCallback(
-    async (coupon = null) => {
+    async (coupon = null, delivery = null) => {
       if (!cart.length) return null
       if (spendingRef.current) {
         showToast('One payment at a time.')
@@ -682,6 +682,7 @@ export function AppProvider({ children }) {
         const result = await buyFromShop(
           cart.map((l) => ({ product_id: l.id, qty: l.qty })),
           coupon || null,
+          delivery,
         )
         if (!result.ok) {
           showToast(result.reason)
@@ -692,6 +693,9 @@ export function AppProvider({ children }) {
             ? `Ordered · ₹${rupees(result.cashback_paise)} back after delivery`
             : 'Ordered',
         )
+        // Not awaited: the courier booking is the server's job and the
+        // seeker should not wait on Shiprocket to see their order placed.
+        dispatchOrder(result.order_id)
         await refreshWallet(session?.user?.id)
         return result
       } catch (err) {

@@ -641,7 +641,7 @@ create table order_items (
   id                uuid primary key default gen_random_uuid(),
   order_id          uuid not null references orders(id) on delete cascade,
   item_type         text not null check (item_type in
-                     ('session','product','course','event','report','question_pack')),
+                     ('session','product','course','event','report','question_pack','shipping')),
   item_id           uuid not null,
   title             text not null,          -- frozen copy
   qty               smallint not null default 1,
@@ -723,6 +723,18 @@ admin calling it by hand.
 **Per-minute sessions are refused by name**, not charged as though one minute
 were the whole call. The meter is phase 11, where a session with join and leave
 timestamps exists to meter against.
+
+**Delivery — 5 Oct 2026.** Three tables carry a parcel, all Django-owned
+(`apps/shop/models.py`, migrations `shop/0001`, `0003`):
+
+| Table | What it holds |
+|---|---|
+| `shipping_addresses` | A seeker's saved addresses: name, 10-digit phone, line1, line2 (nullable), city, state, pincode. Deleting one rewrites nothing that was sent |
+| `shipping_quotes` | One delivery charge: profile, pincode, weight_grams, amount_paise, courier, etd_days, `expires_at` (30 minutes), `used_at`. Buy burns it with a conditional update, so one quote pays for one order |
+| `shipments` | One per order, keyed **by** `order_id`. `address` is a jsonb **snapshot**, never a link. `status` awaiting_payment → ready → shipped → delivered, or returned / cancelled; `courier`, `awb`, `provider_order_id` (Shiprocket's shipment id), and from `0003` two nullable columns: `tracking_status` (the courier's last words) and `label_url` |
+
+The delivery fee is an `order_items` row with `item_type = 'shipping'`, and
+its `item_id` is the order's own id — the shipment's key.
 
 ### 4.8 Payments
 

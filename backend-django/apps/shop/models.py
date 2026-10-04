@@ -175,6 +175,10 @@ class Shipment(models.Model):
     courier = models.TextField(null=True, blank=True)
     awb = models.TextField(null=True, blank=True)
     provider_order_id = models.TextField(null=True, blank=True)
+    # The courier's own last words ("IN TRANSIT", "OUT FOR DELIVERY"), shown
+    # to the seeker under the four steps; `status` is ours and coarser.
+    tracking_status = models.TextField(null=True, blank=True)
+    label_url = models.TextField(null=True, blank=True)
     shipped_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(default=timezone.now)

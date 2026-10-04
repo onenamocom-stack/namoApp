@@ -74,6 +74,12 @@ export default function Orders() {
                   </span>
                 </li>
               ))}
+              {o.shipment?.shipping_paise > 0 && (
+                <li className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-meta t-sub">{t('ord.fee')}</span>
+                  <span className="flex-none text-meta t-sub tnum">₹{rupees(o.shipment.shipping_paise)}</span>
+                </li>
+              )}
             </ul>
 
             <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-rule pt-3">
@@ -90,11 +96,10 @@ export default function Orders() {
               </p>
             )}
 
-            {/* The tracking number, once there is a parcel to track. */}
-            {o.shipment?.awb && (
-              <p className="mt-2 text-micro t-faint">
-                {o.shipment.courier || t('ord.courier')} · {o.shipment.awb}
-              </p>
+            {/* Where the parcel is (5 Oct 2026): four steps, the courier's
+                own last words under them, and their tracking page. */}
+            {o.shipment && !['cancelled', 'refunded'].includes(o.status) && (
+              <Track shipment={o.shipment} t={t} />
             )}
           </li>
         ))}
@@ -113,6 +118,62 @@ export default function Orders() {
       <div className="h-8" />
     </>
   )
+}
+
+const STEPS = ['ordered', 'packed', 'shipped', 'delivered']
+const REACHED = { awaiting_payment: 0, ready: 1, shipped: 2, delivered: 3 }
+
+function Track({ shipment, t }) {
+  if (shipment.status === 'returned') return null
+  const at = REACHED[shipment.status] ?? 0
+  return (
+    <div className="mt-4">
+      <ol className="flex items-center">
+        {STEPS.map((step, i) => (
+          <li key={step} className={`flex items-center ${i < STEPS.length - 1 ? 'flex-1' : ''}`}>
+            <span className="flex flex-col items-center">
+              <span
+                className={`h-3 w-3 rounded-full ${i <= at ? (at === 3 ? 'bg-ok' : 'bg-gold') : 'bg-rule'}`}
+                aria-hidden="true"
+              />
+            </span>
+            {i < STEPS.length - 1 && (
+              <span className={`mx-1 h-0.5 flex-1 rounded ${i < at ? (at === 3 ? 'bg-ok' : 'bg-gold') : 'bg-rule'}`} />
+            )}
+          </li>
+        ))}
+      </ol>
+      <ol className="mt-1.5 flex justify-between">
+        {STEPS.map((step, i) => (
+          <li key={step} className={`text-micro ${i <= at ? 't-heading font-semibold' : 't-faint'}`}>
+            {t(`ord.step.${step}`)}
+          </li>
+        ))}
+      </ol>
+      {(shipment.awb || shipment.tracking_status) && (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="min-w-0 text-micro t-faint">
+            {shipment.tracking_status && <span className="t-sub">{titleCase(shipment.tracking_status)} · </span>}
+            {shipment.courier || t('ord.courier')} {shipment.awb && <span className="tnum">· {shipment.awb}</span>}
+          </p>
+          {shipment.tracking_url && (
+            <a
+              href={shipment.tracking_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pop-btn-sm flex-none rounded-full bg-gold-fill px-3 text-meta font-semibold text-ink"
+            >
+              {t('ord.track')}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function titleCase(s) {
+  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /** "Paid" is the least interesting true thing about a parcel. */

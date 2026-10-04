@@ -274,6 +274,7 @@ bulk actions. See `04-UI-UX.md`.
 | Namo AI | **Gemini Flash**, behind the API — *reversed from Claude, 21 Sep 2026* | The key cannot ship to a browser and the quota is money. Gemini won on cost at this shape: short answers over structured chart data, ~₹0.02 a question against ~₹0.06. `AI_PROVIDER` selects it, so the reversal costs one env var, not a rewrite |
 | Ephemeris | **`freeastroapi.com`**, Entry tier — *reversed from Swiss Ephemeris as our own service, 1 Sep 2026* | Removes a second language and a second deploy. The "subtly wrong forever" risk does not go away, it moves: see below |
 | Numerology | **Removed 5 Oct 2026** | `apps/astro/numerology.py`, `GET /v1/astro/numerology/` and the `NUMEROLOGY_PROVIDER` / `ASTROLOGY_API_*` settings are deleted; the section below is kept as history |
+| Delivery | **Shiprocket**, Namo's own account — *automatic from 5 Oct 2026* | Rates, courier choice, pickup booking, labels and tracking in one API. An API user (not the login) signs in; the tracking webhook is authenticated by a token in `x-api-key`. Dispatch runs in the API after Buy, not on the outbox job, because that job pins an old image and carries no Shiprocket env |
 | Place search | **`freeastroapi.com`** geo endpoint — *replaced Open-Meteo, 2 Sep 2026* | Same tier, commercially licensed, returns the IANA zone. Open-Meteo's free geocoder was non-commercial and sat on the signup path |
 
 ### Charts come from a third-party API — decided 1 Sep 2026

@@ -95,10 +95,57 @@ export async function fetchProducts() {
  * {ok:false, reason} — a refusal is an answer, not an exception, and
  * `reason` is the server's sentence shown verbatim.
  */
-export function buy(lines, coupon = null) {
+export function buy(lines, coupon = null, delivery = null) {
   return api('/buy/', {
     method: 'POST',
-    body: { lines, ...(coupon ? { coupon } : {}) },
+    body: {
+      lines,
+      ...(coupon ? { coupon } : {}),
+      ...(delivery ? { address_id: delivery.addressId, quote_id: delivery.quoteId } : {}),
+    },
+  })
+}
+
+/* ── delivery (5 Oct 2026) ───────────────────────────────────────────────
+ * The fee is the server's: `quote` returns a quote id and an amount, and
+ * Buy names the id. A doctored amount buys nothing — there is no amount
+ * in the Buy body to doctor. */
+
+/** Saved addresses, newest first. */
+export async function fetchAddresses() {
+  const data = await api('/addresses/')
+  return data?.items ?? []
+}
+
+/** {ok:true, address} or {ok:false, reason}. */
+export function saveAddress(address) {
+  return api('/addresses/', { method: 'POST', body: address })
+}
+
+export function deleteAddress(id) {
+  return api(`/addresses/${id}/`, { method: 'DELETE' })
+}
+
+/** {city, state} or null. Never throws: the seeker can type them. */
+export async function lookupPincode(pin) {
+  try {
+    const data = await api(`/pincode/${pin}/`)
+    return data?.place ?? null
+  } catch {
+    return null
+  }
+}
+
+/** {ok, quote_id, amount_paise, courier, etd_days} or {ok:false, reason}. */
+export function deliveryQuote(addressId, lines) {
+  return api('/quote/', { method: 'POST', body: { address_id: addressId, lines } })
+}
+
+/** Send a paid parcel. Fire-and-forget after Buy; idempotent on the server,
+ *  and the console finishes any that stop half-way. */
+export function dispatchOrder(orderId) {
+  return api(`/orders/${orderId}/dispatch/`, { method: 'POST' }).catch((err) => {
+    console.error('[orders] dispatch:', err?.message)
   })
 }
 

@@ -29,6 +29,8 @@ def configured(settings):
     settings.SHIPROCKET_PASSWORD = "not-a-real-password"
     settings.SHIPROCKET_PICKUP = "Primary"
     cache.clear()
+    # The pickup is read from the account; seeded so no test calls out.
+    cache.set(shiprocket.PICKUP_KEY, {"name": "Primary", "pincode": "110001"}, 3600)
 
 
 def _admin(tier=Tier.FULFILMENT):
@@ -142,35 +144,47 @@ class TestConsoleActions:
             follow=True,
         )
 
-    def test_pushing_records_the_provider_id_and_audits_it(self, shipment):
+    def test_dispatch_pushes_assigns_books_and_audits(self, shipment):
         client, admin_id = _admin()
-        with mock.patch("apps.shop.shiprocket.push", return_value="77123"):
-            self._run(client, "push_to_shiprocket", shipment)
+        with mock.patch("apps.shop.shiprocket.push", return_value="77123"),              mock.patch("apps.shop.shiprocket.assign_awb",
+                        return_value={"awb": "AWB9", "courier": "Delhivery"}),              mock.patch("apps.shop.shiprocket.generate_pickup", return_value=True) as pickup,              mock.patch("apps.shop.shiprocket.label", return_value="https://x.test/l.pdf"):
+            self._run(client, "dispatch_now", shipment)
         shipment.refresh_from_db()
         assert shipment.provider_order_id == "77123"
-        assert shipment.status == Shipment.Status.READY
-        entry = AdminAction.objects.get(action="shipment.pushed")
-        assert entry.detail["provider_order_id"] == "77123"
+        assert (shipment.awb, shipment.courier) == ("AWB9", "Delhivery")
+        assert shipment.status == Shipment.Status.SHIPPED
+        assert shipment.label_url == "https://x.test/l.pdf"
+        pickup.assert_called_once_with("77123")
+        entry = AdminAction.objects.get(action="shipment.dispatch")
+        assert entry.detail["awb"] == "AWB9"
 
     def test_a_shipment_is_never_pushed_twice(self, shipment):
-        """Two clicks would be two real parcels booked against one order."""
+        """Two clicks would be two real parcels booked against one order.
+        A half-dispatched one is finished, not restarted."""
         client, _ = _admin()
         Shipment.objects.filter(pk=shipment.pk).update(provider_order_id="77123")
-        with mock.patch("apps.shop.shiprocket.push") as push:
-            self._run(client, "push_to_shiprocket", shipment)
+        with mock.patch("apps.shop.shiprocket.push") as push,              mock.patch("apps.shop.shiprocket.assign_awb",
+                        return_value={"awb": "AWB9", "courier": "Delhivery"}) as assign,              mock.patch("apps.shop.shiprocket.generate_pickup", return_value=True),              mock.patch("apps.shop.shiprocket.label", return_value="u"):
+            self._run(client, "dispatch_now", shipment)
         push.assert_not_called()
+        assign.assert_called_once_with("77123")
 
     def test_support_cannot_dispatch_a_parcel(self, shipment):
         client, _ = _admin(Tier.SUPPORT)
         with mock.patch("apps.shop.shiprocket.push") as push:
-            self._run(client, "push_to_shiprocket", shipment)
+            self._run(client, "dispatch_now", shipment)
         push.assert_not_called()
 
-    def test_an_awb_needs_a_push_first(self, shipment):
+    def test_a_failed_courier_keeps_the_push(self, shipment):
+        """The push succeeded and got an id; the courier step failed. The id
+        must survive, or the retry pushes a second order."""
         client, _ = _admin()
-        with mock.patch("apps.shop.shiprocket.assign_awb") as assign:
-            self._run(client, "assign_awb", shipment)
-        assign.assert_not_called()
+        with mock.patch("apps.shop.shiprocket.push", return_value="77123"),              mock.patch("apps.shop.shiprocket.assign_awb",
+                        side_effect=shiprocket.ShiprocketError("no courier")):
+            self._run(client, "dispatch_now", shipment)
+        shipment.refresh_from_db()
+        assert shipment.provider_order_id == "77123"
+        assert shipment.awb is None
 
     def test_tracking_only_ever_moves_a_parcel_forward(self, shipment):
         """A blip must not walk a shipment backwards out of a status
@@ -190,7 +204,7 @@ class TestConsoleActions:
         client, _ = _admin()
         with mock.patch("apps.shop.shiprocket.push",
                         side_effect=shiprocket.ShiprocketError("Could not reach Shiprocket")):
-            self._run(client, "push_to_shiprocket", shipment)
+            self._run(client, "dispatch_now", shipment)
         shipment.refresh_from_db()
         assert shipment.provider_order_id is None
         assert shipment.status == Shipment.Status.AWAITING_PAYMENT
@@ -199,5 +213,5 @@ class TestConsoleActions:
         settings.SHIPROCKET_EMAIL = ""
         client, _ = _admin()
         with mock.patch("apps.shop.shiprocket.push") as push:
-            self._run(client, "push_to_shiprocket", shipment)
+            self._run(client, "dispatch_now", shipment)
         push.assert_not_called()

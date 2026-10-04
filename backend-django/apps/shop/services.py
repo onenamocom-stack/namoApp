@@ -54,6 +54,8 @@ from django.db.models import F
 
 from apps.wallet import services as wallet_services
 
+from .delivery import DeliveryRefused, snapshot, use_quote
+from .shiprocket import tracking_url as shiprocket_tracking_url
 from .models import Coupon, Order, OrderItem, Product, Shipment
 
 logger = logging.getLogger("apps.shop")
@@ -177,10 +179,13 @@ class Refused(Exception):
         self.payload = {"ok": False, "reason": reason, **extra}
 
 
-def buy(profile_id, lines, coupon_code=None):
+def buy(profile_id, lines, coupon_code=None, delivery=None):
     """One purchase: stock, money, order — all of it or none of it.
 
-    `lines` is [{product_id, qty}].
+    `lines` is [{product_id, qty}]. `delivery` is {address_id, quote_id};
+    the view requires it (a parcel needs somewhere to go and the fee is
+    part of the total). None writes no shipment — internal callers and the
+    tests of stock and money, which are about neither.
 
     The order of operations is deliberate. **Stock is claimed before the
     wallet is touched**, because an unaffordable order that already took
@@ -203,12 +208,14 @@ def buy(profile_id, lines, coupon_code=None):
 
     try:
         with transaction.atomic():
-            return _purchase(profile_id, wanted, coupon_code)
+            return _purchase(profile_id, wanted, coupon_code, delivery)
     except Refused as refusal:
         return refusal.payload
+    except DeliveryRefused as refusal:
+        return {"ok": False, "reason": refusal.reason}
 
 
-def _purchase(profile_id, wanted, coupon_code):
+def _purchase(profile_id, wanted, coupon_code, delivery=None):
     products = {}
     for product_id, qty in wanted:
         product = Product.objects.filter(pk=product_id, active=True).first()
@@ -254,6 +261,17 @@ def _purchase(profile_id, wanted, coupon_code):
                 raise Refused(refusal)
     total = max(0, subtotal - discount)
 
+    # Delivery is added AFTER the discount: a coupon takes money off the
+    # goods, never off what the courier charges. The quote is burned here,
+    # in the same transaction, so a refused purchase does not spend it.
+    address, shipping = None, 0
+    if delivery is not None:
+        weight = sum((p.weight_grams or 100) * q for p, q in products.values())
+        address, shipping = use_quote(
+            profile_id, delivery["address_id"], delivery["quote_id"], weight
+        )
+        total += shipping
+
     # The wallet takes its own row lock inside this transaction. It is the
     # LAST lock taken, after every product row, which is what keeps the
     # ordering consistent across every purchase in the system.
@@ -271,6 +289,18 @@ def _purchase(profile_id, wanted, coupon_code):
             title=product.name, qty=qty,
             unit_price_paise=product.price_paise,
             tax_rate_bps=product.tax_rate_bps,
+        )
+
+    if address is not None:
+        OrderItem.objects.create(
+            # item_id points at the shipment, whose key IS the order's.
+            order=order, item_type="shipping", item_id=order.id,
+            title="Delivery", qty=1, unit_price_paise=shipping, tax_rate_bps=0,
+        )
+        Shipment.objects.create(
+            order=order, address=snapshot(address), pincode=address.pincode,
+            weight_grams=weight,
+            shipping_paise=shipping, status=Shipment.Status.READY,
         )
 
     if coupon is not None:
@@ -294,6 +324,7 @@ def _purchase(profile_id, wanted, coupon_code):
     return {
         "ok": True, "order_id": str(order.id),
         "subtotal_paise": subtotal, "discount_paise": discount,
+        "shipping_paise": shipping,
         "total_paise": total, "balance_paise": paid.get("balance_paise"),
         # Not a discount and deliberately named so. The client says
         # "₹X back after delivery", never "₹X off".
@@ -379,6 +410,10 @@ def _shipment_row(shipment):
         "status": shipment.status,
         "courier": shipment.courier,
         "awb": shipment.awb,
+        "shipping_paise": shipment.shipping_paise,
+        "tracking_status": shipment.tracking_status,
+        "tracking_url": shiprocket_tracking_url(shipment.awb),
+        "city": (shipment.address or {}).get("city"),
         "shipped_at": shipment.shipped_at.isoformat() if shipment.shipped_at else None,
         "delivered_at": (
             shipment.delivered_at.isoformat() if shipment.delivered_at else None

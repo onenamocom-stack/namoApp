@@ -188,17 +188,17 @@ ASTRO_PROVIDER = os.environ.get("ASTRO_PROVIDER", "mock")
 FREE_ASTRO_API_KEY = os.environ.get("FREE_ASTRO_API_KEY", "")
 ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 
-# --- Shiprocket (stage 5) -------------------------------------------------
-# Abzzo's account, borrowed exactly as Razorpay's was. Namo's parcels show
-# up in their dashboard and the labels carry their pickup address, which is
-# why nothing pushes automatically — see apps/shop/shiprocket.py.
+# --- Shiprocket (stage 5; Namo's own account from 5 Oct 2026) -------------
+# An API user (Shiprocket → Settings → API), not the login: Shiprocket
+# refuses an API user with the same email as the account.
 SHIPROCKET_EMAIL = os.environ.get("SHIPROCKET_EMAIL", "")
 SHIPROCKET_PASSWORD = os.environ.get("SHIPROCKET_PASSWORD", "")
-# The named pickup address on that account. Wrong here means a courier at
-# the wrong door — and as of 22 Sep the borrowed account has NO pickup
-# address at all (`shipping_address: null`), so "Primary" names nothing
-# and every push is refused by their validation. See HANDOFF §23.
-SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "Primary")
+# The pickup address's nickname on the account. Blank uses the account's
+# primary address — see shiprocket.pickup().
+SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "")
+# Shiprocket sends this back in `x-api-key` on every tracking webhook; a
+# request without it is not Shiprocket.
+SHIPROCKET_WEBHOOK_TOKEN = os.environ.get("SHIPROCKET_WEBHOOK_TOKEN", "")
 
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
 # One image, two Cloud Run services. The public API serves no console URL

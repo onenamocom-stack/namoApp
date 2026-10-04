@@ -281,9 +281,12 @@ Physical remedial goods: gemstones, maalas, rudraksha, remedies.
 **₹640 to ₹26,400**, with strike-through MRPs from ₹1,200 to ₹24,000 driving a
 computed discount badge. Two products are sold out.
 
-Physical goods bring stock, shipping, returns and courier tracking — none of
-which the current UI has. This is the most operationally expensive line and it is
-sequenced late.
+**Delivery — decided 5 Oct 2026.** Prepaid only: the wallet pays for the goods
+and the delivery together, and no courier collects cash. The delivery charge is
+Shiprocket's own rate for the seeker's pincode and the parcel's weight, rounded
+up to the whole rupee, shown before Pay. There is no free-delivery threshold.
+A coupon comes off the goods, never off delivery, and an astrologer's 10%
+cashback is paid on the goods alone. Returns are handled by hand for now.
 
 ### 4.7 Academy
 
