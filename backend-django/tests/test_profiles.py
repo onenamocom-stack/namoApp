@@ -153,6 +153,8 @@ class TestMeRead:
             "gender",
             # 3 Oct: the Influencer tab is drawn off it.
             "influencer",
+            # 4 Oct: the line under the picture.
+            "bio",
         }
         assert body["id"] == TEST_USER
         assert body["phone"] == "+919999900001"
@@ -388,7 +390,9 @@ class TestPublicRead:
         response = api_client.get(f"/v1/profiles/{TEST_USER}/")
         assert response.status_code == 200
         body = response.json()
-        assert set(body) == {"id", "name", "avatar_url"}  # nothing else, ever
+        # The bio joined on 4 Oct 2026: written to be read by others. Nothing
+        # private ever does — no birth details, phone or email.
+        assert set(body) == {"id", "name", "avatar_url", "bio"}
         assert body["id"] == TEST_USER
         assert body["name"] == "Tara Verma"
         assert body["avatar_url"] == "https://media.example/faces/tara.jpg?v=1"
@@ -667,3 +671,19 @@ class TestTheWalletComesWithTheProfile:
         again, created = services.ensure_profile(TEST_USER, phone="+919999900042")
         assert created is False
         assert wallet_services.balance_of(again.id) == 5_000
+
+
+@pytest.mark.django_db
+class TestBio:
+    """4 Oct 2026: a line under the picture, the caller's to write."""
+
+    def test_set_and_cleared(self, authed_client, clean_profiles):
+        full_profile()
+        body = authed_client.patch(ME, {"bio": "  Seeking clarity  "}, format="json").json()
+        assert body["bio"] == "Seeking clarity"
+        assert authed_client.patch(ME, {"bio": ""}, format="json").json()["bio"] == ""
+
+    def test_too_long_is_refused(self, authed_client, clean_profiles):
+        full_profile()
+        response = authed_client.patch(ME, {"bio": "x" * 151}, format="json")
+        assert response.status_code == 400

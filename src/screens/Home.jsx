@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed, products } from '../data/mock.js'
 import { fetchFeed, fetchReposts, productHref } from '../lib/content.js'
@@ -12,7 +12,6 @@ import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
-import { SignPicker } from './Horoscope.jsx'
 
 /**
  * Where an author's name links to.
@@ -318,11 +317,20 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
  * is left out for items that never had one. Reshare needs `authorId` and is
  * hidden on your own post — the server refuses it there anyway.
  */
-function ActionRow({ id, like = true, onComment, onShare, authorId }) {
+/** A count beside its icon, Instagram's way (4 Oct 2026; the numbers were a
+ *  line of text under the row). Nothing at zero. */
+function Count({ n }) {
+  return n > 0 ? <span className="-ml-2 text-meta font-semibold tnum text-t1">{n.toLocaleString('en-IN')}</span> : null
+}
+
+function ActionRow({ id, like = true, onComment, onShare, authorId, likes = null, comments = 0, reposts = 0 }) {
   const { hasFlag, toggleFlag, session, t } = useStore()
   const me = session?.user?.id
   const canReshare =
     authorId && me && String(authorId).replace(/-/g, '') !== String(me).replace(/-/g, '')
+  // The view's aggregate plus your own un-saved tap, so it moves the instant
+  // you press and still agrees with the database on reload.
+  const likeCount = likes == null ? 0 : likes + (hasFlag(`like:${id}`) ? 1 : 0)
   return (
     <div className="flex items-center gap-4 px-3 pt-2.5">
       {like && (
@@ -335,7 +343,9 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
           onClick={() => toggleFlag(`like:${id}`)}
         />
       )}
+      {like && <Count n={likeCount} />}
       {onComment && <ActIcon icon="chat" label="Reply" onClick={onComment} />}
+      {onComment && <Count n={comments} />}
       {canReshare && (
         <ActIcon
           icon="repost"
@@ -351,6 +361,7 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
           }
         />
       )}
+      {canReshare && <Count n={reposts} />}
       {onShare && <ActIcon icon="share" label="Share" onClick={onShare} />}
       <span className="flex-1" />
       <ActIcon
@@ -375,22 +386,18 @@ function ActionRow({ id, like = true, onComment, onShare, authorId }) {
  * "more". The count is the view's aggregate plus your own un-saved tap, so it
  * moves the instant you press and still agrees with the database on reload.
  */
-function Caption({ id, likes, views, reposts = 0, name, to, text, comments = 0, onComments }) {
-  const { hasFlag, t } = useStore()
+function Caption({ views, name, to, text, comments = 0, onComments }) {
+  const { t } = useStore()
   const [open, setOpen] = useState(false)
-  const count = likes == null ? null : likes + (hasFlag(`like:${id}`) ? 1 : 0)
   const long = (text || '').length > 110
   /* Views: shown once there are any. The API counts one per signed-in
      viewer; before it was deployed every reel read 0, and "0 views" on
      every reel would have been a statement about the counter, not the
      reel. */
+  /* Likes, comments and reshares sit beside their icons now (ActionRow);
+     only views stay here, which have no icon. */
   const counts = [
-    count > 0 && t(count === 1 ? 'home.like1' : 'home.likes', { n: count.toLocaleString('en-IN') }),
     views > 0 && t(views === 1 ? 'home.view1' : 'home.views', { n: views.toLocaleString('en-IN') }),
-    // The server's number as it stands — no optimistic +1, which would count
-    // your own reshare twice once the server's count already includes it.
-    reposts > 0 &&
-      t(reposts === 1 ? 'home.reshare1' : 'home.reshares', { n: reposts.toLocaleString('en-IN') }),
   ].filter(Boolean)
 
   return (
@@ -550,6 +557,9 @@ function PostCard({ post: p, resharedBy }) {
       <ActionRow
         id={p.id}
         authorId={p.authorId}
+        likes={p.likes}
+        comments={comments}
+        reposts={p.reposts}
         onComment={() => setCommenting(true)}
         // A post has no page of its own, so Share sends the author's —
         // until 30 Sep this toasted "Note copied" and copied nothing.
@@ -559,9 +569,6 @@ function PostCard({ post: p, resharedBy }) {
         }}
       />
       <Caption
-        id={p.id}
-        likes={p.likes}
-        reposts={p.reposts}
         name={p.consultant}
         to={authorHref(p)}
         text={tile ? null : text}
@@ -581,23 +588,50 @@ function PostCard({ post: p, resharedBy }) {
   )
 }
 
+/**
+ * True once `ref` comes within `margin` of the screen, and stays true. A reel
+ * card loads its video only then (4 Oct 2026): every card used to request
+ * its video's first frame on page load, so twenty slow requests raced the
+ * one on screen.
+ */
+function useNearScreen(ref, margin = '800px') {
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || near) return undefined
+    if (!('IntersectionObserver' in window)) {
+      setNear(true)
+      return undefined
+    }
+    const io = new IntersectionObserver(
+      (entries) => entries.some((e) => e.isIntersecting) && setNear(true),
+      { rootMargin: margin },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref, near, margin])
+  return near
+}
+
 function ReelCard({ reel: r, resharedBy }) {
   const { showToast } = useStore()
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(r.comments ?? 0)
   const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
+  const frame = useRef(null)
+  const near = useNearScreen(frame)
 
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
       <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} />
 
-      <Link to={`/reels/${r.id}`} className="group relative block">
+      <Link ref={frame} to={`/reels/${r.id}`} className="group relative block">
         <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
           {/* A video's cover is its own frame at half a second: the `#t=` fragment
               seeks there and `preload="metadata"` fetches just enough to paint it.
               ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
-          {isVideo && (
+          {isVideo && near && (
             <video
               src={`${r.mediaUrl}#t=0.5`}
               preload="metadata"
@@ -613,11 +647,8 @@ function ReelCard({ reel: r, resharedBy }) {
           <span className="absolute right-3 top-3 text-white drop-shadow">
             <Icon name="play" size={22} filled />
           </span>
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-transform duration-200 group-hover:scale-105">
-              <Icon name="play" size={28} filled />
-            </span>
-          </span>
+          {/* The big play circle in the middle was removed on 4 Oct 2026
+              (owner's call); the corner glyph still says it is a reel. */}
         </Plate>
       </Link>
       <ProductStrip tagged={r.products} shopRef={r.shopRef} />
@@ -627,6 +658,9 @@ function ReelCard({ reel: r, resharedBy }) {
       <ActionRow
         id={r.id}
         authorId={r.authorId}
+        likes={r.likes}
+        comments={comments}
+        reposts={r.reposts}
         onComment={() => setCommenting(true)}
         onShare={async () => {
           const said = await shareLink(`/reels/${r.id}`, { title: r.consultant })
@@ -634,10 +668,7 @@ function ReelCard({ reel: r, resharedBy }) {
         }}
       />
       <Caption
-        id={r.id}
-        likes={r.likes}
         views={r.views}
-        reposts={r.reposts}
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
@@ -669,20 +700,20 @@ function ReelCard({ reel: r, resharedBy }) {
 function ReadingCard() {
   const { session, sessionReady, t } = useStore()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
-  const [picked, setPicked] = useState(null)
-  const sign = picked ?? mine.rashi ?? 'Aries'
+  /* Only your own sign since 4 Oct 2026 (owner's call): the twelve-sign
+     picker is gone from Home; the other signs are still on /horoscope. */
+  const sign = mine.rashi
   const reading = useAstro('rashifal', {
-    sign,
-    ready: Boolean(sessionReady && (!mine.loading || picked)),
+    sign: sign ?? 'Aries',
+    ready: Boolean(sessionReady && !mine.loading && sign),
   })
   const day = readingFrom(reading.payload, 'today', null)
 
   return (
     <article className="pop-card p-4">
-      {/* No heading and no "Read all" since 30 Sep (owner's call) — the tab
-          is already called आज का पंचांग. */}
-      <SignPicker value={sign} onChange={setPicked} />
+      <Kicker>{t('home.yourRashifal')}</Kicker>
       <div className="pop-inset mt-3 p-4">
+        {!sign && !mine.loading && <p className="text-meta t-body">{t('a.addBirth')}</p>}
         {reading.loading && <p className="text-meta t-faint">{t('home.readingSky')}</p>}
         {reading.refusal && <p className="text-meta t-body">{reading.refusal.reason}</p>}
 
@@ -760,9 +791,9 @@ function PanchangCard() {
               so a reader in Chennai is looking at a sunrise about forty minutes
               from their own. Saying so is the difference between a simplifying
               choice and a quiet inaccuracy. */}
-          {got.city && (
-            <p className="mt-1 caps-sm t-faint">{t('home.computedAt', { city: got.city })}</p>
-          )}
+          {/* "Computed at Ujjain" was a line here until 4 Oct 2026 (owner's
+              call). The almanac is still Ujjain's; the Windows heading below
+              still names it. */}
 
           <dl className="mt-4 grid grid-cols-3 gap-y-4">
             {[

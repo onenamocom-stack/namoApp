@@ -86,10 +86,14 @@ def _daily_free(row=None):
     return max(base, row.bonus_daily)
 
 
-# Where a compressed testing window counts from. Any fixed recent date
-# works; this one keeps the bucket numbers small enough that the dates
-# they map to stay inside `date`'s range for years.
+# Where a compressed testing window counts from.
 _WINDOW_EPOCH = datetime(2026, 9, 1, tzinfo=UTC)
+# Window numbers wrap at this many, so the date they map to stays inside
+# `date`'s range. Without it a 1-second window passed year 9999 about 34
+# days after the epoch and every test using one failed (found 4 Oct 2026).
+# The wrap is a one-step jump back once per 2M windows — 23 days at 1s —
+# which only the testing knob can ever see.
+_WINDOW_WRAP = 2_000_000
 
 
 def _ist_today():
@@ -119,7 +123,7 @@ def _ist_today():
     if window > 0:
         elapsed = (timezone.now() - _WINDOW_EPOCH).total_seconds()
         return _WINDOW_EPOCH.date() + timezone.timedelta(
-            days=int(elapsed // window)
+            days=int(elapsed // window) % _WINDOW_WRAP
         )
     return (timezone.now() + timezone.timedelta(hours=5, minutes=30)).date()
 

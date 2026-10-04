@@ -6,6 +6,7 @@ import Composer from '../components/Composer.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
 import { Loader, Orbit } from '../components/Cosmos.jsx'
 import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
+import AvatarCropper from '../components/AvatarCropper.jsx'
 import { signOut } from '../lib/signout.js'
 import { fetchByAuthor, fetchOne, followCounts } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
@@ -180,6 +181,7 @@ function Hero({ posts, counts, sessionReady, onNewPost }) {
       </div>
 
       <h1 className="mt-4 font-display text-lead leading-tight t-heading">{me.name}</h1>
+      <Bio />
       {/* Each sign in its own colour: the sun saffron, the moon blue, the
           rising sign purple. Empty while the chart is in flight, and two of
           the three when the birth time is unknown. */}
@@ -235,11 +237,17 @@ function AvatarPicker() {
   const { me, showToast, refreshProfile, session, t } = useStore()
   const input = useRef(null)
   const [busy, setBusy] = useState(false)
+  // A chosen file waits here while you place and zoom it (AvatarCropper).
+  const [chosen, setChosen] = useState(null)
 
-  const pick = async (e) => {
+  const pick = (e) => {
     const file = e.target.files?.[0]
     e.target.value = '' // so re-picking the same file still fires
-    if (!file) return
+    if (file) setChosen(file)
+  }
+
+  const upload = async (file) => {
+    setChosen(null)
     setBusy(true)
     try {
       await uploadAvatar(file)
@@ -274,7 +282,76 @@ function AvatarPicker() {
         </span>
       </button>
       <input ref={input} type="file" accept="image/*" onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
+      {chosen && <AvatarCropper file={chosen} onCancel={() => setChosen(null)} onDone={upload} />}
     </>
+  )
+}
+
+/**
+ * The line under your name (4 Oct 2026, owner's request). "Available" until
+ * you write one — WhatsApp's default, and it reads like a status rather
+ * than an empty field. Tap to edit; 150 characters.
+ */
+function Bio() {
+  const { profile, saveProfile, refreshProfile, session, showToast, t } = useStore()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const text = profile?.bio?.trim() || t('prof.bioDefault')
+
+  async function save() {
+    setSaving(true)
+    try {
+      await saveProfile({ bio: draft.trim() })
+      await refreshProfile(session?.user?.id)
+      setEditing(false)
+    } catch (err) {
+      showToast(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-2">
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, 150))}
+          rows={2}
+          placeholder={t('prof.bioDefault')}
+          className="w-full resize-none rounded-xl border border-gold-fill bg-white px-3 py-2 text-meta text-t1 outline-none"
+        />
+        <div className="mt-1.5 flex items-center justify-between">
+          <span className="text-[11px] tnum t-faint">{draft.length}/150</span>
+          <span className="flex gap-3">
+            <button type="button" onClick={() => setEditing(false)} className="text-meta t-faint">
+              {t('a.cancel')}
+            </button>
+            <button type="button" onClick={save} disabled={saving} className="text-meta font-semibold text-gold">
+              {saving ? t('d.saving') : t('prof.bioSave')}
+            </button>
+          </span>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setDraft(profile?.bio ?? '')
+        setEditing(true)
+      }}
+      className="mt-1 flex items-center gap-1.5 text-left text-meta t-body"
+    >
+      <span className={profile?.bio?.trim() ? '' : 'inline-flex items-center gap-1.5'}>
+        {!profile?.bio?.trim() && <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />}
+        {text}
+      </span>
+      <span aria-hidden="true" className="text-[12px] t-faint">✎</span>
+    </button>
   )
 }
 

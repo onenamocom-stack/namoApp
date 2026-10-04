@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import { useGoBack } from '../components/Chrome.jsx'
+import { BackButton, useGoBack } from '../components/Chrome.jsx'
 import ReelFeed from '../components/ReelFeed.jsx'
 import { isPro } from '../side.js'
 import { useStore } from '../store.jsx'
@@ -27,14 +27,7 @@ export default function ReelViewer() {
     <div className="reel-stage relative h-full bg-ink">
       {(!isPro || authorId) && <ReelFeed startId={id} syncUrl authorId={authorId} />}
 
-      <button
-        type="button"
-        onClick={goBack}
-        aria-label="Back"
-        className="absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-transform active:scale-90"
-      >
-        <span className="text-body leading-none">←</span>
-      </button>
+      <BackButton dark onClick={goBack} className="absolute left-3 top-3 z-20" />
 
       <span className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/90">
         Reels

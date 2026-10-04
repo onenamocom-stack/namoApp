@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useGoBack } from '../../components/Chrome.jsx'
+import { BackButton, useGoBack } from '../../components/Chrome.jsx'
 import CodeField from '../../components/CodeField.jsx'
 import PlaceField, { placeLabel } from '../../components/PlaceField.jsx'
 import {
@@ -170,9 +170,7 @@ export default function AboutYou() {
   return (
     <div className="flex min-h-full flex-col px-6 pb-8 pt-6">
       {edit && (
-        <button type="button" aria-label="Back" onClick={goBack} className="-ml-2 self-start p-2 text-lead text-t2">
-          ←
-        </button>
+        <BackButton onClick={goBack} className="self-start" />
       )}
 
       <div className={`${edit ? 'mt-2' : 'mt-6'} animate-fade-rise`}>

@@ -539,6 +539,7 @@ separate application.
 | 7 | **Reviews, with admin audit and consultant analytics** | Reviews tied to completed bookings carry a verified badge |
 | 8 | **Search users and consultants, spend history, analytics** | The most privacy-sensitive capability. Every lookup is audited |
 | 9 | **Detect consultants gaming calls and messages** | Flags for human review — never automatic penalties |
+| 11 | **Bhakti catalogue** — built 4 Oct 2026 | Every status, wallpaper, tune, bhajan and mantra: replace the picture or audio, edit the caption and the artist · licence line, reorder, hide. Fulfilment tier and superadmin |
 | 10 | **Banners and festive themes** — built 4 Oct 2026 | Owner's request: change the app's look without a release. **Banners** for the promo rails on Consult, Shop and Bhakti — text in English and Hindi, two gradient colours or a picture, a tap target (an app path or an https site), an order, a start and an end; the console's banners come first and can hide the built-in ones. **Themes** — an accent colour (replaces the saffron), a button colour (replaces the green) and an optional greeting strip, for a date window; the newest live one wins. Fulfilment tier and superadmin |
 
 ### 6.1 Who may post what, and what a report does — 23 Sep 2026

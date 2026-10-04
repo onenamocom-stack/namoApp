@@ -153,6 +153,28 @@ const PATHS = {
       <path d="M18.6 16.4l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7.7-2.2Z" />
     </>
   ),
+  // Bhakti's share screen (4 Oct 2026): a gallery, a camera, a person.
+  image: (
+    <>
+      <rect x="3.8" y="4.8" width="16.4" height="14.4" rx="2.6" />
+      <circle cx="9" cy="10" r="1.7" />
+      <path d="m4.4 17.4 5-4.6 3.4 3 2.6-2.2 4.4 3.8" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4.2 8.4a1.8 1.8 0 0 1 1.8-1.8h2.2l1.4-2h4.8l1.4 2H18a1.8 1.8 0 0 1 1.8 1.8v9a1.8 1.8 0 0 1-1.8 1.8H6a1.8 1.8 0 0 1-1.8-1.8Z" />
+      <circle cx="12" cy="12.6" r="3.3" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8.6" r="3.8" />
+      <path d="M4.8 19.6a7.2 7.2 0 0 1 14.4 0" />
+    </>
+  ),
+  // A chevron: every back button (4 Oct 2026).
+  back: <path d="M14.6 5.4 8 12l6.6 6.6" />,
   // Nine squares: a profile's posts grid (4 Oct 2026).
   grid: (
     <>

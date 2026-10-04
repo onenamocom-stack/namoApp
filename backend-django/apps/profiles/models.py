@@ -99,6 +99,12 @@ class Profile(models.Model):
     # and nothing else. Their code is their ordinary N invite code.
     influencer = models.BooleanField(default=False)
 
+    # A line under the picture on the profile (4 Oct 2026). Nullable, not a
+    # Django default: `handle_new_user` inserts only (id, phone, name), and
+    # a NOT NULL column without a database default breaks every sign-up
+    # (backend/schema/032). Empty reads as "Available" in the app.
+    bio = models.CharField(max_length=150, null=True, blank=True)
+
     # Set when an admin blocks this person after reviewing reports. A
     # timestamp rather than a boolean because "when" is the first question
     # asked in an appeal, and a boolean cannot answer it. Null is the

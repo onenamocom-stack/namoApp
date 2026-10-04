@@ -1,4 +1,4 @@
-import { useGoBack } from '../../components/Chrome.jsx'
+import { BackButton, useGoBack } from '../../components/Chrome.jsx'
 import { Button } from '../../components/Primitives.jsx'
 
 /**
@@ -22,14 +22,7 @@ export default function QuestionFrame({
 
   return (
     <div className="flex min-h-full flex-col px-6 pb-10 pt-6">
-      <button
-        type="button"
-        aria-label="Back"
-        onClick={goBack}
-        className="self-start text-body text-t3"
-      >
-        ←
-      </button>
+      <BackButton onClick={goBack} className="self-start" />
 
       <div className="mt-16 animate-fade-rise">
         <h1 className="mx-auto max-w-[14ch] text-center text-display font-semibold">{question}</h1>

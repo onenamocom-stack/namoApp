@@ -2,7 +2,8 @@ import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
-import { Sheet, TabHeader } from '../components/Chrome.jsx'
+import { BackButton, TabHeader } from '../components/Chrome.jsx'
+import { createPortal } from 'react-dom'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard } from '../components/Pop.jsx'
@@ -53,17 +54,19 @@ import { rupees, useStore } from '../store.jsx'
  */
 
 const KINDS = [
-  { key: 'status', label: 'Status', icon: 'share', help: 'Pick a picture, then share it to WhatsApp → Status.' },
-  { key: 'wallpaper', label: 'Wallpapers', icon: 'eye', help: 'Save it, then set it from your photo gallery.' },
-  { key: 'tune', label: 'Tunes', icon: 'bell', help: 'Save it, then pick it in your phone’s sound settings.' },
-  { key: 'bhajan', label: 'Bhajans', icon: 'pooja', help: 'Saves as an audio file you can play anywhere.' },
-  { key: 'mantra', label: 'Mantras', icon: 'sound', help: 'Tap play, say how many times, and it repeats that many.' },
+  /* Each shelf has its own colour since 4 Oct 2026 (owner's call): a row of
+     six identical peach circles read as one control, not six places. */
+  { key: 'status', label: 'Status', icon: 'share', hue: '#f5782c', help: 'Pick a picture, then share it to WhatsApp → Status.' },
+  { key: 'wallpaper', label: 'Wallpapers', icon: 'image', hue: '#8e44ad', help: 'Save it, then set it from your photo gallery.' },
+  { key: 'tune', label: 'Tunes', icon: 'bell', hue: '#2f7fd1', help: 'Save it, then pick it in your phone’s sound settings.' },
+  { key: 'bhajan', label: 'Bhajans', icon: 'sound', hue: '#c2185b', help: 'Saves as an audio file you can play anywhere.' },
+  { key: 'mantra', label: 'Mantras', icon: 'pooja', hue: '#1e9e5a', help: 'Tap play, say how many times, and it repeats that many.' },
   /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
      screen. It sits in this row anyway (25 Sep 2026): the row answers "pick
      a devotional thing to do", and the shrine is the one people came for.
      It was reachable only from Home's third tab, which nobody reads as
      "the mandir is over there". */
-  { key: 'darshan', label: 'Darshan', icon: 'pooja', to: '/darshan' },
+  { key: 'darshan', label: 'Darshan', icon: 'pooja', hue: '#c99a1a', to: '/darshan' },
 ]
 
 const isAudio = (kind) => kind === 'tune' || kind === 'bhajan' || kind === 'mantra'
@@ -108,6 +111,23 @@ const BANNERS = [
     kind: 'wallpaper',
   },
 ]
+
+/** A shelf tile in its own colour: a soft wash with the icon in the colour,
+ *  or, when selected, the colour itself with a white icon and a halo. */
+function tileStyle(hue, on) {
+  return on
+    ? {
+        background: `linear-gradient(160deg, color-mix(in srgb, ${hue} 70%, white), ${hue})`,
+        color: '#fff',
+        borderColor: hue,
+        boxShadow: `0 0 0 3px color-mix(in srgb, ${hue} 22%, transparent), 0 8px 18px -8px ${hue}`,
+      }
+    : {
+        background: `linear-gradient(145deg, #ffffff, color-mix(in srgb, ${hue} 14%, white))`,
+        color: hue,
+        borderColor: `color-mix(in srgb, ${hue} 25%, white)`,
+      }
+}
 
 export default function Bhakti() {
   const { showToast, lang } = useStore()
@@ -201,7 +221,7 @@ export default function Bhakti() {
                   and one of them belongs in browser history. */}
               {k.to ? (
                 <Link to={k.to} className="tile w-[72px]">
-                  <span className="tile-face">
+                  <span className="tile-face" style={tileStyle(k.hue, false)}>
                     <Icon name={k.icon} size={22} />
                   </span>
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
@@ -213,8 +233,8 @@ export default function Bhakti() {
                   aria-pressed={kind === k.key}
                   className="tile w-[72px]"
                 >
-                  <span className={`tile-face ${kind === k.key ? 'tile-face-on' : ''}`}>
-                    <Icon name={k.icon} size={22} />
+                  <span className="tile-face" style={tileStyle(k.hue, kind === k.key)}>
+                    <Icon name={k.icon} size={22} weight={kind === k.key ? 2.1 : 1.8} />
                   </span>
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
                 </button>
@@ -712,76 +732,76 @@ function ShareSheet({ asset, onClose }) {
     }
   }
 
-  return (
-    <Sheet open={!!asset} onClose={onClose} title="Share to status">
-      <p className="text-meta t-body">
-        We hand the picture to your share sheet — you pick WhatsApp, then Status. Your name and
-        today’s date are printed on it, with the Namo mark in the corner.
-      </p>
+  /* Full screen since 4 Oct 2026 (owner's call): as a bottom sheet the
+     picture pushed the Share button below the fold. The preview is sized to
+     the screen, the three picture options are one row of icon buttons, and
+     Share is pinned to the bottom. The explainer line above the picture is
+     gone too. */
+  if (!asset) return null
+  const options = [
+    { key: 'gallery', icon: 'image', label: 'Gallery', onClick: () => gallery.current?.click() },
+    { key: 'camera', icon: 'camera', label: 'Camera', onClick: () => camera.current?.click() },
+    ...(me.avatarUrl ? [{ key: 'profile', icon: 'user', label: 'Profile photo', onClick: () => attach(me.avatarUrl) }] : []),
+    ...(photo ? [{ key: 'remove', icon: 'close', label: 'Remove', onClick: () => attach(null) }] : []),
+  ]
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] animate-fade flex-col bg-[#140c08] text-white">
+      <div className="flex flex-none items-center gap-3 px-4 pb-3 pt-4">
+        <BackButton dark onClick={onClose} label="Close" />
+        <p className="flex-1 text-center text-meta font-semibold">Share to status</p>
+        <span className="w-9" aria-hidden="true" />
+      </div>
 
       {/* What the export will look like, in the order it is drawn: the
-          artwork, your face bottom left, the mark bottom right. Small, but
-          it is the only way to know what you are about to send. */}
-      {asset && (
-        <div className="relative mt-5 overflow-hidden rounded-2xl">
-          <img src={asset.url} alt={asset.title} className="aspect-[9/16] w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-ink/80 to-transparent p-3">
+          artwork, your face bottom left, the mark bottom right. */}
+      <div className="flex min-h-0 flex-1 items-center justify-center px-6">
+        <div className="relative aspect-[9/16] h-full max-h-full overflow-hidden rounded-2xl shadow-2xl">
+          <img src={asset.url} alt={asset.title} className="h-full w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent p-3">
             {photo ? (
-              <img
-                src={photo}
-                alt="Your picture"
-                className="h-12 w-12 flex-none rounded-full border-2 border-gold object-cover"
-              />
+              <img src={photo} alt="Your picture" className="h-11 w-11 flex-none rounded-full border-2 border-[#ffa05e] object-cover" />
             ) : (
-              <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white/70">
-                <Icon name="plus" size={18} />
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white/70">
+                <Icon name="plus" size={16} />
               </span>
             )}
             <span className="min-w-0 flex-1">
-              {photo && me.name && (
-                <span className="block truncate text-meta font-semibold text-white">{me.name}</span>
-              )}
-              <span className="block truncate caps-sm text-white/75">
-                {longDate(istDate())}
-              </span>
+              {photo && me.name && <span className="block truncate text-meta font-semibold">{me.name}</span>}
+              <span className="block truncate caps-sm text-white/75">{longDate(istDate())}</span>
             </span>
-            <img
-              src={`${import.meta.env.BASE_URL}namo-logo.png`}
-              alt=""
-              className="h-7 flex-none opacity-90"
-            />
+            <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="" className="h-5 flex-none opacity-90 invert" />
           </div>
         </div>
-      )}
-
-      <p className="mt-4 caps-sm t-faint">
-        {photo
-          ? 'Your picture is on it, and stays until you change it.'
-          : 'A picture is optional.'}
-      </p>
-
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <PopButton full={false} disabled={working} onClick={() => gallery.current?.click()}>
-          From gallery
-        </PopButton>
-        <PopButton full={false} disabled={working} onClick={() => camera.current?.click()}>
-          Take one
-        </PopButton>
-        {me.avatarUrl && (
-          <PopButton full={false} disabled={working} onClick={() => attach(me.avatarUrl)}>
-            Profile picture
-          </PopButton>
-        )}
-        {photo && (
-          <PopButton full={false} disabled={working} onClick={() => attach(null)}>
-            Remove picture
-          </PopButton>
-        )}
       </div>
 
-      <PopButton variant="gold" className="mt-3" disabled={working} onClick={share}>
-        {working ? 'Preparing…' : 'Share this'}
-      </PopButton>
+      <div className="flex-none px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4">
+        <p className="text-center text-[12px] text-white/60">
+          {photo ? 'Your picture is on it, and stays until you change it.' : 'Add your picture, if you like.'}
+        </p>
+        <div className="mt-3 flex justify-center gap-3">
+          {options.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              disabled={working}
+              onClick={o.onClick}
+              className="flex w-[76px] flex-col items-center gap-1.5 rounded-2xl bg-white/10 px-2 py-3 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/15 active:scale-95 disabled:opacity-40"
+            >
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white"
+                style={{ background: o.key === 'remove' ? 'rgba(255,255,255,0.15)' : 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))' }}
+              >
+                <Icon name={o.icon} size={19} weight={2} />
+              </span>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <PopButton variant="gold" className="mt-4" disabled={working} onClick={share}>
+          {working ? 'Preparing…' : 'Share this'}
+        </PopButton>
+      </div>
 
       <input
         ref={gallery}
@@ -802,6 +822,7 @@ function ShareSheet({ asset, onClose }) {
         aria-hidden="true"
         tabIndex={-1}
       />
-    </Sheet>
+    </div>,
+    document.body,
   )
 }

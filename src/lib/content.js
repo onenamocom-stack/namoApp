@@ -167,11 +167,47 @@ export function ago(iso) {
  * shuffle is the same Fisher–Yates deal of the deck it always was — the
  * server orders, the client shuffles.
  */
+/* Feeds read in the last few minutes, kept in memory (4 Oct 2026). Opening a
+   reel from Home used to fetch the whole feed again (~0.85s) for rows Home
+   had just loaded. An entry that came back shorter than its limit is the
+   COMPLETE list for its kinds, so any narrower request is answered from it
+   exactly; a full one could be missing rows, so it only answers itself. */
+const FEED_TTL = 3 * 60 * 1000
+const feedCache = new Map()
+
+function cachedFeed(kinds, limit) {
+  const now = Date.now()
+  for (const [key, entry] of feedCache) {
+    if (now - entry.at > FEED_TTL) {
+      feedCache.delete(key)
+      continue
+    }
+    const exact = entry.kinds.join(',') === (kinds ?? []).join(',') && entry.limit >= limit
+    const covers = entry.complete && (!entry.kinds.length || (kinds ?? []).every((k) => entry.kinds.includes(k)))
+    if (exact || (covers && kinds?.length)) {
+      return entry.rows.then((rows) => (kinds?.length ? rows.filter((r) => kinds.includes(r.kind)) : rows).slice(0, limit))
+    }
+  }
+  return null
+}
+
 export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
-  let path = `/content/feed/?limit=${limit}`
-  if (kinds?.length) path += `&kinds=${kinds.join(',')}`
-  const body = await api(path)
-  const rows = (body?.results ?? []).map(shape)
+  let rows = await cachedFeed(kinds, limit)
+  if (!rows) {
+    let path = `/content/feed/?limit=${limit}`
+    if (kinds?.length) path += `&kinds=${kinds.join(',')}`
+    const entry = {
+      at: Date.now(),
+      kinds: [...(kinds ?? [])],
+      limit,
+      complete: false,
+      rows: api(path).then((body) => (body?.results ?? []).map(shape)),
+    }
+    entry.rows.then((r) => (entry.complete = r.length < limit)).catch(() => feedCache.delete(path))
+    feedCache.set(path, entry)
+    rows = await entry.rows
+  }
+  rows = [...rows]
   if (shuffle) {
     for (let i = rows.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
@@ -319,6 +355,7 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
     },
     token,
   })
+  feedCache.clear() // the new post must show at once
   return data.id
 }
 
@@ -367,6 +404,7 @@ export async function uploadMedia(file) {
 
 /** Soft delete. Never a DELETE — a removed post in a dispute is evidence. */
 export async function remove(contentId) {
+  feedCache.clear()
   const token = await accessToken()
   if (!token) throw new Error('Sign in to continue')
   await api(`/content/${contentId}/remove/`, { method: 'POST', token })

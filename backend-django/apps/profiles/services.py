@@ -65,6 +65,7 @@ CLIENT_WRITABLE = (
     "birth_lon",
     "birth_zone",
     "gender",
+    "bio",
 )
 
 EMAIL_PATTERN = EMAIL_SHAPE
@@ -130,6 +131,7 @@ def serialize_profile(profile):
         # publish.
         "video_enabled": profile.video_enabled,
         "influencer": profile.influencer,
+        "bio": profile.bio,
         # Blocked people are told so rather than left to discover it by
         # having every post refused with no explanation.
         "blocked": profile.blocked_at is not None,
@@ -347,6 +349,7 @@ def public_profile(profile_id):
         "id": str(profile.id),
         "name": profile.name,
         "avatar_url": profile.avatar_url,
+        "bio": profile.bio,
     }
 
 

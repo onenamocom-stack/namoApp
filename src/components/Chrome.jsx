@@ -297,14 +297,7 @@ export function TopBar({
       <div className="grid h-11 grid-cols-[72px_1fr_72px] items-center">
         <div className="flex items-center pl-4">
           {back ? (
-            <button
-              type="button"
-              aria-label="Back"
-              onClick={goBack}
-              className="text-body text-t2 transition-transform duration-150 hover:-translate-x-0.5 hover:text-t1 active:-translate-x-1"
-            >
-              ←
-            </button>
+            <BackButton onClick={goBack} />
           ) : (
             left
           )}
@@ -318,6 +311,29 @@ export function TopBar({
         <div className="flex items-center justify-end pr-4">{right}</div>
       </div>
     </header>
+  )
+}
+
+/**
+ * Back, as a button you can see (4 Oct 2026, owner's call — it was a bare
+ * "←" glyph). A white round chip with a chevron that nudges left on hover
+ * and fills saffron when pressed. `dark` is the version that sits over
+ * video. Every back control in the app is this one.
+ */
+export function BackButton({ onClick, dark = false, className = '', label = 'Back' }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={`group inline-flex h-9 w-9 flex-none items-center justify-center rounded-full transition-all duration-150 active:scale-90 ${
+        dark
+          ? 'bg-black/35 text-white backdrop-blur-sm hover:bg-black/50'
+          : 'border border-rule bg-white text-t1 shadow-sm hover:border-gold-fill hover:text-gold active:bg-gold-fill active:text-white'
+      } ${className}`}
+    >
+      <Icon name="back" size={18} weight={2.2} className="transition-transform duration-150 group-hover:-translate-x-0.5" />
+    </button>
   )
 }
 

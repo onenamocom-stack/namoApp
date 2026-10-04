@@ -1646,6 +1646,7 @@ the cutover is done and Django owns the schema.
 | Column | |
 |---|---|
 | `video_enabled` | `boolean not null default false`. May this person post a reel? |
+| `bio` | `varchar(150) null` (4 Oct 2026, `profiles/0005`). The line under the picture; the app reads empty as "Available". Nullable on purpose — `handle_new_user` inserts three columns, see `backend/schema/032`. Public, with the name and picture |
 | `influencer` | `boolean not null default false` (3 Oct 2026, `profiles/0004`). Adds the Influencer tab. Their numbers are read, not stored: signups = `referrals` of kind `signup` with them as referrer; paid = those referees with a `captured` row in `payments`, dated by the first. Claiming a code now also writes `attribution` (source `referral`), which nothing wrote before |
 | `blocked_at` | `timestamptz null`. Set when an admin blocks them |
 | `blocked_reason` | `text null`. What the console recorded at the time |

@@ -321,6 +321,9 @@ export const strings = {
   'prof.tab.influencer': { en: 'Influencer', hi: 'इन्फ्लुएंसर' },
   // ── Profile, Instagram-shaped (4 Oct 2026) ──
   'prof.tab.posts': { en: 'Posts', hi: 'पोस्ट' },
+  'prof.bioDefault': { en: 'Available', hi: 'उपलब्ध' },
+  'a.cancel': { en: 'Cancel', hi: 'रद्द करें' },
+  'prof.bioSave': { en: 'Save', hi: 'सेव करें' },
   'prof.tab.saved': { en: 'Saved', hi: 'सेव किए' },
   'prof.tab.kundli': { en: 'Kundli', hi: 'कुंडली' },
   'prof.posts': { en: 'Posts', hi: 'पोस्ट' },
@@ -735,6 +738,7 @@ export const strings = {
   'ask.each': { en: '{price} each', hi: '{price} प्रति सवाल' },
   'ask.free': { en: '{n} free', hi: '{n} मुफ़्त' },
   'ask.opening': { en: 'Opening…', hi: 'खुल रहा है…' },
+  'home.yourRashifal': { en: 'Your rashifal', hi: 'आपका राशिफल' },
   'ask.thinking': { en: 'Reading your chart…', hi: 'आपकी कुंडली पढ़ रहे हैं…' },
   'ask.title': { en: 'Ask about your chart', hi: 'अपनी कुंडली के बारे में पूछें' },
   'ask.sub': { en: 'Answers read from the minute you were born.', hi: 'जवाब आपके जन्म के ठीक समय से पढ़े जाते हैं।' },
@@ -832,8 +836,8 @@ export const strings = {
 
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
   'w.title': {
-    en: 'Your kundli, horoscope and astrologers — in one place',
-    hi: 'आपकी कुंडली, राशिफल और ज्योतिषी — एक ही जगह',
+    en: 'Your kundli, astrologer and mandir darshan in one place',
+    hi: 'आपकी कुंडली, ज्योतिषी और मंदिर दर्शन, एक ही जगह',
   },
   'w.p.consult': { en: 'Talk to an astrologer', hi: 'ज्योतिषी से बात करें' },
   'w.p.horoscope': { en: 'Daily horoscope', hi: 'आज का राशिफल' },

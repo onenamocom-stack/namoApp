@@ -1,3 +1,4 @@
+import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
@@ -350,9 +351,7 @@ function Thread({ thread, myId, onBack }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-none items-center gap-3 border-b border-rule px-4 py-3">
-        <button type="button" onClick={onBack} className="caps-sm t-body" aria-label="Back">
-          Back
-        </button>
+        <BackButton onClick={onBack} />
         <PopAvatar initials={initialsOf(other)} size={30} online={!!live} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-meta t-heading">{other}</span>

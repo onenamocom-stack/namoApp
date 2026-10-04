@@ -589,7 +589,10 @@ length, because their two clock times are identical.
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
 saffron ring (tap to change), posts · followers · following, your name, your
 Sun, Moon and Lagna as coloured chips, then **Edit profile**
-(`/onboarding/details?edit=1`), **Share profile** (`/u/<you>`) and **+** (the
+(`/onboarding/details?edit=1`), **Share profile** (`/u/<you>`). Under the name,
+your bio — "● Available" until you write one; tap to edit, 150 characters.
+Choosing a new picture opens an adjuster first: drag to place, slide to zoom,
+and only the circle is uploaded. and **+** (the
 composer, on the Posts tab). Icon tabs, each its own URL: **posts** (a 3-column
 grid — photos open full screen, blog posts and reels open on their pages — then
 what you reshared), **saved** (your bookmarked posts), **kundli** (the chart,
@@ -621,6 +624,17 @@ console's banners for them before their own three (or instead of them, when one
 says so); a tap follows its link. A live theme repaints the accent and button
 colours and puts its greeting under the top bar. If the read fails, nothing
 changes.
+
+### Bhakti's share screen
+*Share* on a status opens a full screen (4 Oct 2026; it was a bottom sheet
+whose Share button sat below the fold): the preview sized to the screen, one
+row of icon buttons — Gallery, Camera, Profile photo, Remove — and **Share
+this** pinned to the bottom.
+
+### Home, Today
+The reading under the panchang is **your rashifal only** — your Moon sign's
+day, with no picker for the other eleven (4 Oct 2026; they remain on
+`/horoscope`). The panchang header no longer says "Computed at Ujjain".
 
 ### Sign-up links
 `/#/onboarding?ref=N…` stores the code for the visit; the details page opens its

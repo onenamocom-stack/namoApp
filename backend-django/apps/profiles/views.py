@@ -70,6 +70,8 @@ class OnboardingInput(serializers.Serializer):
     birth_lon = CoordinateField(180, required=False, allow_null=True)
     birth_zone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     gender = serializers.ChoiceField(choices=GENDERS, required=False, allow_null=True)
+    # A line under the picture; "Available" when empty (4 Oct 2026).
+    bio = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=150, trim_whitespace=True)
 
 
 class AvatarInput(serializers.Serializer):

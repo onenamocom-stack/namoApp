@@ -240,8 +240,13 @@ export default function Welcome() {
               ref={codeRef}
               value={code}
               onChange={(e) => {
-                autoFilled.current = false
-                setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                const next = e.target.value.replace(/\D/g, '').slice(0, 6)
+                /* All six digits arriving in one change is the phone filling
+                   the code in (iOS "From Messages", a paste) — submit it, as
+                   WebOTP does. Typing digit by digit still waits for Verify
+                   (4 Oct 2026). */
+                autoFilled.current = next.length === 6 && code.length <= 1
+                setCode(next)
               }}
               onKeyDown={(e) => e.key === 'Enter' && verify()}
               placeholder="••••••"

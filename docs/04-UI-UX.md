@@ -101,6 +101,18 @@ the effect stays special. `.glass-panel` is no longer used for anything over
 the dark scrim — the Tarot dialog, the chat panel and `Sheet` are solid white,
 because frosted white over a 40% ink scrim reads as grey and disabled.
 
+**Back is `BackButton`** (`Chrome.jsx`, 4 Oct 2026) everywhere — the top bar,
+the reel viewer, edit details, the consultant sign-up steps, a chat thread: a
+36px white circle with a chevron, saffron when pressed, and a translucent dark
+version over video. It replaced a bare "←".
+
+**Bhakti's shelf tiles each have a colour** — status saffron, wallpapers
+purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash
+with the icon in the colour, and the full colour with a halo when selected.
+
+**Counts sit beside their icons** in the feed (♡ 12, comments, reshares), not
+in a line of text under the row; views, which have no icon, stay under it.
+
 **Festive themes** (4 Oct 2026) override exactly twelve tokens at runtime
 (`lib/appearance.js`): the saffron family (`--gold-fill`, `--orange-hi/-lo/
 -edge`, `--gold`, `--gold-dim`, `--gold-wash`, `--surface`, `--surface-2`) is

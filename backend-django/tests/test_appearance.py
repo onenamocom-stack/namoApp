@@ -82,3 +82,40 @@ class TestConsole:
     def test_support_cannot_change_the_look(self):
         client, _ = _admin(Tier.SUPPORT)
         assert client.get(reverse("namo:appearance_banner_changelist")).status_code in (302, 403)
+
+
+@pytest.mark.django_db
+class TestBhaktiConsole:
+    """4 Oct 2026: Bhakti pictures, captions and credit lines from the console."""
+
+    def _asset(self):
+        from apps.bhakti.models import BhaktiAsset
+
+        return BhaktiAsset.objects.create(
+            kind="status", title="Ganesh — good beginnings", deity="Ganesh",
+            media_url="https://x/ganesh.jpg", artist="Raja Ravi Varma",
+            licence="Public domain", source="https://commons.wikimedia.org/x",
+        )
+
+    def test_fulfilment_edits_the_caption_and_it_is_audited(self):
+        from apps.bhakti.models import BhaktiAsset
+
+        asset = self._asset()
+        client, admin_id = _admin(Tier.FULFILMENT)
+        response = client.post(
+            reverse("namo:bhakti_bhaktiasset_change", args=[asset.pk]),
+            {
+                "kind": "status", "title": "Ganesh — new beginnings", "deity": "Ganesh",
+                "artist": "Raja Ravi Varma", "licence": "Public domain",
+                "source": "https://commons.wikimedia.org/x", "media_url": "https://x/ganesh.jpg",
+                "preview_url": "", "sort": "0", "active": "on",
+            },
+        )
+        assert response.status_code == 302, response.content.decode()[:1500]
+        assert BhaktiAsset.objects.get(pk=asset.pk).title == "Ganesh — new beginnings"
+        assert AdminAction.objects.filter(action="bhakti_asset.change", admin_id=admin_id).exists()
+
+    def test_support_cannot_edit_bhakti(self):
+        asset = self._asset()
+        client, _ = _admin(Tier.SUPPORT)
+        assert client.get(reverse("namo:bhakti_bhaktiasset_change", args=[asset.pk])).status_code in (302, 403)
