@@ -395,20 +395,22 @@ export default function Pooja() {
         </span>
 
 
-        {/* ── Back, the deity's nameplate, sangeet ─────────────────────────
-            Hung just under the cornice, so the elephant frieze above stays
-            in view (5 Oct 2026 — they sat on top of it). */}
-        <div
-          className="absolute inset-x-0 flex items-start justify-between gap-2 px-3"
+        {/* ── Back and sangeet in the top corners; the deity's nameplate
+            hung just under the cornice, so the elephant frieze above it stays
+            in view (5 Oct 2026, both placed by the owner). ─────────────── */}
+        <BackButton dark onClick={goBack} className="absolute left-3 top-3 !h-11 !w-11" />
+        {/* Centred by a wrapper, not a translate: `.plinth:active` sets
+            transform, and would knock a translated nameplate sideways. */}
+        <span
+          className="pointer-events-none absolute inset-x-0 flex justify-center px-3"
           style={{ top: frameCqw(232) }}
         >
-          <BackButton dark onClick={goBack} className="!h-11 !w-11" />
           <button
             type="button"
             onClick={() => setSheet(true)}
             aria-haspopup="dialog"
             aria-label={`${lang === 'hi' ? deity.nameHi : deity.name} · ${t('puja.chooseDarshan')}`}
-            className="plinth min-w-0 !h-auto !w-auto gap-2 py-1 pl-1 pr-3"
+            className="plinth pointer-events-auto min-w-0 !h-auto !w-auto gap-2 py-1 pl-1 pr-3"
           >
             <span className="block h-9 w-9 flex-none overflow-hidden rounded-full bg-black/30 ring-1 ring-white/40">
               <img
@@ -435,17 +437,17 @@ export default function Pooja() {
             </span>
             <Icon name="back" size={14} weight={2.2} className="flex-none -rotate-90 opacity-80" />
           </button>
-          <button
-            type="button"
-            onClick={openMusic}
-            aria-haspopup="dialog"
-            aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
-            aria-pressed={Boolean(track)}
-            className={`plinth flex-none ${track ? 'plinth-on' : ''}`}
-          >
-            {track ? <PlayingBars /> : <SangeetGlyph />}
-          </button>
-        </div>
+        </span>
+        <button
+          type="button"
+          onClick={openMusic}
+          aria-haspopup="dialog"
+          aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
+          aria-pressed={Boolean(track)}
+          className={`plinth absolute right-3 top-3 ${track ? 'plinth-on' : ''}`}
+        >
+          {track ? <PlayingBars /> : <SangeetGlyph />}
+        </button>
 
         <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
         <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />

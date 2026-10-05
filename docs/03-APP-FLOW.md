@@ -428,8 +428,9 @@ saffron glow, and a one-time toast says "Touch the ghanti, diya, dhoop or
 flowers to offer". The `namo.puja.touched` localStorage key remembers it per
 device. The rail of dark round buttons down the pillar is gone.
 
-Just under the cornice, leaving the elephant frieze in view: **back**, the deity's **nameplate** (its murti, its name, one dot
-per murti) and **sangeet**. The nameplate opens the **Darshan sheet**: deities in a
+**Back** and **sangeet** sit in the top corners over the frieze. The deity's
+**nameplate** (its murti, its name, one dot per murti) hangs centred just under
+the cornice, leaving the elephant frieze in view. The nameplate opens the **Darshan sheet**: deities in a
 grid, then that deity's murtis. Tapping a deity changes the doorway behind the
 sheet at once and keeps the sheet open on its murtis; tapping a murti closes
 it. This sheet replaced the deity chip row and the eye button, and it is **the
