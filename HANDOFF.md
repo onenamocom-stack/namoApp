@@ -5458,5 +5458,6 @@ were. The per-category banner under the pills is removed, with its four
   `status` update, at the owner's request, not through the console — so
   there is **no `admin_actions` row** for it. He applied the same day as an
   Astrologer; four active services; he is in `/v1/consultants/`.
-- **Test Seeker (8447284861) wallet set to ₹20** for testing: one ledger
-  row, `ref_type` adjustment, −₹126.50, note "Owner request, 5 Oct 2026".
+- **Test Seeker (8447284861) wallet set to ₹20, then ₹40**, for testing:
+  two ledger rows, `ref_type` adjustment (−₹126.50, then +₹20), note
+  "Owner request, 5 Oct 2026".
