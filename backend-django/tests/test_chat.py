@@ -1101,6 +1101,24 @@ class TestEndpoints:
         )
         assert response.json() == []
 
+        # The app always sends an Idempotency-Key. The stored answer holds a
+        # datetime; it once failed to store and answered 500 to a message
+        # that had saved, so the sender typed it again (6 Oct 2026). A retry
+        # with the same key replays the first answer and saves nothing new.
+        keyed = dict(HTTP_IDEMPOTENCY_KEY="7d1f0e1c-5b7a-4c39-9a51-0c2b8f1d2e3a", **auth(seeker))
+        first = api_client.post(
+            f"/v1/chat/threads/{thread_id}/messages/send/",
+            {"body": "And my marriage."}, format="json", **keyed,
+        )
+        assert first.status_code == 200 and first.json()["ok"] is True
+        again = api_client.post(
+            f"/v1/chat/threads/{thread_id}/messages/send/",
+            {"body": "And my marriage."}, format="json", **keyed,
+        )
+        assert again.status_code == 200
+        assert again.json()["message"]["id"] == first.json()["message"]["id"]
+        assert Message.objects.filter(thread_id=thread_id, body="And my marriage.").count() == 1
+
         # markRead clears the pro's unread, nobody else's.
         api_client.post(f"/v1/chat/threads/{thread_id}/read/", **auth(pro))
         me = api_client.get("/v1/chat/threads/", **auth(seeker)).json()[0]
@@ -1133,7 +1151,7 @@ class TestEndpoints:
         history = api_client.get(
             f"/v1/chat/threads/{thread_id}/messages/", **auth(seeker)
         )
-        assert [m["body"] for m in history.json()] == ["My career, please."]
+        assert [m["body"] for m in history.json()] == ["My career, please.", "And my marriage."]
 
     def test_unauthenticated_is_refused(self, api_client, pro_user):
         response = api_client.get("/v1/chat/sessions/")

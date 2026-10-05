@@ -43,7 +43,7 @@
  * every screen that imports this file is untouched:
  *
  *   subscribeToThread      polls messages?after=<last seen id> every
- *                          MESSAGE_POLL_MS (3s). New rows are delivered
+ *                          MESSAGE_POLL_MS (1.5s; 6s hidden). New rows are delivered
  *                          through onMessage one by one; the screens' merge
  *                          logic already de-dupes by id, so a poll
  *                          overlapping the screen's own listMessages fetch
@@ -82,9 +82,11 @@ import { supabase } from './supabase.js'
 
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example.com/v1
 
-/** The polling cadences. 3s inside an open conversation, 5s for the session
- *  lists (a new chat request is the most latency-sensitive poll). */
-const MESSAGE_POLL_MS = 3000
+/** The polling cadences. 1.5s inside an open conversation on screen (6 Oct
+ *  2026: 3s read as lag in a paid chat), 6s when the tab is hidden; 5s for
+ *  the session lists. */
+const MESSAGE_POLL_MS = 1500
+const MESSAGE_POLL_HIDDEN_MS = 6000
 const SESSIONS_POLL_MS = 5000
 
 /** The Supabase access token off the existing session; null when signed out. */
@@ -260,23 +262,40 @@ export async function listMessages(threadId) {
 /**
  * Send. Bounded by the live-session gate server-side: outside a paid window
  * the server refuses with its own sentence and this returns {ok:false,
- * reason} — it is the meter having stopped, not a network failure. The
- * inserted row comes back so the sender renders it immediately rather than
- * waiting for the next poll.
+ * reason} — it is the meter having stopped. The inserted row comes back so
+ * the sender's bubble settles without waiting for the next poll.
+ *
+ * `key` is the message's own Idempotency-Key, made once when it is typed and
+ * reused on every retry, so a send whose answer was lost replays the saved
+ * row instead of saving it twice. A dropped connection, a 5xx, a 429 or a
+ * 409 (the first try still running) is retried here with backoff; only if
+ * all tries fail does this answer {ok:false, retry:true} — the message is
+ * still the sender's, unsent, never "the session has ended" (6 Oct 2026:
+ * that sentence on a server error made people type it again).
  */
-export async function sendMessage(threadId, body) {
+const SEND_BACKOFF_MS = [0, 800, 2000, 4000]
+
+export async function sendMessage(threadId, body, key = crypto.randomUUID()) {
   const text = body.trim()
   if (!text) return { ok: false, reason: '' }
-  try {
-    return await api(`/chat/threads/${threadId}/messages/send/`, {
-      method: 'POST',
-      body: { body: text },
-      idempotencyKey: crypto.randomUUID(), // a retried send replays, never double-posts
-    })
-  } catch (err) {
-    console.error('[chat] send failed:', err.message)
-    return { ok: false, reason: 'That session has ended. Start another to reply.' }
+  let last = null
+  for (const wait of SEND_BACKOFF_MS) {
+    if (wait) await new Promise((r) => setTimeout(r, wait))
+    try {
+      return await api(`/chat/threads/${threadId}/messages/send/`, {
+        method: 'POST',
+        body: { body: text },
+        idempotencyKey: key,
+      })
+    } catch (err) {
+      last = err
+      const status = err.status ?? 0
+      const transient = !status || status >= 500 || status === 429 || status === 409
+      if (!transient) return { ok: false, reason: err.body?.message || err.message }
+    }
   }
+  console.error('[chat] send failed:', last?.message)
+  return { ok: false, retry: true }
 }
 
 /** Mark the other party's messages read. Own side untouched — the unread
@@ -325,13 +344,23 @@ export function subscribeToThread(threadId, onMessage) {
       // A 403 means this thread is no longer ours to read; polling on would
       // just log. Everything else retries next beat.
     }
-    if (!stopped) timer = setTimeout(poll, MESSAGE_POLL_MS)
+    if (!stopped) timer = setTimeout(poll, document.hidden ? MESSAGE_POLL_HIDDEN_MS : MESSAGE_POLL_MS)
   }
+
+  /* Coming back to the tab asks at once rather than at the end of a slow
+     hidden-tab wait. */
+  const onVisible = () => {
+    if (document.hidden || stopped) return
+    if (timer) clearTimeout(timer)
+    poll()
+  }
+  document.addEventListener('visibilitychange', onVisible)
 
   poll()
   return () => {
     stopped = true
     if (timer) clearTimeout(timer)
+    document.removeEventListener('visibilitychange', onVisible)
   }
 }
 

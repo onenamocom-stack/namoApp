@@ -330,8 +330,7 @@ function useUnreadAlerts() {
  */
 function Thread({ thread, myId, onBack }) {
   const { refreshWallet, session, showToast } = useStore()
-  const [messages, setMessages] = useState([])
-  const [draft, setDraft] = useState('')
+  const [messages, setMessages] = useState(() => loadOutbox(thread.id, myId))
   const [live, setLive] = useState(thread.live_session_id ?? null)
   const [left, setLeft] = useState(null)
   const [rate, setRate] = useState(null)
@@ -347,15 +346,24 @@ function Thread({ thread, myId, onBack }) {
        would be appended by the handler and then wiped by the fetch result. */
     listMessages(thread.id).then((rows) =>
       setMessages((prev) => {
+        /* The transcript, then whatever the poll added meanwhile, then my
+           own unsent messages. A pending one that in fact saved is settled
+           when its retry replays the same key. */
         const seen = new Set(rows.map((r) => r.id))
-        return [...rows, ...prev.filter((p) => !seen.has(p.id))]
+        const polled = prev.filter((m) => !m.state && !seen.has(m.id))
+        return [...rows, ...polled, ...prev.filter((m) => m.state)]
       }),
     )
     markRead(thread.id, myId)
-    return subscribeToThread(thread.id, (m) =>
-      setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m])),
-    )
+    return subscribeToThread(thread.id, (m) => setMessages((prev) => settle(prev, m, myId)))
   }, [thread.id, myId])
+
+  /* What has not reached the server lives in this phone's storage until it
+     does, so a reload, a dead tab or a lost signal never loses a message
+     (6 Oct 2026). */
+  useEffect(() => {
+    saveOutbox(thread.id, messages)
+  }, [thread.id, messages])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
@@ -406,27 +414,51 @@ function Thread({ thread, myId, onBack }) {
     }
   }, [live, refreshWallet, session])
 
-  const send = async () => {
-    const text = draft.trim()
-    if (!text) return
-    setDraft('')
-    const res = await sendMessage(thread.id, text)
-    if (!res.ok) {
+  /* A message is on screen the instant it is sent, marked as sending, and
+     carries its own idempotency key from then on: every retry, even after a
+     reload, replays the same write, so it lands once and only once. The
+     server's row replaces it when it arrives — from the send's answer or
+     from the poll, whichever is first. Nothing is ever handed back to the
+     box to be typed again (6 Oct 2026). */
+  const deliver = useCallback(
+    async (key, text) => {
+      setMessages((prev) => prev.map((m) => (m.key === key && m.state ? { ...m, state: 'sending' } : m)))
+      const res = await sendMessage(thread.id, text, key)
+      if (res.ok && res.message) {
+        setMessages((prev) => settle(prev, res.message, myId, key))
+        return
+      }
+      setMessages((prev) => prev.map((m) => (m.key === key && m.state ? { ...m, state: 'failed' } : m)))
       if (res.reason) showToast(res.reason)
-      setDraft(text)                       // give it back rather than eat it
-      return
-    }
-    /* Show my own message straight away rather than waiting for Realtime to
-       echo it back. The echo usually arrives — but the sender watching their
-       own words fail to appear is the worst possible way to discover that a
-       table was never added to the publication, which is exactly how this was
-       found. The de-dupe in the subscription handles the echo when it lands. */
-    if (res.message) {
-      setMessages((prev) => (prev.some((p) => p.id === res.message.id) ? prev : [...prev, res.message]))
-    } else {
-      listMessages(thread.id).then(setMessages)
-    }
+    },
+    [thread.id, myId, showToast],
+  )
+
+  const send = (text) => {
+    const key = crypto.randomUUID()
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${key}`,
+        key,
+        body: text,
+        sender_id: myId,
+        created_at: new Date().toISOString(),
+        state: 'sending',
+      },
+    ])
+    deliver(key, text)
   }
+
+  /* Messages a reload left unsent go out again on their own once the
+     session is live; a refusal leaves them marked, to tap and retry. */
+  const resumed = useRef(false)
+  useEffect(() => {
+    if (!live || resumed.current) return
+    resumed.current = true
+    for (const m of messages) if (m.key && m.state === 'failed') deliver(m.key, m.body)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, deliver])
 
   const hangUp = async () => {
     const res = await endChat(live)
@@ -467,27 +499,28 @@ function Thread({ thread, myId, onBack }) {
       )}
 
       <div className="cosmic-dawn no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        {messages.map((m) => (
-          <Bubble
-            key={m.id}
-            mine={m.sender_id === myId}
-            text={m.body}
-            time={new Date(m.created_at).toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          />
-        ))}
+        {messages.map((m, i) => {
+          const next = messages[i + 1]
+          const time = stamp(m.created_at)
+          /* One time under a run of messages from the same person in the
+             same minute, as a messenger does, not one under every line. */
+          const last = !next || next.sender_id !== m.sender_id || stamp(next.created_at) !== time
+          return (
+            <Bubble
+              key={m.key ?? m.id}
+              mine={m.sender_id === myId}
+              text={m.body}
+              time={last || m.state ? time : null}
+              state={m.state}
+              onRetry={m.state === 'failed' && live ? () => deliver(m.key, m.body) : undefined}
+            />
+          )
+        })}
         <div ref={endRef} />
       </div>
 
       {live ? (
-        <Composer
-          value={draft}
-          onChange={setDraft}
-          onSend={send}
-          placeholder="Type a message"
-        />
+        <Composer onSend={send} placeholder="Type a message" />
       ) : (
         <div className="flex-none border-t border-rule px-4 py-4">
           <p className="text-meta t-faint">
@@ -498,6 +531,53 @@ function Thread({ thread, myId, onBack }) {
       )}
     </div>
   )
+}
+
+/* ── the outbox ──────────────────────────────────────────────────────────── */
+
+/** Put a server row into the list: it replaces my own pending bubble for it
+ *  (matched by key when the send answered, by body when the poll got there
+ *  first), and is never added twice. */
+function settle(list, row, myId, key) {
+  if (list.some((m) => m.id === row.id)) {
+    return key ? list.filter((m) => m.key !== key || m.id === row.id) : list
+  }
+  let at = key ? list.findIndex((m) => m.key === key && m.state) : -1
+  if (at < 0 && row.sender_id === myId) {
+    at = list.findIndex((m) => m.state === 'sending' && m.body === row.body)
+  }
+  const done = { ...row, key: at >= 0 ? list[at].key : undefined }
+  if (at < 0) return [...list, done]
+  const next = list.slice()
+  next[at] = done
+  return next
+}
+
+const OUTBOX = 'namo.outbox.'
+
+function loadOutbox(threadId, myId) {
+  try {
+    const rows = JSON.parse(localStorage.getItem(OUTBOX + threadId) || '[]')
+    return rows
+      .filter((m) => m.sender_id === myId && m.key && m.body)
+      .map((m) => ({ ...m, state: 'failed' }))
+  } catch {
+    return []
+  }
+}
+
+function saveOutbox(threadId, messages) {
+  try {
+    const unsent = messages.filter((m) => m.key && m.state)
+    if (unsent.length) localStorage.setItem(OUTBOX + threadId, JSON.stringify(unsent))
+    else localStorage.removeItem(OUTBOX + threadId)
+  } catch {
+    /* private window or full storage: the bubble on screen still holds it */
+  }
+}
+
+function stamp(iso) {
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 
 /** Initials from a name. Derived, never stored — a column holding this is a
@@ -593,44 +673,100 @@ export function CallButton({ name, className = '' }) {
   )
 }
 
-function Bubble({ mine, text, time }) {
+function Bubble({ mine, text, time, state, onRetry }) {
   return (
-    <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>
       <div className="max-w-[85%]">
         <div
-          className={`px-3 py-2.5 text-meta ${
+          className={`whitespace-pre-wrap break-words px-3 py-2.5 text-meta transition-opacity ${
             mine ? 'bubble-mine rounded-2xl rounded-br-md' : 'bubble-theirs rounded-2xl rounded-bl-md'
-          }`}
+          } ${state === 'sending' ? 'opacity-70' : ''}`}
         >
           {text}
         </div>
-        <p className={`mt-1 caps-sm t-faint tnum ${mine ? 'text-right' : ''}`}>{time}</p>
+        {state === 'failed' ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={!onRetry}
+            className="mt-1 block w-full text-right caps-sm text-bad"
+          >
+            {onRetry ? 'Not sent · Tap to retry' : 'Not sent'}
+          </button>
+        ) : (
+          time && (
+            <p className={`mt-1 caps-sm t-faint tnum ${mine ? 'text-right' : ''}`}>
+              {state === 'sending' ? 'Sending' : time}
+            </p>
+          )
+        )}
       </div>
     </div>
   )
 }
 
-function Composer({ value, onChange, onSend, placeholder, disabled = false }) {
+/**
+ * The box. It owns its own text and empties itself the moment Send is
+ * pressed — the message belongs to the thread from then on and is never
+ * given back.
+ *
+ * Android keyboards hold the word being typed in a composition; emptying
+ * the box under it lets the keyboard write the word back on the next key
+ * (6 Oct 2026: "press backspace, then type again"). So a send made during a
+ * composition ends it first — blur, then focus — and the Send button never
+ * takes focus from the box, so the keyboard stays up between messages.
+ */
+function Composer({ onSend, placeholder, disabled = false }) {
+  const [value, setValue] = useState('')
+  const box = useRef(null)
+  const composing = useRef(false)
+
+  const submit = () => {
+    const el = box.current
+    const text = (el?.value ?? value).trim()
+    if (!text || disabled) return
+    if (el && composing.current) {
+      el.blur()
+      composing.current = false
+    }
+    setValue('')
+    if (el) el.value = ''
+    onSend(text)
+    el?.focus()
+  }
+
   return (
-    <div className="flex flex-none items-center gap-3 border-t border-stroke px-4 py-3">
+    <form
+      className="flex flex-none items-center gap-3 border-t border-stroke px-4 py-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+    >
       <input
+        ref={box}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && onSend()}
+        onChange={(e) => setValue(e.target.value)}
+        onCompositionStart={() => (composing.current = true)}
+        onCompositionEnd={() => (composing.current = false)}
+        enterKeyHint="send"
+        autoComplete="off"
         placeholder={placeholder}
         disabled={disabled}
         aria-label="Message"
         className="min-w-0 flex-1 border-b border-rule bg-transparent pb-2 text-body t-heading outline-none transition-colors placeholder:text-t4 focus:border-gold disabled:opacity-40"
       />
-      <PopButton
-        onClick={onSend}
-        variant="gold"
-        full={false}
-        disabled={disabled || !value.trim()}
-        className="px-4 py-2"
-      >
-        Send
-      </PopButton>
-    </div>
+      <span onPointerDown={(e) => e.preventDefault()} className="flex-none">
+        <PopButton
+          type="submit"
+          variant="gold"
+          full={false}
+          disabled={disabled || !value.trim()}
+          className="px-4 py-2"
+        >
+          Send
+        </PopButton>
+      </span>
+    </form>
   )
 }

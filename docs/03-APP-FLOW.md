@@ -1036,6 +1036,14 @@ Refunds are a separate forward transition, never a mutation of the original.
   never "Ringing", which is a call's word (6 Oct 2026). The consultant's request bar says Chat, Video call or
   Audio call, and its button says Accept or Answer.
 - **The call screen** reads "Connecting" until both are in, then the minutes left.
+- **Sending a chat message** empties the box at once and puts the bubble in
+  the conversation marked *Sending*; it settles to its time when the server
+  has it. A dropped connection is retried on its own; if every try fails the
+  bubble reads *Not sent · Tap to retry* and stays — on this phone, through
+  a reload — until it goes. A refused send (the session ended) keeps the
+  bubble marked and shows the server's sentence. Text is never put back in
+  the box. One time sits under each run of messages from the same person in
+  the same minute. New messages arrive within about 1.5 s (6 Oct 2026).
 - **History:** the chat panel's Consultant tab lists only people you have
   connected with, each with what you last did together ("Video call · 3 min");
   its Sessions tab lists calls and chats (with cost) and booked slots; Alerts

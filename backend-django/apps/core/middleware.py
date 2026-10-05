@@ -3,6 +3,7 @@ import logging
 import uuid
 
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse
 from django.utils.cache import patch_vary_headers
@@ -141,8 +142,13 @@ class IdempotencyMiddleware(MiddlewareMixin):
                 status_code=response.status_code,
                 response_body=body,
             )
-        except IntegrityError:
-            logger.warning("idempotency store raced", extra={"request_id": getattr(request, "request_id", "")})
+        except Exception:
+            # The write has already committed. Failing to remember the answer
+            # must never turn it into a 500 — the client would retry, or the
+            # person would type it again, and the message lands twice
+            # (6 Oct 2026). Forget the key instead: a retry then runs fresh.
+            logger.exception("idempotency store failed", extra={"request_id": getattr(request, "request_id", "")})
+            IdempotencyKey.objects.filter(key=key, user_id=user_key).delete()
         response["Idempotency-Replayed"] = "false"
         return response
 
@@ -175,8 +181,10 @@ class IdempotencyMiddleware(MiddlewareMixin):
     @staticmethod
     def _serializable_body(response):
         if hasattr(response, "data") and isinstance(response.data, (dict, list)):
-            # DRF Response — already parsed.
-            return response.data
+            # DRF Response — already parsed, but it may hold datetimes and
+            # UUIDs the JSON column cannot take. Round-trip through Django's
+            # encoder so the stored body is exactly what the client was sent.
+            return json.loads(json.dumps(response.data, cls=DjangoJSONEncoder))
         try:
             return json.loads(response.content.decode("utf-8"))
         except (ValueError, UnicodeDecodeError, AttributeError):

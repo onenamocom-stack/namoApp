@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 5 Oct 2026.
+Updated 6 Oct 2026.
 
 | Phase | State |
 |---|---|
@@ -5609,3 +5609,28 @@ not, and a call must ring the phone like a phone call.
 
 Tests: 963. Not yet proven on a real phone — needs the API deploy with the
 private key, then a consultant turning Online once to allow notifications.
+
+## 56. Chat sends: the 500 that made messages double — 6 Oct 2026
+
+Owner's report: chat slow, messages appear twice, the box keeps the text
+until you backspace, and "That session has ended" mid-session.
+
+- **Cause, one bug.** Every send saved, then the idempotency middleware
+  failed to store the reply (`datetime is not JSON serializable`) and
+  answered 500. The app read any failure as "That session has ended" and put
+  the text back in the box, so it was sent again — and saved again. Seen in
+  the API log at 19:52 UTC on 5 Oct, five 500s on one thread.
+- **Server.** `apps/core/middleware.py` round-trips the stored body through
+  `DjangoJSONEncoder`, and a failure to store the reply now logs and forgets
+  the key instead of failing a write that has committed. The chat walk test
+  now sends with an `Idempotency-Key` and retries it: one row. Tests 963.
+- **App** (`src/components/ChatPanel.jsx`, `src/lib/chat.js`). Sent messages
+  show at once as *Sending*; each carries its own key, retried with backoff
+  on a dropped connection, 5xx, 429 or 409; unsent ones are kept in
+  `localStorage` and go again after a reload; a failure reads *Not sent · Tap
+  to retry*. The box empties itself and ends an Android keyboard's
+  composition first. Polls every 1.5 s on screen, 6 s hidden, and at once on
+  return to the tab.
+- **Needs the API deploy** for the server half; the app half ships with the
+  Pages build. Not yet tried on a phone.
+
