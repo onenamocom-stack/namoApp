@@ -363,7 +363,8 @@ several deity images are share-alike.
 ### `/darshan`
 **The one screen that does not scroll.** A fixed-height column: back bar, deity
 row, shrine. Reached from Home's Darshan tab; it was `/pooja` on the tab bar
-until 9 Sep 2026 and now takes the whole frame with a `TopBar` back control.
+until 9 Sep 2026 and now takes the whole frame. Since 5 Oct 2026 it has no
+`TopBar`: back sits on the mandir's frieze (see below).
 
 Because it is fixed-height and has no nav under it, the 56px that `main`
 reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
@@ -372,8 +373,8 @@ that reservation is harmless run-off.
 
 Gestures on the shrine — swipe **right/left for the next/previous deity**
 (which resets to that deity's first murti), **down/up for the next/previous
-murti**. Both wrap. The axes mirror the rows they move through: the deity strip
-runs horizontally above the shrine, and murtis are a stack behind the frame.
+murti**. Both wrap. The nameplate on the arch follows along; its dots are the
+murtis, the stack a vertical swipe moves through.
 
 A swipe is refused when it starts on a control, because every prop is a button
 and two own gestures already. Under 44px is a tap; an ambiguous diagonal is
@@ -406,17 +407,30 @@ lit. The Bell offering rings a real ghanta: one 4.2 s strike, `public/puja/ghant
 from "Indian Temple Bell" by ganiket (Freesound #466652, CC0) on 5 Oct 2026 — the
 synthesised bell before it did not sound like one.
 
-**The shrine stands in a temple doorway** (5 Oct 2026, `TempleFrame` in
-`PujaProps.jsx`): a photograph of a carved sandstone mandir doorway
-(`public/puja/mandir-frame.webp`, doors cut out) with jambs, a scalloped arch,
-and the first step the diyas and thali stand on. It is laid on as a CSS
-border-image sized in `cqw`, so the arch scales with the shrine's width and only
-the jambs tile to its height. It replaced a drawn SVG frame the owner called
-"AI created". The bells hang from the arch. Flowers fall as whole
-genda phool. The thali no longer spins on the spot: a tap begins or ends the
-aarti, and it only circles in front of the murti. A knob opens the murti picker,
-which is **the only place the image attribution appears** and therefore cannot
-be removed without removing the images.
+**The whole page is a mandir entrance** (5 Oct 2026, `TempleFrame` in
+`PujaProps.jsx`): a photograph of a carved white-marble entrance with pillars,
+an elephant frieze, a layered scalloped arch and marble steps
+(`public/puja/mandir-marble.webp`, Canva design DAHXKTEtMaA, doorway
+green-screened and keyed). It is laid on as a CSS border-image sized in `cqw`,
+so the frieze and arch scale with the page's width and only the pillar shafts
+stretch to its height. The murti stands **inside the doorway**
+(`FRAME_OPENING`) on a lamp-lit dark sanctum, not behind the pillars. It
+replaced a sandstone door frame and, before that, a drawn SVG frame the owner
+called "AI created". The offering rail runs down the left pillar, the bells hang
+at the doorway's edges, and the samagri stands on the steps.
+
+On the frieze: **back**, the deity's **nameplate** (its murti, its name, one dot
+per murti) and **sangeet**. The nameplate opens the **Darshan sheet**: deities in a
+grid, then that deity's murtis. Tapping a deity changes the doorway behind the
+sheet at once and keeps the sheet open on its murtis; tapping a murti closes
+it. This sheet replaced the deity chip row and the eye button, and it is **the
+only place the image attribution appears**, so it cannot be removed without
+removing the images. **Sangeet** opens with the current deity's own bhajans and
+mantras first ("For Ganesh"), matched loosely on Bhakti's deity field and title,
+then the Bhajans/Mantras tabs. While something plays, the button turns gold
+with moving bars. Flowers fall as whole genda phool. The thali never spins on
+the spot: a tap begins or ends the aarti, and it only circles in front of the
+murti.
 
 No money anywhere. Nothing books a pandit.
 

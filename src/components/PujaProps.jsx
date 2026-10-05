@@ -320,19 +320,36 @@ export function Thali({ size = 86, lit = false }) {
   )
 }
 
-/* ── The temple doorway around the shrine (5 Oct 2026) ─────────────────────
-   A PHOTOGRAPH of a carved sandstone mandir doorway — jambs, a scalloped
-   arch, the first step — with the doors cut out so the murti stands in the
-   opening. It replaced a drawn SVG doorway the owner called "AI created".
-   Source: Canva (design DAHXKdPJMlY), cropped to 760×1330 and cut by hand.
+/* ── The mandir entrance the whole puja page stands in (5 Oct 2026) ───────
+   A PHOTOGRAPH of a carved white-marble mandir entrance — pillars, an
+   elephant frieze, a layered scalloped arch, marble steps — with its doorway
+   keyed out so the murti stands inside it. Asked for on the owner's reference
+   of a BAPS-style marble mandir; it replaced a sandstone door frame and,
+   before that, a drawn SVG one ("AI created").
+   Source: Canva design DAHXKTEtMaA, green-screened opening, keyed and
+   cropped to 880×1690.
 
-   Laid on as a border-image so the arch and step keep their shape while
-   only the straight jambs tile to the shrine's height. Slices are in the
-   image's pixels; widths are the same numbers scaled to the shrine's width
-   (`cqw` — the shrine is an inline-size container), so the whole frame
-   scales uniformly and the arch never squashes. */
-const FRAME_SRC = { w: 760, top: 455, side: 58, bottom: 75 }
-const cqw = (px) => `${((px / FRAME_SRC.w) * 100).toFixed(3)}cqw`
+   Laid on as a border-image so the frieze, arch and steps keep their shape
+   and only the pillar shafts stretch to the phone's height. Slices are in the
+   image's pixels; widths are the same numbers in `cqw` (the shrine is an
+   inline-size container), so everything scales with the page's width and the
+   arch never squashes. */
+const FRAME_SRC = {
+  w: 880,
+  top: 900, // frieze + arch, down to where the doorway's sides run straight
+  side: 160, // pillar + jamb, each side
+  bottom: 225, // threshold and steps
+  apex: 567, // the top of the doorway, under the arch's crown
+}
+export const frameCqw = (px) => `${((px / FRAME_SRC.w) * 100).toFixed(3)}cqw`
+
+/* The doorway itself, as absolute insets: the murti and its light go here. */
+export const FRAME_OPENING = {
+  top: frameCqw(FRAME_SRC.apex),
+  left: frameCqw(FRAME_SRC.side),
+  right: frameCqw(FRAME_SRC.side),
+  bottom: frameCqw(FRAME_SRC.bottom),
+}
 
 export function TempleFrame() {
   const { top, side, bottom } = FRAME_SRC
@@ -343,10 +360,10 @@ export function TempleFrame() {
       style={{
         borderStyle: 'solid',
         borderColor: 'transparent',
-        borderWidth: `${cqw(top)} ${cqw(side)} ${cqw(bottom)}`,
-        borderImage: `url(${import.meta.env.BASE_URL}puja/mandir-frame.webp) ${top} ${side} ${bottom} round`,
-        // The stone throws a little shadow onto the murti behind it.
-        filter: 'drop-shadow(0 3px 5px rgba(40,20,0,.45))',
+        borderWidth: `${frameCqw(top)} ${frameCqw(side)} ${frameCqw(bottom)}`,
+        borderImage: `url(${import.meta.env.BASE_URL}puja/mandir-marble.webp) ${top} ${side} ${bottom} stretch`,
+        // The marble throws a little shadow into the sanctum behind it.
+        filter: 'drop-shadow(0 4px 8px rgba(20,10,0,.55))',
       }}
     />
   )

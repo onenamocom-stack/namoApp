@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities, offerings } from '../data/mock.js'
-import { TopBar } from '../components/Chrome.jsx'
+import { BackButton, useGoBack } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
-import { Dhoop, Diya, Ghanti, LampFlame, Marigold, PujaPhoto, TempleFrame, Thali } from '../components/PujaProps.jsx'
+import {
+  Dhoop,
+  Diya,
+  FRAME_OPENING,
+  Ghanti,
+  LampFlame,
+  Marigold,
+  PujaPhoto,
+  TempleFrame,
+  Thali,
+  frameCqw,
+} from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets } from '../lib/bhakti.js'
 
@@ -10,9 +21,15 @@ import { fetchAssets } from '../lib/bhakti.js'
  * Mandir — e-puja only, and it does not scroll.
  *
  * That is the whole layout rule. You cannot perform an aarti while hunting for
- * the thali, so the shrine takes every pixel between the deity row and the tab
- * bar, and every prop — bells, offerings, thali, sangeet — sits on the image
- * rather than under it. Nothing on this screen is below the fold because there
+ * the thali, so the shrine takes every pixel of the page, and every prop —
+ * bells, offerings, thali, sangeet — sits on it rather than under it.
+ *
+ * Since 5 Oct 2026 the page IS a mandir entrance: a photographed white-marble
+ * doorway fills the screen and the murti stands inside it. The top bar and the
+ * deity row went with that. Back, the deity and sangeet now sit on the
+ * frieze over the arch: the deity's name is a nameplate that opens one sheet
+ * for deity and murti, and sangeet opens with that deity's own bhajans and
+ * mantras first. Nothing on this screen is below the fold because there
  * is no fold. (A white action bar under the image was tried on 3 Oct 2026 and
  * taken out the same day, the owner's call: the rail is the layout.)
  *
@@ -80,7 +97,7 @@ export default function Pooja() {
   const [ripples, setRipples] = useState([])
   const seq = useRef(0)
   const swipe = useRef(null)
-  const chips = useRef(null)
+  const goBack = useGoBack('/home')
 
   useEffect(() => {
     ghanta = ghanta || new Audio(GHANTA_URL)
@@ -89,11 +106,8 @@ export default function Pooja() {
 
   /**
    * Swiping the shrine. Right for the next deity, down for the next murti of
-   * the one you are on; left and up go back.
-   *
-   * The axes match the rows they mirror: the deity strip above the shrine runs
-   * horizontally, so deities change horizontally. Murtis of one deity are a
-   * stack behind the frame, so they change vertically.
+   * the one you are on; left and up go back. The nameplate on the arch follows
+   * along — its dots are the murtis, the stack a vertical swipe moves through.
    *
    * The rule that makes this safe to add is the `closest('button')` bail. Every
    * prop on the shrine is a button and two of them own gestures already — the
@@ -143,16 +157,6 @@ export default function Pooja() {
       setPic((p) => wrap(p + (dy > 0 ? 1 : -1), deity.images.length))
     }
   }
-
-  // Swiping past a deity whose chip is off the end of the row leaves you with
-  // no way to tell which one you landed on, so the row follows the selection.
-  // No `behavior: 'smooth'` — it is declined inside scroll containers in this
-  // app and silently does nothing. `block: 'nearest'` keeps it horizontal.
-  useEffect(() => {
-    chips.current
-      ?.querySelector('[aria-pressed="true"]')
-      ?.scrollIntoView({ block: 'nearest', inline: 'center' })
-  }, [deity])
 
   // Petals and ripples are one-shot animations; drop them once they finish so
   // the DOM does not fill up over a long session.
@@ -255,76 +259,34 @@ export default function Pooja() {
        screen reserves 56px at the bottom for the nav, and this route has no
        nav to reserve for. */
     <div className="darshan relative flex h-full flex-col">
-      <TopBar
-        title={t('nav.pooja')}
-        back
-        backTo="/home"
-      />
-
-      {/* ── Choose a deity ─────────────────────────────────────────────── */}
-      <section className="flex-none px-2 pb-2 pt-2">
-        <ul ref={chips} className="no-scrollbar flex gap-1 overflow-x-auto px-2">
-          {deities.map((d) => (
-            <li key={d.id}>
-              <button
-                type="button"
-                aria-pressed={deity.id === d.id}
-                onClick={() => {
-                  setDeity(d)
-                  setPic(0)
-                }}
-                className="tile w-[72px]"
-              >
-                {/* The face is the murti, so the pressed-in "on" state cannot
-                    show through it. Selection reads as full colour against
-                    faded neighbours instead. */}
-                <span className="tile-face !h-[52px] !w-[52px] overflow-hidden">
-                  <img
-                    src={`${import.meta.env.BASE_URL}deities/${d.images[0].f}`}
-                    alt=""
-                    loading="lazy"
-                    className={`h-full w-full transition duration-200 ${fullImage ? 'object-contain' : 'object-cover'} ${
-                      deity.id === d.id ? '' : 'opacity-50 saturate-50'
-                    }`}
-                  />
-                </span>
-                <span
-                  className={`text-center text-[12px] font-semibold leading-tight ${deity.id === d.id ? 't-heading' : 't-body'}`}
-                >
-                  {lang === 'hi' ? d.nameHi : d.name}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ── The shrine, taking whatever is left ────────────────────────── */}
-      {/* Image scaling: `object-scale-down` by default maintains aspect ratio
-          and fits within the container without distortion. The complete murti
-          is shown, letterboxed if needed, responsive to any screen size.
-
+      {/* ── The shrine is the whole page ─────────────────────────────── */}
+      {/* Image scaling: `object-scale-down` by default keeps the whole murti,
+          letterboxed inside the doorway on the sanctum's lamp-lit dark.
           `setting:croppedDeityImage` (Profile → Settings) opts into `cover`,
-          which fills the box and crops edges. The crop position is optimized
-          for each device height. */}
+          which fills the doorway and crops the painting's edges. */}
       <section
-        className="relative min-h-0 flex-1 touch-none overflow-hidden bg-[#e4ddd1] [container-type:inline-size]"
+        className="relative min-h-0 flex-1 touch-none overflow-hidden [container-type:inline-size]"
+        style={{ background: 'radial-gradient(ellipse 75% 45% at 50% 58%, #7a4416 0%, #3a1f0b 55%, #1c0f06 100%)' }}
         onPointerDown={startSwipe}
         onPointerUp={endSwipe}
         onPointerCancel={() => (swipe.current = null)}
       >
-        <img
-          key={image.f}
-          src={`${import.meta.env.BASE_URL}deities/${image.f}`}
-          alt={`${deity.name} — ${image.label}`}
-          className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-scale-down' : 'object-cover'}`}
-          style={fullImage ? { objectPosition: '50% 50%' } : { objectPosition: '50% 32%' }}
-        />
+        {/* The garbhagriha: the murti stands in the doorway, not behind the
+            pillars. */}
+        <span className="absolute block" style={FRAME_OPENING}>
+          <img
+            key={image.f}
+            src={`${import.meta.env.BASE_URL}deities/${image.f}`}
+            alt={`${deity.name} — ${image.label}`}
+            className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-scale-down' : 'object-cover'}`}
+            style={{ objectPosition: fullImage ? '50% 70%' : '50% 32%' }}
+          />
+        </span>
 
         {/* Lamp light over the murti, always breathing. */}
         <span
           aria-hidden="true"
-          className="animate-halo absolute left-1/2 top-[38%] block h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full mix-blend-screen"
+          className="animate-halo absolute left-1/2 top-[52%] block h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full mix-blend-screen"
           style={{ background: 'radial-gradient(circle, rgba(227,166,60,.5) 0%, rgba(227,166,60,0) 70%)' }}
         />
 
@@ -360,15 +322,65 @@ export default function Pooja() {
           ))}
         </span>
 
-        {/* The carved mandir doorway around the murti (5 Oct 2026). Under
-            the controls, over the image and the falling flowers. */}
+        {/* The marble entrance (5 Oct 2026). Under the controls, over the
+            murti and the falling flowers. */}
         <TempleFrame />
+
+        {/* ── On the frieze: back, the deity's nameplate, sangeet ─────────── */}
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
+          <BackButton dark onClick={goBack} className="!h-11 !w-11" />
+          <button
+            type="button"
+            onClick={() => setSheet(true)}
+            aria-haspopup="dialog"
+            aria-label={`${lang === 'hi' ? deity.nameHi : deity.name} · ${t('puja.chooseDarshan')}`}
+            className="plinth min-w-0 !h-auto !w-auto gap-2 py-1 pl-1 pr-3"
+          >
+            <span className="block h-9 w-9 flex-none overflow-hidden rounded-full bg-black/30 ring-1 ring-white/40">
+              <img
+                src={`${import.meta.env.BASE_URL}deities/${deity.images[0].f}`}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </span>
+            <span className="min-w-0 text-left leading-tight">
+              <span className="block truncate text-[15px] font-semibold">
+                {lang === 'hi' ? deity.nameHi : deity.name}
+              </span>
+              {/* One dot per murti — the stack a vertical swipe moves through. */}
+              {deity.images.length > 1 && (
+                <span aria-hidden="true" className="mt-1 flex gap-1">
+                  {deity.images.map((im, i) => (
+                    <span
+                      key={im.f}
+                      className={`block h-1 rounded-full transition-all duration-200 ${i === pic ? 'w-3 bg-[#f4dc93]' : 'w-1 bg-white/40'}`}
+                    />
+                  ))}
+                </span>
+              )}
+            </span>
+            <Icon name="back" size={14} weight={2.2} className="flex-none -rotate-90 opacity-80" />
+          </button>
+          <button
+            type="button"
+            onClick={openMusic}
+            aria-haspopup="dialog"
+            aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
+            aria-pressed={Boolean(track)}
+            className={`plinth flex-none ${track ? 'plinth-on' : ''}`}
+          >
+            {track ? <PlayingBars /> : <SangeetGlyph />}
+          </button>
+        </div>
 
         <HangingBell side="left" ringing={ringing} />
         <HangingBell side="right" ringing={ringing} />
 
-        {/* ── The offering rail ───────────────────────────────────────── */}
-        <ul className="absolute left-7 top-1/2 flex -translate-y-1/2 flex-col gap-2.5">
+        {/* ── The offering rail, down the left pillar ─────────────────── */}
+        <ul
+          className="absolute top-1/2 flex -translate-y-1/2 flex-col gap-2.5"
+          style={{ left: `max(6px, calc(${frameCqw(80)} - 22px))` }}
+        >
           {offerings.map((o) => {
             const on = o.key === 'diya' ? lit.diya : o.key === 'incense' ? lit.incense : false
             return (
@@ -386,27 +398,6 @@ export default function Pooja() {
             )
           })}
         </ul>
-
-        {/* Which murti. A knob rather than a caption, because a caption under
-            the image is the one thing this screen is not allowed to have. */}
-        <button
-          type="button"
-          onClick={() => setSheet(true)}
-          aria-label={t('puja.chooseMurti')}
-          className="plinth absolute bottom-5 left-7"
-        >
-          <Icon name="eye" size={19} />
-        </button>
-
-        <button
-          type="button"
-          onClick={openMusic}
-          aria-label={t('puja.sangeet')}
-          aria-pressed={Boolean(track)}
-          className={`plinth absolute bottom-5 right-7 ${track ? 'plinth-on' : ''}`}
-        >
-          <SangeetGlyph />
-        </button>
 
         {/* The altar. These stand on the step whether or not they are lit —
             samagri you have not touched yet is still samagri, and a diya that
@@ -522,6 +513,7 @@ export default function Pooja() {
 
       {musicOpen && (
         <SangeetSheet
+          deity={deity}
           library={library}
           playing={track}
           onPlay={(asset) => {
@@ -534,9 +526,15 @@ export default function Pooja() {
       )}
 
       {sheet && (
-        <MurtiSheet
+        <DarshanSheet
           deity={deity}
           pic={pic}
+          // A deity tapped in the sheet shows in the doorway behind it at
+          // once; the sheet stays open on its murtis.
+          onDeity={(d) => {
+            setDeity(d)
+            setPic(0)
+          }}
           onPick={(i) => {
             setPic(i)
             setSheet(false)
@@ -549,27 +547,66 @@ export default function Pooja() {
 }
 
 /**
- * The murti picker, and the only place the attribution lives.
+ * Darshan — which deity, then which murti, in one sheet (5 Oct 2026; it was a
+ * row of deity chips above the shrine and an eye button for the murti).
+ * Tapping a deity changes the doorway behind the sheet straight away and
+ * leaves the sheet open on that deity's murtis; tapping a murti closes it.
  *
- * That is not a detail to tidy away: four of the Hanuman murtis are CC BY and
- * three more across Durga and Shani are share-alike. The licence needs a
- * credit somewhere a person can reach, and the shrine itself is not allowed to
- * carry text. If this sheet goes, the images have to go with it.
+ * Also the only place the attribution lives, and that is not a detail to tidy
+ * away: four of the Hanuman murtis are CC BY and three more across Durga and
+ * Shani are share-alike. The licence needs a credit somewhere a person can
+ * reach, and the shrine itself is not allowed to carry text. If this sheet
+ * goes, the images have to go with it.
  */
-function MurtiSheet({ deity, pic, onPick, onClose }) {
+function DarshanSheet({ deity, pic, onDeity, onPick, onClose }) {
   const { lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
+  const name = (d) => (lang === 'hi' ? d.nameHi : d.name)
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
+    <div role="dialog" aria-modal="true" aria-label={t('puja.chooseDarshan')} className="absolute inset-0 z-30 flex flex-col justify-end">
       <button
         type="button"
         aria-label="Close"
         onClick={onClose}
         className="animate-fade absolute inset-0 bg-black/45"
       />
-      <div className="animate-fade-rise relative rounded-t-3xl bg-surface p-4 shadow-xl">
-        <p className="caps-sm t-faint">
-          {lang === 'hi' ? deity.nameHi : deity.name} · {t('puja.murti')}
+      <div className="animate-fade-rise no-scrollbar relative max-h-[85%] overflow-y-auto rounded-t-3xl bg-surface p-4 pb-6 shadow-xl">
+        <span aria-hidden="true" className="mx-auto mb-3 block h-1 w-10 rounded-full bg-black/15" />
+        <p className="caps-sm t-faint">{t('puja.deity')}</p>
+        <ul className="mt-3 grid grid-cols-4 gap-x-2 gap-y-3">
+          {deities.map((d) => {
+            const on = d.id === deity.id
+            return (
+              <li key={d.id}>
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onDeity(d)}
+                  className="flex w-full flex-col items-center gap-1.5"
+                >
+                  <span
+                    className={`block h-14 w-14 overflow-hidden rounded-full ring-2 ring-offset-2 transition duration-200 ${
+                      on ? 'ring-gold-fill' : 'ring-transparent opacity-70'
+                    }`}
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}deities/${d.images[0].f}`}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <span className={`text-center text-[12px] font-semibold leading-tight ${on ? 't-heading' : 't-body'}`}>
+                    {name(d)}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+
+        <p className="mt-5 caps-sm t-faint">
+          {name(deity)} · {t('puja.murti')}
         </p>
         <ul className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
           {deity.images.map((im, i) => (
@@ -601,15 +638,38 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
   )
 }
 
+/* Whether a bhajan or mantra belongs to a deity. Bhakti's `deity` field is
+   typed by hand when a file is loaded, so it is matched loosely, with the
+   names people actually use, and the title is read too. */
+const DEITY_WORDS = {
+  Ganesh: ['ganesh', 'ganpati', 'ganapati', 'vinayak'],
+  Shiva: ['shiv', 'mahadev', 'shankar', 'bholenath', 'rudra'],
+  Lakshmi: ['lakshmi', 'laxmi'],
+  Hanuman: ['hanuman', 'bajrang', 'maruti'],
+  Durga: ['durga', 'devi', 'ambe', 'mata'],
+  Mahavir: ['mahavir', 'navkar', 'jain'],
+  Aadinath: ['aadinath', 'adinath', 'rishabh', 'navkar', 'jain'],
+  Shani: ['shani'],
+}
+function forDeity(asset, deity) {
+  const hay = `${asset.deity ?? ''} ${asset.title ?? ''}`.toLowerCase()
+  return (DEITY_WORDS[deity.name] ?? [deity.name.toLowerCase()]).some((w) => hay.includes(w))
+}
+
 /**
  * Sangeet — choose a bhajan or a mantra to play during the puja. The list is
  * Bhakti's own library (`bhakti_assets`, kinds bhajan and mantra), so a new
  * file loaded there appears here with no change to this screen.
  */
-function SangeetSheet({ library, playing, onPlay, onStop, onClose }) {
-  const { t } = useStore()
+function SangeetSheet({ deity, library, playing, onPlay, onStop, onClose }) {
+  const { t, lang } = useStore()
   const [tab, setTab] = useState(playing?.kind === 'mantra' ? 'mantra' : 'bhajan')
   const rows = (library ?? []).filter((a) => a.kind === tab)
+  // The deity in the doorway's own bhajans and mantras, first (5 Oct 2026).
+  const mine = (library ?? []).filter((a) => forDeity(a, deity)).slice(0, 4)
+  const row = (a) => (
+    <TrackRow key={a.id} asset={a} on={playing?.id === a.id} onPlay={onPlay} onStop={onStop} />
+  )
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end">
@@ -619,7 +679,8 @@ function SangeetSheet({ library, playing, onPlay, onStop, onClose }) {
         onClick={onClose}
         className="animate-fade absolute inset-0 bg-black/45"
       />
-      <div className="animate-fade-rise relative flex max-h-[70%] flex-col rounded-t-3xl bg-surface p-4 shadow-xl">
+      <div className="animate-fade-rise relative flex max-h-[80%] flex-col rounded-t-3xl bg-surface p-4 shadow-xl">
+        <span aria-hidden="true" className="mx-auto mb-3 block h-1 w-10 flex-none rounded-full bg-black/15" />
         <p className="caps-sm t-faint">{t('puja.sangeet')}</p>
 
         {playing && (
@@ -634,73 +695,95 @@ function SangeetSheet({ library, playing, onPlay, onStop, onClose }) {
           </div>
         )}
 
-        <div className="mt-3 flex gap-2">
-          {[['bhajan', 'puja.bhajans'], ['mantra', 'puja.mantras']].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={tab === key}
-              onClick={() => setTab(key)}
-              className="pill caps-sm"
-            >
-              {t(label)}
-            </button>
-          ))}
-        </div>
-
         <div className="no-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto">
+          {mine.length > 0 && (
+            <section className="mb-4">
+              <p className="caps-sm gold">{t('puja.forDeity', { name: lang === 'hi' ? deity.nameHi : deity.name })}</p>
+              <ul className="mt-2 space-y-2">{mine.map(row)}</ul>
+            </section>
+          )}
+
+          <div className="sticky top-0 z-10 flex gap-2 bg-surface pb-3">
+            {[['bhajan', 'puja.bhajans'], ['mantra', 'puja.mantras']].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={tab === key}
+                onClick={() => setTab(key)}
+                className="pill caps-sm"
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
+
           {library === null && <p className="py-6 text-center text-meta t-faint">{t('puja.loadingMusic')}</p>}
           {library !== null && rows.length === 0 && (
             <p className="py-6 text-center text-meta t-faint">{t('puja.noMusic')}</p>
           )}
-          <ul className="space-y-2">
-            {rows.map((a) => {
-              const on = playing?.id === a.id
-              return (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => (on ? onStop() : onPlay(a))}
-                    aria-pressed={on}
-                    className={`flex w-full items-center gap-3 rounded-2xl border p-2 text-left transition ${
-                      on ? 'border-gold-fill bg-white' : 'border-stroke bg-white/60'
-                    }`}
-                  >
-                    {a.previewUrl ? (
-                      <img src={a.previewUrl} alt="" loading="lazy" className="h-10 w-16 flex-none rounded-lg object-cover" />
-                    ) : (
-                      <span className="h-10 w-16 flex-none rounded-lg bg-surface2" />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-meta t-heading">{a.title}</span>
-                      {a.deity && <span className="block truncate text-[12px] t-faint">{a.deity}</span>}
-                    </span>
-                    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-white">
-                      <Icon name={on ? 'pause' : 'play'} size={16} filled={!on} />
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <ul className="space-y-2">{rows.map(row)}</ul>
         </div>
       </div>
     </div>
   )
 }
 
-/** A ghanti on its chain, hung in a top corner of the niche. */
+function TrackRow({ asset: a, on, onPlay, onStop }) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => (on ? onStop() : onPlay(a))}
+        aria-pressed={on}
+        className={`flex w-full items-center gap-3 rounded-2xl border p-2 text-left transition ${
+          on ? 'border-gold-fill bg-white' : 'border-stroke bg-white/60'
+        }`}
+      >
+        {a.previewUrl ? (
+          <img src={a.previewUrl} alt="" loading="lazy" className="h-10 w-16 flex-none rounded-lg object-cover" />
+        ) : (
+          <span className="h-10 w-16 flex-none rounded-lg bg-surface2" />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-meta t-heading">{a.title}</span>
+          {a.deity && <span className="block truncate text-[12px] t-faint">{a.deity}</span>}
+        </span>
+        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-white">
+          <Icon name={on ? 'pause' : 'play'} size={16} filled={!on} />
+        </span>
+      </button>
+    </li>
+  )
+}
+
+/** Three bars that move while sangeet plays — the button says it is on. */
+function PlayingBars() {
+  return (
+    <span aria-hidden="true" className="flex h-[18px] items-end gap-[3px]">
+      {[0, 0.25, 0.5].map((d) => (
+        <span
+          key={d}
+          className="block w-[3px] rounded-full bg-current motion-safe:animate-pulse"
+          style={{ height: d === 0.25 ? '100%' : '60%', animationDelay: `${d}s` }}
+        />
+      ))}
+    </span>
+  )
+}
+
+/** A ghanti on its chain, hung from the arch at an edge of the doorway. */
 function HangingBell({ side, ringing }) {
   return (
     <span
       aria-hidden="true"
-      // Hung from under the lintel, just inside the pillars.
-      className={`absolute top-[24px] origin-top ${side === 'left' ? 'left-[26px]' : 'right-[26px]'} ${
-        ringing ? 'animate-swing' : ''
-      }`}
-      style={{ filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))' }}
+      className={`absolute origin-top ${ringing ? 'animate-swing' : ''}`}
+      style={{
+        top: frameCqw(640),
+        [side]: `calc(${frameCqw(160)} - 22px)`,
+        filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))',
+      }}
     >
-      <PujaPhoto name="ghanti" width={60} fallback={<Ghanti size={116} hanging />} />
+      <PujaPhoto name="ghanti" width={52} fallback={<Ghanti size={100} hanging />} />
     </span>
   )
 }
