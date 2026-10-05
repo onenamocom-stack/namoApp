@@ -5458,8 +5458,8 @@ were. The per-category banner under the pills is removed, with its four
   `status` update, at the owner's request, not through the console — so
   there is **no `admin_actions` row** for it. He applied the same day as an
   Astrologer; four active services; he is in `/v1/consultants/`.
-- **Test Seeker (8447284861) wallet set to ₹20, then ₹40, then ₹80, then +₹37 twice**, for testing:
-  five ledger rows, `ref_type` adjustment (−₹126.50, +₹20, +₹40, +₹37, +₹37), note
+- **Test Seeker (8447284861) wallet set to ₹20, then ₹40, then ₹80, then +₹37 three times**, for testing:
+  six ledger rows, `ref_type` adjustment (−₹126.50, +₹20, +₹40, then +₹37 three times), note
   "Owner request, 5 Oct 2026".
 
 ## 53. Calls and chats rebuilt: one caller at a time, billing from connect — 5 Oct 2026
