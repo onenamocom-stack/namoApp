@@ -89,7 +89,7 @@ def create_room(name, expires_at):
     })
 
 
-def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False):
+def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False, user_id=None):
     """One token per person per session. Private rooms cannot be joined
     without one, so a forwarded link is a link to a locked door.
 
@@ -102,9 +102,40 @@ def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False):
         "is_owner": bool(is_owner),
         "exp": int(expires_at.timestamp()),
     }}
+    if user_id:
+        # The profile id, so the room's participant list says WHO is in it
+        # and the server can start the clock on its own evidence.
+        payload["properties"]["user_id"] = str(user_id).replace("-", "")[:36]
     if audio_only:
         # An audio call: the camera starts off for this person. They can
         # still turn it on from the call's own controls.
         payload["properties"]["start_video_off"] = True
     data = _call("POST", "/meeting-tokens", payload)
     return (data or {}).get("token")
+
+
+def set_room_expiry(name, expires_at):
+    """Move the room's end to the paid end, once the clock has started.
+    Raises UpstreamError; the caller decides whether that matters."""
+    return _call("POST", f"/rooms/{name}", {"properties": {
+        "exp": int(expires_at.timestamp()), "eject_at_room_exp": True,
+    }})
+
+
+def present_user_ids(room_name):
+    """Who is in the room right now, by the user_id on their token — or
+    None when Daily cannot say. Never guesses: an unknown answer must not
+    start anybody's clock."""
+    try:
+        data = _call("GET", f"/rooms/{room_name}/presence")
+    except UpstreamError as exc:
+        logger.warning("[video] presence for %s failed: %s", room_name, exc)
+        return None
+    if data is None:
+        return set()
+    out = set()
+    for row in data.get("data") or []:
+        uid = row.get("userId") or row.get("user_id")
+        if uid:
+            out.add(str(uid).replace("-", "").lower())
+    return out

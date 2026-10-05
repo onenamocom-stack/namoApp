@@ -210,6 +210,10 @@ SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "")
 # request without it is not Shiprocket.
 SHIPROCKET_WEBHOOK_TOKEN = os.environ.get("SHIPROCKET_WEBHOOK_TOKEN", "")
 
+# The database's scheduler calls /v1/chat/sweep/ with this in x-sweep-token
+# (pg_cron + pg_net, `manage.py use_api_sweeper`). Empty: the endpoint refuses.
+SWEEP_TOKEN = os.environ.get("SWEEP_TOKEN", "")
+
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
 # One image, two Cloud Run services. The public API serves no console URL
 # and the console serves no /v1, so a hole in one is not a door into the

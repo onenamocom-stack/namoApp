@@ -53,7 +53,7 @@ def fake_daily(monkeypatch):
         calls["rooms"].append((name, expires_at))
         return {"url": f"https://1namo.daily.co/{name}", "name": name}
 
-    def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False):
+    def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False, user_id=None):
         calls["tokens"].append((room_name, user_name, is_owner, expires_at))
         calls.setdefault("audio_only", []).append(audio_only)
         return f"token-for-{user_name}"

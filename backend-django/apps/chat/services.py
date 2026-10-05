@@ -49,6 +49,29 @@ semantics back before touching anything:
   write on SQLite (no triggers there) — the gateway precedent for prod's
   phase-2 balance trigger.
 
+THE CONNECT PHASE AND ONE CALLER AT A TIME (5 Oct 2026). Three rules,
+each enforced by the database rather than by a client being polite:
+
+  1. A consultant has at most ONE ringing request and ONE live session —
+     two partial unique indexes. Every request and every accept first
+     locks that consultant's row (SELECT … FOR UPDATE), so the two cannot
+     interleave: a second seeker calling a busy consultant is answered
+     "busy" with nothing written and nothing charged, and retries.
+  2. A CALL's clock starts when both people are in the room, not when the
+     consultant presses Answer. Answer takes the hold (so the money exists)
+     and reserves the consultant; `started_at` stays empty until the video
+     service reports both of them present. A call that does not connect
+     within CONNECT_SECONDS settles at ₹0 and the whole hold comes back.
+     A CHAT starts on accept: the consultant is in the chat the moment they
+     accept it.
+  3. Nothing here waits for a scheduler. Ringing that nobody answered and
+     calls that never connected are judged from timestamps whenever anyone
+     touches that consultant (`_tidy`), and the sweeper is a second net, not
+     the only one. A partitioned or dead scheduler delays nothing.
+
+Lock order, everywhere, so nothing can deadlock: consultant row, then
+session row, then wallet row.
+
 Money paths go through apps.wallet.services (module 8 owns wallets and
 ledger; the booking/chat gateway calls moved there unchanged — same SQL,
 same results); orders/order_items stay module 6's raw gateway. The fee
@@ -74,7 +97,12 @@ from .models import Message, Session, Thread
 # ── the product constants, named once (014) ──────────────────────────────────
 
 GRACE_SECONDS = 60  # a blinking connection does not end a paid reading
-UNANSWERED = 15 * 60  # a request nobody answered in 15 minutes is a lie on the queue
+# A request rings for this long and then stops (5 Oct 2026; was 15 minutes,
+# which kept a consultant "busy" for a seeker who had long gone).
+RING_SECONDS = 45
+UNANSWERED = RING_SECONDS
+# An accepted call must connect — both people in the room — within this.
+CONNECT_SECONDS = 90
 PREVIEW_CHARS = 120  # 016: left(body, 120) — characters, not bytes
 
 
@@ -97,11 +125,14 @@ REFUSAL_NO_SESSION = "No such session."
 REFUSAL_NOT_YOURS = "That is not your session."
 REFUSAL_SESSION_ENDED = "That session has ended. Start another to reply."
 REFUSAL_NOT_PARTICIPANT = "You are not part of that conversation."
+REFUSAL_BUSY = "They are with another seeker right now. We will keep trying."
+REFUSAL_RING_OVER = "That call stopped ringing."
 
 SESSION_ROW_FIELDS = (
     "id", "seeker_id", "consultant_id", "service_id", "thread_id", "order_id",
     "mode", "rate_paise", "status", "requested_at", "started_at", "expires_at",
     "ended_at", "heartbeat_at", "hold_paise", "charged_paise", "created_at",
+    "accepted_at", "audio_only",
 )
 
 
@@ -167,18 +198,73 @@ def _touch_thread(thread_id, created_at, body):
 # ── ask for a session (014; 018 fixes 2 and 3) ───────────────────────────────
 
 
-def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=False):
-    """The knock on the door. NO MONEY MOVES HERE — a consultant who never
-    answers has cost the seeker nothing, which is the opposite of a booking
-    (that charges up front because it claims a slot somebody else wanted).
+def _lock_consultant(consultant_id):
+    """The per-consultant mutex: their row, FOR UPDATE. Every request and
+    every accept for one consultant passes through here one at a time;
+    different consultants never wait on each other."""
+    from apps.consultants.models import Consultant
 
-    The balance check here is advisory only ("refuse before anyone waits");
-    the number that matters is re-checked under the wallet lock at accept.
-    Asking twice is the same ask: sessions_one_open_request is the
-    guarantee (018 fix 2), the conflicting insert is caught and the request
-    already waiting is returned."""
+    return Consultant.objects.select_for_update().filter(profile_id=consultant_id).first()
+
+
+def _tidy(consultant_id, now):
+    """Settle what time has already decided, for this consultant only:
+    ringing nobody answered, and live sessions that are over — a call that
+    never connected, a clock that ran out, a connection that went silent.
+    Called under the consultant lock, so it is the scheduler-free half of
+    the sweeper: correctness never waits for the next sweep."""
+    Session.objects.filter(
+        consultant_id=consultant_id, status=Session.Status.REQUESTED,
+        requested_at__lt=now - timezone.timedelta(seconds=RING_SECONDS),
+    ).update(status=Session.Status.EXPIRED, ended_at=now)
+    for session in Session.objects.filter(consultant_id=consultant_id, status=Session.Status.LIVE):
+        reason = _due(session, now)
+        if reason:
+            end_session(None, session.id, reason=reason, now=now)
+
+
+def _due(session, now):
+    """Why a live session should be settled now, or None."""
+    grace_before = now - timezone.timedelta(seconds=GRACE_SECONDS)
+    if session.started_at is None:
+        accepted = session.accepted_at or session.requested_at
+        if accepted < now - timezone.timedelta(seconds=CONNECT_SECONDS):
+            return "never connected"
+        if session.heartbeat_at is not None and session.heartbeat_at < grace_before:
+            return "connection lost"
+        return None
+    if session.expires_at is not None and session.expires_at <= now:
+        return "time ran out"
+    if (session.heartbeat_at or session.started_at) < grace_before:
+        return "connection lost"
+    return None
+
+
+def is_busy(consultant_id, now=None):
+    """Ringing for somebody or in a session — either way, not free."""
+    now = now or timezone.now()
+    return Session.objects.filter(
+        Q(status=Session.Status.LIVE)
+        | Q(status=Session.Status.REQUESTED,
+            requested_at__gte=now - timezone.timedelta(seconds=RING_SECONDS)),
+        consultant_id=consultant_id,
+    ).exists()
+
+
+def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=False, channel=None):
+    """The knock on the door. NO MONEY MOVES HERE — a consultant who never
+    answers has cost the seeker nothing.
+
+    `channel` is what the seeker pressed — chat, video or audio — and sets
+    the session's mode: a call is `call`, whatever the service row says.
+    Until 5 Oct the mode came from the service, every per-minute service
+    was `chat`, and the consultant's app opened a camera for a chat.
+
+    Busy is an ANSWER, not an error: {ok: false, busy: true}. The client
+    waits and asks again; nothing was written, so asking again is free."""
     from apps.consultants.models import ConsultantService, ConsultantStatus
 
+    now = now or timezone.now()
     if str(consultant_id) == str(seeker_id):
         return {"ok": False, "reason": REFUSAL_SELF_CHAT}
     service = (
@@ -194,20 +280,20 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
     )
     if service is None:
         return {"ok": False, "reason": REFUSAL_NOT_TAKING}
-    # Presence, checked BEFORE any money is looked at. A request to somebody
-    # who is asleep would be refused eventually — by nobody accepting it,
-    # after a hold and a wait — and "eventually" is the part that costs the
-    # seeker their evening. The server refuses here rather than trusting the
-    # roster's dot, which was a second old when it was drawn.
     from apps.consultants import services as consultant_services
 
     if not consultant_services.is_online(consultant_id, now=now):
         return {"ok": False, "reason": REFUSAL_OFFLINE}
     if service.price_paise <= 0:
         return {"ok": False, "reason": REFUSAL_NOT_PRICED}
-    # 018 fix 3: consultant_services.mode permits 'booking', sessions.mode
-    # does not — a mode the session cannot store is a refusal, not a crash.
-    if service.mode not in Session.Mode.values:
+    if channel in ("video", "audio"):
+        mode = Session.Mode.CALL
+        audio_only = channel == "audio"
+    elif channel == "chat":
+        mode = Session.Mode.CHAT
+    else:
+        mode = service.mode
+    if mode not in Session.Mode.values:
         return {"ok": False, "reason": REFUSAL_BAD_MODE}
 
     balance = _balance_of(seeker_id)
@@ -215,25 +301,41 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
         return {"ok": False, "reason": REFUSAL_SHORT_BALANCE,
                 "rate_paise": service.price_paise}
 
-    try:
-        with transaction.atomic():  # savepoint: the lost race rolls back only the insert
-            session = Session.objects.create(
-                seeker_id=seeker_id,
-                consultant_id=consultant_id,
-                service_id=service.id,
-                mode=service.mode,
-                rate_paise=service.price_paise,
-                status=Session.Status.REQUESTED,
-                audio_only=bool(audio_only),
-            )
-    except IntegrityError:
-        # 23505 on sessions_one_open_request — the same ask. The index is
-        # the guarantee; this read returns the request already waiting.
-        session = Session.objects.get(
+    with transaction.atomic():
+        _lock_consultant(consultant_id)
+        _tidy(consultant_id, now)
+        mine = Session.objects.filter(
             seeker_id=seeker_id, consultant_id=consultant_id,
             status=Session.Status.REQUESTED,
-        )
-    return {"ok": True, "session_id": str(session.id), "rate_paise": session.rate_paise}
+        ).first()
+        if mine is not None:
+            # Asking twice is the same ask.
+            return {"ok": True, "session_id": str(mine.id), "rate_paise": mine.rate_paise,
+                    "mode": mine.mode}
+        if Session.objects.filter(seeker_id=seeker_id, status=Session.Status.LIVE).exists():
+            return {"ok": False, "reason": REFUSAL_ALREADY_LIVE}
+        if Session.objects.filter(
+            consultant_id=consultant_id,
+            status__in=(Session.Status.LIVE, Session.Status.REQUESTED),
+        ).exists():
+            return {"ok": False, "busy": True, "reason": REFUSAL_BUSY, "retry_after": 5}
+        try:
+            with transaction.atomic():  # savepoint: a lost race rolls back only the insert
+                session = Session.objects.create(
+                    seeker_id=seeker_id,
+                    consultant_id=consultant_id,
+                    service_id=service.id,
+                    mode=mode,
+                    rate_paise=service.price_paise,
+                    status=Session.Status.REQUESTED,
+                    requested_at=now,
+                    audio_only=bool(audio_only),
+                )
+        except IntegrityError:
+            # The unique indexes are the last word: somebody else is ringing.
+            return {"ok": False, "busy": True, "reason": REFUSAL_BUSY, "retry_after": 5}
+    return {"ok": True, "session_id": str(session.id), "rate_paise": session.rate_paise,
+            "mode": session.mode}
 
 
 def _balance_of(profile_id):
@@ -251,37 +353,49 @@ def _balance_of(profile_id):
 # ── accept, and start the meter (014; 017 removes the cap; 018 fix 1) ────────
 
 
+def _accepted_row(session):
+    return {
+        "ok": True,
+        "session_id": str(session.id),
+        "thread_id": str(session.thread_id) if session.thread_id else None,
+        "mode": session.mode,
+        "minutes_held": (session.hold_paise or 0) // session.rate_paise,
+        "hold_paise": session.hold_paise,
+        "expires_at": session.expires_at,
+        "connecting": session.started_at is None,
+    }
+
+
 def accept_chat(consultant_id, session_id, now=None):
-    """The consultant's join — THE money transaction. One block, exactly as
-    014/017/018: the session ROW LOCK first (018 fix 1: two concurrent
-    accepts both read 'requested' under READ COMMITTED; the second must
-    serialise here and find the status already moved — the unique index
-    does not catch this, it is two UPDATEs, not two INSERTs), then the
-    wallet lock, the affordable minutes off the LOCKED balance (no cap,
-    017), the order and its one line, the thread upsert (one per pair,
-    forever), the live transition, the whole-hold debit. The unique index
-    sessions_one_live_per_consultant is the backstop for a SECOND request
-    from another seeker; its 23505 is caught and translated, exactly like
-    the slot claim. Earnings are NOT written here — the consultant earns
-    what was used, and that is not known until the session ends."""
+    """The consultant says yes — THE money transaction, one block.
+
+    Lock order: the consultant row (the per-consultant mutex), then the
+    session row (018 fix 1: two concurrent accepts serialise and the second
+    finds the status moved), then the wallet. The hold is every minute the
+    LOCKED balance buys (017). A chat's clock starts now; a call's waits for
+    both people to be in the room (`start_clock`). Earnings are written at
+    the end, when the minutes used are known.
+
+    Idempotent for its own consultant: answering twice (a double tap, a
+    retried request after a dropped response) returns the session already
+    live instead of a refusal the app would show as an error."""
     now = now or timezone.now()
     try:
         with transaction.atomic():
-            # THE LOCK (018 fix 1). Postgres: FOR UPDATE; the loser waits,
-            # re-reads, and finds status moved. SQLite (tests): the
-            # transaction's IMMEDIATE write lock serialises at BEGIN, before
-            # any read, so the loser reads the winner's commit.
+            _lock_consultant(consultant_id)
+            _tidy(consultant_id, now)
             session = (
                 Session.objects.select_for_update().filter(pk=session_id).first()
             )
             if session is None:
                 return {"ok": False, "reason": REFUSAL_GONE}
-            # Only the consultant accepts, and only out of 'requested' — the
-            # same edge as the booking policy: no reaching back into a
-            # session already resolved.
-            if str(session.consultant_id) != str(consultant_id) or (
-                session.status != Session.Status.REQUESTED
-            ):
+            if str(session.consultant_id) != str(consultant_id):
+                return {"ok": False, "reason": REFUSAL_NOT_OPEN}
+            if session.status == Session.Status.LIVE:
+                return _accepted_row(session)
+            if session.status == Session.Status.EXPIRED:
+                return {"ok": False, "reason": REFUSAL_RING_OVER}
+            if session.status != Session.Status.REQUESTED:
                 return {"ok": False, "reason": REFUSAL_NOT_OPEN}
 
             balance = wallet_services.lock_wallet_balance(session.seeker_id)
@@ -289,15 +403,12 @@ def accept_chat(consultant_id, session_id, now=None):
                 return {"ok": False, "reason": REFUSAL_NO_WALLET}
             minutes = _minutes_held(balance, session.rate_paise)
             if minutes < 1:
-                # 013 fix 2's shape from module 6: its own branch, not a
-                # shared sentinel. Nothing written yet, the read-only early
-                # return is safe — there is no block to unwind.
                 return {"ok": False, "reason": REFUSAL_SHORT_BALANCE,
                         "balance_paise": balance}
             hold = minutes * session.rate_paise
 
             pro_name = gateway.profile_name(consultant_id)
-            label = f"{pro_name or 'Consultation'} · chat"
+            label = f"{pro_name or 'Consultation'} · {_what(session)}"
 
             order_id = gateway.insert_order(session.seeker_id, hold)
             gateway.insert_order_item(
@@ -308,46 +419,61 @@ def accept_chat(consultant_id, session_id, now=None):
                 unit_price_paise=session.rate_paise,
             )
 
-            # The transcript. One per pair, forever.
+            # The transcript. One per pair, forever — calls included, so the
+            # people you have spoken to are the people in your list.
             thread, _ = Thread.objects.get_or_create(
                 seeker_id=session.seeker_id, consultant_id=session.consultant_id
             )
 
             session.status = Session.Status.LIVE
-            session.started_at = now
-            session.expires_at = now + timezone.timedelta(minutes=minutes)
+            session.accepted_at = now
             session.heartbeat_at = now
             session.hold_paise = hold
             session.thread_id = thread.id
             session.order_id = order_id
+            if session.mode == Session.Mode.CHAT:
+                session.started_at = now
+                session.expires_at = now + timezone.timedelta(minutes=minutes)
+            else:
+                session.started_at = None
+                session.expires_at = None
             session.save(
                 update_fields=(
-                    "status", "started_at", "expires_at", "heartbeat_at",
+                    "status", "accepted_at", "started_at", "expires_at", "heartbeat_at",
                     "hold_paise", "thread_id", "order_id",
                 )
             )
 
-            # The hold. Two ledger rows per session, not fifty; the wallet
-            # follows by prod's phase-2 trigger and by the gateway's
-            # emulation on SQLite.
             wallet_services.insert_ledger(
                 session.seeker_id, -hold,
                 f"{label} · {minutes} min held",
                 ref_type="order", ref_id=order_id,
             )
     except IntegrityError:
-        # 23505 on sessions_one_live_per_consultant — a second seeker's
-        # request racing into a live session. The index is the conflict
-        # check; the whole block unwinds.
+        # sessions_one_live_per_consultant: the backstop under the lock.
         return {"ok": False, "reason": REFUSAL_ALREADY_LIVE}
-    return {
-        "ok": True,
-        "session_id": str(session.id),
-        "thread_id": str(thread.id),
-        "minutes_held": minutes,
-        "hold_paise": hold,
-        "expires_at": session.expires_at,
-    }
+    return _accepted_row(session)
+
+
+def _what(session):
+    if session.mode == Session.Mode.CHAT:
+        return "chat"
+    return "audio call" if session.audio_only else "video call"
+
+
+def start_clock(session_id, now=None):
+    """Both people are in the room: the paid minutes begin now. A compare-
+    and-set on `started_at is null`, so two heartbeats reporting the same
+    moment start it once. Returns True when this call started it."""
+    now = now or timezone.now()
+    session = Session.objects.filter(pk=session_id).first()
+    if session is None or session.status != Session.Status.LIVE or session.started_at is not None:
+        return False
+    minutes = (session.hold_paise or 0) // session.rate_paise
+    return bool(Session.objects.filter(
+        pk=session_id, status=Session.Status.LIVE, started_at__isnull=True,
+    ).update(started_at=now, expires_at=now + timezone.timedelta(minutes=minutes),
+             heartbeat_at=now))
 
 
 # ── end, and settle (014; 018 fix 4) ─────────────────────────────────────────
@@ -383,14 +509,19 @@ def end_session(actor_id, session_id, reason=None, now=None):
             return {"ok": False, "reason": REFUSAL_NOT_YOURS}
 
         note = reason if actor_id is None else "ended"
-        stop = min(now, session.expires_at)
-        charged = _billable_paise(
-            session.started_at, stop, session.hold_paise, session.rate_paise
-        )
-        # Label only — what the earnings row says, not what anybody pays.
-        minutes = _billable_minutes(
-            session.started_at, stop, session.hold_paise, session.rate_paise
-        )
+        if session.started_at is None:
+            # A call that never connected: nobody talked, nobody pays, and
+            # the consultant has earned nothing (5 Oct 2026).
+            charged, minutes = 0, 0
+        else:
+            stop = min(now, session.expires_at)
+            charged = _billable_paise(
+                session.started_at, stop, session.hold_paise, session.rate_paise
+            )
+            # Label only — what the earnings row says, not what anybody pays.
+            minutes = _billable_minutes(
+                session.started_at, stop, session.hold_paise, session.rate_paise
+            )
         refund = session.hold_paise - charged
 
         claimed = Session.objects.filter(
@@ -417,17 +548,18 @@ def end_session(actor_id, session_id, reason=None, now=None):
         # The consultant earns what was USED — this is why earnings are
         # written here and not at accept: at accept nobody knows how long
         # anyone will talk.
-        seeker_name = gateway.profile_name(session.seeker_id)
-        fee = fee_paise(charged)
-        EarningsLedger.objects.create(
-            consultant_id=session.consultant_id,
-            booking=None,
-            gross_paise=charged,
-            fee_bps=FEE_BPS,
-            fee_paise=fee,
-            net_paise=charged - fee,
-            kind=f"{seeker_name or 'Session'} · {minutes} min chat",
-        )
+        if charged > 0:
+            seeker_name = gateway.profile_name(session.seeker_id)
+            fee = fee_paise(charged)
+            EarningsLedger.objects.create(
+                consultant_id=session.consultant_id,
+                booking=None,
+                gross_paise=charged,
+                fee_bps=FEE_BPS,
+                fee_paise=fee,
+                net_paise=charged - fee,
+                kind=f"{seeker_name or 'Session'} · {minutes} min {_what(session)}",
+            )
     return {"ok": True, "minutes": minutes,
             "charged_paise": charged, "refunded_paise": refund}
 
@@ -436,12 +568,15 @@ def end_session(actor_id, session_id, reason=None, now=None):
 
 
 def heartbeat(actor_id, session_id, now=None):
-    """Says "still here" and asks how long is left. It does NOT advance the
-    meter and cannot extend anything — the cutoff is expires_at on the
-    server. A client that stops calling this loses nothing it paid for; it
-    just gets swept sooner (the 60-second grace). Note the expired-but-not-
-    yet-swept case answers live:true with seconds_left 0, exactly like the
-    SQL: only the sweeper ends a session."""
+    """Says "still here" and asks how long is left. It cannot extend
+    anything — the cutoff is expires_at on the server.
+
+    For a call still CONNECTING it is also where the clock starts: the
+    server asks the video service who is in the room, and when both people
+    are, `start_clock` begins the paid minutes. The seeker's word is not
+    taken for it — a client that never reported would get a free call —
+    the room's own list of participants is. A call that does not connect
+    in time is settled here, at ₹0, whoever happens to ask."""
     now = now or timezone.now()
     session = Session.objects.filter(pk=session_id).first()
     if session is None or str(actor_id) not in (
@@ -449,12 +584,27 @@ def heartbeat(actor_id, session_id, now=None):
     ):
         return {"ok": False, "reason": REFUSAL_NOT_YOURS}
     if session.status != Session.Status.LIVE:
-        return {"ok": True, "live": False, "seconds_left": 0}
+        return {"ok": True, "live": False, "seconds_left": 0,
+                "never_connected": session.started_at is None and session.accepted_at is not None}
+    if session.started_at is None:
+        if _due(session, now):
+            end_session(None, session.id, reason="never connected", now=now)
+            return {"ok": True, "live": False, "seconds_left": 0, "never_connected": True}
+        Session.objects.filter(pk=session.id).update(heartbeat_at=now)
+        from apps.video import services as video_services
+
+        if video_services.both_present(session) and start_clock(session.id, now=now):
+            session.refresh_from_db()
+            video_services.clock_started(session)
+        session.refresh_from_db()
+        if session.started_at is None:
+            return {"ok": True, "live": True, "connecting": True, "seconds_left": None,
+                    "rate_paise": session.rate_paise}
     Session.objects.filter(pk=session.id).update(heartbeat_at=now)
     remaining = session.expires_at - now
     seconds_left = max(0, int(remaining.total_seconds()))
-    return {"ok": True, "live": True, "seconds_left": seconds_left,
-            "rate_paise": session.rate_paise}
+    return {"ok": True, "live": True, "connecting": False, "seconds_left": seconds_left,
+            "expires_at": session.expires_at, "rate_paise": session.rate_paise}
 
 
 # ── the sweeper (014; 018 adds request expiry) ───────────────────────────────
@@ -489,6 +639,8 @@ def sweep_sessions(now=None):
             Q(expires_at__lte=now)
             | Q(heartbeat_at__isnull=True, started_at__lt=grace_before)
             | Q(heartbeat_at__lt=grace_before)
+            | Q(started_at__isnull=True,
+                accepted_at__lt=now - timezone.timedelta(seconds=CONNECT_SECONDS))
         )
         .order_by("id")
     )
@@ -499,7 +651,7 @@ def sweep_sessions(now=None):
     # expired sessions are never settled (holds leak).
     with transaction.atomic():
         for session in candidates:
-            reason = "time ran out" if session.expires_at <= now else "connection lost"
+            reason = _due(session, now) or "connection lost"
             result = end_session(None, session.id, reason=reason, now=now)
             # Count what THIS run actually settled. A concurrent sweeper (or a
             # pressed End) that got there first is reported already_ended — on
@@ -511,7 +663,7 @@ def sweep_sessions(now=None):
     expired_requests = Session.objects.filter(
         status=Session.Status.REQUESTED,
         requested_at__lt=now - timezone.timedelta(seconds=UNANSWERED),
-    ).update(status=Session.Status.EXPIRED)
+    ).update(status=Session.Status.EXPIRED, ended_at=now)
     return {"settled": settled, "expired_requests": expired_requests}
 
 
@@ -654,6 +806,29 @@ def list_threads(actor_id):
             thread_id__in=[t.id for t in threads], status=Session.Status.LIVE
         )
     }
+    # What you last did with this person — a video call, an audio call or
+    # a chat, how long, what it cost — so the list is a history of people
+    # you have actually spoken to (5 Oct 2026).
+    last_by_thread = {}
+    for row in Session.objects.filter(
+        thread_id__in=[t.id for t in threads]
+    ).exclude(accepted_at=None).order_by("-accepted_at").values(
+        "thread_id", "mode", "audio_only", "status", "started_at", "ended_at", "charged_paise",
+    ):
+        key = str(row["thread_id"])
+        if key in last_by_thread:
+            continue
+        seconds = None
+        if row["started_at"] and row["ended_at"]:
+            seconds = int((row["ended_at"] - row["started_at"]).total_seconds())
+        last_by_thread[key] = {
+            "kind": "chat" if row["mode"] == Session.Mode.CHAT else (
+                "audio" if row["audio_only"] else "video"),
+            "status": row["status"],
+            "at": row["started_at"] or row["ended_at"],
+            "seconds": seconds,
+            "charged_paise": row["charged_paise"],
+        }
     unread_counts = {
         str(thread_id): count
         for thread_id, count in Message.objects.filter(
@@ -675,6 +850,7 @@ def list_threads(actor_id):
             "consultant_name": thread.consultant_name,
             "unread": unread_counts.get(str(thread.id), 0),
             "live_session_id": live_by_thread.get(str(thread.id)),
+            "last_session": last_by_thread.get(str(thread.id)),
         }
         for thread in threads
     ]

@@ -11,6 +11,7 @@ urlpatterns = [
     path("sessions/<uuid:session_id>/decline/", views.decline, name="chat-decline"),
     path("sessions/<uuid:session_id>/heartbeat/", views.heartbeat, name="chat-heartbeat"),
     path("threads/", views.my_threads, name="chat-threads"),
+    path("sweep/", views.sweep, name="chat-sweep"),
     path("threads/<uuid:thread_id>/messages/", views.messages, name="chat-messages"),
     path("threads/<uuid:thread_id>/messages/send/", views.send, name="chat-send"),
     path("threads/<uuid:thread_id>/read/", views.read, name="chat-read"),

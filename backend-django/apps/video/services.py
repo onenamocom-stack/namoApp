@@ -101,17 +101,32 @@ def join(actor_id, session_id, now=None):
             else REFUSAL_NOT_LIVE,
             session=session, actor_id=actor_id, status=session.status,
         )
-    if session.expires_at is None or session.expires_at <= stamp:
+    # CONNECTING (5 Oct 2026): accepted, the money held, the clock not yet
+    # running. Both of them may come in; the clock starts when both are
+    # here (apps.chat.services.heartbeat → both_present). The room and the
+    # tokens are cut to last the connect window plus every minute held.
+    if session.started_at is None:
+        from apps.chat.services import CONNECT_SECONDS
+
+        accepted = session.accepted_at or session.requested_at
+        if accepted + timezone.timedelta(seconds=CONNECT_SECONDS) <= stamp:
+            return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
+                           status=session.status)
+        minutes = (session.hold_paise or 0) // session.rate_paise
+        room_until = accepted + timezone.timedelta(seconds=CONNECT_SECONDS, minutes=minutes)
+    elif session.expires_at is None or session.expires_at <= stamp:
         # The sweeper will settle it within the minute. Refusing here
         # rather than opening a room that Daily would eject them from
         # two seconds later.
         return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
                        status=session.status)
+    else:
+        room_until = session.expires_at
 
     name = room_name(session.id)
     try:
         room = providers.get_room(name) or providers.create_room(
-            name, session.expires_at
+            name, room_until
         )
         from apps.profiles import services as profile_services
 
@@ -119,8 +134,9 @@ def join(actor_id, session_id, now=None):
             name,
             profile_services.profile_name(actor_id) or "Guest",
             is_owner=is_consultant,
-            expires_at=session.expires_at,
+            expires_at=room_until,
             audio_only=session.audio_only,
+            user_id=actor_id,
         )
     except providers.UpstreamError as exc:
         logger.error("[video] daily failed for %s: %s", name, exc)
@@ -139,6 +155,46 @@ def join(actor_id, session_id, now=None):
         # read from the session, never from the room — the room's own
         # `exp` is a copy, and two clocks disagreeing over somebody's
         # money is the complaint this product already avoided once.
-        "expires_at": session.expires_at.isoformat(),
+        # Empty while the call connects: the countdown has nothing to count
+        # until the clock starts, and the heartbeat says when it does.
+        "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+        "connecting": session.started_at is None,
         "is_owner": is_consultant,
     }
+
+
+def both_present(session):
+    """Are the seeker AND the consultant in this session's room, by the
+    room's own participant list? False when Daily cannot say — the clock
+    then waits for the next heartbeat rather than starting on a guess."""
+    if not providers.is_configured():
+        return False
+    # Both phones ask every few seconds while a call connects; two seconds
+    # of cache keeps that to one question to Daily per room per beat.
+    from django.core.cache import cache
+
+    key = f"daily-presence:{session.id}"
+    ids = cache.get(key)
+    if ids is None:
+        ids = providers.present_user_ids(room_name(session.id))
+        if ids is not None:
+            cache.set(key, ids, 2)
+    if not ids:
+        return False
+    want = {str(session.seeker_id).replace("-", "").lower(),
+            str(session.consultant_id).replace("-", "").lower()}
+    return want <= ids
+
+
+def clock_started(session):
+    """The paid minutes began: the room now ends exactly when they do.
+    Until this the room was cut to the connect window plus every minute
+    held, which would otherwise outlast the money by up to that window."""
+    if not providers.is_configured() or session.expires_at is None:
+        return
+    try:
+        providers.set_room_expiry(room_name(session.id), session.expires_at)
+    except providers.UpstreamError as exc:
+        # The settle is still on time — the money never depended on the
+        # room. Logged, because a room outliving its money is worth knowing.
+        logger.error("[video] could not move room expiry for %s: %s", session.id, exc)

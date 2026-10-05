@@ -100,7 +100,12 @@ class Session(models.Model):
         max_length=16, choices=SessionStatus.choices, default=SessionStatus.REQUESTED
     )
     requested_at = models.DateTimeField(default=timezone.now)
-    started_at = models.DateTimeField(null=True, blank=True)  # consultant joined; clock starts
+    # The consultant said yes (5 Oct 2026). The hold is taken here; for a
+    # chat the clock starts here too. For a CALL it does not — `started_at`
+    # stays empty until the video service sees both people in the room, and
+    # a call that never connects inside CONNECT_SECONDS is refunded whole.
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)  # both connected; clock starts
     expires_at = models.DateTimeField(null=True, blank=True)  # started_at + the minutes held
     ended_at = models.DateTimeField(null=True, blank=True)
     heartbeat_at = models.DateTimeField(null=True, blank=True)
@@ -140,6 +145,16 @@ class Session(models.Model):
                 fields=["seeker_id", "consultant_id"],
                 condition=models.Q(status=SessionStatus.REQUESTED),
                 name="sessions_one_open_request",
+            ),
+            # 5 Oct 2026: ONE ringing request per consultant, from anybody.
+            # Two seekers pressing Call on the same person in the same
+            # instant both reach the INSERT; Postgres lets exactly one row
+            # through and the other gets 23505, answered as "busy". The
+            # consultant is never shown two callers at once.
+            models.UniqueConstraint(
+                fields=["consultant_id"],
+                condition=models.Q(status=SessionStatus.REQUESTED),
+                name="sessions_one_ringing_per_consultant",
             ),
         ]
         indexes = [

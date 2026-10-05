@@ -47,7 +47,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, connection, transaction
-from django.db.models import BooleanField, Case, F, Value, When
+from django.db.models import BooleanField, Case, F, Q, Value, When
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
@@ -309,6 +309,7 @@ def public_consultants():
         .annotate(
             name=_name_expr("profile_id"),
             online=online_expr(),
+            busy=busy_expr(),
             sessions_done=sessions_done_expr(),
         )
         # Online first (5 Oct 2026, owner's request), then best rated.
@@ -774,6 +775,26 @@ def _cutoff(now=None):
     from django.utils import timezone
 
     return (now or timezone.now()) - timedelta(seconds=PRESENCE_GRACE_SECONDS)
+
+
+def busy_expr(now=None):
+    """Annotation: ringing for somebody or in a session right now (5 Oct
+    2026). Shown as "Busy" beside the name; a call to them waits and
+    retries instead of failing. Read live from `sessions`, never stored —
+    a busy flag on the consultant row is one more thing to forget to clear."""
+    from django.db.models import Exists, OuterRef
+
+    from apps.chat.models import Session
+    from apps.chat.services import RING_SECONDS
+
+    stamp = now or timezone.now()
+    return Exists(
+        Session.objects.filter(consultant_id=OuterRef("profile_id")).filter(
+            Q(status=Session.Status.LIVE)
+            | Q(status=Session.Status.REQUESTED,
+                requested_at__gte=stamp - timedelta(seconds=RING_SECONDS))
+        )
+    )
 
 
 def online_expr(now=None):

@@ -60,6 +60,7 @@ def _consultant_row(consultant, service_rows):
         # last_seen timestamp, because two devices with two clocks would
         # disagree about the same dot.
         "online": bool(getattr(consultant, "online", False)),
+        "busy": bool(getattr(consultant, "busy", False)),
         "rating_avg_cache": consultant.rating_avg_cache,
         "rating_count_cache": consultant.rating_count_cache,
         # Paid sessions given — the milestone badges read it (3 Oct 2026).

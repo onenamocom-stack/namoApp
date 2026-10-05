@@ -75,3 +75,17 @@ def row(notification):
         "read": notification.read_at is not None,
         "created_at": notification.created_at.isoformat(),
     }
+
+
+# Alerts are kept six months (owner's call, 5 Oct 2026). Older ones go,
+# a thousand at a time so one sweep never holds a long lock.
+KEEP_DAYS = 183
+
+
+def flush_old(now=None, batch=1000):
+    cutoff = (now or timezone.now()) - timezone.timedelta(days=KEEP_DAYS)
+    ids = list(Notification.objects.filter(created_at__lt=cutoff)
+               .values_list("id", flat=True)[:batch])
+    if not ids:
+        return 0
+    return Notification.objects.filter(id__in=ids).delete()[0]

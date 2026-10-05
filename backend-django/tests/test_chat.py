@@ -83,6 +83,7 @@ MESSAGE_KEYS = {"id", "thread_id", "sender_id", "body", "created_at", "read_at"}
 THREAD_KEYS = {
     "id", "seeker_id", "consultant_id", "last_message_at", "last_preview",
     "created_at", "seeker_name", "consultant_name", "unread", "live_session_id",
+    "last_session",
 }
 SESSION_KEYS = {
     "id", "seeker_id", "consultant_id", "service_id", "thread_id", "order_id",
@@ -92,6 +93,8 @@ SESSION_KEYS = {
     # needs to know who is calling, and a row of UUIDs does not tell them.
     # Joined in bulk — one lookup for the page, not one per row.
     "seeker_name", "consultant_name",
+    # 5 Oct 2026: when the consultant said yes, and whether it is audio.
+    "accepted_at", "audio_only",
 }
 
 
@@ -480,10 +483,12 @@ class TestAccept:
             "ok": False, "reason": REFUSAL_NOT_OPEN,
         }
         # ...and a second tap after the join finds it resolved.
-        assert services.accept_chat(PRO, requested["session_id"])["ok"] is True
-        assert services.accept_chat(PRO, requested["session_id"]) == {
-            "ok": False, "reason": REFUSAL_NOT_OPEN,
-        }
+        first = services.accept_chat(PRO, requested["session_id"])
+        assert first["ok"] is True
+        # A second tap (5 Oct 2026) returns the session already live — the
+        # same hold, not a second debit and not an error.
+        again = services.accept_chat(PRO, requested["session_id"])
+        assert again["ok"] is True and again["hold_paise"] == first["hold_paise"]
 
     def test_whole_balance_held_so_nothing_else_can_be_bought(self, pro_user):
         # 017's documented cost, proved sideways the way the check does it:
@@ -678,16 +683,15 @@ class TestOneLivePerConsultant:
         _fund(SECOND_SEEKER, RATE * 5)
         before = _counts(SECOND_SEEKER)
         requested = services.request_chat(SECOND_SEEKER, PRO, service.id)
-        assert requested["ok"] is True
-        result = services.accept_chat(PRO, requested["session_id"])
-        assert result == {"ok": False, "reason": REFUSAL_ALREADY_LIVE}
-        # The refused accept unwound completely: no order, no debit, and
-        # the second request is still sitting there, unpaid.
+        # 5 Oct 2026: the consultant is in a session, so the second seeker
+        # is told "busy" at the REQUEST — nothing is written, nothing held,
+        # and the consultant never sees a second caller.
+        assert requested["ok"] is False and requested["busy"] is True
         after = _counts(SECOND_SEEKER)
         assert after["balance"] == before["balance"]
         assert after["orders"] == before["orders"] == 0
         assert after["ledger"] == before["ledger"]
-        assert Session.objects.get(pk=requested["session_id"]).status == "requested"
+        assert not Session.objects.filter(seeker_id=SECOND_SEEKER).exists()
 
     def test_a_second_live_session_index_refusal_is_not_the_only_guard(self):
         # The unique index is the backstop for a racing second REQUEST; the
@@ -780,15 +784,16 @@ class TestHeartbeat:
         t0 = _t0()
         _stamp(session, started_at=t0 - 2 * MIN, expires_at=t0 + 8 * MIN)
         result = services.heartbeat(SEEKER, session.id, now=t0)
-        assert result == {"ok": True, "live": True,
-                          "seconds_left": 8 * 60, "rate_paise": RATE}
+        assert result["ok"] is True and result["live"] is True
+        assert result["seconds_left"] == 8 * 60 and result["rate_paise"] == RATE
+        assert result["connecting"] is False
         assert Session.objects.get(pk=session.id).heartbeat_at == t0
 
     def test_not_live_answers_zero_without_touching_anything(self, pro_user):
         session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
         services.end_session(SEEKER, session.id)
         assert services.heartbeat(SEEKER, session.id) == {
-            "ok": True, "live": False, "seconds_left": 0,
+            "ok": True, "live": False, "seconds_left": 0, "never_connected": False,
         }
 
     def test_expired_but_not_yet_swept_is_still_live_with_zero(self, pro_user):
@@ -880,26 +885,24 @@ class TestSweeper:
                expires_at=t0 + 15 * MIN)
         assert services.sweep_sessions(now=t0)["settled"] == 1
 
-    def test_unanswered_requests_expire_after_fifteen_minutes(self, pro_user):
-        # 018 fix 2's second half: the queue cannot pile up forever. No
-        # money is involved — a status change and nothing else.
+    def test_unanswered_requests_stop_ringing(self, pro_user):
+        # A request rings for RING_SECONDS and then stops (5 Oct 2026; it
+        # was fifteen minutes). No money is involved — a status change.
         service = pro_user[1]
         _fund(SEEKER, RATE * 5)
         old = services.request_chat(SEEKER, PRO, service.id)
-        _fund(SECOND_SEEKER, RATE * 5)
-        fresh = services.request_chat(SECOND_SEEKER, PRO, service.id)
         t0 = _t0()
         Session.objects.filter(pk=old["session_id"]).update(
-            requested_at=t0 - 15 * MIN - SEC
+            requested_at=t0 - (services.RING_SECONDS + 1) * SEC
         )
         result = services.sweep_sessions(now=t0)
         assert result["expired_requests"] == 1
         assert Session.objects.get(pk=old["session_id"]).status == "expired"
+        # The consultant is free again: the next caller rings.
+        _fund(SECOND_SEEKER, RATE * 5)
+        fresh = services.request_chat(SECOND_SEEKER, PRO, service.id)
+        assert fresh["ok"] is True
         assert Session.objects.get(pk=fresh["session_id"]).status == "requested"
-        # The expired request frees the pair to ask again.
-        again = services.request_chat(SEEKER, PRO, service.id)
-        assert again["ok"] is True
-        assert again["session_id"] != old["session_id"]
 
     def test_sweep_is_idempotent(self, pro_user):
         session, _ = _live_session(pro_user, minutes=20, fund=RATE * 20)
@@ -1256,13 +1259,14 @@ class TestMeteringRaces:
         assert len(results) == 6
         winners = [r for r in results if r.get("ok")]
         losers = [r for r in results if not r.get("ok")]
-        assert len(winners) == 1 and len(losers) == 5
-        # Refused on the lock (status moved) or on the index (second live
-        # session): both are the serialized answer, never a second debit.
+        # Since 5 Oct 2026 a repeated accept by the same consultant is
+        # idempotent: the five later taps return the session the first one
+        # made. What must hold is unchanged — ONE hold, one order.
         assert all(
             r["reason"] in (REFUSAL_NOT_OPEN, REFUSAL_ALREADY_LIVE) for r in losers
         )
-        assert winners[0]["hold_paise"] == RATE * 10
+        assert len({r["session_id"] for r in winners}) == 1
+        assert all(r["hold_paise"] == RATE * 10 for r in winners)
         assert bal0 - _balance(SEEKER) == winners[0]["hold_paise"]  # exactly once
         assert Session.objects.get(pk=session_id).status == "live"
         from django.db import connection

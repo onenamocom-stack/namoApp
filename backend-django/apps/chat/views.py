@@ -15,6 +15,12 @@ Identity is the JWT's sub everywhere (rule 3/4): sendMessage takes
 {threadId, body} — never a sender, never a price.
 """
 
+import hmac
+
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -34,6 +40,8 @@ class RequestInput(serializers.Serializer):
     service_id = serializers.UUIDField()
     # "Audio call" on /consult: the call joins with cameras off (5 Oct 2026).
     audio_only = serializers.BooleanField(required=False, default=False)
+    # What the seeker pressed (5 Oct 2026): it sets chat or call on the row.
+    channel = serializers.ChoiceField(choices=("chat", "video", "audio"), required=False)
 
 
 class SendInput(serializers.Serializer):
@@ -69,7 +77,7 @@ def request(request):
     return Response(
         services.request_chat(
             request.user.pk, data["consultant_id"], data["service_id"],
-            audio_only=data["audio_only"],
+            audio_only=data["audio_only"], channel=data.get("channel"),
         )
     )
 
@@ -178,3 +186,22 @@ def cancel(request, session_id):
 def decline(request, session_id):
     """The consultant turning down a call nobody has paid for yet."""
     return Response(services.decline_request(request.user.pk, session_id))
+
+
+@csrf_exempt
+@require_POST
+def sweep(request):
+    """The sweeper, called by the database's own scheduler (pg_cron through
+    pg_net, every minute) — so there is ONE settle, this module's, and the
+    SQL copy that charged whole minutes while this charges thirty-second
+    blocks is retired (5 Oct 2026). The token is the credential; without
+    SWEEP_TOKEN set the endpoint does nothing."""
+    expected = settings.SWEEP_TOKEN
+    given = request.headers.get("x-sweep-token", "")
+    if not expected or not hmac.compare_digest(given.encode(), expected.encode()):
+        return JsonResponse({"ok": False}, status=401)
+    result = services.sweep_sessions()
+    from apps.notifications.services import flush_old
+
+    result["alerts_flushed"] = flush_old()
+    return JsonResponse({"ok": True, **result})
