@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
 import ResharedList from '../components/ResharedList.jsx'
@@ -8,10 +9,10 @@ import { Loader, Orbit } from '../components/Cosmos.jsx'
 import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { signOut } from '../lib/signout.js'
-import { fetchByAuthor, fetchOne, followCounts } from '../lib/content.js'
+import { fetchByAuthor, fetchOne, followCounts, followList } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { LANGS } from '../data/i18n.js'
-import { TopBar } from '../components/Chrome.jsx'
+import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { uploadAvatar } from '../lib/avatar.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
@@ -73,8 +74,9 @@ export default function Profile() {
   const tabs = profile?.influencer
     ? [...TABS, { key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }]
     : TABS
-  // Bare /profile: posts if you have any, otherwise your kundli.
-  const active = tab ?? (posts === null ? null : posts.length ? 'posts' : 'kundli')
+  // Bare /profile opens on Posts, always (5 Oct 2026, owner's request) —
+  // it used to open on the kundli when you had not posted yet.
+  const active = tab ?? 'posts'
   if (tab && !tabs.some((x) => x.key === tab) && !(tab === 'influencer' && profile === null)) {
     return <Navigate to="/profile" replace />
   }
@@ -146,6 +148,7 @@ export default function Profile() {
 
 function Hero({ posts, counts, sessionReady, onNewPost }) {
   const { t, session, showToast } = useStore()
+  const [listing, setListing] = useState(null)
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   const signs = [
@@ -165,18 +168,28 @@ function Hero({ posts, counts, sessionReady, onNewPost }) {
         <AvatarPicker />
         <dl className="grid flex-1 grid-cols-3 text-center">
           {[
-            [posts === null ? '—' : posts.length, 'prof.posts'],
-            [counts.followers, 'prof.followers'],
-            [counts.following, 'prof.following'],
-          ].map(([n, k]) => (
-            <div key={k}>
-              <dt className="sr-only">{t(k)}</dt>
-              <dd className="font-display text-lead leading-none tnum t-heading">
-                {typeof n === 'number' ? n.toLocaleString('en-IN') : n}
-              </dd>
-              <span className="mt-1 block text-[12px] t-faint">{t(k)}</span>
-            </div>
-          ))}
+            [posts === null ? '—' : posts.length, 'prof.posts', null],
+            [counts.followers, 'prof.followers', 'followers'],
+            [counts.following, 'prof.following', 'following'],
+          ].map(([n, k, list]) => {
+            const body = (
+              <>
+                <dt className="sr-only">{t(k)}</dt>
+                <dd className="font-display text-lead leading-none tnum t-heading">
+                  {typeof n === 'number' ? n.toLocaleString('en-IN') : n}
+                </dd>
+                <span className="mt-1 block text-[12px] t-faint">{t(k)}</span>
+              </>
+            )
+            // Followers and Following open the list (5 Oct 2026).
+            return list ? (
+              <button key={k} type="button" onClick={() => setListing(list)} className="block">
+                {body}
+              </button>
+            ) : (
+              <div key={k}>{body}</div>
+            )
+          })}
         </dl>
       </div>
 
@@ -225,6 +238,7 @@ function Hero({ posts, counts, sessionReady, onNewPost }) {
           </button>
         )}
       </div>
+      <FollowSheet which={listing} onClose={() => setListing(null)} />
     </section>
   )
 }
@@ -292,6 +306,64 @@ function AvatarPicker() {
  * you write one — WhatsApp's default, and it reads like a status rather
  * than an empty field. Tap to edit; 150 characters.
  */
+/** Your followers or whom you follow, by name. Tap one to open them. */
+function FollowSheet({ which, onClose }) {
+  const { t } = useStore()
+  const [items, setItems] = useState(null)
+  useEffect(() => {
+    if (!which) return undefined
+    let live = true
+    setItems(null)
+    followList(which)
+      .then((rows) => live && setItems(rows))
+      .catch(() => live && setItems([]))
+    return () => {
+      live = false
+    }
+  }, [which])
+  if (!which) return null
+  // Out of the hero and onto the page, in the phone-width frame, as
+  // CommentSheet does — inside the hero it opened mid-page.
+  return createPortal(
+    <div className="fixed inset-y-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+    <Sheet open onClose={onClose} title={t(`prof.${which}`)}>
+      {items === null ? (
+        <Loader className="py-8" />
+      ) : items.length === 0 ? (
+        <p className="py-8 text-center text-meta t-faint">
+          {which === 'followers' ? t('prof.noFollowers') : t('prof.noFollowing')}
+        </p>
+      ) : (
+        <ul className="max-h-[60vh] overflow-y-auto">
+          {items.map((p) => (
+            <li key={p.id}>
+              <Link
+                to={p.is_consultant ? `/consult/${p.id}` : `/u/${p.id}`}
+                onClick={onClose}
+                className="flex items-center gap-3 border-b border-rule py-3"
+              >
+                {p.avatar_url ? (
+                  <img src={p.avatar_url} alt="" className="h-10 w-10 flex-none rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-surface text-meta font-semibold t-heading">
+                    {(p.name || '?').slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta font-semibold t-heading">{p.name}</span>
+                  {p.is_consultant && <span className="block text-[12px] t-faint">{t('prof.consultant')}</span>}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Sheet>
+    </div>,
+    document.body,
+  )
+}
+
 function Bio() {
   const { profile, saveProfile, refreshProfile, session, showToast, t } = useStore()
   const [editing, setEditing] = useState(false)
@@ -319,8 +391,8 @@ function Bio() {
           autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value.slice(0, 150))}
-          rows={2}
-          placeholder={t('prof.bioDefault')}
+          rows={3}
+          placeholder={t('prof.bioPh')}
           className="w-full resize-none rounded-xl border border-gold-fill bg-white px-3 py-2 text-meta text-t1 outline-none"
         />
         <div className="mt-1.5 flex items-center justify-between">
@@ -337,6 +409,28 @@ function Bio() {
       </div>
     )
   }
+  // No bio yet: the "Available" line, and a plain invitation to write one
+  // (5 Oct 2026) — a small pencil beside "Available" read as decoration.
+  if (!profile?.bio?.trim()) {
+    return (
+      <div className="mt-1">
+        <span className="inline-flex items-center gap-1.5 text-meta t-body">
+          <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />
+          {text}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setDraft('')
+            setEditing(true)
+          }}
+          className="mt-1.5 flex items-center gap-1 text-meta font-semibold text-gold"
+        >
+          <Icon name="plus" size={14} /> {t('prof.bioAdd')}
+        </button>
+      </div>
+    )
+  }
   return (
     <button
       type="button"
@@ -344,7 +438,7 @@ function Bio() {
         setDraft(profile?.bio ?? '')
         setEditing(true)
       }}
-      className="mt-1 flex items-center gap-1.5 text-left text-meta t-body"
+      className="mt-1 flex items-center gap-1.5 whitespace-pre-line text-left text-meta t-body"
     >
       <span className={profile?.bio?.trim() ? '' : 'inline-flex items-center gap-1.5'}>
         {!profile?.bio?.trim() && <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />}

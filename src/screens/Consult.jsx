@@ -1,18 +1,17 @@
 import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { categories, SESSION } from '../data/mock.js'
-import { Sheet, TabHeader } from '../components/Chrome.jsx'
+import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
-import { firstName, Search } from '../components/Primitives.jsx'
+import { Search } from '../components/Primitives.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
-import { listConsultants, listMyBookings } from '../lib/consultants.js'
+import { listConsultants } from '../lib/consultants.js'
 import { PRO_APP_URL } from '../lib/urls.js'
-import { leaveReview, reviewableBookings } from '../lib/content.js'
 
 /**
  * The free tools, as circles above the search field.
@@ -121,111 +120,6 @@ const BANNERS = [
   },
 ]
 
-/**
- * Leaving a review.
- *
- * The rating is required and the words are not — a star with no sentence is
- * still a signal, and demanding prose is how review counts stay at three.
- *
- * There is no client-side check that the booking is completed and unreviewed.
- * The RLS policy is the enforcement (`020_content_reviews.sql`), and a second
- * copy of the rule here would be a second thing to keep in step. What this does
- * instead is show the server's refusal in the app's voice.
- */
-function ReviewSheet({ booking, onClose, onDone }) {
-  const { showToast, t } = useStore()
-  const [rating, setRating] = useState(0)
-  const [body, setBody] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  /* Reset when a different booking opens the sheet, so last time's four stars
-     are not sitting there waiting to be submitted against somebody else. */
-  useEffect(() => {
-    setRating(0)
-    setBody('')
-  }, [booking?.id])
-
-  if (!booking) return null
-
-  async function submit() {
-    setBusy(true)
-    try {
-      await leaveReview({
-        bookingId: booking.id,
-        consultantId: booking.consultant_id,
-        rating,
-        body: body.trim() || null,
-      })
-      showToast(t('con.reviewPosted'))
-      onDone()
-    } catch (err) {
-      showToast(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Sheet open onClose={onClose} title={t('con.reviewTitle', { name: firstName(booking.consultant_name) })}>
-      <div className="px-5 pb-6">
-        <p className="prose-c">{t('con.rateNote')}</p>
-
-        <div className="mt-5 flex justify-center gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-label={`${n} out of 5`}
-              aria-pressed={rating === n}
-              onClick={() => setRating(n)}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border text-body leading-none tnum transition-colors ${
-                n <= rating ? 'border-gold bg-gold/10 t-heading' : 'border-rule t-faint'
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={4}
-          placeholder={t('con.reviewPh')}
-          aria-label="Your review"
-          className="mt-5 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
-        />
-
-        <PopButton
-          variant="gold"
-          className="mt-6"
-          disabled={!rating || busy}
-          onClick={submit}
-        >
-          {busy ? t('con.posting') : rating ? t('con.postReview') : t('con.pickRating')}
-        </PopButton>
-      </div>
-    </Sheet>
-  )
-}
-
-/**
- * The seven booking statuses as a seeker reads them, and what colour each one
- * is. Rendering `b.status` raw printed the enum — `no_show` came out as
- * "NO_SHOW" under `caps-sm` — and colouring everything except `declined` with
- * `text-ok` painted a cancelled or missed session as a green success row.
- * `03-APP-FLOW.md` §8.1 is the machine; this is its vocabulary.
- */
-const STATUS = {
-  pending: { label: 'con.st.pending', tone: 't-faint' },
-  confirmed: { label: 'con.st.confirmed', tone: 'text-ok' },
-  completed: { label: 'con.st.completed', tone: 'text-ok' },
-  declined: { label: 'con.st.declined', tone: 't-faint' },
-  cancelled: { label: 'con.st.cancelled', tone: 't-faint' },
-  rescheduled: { label: 'con.st.rescheduled', tone: 't-faint' },
-  no_show: { label: 'con.st.noShow', tone: 't-faint' },
-}
-
 /** How each channel is actually delivered. */
 /* Four ways to reach somebody, on every card (5 Oct 2026, the owner's
    call): video, audio and chat run on the per-minute meter now; Book takes a
@@ -237,7 +131,7 @@ const CHANNELS = {
 }
 
 export default function Consult() {
-  const { showToast, session, t, lang } = useStore()
+  const { showToast, t, lang } = useStore()
   const navigate = useNavigate()
   // The console's banners first, then the built-in three (4 Oct 2026).
   const banners = useBanners('consult', BANNERS, lang)
@@ -253,12 +147,6 @@ export default function Consult() {
   const rail = useRef(null)
   const listRef = useRef(null)
 
-  /* The seeker's own bookings, from `bookings_view` — the same view the
-     consultant's queue reads, restricting itself by the same predicate. This
-     is the half of a booking that survives a reload: the toast does not, and
-     before phase 5 there was nothing else to survive. */
-  const [mine, setMine] = useState([])
-
   useEffect(() => {
     let live = true
     listConsultants().then((rows) => live && setConsultants(rows))
@@ -266,44 +154,6 @@ export default function Consult() {
       live = false
     }
   }, [])
-
-  useEffect(() => {
-    let live = true
-    const uid = session?.user?.id
-    if (uid) listMyBookings(uid).then((rows) => live && setMine(rows))
-    else setMine([])
-    return () => {
-      live = false
-    }
-  }, [session])
-
-  /* Which completed bookings have no review yet. The list is asked for rather
-     than worked out from `mine`, because "already reviewed" lives in a table
-     this screen does not otherwise read. */
-  const [reviewable, setReviewable] = useState([])
-  const [reviewing, setReviewing] = useState(null)
-
-  const reloadReviewable = useCallback(() => {
-    reviewableBookings()
-      .then(setReviewable)
-      .catch((err) => console.error('[reviews] load failed:', err.message))
-  }, [])
-
-  useEffect(() => {
-    if (!session) return setReviewable([])
-    reloadReviewable()
-  }, [session, reloadReviewable])
-
-  /* A session waiting on your review comes first, whatever its date.
-     `listMyBookings` sorts starts_at DESCENDING and this list shows four rows,
-     which quietly made the review affordance unreachable: a COMPLETED session
-     is in the past by definition and pending ones are in the future, so the
-     only row you can review sorts below four you cannot. Not a data quirk —
-     it would have hidden the button for almost everybody. */
-  const shown = [
-    ...mine.filter((b) => reviewable.some((r) => r.id === b.id)),
-    ...mine.filter((b) => !reviewable.some((r) => r.id === b.id)),
-  ].slice(0, 4)
 
   const step = (el) =>
     el.children[1] ? el.children[1].offsetLeft - el.children[0].offsetLeft : el.clientWidth
@@ -324,7 +174,7 @@ export default function Consult() {
   const q = query.trim().toLowerCase()
   const roster = consultants ?? []
   const list = roster.filter((c) => {
-    const inCat = cat === 'All' || c.category === cat
+    const inCat = cat === 'All' || (c.practices ?? [c.category]).includes(cat)
     const inQuery =
       !q ||
       [c.name, c.specialization, c.category, ...c.languages].some((f) =>
@@ -443,71 +293,11 @@ export default function Consult() {
         </div>
       </div>
 
-      {/* ── Your sessions ─────────────────────────────────────────────────
-          Real rows, so a booking survives a reload — which the toast never
-          did. Hidden when there are none: a heading over an empty list
-          advertises a history that does not exist. Declined rows stay
-          visible, because the money came back and the seeker should be able
-          to see where it went. */}
-      {mine.length > 0 && (
-        <section className="px-5 pt-6">
-          <Kicker>{t('con.yourSessions')}</Kicker>
-          <ul className="mt-3 space-y-2">
-            {shown.map((b) => (
-              <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-meta t-heading">{b.consultant_name}</span>
-                  <span className="mt-0.5 block caps-sm t-faint tnum">
-                    {new Date(b.starts_at).toLocaleString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'Asia/Kolkata',
-                    })}{' '}
-                    · {t('a.min', { n: b.duration_mins })}
-                  </span>
-                </span>
-                <span className="flex-none text-right">
-                  <span className="block caps-sm tnum t-heading">₹{rupees(b.amount_paise)}</span>
-                  {/* A review is offered only where one can actually be left:
-                      a completed booking of yours that has none yet. That is
-                      the same condition the RLS policy enforces, so the button
-                      never appears on something the server would refuse. */}
-                  {reviewable.some((r) => r.id === b.id) ? (
-                    <button
-                      type="button"
-                      onClick={() => setReviewing(b)}
-                      className="act-link mt-0.5 block caps-sm"
-                    >
-                      {t('con.review')}
-                    </button>
-                  ) : (
-                    <span className={`mt-0.5 block caps-sm ${STATUS[b.status]?.tone ?? 't-faint'}`}>
-                      {STATUS[b.status] ? t(STATUS[b.status].label) : b.status}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <ReviewSheet
-        booking={reviewing}
-        onClose={() => setReviewing(null)}
-        onDone={() => {
-          setReviewing(null)
-          reloadReviewable()
-        }}
-      />
-
       {/* ── Category chips ─────────────────────────────────────────────── */}
       <div className="relative mt-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1">
           {filters.map((f) => {
-            const count = f === 'All' ? roster.length : roster.filter((c) => c.category === f).length
+            const count = f === 'All' ? roster.length : roster.filter((c) => (c.practices ?? [c.category]).includes(f)).length
             return (
               <button
                 key={f}
@@ -524,40 +314,10 @@ export default function Consult() {
         <span className="scroll-fade" aria-hidden="true" />
       </div>
 
-      {/* ── The verified rail ─────────────────────────────────────────────
-          Hidden when nobody is verified, which is the normal state early on:
-          approval and verification are different claims, and a heading over an
-          empty rail advertises a shortlist that does not exist. */}
-      {featured.length > 0 && (
-      <section className="pt-6">
-        <div className="mb-3 flex items-baseline justify-between px-4">
-          <p className="font-display text-lead t-heading">
-            {t('con.railTitle', SV)}
-          </p>
-          <span className="flex-none caps-sm text-ok">{t('con.verified', { n: featured.length })}</span>
-        </div>
-        <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
-          {featured.map((c) => (
-            <div key={c.id} className="pop-card w-36 flex-none p-3.5 text-center">
-              <TierRing count={c.sessionsDone} size={64} className="mx-auto">
-                <PopAvatar initials={c.initials} size={64} online={c.online} />
-              </TierRing>
-              <p className="mt-2.5 truncate text-meta t-heading">{c.name}</p>
-              <p className="mt-0.5 truncate caps-sm t-faint">{c.specialization.split(' · ')[0]}</p>
-              <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
-              <div className="mt-2 flex items-center justify-between">
-                <span className="caps-sm gold tnum">{c.rating}</span>
-                <span className="text-meta t-heading tnum">₹{rupees(c.pricePaise)}</span>
-              </div>
-              <PopButton variant="gold" size="sm" className="mt-2.5" to={`/consult/${c.id}`}>
-                {t('con.book')}
-              </PopButton>
-            </div>
-          ))}
-        </div>
-      </section>
-      )}
-
+      {/* The verified rail ("Unlimited questions in 20 min") and "Your
+          sessions" left this screen on 5 Oct 2026 (owner's call): sessions
+          live in the chat panel's Sessions tab now, and the rail repeated
+          the roster below it. */}
       {/* ── Available now — the full roster ───────────────────────────── */}
       <section ref={listRef} className="px-5 pt-8">
         <p className="mb-3 caps-sm t-faint">

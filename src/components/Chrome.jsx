@@ -135,10 +135,9 @@ export function BottomNav({ tabs = TABS }) {
  *
  * Profile moved from the left to the far right the same day, and the wallet
  * arrived beside it. Money used to be two taps inside Profile; it is the
- * thing people check most and it now sits on every tab. It is the balance as
- * text rather than a glyph — a rupee icon next to a rupee amount says the
- * same thing twice — and it reads `—` until the wallet loads, because a zero
- * shown to somebody who has money is worse than showing nothing yet.
+ * thing people check most and it sits on every tab. It showed the balance as
+ * text until 5 Oct 2026; it is a wallet icon now (owner's request), with the
+ * amount in its accessible name and on /wallet.
  *
  * `action` is the one slot that varies: Shop puts the cart there and
  * ProConsult its waiting count. Everything else passes nothing.
@@ -175,14 +174,15 @@ export function TabHeader({ action = null }) {
 
       {action}
 
+      {/* A wallet icon, not the amount (5 Oct 2026, owner's request): the
+          balance is one tap away on /wallet and no longer sits on every
+          screen for anybody looking over a shoulder. */}
       <Link
         to="/wallet"
-        aria-label={t('a.wallet')}
-        className="pill knob !h-9 justify-center !px-3"
+        aria-label={balance === null ? t('a.wallet') : `${t('a.wallet')}, ₹${rupees(balance)}`}
+        className="pill knob !h-9 !w-9 justify-center"
       >
-        <span className="caps-sm tnum t-body">
-          {balance === null ? '—' : `₹${rupees(balance)}`}
-        </span>
+        <Icon name="wallet" size={18} />
       </Link>
 
       <button

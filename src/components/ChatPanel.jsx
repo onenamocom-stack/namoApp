@@ -15,6 +15,7 @@ import {
   subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
+import MySessions from './MySessions.jsx'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -80,6 +81,8 @@ export default function ChatPanel() {
                 ]
               : [
                   { key: 'live', label: 'Consultant' },
+                  // Booked sessions, moved here from Consult (5 Oct 2026).
+                  { key: 'sessions', label: 'Sessions' },
                   { key: 'alerts', label: 'Alerts' },
                 ]
             ).map((t) => (
@@ -100,6 +103,11 @@ export default function ChatPanel() {
         </header>
 
         {chatTab === 'live' && <LiveConsultant isPro={isPro} />}
+        {chatTab === 'sessions' && !isPro && (
+          <div className="flex-1 overflow-y-auto">
+            <MySessions />
+          </div>
+        )}
         {chatTab === 'alerts' && <Alerts />}
       </aside>
     </div>

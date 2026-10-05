@@ -296,7 +296,7 @@ consent that governs using it, are `docs/01-PRD.md`'s.
 ```sql
 create table consultants (
   profile_id        uuid primary key references profiles(id) on delete cascade,
-  category          text not null,
+  category          text not null,   -- one or more, comma-separated: 'Astrologer, Tarot' (5 Oct 2026)
   specialization    text,
   languages         text[] not null default '{}',
   experience_yrs    smallint,

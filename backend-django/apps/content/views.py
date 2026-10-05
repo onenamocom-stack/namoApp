@@ -320,6 +320,16 @@ def follow_counts(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def follow_list(request, which):
+    """Your followers or whom you follow. Your own only — there is no
+    profile_id parameter to put somebody else's id in."""
+    if which not in ("followers", "following"):
+        return Response(refusal_body("not_found", "No such list."), status=404)
+    return Response({"items": services.follow_list(request.user.pk, which)})
+
+
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def author(request, profile_id):
     """A published author's public name, for /u/:id. A profile with no live

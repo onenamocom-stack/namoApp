@@ -61,7 +61,6 @@ const KINDS = [
      six identical peach circles read as one control, not six places. */
   { key: 'status', label: 'Status', icon: 'share', hue: '#f5782c', help: 'Pick a picture, then share it to WhatsApp → Status.' },
   { key: 'wallpaper', label: 'Wallpapers', icon: 'image', hue: '#8e44ad', help: 'Save it, then set it from your photo gallery.' },
-  { key: 'tune', label: 'Tunes', icon: 'bell', hue: '#2f7fd1', help: 'Save it, then pick it in your phone’s sound settings.' },
   { key: 'bhajan', label: 'Bhajans', icon: 'sound', hue: '#c2185b', help: 'Saves as an audio file you can play anywhere.' },
   { key: 'mantra', label: 'Mantras', icon: 'pooja', hue: '#1e9e5a', help: 'Tap play, say how many times, and it repeats that many.' },
   /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
@@ -70,6 +69,8 @@ const KINDS = [
      It was reachable only from Home's third tab, which nobody reads as
      "the mandir is over there". */
   { key: 'darshan', label: 'Darshan', icon: 'pooja', hue: '#c99a1a', to: '/darshan' },
+  // Tunes last, after Darshan (5 Oct 2026, owner's call).
+  { key: 'tune', label: 'Tunes', icon: 'bell', hue: '#2f7fd1', help: 'Save it, then pick it in your phone’s sound settings.' },
 ]
 
 const isAudio = (kind) => kind === 'tune' || kind === 'bhajan' || kind === 'mantra'

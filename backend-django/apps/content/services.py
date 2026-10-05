@@ -766,6 +766,30 @@ def follow_counts(profile_id):
     return {"followers": followers, "following": following}
 
 
+def follow_list(profile_id, which, limit=200):
+    """Who follows this person, or whom they follow — names and pictures,
+    newest first (5 Oct 2026). The view only ever passes the caller's own id:
+    a follow list is the caller's to read, not anybody's to browse."""
+    from apps.consultants.models import Consultant
+    from apps.profiles.models import Profile
+
+    targets = [Reaction.TargetType.PROFILE, Reaction.TargetType.CONSULTANT]
+    rows = Reaction.objects.filter(kind=Reaction.Kind.FOLLOW, target_type__in=targets)
+    if which == "followers":
+        ids = rows.filter(target_id=profile_id).order_by("-created_at").values_list("actor_id", flat=True)
+    else:
+        ids = rows.filter(actor_id=profile_id).order_by("-created_at").values_list("target_id", flat=True)
+    ids = list(dict.fromkeys(str(i) for i in ids[:limit]))
+    people = {str(p.id): p for p in Profile.objects.filter(id__in=ids, blocked_at=None)}
+    pros = set(str(i) for i in Consultant.objects.filter(
+        profile_id__in=ids, status="approved").values_list("profile_id", flat=True))
+    return [
+        {"id": i, "name": people[i].name or "Namo member",
+         "avatar_url": people[i].avatar_url, "is_consultant": i in pros}
+        for i in ids if i in people
+    ]
+
+
 def fetch_author(profile_id):
     """authors_public (025): the public name of a seeker whose posts are in
     the feed — publishing a post is what puts a name on a screen; only people

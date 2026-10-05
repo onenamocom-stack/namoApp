@@ -229,6 +229,15 @@ const PATHS = {
       <path d="M8.6 8.4 20 17.8M8.6 15.6 20 6.2" />
     </>
   ),
+  // The wallet in the header (5 Oct 2026): the balance moved inside it.
+  wallet: (
+    <>
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5V8" />
+      <rect x="4" y="7.5" width="16" height="12" rx="2.5" />
+      <path d="M20 11.5h-3.5a2 2 0 0 0 0 4H20" />
+      <circle cx="16.6" cy="13.5" r="0.4" />
+    </>
+  ),
   // The shop's four categories as round tiles (5 Oct 2026).
   gem: (
     <>

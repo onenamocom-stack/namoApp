@@ -157,7 +157,9 @@ function UnderReview({ status }) {
 function Application({ onDone, toast }) {
   const [bands, setBands] = useState([])
   const [form, setForm] = useState({
-    category: categories[0],
+    // More than one practice (5 Oct 2026, owner's request): saved as one
+    // comma-separated `category`, "Astrologer, Tarot", read back as a list.
+    categories: [categories[0]],
     specialization: '',
     languages: 'Hindi, English',
     experience: '',
@@ -214,7 +216,7 @@ function Application({ onDone, toast }) {
        that band's prices itself, so the browser never sends a price. */
     try {
       await applyAsConsultant({
-        category: form.category,
+        category: form.categories.join(', '),
         specialization: form.specialization.trim(),
         languages: list(form.languages),
         experienceYrs: parseInt(form.experience, 10) || null,
@@ -246,13 +248,26 @@ function Application({ onDone, toast }) {
       </p>
 
       <Section label="Practice" className="mt-10">
+        <p className="-mt-1 mb-3 text-meta t-faint">Pick every one you practise.</p>
         <div className="flex flex-wrap gap-2">
           {categories.map((c) => (
             <button
               key={c}
               type="button"
-              aria-pressed={form.category === c}
-              onClick={() => setForm((f) => ({ ...f, category: c }))}
+              aria-pressed={form.categories.includes(c)}
+              onClick={() =>
+                setForm((f) => {
+                  const on = f.categories.includes(c)
+                  // At least one stays chosen: a practice of nothing is not an application.
+                  if (on && f.categories.length === 1) return f
+                  return {
+                    ...f,
+                    categories: on
+                      ? f.categories.filter((x) => x !== c)
+                      : categories.filter((x) => x === c || f.categories.includes(x)),
+                  }
+                })
+              }
               className="pill caps-sm"
             >
               {c}

@@ -123,6 +123,8 @@ function shape(row, services = []) {
       .join('')
       .toUpperCase(),
     category: row.category,
+    // "Astrologer, Tarot" — a practitioner can practise more than one (5 Oct 2026).
+    practices: String(row.category ?? '').split(',').map((x) => x.trim()).filter(Boolean),
     specialization: row.specialization ?? '',
     languages: row.languages ?? [],
     experienceYrs: row.experience_yrs,

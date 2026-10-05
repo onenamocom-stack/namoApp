@@ -502,6 +502,15 @@ export async function followCounts(profileId) {
   return { followers: counts?.followers ?? 0, following: counts?.following ?? 0 }
 }
 
+/** Your followers, or whom you follow — `which` is 'followers' or 'following'.
+ *  Your own only; the server takes no profile id (5 Oct 2026). */
+export async function followList(which) {
+  const token = await accessToken()
+  if (!token) return []
+  const data = await api(`/content/follows/${which}/`, { token })
+  return data?.items ?? []
+}
+
 /** Just the follower count — the consultant profile header shows only that. */
 export async function followerCount(profileId) {
   return (await followCounts(profileId)).followers

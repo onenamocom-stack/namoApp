@@ -269,7 +269,12 @@ buried above a stream.
 
 Then the roster, read from `consultants_public` — so an unapproved practice is
 absent because the server never sent it, not because a filter here dropped it.
-Search and category counts run over what came back.
+Search and category counts run over what came back; a practitioner with
+several practices counts under each.
+
+**Not on this screen since 5 Oct 2026:** "Your sessions" (now the chat panel's
+Sessions tab) and the verified rail ("Unlimited questions in 20 min"), which
+repeated the roster below it.
 
 Per consultant: the row opens their profile; a call knob toasts; a message knob
 opens the chat overlay; Live goes to a real room when one is running. Nothing is
@@ -824,8 +829,11 @@ is the point: they open from any tab without losing the screen underneath.
 | **CartSheet** | Shop's cart button (beside search), Shop's view-cart button, Reports' top-bar Cart |
 | **Toast** | Every `showToast` and every flag toggle carrying messages |
 
-ChatPanel's tabs differ by side: a seeker gets Consultant / Alerts, a consultant
-Clients / Alerts, and both open on the first. **Ask AI left the panel on 30 Sep
+ChatPanel's tabs differ by side: a seeker gets Consultant / Sessions / Alerts —
+Sessions is the booked sessions list, with Review on a completed one, moved
+from `/consult` on 5 Oct 2026 — a consultant Clients / Alerts, and both open
+on the first. The header's wallet knob is an icon, not the balance, since the
+same day. **Ask AI left the panel on 30 Sep
 2026** for its own page, `/ask` — messages are people.
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.

@@ -5432,3 +5432,22 @@ shared `tileStyle` now in `src/lib/tiles.js`), with four new icons — gem,
 mala, rudraksha, remedy. Subcategory pills sit where the category pills
 were. The per-category banner under the pills is removed, with its four
 `shop.cat.*` strings. Walked: tiles, Gemstones selected (3 items).
+
+## 51. Owner's list, 5 Oct evening
+
+- **Followers / Following open a list** of names (tap one to open them) —
+  your own profile only. `GET /v1/content/follows/<followers|following>/`,
+  takes no profile id. Needs an API deploy; until then the sheet says
+  nobody follows you.
+- **Profile opens on Posts**, always (it opened on the kundli when you had
+  not posted). An empty bio shows "Available" and a "Write about yourself"
+  link; the bio box is three lines.
+- **A consultant can pick several practices** when applying. Stored as one
+  comma-separated `consultants.category`; Consult's filter and counts match
+  any of them. Existing single values are unchanged.
+- **Bhakti**: Tunes is last, after Darshan.
+- **Header**: a wallet icon instead of the balance; the amount is in its
+  accessible name and on `/wallet`.
+- **Consult**: "Your sessions" moved to the chat panel's new Sessions tab
+  (`src/components/MySessions.jsx`, review included); the verified rail
+  ("Unlimited questions in 20 min") is removed.
