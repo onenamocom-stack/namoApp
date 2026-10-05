@@ -552,10 +552,6 @@ export const strings = {
     hi: 'तेल, कपड़ा, मंत्र कार्ड। ऐसा कुछ नहीं जो आप बोल न सकें।',
   },
   'shop.bn.remedies.c': { en: 'See remedies', hi: 'उपाय देखें' },
-  'shop.cat.Gemstones': { en: 'Certified, or we do not list it', hi: 'प्रमाणित, वरना हम इसे बेचते ही नहीं' },
-  'shop.cat.Maalas': { en: 'Counted by hand, knotted one at a time', hi: 'हाथ से गिनी, एक-एक करके पिरोई' },
-  'shop.cat.Rudraksha': { en: 'Nepali and Java origin, lab checked', hi: 'नेपाल और जावा से, लैब में जांचे हुए' },
-  'shop.cat.Remedies': { en: 'Everything the ritual needs, in one box', hi: 'अनुष्ठान की हर चीज़, एक ही डिब्बे में' },
   'shop.gone': { en: 'That product is no longer in the shop', hi: 'यह प्रोडक्ट अब दुकान में नहीं है' },
   /* One sentence in four pieces, so the code and "10% back" can be bold. */
   'shop.ref.a': { en: 'Code', hi: 'कोड' },

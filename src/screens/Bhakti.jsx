@@ -22,6 +22,7 @@ import {
 } from '../lib/bhakti.js'
 import { istDate, longDate } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
+import { tileStyle } from '../lib/tiles.js'
 
 /**
  * Bhakti — the devotional media library, in the slot the shrine used to hold.
@@ -113,23 +114,6 @@ const BANNERS = [
     kind: 'wallpaper',
   },
 ]
-
-/** A shelf tile in its own colour: a soft wash with the icon in the colour,
- *  or, when selected, the colour itself with a white icon and a halo. */
-function tileStyle(hue, on) {
-  return on
-    ? {
-        background: `linear-gradient(160deg, color-mix(in srgb, ${hue} 70%, white), ${hue})`,
-        color: '#fff',
-        borderColor: hue,
-        boxShadow: `0 0 0 3px color-mix(in srgb, ${hue} 22%, transparent), 0 8px 18px -8px ${hue}`,
-      }
-    : {
-        background: `linear-gradient(145deg, #ffffff, color-mix(in srgb, ${hue} 14%, white))`,
-        color: hue,
-        borderColor: `color-mix(in srgb, ${hue} 25%, white)`,
-      }
-}
 
 export default function Bhakti() {
   const { showToast, lang } = useStore()

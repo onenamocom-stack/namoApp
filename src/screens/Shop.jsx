@@ -12,6 +12,7 @@ import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
 import { looksLikeReferral } from '../lib/referrals.js'
 import { useMyChart } from '../lib/astro.js'
+import { tileStyle } from '../lib/tiles.js'
 
 /**
  * The three promo banners at the top of the shop.
@@ -64,19 +65,15 @@ const BANNERS = [
  * a two-up grid for everything else. A single uniform grid reads as a
  * catalogue; the break gives the screen a front page.
  */
-/** One gradient and one line per category, for the banner above its grid. */
-const CAT_GRADIENT = {
-  Gemstones: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 100%)',
-  Maalas: 'linear-gradient(135deg, #6b3410 0%, #a85400 100%)',
-  Rudraksha: 'linear-gradient(135deg, #5c2c0d 0%, #9a4a05 100%)',
-  Remedies: 'linear-gradient(135deg, #8a3a00 0%, #b45309 100%)',
-}
-
-const CAT_LINE = {
-  Gemstones: 'shop.cat.Gemstones',
-  Maalas: 'shop.cat.Maalas',
-  Rudraksha: 'shop.cat.Rudraksha',
-  Remedies: 'shop.cat.Remedies',
+/** The category tiles above the banners (5 Oct 2026, owner's request): round
+ *  and coloured like Bhakti's shelves and Consult's tools, so every tab opens
+ *  the same way — search, circles, banners. */
+const CAT_TILE = {
+  All: { icon: 'grid', hue: '#f5782c' },
+  Gemstones: { icon: 'gem', hue: '#2f7fd1' },
+  Maalas: { icon: 'mala', hue: '#8e44ad' },
+  Rudraksha: { icon: 'rudraksha', hue: '#a0522d' },
+  Remedies: { icon: 'remedy', hue: '#1e9e5a' },
 }
 
 export default function Shop() {
@@ -218,8 +215,38 @@ export default function Shop() {
         }
       />
 
+      {/* ── Categories, as circles ─────────────────────────────────────── */}
+      <section className="pb-1 pt-1">
+        <ul className="tile-rail">
+          {filters.map((f) => {
+            const tile = CAT_TILE[f] || CAT_TILE.All
+            const on = cat === f
+            return (
+              <li key={f} className="flex-none">
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setCat(f)
+                    setSub(null)
+                  }}
+                  className="tile"
+                >
+                  <span className="tile-face" style={tileStyle(tile.hue, on)}>
+                    <Icon name={tile.icon} size={20} weight={on ? 2.1 : 1.8} />
+                  </span>
+                  <span className="text-center text-[12px] font-semibold leading-tight t-body">
+                    {f === 'All' ? t('a.all') : f}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
       {/* ── Banners ─────────────────────────────────────────────────────── */}
-      <div className="pt-4">
+      <div className="pt-3">
         <div ref={rail} onScroll={onRailScroll} className="rail gap-3 px-4">
           {banners.map((b, i) => (
             <button
@@ -280,60 +307,31 @@ export default function Shop() {
         </div>
       </div>
 
+      {/* Subcategories where the category pills were (5 Oct 2026). On All,
+          every subcategory, and picking one also picks its category. */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-4">
-        {filters.map((f) => (
+        <button type="button" aria-pressed={!sub} onClick={() => setSub(null)} className="pill caps-sm">
+          {t('a.all')}
+        </button>
+        {(cat === 'All'
+          ? shopCategories.flatMap((c) => (shopSubcategories[c] || []).map((sc) => [c, sc]))
+          : (shopSubcategories[cat] || []).map((sc) => [cat, sc])
+        ).map(([c, sc]) => (
           <button
-            key={f}
+            key={`${c}-${sc}`}
             type="button"
-            aria-pressed={cat === f}
+            aria-pressed={sub === sc}
             onClick={() => {
-              setCat(f)
-              setSub(null)
+              if (sub === sc) return setSub(null)
+              setCat(c)
+              setSub(sc)
             }}
             className="pill caps-sm"
           >
-            {f === 'All' ? t('a.all') : f}
+            {sc}
           </button>
         ))}
       </div>
-
-      {/* A banner for the category you are in, then what sits inside it.
-          Both only exist once you have chosen — on All they would be noise on
-          top of the promo rail that is already there. */}
-      {cat !== 'All' && (
-        <>
-          <section className="px-4 pb-1">
-            <div className="banner p-4" style={{ backgroundImage: CAT_GRADIENT[cat] }}>
-              <Plate
-                seed={`cat-${cat}`}
-                variant="halftone"
-                className="pointer-events-none absolute -right-6 -top-4 h-[150%] w-1/2 bg-transparent opacity-25 mix-blend-overlay"
-              />
-              <span className="sheen animate-sweep" />
-              <span className="relative block">
-                <span className="caps-sm text-white/70">{cat}</span>
-                <span className="mt-1.5 block text-lead font-medium leading-tight text-white">
-                  {CAT_LINE[cat] && t(CAT_LINE[cat])}
-                </span>
-              </span>
-            </div>
-          </section>
-
-          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
-            {(shopSubcategories[cat] || []).map((sc) => (
-              <button
-                key={sc}
-                type="button"
-                aria-pressed={sub === sc}
-                onClick={() => setSub(sub === sc ? null : sc)}
-                className="pill caps-sm"
-              >
-                {sc}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
 
       {/* ── Chart-matched hero ────────────────────────────────────────── */}
       {hero && (

@@ -408,8 +408,13 @@ the header** — since 3 Oct 2026. It was a floating button, bottom right, from
 is there whenever this screen is open; the badge appears only with a count,
 and an empty cart opens a sheet that says it is empty.
 
-Promo banners that set a category filter. Category pills revealing subcategory
-pills. A chart-matched hero when unfiltered.
+**Top to bottom, as on Bhakti and Consult** (5 Oct 2026): search and cart,
+then the categories as round coloured tiles (All, Gemstones, Maalas,
+Rudraksha, Remedies), then the promo banners, then subcategory pills where
+the category pills were — every subcategory on All, picking one also picks
+its category; the chosen category's own on any other. The per-category
+banner that sat under the pills is gone (it repeated the tile). A
+chart-matched hero when unfiltered.
 
 **Add** goes to the cart; **Buy now** charges the wallet immediately. Sold-out
 products keep their row with both controls dead.

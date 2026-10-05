@@ -5424,3 +5424,11 @@ Not done — needs the owner:
 - Before launch: `maxScale` 4 → 10+, `minScale` 1 (no cold start for the
   first user), `THROTTLE_ANON_RATE` up from 60/min (carrier NAT puts many
   phones behind one IP), and the API in the database's region.
+
+## 50. Shop opens like the other tabs — 5 Oct 2026
+
+Categories are round coloured tiles above the banners (`.tile-rail`, the
+shared `tileStyle` now in `src/lib/tiles.js`), with four new icons — gem,
+mala, rudraksha, remedy. Subcategory pills sit where the category pills
+were. The per-category banner under the pills is removed, with its four
+`shop.cat.*` strings. Walked: tiles, Gemstones selected (3 items).
