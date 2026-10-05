@@ -5246,8 +5246,14 @@ from 4–5 Oct fail the same way on clean `main`).
 
 ## 43. Delivery through Shiprocket — 5 Oct 2026
 
-**Prod is migrated (`shop/0003` applied 5 Oct); the API, console and
-frontend are not yet deployed.** The
+**State, 5 Oct 08:00 IST.** Prod is migrated (`shop/0003`). The front end
+is on `main`. `namo-api-00066-2hv` and `namo-console-00007-pk4` carry the
+delivery code and `SHIPROCKET_EMAIL` / `SHIPROCKET_WEBHOOK_TOKEN` — **but
+00066 was built from a tree without §42's backend**, so it rolled back
+§42's audio-only calls and the slot-only reprice guard until the API and
+console are redeployed from `main`. `SHIPROCKET_PASSWORD` is not set yet,
+so the cart answers "Delivery is not set up yet" and nothing can be bought
+until it is. The
 Shiprocket account is Namo's own, so a paid parcel now goes out by itself.
 
 What happens, in order:
