@@ -5366,6 +5366,12 @@ band), the browser-tab and home-screen icon (new: there was none), and the
 console header. Files and rules: `docs/04-UI-UX.md` under the colour tokens.
 Front end ships on push; the console header needs a console deploy.
 
+Revised the same day from the owner's second files: smaller letters beside
+the tile, and the tile icon from its own image. And the Bhakti category
+circles (and Consult's tools, same row) are `.tile-rail` now — 50px faces
+instead of 58, with room inside the sideways scroller, because a row that
+scrolls on x clips on y and the selected circle's ring was cut off.
+
 ## 47. Feed reels play by themselves — 5 Oct 2026
 
 On Home, the reel 60% or more on screen plays muted and looping; every other

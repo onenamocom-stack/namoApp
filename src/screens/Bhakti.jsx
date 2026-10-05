@@ -214,17 +214,17 @@ export default function Bhakti() {
           phone is 360–412: the row used to spread with `justify-around` and
           no overflow, so Darshan — and on small phones Mantras — sat cut off
           past the edge with no way to reach it. Same row as Consult's tools. */}
-      <section className="pb-1 pt-3">
-        <ul className="no-scrollbar flex items-start gap-1 overflow-x-auto px-3">
+      <section className="pb-1 pt-1">
+        <ul className="tile-rail">
           {KINDS.map((k) => (
             <li key={k.key} className="flex-none">
               {/* Darshan leaves the screen; the other four switch shelves on
                   it. A link and a button, because they do different things
                   and one of them belongs in browser history. */}
               {k.to ? (
-                <Link to={k.to} className="tile w-[72px]">
+                <Link to={k.to} className="tile">
                   <span className="tile-face" style={tileStyle(k.hue, false)}>
-                    <Icon name={k.icon} size={22} />
+                    <Icon name={k.icon} size={20} />
                   </span>
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
                 </Link>
@@ -233,10 +233,10 @@ export default function Bhakti() {
                   type="button"
                   onClick={() => setKind(k.key)}
                   aria-pressed={kind === k.key}
-                  className="tile w-[72px]"
+                  className="tile"
                 >
                   <span className="tile-face" style={tileStyle(k.hue, kind === k.key)}>
-                    <Icon name={k.icon} size={22} weight={kind === k.key ? 2.1 : 1.8} />
+                    <Icon name={k.icon} size={20} weight={kind === k.key ? 2.1 : 1.8} />
                   </span>
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
                 </button>

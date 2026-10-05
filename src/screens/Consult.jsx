@@ -53,18 +53,18 @@ function FreeTools() {
 
   return (
     <section className="pb-1 pt-3">
-      <ul className="no-scrollbar flex gap-1 overflow-x-auto px-4">
+      <ul className="tile-rail px-4">
         {FREE_TOOLS.map((f) => (
           <li key={f.key} className="flex-none">
             {f.to ? (
-              <Link to={f.to} className="tile w-[72px]">
+              <Link to={f.to} className="tile">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>
                 <span className="text-center text-[12px] font-semibold leading-tight t-body">{t(f.label)}</span>
               </Link>
             ) : (
-              <button type="button" onClick={() => f.act(bag)} className="tile w-[72px]">
+              <button type="button" onClick={() => f.act(bag)} className="tile">
                 <span className="tile-face">
                   <Icon name={f.icon} size={23} />
                 </span>
