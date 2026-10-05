@@ -5365,3 +5365,14 @@ version — the old black mark was all but invisible on the status's dark
 band), the browser-tab and home-screen icon (new: there was none), and the
 console header. Files and rules: `docs/04-UI-UX.md` under the colour tokens.
 Front end ships on push; the console header needs a console deploy.
+
+## 47. Feed reels play by themselves — 5 Oct 2026
+
+On Home, the reel 60% or more on screen plays muted and looping; every other
+one is paused, so exactly one plays and scrolling hands it on. A speaker
+button (bottom right of the reel) is one sound switch for the whole feed.
+Walked on the dev server: plays on load, hands off at each scroll step,
+unmute carries to the next reel. Per card, not per reel id — the same reel
+can appear twice (a repost), and the off-screen copy used to cancel the
+visible one's turn. A browser in battery or data saver can still refuse
+autoplay; the first frame then stays, as before.

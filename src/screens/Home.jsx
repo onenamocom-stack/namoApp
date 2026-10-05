@@ -613,6 +613,67 @@ function useNearScreen(ref, margin = '800px') {
   return near
 }
 
+/**
+ * Instagram's feed rule (owner's request, 5 Oct 2026): the reel that is
+ * mostly on screen plays by itself, muted and looping, and every other one
+ * is paused — so exactly one plays, and scrolling hands it to the next.
+ *
+ * One module-level "who is playing" rather than state in a parent: the cards
+ * are spread through a mixed feed, and a card claiming the turn is simpler
+ * than a feed counting which of its children is where. Sound is one switch
+ * for the whole feed, as on Instagram — unmute one and the next plays aloud.
+ */
+const feedPlayer = { current: null, muted: true, listeners: new Set() }
+function announce() {
+  feedPlayer.listeners.forEach((fn) => fn())
+}
+
+function useFeedTurn(ref) {
+  // Per CARD, not per reel: the same reel can sit in the feed twice (once
+  // as a repost), and an off-screen copy must not cancel the visible one.
+  const [id] = useState(() => Symbol('reel-card'))
+  const [, rerender] = useState(0)
+  useEffect(() => {
+    const fn = () => rerender((n) => n + 1)
+    feedPlayer.listeners.add(fn)
+    return () => {
+      feedPlayer.listeners.delete(fn)
+      if (feedPlayer.current === id) {
+        feedPlayer.current = null
+        announce()
+      }
+    }
+  }, [id])
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !('IntersectionObserver' in window)) return undefined
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.intersectionRatio >= 0.6) {
+          if (feedPlayer.current !== id) {
+            feedPlayer.current = id
+            announce()
+          }
+        } else if (feedPlayer.current === id) {
+          feedPlayer.current = null
+          announce()
+        }
+      },
+      { threshold: [0, 0.6, 1] },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref, id])
+  return {
+    playing: feedPlayer.current === id,
+    muted: feedPlayer.muted,
+    toggleMute: () => {
+      feedPlayer.muted = !feedPlayer.muted
+      announce()
+    },
+  }
+}
+
 function ReelCard({ reel: r, resharedBy }) {
   const { showToast } = useStore()
   const [commenting, setCommenting] = useState(false)
@@ -620,6 +681,21 @@ function ReelCard({ reel: r, resharedBy }) {
   const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
   const frame = useRef(null)
   const near = useNearScreen(frame)
+  const video = useRef(null)
+  const { playing, muted, toggleMute } = useFeedTurn(frame)
+
+  useEffect(() => {
+    const v = video.current
+    if (!v) return
+    v.muted = muted
+    if (playing) {
+      // A browser may still refuse (battery saver, data saver); the first
+      // frame stays on screen and a tap opens the reel, as before.
+      v.play().catch(() => {})
+    } else {
+      v.pause()
+    }
+  }, [playing, muted, near])
 
   return (
     <article className="border-b border-rule bg-white">
@@ -633,9 +709,11 @@ function ReelCard({ reel: r, resharedBy }) {
               ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
           {isVideo && near && (
             <video
+              ref={video}
               src={`${r.mediaUrl}#t=0.5`}
-              preload="metadata"
+              preload={playing ? 'auto' : 'metadata'}
               muted
+              loop
               playsInline
               className="absolute inset-0 h-full w-full object-cover"
             />
@@ -650,6 +728,20 @@ function ReelCard({ reel: r, resharedBy }) {
           {/* The big play circle in the middle was removed on 4 Oct 2026
               (owner's call); the corner glyph still says it is a reel. */}
         </Plate>
+        {isVideo && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              toggleMute()
+            }}
+            aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+            className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-white"
+          >
+            <Icon name={muted ? 'muted' : 'sound'} size={18} />
+          </button>
+        )}
       </Link>
       <ProductStrip tagged={r.products} shopRef={r.shopRef} />
 
