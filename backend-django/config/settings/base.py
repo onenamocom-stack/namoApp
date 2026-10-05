@@ -35,6 +35,16 @@ def parse_database_url(url):
     }
     if parsed.port:
         config["PORT"] = str(parsed.port)
+    # Supabase's transaction pooler (port 6543), the recommended connection
+    # from 5 Oct 2026: the load test ran the direct connection (5432) out of
+    # slots at ~200 requests a second — every gunicorn thread on every
+    # instance held its own Postgres connection, and Postgres allows 60.
+    # Through the pooler a connection is only borrowed for one transaction,
+    # so Django must not keep it (CONN_MAX_AGE 0) and must not use
+    # server-side cursors, which outlive the transaction they were opened in.
+    if parsed.port == 6543:
+        config["CONN_MAX_AGE"] = 0
+        config["DISABLE_SERVER_SIDE_CURSORS"] = True
     if query.get("sslmode"):
         config["OPTIONS"] = {"sslmode": query["sslmode"]}
     return config

@@ -5401,3 +5401,26 @@ autoplay; the first frame then stays, as before.
   145 / 170 / 184. Title one line, note two. Three titles shortened to fit a
   360px phone: "Stones with a lab report", "Hand-counted rudraksha",
   "Lock-screen deities". Console-made banners follow the same clamp.
+
+## 49. Load test, and what broke — 5 Oct 2026
+
+Read-only ramp against the live API (numbers in `docs/02-TRD.md`
+§Performance). Clean to **~167 requests a second** (50 in flight, 0
+errors); at ~200 a second 7–8% failed, every one Postgres out of
+connection slots. Live `DATABASE_URL` is the **direct** connection (5432),
+one Postgres connection per gunicorn thread, Postgres max 60, ~24 already
+used by Supabase. All 4 instances were up.
+
+Done in code (pushed, not deployed): Django is pooler-safe on port 6543
+(`CONN_MAX_AGE` 0, no server-side cursors), and the consultant list is two
+queries (that fix, committed 14:02 IST, is also not deployed — 00072 is the
+12:41 build).
+
+Not done — needs the owner:
+- `DATABASE_URL` on namo-api and namo-console → the Supabase **transaction
+  pooler** string (port 6543), then deploy from `main`.
+- `THROTTLE_USER_RATE=100000/minute` is on namo-api for the test. **Remove
+  it** after the re-test.
+- Before launch: `maxScale` 4 → 10+, `minScale` 1 (no cold start for the
+  first user), `THROTTLE_ANON_RATE` up from 60/min (carrier NAT puts many
+  phones behind one IP), and the API in the database's region.

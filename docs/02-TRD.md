@@ -660,6 +660,25 @@ time.
 The JS bundle is ~458 kB raw / ~142 kB gzipped today. Adding a Supabase client
 and a payment SDK is the first real growth; watch it rather than assume it.
 
+**Measured capacity — 5 Oct 2026** (read-only load test of the live API,
+`namo-api` at 4 instances max, 1 CPU / 512 MB, gunicorn 2 × 8):
+
+| Requests in flight | Requests / s | Errors | Server p50 / p95 |
+|---|---|---|---|
+| 10 | 43 | 0 | ~130 / ~590 ms |
+| 50 | 167 | 0 | ~145 / ~630 ms |
+| 100 | 201 | 6.8% | ~190 / ~750 ms |
+| 150 | 221 | 7.9% | — |
+
+Every error was Postgres refusing a connection ("remaining connection slots
+are reserved"): the API connected directly (port 5432) with one connection
+per thread, and Postgres allows 60. **The rule since: the API reaches the
+database through Supabase's transaction pooler (port 6543)**, where Django
+keeps no connection and uses no server-side cursors (`parse_database_url`).
+The p95 is the consultant list (~620 ms, two queries per consultant until
+5 Oct). The database is in Singapore and the API in Mumbai, so every query
+pays the distance; the regions should match.
+
 ### Accessibility
 
 Existing behaviour is the floor, not the ceiling: visible focus rings,
