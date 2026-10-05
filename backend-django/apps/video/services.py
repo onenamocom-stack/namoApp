@@ -125,9 +125,7 @@ def join(actor_id, session_id, now=None):
 
     name = room_name(session.id)
     try:
-        room = providers.get_room(name) or providers.create_room(
-            name, room_until
-        )
+        room = providers.get_room(name) or _create_or_get(name, room_until)
         from apps.profiles import services as profile_services
 
         token = providers.meeting_token(
@@ -161,6 +159,19 @@ def join(actor_id, session_id, now=None):
         "connecting": session.started_at is None,
         "is_owner": is_consultant,
     }
+
+
+def _create_or_get(name, until):
+    """Both phones open the call in the same second (5 Oct 2026, seen live):
+    both read "no room", both create, and Daily refuses the second with
+    "already exists" — which turned one of them away for a retry. The room
+    they wanted exists, so read it and carry on."""
+    try:
+        return providers.create_room(name, until)
+    except providers.UpstreamError as exc:
+        if "already exists" not in str(exc):
+            raise
+        return providers.get_room(name)
 
 
 def both_present(session):

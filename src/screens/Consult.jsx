@@ -12,6 +12,7 @@ import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
 import { PRO_APP_URL } from '../lib/urls.js'
+import { toolStyle } from '../lib/tiles.js'
 
 /**
  * The free tools, as circles above the search field.
@@ -37,12 +38,12 @@ const FREE_TOOLS = [
   /* Straight to the full chart since 30 Sep 2026 — the chart is computed at
      sign-up, and the reader's own predictions are its second tab. The free
      sign-by-sign reading is /horoscope, reached from Home. */
-  { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/chart' },
+  { key: 'horoscope', label: 'tool.horoscope', icon: 'horoscope', to: '/chart', hue: '#f08a24' },
   /* Its own page since 30 Sep 2026, out of the messages panel. */
-  { key: 'ai', label: 'tool.ai', icon: 'ai', to: '/ask' },
-  { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot' },
-  { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match' },
-  { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat' },
+  { key: 'ai', label: 'tool.ai', icon: 'ai', to: '/ask', hue: '#7c4dff' },
+  { key: 'tarot', label: 'tool.tarot', icon: 'tarot', to: '/tarot', hue: '#d81b60' },
+  { key: 'match', label: 'tool.match', icon: 'kundli', to: '/match', hue: '#c62828' },
+  { key: 'muhurat', label: 'tool.muhurat', icon: 'calendar', to: '/muhurat', hue: '#1e9e5a' },
 ]
 
 /** Circles, because a circle reads as a tool and a card reads as content. */
@@ -57,15 +58,15 @@ function FreeTools() {
           <li key={f.key} className="flex-none">
             {f.to ? (
               <Link to={f.to} className="tile">
-                <span className="tile-face">
-                  <Icon name={f.icon} size={23} />
+                <span className="tile-face" style={toolStyle(f.hue ?? '#f08a24')}>
+                  <Icon name={f.icon} size={22} weight={2} />
                 </span>
                 <span className="text-center text-[12px] font-semibold leading-tight t-body">{t(f.label)}</span>
               </Link>
             ) : (
               <button type="button" onClick={() => f.act(bag)} className="tile">
-                <span className="tile-face">
-                  <Icon name={f.icon} size={23} />
+                <span className="tile-face" style={toolStyle(f.hue ?? '#f08a24')}>
+                  <Icon name={f.icon} size={22} weight={2} />
                 </span>
                 <span className="text-center text-[12px] font-semibold leading-tight t-body">{t(f.label)}</span>
               </button>

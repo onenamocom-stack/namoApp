@@ -14,3 +14,16 @@ export function tileStyle(hue, on) {
         borderColor: `color-mix(in srgb, ${hue} 25%, white)`,
       }
 }
+
+
+/** A tool tile that is not a choice — Consult's free tools (6 Oct 2026,
+ *  "these look dull"). Full colour, a white icon, a soft glow of its own
+ *  hue; there is no selected state to confuse it with. */
+export function toolStyle(hue) {
+  return {
+    background: `linear-gradient(150deg, color-mix(in srgb, ${hue} 55%, white) 0%, ${hue} 70%, color-mix(in srgb, ${hue} 80%, black) 100%)`,
+    color: '#fff',
+    borderColor: 'transparent',
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,.35), 0 8px 16px -8px ${hue}`,
+  }
+}

@@ -12,9 +12,26 @@ import react from '@vitejs/plugin-react'
 // separate deployment. Nothing in the seeker build changes because the pro
 // build exists.
 
+// Every build gets an id, baked into the app AND written beside it as
+// version.json (6 Oct 2026). The running app compares the two and reloads
+// itself at the next screen change when a newer build is live — a tab left
+// open across a deploy was running the old call screen against the new
+// server, and hanging up every call. See src/lib/update.js.
+const BUILD_ID = process.env.GITHUB_SHA?.slice(0, 12) || String(Date.now())
+
+function versionFile() {
+  return {
+    name: 'namo-version-file',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build: BUILD_ID }) })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
   base: process.env.DEPLOY_BASE || '/',
-  plugins: [react()],
+  plugins: [react(), versionFile()],
+  define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   server: { port: 5174 },
   build: {
     outDir: mode === 'pro' ? 'dist-pro' : 'dist',

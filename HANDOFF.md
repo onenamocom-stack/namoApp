@@ -5544,3 +5544,23 @@ consultant's chat and call bars, Pooja.
 Not proven against the real Daily presence API — its response is parsed for
 `userId`/`user_id`; if Daily answers differently the call stays "Connecting"
 and settles at ₹0 after 90 s, which is the safe failure.
+
+## 54. First live test of the new calls — 6 Oct 2026
+
+Three test calls hung up 2–8 s after joining. Every End came from
+1namo.com, which also sent none of the new connecting heartbeats: the
+seeker's tab had loaded the app before the deploy, and the OLD call screen
+read the new `expires_at: null` as "0:00 left" and ended the call. Nothing
+was charged (each hold refunded whole). Two fixes:
+
+- **The app reloads into a newer build** (`src/lib/update.js`): every build
+  bakes an id and publishes `version.json`; the app checks every five
+  minutes and on returning to the foreground, and reloads at the next
+  screen change — never on `/call` or `/connect`.
+- **Room race** (`apps/video/services.py::_create_or_get`): both phones
+  joining in the same second both created the Daily room and the second got
+  "already exists", refused for a retry. It now reads the existing room.
+  Needs an API deploy.
+
+Also: Consult's free-tool circles are full colour with white icons
+(`toolStyle` in `src/lib/tiles.js`), owner's "these look dull".

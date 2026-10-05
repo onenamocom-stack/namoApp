@@ -40,6 +40,7 @@ import Wallet from './screens/Wallet.jsx'
 import Orders from './screens/Orders.jsx'
 import Call from './screens/Call.jsx'
 import Connect from './screens/Connect.jsx'
+import { useReloadIntoNewBuild } from './lib/update.js'
 import IncomingCall from './components/IncomingCall.jsx'
 import { PresenceKeeper } from './components/PresenceToggle.jsx'
 import Horoscope from './screens/Horoscope.jsx'
@@ -102,6 +103,12 @@ function ProLayout() {
       <BottomNav tabs={PRO_TABS} />
     </>
   )
+}
+
+/** Reloads into a newer build at the next screen change (src/lib/update.js). */
+function BuildWatcher() {
+  useReloadIntoNewBuild()
+  return null
 }
 
 /** Shell for onboarding and drill-in screens — no bottom nav. */
@@ -249,6 +256,7 @@ function Frame() {
     <div className="flex min-h-[100dvh] w-full justify-center bg-ink">
       <div className="relative flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden bg-bg text-t1">
         <SessionGate />
+        <BuildWatcher />
         {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
         {isPro && <MilestoneCelebration />}
         {/* The consultant's "app is open" beat, on every route — the call

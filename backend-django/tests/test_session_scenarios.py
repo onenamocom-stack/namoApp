@@ -230,3 +230,24 @@ class TestAChatStory:
         asked = people["ask"](channel="chat")
         assert asked["ok"] is False and "balance" in asked["reason"].lower()
         assert not Session.objects.filter(seeker_id=SEEKER).exists()
+
+
+@pytest.mark.django_db
+def test_two_phones_creating_the_room_at_once(people, daily, monkeypatch):
+    """The second create hears "already exists"; it must join, not refuse."""
+    _fund(SEEKER, RATE * 3)
+    sid = people["ask"]()["session_id"]
+    people["post"]("pro", f"/v1/chat/sessions/{sid}/accept/")
+    made = {"n": 0}
+
+    def get_room(name):
+        return {"url": f"https://1namo.daily.co/{name}"} if made["n"] else None
+
+    def create_room(name, exp):
+        made["n"] += 1
+        raise providers.UpstreamError('400 {"info":"a room named x already exists"}')
+
+    monkeypatch.setattr(providers, "get_room", get_room)
+    monkeypatch.setattr(providers, "create_room", create_room)
+    joined = people["post"]("seeker", f"/v1/video/sessions/{sid}/join/")
+    assert joined["ok"] is True and joined["url"].endswith(video_services.room_name(sid))
