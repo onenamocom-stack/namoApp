@@ -60,11 +60,20 @@ def _token(refresh=False):
                   "password": settings.SHIPROCKET_PASSWORD},
             timeout=TIMEOUT,
         )
-        response.raise_for_status()
-        token = response.json()["token"]
     except requests.RequestException as exc:
         logger.error("[shiprocket] login failed: %s", type(exc).__name__)
-        raise ShiprocketError("Could not sign in to Shiprocket") from None
+        raise ShiprocketError("Could not reach Shiprocket to sign in") from None
+    if response.status_code in (400, 401, 403, 422):
+        # Status only: their body echoes the email.
+        raise ShiprocketError(
+            f"Shiprocket refused the sign-in ({response.status_code}) — check the API "
+            "user's email and password in Shiprocket → Settings → API Users"
+        )
+    try:
+        response.raise_for_status()
+        token = response.json()["token"]
+    except requests.RequestException:
+        raise ShiprocketError(f"Shiprocket sign-in failed ({response.status_code})") from None
     except (KeyError, ValueError):
         raise ShiprocketError("Shiprocket returned no token") from None
     cache.set(TOKEN_KEY, token, TOKEN_TTL)
