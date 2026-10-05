@@ -270,7 +270,9 @@ buried above a stream.
 Then the roster, read from `consultants_public` — so an unapproved practice is
 absent because the server never sent it, not because a filter here dropped it.
 Search and category counts run over what came back; a practitioner with
-several practices counts under each.
+several practices counts under each. **Whoever is online right now is listed
+first** (5 Oct 2026), then best rated — the API orders it so and the screen
+keeps that order through search and filters.
 
 **Not on this screen since 5 Oct 2026:** "Your sessions" (now the chat panel's
 Sessions tab) and the verified rail ("Unlimited questions in 20 min"), which

@@ -182,6 +182,9 @@ export default function Consult() {
       )
     return inCat && inQuery
   })
+    // Whoever is online right now comes first (5 Oct 2026, owner's request);
+    // within each group the server's order — best rated first — stands.
+    .sort((a, b) => Number(b.online) - Number(a.online))
 
   /* The dot is PRESENCE now (24 Sep 2026), not `verified`. It stood in for
      online while there was no presence — a dot that is always green is

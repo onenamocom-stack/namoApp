@@ -311,7 +311,8 @@ def public_consultants():
             online=online_expr(),
             sessions_done=sessions_done_expr(),
         )
-        .order_by(F("rating_avg_cache").desc(nulls_last=True), "-created_at")
+        # Online first (5 Oct 2026, owner's request), then best rated.
+        .order_by(F("online").desc(), F("rating_avg_cache").desc(nulls_last=True), "-created_at")
     )
 
 

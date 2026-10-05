@@ -45,3 +45,20 @@ def test_whom_i_follow_marks_the_consultant(me, people):
 
 def test_signed_out_reads_nothing(people):
     assert APIClient().get("/v1/content/follows/followers/").status_code in (401, 403)
+
+
+def test_online_consultants_come_first(db):
+    """5 Oct 2026: whoever can be taken right now leads the roster."""
+    from django.utils import timezone
+
+    from apps.consultants import services as consultant_services
+
+    offline, online = uuid.uuid4(), uuid.uuid4()
+    for pid, name in ((offline, "Offline Pro"), (online, "Online Pro")):
+        Profile.objects.create(id=pid, phone=str(pid)[:15], name=name)
+    Consultant.objects.create(profile_id=offline, category="Astrologer", status="approved",
+                              rating_avg_cache=5)
+    Consultant.objects.create(profile_id=online, category="Astrologer", status="approved",
+                              accepting_now=True, last_seen_at=timezone.now())
+    order = [str(c.profile_id) for c in consultant_services.public_consultants()]
+    assert order.index(str(online)) < order.index(str(offline))
