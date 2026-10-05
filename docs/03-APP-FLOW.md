@@ -428,10 +428,19 @@ saffron glow, and a one-time toast says "Touch the ghanti, diya, dhoop or
 flowers to offer". The `namo.puja.touched` localStorage key remembers it per
 device. The rail of dark round buttons down the pillar is gone.
 
+**Four mandirs to choose from** (5 Oct 2026): white marble, pink sandstone, gold
+and black granite with brass (`MANDIRS` in `PujaProps.jsx`, files
+`public/puja/mandir-{id}.webp` plus a `-thumb`). Each is measured in its own
+pixels (top, side, bottom, apex, plate), so the doorway, bells and nameplate
+follow whichever is chosen. The choice is in the Darshan sheet under **Mandir**,
+changes the page behind the sheet at once, and is remembered per device
+(`namo.puja.mandir`).
+
 **Back** and **sangeet** sit in the top corners over the frieze. The deity's
-**nameplate** (its murti, its name, one dot per murti) hangs centred just under
-the cornice, leaving the elephant frieze in view. The nameplate opens the **Darshan sheet**: deities in a
-grid, then that deity's murtis. Tapping a deity changes the doorway behind the
+**nameplate** (its murti, its name, one dot per murti) is centred on the band
+under the frieze, where the owner placed it on the marble; each mandir's
+`plate` says where that band is. The nameplate opens the **Darshan sheet**: deities in a
+grid, then that deity's murtis, then the mandir. Tapping a deity changes the doorway behind the
 sheet at once and keeps the sheet open on its murtis; tapping a murti closes
 it. This sheet replaced the deity chip row and the eye button, and it is **the
 only place the image attribution appears**, so it cannot be removed without

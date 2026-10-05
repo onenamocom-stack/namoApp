@@ -321,43 +321,54 @@ export function Thali({ size = 86, lit = false }) {
 }
 
 /* ── The mandir entrance the whole puja page stands in (5 Oct 2026) ───────
-   A PHOTOGRAPH of a carved white-marble mandir entrance — pillars, an
-   elephant frieze, a layered scalloped arch, marble steps — with its doorway
-   keyed out so the murti stands inside it. Asked for on the owner's reference
-   of a BAPS-style marble mandir; it replaced a sandstone door frame and,
-   before that, a drawn SVG one ("AI created").
-   Source: Canva design DAHXKTEtMaA, green-screened opening, keyed and
-   cropped to 880×1690.
+   PHOTOGRAPHS of carved mandir entrances — pillars, a frieze, a scalloped
+   arch, steps — with the doorway keyed out so the murti stands inside it. The
+   owner asked for the first on a reference of a BAPS-style marble mandir
+   (it replaced a sandstone door frame and, before that, a drawn SVG one,
+   "AI created"), then for a choice of colours.
 
+   Each is a Canva phone-wallpaper design with a green-screened doorway,
+   keyed, cropped so the pillars take the same share of the width, and
+   measured. In each entry, in the image's own pixels:
+     top     frieze + arch, down to where the doorway's sides run straight
+     side    pillar + jamb, each side
+     bottom  threshold and steps
+     apex    the top of the doorway, under the arch's crown
+     plate   where the deity's nameplate hangs (its centre)
    Laid on as a border-image so the frieze, arch and steps keep their shape
-   and only the pillar shafts stretch to the phone's height. Slices are in the
-   image's pixels; widths are the same numbers in `cqw` (the shrine is an
-   inline-size container), so everything scales with the page's width and the
-   arch never squashes. */
-const FRAME_SRC = {
-  w: 880,
-  top: 900, // frieze + arch, down to where the doorway's sides run straight
-  side: 160, // pillar + jamb, each side
-  bottom: 225, // threshold and steps
-  apex: 567, // the top of the doorway, under the arch's crown
-}
-// The marble is drawn at three-quarters of the page's width-scale (6 Oct
+   and only the pillar shafts stretch to the phone's height. Widths are the
+   same numbers in `cqw` (the shrine is an inline-size container), so it all
+   scales with the page's width and the arch never squashes. */
+export const MANDIRS = [
+  // Canva DAHXKTEtMaA. `plate` placed by the owner, on the band under the frieze.
+  { id: 'marble', label: 'puja.mandir.marble', w: 880, top: 900, side: 160, bottom: 225, apex: 567, plate: 180 },
+  // Canva DAHXKsHbwlw
+  { id: 'pink', label: 'puja.mandir.pink', w: 759, top: 812, side: 138, bottom: 192, apex: 614, plate: 182 },
+  // Canva DAHXKjLqKoI
+  { id: 'gold', label: 'puja.mandir.gold', w: 740, top: 776, side: 134, bottom: 187, apex: 572, plate: 330 },
+  // Canva DAHXKk6NlTw
+  { id: 'granite', label: 'puja.mandir.granite', w: 789, top: 695, side: 144, bottom: 200, apex: 436, plate: 215 },
+]
+
+// Every mandir is drawn at three-quarters of the page's width-scale (6 Oct
 // 2026, owner's request: "the mandir a little smaller, the deity bigger").
 // Every frame measure — the border, the doorway, the bells, the nameplate —
 // goes through this one function, so they shrink together and stay aligned.
-const FRAME_SCALE = 0.75
-export const frameCqw = (px) => `${((px / FRAME_SRC.w) * 100 * FRAME_SCALE).toFixed(3)}cqw`
+const MANDIR_SCALE = 0.75
+export const mandirCqw = (m, px) => `${((px / m.w) * 100 * MANDIR_SCALE).toFixed(3)}cqw`
 
 /* The doorway itself, as absolute insets: the murti and its light go here. */
-export const FRAME_OPENING = {
-  top: frameCqw(FRAME_SRC.apex),
-  left: frameCqw(FRAME_SRC.side),
-  right: frameCqw(FRAME_SRC.side),
-  bottom: frameCqw(FRAME_SRC.bottom),
-}
+export const mandirOpening = (m) => ({
+  top: mandirCqw(m, m.apex),
+  left: mandirCqw(m, m.side),
+  right: mandirCqw(m, m.side),
+  bottom: mandirCqw(m, m.bottom),
+})
 
-export function TempleFrame() {
-  const { top, side, bottom } = FRAME_SRC
+export const mandirSrc = (m) => `${import.meta.env.BASE_URL}puja/mandir-${m.id}.webp`
+
+export function TempleFrame({ mandir: m }) {
+  const { top, side, bottom } = m
   return (
     <span
       aria-hidden="true"
@@ -365,9 +376,9 @@ export function TempleFrame() {
       style={{
         borderStyle: 'solid',
         borderColor: 'transparent',
-        borderWidth: `${frameCqw(top)} ${frameCqw(side)} ${frameCqw(bottom)}`,
-        borderImage: `url(${import.meta.env.BASE_URL}puja/mandir-marble.webp) ${top} ${side} ${bottom} stretch`,
-        // The marble throws a little shadow into the sanctum behind it.
+        borderWidth: `${mandirCqw(m, top)} ${mandirCqw(m, side)} ${mandirCqw(m, bottom)}`,
+        borderImage: `url(${mandirSrc(m)}) ${top} ${side} ${bottom} stretch`,
+        // The stone throws a little shadow into the sanctum behind it.
         filter: 'drop-shadow(0 4px 8px rgba(20,10,0,.55))',
       }}
     />

@@ -5,13 +5,14 @@ import Icon from '../components/Icon.jsx'
 import {
   Dhoop,
   Diya,
-  FRAME_OPENING,
   Ghanti,
   LampFlame,
+  MANDIRS,
   PujaPhoto,
   TempleFrame,
   Thali,
-  frameCqw,
+  mandirCqw,
+  mandirOpening,
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets } from '../lib/bhakti.js'
@@ -99,12 +100,29 @@ const BLOOMS = [
 ]
 const SHOWER = 36 // per tap — three times the 12 it was
 const HINT_KEY = 'namo.puja.touched'
+const MANDIR_KEY = 'namo.puja.mandir'
 const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
   const [deity, setDeity] = useState(deities[0])
+  // Which mandir the page stands in, remembered per device.
+  const [mandir, setMandirState] = useState(() => {
+    try {
+      return MANDIRS.find((m) => m.id === localStorage.getItem(MANDIR_KEY)) ?? MANDIRS[0]
+    } catch {
+      return MANDIRS[0]
+    }
+  })
+  const setMandir = (m) => {
+    setMandirState(m)
+    try {
+      localStorage.setItem(MANDIR_KEY, m.id)
+    } catch {
+      /* private mode: it resets next time */
+    }
+  }
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
   // Sangeet (4 Oct 2026): the bhajans and mantras from Bhakti, played over
@@ -327,7 +345,7 @@ export default function Pooja() {
       >
         {/* The garbhagriha: the murti stands in the doorway, not behind the
             pillars. */}
-        <span className="absolute block" style={FRAME_OPENING}>
+        <span className="absolute block" style={mandirOpening(mandir)}>
           <img
             key={image.f}
             src={`${import.meta.env.BASE_URL}deities/${image.f}`}
@@ -359,7 +377,7 @@ export default function Pooja() {
 
         {/* The marble entrance (5 Oct 2026). Under the controls and the
             falling flowers, over the murti. */}
-        <TempleFrame />
+        <TempleFrame mandir={mandir} />
 
         {/* Pushpanjali falls the whole height of the page — photographed
             marigolds and loose genda and rose petals (5 Oct 2026). A
@@ -395,14 +413,14 @@ export default function Pooja() {
 
 
         {/* ── Back and sangeet in the top corners; the deity's nameplate
-            hung just under the cornice, so the elephant frieze above it stays
-            in view (5 Oct 2026, both placed by the owner). ─────────────── */}
+            centred on the band under the frieze (5 Oct 2026, both placed by
+            the owner). Each mandir says where that band is. ─────────────── */}
         <BackButton dark onClick={goBack} className="absolute left-3 top-3 !h-11 !w-11" />
         {/* Centred by a wrapper, not a translate: `.plinth:active` sets
             transform, and would knock a translated nameplate sideways. */}
         <span
-          className="pointer-events-none absolute inset-x-0 flex justify-center px-3"
-          style={{ top: frameCqw(232) }}
+          className="pointer-events-none absolute inset-x-0 flex -translate-y-1/2 justify-center px-3"
+          style={{ top: mandirCqw(mandir, mandir.plate) }}
         >
           <button
             type="button"
@@ -448,8 +466,8 @@ export default function Pooja() {
           {track ? <PlayingBars /> : <SangeetGlyph />}
         </button>
 
-        <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
-        <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
+        <HangingBell mandir={mandir} side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
+        <HangingBell mandir={mandir} side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
 
         {/* ── The altar, on the steps. Every piece of samagri is its own
             control (5 Oct 2026; there was a rail of round buttons down the
@@ -584,6 +602,8 @@ export default function Pooja() {
         <DarshanSheet
           deity={deity}
           pic={pic}
+          mandir={mandir}
+          onMandir={setMandir}
           // A deity tapped in the sheet shows in the doorway behind it at
           // once; the sheet stays open on its murtis.
           onDeity={(d) => {
@@ -613,7 +633,7 @@ export default function Pooja() {
  * reach, and the shrine itself is not allowed to carry text. If this sheet
  * goes, the images have to go with it.
  */
-function DarshanSheet({ deity, pic, onDeity, onPick, onClose }) {
+function DarshanSheet({ deity, pic, mandir, onMandir, onDeity, onPick, onClose }) {
   const { lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
   const name = (d) => (lang === 'hi' ? d.nameHi : d.name)
@@ -688,6 +708,41 @@ function DarshanSheet({ deity, pic, onDeity, onPick, onClose }) {
         <p className="mt-3 text-[11px] leading-snug t-faint">
           {deity.images[pic].label} · {creditLine(deity.images[pic])}
         </p>
+
+        {/* The mandir around the doorway (5 Oct 2026). Like a deity, it
+            changes behind the sheet at once and the sheet stays open. */}
+        <p className="mt-5 caps-sm t-faint">{t('puja.mandir')}</p>
+        <ul className="mt-3 grid grid-cols-4 gap-x-2">
+          {MANDIRS.map((m) => {
+            const on = m.id === mandir.id
+            return (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onMandir(m)}
+                  className="flex w-full flex-col items-center gap-1.5"
+                >
+                  <span
+                    className={`block h-[84px] w-14 overflow-hidden rounded-t-full rounded-b-md ring-2 ring-offset-2 transition duration-200 ${
+                      on ? 'ring-gold-fill' : 'ring-transparent opacity-70'
+                    }`}
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}puja/mandir-${m.id}-thumb.webp`}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top"
+                    />
+                  </span>
+                  <span className={`text-center text-[12px] font-semibold leading-tight ${on ? 't-heading' : 't-body'}`}>
+                    {t(m.label)}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       </div>
     </div>
   )
@@ -828,7 +883,7 @@ function PlayingBars() {
 
 /** A ghanti on its chain, hung from the arch at an edge of the doorway.
     Touching it rings it — both swing, as a struck bell shakes its pair. */
-function HangingBell({ side, ringing, hint, onRing, label }) {
+function HangingBell({ mandir, side, ringing, hint, onRing, label }) {
   return (
     <button
       type="button"
@@ -836,8 +891,8 @@ function HangingBell({ side, ringing, hint, onRing, label }) {
       aria-label={label}
       className={`absolute isolate origin-top rounded-full p-1 ${ringing ? 'animate-swing' : ''}`}
       style={{
-        top: frameCqw(640),
-        [side]: `calc(${frameCqw(160)} - 26px)`,
+        top: mandirCqw(mandir, mandir.apex + 73),
+        [side]: `calc(${mandirCqw(mandir, mandir.side)} - 26px)`,
         filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))',
       }}
     >
