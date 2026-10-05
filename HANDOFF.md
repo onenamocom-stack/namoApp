@@ -5246,7 +5246,8 @@ from 4–5 Oct fail the same way on clean `main`).
 
 ## 43. Delivery through Shiprocket — 5 Oct 2026
 
-**Built and tested locally; not yet migrated, deployed or pushed.** The
+**Prod is migrated (`shop/0003` applied 5 Oct); the API, console and
+frontend are not yet deployed.** The
 Shiprocket account is Namo's own, so a paid parcel now goes out by itself.
 
 What happens, in order:
