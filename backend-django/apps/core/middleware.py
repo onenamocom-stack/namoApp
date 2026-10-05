@@ -4,7 +4,7 @@ import uuid
 
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.http import HttpResponse, JsonResponse
 from django.utils.cache import patch_vary_headers
 from django.utils.deprecation import MiddlewareMixin
@@ -92,38 +92,36 @@ class IdempotencyMiddleware(MiddlewareMixin):
             # auth failures must not mint replay rows. Pass through and let
             # the view/permission layer answer.
             return None
+        # Claim the key by inserting it, in-flight, before the view runs. The
+        # unique (key, user) constraint is the whole race: the first request
+        # inserts, any other — a replay or a concurrent twin — hits the
+        # violation and is answered from the stored row. One database trip
+        # instead of the six a locked read-then-insert took (6 Oct 2026).
+        # Inside an outer transaction (tests) the insert takes a savepoint so
+        # the violation cannot abort it; in production's autocommit it needs
+        # none, and a savepoint would be two more trips.
         try:
-            with transaction.atomic():
-                record = (
-                    IdempotencyKey.objects.select_for_update()
-                    .filter(key=key, user_id=user_key)
-                    .first()
-                )
-                if record is not None:
-                    return self._replay_response(record, request)
-                # Mark the key in-flight *before* the view runs: a unique
-                # violation here means a concurrent request won the race.
-                # The inner atomic is a savepoint — an IntegrityError must
-                # not abort the outer transaction's later reads.
-                try:
-                    with transaction.atomic():
-                        IdempotencyKey.objects.create(
-                            key=key,
-                            user_id=user_key,
-                            method=request.method,
-                            path=request.path,
-                        )
-                except IntegrityError:
-                    winner = IdempotencyKey.objects.get(key=key, user_id=user_key)
-                    return self._replay_response(winner, request)
-                request._idempotency_pending = (key, user_key)
-                return None
+            if connection.in_atomic_block:
+                with transaction.atomic():
+                    self._claim(key, user_key, request)
+            else:
+                self._claim(key, user_key, request)
         except IntegrityError:
-            # Concurrent commit edge: re-read the committed winner.
             winner = IdempotencyKey.objects.filter(key=key, user_id=user_key).first()
             if winner is not None:
                 return self._replay_response(winner, request)
             raise
+        request._idempotency_pending = (key, user_key)
+        return None
+
+    @staticmethod
+    def _claim(key, user_key, request):
+        IdempotencyKey.objects.create(
+            key=key,
+            user_id=user_key,
+            method=request.method,
+            path=request.path,
+        )
 
     def process_response(self, request, response):
         pending = getattr(request, "_idempotency_pending", None)

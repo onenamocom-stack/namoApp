@@ -1,9 +1,10 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
 import { MilestoneCelebration } from './components/Milestones.jsx'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
 import { isPro } from './side.js'
+import { listSessions } from './lib/chat.js'
 import { startAnalytics } from './lib/analytics.js'
 import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
@@ -124,6 +125,26 @@ function NotificationRouter() {
     navigator.serviceWorker.addEventListener('message', onMessage)
     return () => navigator.serviceWorker.removeEventListener('message', onMessage)
   }, [navigate])
+  return null
+}
+
+/** A paid chat still running when the app opens — after a reload, a closed
+ *  tab, a phone that slept — opens straight back onto its conversation, for
+ *  either side. The chat panel is an overlay, not a route, so nothing else
+ *  brings it back, and the meter runs whether or not anybody can see it
+ *  (6 Oct 2026). A call needs nothing: its screen is in the URL. */
+function LiveChatResume() {
+  const { session, openChat } = useStore()
+  const uid = session?.user?.id
+  const checked = useRef(null)
+  useEffect(() => {
+    if (!uid || checked.current === uid) return
+    checked.current = uid
+    listSessions().then((rows) => {
+      const live = (rows || []).find((s) => s.status === 'live' && s.mode === 'chat' && s.thread_id)
+      if (live) openChat('live', live.thread_id)
+    })
+  }, [uid, openChat])
   return null
 }
 
@@ -274,6 +295,7 @@ function Frame() {
         <SessionGate />
         <BuildWatcher />
         <NotificationRouter />
+        <LiveChatResume />
         {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
         {isPro && <MilestoneCelebration />}
         {/* The consultant's "app is open" beat, on every route — the call

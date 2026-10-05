@@ -1037,6 +1037,24 @@ class TestReadSide:
 # ── the endpoint contract: /v1/chat call-for-call with src/lib/chat.js ──────
 
 
+@pytest.mark.django_db(transaction=True)  # autocommit, as in production
+def test_send_is_a_few_database_trips(api_client, seeker_token, pro_user, django_assert_max_num_queries):
+    """Every query costs the API's distance to the database, and a chat pays
+    it on every line: a keyed send took thirteen trips, about 800 ms, before
+    6 Oct 2026. Claim the key, check the session, insert, store the answer —
+    plus the thread touch this SQLite fixture does by hand (a trigger on
+    Postgres)."""
+    _fund(SEEKER, 100000)
+    _, thread_id = _live_session(pro_user, now=timezone.now())
+    with django_assert_max_num_queries(5):
+        response = api_client.post(
+            f"/v1/chat/threads/{thread_id}/messages/send/", {"body": "Namaste"},
+            format="json", HTTP_IDEMPOTENCY_KEY="0f6b3c1e-8d2a-4e57-b9c0-1a2b3c4d5e6f",
+            **auth(seeker_token),
+        )
+    assert response.status_code == 200 and response.json()["ok"] is True
+
+
 @pytest.mark.django_db
 class TestEndpoints:
     def test_full_walk_and_shapes(self, hs256_mode, sign_hs256, api_client,

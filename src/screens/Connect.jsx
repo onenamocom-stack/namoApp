@@ -24,7 +24,9 @@ import { rupees, useStore } from '../store.jsx'
  *            the server's words, with the one action that helps.
  */
 const RETRY_FOR_MS = 3 * 60_000
-const POLL_MS = 2500
+// How often a waiting chat asks whether it was accepted: the chat should
+// open the moment it is (6 Oct 2026: 2.5 s plus the request read as ~4.5 s).
+const POLL_MS = 1000
 
 export default function Connect() {
   const { id } = useParams()
@@ -112,8 +114,11 @@ export default function Connect() {
   // Ringing a chat: watch the request until it is answered.
   useEffect(() => {
     if (phase !== 'ringing') return undefined
+    let asking = false
     const timer = setInterval(async () => {
-      const rows = await listSessions()
+      if (asking) return // one question at a time; a slow answer is not asked twice
+      asking = true
+      const rows = await listSessions().finally(() => (asking = false))
       if (!alive.current) return
       const row = (rows ?? []).find((r) => r.id === sessionId.current)
       if (!row) return

@@ -747,22 +747,25 @@ def send_message(sender_id, thread_id, body, now=None):
     text = (body or "").strip()
     if not text:
         return {"ok": False, "reason": REFUSAL_SESSION_ENDED}
-    thread = Thread.objects.filter(pk=thread_id).first()
-    if thread is None:
-        return {"ok": False, "reason": REFUSAL_NOT_PARTICIPANT}
-    refusal = _participant_check(sender_id, thread)
-    if refusal is not None:
-        return {"ok": False, "reason": refusal}
+    # The common case in ONE read: a live, unexpired session on this thread
+    # with the sender as one of its two people (a session's pair is its
+    # thread's pair). Every database trip costs the API's distance to the
+    # database, and a chat pays it on every line (6 Oct 2026: a send made
+    # thirteen). Only a refusal pays for the reads that say which refusal.
     live = Session.objects.filter(
-        thread_id=thread.id, status=Session.Status.LIVE, expires_at__gt=now
+        Q(seeker_id=sender_id) | Q(consultant_id=sender_id),
+        thread_id=thread_id, status=Session.Status.LIVE, expires_at__gt=now,
     ).exists()
     if not live:
+        thread = Thread.objects.filter(pk=thread_id).first()
+        if thread is None or _participant_check(sender_id, thread) is not None:
+            return {"ok": False, "reason": REFUSAL_NOT_PARTICIPANT}
         return {"ok": False, "reason": REFUSAL_SESSION_ENDED}
-    with transaction.atomic():
-        message = Message.objects.create(
-            thread_id=thread.id, sender_id=sender_id, body=text
-        )
-        _touch_thread(thread.id, message.created_at, text)
+    # A single insert is atomic on its own; on Postgres the touch_thread
+    # trigger updates the thread inside the same statement, so no
+    # transaction is opened around it.
+    message = Message.objects.create(thread_id=thread_id, sender_id=sender_id, body=text)
+    _touch_thread(thread_id, message.created_at, text)
     return {"ok": True, "message": _message_row(message)}
 
 

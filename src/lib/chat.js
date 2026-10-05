@@ -87,6 +87,10 @@ const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example
  *  the session lists. */
 const MESSAGE_POLL_MS = 1500
 const MESSAGE_POLL_HIDDEN_MS = 6000
+/** A consultant's queue: a seeker is waiting on the other end, 45 s at most,
+ *  so 2 s while the app is on screen (6 Oct 2026: 5 s left them waiting
+ *  ~6 s for the request to appear). A closed app is rung by web push. */
+const REQUESTS_POLL_MS = 2000
 const SESSIONS_POLL_MS = 5000
 
 /** The Supabase access token off the existing session; null when signed out. */
@@ -370,17 +374,17 @@ export function subscribeToThread(threadId, onMessage) {
  * the session has been swept. Fires only when the list actually changes.
  */
 export function subscribeToMySessions(seekerId, onChange) {
-  return _pollSessions(onChange)
+  return _pollSessions(onChange, SESSIONS_POLL_MS)
 }
 
 /** A consultant's incoming requests — the ones waiting for an accept. The
  *  queue is listSessions filtered client-side, exactly as the current
  *  screen does it. */
 export function subscribeToRequests(consultantId, onChange) {
-  return _pollSessions(onChange)
+  return _pollSessions(onChange, REQUESTS_POLL_MS)
 }
 
-function _pollSessions(onChange) {
+function _pollSessions(onChange, every) {
   let last = null
   let stopped = false
   let timer = null
@@ -395,7 +399,7 @@ function _pollSessions(onChange) {
     } catch (err) {
       console.error('[chat] sessions poll failed:', err.message)
     }
-    if (!stopped) timer = setTimeout(poll, SESSIONS_POLL_MS)
+    if (!stopped) timer = setTimeout(poll, document.hidden ? Math.max(every, 8000) : every)
   }
 
   poll()
