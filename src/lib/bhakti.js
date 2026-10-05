@@ -265,7 +265,7 @@ export async function composeStatus(artworkSrc, { photoSrc, name, dateLabel, log
   }
 
   if (logo) {
-    const w = 190
+    const w = 230                         // the NAMO logo with its tile, 5 Oct 2026
     const h = (logo.height / logo.width) * w
     ctx.globalAlpha = 0.9
     ctx.drawImage(logo, c.width - pad - w, middle - h / 2, w, h)

@@ -126,11 +126,12 @@ export function BottomNav({ tabs = TABS }) {
  * labelled ACADEMY. The bar names the screen; the header does not need to say
  * it a second time, and the row is worth more as a constant.
  *
- * The wordmark was type; it is the real mark as of 9 Sep 2026. The source is
- * a JPEG of black ink on solid white, which on this warm canvas renders as a
- * white slab — `public/namo-logo.png` is that file with the white keyed to
- * alpha and the whitespace cropped off, so padding is decided here and not by
- * the artwork.
+ * The mark is the owner's NAMO logo as of 5 Oct 2026 — the orange tile with
+ * the infinity, then NAMO. Before that it was a black wordmark drawn as a CSS
+ * mask in `--ink`; a mask paints one colour, and this mark has three, so it
+ * is an image now. `public/namo-logo.png` is the JPEG with the white outside
+ * the tile keyed to alpha and the letters rebuilt from luminance in near-black;
+ * `namo-logo-light.png` is the same with white letters, for dark backgrounds.
  *
  * Profile moved from the left to the far right the same day, and the wallet
  * arrived beside it. Money used to be two taps inside Profile; it is the
@@ -151,35 +152,15 @@ export function TabHeader({ action = null }) {
   return (
     <>
     <header className="topbar flex items-center gap-2 px-4 py-2">
-      {/* The mark is the PNG used as a MASK rather than drawn as an image, so
-          its colour is `--ink` and it repalettes with everything else. The
-          file is pure #000 on alpha, and pure black beside navy type broke
-          the first rule in index.css — the ink is never pure black. Painting
-          a second PNG would have put the brand colour somewhere no token can
-          reach it; this way the mark follows the token forever.
-
-          Not the accent, deliberately: orange is one voltage per screen, and
-          a mark that appears on every screen would spend it everywhere and
-          therefore signal nothing. The Link carries the accessible name, so
-          the span is decorative. */}
       {/* The mark is what gives way when the bar is full — the consultant's
           has five controls. The pills take `!px-3` because `.pill.knob`
           zeroes padding and outranks a plain `px-*`; until 3 Oct "Online"
           and the balance ran edge to edge in their pills. */}
-      <Link to={me.homeTo} aria-label="Namo" className="min-w-[56px] shrink transition-opacity hover:opacity-70">
-        <span
-          aria-hidden="true"
-          className="block h-5 w-[90px] max-w-full bg-ink"
-          style={{
-            WebkitMaskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
-            maskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'left center',
-            maskPosition: 'left center',
-          }}
+      <Link to={me.homeTo} aria-label="Namo" className="min-w-[60px] max-w-[112px] shrink transition-opacity hover:opacity-70">
+        <img
+          src={`${import.meta.env.BASE_URL}namo-logo.png`}
+          alt=""
+          className="block h-6 w-auto max-w-full object-contain object-left"
         />
       </Link>
 

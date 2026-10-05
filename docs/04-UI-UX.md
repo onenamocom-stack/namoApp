@@ -43,7 +43,7 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 | `--surface-2` | `#ffe4cc` | One step deeper — inactive tracks, chip wells |
 | `--stroke` | `rgba(17,17,17,0.08)` | Hairline on a raised surface |
 | `--rule` | `#ebebef` | Divider on the page itself |
-| `--ink` | `#262626` | Dark slabs — toasts, scrims, reel backdrop, sent chat bubble — and the logo |
+| `--ink` | `#262626` | Dark slabs — toasts, scrims, reel backdrop, sent chat bubble. *Not the logo since 5 Oct 2026* — see below |
 | `--ink-2` | `#363636` | A block sitting on ink |
 | `--ink-lit` | `#444444` | The lit top of an ink gradient |
 | `--btn` / `--btn-deep` / `--btn-edge` | `#45bd82` / `#2ea56b` / `#27925d` | The green main-action button — two shades lighter since 30 Sep, at the owner's call |
@@ -53,6 +53,15 @@ replaced, not extended** — apart from `transparent`, `current`, `black` and
 | `--lo` | `rgba(17,17,17,0.1)` | Shade under a lip |
 | `--live` | `#d93025` | Live badge, liked heart, unread dot |
 | `--ok` | `#1e9e5a` | Online dot — green, matching the button |
+
+**The logo — 5 Oct 2026.** The owner's NAMO mark: an orange tile with a white
+infinity, then NAMO. Three colours, so it is an image, never a CSS mask:
+`public/namo-logo.png` (near-black letters) on light surfaces — the tab
+header and Welcome — and `public/namo-logo-light.png` (white letters) on
+dark ones — the Bhakti status band and the console header. The tile alone
+is the browser-tab and home-screen icon (`favicon.png`, `apple-touch-icon.png`,
+`namo-icon.png`). On a 1080 × 1920 status it is drawn 230 px wide,
+bottom right.
 
 **Buttons.** `.pop-btn-gold` (the `gold` variant of `PopButton`, and
 `Button variant="solid"`) is the ONE main action on a screen — pay, buy,

@@ -22,6 +22,7 @@ behind an IP allowlist without touching the app.
 import logging
 
 from django.contrib.admin import AdminSite
+from django.utils.safestring import mark_safe
 
 from .models import AdminUser, Tier
 
@@ -29,7 +30,11 @@ logger = logging.getLogger("apps.console")
 
 
 class NamoAdminSite(AdminSite):
-    site_header = "Namo console"
+    # The owner's NAMO logo (5 Oct 2026), served from the app's public folder.
+    site_header = mark_safe(
+        '<img src="https://1namo.com/namo-logo-light.png" alt="Namo" '
+        'style="height:28px;vertical-align:middle;margin-right:10px">console'
+    )
     site_title = "Namo console"
     index_title = "What needs doing"
     # Never "/admin/": a default path is a default attack surface, and this

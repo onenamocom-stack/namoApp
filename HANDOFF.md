@@ -5356,3 +5356,12 @@ alert ending "until None". `apps/referrals/services.py::_notify_referrer`.
 The three alerts on Test Seeker ending "until 2075-…" are rows written by
 the 25 Sep referral tests, not a live bug; the real 3 Oct referral says
 2026-10-06. Old alerts keep their old text.
+
+## 46. The NAMO logo everywhere — 5 Oct 2026
+
+The owner's logo (orange infinity tile + NAMO) replaces the old black "1namo"
+wordmark: tab header, Welcome, the Bhakti status image and its preview (white
+version — the old black mark was all but invisible on the status's dark
+band), the browser-tab and home-screen icon (new: there was none), and the
+console header. Files and rules: `docs/04-UI-UX.md` under the colour tokens.
+Front end ships on push; the console header needs a console deploy.

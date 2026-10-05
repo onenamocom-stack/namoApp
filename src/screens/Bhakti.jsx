@@ -741,7 +741,7 @@ function ShareSheet({ asset, onClose }) {
         photoSrc: photo,
         name: photo ? me.name : '',
         dateLabel: longDate(istDate()),
-        logoSrc: `${import.meta.env.BASE_URL}namo-logo.png`,
+        logoSrc: `${import.meta.env.BASE_URL}namo-logo-light.png`,
       })
       if (!blob) throw new Error('compose failed')
       const filename = `namo-status-${Date.now()}.jpg`
@@ -796,7 +796,7 @@ function ShareSheet({ asset, onClose }) {
               {photo && me.name && <span className="block truncate text-meta font-semibold">{me.name}</span>}
               <span className="block truncate caps-sm text-white/75">{longDate(istDate())}</span>
             </span>
-            <img src={`${import.meta.env.BASE_URL}namo-logo.png`} alt="" className="h-5 flex-none opacity-90 invert" />
+            <img src={`${import.meta.env.BASE_URL}namo-logo-light.png`} alt="" className="h-5 flex-none opacity-90" />
           </div>
         </div>
       </div>

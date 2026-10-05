@@ -172,20 +172,10 @@ export default function Welcome() {
       </div>
 
       <div className="mt-8 animate-fade-rise text-center">
-        <span
-          aria-label="Namo"
-          role="img"
-          className="mx-auto block h-9 w-[150px] bg-ink"
-          style={{
-            WebkitMaskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
-            maskImage: `url(${import.meta.env.BASE_URL}namo-logo.png)`,
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-          }}
+        <img
+          src={`${import.meta.env.BASE_URL}namo-logo.png`}
+          alt="Namo"
+          className="mx-auto block h-11 w-auto"
         />
         <h1 className="mx-auto mt-6 max-w-[18ch] text-title font-semibold leading-snug text-t1">
           {t('w.title')}
