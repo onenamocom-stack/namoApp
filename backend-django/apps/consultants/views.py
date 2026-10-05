@@ -81,15 +81,18 @@ def list_consultants(request):
     """The approved consultants, best rating first, NULLs last — the same
     order the client's PostgREST query asked for. Anonymous, per the view's
     grant to anon and authenticated (007)."""
-    rows = []
-    for consultant in services.public_consultants():
-        rows.append(
-            _consultant_row(
-                consultant,
-                _service_rows(services.active_services(consultant.profile_id)),
-            )
-        )
-    return Response(rows)
+    # Two queries, not two per consultant (5 Oct 2026). The database is in
+    # Singapore and the API in Mumbai, so each query is a round trip abroad;
+    # the old loop made the list slower with every consultant approved.
+    # Every row here is approved, so `active_services`' "pending is
+    # visible to its owner" branch cannot apply and one IN query is the same
+    # answer.
+    consultants = list(services.public_consultants())
+    by_owner = services.active_services_for([c.profile_id for c in consultants])
+    return Response([
+        _consultant_row(c, _service_rows(by_owner.get(c.profile_id, [])))
+        for c in consultants
+    ])
 
 
 @api_view(["GET"])

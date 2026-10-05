@@ -341,6 +341,18 @@ def active_services(consultant_id, requester_id=None):
     )
 
 
+def active_services_for(consultant_ids):
+    """`active_services` for many APPROVED consultants in one query:
+    {consultant_id: [services]}, each list in the same order."""
+    grouped = {}
+    rows = ConsultantService.objects.filter(
+        consultant_id__in=consultant_ids, active=True
+    ).order_by("sort", "duration_mins", "billing")
+    for row in rows:
+        grouped.setdefault(row.consultant_id, []).append(row)
+    return grouped
+
+
 def my_consultant(profile_id):
     """The caller's own consultants row, or None — store.jsx's
     refreshConsultant read, including the pending row (007's
