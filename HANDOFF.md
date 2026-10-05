@@ -5339,7 +5339,7 @@ that one transaction and re-enabled inside it.
 
 **The 48 reels the seed consultants "posted" were kept** and now belong to
 the Raghu account (phone ending 1246); the live feed shows 52 pieces, 48 by
-Raghu. Their stock sources and captions are unchanged.
+Raghu. Only the author changed.
 
 A JSON backup of every touched row is in the session scratchpad
 (`fake-users-backup-2026-10-05.json`), not in the repository — it holds
