@@ -5250,8 +5250,10 @@ from 4–5 Oct fail the same way on clean `main`).
 `namo-api-00067-xzx` and `namo-console-00008-v8m`, both built from merged
 `main` (00066 had briefly rolled back §42's backend; 00067 restores it), and
 the front end. `SHIPROCKET_EMAIL` and `SHIPROCKET_WEBHOOK_TOKEN` are set;
-`SHIPROCKET_PASSWORD` is not on the API yet, so the cart answers "Delivery
-is not set up yet" and nothing can be bought until it is. The
+`SHIPROCKET_PASSWORD` was set on both by hand on 5 Oct (api 00068, console
+00009). The console still has `SHIPROCKET_PICKUP=Primary` from the borrowed
+account; the API has none (primary pickup). Not yet proven against the real
+account — use Check Shiprocket. The
 Shiprocket account is Namo's own, so a paid parcel now goes out by itself.
 
 What happens, in order:
@@ -5283,7 +5285,12 @@ What happens, in order:
 6. **Orders** shows Ordered · Packed · Shipped · Delivered, the courier's
    last status, the AWB and a Track parcel link (`shiprocket.co/tracking/<awb>`).
 
-Console: Shipments has **Dispatch** (the same path, for one that stopped)
+Pincode → city/state reads Shiprocket loosely (its reply shape is
+undocumented; on 5 Oct the live answer had no city where expected) and
+falls back to India Post's public directory (`api.postalpincode.in`).
+
+Console: Shipments has **Check Shiprocket** (select any row: signs in afresh,
+reads the pickup, quotes 500 g to 110001, places nothing), **Dispatch** (the same path, for one that stopped)
 and **Refresh tracking**, which now also starts the cashback clock — it
 used a bare update before and skipped it. The label PDF is a column.
 

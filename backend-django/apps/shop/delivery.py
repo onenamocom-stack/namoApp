@@ -115,12 +115,13 @@ def delete_address(profile_id, address_id):
 def lookup_pincode(pincode):
     if not PINCODE.match(pincode or ""):
         return None
-    if not shiprocket.is_configured():
-        return None
-    try:
-        return shiprocket.pincode_details(pincode)
-    except shiprocket.ShiprocketError:
-        return None
+    place = None
+    if shiprocket.is_configured():
+        try:
+            place = shiprocket.pincode_details(pincode)
+        except shiprocket.ShiprocketError:
+            place = None
+    return place or shiprocket.india_post(pincode)
 
 
 # ── the quote ──────────────────────────────────────────────────────────────

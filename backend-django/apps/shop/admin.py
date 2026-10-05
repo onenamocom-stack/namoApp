@@ -454,7 +454,19 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return at_least(request, Tier.FULFILMENT)
 
-    actions = ("dispatch_now", "refresh_tracking")
+    actions = ("dispatch_now", "refresh_tracking", "check_shiprocket")
+
+    @dj.action(description="Check Shiprocket — sign in and quote, places nothing")
+    def check_shiprocket(self, request, queryset):
+        """Select any row; the rows are ignored. The one way to see from the
+        console that the credentials, pickup and couriers work."""
+        if not shiprocket.is_configured():
+            return self.message_user(request, "Shiprocket credentials are not set.", messages.ERROR)
+        try:
+            for line in shiprocket.check():
+                self.message_user(request, line)
+        except shiprocket.ShiprocketError as exc:
+            self.message_user(request, f"Shiprocket: {exc}", messages.ERROR)
 
     @dj.action(description="Dispatch — push, courier, pickup, label")
     def dispatch_now(self, request, queryset):

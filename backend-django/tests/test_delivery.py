@@ -314,3 +314,32 @@ class TestWebhook:
                     "current_status": "PICKED UP", "courier_name": "Blue Dart"})
         shipment.refresh_from_db()
         assert shipment.awb == "AWB7" and shipment.status == Shipment.Status.SHIPPED
+
+
+class TestPincode:
+    def test_shiprocket_city_is_read_loosely(self, db):
+        with mock.patch("apps.shop.shiprocket._call",
+                        return_value={"success": True, "postcode_details": {"city": "Noida", "state": "Uttar Pradesh"}}):
+            assert delivery.lookup_pincode("201301") == {"city": "Noida", "state": "Uttar Pradesh"}
+
+    def test_india_post_fills_in_when_shiprocket_has_nothing(self, db):
+        post = mock.Mock()
+        post.json.return_value = [{"Status": "Success", "PostOffice": [
+            {"District": "Gautam Buddha Nagar", "State": "Uttar Pradesh"}]}]
+        with mock.patch("apps.shop.shiprocket._call", return_value={"success": True}), \
+             mock.patch("apps.shop.shiprocket.requests.get", return_value=post):
+            assert delivery.lookup_pincode("201301") == {"city": "Gautam Buddha Nagar", "state": "Uttar Pradesh"}
+
+    def test_a_bad_pincode_asks_nobody(self, db):
+        with mock.patch("apps.shop.shiprocket._call") as call:
+            assert delivery.lookup_pincode("12345") is None
+        call.assert_not_called()
+
+    def test_the_console_check_signs_in_and_quotes(self, db):
+        with mock.patch("apps.shop.shiprocket._token", return_value="t"), \
+             mock.patch("apps.shop.shiprocket.pickup", return_value={"name": "Home", "pincode": "201301"}), \
+             mock.patch("apps.shop.shiprocket.quote",
+                        return_value={"amount_paise": 6800, "courier": "Delhivery", "etd_days": 3}):
+            lines = shiprocket.check()
+        assert lines[1] == "Pickup: Home (201301)."
+        assert "₹68 by Delhivery" in lines[2]

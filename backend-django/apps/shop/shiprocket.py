@@ -223,10 +223,50 @@ def pickup():
 def pincode_details(pincode):
     """{city, state} for an Indian pincode, or None when nobody knows it."""
     data = _call("GET", f"/open/postcode/details?postcode={pincode}")
-    details = data.get("postcode_details") or {}
-    if not data.get("success", True) or not details.get("city"):
+    # The shape is undocumented; read it loosely, and say what came back
+    # (keys only — no address in it) when nothing usable did.
+    details = data.get("postcode_details") or data.get("data") or data
+    if isinstance(details, list):
+        details = details[0] if details else {}
+    city = details.get("city") or details.get("district") or ""
+    if not city:
+        logger.warning("[shiprocket] pincode %s: no city in keys %s", pincode, sorted(data)[:12])
         return None
-    return {"city": details.get("city") or "", "state": details.get("state") or ""}
+    return {"city": city, "state": details.get("state") or ""}
+
+
+def india_post(pincode):
+    """{city, state} from India Post's public pincode directory — the
+    fallback when Shiprocket knows nothing. The district is what it calls
+    the city ("Gautam Buddha Nagar" for Noida), which the seeker can edit."""
+    try:
+        response = requests.get(f"https://api.postalpincode.in/pincode/{pincode}", timeout=8)
+        rows = response.json()
+        office = ((rows or [{}])[0].get("PostOffice") or [{}])[0]
+    except (requests.RequestException, ValueError, AttributeError, IndexError, TypeError):
+        return None
+    if not office.get("District"):
+        return None
+    return {"city": office.get("District") or "", "state": office.get("State") or ""}
+
+
+def check():
+    """For the console's "Check Shiprocket" button: sign in afresh, read
+    the pickup address, and quote a 500 g parcel to New Delhi. Returns
+    lines to show. Places nothing."""
+    cache.delete(TOKEN_KEY)
+    cache.delete(PICKUP_KEY)
+    lines = []
+    _token(refresh=True)
+    lines.append("Signed in.")
+    found = pickup()
+    lines.append(f"Pickup: {found['name']} ({found['pincode']}).")
+    got = quote("110001", 500)
+    lines.append(
+        f"500 g to 110001: ₹{got['amount_paise'] // 100} by {got['courier']}" if got
+        else "No courier for 110001 — check the account's couriers."
+    )
+    return lines
 
 
 def quote(delivery_pincode, weight_grams):
