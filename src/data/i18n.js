@@ -176,7 +176,6 @@ export const strings = {
   'tool.muhurat': { en: 'Muhurat', hi: 'मुहूर्त' },
 
   // ── Mandir ───────────────────────────────────────────────────────────────
-  'puja.tag': { en: 'e-puja', hi: 'ई-पूजा' },
   'puja.bell': { en: 'Bell', hi: 'घंटी' },
   'puja.flowers': { en: 'Flowers', hi: 'पुष्प' },
   'puja.diya': { en: 'Diya', hi: 'दीया' },
@@ -536,14 +535,14 @@ export const strings = {
 
   // ── Shop ─────────────────────────────────────────────────────────────────
   'shop.bn.stones.k': { en: 'Certified', hi: 'प्रमाणित' },
-  'shop.bn.stones.t': { en: 'Stones that ship with the lab report', hi: 'लैब रिपोर्ट के साथ आने वाले रत्न' },
+  'shop.bn.stones.t': { en: 'Stones with a lab report', hi: 'लैब रिपोर्ट वाले रत्न' },
   'shop.bn.stones.n': {
     en: 'Every gem, its certificate. No exceptions.',
     hi: 'हर रत्न के साथ उसका प्रमाण-पत्र। कोई अपवाद नहीं।',
   },
   'shop.bn.stones.c': { en: 'See gemstones', hi: 'रत्न देखें' },
   'shop.bn.rudraksha.k': { en: 'Nepali origin', hi: 'नेपाल से' },
-  'shop.bn.rudraksha.t': { en: 'Rudraksha, counted by hand', hi: 'रुद्राक्ष, हाथ से गिने हुए' },
+  'shop.bn.rudraksha.t': { en: 'Hand-counted rudraksha', hi: 'रुद्राक्ष, हाथ से गिने हुए' },
   'shop.bn.rudraksha.n': { en: '108 beads, knotted one at a time.', hi: '108 मनके, एक-एक करके पिरोए हुए।' },
   'shop.bn.rudraksha.c': { en: 'See rudraksha', hi: 'रुद्राक्ष देखें' },
   'shop.bn.remedies.k': { en: 'Weekly ritual', hi: 'साप्ताहिक अनुष्ठान' },

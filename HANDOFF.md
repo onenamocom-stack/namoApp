@@ -5382,3 +5382,22 @@ unmute carries to the next reel. Per card, not per reel id — the same reel
 can appear twice (a repost), and the off-screen copy used to cancel the
 visible one's turn. A browser in battery or data saver can still refuse
 autoplay; the first frame then stays, as before.
+
+## 48. Owner's list, 5 Oct afternoon
+
+- **Share preview.** A shared 1namo.com link showed "Front-end prototype, no
+  backend" and no picture. `index.html` now carries Open Graph tags and
+  `public/og.png` (1200 × 630, the logo and the welcome line). Every link
+  shows this one card: routes live after the `#`, which crawlers never
+  read, so a reel cannot have its own thumbnail without server-rendered
+  share pages. WhatsApp caches previews per URL — old links keep the old card.
+- **Logo** regenerated from the owner's third file (smaller letters).
+- **Follow** beside the author on every feed post, reel and article — the
+  same saved follow the profile pages use; hidden on your own posts.
+- **Muhurat's purpose circles** use `.tile-rail` — the selected one was
+  clipped at the top, as Bhakti's was.
+- **E-PUJA** tag gone from the Pooja header (and its string).
+- **Banners** on Consult, Bhakti and Shop are one height (150px); they were
+  145 / 170 / 184. Title one line, note two. Three titles shortened to fit a
+  360px phone: "Stones with a lab report", "Hand-counted rudraksha",
+  "Lock-screen deities". Console-made banners follow the same clamp.

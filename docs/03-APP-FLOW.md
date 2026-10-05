@@ -227,6 +227,7 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 | Card | Actions |
 |---|---|
 | Post | Like · Comments (sheet) · Reshare (not on your own) · Share (share sheet / copy) · Save. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
+| Post head (post, reel, article) | Author → their profile · **Follow / Following** beside the name, as on Instagram (5 Oct 2026): the same saved follow the profile pages use, hidden on your own posts and when signed out |
 | Reel | **Plays by itself** when 60% of it is on screen — muted, looping, one at a time; scrolling on pauses it and starts the next (5 Oct 2026). The speaker button turns sound on or off for the whole feed. Tap → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save · views. A tagged product → `/shop?p=<id>&ref=…` |
 
 A reshared post appears in the feed after every third post under "↻ Name

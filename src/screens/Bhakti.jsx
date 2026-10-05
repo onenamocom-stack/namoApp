@@ -104,7 +104,7 @@ const BANNERS = [
   {
     id: 'bn-wallpaper',
     kicker: 'Free',
-    title: 'Put a deity on your lock screen',
+    title: 'Lock-screen deities',
     note: 'Painted wallpapers, saved to your gallery.',
     cta: 'Browse wallpapers',
     art: 'contour',
@@ -262,10 +262,10 @@ export default function Bhakti() {
                 />
                 <span className="relative flex flex-col items-start">
                   <span className="caps-sm text-white/70">{b.kicker}</span>
-                  <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
+                  <span className="mt-1 max-w-[22ch] line-clamp-1 text-lead font-medium leading-tight text-white">
                     {b.title}
                   </span>
-                  <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.note}</span>
+                  <span className="mt-1.5 max-w-[30ch] line-clamp-2 text-meta text-white/75">{b.note}</span>
                   <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
                     {b.cta} <span aria-hidden="true">→</span>
                   </span>
@@ -277,7 +277,7 @@ export default function Bhakti() {
               animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
             }
             return b.to_ ? (
-              <Link key={b.id} to={b.to_} className="banner w-[86%] p-3 text-left" style={style}>
+              <Link key={b.id} to={b.to_} className="banner h-[150px] w-[86%] p-3 text-left" style={style}>
                 {inner}
               </Link>
             ) : (
@@ -291,7 +291,7 @@ export default function Bhakti() {
                     setQuery('')
                   }
                 }}
-                className="banner w-[86%] p-3 text-left"
+                className="banner h-[150px] w-[86%] p-3 text-left"
                 style={style}
               >
                 {inner}

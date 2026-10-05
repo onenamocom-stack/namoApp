@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities, offerings } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
-import { PopTag } from '../components/Pop.jsx'
 import { Dhoop, Diya, Ghanti, LampFlame, Marigold, PujaPhoto, Thali } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets } from '../lib/bhakti.js'
@@ -345,7 +344,6 @@ export default function Pooja() {
         title={t('nav.pooja')}
         back
         backTo="/home"
-        right={<PopTag tone="gold">{t('puja.tag')}</PopTag>}
       />
 
       {/* ── Choose a deity ─────────────────────────────────────────────── */}

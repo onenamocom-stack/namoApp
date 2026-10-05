@@ -256,7 +256,34 @@ function RingAvatar({ initials, size = 32, ring = true }) {
 
 /** Post header: ringed avatar, bold name, an optional tag, and ⋯. No date —
  *  removed 30 Sep on the owner's call; a reel reads as current. */
-function PostHead({ initials, name, to, note, tag, onMore, moreLabel }) {
+/**
+ * Follow, beside the author's name, as on Instagram (owner's request, 5 Oct
+ * 2026). The same saved follow the profile pages use — `follow:` for a
+ * consultant, `followp:` for anybody else — so following here shows there.
+ * Not on your own posts, and not for a signed-out visitor.
+ */
+function FollowButton({ item }) {
+  const { hasFlag, toggleFlag, session } = useStore()
+  const me = session?.user?.id
+  if (!item?.authorId || !me || item.authorId === me) return null
+  const key = `${item.isConsultant ? 'follow' : 'followp'}:${item.authorId}`
+  const on = hasFlag(key)
+  const first = (item.consultant || '').split(' ')[0]
+  return (
+    <button
+      type="button"
+      onClick={() => toggleFlag(key, { on: `Following ${first}`, off: `Unfollowed ${first}` })}
+      aria-pressed={on}
+      className={`flex-none rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors ${
+        on ? 'bg-ink/5 text-t3' : 'bg-ink/[0.07] text-t1 hover:bg-ink/10'
+      }`}
+    >
+      {on ? 'Following' : 'Follow'}
+    </button>
+  )
+}
+
+function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow }) {
   const who = (
     <>
       <RingAvatar initials={initials} size={30} />
@@ -277,6 +304,7 @@ function PostHead({ initials, name, to, note, tag, onMore, moreLabel }) {
       ) : (
         <div className="flex min-w-0 flex-1 items-center gap-2.5">{who}</div>
       )}
+      {follow && <FollowButton item={follow} />}
       {tag && <PopTag>{tag}</PopTag>}
       {onMore && (
         <button
@@ -537,6 +565,7 @@ function PostCard({ post: p, resharedBy }) {
         initials={p.initials}
         name={p.consultant}
         to={authorHref(p)}
+        follow={p}
         onMore={() => setReporting(true)}
         moreLabel="Report this post"
       />
@@ -700,7 +729,7 @@ function ReelCard({ reel: r, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
-      <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} />
+      <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} follow={r} />
 
       <Link ref={frame} to={`/reels/${r.id}`} className="group relative block">
         <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
@@ -936,6 +965,7 @@ function ArticleCard({ read: b }) {
         name={b.consultant}
         note={t('home.publishedArticle')}
         to={authorHref(b)}
+        follow={b}
       />
 
       {/* The cover: the plate, with the title set over a scrim at its foot. */}

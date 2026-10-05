@@ -132,17 +132,17 @@ export default function Muhurat() {
       {/* Circle tiles, not pills (5 Oct 2026) — the same row as Consult's tools
           and Bhakti's shelves. It scrolls: six tiles are wider than a phone. */}
       <Section label={t('mu.whatFor')} tight>
-        <ul className="no-scrollbar -mx-2 flex gap-1 overflow-x-auto px-1">
+        <ul className="tile-rail -mx-2 px-1">
           {PURPOSES.map((p) => (
             <li key={p.key} className="flex-none">
               <button
                 type="button"
                 onClick={() => setPurpose(p.key)}
-                className="tile w-[72px]"
+                className="tile"
                 aria-pressed={purpose === p.key}
               >
                 <span className={`tile-face ${purpose === p.key ? 'tile-face-on' : ''}`}>
-                  <Icon name={p.icon} size={22} />
+                  <Icon name={p.icon} size={20} />
                 </span>
                 <span className="text-center text-[12px] font-semibold leading-tight t-body">
                   {t(p.label)}

@@ -391,7 +391,7 @@ export default function Consult() {
                 else if (b.id === 'bn-refer') showToast(t('con.inviteProto'))
                 else showToast(t('con.offerProto'))
               }}
-              className="banner w-[86%] p-3 text-left"
+              className="banner h-[150px] w-[86%] p-3 text-left"
               style={{
                 ...bannerStyle(b),
                 animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${i * 80}ms backwards`,
@@ -415,10 +415,10 @@ export default function Consult() {
                   of dead space under the CTA that no padding rule explains. */}
               <span className="relative flex flex-col items-start">
                 <span className="caps-sm text-white/70">{b.remote ? b.kicker : t(b.kicker, SV)}</span>
-                <span className="mt-1 block max-w-[22ch] text-lead font-medium leading-tight text-white">
+                <span className="mt-1 max-w-[22ch] line-clamp-1 text-lead font-medium leading-tight text-white">
                   {b.remote ? b.title : t(b.title, SV)}
                 </span>
-                <span className="mt-2 block max-w-[30ch] text-meta text-white/75">{b.remote ? b.note : t(b.note, SV)}</span>
+                <span className="mt-1.5 max-w-[30ch] line-clamp-2 text-meta text-white/75">{b.remote ? b.note : t(b.note, SV)}</span>
                 <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
                   {b.remote ? b.cta : t(b.cta, SV)} <span aria-hidden="true">→</span>
                 </span>

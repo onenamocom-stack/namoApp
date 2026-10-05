@@ -226,7 +226,7 @@ export default function Shop() {
               key={b.id}
               type="button"
               onClick={() => (b.remote ? followBanner(b, navigate) : setCat(b.cat))}
-              className="banner w-[86%] p-4 text-left"
+              className="banner h-[150px] w-[86%] p-3 text-left"
               style={{
                 ...bannerStyle(b),
                 // `backwards`, not `both` — `both` would pin the transform after
@@ -251,11 +251,11 @@ export default function Shop() {
                   padding rule accounts for. */}
               <span className="relative flex flex-col items-start">
                 <span className="caps-sm text-white/70">{b.remote ? b.kicker : t(b.kicker)}</span>
-                <span className="mt-1.5 block max-w-[16ch] text-lead font-medium leading-tight text-white">
+                <span className="mt-1 max-w-[22ch] line-clamp-1 text-lead font-medium leading-tight text-white">
                   {b.remote ? b.title : t(b.title)}
                 </span>
-                <span className="mt-1.5 block max-w-[28ch] text-meta text-white/75">{b.remote ? b.note : t(b.note)}</span>
-                <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 caps-sm text-ink shadow-md">
+                <span className="mt-1.5 max-w-[30ch] line-clamp-2 text-meta text-white/75">{b.remote ? b.note : t(b.note)}</span>
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 caps-sm text-ink shadow-md">
                   {b.remote ? b.cta : t(b.cta)} <span aria-hidden="true">→</span>
                 </span>
               </span>
