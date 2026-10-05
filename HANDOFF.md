@@ -5324,3 +5324,23 @@ check already allows `shipping` (verified read-only, 5 Oct). 917 tests.
   Nothing automatic dispatches an order placed before 5 Oct 00:00 IST
   (`AUTO_DISPATCH_FROM`); only the console's Dispatch button can. Cancel
   those two in the console.
+
+## 44. Every account without a verified OTP is gone — 5 Oct 2026
+
+Production now holds only people who signed in with a verified OTP: **9
+profiles, 4 consultants** (Raghu, Nikhil, two Atharv accounts). Removed: the
+13 seed people from 25 Aug (the eleven fake consultants — Ritu Kashyap, Dev
+Malhotra and the rest — and seed reviewers), 11 `[test]` referral profiles
+from 24–26 Sep, and one number that never verified its OTP — with their
+wallets and ledger rows, bookings (7 of them a real account booking a fake
+consultant), earnings rows, services, notifications and referral rows. The
+immutability triggers on `ledger` and `earnings_ledger` were disabled for
+that one transaction and re-enabled inside it.
+
+**The 48 reels the seed consultants "posted" were kept** and now belong to
+the Raghu account (phone ending 1246); the live feed shows 52 pieces, 48 by
+Raghu. Their stock sources and captions are unchanged.
+
+A JSON backup of every touched row is in the session scratchpad
+(`fake-users-backup-2026-10-05.json`), not in the repository — it holds
+phone numbers.
