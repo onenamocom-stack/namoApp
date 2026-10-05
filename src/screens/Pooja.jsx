@@ -77,6 +77,24 @@ const THALI_WICKS = [
   [0.636, 0.379],
 ]
 
+/* What a pushpanjali showers (5 Oct 2026): photographed whole marigolds and
+   loose genda and rose petals, `public/puja/{flower,petal}-*.webp`, keyed
+   from Canva images. Listed more than once to weight the mix. `size` is the
+   rendered width in px before each one's own ±25%. */
+const BLOOMS = [
+  { f: 'flower-marigold', size: 26 },
+  { f: 'flower-marigold', size: 26 },
+  { f: 'flower-marigold', size: 26 },
+  { f: 'flower-marigold-yellow', size: 26 },
+  { f: 'flower-marigold-yellow', size: 26 },
+  { f: 'petal-rose-2', size: 15, petal: true },
+  { f: 'petal-rose-3', size: 15, petal: true },
+  { f: 'petal-rose-4', size: 15, petal: true },
+  { f: 'petal-genda-1', size: 14, petal: true },
+  { f: 'petal-genda-5', size: 14, petal: true },
+]
+const SHOWER = 36 // per tap — three times the 12 it was
+
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
@@ -102,6 +120,8 @@ export default function Pooja() {
   useEffect(() => {
     ghanta = ghanta || new Audio(GHANTA_URL)
     ghanta.preload = 'auto'
+    // Warm the flowers too, so the first shower does not fall as blanks.
+    for (const b of BLOOMS) new Image().src = `${import.meta.env.BASE_URL}puja/${b.f}.webp`
   }, [])
 
   /**
@@ -162,7 +182,7 @@ export default function Pooja() {
   // the DOM does not fill up over a long session.
   useEffect(() => {
     if (!petals.length) return
-    const timer = setTimeout(() => setPetals((p) => p.slice(12)), 5200)
+    const timer = setTimeout(() => setPetals((p) => p.slice(SHOWER)), 6600)
     return () => clearTimeout(timer)
   }, [petals])
 
@@ -189,12 +209,18 @@ export default function Pooja() {
       const base = seq.current
       setPetals((p) => [
         ...p,
-        ...Array.from({ length: 12 }, (_, i) => ({
-          id: `${base}-${i}`,
-          left: 8 + Math.random() * 84,
-          delay: Math.random() * 0.7,
-          scale: 0.7 + Math.random() * 0.6,
-        })),
+        ...Array.from({ length: SHOWER }, (_, i) => {
+          const kind = BLOOMS[Math.floor(Math.random() * BLOOMS.length)]
+          return {
+            id: `${base}-${i}`,
+            kind,
+            left: 2 + Math.random() * 92,
+            delay: Math.random() * 1.2,
+            fall: 3.4 + Math.random() * 1.8,
+            size: kind.size * (0.75 + Math.random() * 0.5),
+            flutter: 1.3 + Math.random() * 0.9,
+          }
+        }),
       ])
     }
     if (key === 'diya') setLit((l) => ({ ...l, diya: !l.diya }))
@@ -290,25 +316,6 @@ export default function Pooja() {
           style={{ background: 'radial-gradient(circle, rgba(227,166,60,.5) 0%, rgba(227,166,60,0) 70%)' }}
         />
 
-        {/* Genda phool fall the whole height of the shrine — whole marigolds,
-            tumbling (5 Oct 2026; they were loose orange petals). A
-            full-height lane falls; the flower at its top turns over. */}
-        <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          {petals.map((p) => (
-            <span
-              key={p.id}
-              className="animate-petal absolute top-0 block h-full w-6"
-              style={{ left: `${p.left}%`, animationDelay: `${p.delay}s` }}
-            >
-              <span className="block" style={{ transform: `scale(${p.scale})` }}>
-                <span className="animate-petal-spin block" style={{ animationDelay: `${p.delay}s` }}>
-                  <Marigold size={24} />
-                </span>
-              </span>
-            </span>
-          ))}
-        </span>
-
         {/* One ring per offering, from the centre. */}
         <span
           aria-hidden="true"
@@ -322,12 +329,50 @@ export default function Pooja() {
           ))}
         </span>
 
-        {/* The marble entrance (5 Oct 2026). Under the controls, over the
-            murti and the falling flowers. */}
+        {/* The marble entrance (5 Oct 2026). Under the controls and the
+            falling flowers, over the murti. */}
         <TempleFrame />
 
-        {/* ── On the frieze: back, the deity's nameplate, sangeet ─────────── */}
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
+        {/* Pushpanjali falls the whole height of the page — photographed
+            marigolds and loose genda and rose petals (5 Oct 2026). A
+            full-height lane falls, in front of the marble, not behind it; the flower at its top turns, and a loose
+            petal also flutters over and back. Each one's speed and size
+            differ, so a shower never falls in step. */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          {petals.map((p) => (
+            <span
+              key={p.id}
+              className="animate-petal absolute top-0 block h-full"
+              style={{ left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.fall}s` }}
+            >
+              <span
+                className="animate-petal-spin block [perspective:200px]"
+                style={{ animationDelay: `${p.delay}s`, animationDuration: `${p.fall}s` }}
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}puja/${p.kind.f}.webp`}
+                  alt=""
+                  width={p.size}
+                  className={`block h-auto max-w-none ${p.kind.petal ? 'motion-safe:animate-petal-flutter' : ''}`}
+                  style={{
+                    width: p.size,
+                    animationDuration: `${p.flutter}s`,
+                    filter: 'drop-shadow(0 2px 2px rgba(0,0,0,.35))',
+                  }}
+                />
+              </span>
+            </span>
+          ))}
+        </span>
+
+
+        {/* ── Back, the deity's nameplate, sangeet ─────────────────────────
+            Hung just under the cornice, so the elephant frieze above stays
+            in view (5 Oct 2026 — they sat on top of it). */}
+        <div
+          className="absolute inset-x-0 flex items-start justify-between gap-2 px-3"
+          style={{ top: frameCqw(232) }}
+        >
           <BackButton dark onClick={goBack} className="!h-11 !w-11" />
           <button
             type="button"

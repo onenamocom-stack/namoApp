@@ -419,7 +419,7 @@ replaced a sandstone door frame and, before that, a drawn SVG frame the owner
 called "AI created". The offering rail runs down the left pillar, the bells hang
 at the doorway's edges, and the samagri stands on the steps.
 
-On the frieze: **back**, the deity's **nameplate** (its murti, its name, one dot
+Just under the cornice, leaving the elephant frieze in view: **back**, the deity's **nameplate** (its murti, its name, one dot
 per murti) and **sangeet**. The nameplate opens the **Darshan sheet**: deities in a
 grid, then that deity's murtis. Tapping a deity changes the doorway behind the
 sheet at once and keeps the sheet open on its murtis; tapping a murti closes
@@ -428,7 +428,9 @@ only place the image attribution appears**, so it cannot be removed without
 removing the images. **Sangeet** opens with the current deity's own bhajans and
 mantras first ("For Ganesh"), matched loosely on Bhakti's deity field and title,
 then the Bhajans/Mantras tabs. While something plays, the button turns gold
-with moving bars. Flowers fall as whole genda phool. The thali never spins on
+with moving bars. A pushpanjali showers 36 photographed marigolds and loose genda
+and rose petals (`public/puja/{flower,petal}-*.webp`) in front of the marble;
+petals flutter edge-on as they fall, and each one's size and speed differ. The thali never spins on
 the spot: a tap begins or ends the aarti, and it only circles in front of the
 murti.
 

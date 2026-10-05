@@ -223,6 +223,15 @@ export default {
           '0%': { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(300deg)' },
         },
+        // A loose petal does not fall flat: it sways and tips over and back,
+        // showing its edge, the way a real one does (5 Oct 2026).
+        'petal-flutter': {
+          '0%': { transform: 'translateX(0) rotateX(0deg) rotateY(0deg)' },
+          '25%': { transform: 'translateX(12px) rotateX(70deg) rotateY(25deg)' },
+          '50%': { transform: 'translateX(-5px) rotateX(165deg) rotateY(-10deg)' },
+          '75%': { transform: 'translateX(10px) rotateX(250deg) rotateY(30deg)' },
+          '100%': { transform: 'translateX(0) rotateX(360deg) rotateY(0deg)' },
+        },
         swing: {
           '0%, 100%': { transform: 'rotate(0deg)' },
           '15%': { transform: 'rotate(13deg)' },
@@ -273,6 +282,7 @@ export default {
         flicker: 'flicker 1.1s ease-in-out infinite',
         petal: 'petal 4.2s cubic-bezier(.4,.1,.7,1) forwards',
         'petal-spin': 'petal-spin 4.2s linear forwards',
+        'petal-flutter': 'petal-flutter 1.7s ease-in-out infinite',
         swing: 'swing 1.4s ease-out',
         aarti: 'aarti 3.2s linear infinite',
         halo: 'halo 3s ease-in-out infinite',
