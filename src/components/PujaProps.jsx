@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 /* Photos that 404'd this session, so a missing one is asked for once and not
    on every render — and the drawing shows at once instead of after a flash. */
@@ -317,5 +317,161 @@ export function Thali({ size = 86, lit = false }) {
       ))}
       {lit && [50, 55, 60, 65, 70].map((x, i) => <Flame key={x} x={x} y={27} h={11} delay={i * 0.13} />)}
     </svg>
+  )
+}
+
+/* ── The temple doorway around the shrine (5 Oct 2026) ─────────────────────
+   Carved brass pillars, a lintel with a lotus at its centre, a scalloped
+   arch under it, a marigold toran hung across, and a threshold the diyas and
+   thali stand on — the shrine read as a picture with things stuck to it, and
+   a doorway makes it a place you are standing at.
+
+   Brass and saffron from the same ramp as the photographed props, so the
+   frame and the samagri are one set. Drawn at the shrine's MEASURED size
+   (ResizeObserver) rather than stretched from a fixed viewBox, so the arch's
+   lobes stay round on every phone. Purely decorative: pointer-events none. */
+const FRAME = {
+  pillar: 20,   // px, each side
+  lintel: 24,   // px, top band
+  rise: 64,     // px, how far the arch's sides drop below the lintel
+  crown: 14,    // px, how far its apex drops
+  sill: 10,     // px, the threshold at the bottom
+}
+
+export const FRAME_INSET = FRAME
+
+function archPoints(w) {
+  const { pillar: p, lintel: l, rise, crown } = FRAME
+  const left = p
+  const right = w - p
+  const half = (right - left) / 2
+  const cx = left + half
+  const n = 9 // lobes
+  const pts = []
+  for (let i = 0; i <= n; i++) {
+    const x = left + ((right - left) * i) / n
+    const t = (x - cx) / half
+    pts.push([x, l + crown + (rise - crown) * t * t])
+  }
+  return pts
+}
+
+/* One carved diamond, repeated down each pillar (CSS background). */
+const PILLAR_CARVING = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="26"><path d="M10 8L14 13L10 18L6 13Z" fill="#6e4a14" fill-opacity=".45"/></svg>',
+)}")`
+const BRASS_ACROSS = 'linear-gradient(90deg,#6e4a14 0%,#c48c30 20%,#f3d58a 50%,#c48c30 80%,#6e4a14 100%)'
+const BRASS_DOWN = 'linear-gradient(180deg,#f3d58a 0%,#d6a043 55%,#8a5e1c 100%)'
+
+export function TempleFrame() {
+  const box = useRef(null)
+  const [w, setW] = useState(0)
+  const id = useId()
+
+  /* Only the WIDTH is measured, for the arch. The pillars and the threshold
+     are pinned to the shrine's edges with CSS, so they reach the bottom
+     whatever the layout does after mount. */
+  useEffect(() => {
+    const el = box.current
+    if (!el) return undefined
+    const measure = () => setW(el.clientWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const { pillar: p, lintel: l, rise, sill } = FRAME
+  const topH = l + rise + 12
+
+  let arch = ''
+  const toran = []
+  if (w > 0) {
+    const pts = archPoints(w)
+    arch = `M${p} ${l} L${w - p} ${l} L${pts[pts.length - 1][0]} ${pts[pts.length - 1][1]}`
+    for (let i = pts.length - 1; i > 0; i--) {
+      const [x1, y1] = pts[i]
+      const [x0, y0] = pts[i - 1]
+      arch += ` Q${(x0 + x1) / 2} ${Math.min(y0, y1) - 9} ${x0} ${y0}`
+    }
+    arch += ` L${p} ${l} Z`
+
+    const hangs = [0, 1, 2, 3, 4].map((k) => p + 6 + ((w - 2 * p - 12) * k) / 4)
+    const sag = 15
+    hangs.slice(0, -1).forEach((x0, k) => {
+      const x1 = hangs[k + 1]
+      const span = x1 - x0
+      const beads = Math.max(6, Math.round(span / 8))
+      for (let b = 0; b <= beads; b++) {
+        const t = b / beads
+        toran.push({ x: x0 + span * t, y: l + 3 + 4 * sag * t * (1 - t), r: 3.1, c: b % 2 ? '#f6b72f' : '#ef7f1a', k: `s${k}-${b}` })
+      }
+    })
+    hangs.slice(1, -1).forEach((x, k) => {
+      ;[0, 1, 2].forEach((b) => toran.push({ x, y: l + 6 + b * 6, r: 2.8, c: b % 2 ? '#f6b72f' : '#ef7f1a', k: `h${k}-${b}` }))
+      toran.push({ x, y: l + 26, leaf: true, k: `l${k}` })
+    })
+  }
+
+  const pillarStyle = (side) => ({
+    width: p,
+    backgroundImage: `${PILLAR_CARVING}, ${BRASS_ACROSS}`,
+    backgroundRepeat: 'repeat-y, no-repeat',
+    backgroundPosition: `0 ${l + 22}px, 0 0`,
+    [side === 'left' ? 'boxShadow' : 'boxShadow']:
+      side === 'left' ? 'inset -2.5px 0 0 -1px rgba(245,120,44,.75)' : 'inset 2.5px 0 0 -1px rgba(245,120,44,.75)',
+  })
+  const capital = { background: BRASS_DOWN, border: '0.8px solid #8a5e1c', borderRadius: 2 }
+
+  return (
+    <span ref={box} aria-hidden="true" className="pointer-events-none absolute inset-0 block">
+      {/* Pillars, full height, with capital and base. */}
+      {['left', 'right'].map((side) => (
+        <span key={side} className={`absolute bottom-0 top-0 block ${side === 'left' ? 'left-0' : 'right-0'}`} style={pillarStyle(side)}>
+          <span className={`absolute block ${side === 'left' ? 'left-0' : 'right-0'}`} style={{ ...capital, top: l, width: p + 5, height: 9 }} />
+          <span className={`absolute block ${side === 'left' ? 'left-0' : 'right-0'}`} style={{ ...capital, bottom: sill, width: p + 5, height: 14 }} />
+        </span>
+      ))}
+
+      {/* Threshold, along the bottom: the altar stands on it. */}
+      <span
+        className="absolute inset-x-0 bottom-0 block"
+        style={{ height: sill, background: BRASS_DOWN, borderTop: '1.2px solid rgba(245,120,44,.8)' }}
+      />
+
+      {/* Lintel, arch and toran — drawn at the measured width. */}
+      {w > 0 && (
+        <svg width={w} height={topH} className="absolute left-0 top-0 overflow-visible">
+          <defs>
+            <linearGradient id={`v${id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#f3d58a" />
+              <stop offset=".55" stopColor="#d6a043" />
+              <stop offset="1" stopColor="#8a5e1c" />
+            </linearGradient>
+          </defs>
+          <path d={arch} fill={`url(#v${id})`} stroke="#8a5e1c" strokeWidth="1" />
+          <path d={arch} fill="none" stroke="#f5782c" strokeWidth="1.2" opacity=".55" transform="translate(0 -2)" />
+          <rect x={0} y={0} width={w} height={l} fill={`url(#v${id})`} />
+          <line x1={0} y1={l - 0.6} x2={w} y2={l - 0.6} stroke="#f5782c" strokeWidth="1.4" />
+          {Array.from({ length: Math.floor(w / 13) }, (_, i) => (
+            <circle key={i} cx={8 + i * 13} cy={l / 2} r="2.1" fill="#fff3cf" stroke="#8a5e1c" strokeWidth=".7" opacity=".9" />
+          ))}
+          <g transform={`translate(${w / 2} ${l / 2 + 1})`}>
+            <circle r="12.5" fill="#f5782c" stroke="#8a5e1c" strokeWidth="1" />
+            {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+              <ellipse key={a} cx="0" cy="-6" rx="2.6" ry="5" fill="#fff3cf" transform={`rotate(${a})`} />
+            ))}
+            <circle r="3" fill="#c0500d" />
+          </g>
+          {toran.map((b) =>
+            b.leaf ? (
+              <ellipse key={b.k} cx={b.x} cy={b.y} rx="3.4" ry="7" fill="#4f8a2b" stroke="#2f5a17" strokeWidth=".6" />
+            ) : (
+              <circle key={b.k} cx={b.x} cy={b.y} r={b.r} fill={b.c} stroke="#b4540c" strokeWidth=".5" />
+            ),
+          )}
+        </svg>
+      )}
+    </span>
   )
 }

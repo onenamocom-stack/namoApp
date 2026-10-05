@@ -280,7 +280,9 @@ function Ebook({ book: d }) {
   return (
     <PopCard className="overflow-hidden">
       {d.previewUrl ? (
-        <img src={d.previewUrl} alt="" loading="lazy" className="aspect-[21/9] w-full object-cover" />
+        /* The whole cover, at its own shape (5 Oct 2026) — a 21:9 crop cut
+           the title off most of them. */
+        <img src={d.previewUrl} alt={d.title} loading="lazy" className="block h-auto w-full" />
       ) : (
         <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full" />
       )}

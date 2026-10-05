@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities, offerings } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
-import { Dhoop, Diya, Ghanti, LampFlame, Marigold, PujaPhoto, Thali } from '../components/PujaProps.jsx'
+import { Dhoop, Diya, Ghanti, LampFlame, Marigold, PujaPhoto, TempleFrame, Thali } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets } from '../lib/bhakti.js'
 
@@ -27,53 +27,23 @@ import { fetchAssets } from '../lib/bhakti.js'
  * Nothing books a pandit and nothing is charged. Sangeet plays Bhakti's
  * bhajans and mantras (4 Oct 2026).
  */
-/* ── The ghanti's voice (4 Oct 2026) ─────────────────────────────────────
-   Synthesised, not a recording: a cast bell is a handful of INHARMONIC sine
-   partials (hum, prime, tierce, quint, nominal — the ratios below), each
-   struck at once and dying away on its own time, the low ones longest. Two
-   of them are doubled a hair apart so they beat, which is the shimmer a
-   brass bell has and a pure tone does not. No file to download, nothing to
-   license, and it plays on the first tap.
+/* ── The ghanti's voice (5 Oct 2026) ─────────────────────────────────────
+   A RECORDING of a temple ghanta: one strike, 4.2 s, cut from "Indian Temple
+   Bell" by ganiket (Freesound #466652, recorded in Kothi, Himachal Pradesh,
+   CC0 — no credit owed, given anyway). It replaced a synthesised bell that
+   the owner rightly said did not sound like a ghanta.
 
-   It must be called from inside the tap: a phone only lets a page make
-   sound from the gesture itself. One AudioContext for the page — browsers
-   cap how many can exist. */
-let bellCtx = null
-const BELL = [
-  // [ratio to the strike note, loudness, seconds to die away]
-  [0.5, 0.5, 3.4],
-  [1, 0.9, 2.8],
-  [1.004, 0.4, 2.8],
-  [1.19, 0.45, 2.1],
-  [1.5, 0.3, 1.7],
-  [2, 0.42, 1.5],
-  [2.006, 0.2, 1.5],
-  [2.74, 0.22, 0.9],
-  [3.76, 0.14, 0.6],
-]
+   Each tap plays a fresh copy, so quick taps overlap the way a real bell's
+   strikes do. Called from inside the tap: a phone only lets a page make
+   sound from the gesture itself. */
+const GHANTA_URL = `${import.meta.env.BASE_URL}puja/ghanta.mp3`
+let ghanta = null
 function ringGhanti() {
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext
-    if (!Ctx) return
-    bellCtx = bellCtx || new Ctx()
-    if (bellCtx.state === 'suspended') bellCtx.resume()
-    const now = bellCtx.currentTime
-    const out = bellCtx.createGain()
-    out.gain.value = 0.28
-    out.connect(bellCtx.destination)
-    for (const [ratio, amp, decay] of BELL) {
-      const osc = bellCtx.createOscillator()
-      osc.type = 'sine'
-      osc.frequency.value = 560 * ratio
-      const env = bellCtx.createGain()
-      env.gain.setValueAtTime(0.0001, now)
-      env.gain.exponentialRampToValueAtTime(amp, now + 0.004)
-      env.gain.exponentialRampToValueAtTime(0.0001, now + decay)
-      osc.connect(env)
-      env.connect(out)
-      osc.start(now)
-      osc.stop(now + decay + 0.05)
-    }
+    ghanta = ghanta || new Audio(GHANTA_URL)
+    const strike = ghanta.cloneNode()
+    strike.volume = 0.9
+    strike.play().catch(() => {})
   } catch {
     /* No audio on this device. The bells still swing. */
   }
@@ -108,12 +78,14 @@ export default function Pooja() {
   const [ringing, setRinging] = useState(false)
   const [petals, setPetals] = useState([])
   const [ripples, setRipples] = useState([])
-  const [turn, setTurn] = useState(0)
-  const [turning, setTurning] = useState(false)
   const seq = useRef(0)
-  const turned = useRef(false)
   const swipe = useRef(null)
   const chips = useRef(null)
+
+  useEffect(() => {
+    ghanta = ghanta || new Audio(GHANTA_URL)
+    ghanta.preload = 'auto'
+  }, [])
 
   /**
    * Swiping the shrine. Right for the next deity, down for the next murti of
@@ -181,63 +153,6 @@ export default function Pooja() {
       ?.querySelector('[aria-pressed="true"]')
       ?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [deity])
-
-  /**
-   * Circling the thali.
-   *
-   * An aarti is a plate moved in circles, so the plate follows the finger:
-   * angle from the thali's centre to the pointer, accumulated across the
-   * ±180° wrap so a full turn keeps counting instead of snapping backwards.
-   *
-   * Pointer events rather than touch — one code path covers finger, pen and a
-   * mouse dragging on the desktop build. Capture is essential: without it the
-   * gesture dies the moment the finger leaves the plate, which is immediately,
-   * because the plate is 104px and a circle is bigger than that.
-   */
-  const startTurn = (e) => {
-    const box = e.currentTarget.getBoundingClientRect()
-    const cx = box.left + box.width / 2
-    const cy = box.top + box.height / 2
-    const angle = (ev) => (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI
-    let last = angle(e)
-    let moved = 0
-
-    // Cleared here, not in the click handler. A drag that ends without
-    // producing a click would otherwise leave the flag set and swallow the
-    // next real tap — measured: after one circle, the following tap on the
-    // thali did nothing. Every gesture now starts clean.
-    turned.current = false
-    setTurning(true)
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId)
-    } catch {
-      /* same as the swipe — a failed capture must not stop the listeners
-         below from being attached, or the plate simply never turns */
-    }
-
-    const move = (ev) => {
-      let d = angle(ev) - last
-      if (d > 180) d -= 360
-      if (d < -180) d += 360
-      last += d
-      moved += Math.abs(d)
-      if (moved > 12) turned.current = true // past this it is a turn, not a tap
-      setTurn((prev) => prev + d)
-    }
-    const end = (ev) => {
-      ev.currentTarget?.releasePointerCapture?.(e.pointerId)
-      ev.currentTarget?.removeEventListener('pointermove', move)
-      ev.currentTarget?.removeEventListener('pointerup', end)
-      ev.currentTarget?.removeEventListener('pointercancel', end)
-      setTurning(false)
-      // Settle to the nearest whole turn so it never rests crooked.
-      setTurn((prev) => Math.round(prev / 360) * 360)
-    }
-
-    e.currentTarget.addEventListener('pointermove', move)
-    e.currentTarget.addEventListener('pointerup', end)
-    e.currentTarget.addEventListener('pointercancel', end)
-  }
 
   // Petals and ripples are one-shot animations; drop them once they finish so
   // the DOM does not fill up over a long session.
@@ -413,26 +328,20 @@ export default function Pooja() {
           style={{ background: 'radial-gradient(circle, rgba(227,166,60,.5) 0%, rgba(227,166,60,0) 70%)' }}
         />
 
-        {/* Petals fall the whole height of the shrine. */}
+        {/* Genda phool fall the whole height of the shrine — whole marigolds,
+            tumbling (5 Oct 2026; they were loose orange petals). A
+            full-height lane falls; the flower at its top turns over. */}
         <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           {petals.map((p) => (
-            /* Marigold petals, not gold confetti — an ellipse tipped off
-               axis reads as a petal at 8px where a circle reads as a dot. */
-            /* A full-height lane falls; the petal at its top turns over. */
             <span
               key={p.id}
-              className="animate-petal absolute top-0 block h-full w-2"
+              className="animate-petal absolute top-0 block h-full w-6"
               style={{ left: `${p.left}%`, animationDelay: `${p.delay}s` }}
             >
               <span className="block" style={{ transform: `scale(${p.scale})` }}>
-                <span
-                  className="animate-petal-spin block h-3.5 w-2.5"
-                  style={{
-                    animationDelay: `${p.delay}s`,
-                    borderRadius: '50% 50% 50% 50% / 62% 62% 38% 38%',
-                    background: 'linear-gradient(160deg, #f7b733 0%, #e8871e 62%, #c25e10 100%)',
-                  }}
-                />
+                <span className="animate-petal-spin block" style={{ animationDelay: `${p.delay}s` }}>
+                  <Marigold size={24} />
+                </span>
               </span>
             </span>
           ))}
@@ -451,11 +360,15 @@ export default function Pooja() {
           ))}
         </span>
 
+        {/* The temple doorway around the murti (5 Oct 2026). Under the
+            controls, over the image and the falling flowers' edges. */}
+        <TempleFrame />
+
         <HangingBell side="left" ringing={ringing} />
         <HangingBell side="right" ringing={ringing} />
 
         {/* ── The offering rail ───────────────────────────────────────── */}
-        <ul className="absolute left-3 top-1/2 flex -translate-y-1/2 flex-col gap-2.5">
+        <ul className="absolute left-7 top-1/2 flex -translate-y-1/2 flex-col gap-2.5">
           {offerings.map((o) => {
             const on = o.key === 'diya' ? lit.diya : o.key === 'incense' ? lit.incense : false
             return (
@@ -480,7 +393,7 @@ export default function Pooja() {
           type="button"
           onClick={() => setSheet(true)}
           aria-label={t('puja.chooseMurti')}
-          className="plinth absolute bottom-4 left-3"
+          className="plinth absolute bottom-5 left-7"
         >
           <Icon name="eye" size={19} />
         </button>
@@ -490,7 +403,7 @@ export default function Pooja() {
           onClick={openMusic}
           aria-label={t('puja.sangeet')}
           aria-pressed={Boolean(track)}
-          className={`plinth absolute bottom-4 right-3 ${track ? 'plinth-on' : ''}`}
+          className={`plinth absolute bottom-5 right-7 ${track ? 'plinth-on' : ''}`}
         >
           <SangeetGlyph />
         </button>
@@ -551,33 +464,21 @@ export default function Pooja() {
 
         {/* ── The thali. Tap to begin the aarti: it rises off the altar to in
             front of the murti and circles there, as a thali is moved in an
-            aarti (4 Oct 2026 — it used to light up and stay put). Tap again
-            and it settles back. Dragging still turns it, either way. ───── */}
+            aarti; tap again and it settles back. It never spins on the spot
+            (5 Oct 2026, the owner's call) — it used to turn under a finger
+            and settle to a whole turn, which read as a plate spinning. ─── */}
         <button
           type="button"
-          onClick={() => {
-            // A drag ends in a click too. Swallow that one, or finishing a
-            // circle would put the aarti out. The flag is reset on the next
-            // pointerdown, not here — see startTurn.
-            if (turned.current) return
-            toggleAarti()
-          }}
-          onPointerDown={startTurn}
+          onClick={toggleAarti}
           aria-pressed={aarti}
           aria-label={t(aarti ? 'puja.endAarti' : 'puja.aarti')}
-          className="group absolute left-1/2 -translate-x-1/2 touch-none"
+          className="group absolute left-1/2 -translate-x-1/2"
           style={{ bottom: aarti ? '30%' : '12px', transition: 'bottom .8s cubic-bezier(.2,.7,.3,1)' }}
         >
           <span className={`block ${aarti ? 'motion-safe:animate-aarti' : ''}`}>
             <span
               className="relative isolate block"
-              style={{
-                filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))',
-                transform: `rotate(${turn}deg)`,
-                // No transition while a finger is on it — an eased follow lags
-                // behind the thumb and feels like the plate is on elastic.
-                transition: turning ? 'none' : 'transform .5s cubic-bezier(.2,.7,.3,1)',
-              }}
+              style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))' }}
             >
               {/* One photograph for both states; lit, it glows from behind. */}
               {aarti && (
@@ -793,7 +694,8 @@ function HangingBell({ side, ringing }) {
   return (
     <span
       aria-hidden="true"
-      className={`absolute top-0 origin-top ${side === 'left' ? 'left-[6%]' : 'right-[6%]'} ${
+      // Hung from under the lintel, just inside the pillars.
+      className={`absolute top-[24px] origin-top ${side === 'left' ? 'left-[26px]' : 'right-[26px]'} ${
         ringing ? 'animate-swing' : ''
       }`}
       style={{ filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))' }}

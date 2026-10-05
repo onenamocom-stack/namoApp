@@ -402,7 +402,16 @@ carries a larger flickering flame over the photo's own; the pair face the thali.
 
 Beginning the aarti lights everything on the altar: five flames on the thali's
 lamp, both diyas and the agarbatti. Ending it leaves the diyas and agarbatti
-lit. The Bell offering rings a ghanti — a synthesised bell, no audio file. A knob opens the murti picker,
+lit. The Bell offering rings a real ghanta: one 4.2 s strike, `public/puja/ghanta.mp3`, cut
+from "Indian Temple Bell" by ganiket (Freesound #466652, CC0) on 5 Oct 2026 — the
+synthesised bell before it did not sound like one.
+
+**The shrine stands in a temple doorway** (5 Oct 2026, `TempleFrame` in
+`PujaProps.jsx`): brass pillars, a lintel with a lotus, a scalloped arch, a
+marigold toran, and a threshold the diyas and thali stand on. The controls sit
+just inside the pillars; the bells hang from the lintel. Flowers fall as whole
+genda phool. The thali no longer spins on the spot: a tap begins or ends the
+aarti, and it only circles in front of the murti. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
 be removed without removing the images.
 
