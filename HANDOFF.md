@@ -5451,3 +5451,12 @@ were. The per-category banner under the pills is removed, with its four
 - **Consult**: "Your sessions" moved to the chat panel's new Sessions tab
   (`src/components/MySessions.jsx`, review included); the verified rail
   ("Unlimited questions in 20 min") is removed.
+
+## 52. Two owner-requested data changes — 5 Oct 2026
+
+- **Rahul Jain (phone ending 0508) approved as a consultant** by a direct
+  `status` update, at the owner's request, not through the console — so
+  there is **no `admin_actions` row** for it. He applied the same day as an
+  Astrologer; four active services; he is in `/v1/consultants/`.
+- **Test Seeker (8447284861) wallet set to ₹20** for testing: one ledger
+  row, `ref_type` adjustment, −₹126.50, note "Owner request, 5 Oct 2026".
