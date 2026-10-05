@@ -8,7 +8,6 @@ import {
   FRAME_OPENING,
   Ghanti,
   LampFlame,
-  Marigold,
   PujaPhoto,
   TempleFrame,
   Thali,
@@ -23,6 +22,11 @@ import { fetchAssets } from '../lib/bhakti.js'
  * That is the whole layout rule. You cannot perform an aarti while hunting for
  * the thali, so the shrine takes every pixel of the page, and every prop —
  * bells, offerings, thali, sangeet — sits on it rather than under it.
+ *
+ * There are no offering buttons (5 Oct 2026, the owner's pick of four
+ * options): you touch the samagri itself. The ghantis ring, the diyas and the
+ * agarbatti light, and the bowl of marigolds on the step showers flowers. Each
+ * glows until the first offering, and a one-time toast says what to touch.
  *
  * Since 5 Oct 2026 the page IS a mandir entrance: a photographed white-marble
  * doorway fills the screen and the murti stands inside it. The top bar and the
@@ -94,6 +98,8 @@ const BLOOMS = [
   { f: 'petal-genda-5', size: 14, petal: true },
 ]
 const SHOWER = 36 // per tap — three times the 12 it was
+const HINT_KEY = 'namo.puja.touched'
+const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
@@ -116,12 +122,26 @@ export default function Pooja() {
   const seq = useRef(0)
   const swipe = useRef(null)
   const goBack = useGoBack('/home')
+  // The samagri glows until it is first touched, once per device.
+  const [hint, setHint] = useState(() => {
+    try {
+      return !localStorage.getItem(HINT_KEY)
+    } catch {
+      return true
+    }
+  })
 
   useEffect(() => {
     ghanta = ghanta || new Audio(GHANTA_URL)
     ghanta.preload = 'auto'
     // Warm the flowers too, so the first shower does not fall as blanks.
     for (const b of BLOOMS) new Image().src = `${import.meta.env.BASE_URL}puja/${b.f}.webp`
+  }, [])
+
+  // Said once, the first time: nothing on the altar looks like a button.
+  useEffect(() => {
+    if (hint) showToast(t('puja.touchHint'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**
@@ -197,7 +217,16 @@ export default function Pooja() {
     setRipples((r) => [...r, seq.current])
   }
 
-  const offer = (key, says) => {
+  const offer = (key) => {
+    const { says } = offerings.find((o) => o.key === key)
+    if (hint) {
+      setHint(false)
+      try {
+        localStorage.setItem(HINT_KEY, '1')
+      } catch {
+        /* private mode: it glows again next time, which is harmless */
+      }
+    }
     ripple()
     if (key === 'bell') {
       ringGhanti()
@@ -418,74 +447,20 @@ export default function Pooja() {
           </button>
         </div>
 
-        <HangingBell side="left" ringing={ringing} />
-        <HangingBell side="right" ringing={ringing} />
+        <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
+        <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
 
-        {/* ── The offering rail, down the left pillar ─────────────────── */}
-        <ul
-          className="absolute top-1/2 flex -translate-y-1/2 flex-col gap-2.5"
-          style={{ left: `max(6px, calc(${frameCqw(80)} - 22px))` }}
-        >
-          {offerings.map((o) => {
-            const on = o.key === 'diya' ? lit.diya : o.key === 'incense' ? lit.incense : false
-            return (
-              <li key={o.id}>
-                <button
-                  type="button"
-                  onClick={() => offer(o.key, o.says)}
-                  aria-pressed={on || undefined}
-                  aria-label={t(o.label)}
-                  className={`plinth ${on ? 'plinth-on' : ''}`}
-                >
-                  <OfferingProp kind={o.key} on={on} />
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-
-        {/* The altar. These stand on the step whether or not they are lit —
-            samagri you have not touched yet is still samagri, and a diya that
-            only exists once you light it makes the shrine look half-built. */}
-        <span
-          aria-hidden="true"
-          className="absolute bottom-4 left-[19%]"
-          // Mirrored, so the pair face the thali and the left one's flame is
-          // not hidden behind the agarbatti stand.
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))', transform: 'scaleX(-1)' }}
-        >
-          <span className="relative block">
-            <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
-            {/* The photo's flame is a few pixels at this size; this one stands
-                on the same wick (left spout) and flickers (4 Oct 2026). */}
-            {lit.diya && (
-              <span className="absolute" style={{ left: '4%', top: '30%', transform: 'translate(-50%, -96%)' }}>
-                <LampFlame height={36} />
-              </span>
-            )}
-          </span>
-        </span>
-        <span
-          aria-hidden="true"
-          className="absolute bottom-4 right-[19%]"
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
-        >
-          <span className="relative block">
-            <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={58} fallback={<Diya size={52} lit={lit.diya} />} />
-            {/* The photo's flame is a few pixels at this size; this one stands
-                on the same wick (left spout) and flickers (4 Oct 2026). */}
-            {lit.diya && (
-              <span className="absolute" style={{ left: '4%', top: '30%', transform: 'translate(-50%, -96%)' }}>
-                <LampFlame height={36} />
-              </span>
-            )}
-          </span>
-        </span>
-
-        <span
-          aria-hidden="true"
-          className="absolute bottom-6 left-[13%]"
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
+        {/* ── The altar, on the steps. Every piece of samagri is its own
+            control (5 Oct 2026; there was a rail of round buttons down the
+            pillar, which looked like an app laid over a mandir). They stand
+            here whether or not they are lit — a diya that only exists once
+            you light it makes the shrine look half-built. ──────────────── */}
+        <Samagri
+          label={t(offeringLabel('incense'))}
+          pressed={lit.incense}
+          hint={hint}
+          onClick={() => offer('incense')}
+          className="bottom-5 left-[4%]"
         >
           <PujaPhoto name="dhoop" width={40} fallback={<Dhoop size={58} lit={lit.incense} />} />
           {lit.incense &&
@@ -496,7 +471,41 @@ export default function Pooja() {
                 style={{ animationDelay: `${d}s` }}
               />
             ))}
-        </span>
+        </Samagri>
+
+        {['left', 'right'].map((side) => (
+          <Samagri
+            key={side}
+            label={t(offeringLabel('diya'))}
+            pressed={lit.diya}
+            hint={hint}
+            onClick={() => offer('diya')}
+            className={`bottom-3 ${side === 'left' ? 'left-[16%]' : 'right-[17%]'}`}
+          >
+            {/* The left one mirrored, so the pair face the thali and its flame
+                is not hidden behind the agarbatti stand. */}
+            <span className="relative block" style={side === 'left' ? { transform: 'scaleX(-1)' } : undefined}>
+              <PujaPhoto name={lit.diya ? 'diya-lit' : 'diya'} width={56} fallback={<Diya size={52} lit={lit.diya} />} />
+              {/* The photo's flame is a few pixels at this size; this one
+                  stands on the same wick (left spout) and flickers. */}
+              {lit.diya && (
+                <span className="absolute" style={{ left: '4%', top: '30%', transform: 'translate(-50%, -96%)' }}>
+                  <LampFlame height={36} />
+                </span>
+              )}
+            </span>
+          </Samagri>
+        ))}
+
+        {/* Pushpanjali: a brass bowl heaped with genda and rose. */}
+        <Samagri
+          label={t(offeringLabel('flower'))}
+          hint={hint}
+          onClick={() => offer('flower')}
+          className="bottom-4 right-[2%]"
+        >
+          <PujaPhoto name="pushpa" width={54} fallback={<span className="block h-12 w-12" />} />
+        </Samagri>
 
         {/* ── The thali. Tap to begin the aarti: it rises off the altar to in
             front of the murti and circles there, as a thali is moved in an
@@ -816,19 +825,59 @@ function PlayingBars() {
   )
 }
 
-/** A ghanti on its chain, hung from the arch at an edge of the doorway. */
-function HangingBell({ side, ringing }) {
+/** A ghanti on its chain, hung from the arch at an edge of the doorway.
+    Touching it rings it — both swing, as a struck bell shakes its pair. */
+function HangingBell({ side, ringing, hint, onRing, label }) {
   return (
-    <span
-      aria-hidden="true"
-      className={`absolute origin-top ${ringing ? 'animate-swing' : ''}`}
+    <button
+      type="button"
+      onClick={onRing}
+      aria-label={label}
+      className={`absolute isolate origin-top rounded-full p-1 ${ringing ? 'animate-swing' : ''}`}
       style={{
         top: frameCqw(640),
-        [side]: `calc(${frameCqw(160)} - 22px)`,
+        [side]: `calc(${frameCqw(160)} - 26px)`,
         filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))',
       }}
     >
+      {/* On the bell's mouth, not its chain. */}
+      {hint && <Glow top="78%" />}
       <PujaPhoto name="ghanti" width={52} fallback={<Ghanti size={100} hanging />} />
+    </button>
+  )
+}
+
+/** One piece of samagri on the altar, and the control for its offering. */
+function Samagri({ label, pressed, hint, onClick, className, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={pressed}
+      className={`absolute isolate rounded-full p-1 transition-transform duration-150 active:scale-95 ${className}`}
+      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))' }}
+    >
+      {hint && <Glow />}
+      {children}
+    </button>
+  )
+}
+
+/** The breathing gold light behind samagri that has not been touched yet. */
+function Glow({ top = '50%' }) {
+  // Placed by the outer span, breathed by the inner one: this app's `pulse`
+  // animates transform, and would throw away a centring translate.
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute left-1/2 -z-10 block h-[72px] w-[72px] -translate-x-1/2 -translate-y-1/2"
+      style={{ top }}
+    >
+      <span
+        className="block h-full w-full rounded-full motion-safe:animate-pulse"
+        style={{ background: 'radial-gradient(circle, rgba(255,150,30,.75) 0%, rgba(255,180,60,.35) 40%, rgba(255,180,60,0) 70%)' }}
+      />
     </span>
   )
 }
@@ -841,12 +890,4 @@ function SangeetGlyph() {
       <circle cx="16.5" cy="16" r="2.5" />
     </svg>
   )
-}
-
-/** What the rail shows: the samagri itself, not a symbol for it. */
-function OfferingProp({ kind, on }) {
-  if (kind === 'bell') return <Ghanti size={26} />
-  if (kind === 'flower') return <Marigold size={25} />
-  if (kind === 'diya') return <Diya size={26} lit={on} />
-  return <Dhoop size={26} lit={on} />
 }

@@ -416,8 +416,17 @@ so the frieze and arch scale with the page's width and only the pillar shafts
 stretch to its height. The murti stands **inside the doorway**
 (`FRAME_OPENING`) on a lamp-lit dark sanctum, not behind the pillars. It
 replaced a sandstone door frame and, before that, a drawn SVG frame the owner
-called "AI created". The offering rail runs down the left pillar, the bells hang
-at the doorway's edges, and the samagri stands on the steps.
+called "AI created".
+
+**No offering buttons: you touch the samagri** (5 Oct 2026, the owner's pick
+over brass roundels on the pillars, a samagri tray, or a fan-out from the
+thali). The two ghantis hang at the doorway's edges and ring when touched. On the
+steps, the agarbatti stand and both diyas light when touched, and a brass bowl
+of marigolds (`public/puja/pushpa.webp`) showers flowers. The thali in the
+middle still begins the aarti. Until the first offering, each object breathes a
+saffron glow, and a one-time toast says "Touch the ghanti, diya, dhoop or
+flowers to offer". The `namo.puja.touched` localStorage key remembers it per
+device. The rail of dark round buttons down the pillar is gone.
 
 Just under the cornice, leaving the elephant frieze in view: **back**, the deity's **nameplate** (its murti, its name, one dot
 per murti) and **sangeet**. The nameplate opens the **Darshan sheet**: deities in a

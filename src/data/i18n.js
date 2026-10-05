@@ -185,6 +185,7 @@ export const strings = {
   'puja.sangeet': { en: 'Sangeet', hi: 'संगीत' },
   'puja.chooseMurti': { en: 'Choose a murti', hi: 'मूर्ति चुनें' },
   'puja.chooseDarshan': { en: 'Choose darshan', hi: 'दर्शन चुनें' },
+  'puja.touchHint': { en: 'Touch the ghanti, diya, dhoop or flowers to offer', hi: 'अर्पण के लिए घंटी, दीया, धूप या पुष्प को छुएँ' },
   'puja.deity': { en: 'Deity', hi: 'देवता' },
   'puja.forDeity': { en: 'For {name}', hi: '{name} के लिए' },
   'puja.murti': { en: 'murti', hi: 'मूर्ति' },
