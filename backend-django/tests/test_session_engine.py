@@ -224,3 +224,84 @@ class TestSweepEndpoint:
     def test_unset_token_means_off(self, settings, client):
         settings.SWEEP_TOKEN = ""
         assert client.post("/v1/chat/sweep/", HTTP_X_SWEEP_TOKEN="").status_code == 401
+
+
+@pytest.mark.django_db
+class TestMissedCalls:
+    def _ring_out(self, pro_user, seeker):
+        _, service = pro_user
+        r = services.request_chat(seeker, PRO, service.id)
+        assert r["ok"], r
+        Session.objects.filter(pk=r["session_id"]).update(
+            requested_at=_t0() - (services.RING_SECONDS + 2) * SEC)
+        services.sweep_sessions()
+        return r["session_id"]
+
+    def test_three_rings_out_in_a_row_switch_the_consultant_off(self, pro_user):
+        from apps.consultants.models import Consultant
+
+        _fund(SEEKER, RATE * 5)
+        for _ in range(3):
+            self._ring_out(pro_user, SEEKER)
+        assert Consultant.objects.get(profile_id=PRO).accepting_now is False
+
+    def test_two_missed_then_an_answer_keeps_them_online(self, pro_user):
+        from apps.consultants.models import Consultant
+
+        _fund(SEEKER, RATE * 5)
+        self._ring_out(pro_user, SEEKER)
+        self._ring_out(pro_user, SEEKER)
+        s = _call_session(pro_user, channel="chat", fund=0)
+        services.end_session(PRO, s.id)
+        self._ring_out(pro_user, SEEKER)
+        assert Consultant.objects.get(profile_id=PRO).accepting_now is True
+
+    def test_a_seeker_cancelling_is_not_a_missed_call(self, pro_user):
+        from apps.consultants.models import Consultant
+
+        _, service = pro_user
+        _fund(SEEKER, RATE * 5)
+        for _ in range(3):
+            r = services.request_chat(SEEKER, PRO, service.id)
+            services.cancel_request(SEEKER, r["session_id"])
+        services.sweep_sessions()
+        assert Consultant.objects.get(profile_id=PRO).accepting_now is True
+
+
+@pytest.mark.django_db
+class TestRinging:
+    def test_a_request_rings_the_consultants_phones(self, pro_user, monkeypatch, django_capture_on_commit_callbacks):
+        from apps.notifications import push
+
+        rung = []
+        monkeypatch.setattr(push, "ring", lambda s, name: rung.append((str(s.id), name)))
+        _, service = pro_user
+        _fund(SEEKER, RATE * 5)
+        with django_capture_on_commit_callbacks(execute=True):
+            r = services.request_chat(SEEKER, PRO, service.id, channel="video")
+        assert rung == [(r["session_id"], "Tara Verma")]
+
+    def test_a_busy_answer_rings_nobody(self, pro_user, monkeypatch, django_capture_on_commit_callbacks):
+        from apps.notifications import push
+
+        rung = []
+        monkeypatch.setattr(push, "ring", lambda s, name: rung.append(s.id))
+        _, service = pro_user
+        _fund(SEEKER, RATE * 5)
+        _fund(SECOND_SEEKER, RATE * 5)
+        with django_capture_on_commit_callbacks(execute=True):
+            services.request_chat(SEEKER, PRO, service.id)
+            services.request_chat(SECOND_SEEKER, PRO, service.id)
+        assert len(rung) == 1
+
+    def test_push_failures_never_break_a_request(self, pro_user, monkeypatch, django_capture_on_commit_callbacks):
+        from apps.notifications import push
+
+        def boom(*a, **k):
+            raise RuntimeError("push service down")
+
+        monkeypatch.setattr(push, "ring", boom)
+        _, service = pro_user
+        _fund(SEEKER, RATE * 5)
+        with django_capture_on_commit_callbacks(execute=True):
+            assert services.request_chat(SEEKER, PRO, service.id)["ok"] is True

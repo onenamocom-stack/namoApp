@@ -213,14 +213,53 @@ def _tidy(consultant_id, now):
     never connected, a clock that ran out, a connection that went silent.
     Called under the consultant lock, so it is the scheduler-free half of
     the sweeper: correctness never waits for the next sweep."""
-    Session.objects.filter(
+    rang_out = Session.objects.filter(
         consultant_id=consultant_id, status=Session.Status.REQUESTED,
         requested_at__lt=now - timezone.timedelta(seconds=RING_SECONDS),
     ).update(status=Session.Status.EXPIRED, ended_at=now)
+    if rang_out:
+        _missed_check(consultant_id, now)
     for session in Session.objects.filter(consultant_id=consultant_id, status=Session.Status.LIVE):
         reason = _due(session, now)
         if reason:
             end_session(None, session.id, reason=reason, now=now)
+
+
+MISSED_IN_A_ROW = 3
+
+
+def _missed_check(consultant_id, now):
+    """Three requests in a row that rang out with nobody answering turn the
+    consultant's switch off (6 Oct 2026). Online is the switch alone now,
+    so this is what stops a consultant asleep with it on from being rung
+    all night by seekers who hear nothing. A seeker who cancelled early is
+    not a missed call; only a ring that ran its full time is."""
+    from apps.consultants.models import Consultant
+
+    last = list(Session.objects.filter(consultant_id=consultant_id)
+                .exclude(status=Session.Status.REQUESTED)
+                .order_by("-requested_at")[:MISSED_IN_A_ROW])
+    if len(last) < MISSED_IN_A_ROW:
+        return False
+    rang_out = timezone.timedelta(seconds=RING_SECONDS - 1)
+    if not all(s.status == Session.Status.EXPIRED and s.accepted_at is None
+               and s.ended_at and s.ended_at - s.requested_at >= rang_out for s in last):
+        return False
+    moved = Consultant.objects.filter(profile_id=consultant_id, accepting_now=True).update(
+        accepting_now=False)
+    if moved:
+        from apps.notifications import push
+        from apps.notifications import services as notify
+
+        text = (f"You missed {MISSED_IN_A_ROW} calls in a row, so we set you offline. "
+                "Switch Online again when you can take calls.")
+        try:
+            notify.push(consultant_id, kind="presence.auto_offline",
+                        title="You are offline now", body=text)
+            push.send(consultant_id, {"type": "notice", "title": "You are offline now", "body": text})
+        except Exception:  # noqa: BLE001
+            pass
+    return bool(moved)
 
 
 def _due(session, now):
@@ -334,8 +373,21 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
         except IntegrityError:
             # The unique indexes are the last word: somebody else is ringing.
             return {"ok": False, "busy": True, "reason": REFUSAL_BUSY, "retry_after": 5}
+        # The consultant's phone rings (6 Oct 2026) — after the commit, so a
+        # rolled-back request never rings anybody, and best-effort, so a
+        # push service that is down never refuses a request.
+        transaction.on_commit(lambda: _ring(session))
     return {"ok": True, "session_id": str(session.id), "rate_paise": session.rate_paise,
             "mode": session.mode}
+
+
+def _ring(session):
+    from apps.notifications import push
+
+    try:
+        push.ring(session, gateway.profile_name(session.seeker_id))
+    except Exception:  # noqa: BLE001 — ringing is never allowed to break a request
+        pass
 
 
 def _balance_of(profile_id):
@@ -660,10 +712,14 @@ def sweep_sessions(now=None):
             # overlapping runs is one settle per session.
             if not result.get("already_ended"):
                 settled += 1
-    expired_requests = Session.objects.filter(
+    ringing_out = Session.objects.filter(
         status=Session.Status.REQUESTED,
         requested_at__lt=now - timezone.timedelta(seconds=UNANSWERED),
-    ).update(status=Session.Status.EXPIRED, ended_at=now)
+    )
+    affected = set(ringing_out.values_list("consultant_id", flat=True))
+    expired_requests = ringing_out.update(status=Session.Status.EXPIRED, ended_at=now)
+    for consultant_id in affected:
+        _missed_check(consultant_id, now)
     return {"settled": settled, "expired_requests": expired_requests}
 
 

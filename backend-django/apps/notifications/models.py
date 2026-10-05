@@ -68,3 +68,21 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.kind} · {self.title[:40]}"
+
+
+class PushSubscription(models.Model):
+    """One phone that may be woken for this person (6 Oct 2026) — the
+    browser's push endpoint and its two keys. Nullable nothing: a row is
+    either a working address or deleted when the push service says it is
+    gone."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField(db_index=True)
+    endpoint = models.TextField(unique=True)
+    p256dh = models.TextField()
+    auth = models.TextField()
+    user_agent = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "push_subscriptions"

@@ -5564,3 +5564,31 @@ was charged (each hold refunded whole). Two fixes:
 
 Also: Consult's free-tool circles are full colour with white icons
 (`toolStyle` in `src/lib/tiles.js`), owner's "these look dull".
+
+## 55. Online is the switch; calls ring the phone — 6 Oct 2026
+
+Owner's call: a consultant is online until they switch off, app open or
+not, and a call must ring the phone like a phone call.
+
+- **Online = `accepting_now`.** The 90-second heartbeat no longer decides
+  it (`online_expr`, `is_online`); the beat still runs and `last_seen_at`
+  is still written. **Safety net:** three requests in a row that ring out
+  unanswered switch the consultant off and tell them (`_missed_check` in
+  `apps/chat/services.py`); a seeker cancelling early is not a missed call.
+- **Web push.** `push_subscriptions` (notifications/0002), endpoints
+  `/v1/notifications/push/{key,subscribe,unsubscribe}/`, `apps/notifications/push.py`.
+  Every new request pushes "<name> is calling" to the consultant's phones
+  after commit, best-effort; 404/410 subscriptions are deleted.
+  `public/sw.js` shows it with sound, a long vibration, Answer / Decline,
+  and opens `/pro/ring/<id>?do=…` (`src/pro/ProRing.jsx`). Turning Online
+  asks for notification permission (`src/lib/push.js`); the open app rings
+  with a synthesised tone (`src/lib/ringtone.js`).
+- **Limits.** A web notification rings once with the system sound; a
+  looping full-screen call screen needs the Play Store build (Capacitor /
+  TWA + FCM full-screen intent). iPhone gets web push only as an installed
+  home-screen app (iOS 16.4+).
+- **Keys.** Public VAPID key in settings (it is public); the private key
+  is `VAPID_PRIVATE_KEY` on namo-api only — not in the repository.
+
+Tests: 963. Not yet proven on a real phone — needs the API deploy with the
+private key, then a consultant turning Online once to allow notifications.

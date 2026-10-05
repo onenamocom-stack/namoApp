@@ -7,6 +7,7 @@ import {
   subscribeToMySessions,
 } from '../lib/chat.js'
 import { isPro } from '../side.js'
+import { startRinging, stopRinging } from '../lib/ringtone.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -56,6 +57,13 @@ export default function IncomingCall() {
     // worth knowing about quickly; it is not worth a websocket yet.
     return subscribeToMySessions(myId, load)
   }, [myId, load])
+
+  // Ring while somebody is waiting (6 Oct 2026); stop the moment nobody is.
+  useEffect(() => {
+    if (isPro && pending.length > 0) startRinging()
+    else stopRinging()
+    return () => stopRinging()
+  }, [pending.length])
 
   if (!isPro || !myId || pending.length === 0) return null
 

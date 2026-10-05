@@ -28,6 +28,7 @@ import Tarot from './screens/Tarot.jsx'
 
 import ProEarnings from './pro/ProEarnings.jsx'
 import ProStudio from './pro/ProStudio.jsx'
+import ProRing from './pro/ProRing.jsx'
 import ProConsult from './pro/ProConsult.jsx'
 import ProProfile from './pro/ProProfile.jsx'
 import ProApply from './pro/ProApply.jsx'
@@ -108,6 +109,21 @@ function ProLayout() {
 /** Reloads into a newer build at the next screen change (src/lib/update.js). */
 function BuildWatcher() {
   useReloadIntoNewBuild()
+  return null
+}
+
+/** A tapped call notification, while the app is already open: the service
+ *  worker posts the route and this follows it (public/sw.js). */
+function NotificationRouter() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!isPro || !('serviceWorker' in navigator)) return undefined
+    const onMessage = (e) => {
+      if (e.data?.type === 'namo-route' && typeof e.data.path === 'string') navigate(e.data.path)
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage)
+  }, [navigate])
   return null
 }
 
@@ -257,6 +273,7 @@ function Frame() {
       <div className="relative flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden bg-bg text-t1">
         <SessionGate />
         <BuildWatcher />
+        <NotificationRouter />
         {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
         {isPro && <MilestoneCelebration />}
         {/* The consultant's "app is open" beat, on every route — the call
@@ -381,6 +398,8 @@ function Frame() {
             <Route element={<ProLayout />}>
               <Route path="/pro/earnings" element={<ProEarnings />} />
               <Route path="/pro/studio" element={<ProStudio />} />
+              {/* Where a call notification's Answer / Decline lands (6 Oct 2026). */}
+              <Route path="/pro/ring/:id" element={<ProRing />} />
               <Route path="/pro/affiliate" element={<ProAffiliate />} />
               <Route path="/pro/payout-details" element={<ProPayoutDetails />} />
               <Route path="/pro/consult" element={<ProConsult />} />

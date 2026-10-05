@@ -44,3 +44,43 @@ def read(request):
     serializer.is_valid(raise_exception=True)
     moved = services.mark_read(request.user.pk, serializer.validated_data.get("ids"))
     return Response({"marked": moved, "unread": services.unread_count(request.user.pk)})
+
+
+class PushInput(serializers.Serializer):
+    endpoint = serializers.URLField(max_length=1000)
+    keys = serializers.DictField(child=serializers.CharField(max_length=300))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def push_key(request):
+    """The public VAPID key the phone subscribes with. Public by design;
+    served rather than built in so no build secret is needed."""
+    from django.conf import settings
+
+    return Response({"key": settings.VAPID_PUBLIC_KEY or None})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def push_subscribe(request):
+    """This phone may now be woken for the caller (their own, always)."""
+    from . import push
+
+    form = PushInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    keys = form.validated_data["keys"]
+    if not keys.get("p256dh") or not keys.get("auth"):
+        return Response({"ok": False, "reason": "Missing keys."}, status=400)
+    push.subscribe(request.user.pk, form.validated_data["endpoint"], keys["p256dh"], keys["auth"],
+                   request.headers.get("user-agent", ""))
+    return Response({"ok": True})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def push_unsubscribe(request):
+    from . import push
+
+    endpoint = (request.data or {}).get("endpoint", "")
+    return Response({"ok": True, "removed": push.unsubscribe(request.user.pk, endpoint)})

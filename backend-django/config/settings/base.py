@@ -214,6 +214,15 @@ SHIPROCKET_WEBHOOK_TOKEN = os.environ.get("SHIPROCKET_WEBHOOK_TOKEN", "")
 # (pg_cron + pg_net, `manage.py use_api_sweeper`). Empty: the endpoint refuses.
 SWEEP_TOKEN = os.environ.get("SWEEP_TOKEN", "")
 
+# Web push for incoming calls (6 Oct 2026). The public key is public; the
+# private key is environment-only. Either missing: no pushes, nothing breaks.
+VAPID_PUBLIC_KEY = os.environ.get(
+    "VAPID_PUBLIC_KEY",
+    "BJEYSz0E_JpK-klTU4hjHt9_wtU2Fz1VSe0rlhBQR4mxUvcPDQ-88qFyjDic3t-L1vFoyFCmIZzHEtasVEvzuuo",
+)
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:support@1namo.com")
+
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
 # One image, two Cloud Run services. The public API serves no console URL
 # and the console serves no /v1, so a hole in one is not a door into the

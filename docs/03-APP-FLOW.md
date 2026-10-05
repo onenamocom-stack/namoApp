@@ -1022,6 +1022,12 @@ Refunds are a separate forward transition, never a mutation of the original.
                                                            (charged per 30-second block, rest refunded)
 ```
 
+- **Online is the consultant's switch alone** (6 Oct 2026) — app open or not.
+  Every request rings their phone by web push ("Rahul is calling", Answer /
+  Decline, long vibration; `public/sw.js`), and the open app plays a ring
+  tone. Three requests in a row that ring out unanswered switch them
+  offline and tell them so. Turning Online is the tap that asks for
+  notification permission.
 - **Busy** shows beside the consultant's name while a request rings for them or
   a session is live; it clears by itself when that ends.
 - **A chat** opens the chat panel on that conversation for both people; **a call**

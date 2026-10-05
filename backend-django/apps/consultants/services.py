@@ -800,11 +800,17 @@ def busy_expr(now=None):
 def online_expr(now=None):
     """Annotation: is this consultant takeable RIGHT NOW?
 
-    Both halves, because either alone sends a seeker to somebody who will
-    not answer — see the fields' own comment on the model.
+    THE SWITCH ALONE, since 6 Oct 2026 (owner's call). It was the switch AND
+    a heartbeat in the last 90 seconds, and a phone web app stops beating
+    the moment it is locked or backgrounded — so every consultant showed
+    offline unless they stared at the app. A request now wakes their phone
+    by push (apps/notifications/push.py), so the app need not be open.
+    The guard against somebody asleep with the switch on is the missed-
+    call rule: three rings in a row nobody answered turn the switch off
+    (apps/chat/services.py, `_missed_check`).
     """
     return Case(
-        When(accepting_now=True, last_seen_at__gte=_cutoff(now), then=Value(True)),
+        When(accepting_now=True, then=Value(True)),
         default=Value(False),
         output_field=BooleanField(),
     )
@@ -816,7 +822,6 @@ def is_online(consultant_id, now=None):
         profile_id=consultant_id,
         status=ConsultantStatus.APPROVED,
         accepting_now=True,
-        last_seen_at__gte=_cutoff(now),
     ).exists()
 
 
@@ -851,7 +856,7 @@ def touch_presence(consultant_id, accepting=None, now=None):
     ).first()
     return {
         "accepting_now": row["accepting_now"],
-        "online": row["accepting_now"] and row["last_seen_at"] >= _cutoff(stamp),
+        "online": bool(row["accepting_now"]),  # the switch alone (6 Oct 2026)
         "last_seen_at": row["last_seen_at"].isoformat(),
         "grace_seconds": PRESENCE_GRACE_SECONDS,
     }

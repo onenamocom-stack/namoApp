@@ -9,3 +9,8 @@ pytest-django==4.14.0
 cryptography>=43,<46
 psycopg[binary]>=3.2,<3.3
 whitenoise==6.8.2
+# Web push for incoming calls (6 Oct 2026). 1.14.x and py-vapid 1.9.2 work
+# with the cryptography pin above; pywebpush 2.x needs cryptography>=47.
+pywebpush==1.14.1
+py-vapid==1.9.2
+http-ece==1.2.1

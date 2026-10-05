@@ -58,14 +58,15 @@ class TestOnlineIsBothHalves:
         be advertised as available by the act of being approved."""
         assert services.is_online(PRO) is False
 
-    def test_the_switch_alone_is_not_online(self, pro):
-        """They flipped it on this morning, shut the app, and went to
-        sleep. The dot has to go dark by itself — nothing is going to
-        write "offline" for a phone that is off."""
+    def test_the_switch_alone_is_online(self, pro):
+        """6 Oct 2026, owner's call: online until they switch it off, app
+        open or not — a request wakes the phone by push. The guard against
+        a consultant asleep with it on is three missed calls in a row
+        (tests/test_session_engine.py)."""
         pro.accepting_now = True
         pro.last_seen_at = timezone.now() - timedelta(hours=8)
         pro.save()
-        assert services.is_online(PRO) is False
+        assert services.is_online(PRO) is True
 
     def test_the_heartbeat_alone_is_not_online(self, pro):
         """Their app is open on the earnings screen while they eat dinner.
@@ -86,9 +87,9 @@ class TestOnlineIsBothHalves:
         _online(pro, seconds_ago=60)
         assert services.is_online(PRO) is True
 
-    def test_a_dead_app_goes_dark(self, pro):
+    def test_a_closed_app_stays_online(self, pro):
         _online(pro, seconds_ago=services.PRESENCE_GRACE_SECONDS + 5)
-        assert services.is_online(PRO) is False
+        assert services.is_online(PRO) is True
 
     def test_an_unapproved_consultant_is_never_online(self, pro):
         """Pending and blocked practices are invisible. Presence must not

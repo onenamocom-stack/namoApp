@@ -795,6 +795,17 @@ create unique index sessions_one_live_per_consultant
 -- 5 Oct 2026, chat/0003: one RINGING request per consultant, from anybody.
 create unique index sessions_one_ringing_per_consultant
   on sessions (consultant_id) where status = 'requested';
+
+-- 6 Oct 2026, notifications/0002: the phones that may be woken for a call.
+create table push_subscriptions (
+  id          uuid primary key,
+  profile_id  uuid not null,          -- indexed; the owner
+  endpoint    text not null unique,   -- the browser push service's address
+  p256dh      text not null,          -- the phone's public key
+  auth        text not null,          -- the phone's auth secret
+  user_agent  text not null default '',
+  created_at  timestamptz not null default now()
+);
 ```
 
 **Two ledger rows per session, not one per minute.** The obvious design is a

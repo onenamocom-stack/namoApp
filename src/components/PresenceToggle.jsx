@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { beat } from '../lib/consultants.js'
+import { enablePush, keepPushFresh } from '../lib/push.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -71,10 +72,20 @@ export default function PresenceToggle() {
       showToast('Could not reach the server. Try again.')
       return
     }
+    if (!answer.online) {
+      showToast('You are offline. No new calls will come through.')
+      return
+    }
+    /* Going online is the tap that may ask for notifications: a call must
+       ring this phone with the app closed (6 Oct 2026), and a browser only
+       shows its permission prompt in answer to a tap. */
+    const ring = await enablePush()
     showToast(
-      answer.online
-        ? 'You are online. Seekers can call you.'
-        : 'You are offline. No new calls will come through.',
+      ring === 'granted'
+        ? 'You are online. Calls will ring this phone, even with the app closed.'
+        : ring === 'denied'
+          ? 'You are online, but notifications are blocked — calls ring only while the app is open. Allow notifications for this site in your browser settings.'
+          : 'You are online. Calls ring while the app is open.',
     )
   }
 
@@ -112,6 +123,9 @@ export function PresenceKeeper() {
   const signedIn = !!session?.user?.id
   useEffect(() => {
     if (!isPro || !signedIn) return undefined
+    // A phone that already allowed notifications re-registers on launch,
+    // so a subscription the browser rotated never goes quietly dead.
+    keepPushFresh()
     const timer = setInterval(() => beat(undefined), BEAT_MS)
     const onShow = () => document.visibilityState === 'visible' && beat(undefined)
     document.addEventListener('visibilitychange', onShow)
