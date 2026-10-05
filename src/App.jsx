@@ -39,7 +39,9 @@ import Profile from './screens/Profile.jsx'
 import Wallet from './screens/Wallet.jsx'
 import Orders from './screens/Orders.jsx'
 import Call from './screens/Call.jsx'
+import Connect from './screens/Connect.jsx'
 import IncomingCall from './components/IncomingCall.jsx'
+import { PresenceKeeper } from './components/PresenceToggle.jsx'
 import Horoscope from './screens/Horoscope.jsx'
 import Ask from './screens/Ask.jsx'
 import Chart from './screens/Chart.jsx'
@@ -249,6 +251,9 @@ function Frame() {
         <SessionGate />
         {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
         {isPro && <MilestoneCelebration />}
+        {/* The consultant's "app is open" beat, on every route — the call
+            screen included, which is outside the shell (5 Oct 2026). */}
+        {isPro && <PresenceKeeper />}
         <Routes>
           <Route
             path="/"
@@ -263,6 +268,8 @@ function Frame() {
                 consultant's Answer button navigated to a route their
                 build did not have. */}
             <Route path="/call/:id" element={<Call />} />
+            {/* Reaching a consultant: busy, ringing, answered (5 Oct 2026). */}
+            <Route path="/connect/:id" element={<Connect />} />
 
             {/* The seeker's screens. Absent from the consultant build —
                 a consultant who needs the seeker app follows a link out to
@@ -312,11 +319,6 @@ function Frame() {
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/tarot" element={<Tarot />} />
 
-                {/* The shrine is full screen and off the tab bar as of 9 Sep 2026.
-                    It reached its own layout by being the one screen that does not
-                    scroll — a nav bar under a fixed-height shrine cost it 56px it
-                    could not spare. Home's Darshan tab is how you get here. */}
-                <Route path="/darshan" element={<Pooja />} />
               </>
             )}
 
@@ -347,6 +349,10 @@ function Frame() {
               PRO_TABS inside ProLayout. */}
           {!isPro && (
             <Route element={<TabLayout />}>
+              {/* The shrine is back under the tab bar (5 Oct 2026, owner's
+                  request, after Sri Mandir's): the deity row moved into the
+                  header, which pays for the 56px the nav takes. */}
+              <Route path="/darshan" element={<Pooja />} />
               {/* Home carries its tab in the URL, same as Profile — a tab worth
                   switching to is worth linking to, and Back should undo the switch.
                   Without the `:tab` route, `/home/today` falls through the catch-all

@@ -135,6 +135,9 @@ function shape(row, services = []) {
     // Two phones with two clocks would otherwise disagree about the same
     // dot, and the one that is wrong is always somebody's evening.
     online: row.online === true,
+    // Ringing for somebody or in a session (5 Oct 2026). Still callable:
+    // the call waits and retries instead of failing.
+    busy: row.busy === true,
     rating: row.rating_avg_cache,
     reviewCount: row.rating_count_cache,
     // Paid sessions given — the milestone tier (lib/milestones.js).

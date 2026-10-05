@@ -3,6 +3,8 @@ import { Sheet } from './Chrome.jsx'
 import { PopButton } from './Pop.jsx'
 import { firstName } from './Primitives.jsx'
 import { listMyBookings } from '../lib/consultants.js'
+import { listSessions } from '../lib/chat.js'
+import Icon from './Icon.jsx'
 import { leaveReview, reviewableBookings } from '../lib/content.js'
 import { rupees, useStore } from '../store.jsx'
 
@@ -15,14 +17,29 @@ import { rupees, useStore } from '../store.jsx'
 export default function MySessions() {
   const { session, t } = useStore()
   const [mine, setMine] = useState(null)
+  const [calls, setCalls] = useState(null)
   const [reviewable, setReviewable] = useState([])
   const [reviewing, setReviewing] = useState(null)
 
   useEffect(() => {
     let live = true
     const uid = session?.user?.id
-    if (uid) listMyBookings(uid).then((rows) => live && setMine(rows)).catch(() => live && setMine([]))
-    else setMine([])
+    if (uid) {
+      listMyBookings(uid).then((rows) => live && setMine(rows)).catch(() => live && setMine([]))
+      // Calls and chats by the minute (5 Oct 2026) — they were in nobody's
+      // history: the seeker could see the money go and nowhere it went.
+      listSessions().then((rows) =>
+        live &&
+        setCalls(
+          (rows ?? []).filter(
+            (r) => String(r.seeker_id).replace(/-/g, '') === String(uid).replace(/-/g, '') && r.accepted_at,
+          ),
+        ),
+      )
+    } else {
+      setMine([])
+      setCalls([])
+    }
     return () => {
       live = false
     }
@@ -39,8 +56,12 @@ export default function MySessions() {
     reloadReviewable()
   }, [session, reloadReviewable])
 
-  if (mine === null) return <p className="px-5 py-8 text-center text-meta t-faint">{t('ord.loading')}</p>
-  if (!mine.length) return <p className="px-5 py-8 text-center text-meta t-faint">{t('con.noSessions')}</p>
+  if (mine === null || calls === null) {
+    return <p className="px-5 py-8 text-center text-meta t-faint">{t('ord.loading')}</p>
+  }
+  if (!mine.length && !calls.length) {
+    return <p className="px-5 py-8 text-center text-meta t-faint">{t('con.noSessions')}</p>
+  }
 
   const shown = [
     ...mine.filter((b) => reviewable.some((r) => r.id === b.id)),
@@ -49,7 +70,42 @@ export default function MySessions() {
 
   return (
     <>
-      <ul className="space-y-2 px-4 py-4">
+      {calls.length > 0 && (
+        <>
+          <p className="px-4 pt-4 caps-sm t-faint">Calls and chats</p>
+          <ul className="space-y-2 px-4 pt-2">
+            {calls.map((r) => (
+              <li key={r.id} className="pop-inset flex items-center gap-3 p-3">
+                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-surface t-body">
+                  <Icon name={r.mode === 'chat' ? 'chat' : r.audio_only ? 'phone' : 'video'} size={16} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta t-heading">{r.consultant_name}</span>
+                  <span className="mt-0.5 block caps-sm t-faint tnum">
+                    {new Date(r.started_at || r.accepted_at).toLocaleString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Asia/Kolkata',
+                    })}{' '}
+                    · {minutesOf(r)}
+                  </span>
+                </span>
+                <span className="flex-none text-right">
+                  {r.status === 'live' ? (
+                    <span className="block caps-sm text-ok">Live now</span>
+                  ) : (
+                    <span className="block caps-sm tnum t-heading">₹{rupees(r.charged_paise ?? 0)}</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {mine.length > 0 && <p className="px-4 pt-5 caps-sm t-faint">Booked slots</p>}
+      <ul className="space-y-2 px-4 py-2">
         {shown.map((b) => (
           <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
             <span className="min-w-0 flex-1">
@@ -195,4 +251,13 @@ const STATUS = {
   cancelled: { label: 'con.st.cancelled', tone: 't-faint' },
   rescheduled: { label: 'con.st.rescheduled', tone: 't-faint' },
   no_show: { label: 'con.st.noShow', tone: 't-faint' },
+}
+
+
+/** "3 min", or why there is no number. */
+function minutesOf(r) {
+  if (r.status === 'live') return r.started_at ? 'in progress' : 'connecting'
+  if (!r.started_at) return 'did not connect'
+  const secs = (new Date(r.ended_at) - new Date(r.started_at)) / 1000
+  return `${Math.max(1, Math.round(secs / 60))} min`
 }

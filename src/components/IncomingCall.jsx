@@ -31,7 +31,7 @@ import { rupees, useStore } from '../store.jsx'
  */
 export default function IncomingCall() {
   const navigate = useNavigate()
-  const { showToast, session } = useStore()
+  const { showToast, session, openChat } = useStore()
   const myId = session?.user?.id
   const [pending, setPending] = useState([])
   const [busy, setBusy] = useState(null)
@@ -84,6 +84,13 @@ export default function IncomingCall() {
       load()
       return
     }
+    /* A CHAT opens the chat, on that conversation (5 Oct 2026). Until then
+       every answer went to the call screen, and the consultant's camera
+       came on for somebody who had asked to type. */
+    if ((result.mode ?? row.mode) === 'chat') {
+      openChat('live', result.thread_id ?? null)
+      return
+    }
     navigate(`/call/${row.id}`)
   }
 
@@ -93,11 +100,10 @@ export default function IncomingCall() {
         <div key={row.id} className="flex items-center gap-3 px-4 py-3">
           <span className="block h-2 w-2 flex-none animate-pulse rounded-full bg-live" />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-body text-t1">
-              {row.seeker_name || 'Someone'} is calling
-            </span>
-            <span className="mt-0.5 block caps-sm t-faint tnum">
-              ₹{rupees(row.rate_paise)}/min · {row.mode}
+            <span className="block truncate text-body text-t1">{row.seeker_name || 'Someone'}</span>
+            <span className="mt-0.5 block truncate whitespace-nowrap caps-sm t-faint tnum">
+              {row.mode === 'chat' ? 'Chat' : row.audio_only ? 'Audio call' : 'Video call'} · ₹
+              {rupees(row.rate_paise)}/min
             </span>
           </span>
           {/* DECLINE FIRST, and quieter. A consultant reaching for one
@@ -118,7 +124,7 @@ export default function IncomingCall() {
             disabled={busy === row.id}
             className="flex-none rounded-full bg-live px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-sm transition-transform active:scale-95 disabled:opacity-60"
           >
-            {busy === row.id ? 'Starting…' : 'Answer'}
+            {busy === row.id ? 'Starting…' : row.mode === 'chat' ? 'Accept' : 'Answer'}
           </button>
         </div>
       ))}

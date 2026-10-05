@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { requestChat } from '../lib/chat.js'
-import { rupees, useStore } from '../store.jsx'
+import { useStore } from '../store.jsx'
 
 /**
  * Asking a consultant for a live session — one implementation, every
@@ -24,7 +23,7 @@ import { rupees, useStore } from '../store.jsx'
  */
 export default function useStartSession() {
   const navigate = useNavigate()
-  const { showToast, openChat, session } = useStore()
+  const { showToast, session } = useStore()
   const [asking, setAsking] = useState(false)
 
   /**
@@ -47,33 +46,20 @@ export default function useStartSession() {
         return showToast(`${consultant.name} is offline right now.`)
       }
 
+      /* Everything after this — asking, busy and retrying, ringing, the
+         chat opening on accept — lives on /connect (5 Oct 2026). A
+         consultant who is busy is still pressable: the screen waits and
+         asks again instead of failing. */
       setAsking(true)
       try {
-        const result = await requestChat(consultant.id, consultant.perMinute.id, {
-          audioOnly: to === 'audio',
+        navigate(`/connect/${consultant.id}?via=${to === 'call' ? 'video' : to}`, {
+          state: { consultant },
         })
-        if (!result?.ok) {
-          // The server's sentence. Every refusal it gives names the fix —
-          // offline, not priced, not enough balance.
-          return showToast(result?.reason ?? 'Could not reach the astrologer.')
-        }
-        showToast(
-          `Asked ${consultant.name} · ₹${rupees(consultant.perMinute.price_paise)}/min once they join`,
-        )
-        if (isCall) {
-          /* Straight to the call screen rather than waiting here for the
-             accept. An empty room with the countdown on it is a truer
-             picture of "waiting for them" than a spinner on a list, and
-             that screen already owns the clock the money runs on. */
-          navigate(`/call/${result.session_id}`)
-        } else {
-          openChat('live')
-        }
       } finally {
         setAsking(false)
       }
     },
-    [asking, navigate, openChat, session, showToast],
+    [asking, navigate, session, showToast],
   )
 
   return { start, asking }

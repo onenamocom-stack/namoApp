@@ -43,28 +43,16 @@ export default function PresenceToggle() {
     return answer
   }, [])
 
-  /* One beat on mount to learn where the switch is, then every thirty
-     seconds. The grace window is ninety, so two dropped beats — a
-     wifi-to-mobile handover mid-tap — do not blink the dot. */
+  /* One beat on mount to learn where the switch is. The regular beat is
+     PresenceKeeper's (below), mounted in the consultant's shell — this
+     control lives in the tab header, which the call screen does not have,
+     so a consultant on a call stopped beating and showed OFFLINE to every
+     seeker until the call ended (the 5 Oct "offline, then online after a
+     refresh"). The keeper beats on every screen. */
   useEffect(() => {
     if (!isPro || !signedIn) return undefined
-    let alive = true
-
-    send(undefined).then((answer) => {
-      if (!alive || !answer) return
-    })
-
-    const timer = setInterval(() => {
-      // Every beat carries the switch, so a toggle whose request failed
-      // corrects itself within thirty seconds instead of leaving the
-      // consultant visible and absent until they notice.
-      send(accepting.current)
-    }, BEAT_MS)
-
-    return () => {
-      alive = false
-      clearInterval(timer)
-    }
+    send(undefined)
+    return undefined
   }, [isPro, signedIn, send])
 
   // The seeker app has no use for this, and neither does a signed-out
@@ -109,4 +97,28 @@ export default function PresenceToggle() {
       <span className="caps-sm t-body">{on ? 'Online' : 'Offline'}</span>
     </button>
   )
+}
+
+
+/**
+ * The beat, on every screen of the consultant app — the call screen
+ * included (5 Oct 2026). It never changes the switch: an empty beat keeps
+ * whatever the consultant chose and only says "the app is open". It also
+ * beats the moment the app comes back to the foreground, so a phone that
+ * slept does not wait half a minute to be seen again.
+ */
+export function PresenceKeeper() {
+  const { isPro, session } = useStore()
+  const signedIn = !!session?.user?.id
+  useEffect(() => {
+    if (!isPro || !signedIn) return undefined
+    const timer = setInterval(() => beat(undefined), BEAT_MS)
+    const onShow = () => document.visibilityState === 'visible' && beat(undefined)
+    document.addEventListener('visibilitychange', onShow)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onShow)
+    }
+  }, [isPro, signedIn])
+  return null
 }

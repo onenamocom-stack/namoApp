@@ -1,6 +1,7 @@
 import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -35,6 +36,7 @@ import {
  * as the people you pay read as one more person to message.
  */
 export default function ChatPanel() {
+  const unreadAlerts = useUnreadAlerts()
   const { isPro, chatOpen, setChatOpen, chatTab, setChatTab } =
     useStore()
 
@@ -97,6 +99,11 @@ export default function ChatPanel() {
                 }`}
               >
                 {t.label}
+                {t.key === 'alerts' && unreadAlerts > 0 && chatTab !== 'alerts' && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white tnum">
+                    {unreadAlerts > 9 ? '9+' : unreadAlerts}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -129,10 +136,23 @@ export default function ChatPanel() {
    made unavoidable. */
 
 function LiveConsultant({ isPro }) {
-  const { session } = useStore()
+  const { session, chatFocus, setChatFocus } = useStore()
   const myId = session?.user?.id
   const [threads, setThreads] = useState(null)
   const [activeId, setActiveId] = useState(null)
+
+  /* Opened on one conversation — a chat just accepted, from either side
+     (5 Oct 2026). A brand-new thread may not be in the list yet, so this
+     waits for a load that contains it, then clears the request. */
+  useEffect(() => {
+    if (!chatFocus) return
+    if ((threads ?? []).some((x) => x.id === chatFocus)) {
+      setActiveId(chatFocus)
+      setChatFocus(null)
+    } else {
+      listThreads().then(setThreads)
+    }
+  }, [chatFocus, threads, setChatFocus])
 
   const load = useCallback(() => {
     listThreads().then(setThreads)
@@ -151,9 +171,7 @@ function LiveConsultant({ isPro }) {
     return (
       <div className="px-4 py-6">
         <p className="text-meta t-body">Sign in to see your conversations.</p>
-        <PopButton to="/consult" variant="ghost" className="mt-4">
-          Find a consultant
-        </PopButton>
+        <FindConsultant />
       </div>
     )
   }
@@ -182,11 +200,36 @@ function ThreadList({ threads, isPro, onOpen }) {
     return <p className="px-4 py-6 text-meta t-faint">Loading your conversations.</p>
   }
 
+  /* The people you have actually spoken to — by chat, video or audio — and
+     nobody else (5 Oct 2026). Each row says what you last did together;
+     a row with nothing done yet never appears, because a thread only
+     exists once a consultant has accepted. */
+  if (threads.length === 0) {
+    return (
+      <div className="px-5 py-10 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface t-faint">
+          <Icon name="chat" size={24} />
+        </span>
+        <p className="mt-4 text-body t-heading">
+          {isPro ? 'No conversations yet' : 'You have not spoken to anyone yet'}
+        </p>
+        <p className="mt-1 text-meta t-faint">
+          {isPro
+            ? 'They appear here when you accept a chat or a call.'
+            : 'Chat, video or audio with an astrologer — everyone you talk to stays here.'}
+        </p>
+        {!isPro && <FindConsultant />}
+      </div>
+    )
+  }
+
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      <p className="px-4 pb-1 pt-3 caps-sm t-faint">Recently connected</p>
       <ul>
         {threads.map((t) => {
           const other = isPro ? t.seeker_name : t.consultant_name
+          const last = t.last_session
           return (
             <li key={t.id}>
               <button
@@ -202,8 +245,14 @@ function ThreadList({ threads, isPro, onOpen }) {
                       <span className="ml-auto flex-none caps-sm text-ok">Live</span>
                     )}
                   </span>
+                  {last && (
+                    <span className="mt-1 flex items-center gap-1.5 text-[12px] t-faint">
+                      <Icon name={last.kind === 'chat' ? 'chat' : last.kind === 'audio' ? 'phone' : 'video'} size={13} />
+                      {lastLine(last)}
+                    </span>
+                  )}
                   <span className="mt-1 block truncate text-meta t-body">
-                    {t.last_preview ?? 'No messages yet.'}
+                    {t.last_preview ?? (last && last.kind !== 'chat' ? 'No messages — calls only.' : 'No messages yet.')}
                   </span>
                 </span>
                 {t.unread > 0 && (
@@ -216,23 +265,58 @@ function ThreadList({ threads, isPro, onOpen }) {
           )
         })}
       </ul>
-
-      <div className="px-4 py-6">
-        {threads.length === 0 && (
-          <p className="text-meta t-body">
-            {isPro
-              ? 'No conversations yet. They start when you accept a chat request.'
-              : 'No conversations yet. Chat is charged by the minute and starts when the consultant joins.'}
-          </p>
-        )}
-        {!isPro && (
-          <PopButton to="/consult" variant="ghost" className="mt-4">
-            Find a consultant
-          </PopButton>
-        )}
-      </div>
+      {!isPro && (
+        <div className="px-4 py-6">
+          <FindConsultant />
+        </div>
+      )}
     </div>
   )
+}
+
+/** "Video call · 3 min · 5 Oct" — what you last did together. */
+function lastLine(last) {
+  const what = last.kind === 'chat' ? 'Chat' : last.kind === 'audio' ? 'Audio call' : 'Video call'
+  const parts = [what]
+  if (last.status === 'live') parts.push('now')
+  else if (last.seconds != null) parts.push(`${Math.max(1, Math.round(last.seconds / 60))} min`)
+  else parts.push('did not connect')
+  if (last.at) {
+    parts.push(new Date(last.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }))
+  }
+  return parts.join(' · ')
+}
+
+/** Goes to Consult AND closes the panel — it used to be a link under an
+ *  overlay that stayed open, so pressing it appeared to do nothing. */
+function FindConsultant() {
+  const { setChatOpen } = useStore()
+  const navigate = useNavigate()
+  return (
+    <PopButton
+      variant="gold"
+      className="mt-5"
+      onClick={() => {
+        setChatOpen(false)
+        navigate('/consult')
+      }}
+    >
+      Find a consultant
+    </PopButton>
+  )
+}
+
+/** Unread alerts, for the Alerts tab's badge. Polls with the alerts list. */
+function useUnreadAlerts() {
+  const { session } = useStore()
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!session) return undefined
+    return subscribeToAlerts((payload) =>
+      setN(payload?.unread ?? (payload?.items ?? []).filter((x) => !x.read).length),
+    )
+  }, [session])
+  return n
 }
 
 /**

@@ -147,11 +147,20 @@ export default function Consult() {
   const rail = useRef(null)
   const listRef = useRef(null)
 
+  /* Re-read every twenty seconds while the screen is open, and when the
+     tab comes back (5 Oct 2026): online, offline and busy change while you
+     look, and a list read once said whatever was true when you arrived. */
   useEffect(() => {
     let live = true
+    const load = () => listConsultants().then((rows) => live && rows.length && setConsultants(rows))
     listConsultants().then((rows) => live && setConsultants(rows))
+    const timer = setInterval(load, 20_000)
+    const onShow = () => document.visibilityState === 'visible' && load()
+    document.addEventListener('visibilitychange', onShow)
     return () => {
       live = false
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onShow)
     }
   }, [])
 
@@ -348,7 +357,16 @@ export default function Consult() {
 
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-body text-t1">{c.name}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-body text-t1">{c.name}</span>
+                      {/* On a call or ringing right now (5 Oct 2026). Still
+                          pressable — the call waits and retries for you. */}
+                      {c.online && c.busy && (
+                        <span className="flex-none rounded-full bg-gold-fill/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-gold">
+                          Busy
+                        </span>
+                      )}
+                    </span>
                     <span className="flex-none text-body text-t1 tnum">
                       {/* The per-minute rate is its own service row, priced off
                           the same band. It is not `price / SESSION.mins` any
@@ -423,6 +441,12 @@ export default function Consult() {
                   {t('con.offline')}
                 </p>
               )}
+              {c.online && c.busy && (
+                <p className="mt-2 text-micro t-faint">
+                  {firstNameOf(c.name)} is with someone right now. Press any of the three
+                  and we will keep trying until they are free — nothing is charged while you wait.
+                </p>
+              )}
             </li>
           ))}
         </ul>
@@ -480,4 +504,9 @@ function NobodyYet() {
       </div>
     </div>
   )
+}
+
+
+function firstNameOf(name) {
+  return (name || '').split(' ')[0]
 }

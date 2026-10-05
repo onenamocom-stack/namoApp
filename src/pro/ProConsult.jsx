@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { timeSlots, weekDays } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -138,6 +138,7 @@ const dayLabel = (iso) => {
 
 function Sessions({ me, rows, bookings, reload }) {
   const { showToast, openChat } = useStore()
+  const navigate = useNavigate()
   /* Incoming CHAT requests. These are not bookings: nobody has been charged,
      the seeker is sitting there waiting, and accepting is what starts both the
      conversation and the meter. Realtime rather than polling, because a
@@ -160,9 +161,11 @@ function Sessions({ me, rows, bookings, reload }) {
   const takeChat = async (sess) => {
     const res = await acceptChat(sess.id)
     if (!res?.ok) return showToast(res?.reason ?? 'Could not start that session.')
-    showToast(`Live · ${res.minutes_held} min held`)
     loadRequests()
-    openChat('live')
+    // A call goes to the call screen; a chat opens on its conversation.
+    if ((res.mode ?? sess.mode) !== 'chat') return navigate(`/call/${sess.id}`)
+    showToast(`Live · ${res.minutes_held} min held`)
+    openChat('live', res.thread_id ?? null)
   }
   const [dayIndex, setDayIndex] = useState(0)
   const [rules, setRules] = useState([])

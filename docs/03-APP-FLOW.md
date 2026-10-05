@@ -995,6 +995,35 @@ a check, because a check races with its own write.
 
 Refunds are a separate forward transition, never a mutation of the original.
 
+### 8.2a A live session — chat, video or audio (5 Oct 2026)
+
+```
+ Call / Chat ──► request ──┬─ busy ──► (nothing written; /connect retries every 5 s for 3 min)
+                           │
+                           └─ requested ──┬─ 45 s, no answer ──► expired      (₹0)
+                              (rings for  ├─ consultant declines ──► declined (₹0)
+                               ONE seeker ├─ seeker cancels ──► expired       (₹0)
+                               at a time) │
+                                          └─ accept ──► live
+                                             hold taken │
+                                   chat: clock starts ──┤
+                                   call: connecting ────┼─ 90 s, not both in ──► ended (₹0, hold refunded)
+                                     both in the room ──┤
+                                                        └─ end / time up / 60 s silent ──► ended
+                                                           (charged per 30-second block, rest refunded)
+```
+
+- **Busy** shows beside the consultant's name while a request rings for them or
+  a session is live; it clears by itself when that ends.
+- **A chat** opens the chat panel on that conversation for both people; **a call**
+  opens the call screen. The consultant's request bar says Chat, Video call or
+  Audio call, and its button says Accept or Answer.
+- **The call screen** reads "Connecting" until both are in, then the minutes left.
+- **History:** the chat panel's Consultant tab lists only people you have
+  connected with, each with what you last did together ("Video call · 3 min");
+  its Sessions tab lists calls and chats (with cost) and booked slots; Alerts
+  carries an unread count. Alerts older than six months are deleted by the sweep.
+
 ### 8.3 Consultant approval
 
 ```

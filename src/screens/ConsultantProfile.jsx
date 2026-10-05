@@ -86,6 +86,17 @@ export default function ConsultantProfile() {
     }
   }, [id])
 
+  // Presence and busy, kept current while the page is open (5 Oct 2026).
+  // Only the two flags are taken, so nothing the person is choosing moves.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      getConsultant(id).then((row) => {
+        if (row) setC((prev) => (prev ? { ...prev, online: row.online, busy: row.busy } : prev))
+      })
+    }, 20_000)
+    return () => clearInterval(timer)
+  }, [id])
+
   /* The follower count, which is a COUNT of rows rather than a column — the
      mock said '52.0k' for a consultant nobody had ever followed. Null until it
      arrives, so the line renders a real number or nothing, never a 0 that is
@@ -322,6 +333,12 @@ export default function ConsultantProfile() {
             <p className="mt-3 text-micro t-faint">
               {firstName(c.name)} is offline right now. You can still schedule a
               session.
+            </p>
+          )}
+          {c.online && c.busy && (
+            <p className="mt-3 text-micro font-semibold text-gold">
+              Busy — {firstName(c.name)} is with someone right now. Press call or chat and we
+              will keep trying until they are free. Nothing is charged while you wait.
             </p>
           )}
 

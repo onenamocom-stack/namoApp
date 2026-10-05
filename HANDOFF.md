@@ -5461,3 +5461,65 @@ were. The per-category banner under the pills is removed, with its four
 - **Test Seeker (8447284861) wallet set to ₹20, then ₹40, then ₹80, then +₹37 twice**, for testing:
   five ledger rows, `ref_type` adjustment (−₹126.50, +₹20, +₹40, +₹37, +₹37), note
   "Owner request, 5 Oct 2026".
+
+## 53. Calls and chats rebuilt: one caller at a time, billing from connect — 5 Oct 2026 (built; not migrated, deployed or pushed)
+
+What the owner found testing: a call's minutes ran from Answer, before
+anyone was in the room; a chat request opened the consultant's camera;
+calls were in nobody's history; a consultant on a call showed offline;
+"Find a consultant" did nothing. And underneath, two copies of the settle:
+the API charged 30-second blocks, the SQL `session_sweep` pg_cron runs
+charged whole minutes.
+
+Built (design: `docs/02-TRD.md` "Live sessions", state machine
+`docs/03-APP-FLOW.md` §8.2a, columns `docs/05-BACKEND-SCHEMA.md`):
+
+- **One ringing request and one live session per consultant**, both partial
+  unique indexes, with request/accept serialised on the consultant's row.
+  A second caller gets `{busy: true}`, nothing written; `/connect/:id`
+  retries every 5 s for 3 minutes. Rings stop after 45 s (was 15 min).
+- **A call's clock starts when Daily's presence API lists both people**
+  (`user_id` is now on every meeting token). Answer holds the money; a call
+  not connected in 90 s settles at ₹0. When the clock starts the room's
+  expiry moves to the paid end. A chat still starts on accept.
+- **The channel (chat / video / audio) sets the session's mode** — every
+  per-minute service was `chat`, so the consultant's app could not tell a
+  call from a chat. Requests now say which.
+- **No scheduler on the critical path**: stale rings and dead connects are
+  settled by the next request/accept/heartbeat for that consultant.
+  `/v1/chat/sweep/` (token `SWEEP_TOKEN`) is the API's sweep for pg_cron;
+  `manage.py use_api_sweeper --url …` switches the job, `--revert` undoes it.
+  Migration `chat/0003` also teaches the SQL sweep to skip calls still
+  connecting, for the window before the switch.
+- **Busy** on the roster and profile (`busy` on `/v1/consultants/`), refreshed
+  every 20 s while those screens are open.
+- **Presence**: the consultant's beat runs on every screen (`PresenceKeeper`,
+  mounted app-wide); it lived in the header switch, which the call screen
+  does not have — the offline-then-online flicker.
+- **Chat panel**: "Recently connected" with each person's last call or chat;
+  Sessions tab lists calls and chats with cost; Alerts shows an unread
+  count; Find a consultant closes the panel and goes to Consult. Alerts older
+  than 183 days are deleted by the sweep.
+- **Pooja** is under the tab bar again, with the deities as pills in its header.
+
+Tests: 947 (new: `test_session_engine.py`, `test_session_scenarios.py` — the
+two-caller race, never-connected refunds, busy, a full video call by HTTP).
+Walked with a faked API: busy, ringing, declined, connecting, the panel, the
+consultant's chat and call bars, Pooja.
+
+### To make it live — this order
+
+1. `python manage.py migrate chat` on production (additive: one nullable
+   column, one unique index, the SQL sweep guard).
+2. Set `SWEEP_TOKEN` (any long random string) on namo-api; deploy API and
+   console from `main`.
+3. Push the front end — **not before step 2**: the new consultant app routes
+   by the session's mode, which the old API sets to `chat` for every call.
+4. `python manage.py use_api_sweeper --url https://namo-api-499026166575.asia-south1.run.app/v1/chat/sweep/`
+   with `SWEEP_TOKEN` in the environment.
+5. Walk it with two phones: a video call (clock starts on connect), a chat
+   (opens the chat, not the camera), a second caller (busy, then through).
+
+Not proven against the real Daily presence API — its response is parsed for
+`userId`/`user_id`; if Daily answers differently the call stays "Connecting"
+and settles at ₹0 after 90 s, which is the safe failure.

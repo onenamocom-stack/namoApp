@@ -49,7 +49,10 @@ export async function joinCall(sessionId) {
       ok: true,
       url: data.url,
       token: data.token,
+      // Null while the call connects: the clock starts when both are in the
+      // room, and the heartbeat says when (5 Oct 2026).
       expiresAt: data.expires_at,
+      connecting: data.connecting === true,
       isOwner: data.is_owner,
     }
   } catch (err) {

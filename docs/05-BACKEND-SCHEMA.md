@@ -781,8 +781,9 @@ create table sessions (
   status         text not null default 'requested'
                  check (status in ('requested','live','ended','declined','expired')),
   requested_at   timestamptz not null default now(),
-  started_at     timestamptz,      -- the consultant joined; the clock starts here
-  expires_at     timestamptz,      -- started_at + the minutes held
+  accepted_at    timestamptz,      -- 5 Oct 2026, chat/0003: the consultant said yes; the hold is taken here
+  started_at     timestamptz,      -- the clock: on accept for a chat; for a call, when both are in the room
+  expires_at     timestamptz,      -- started_at + the minutes held; null while a call connects
   ended_at       timestamptz,
   heartbeat_at   timestamptz,
   hold_paise     integer,
@@ -791,6 +792,9 @@ create table sessions (
 
 create unique index sessions_one_live_per_consultant
   on sessions (consultant_id) where status = 'live';
+-- 5 Oct 2026, chat/0003: one RINGING request per consultant, from anybody.
+create unique index sessions_one_ringing_per_consultant
+  on sessions (consultant_id) where status = 'requested';
 ```
 
 **Two ledger rows per session, not one per minute.** The obvious design is a
@@ -808,7 +812,10 @@ is a timestamp rather than a countdown, so a client with a broken clock, a
 paused tab or no heartbeat at all cannot buy a free minute. And a statement
 reads as two lines a person can explain.
 
-**The clock starts on the consultant's join, never on the seeker's request.**
+**The clock starts on the consultant's join, never on the seeker's request** —
+and for a call, since 5 Oct 2026, not even on the join: the hold is taken at
+accept, `started_at` waits until the video service reports both people in the
+room, and a call that never connects settles at ₹0.
 `session_request` writes a row and moves no money — a consultant who never
 answers has cost the seeker nothing. That is the opposite of a booking, which
 charges immediately because it claims a slot somebody else could have had.

@@ -144,13 +144,13 @@
     padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 
-  /* The reservation above is unconditional, and every screen but one scrolls,
-     where 56px of extra run-off at the end is harmless. The shrine is the one
-     fixed-height screen — `h-full` against this box, no scrolling — so on
-     `/darshan`, which has no nav bar at all, that 56px is a dead band of bare
-     canvas under the murti. Cancel it where the shrine is mounted rather than
-     unpicking the rule for the twenty-odd routes it is right for. */
-  main:has(.darshan),
+  /* The reservation above is unconditional, and every screen but a few
+     scrolls, where 56px of extra run-off at the end is harmless. The
+     exceptions are full-height screens with NO nav bar under them — the reel
+     viewer, the call, and reaching a consultant (`.full-bleed`) — where that
+     56px is a dead band under a dark screen. The shrine had this exception
+     until 5 Oct 2026, when it moved under the tab bar and needs the space. */
+  main:has(.full-bleed),
   main:has(.reel-stage) {
     /* The reel viewer is the other full-height screen: without this a 56px
        white band sat under every reel opened on its own (4 Oct 2026). */

@@ -609,8 +609,12 @@ export function AppProvider({ children }) {
     [walletApi],
   )
 
-  const openChat = useCallback((tab = 'live') => {
+  /* `threadId` opens straight into one conversation — the consultant who
+     just accepted a chat, the seeker whose chat was just accepted (5 Oct 2026). */
+  const [chatFocus, setChatFocus] = useState(null)
+  const openChat = useCallback((tab = 'live', threadId = null) => {
     setChatTab(tab)
+    setChatFocus(threadId)
     setChatOpen(true)
   }, [])
 
@@ -791,6 +795,8 @@ export function AppProvider({ children }) {
       setChatOpen,
       chatTab,
       setChatTab,
+      chatFocus,
+      setChatFocus,
       openChat,
       toast,
       showToast,
@@ -837,6 +843,7 @@ export function AppProvider({ children }) {
       chatOpen,
       chatTab,
       openChat,
+      chatFocus,
       toast,
       showToast,
       lang,

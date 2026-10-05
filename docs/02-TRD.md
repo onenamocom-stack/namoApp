@@ -634,6 +634,25 @@ traditions) keeps it as data rather than as an interface string.
 is its transliteration, and the `en` field is a rendering alongside, not a
 replacement.
 
+### Live sessions: one caller at a time, money exact — 5 Oct 2026
+
+The rules a busy consultant must survive, and where each is enforced. All of
+them are in Postgres, so they hold across any number of API instances.
+
+| Rule | Enforced by |
+|---|---|
+| One ringing request per consultant | Partial unique index `sessions_one_ringing_per_consultant` |
+| One live session per consultant | Partial unique index `sessions_one_live_per_consultant` |
+| Request and accept never interleave for one consultant | `SELECT … FOR UPDATE` on that consultant's row, taken first by both |
+| A double accept takes one hold | The session row lock, then a status check; a repeat accept returns the live session |
+| A call is billed only while both are in it | `started_at` set by compare-and-set when Daily's room-presence API lists both user ids |
+| A dead connect or a stale ring frees the consultant | Judged from timestamps under the consultant lock on every request/accept (`_tidy`) and every heartbeat — no scheduler needed |
+| One settle, one rule | The API's `end_session`; pg_cron calls `/v1/chat/sweep/` (pg_net, token header) instead of the SQL copy, which charged whole minutes |
+
+Lock order is always consultant → session → wallet, so no two transactions can
+wait on each other in a cycle. Asking costs nothing and a busy answer writes
+nothing, so the client retries freely. Different consultants never contend.
+
 ### Idempotency and retries
 
 Payment webhooks arrive more than once by design. Idempotency is a **unique index

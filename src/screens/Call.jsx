@@ -81,7 +81,8 @@ export default function Call() {
      a tab that was backgrounded for two minutes comes back with the
      right answer instead of one two minutes stale. */
   useEffect(() => {
-    if (!call?.ok) return undefined
+    // Nothing to count while the call connects — the clock has not started.
+    if (!call?.ok || !call.expiresAt) return undefined
     const tick = () => {
       const remaining = timeLeft(call.expiresAt)
       setLeft(remaining)
@@ -101,10 +102,44 @@ export default function Call() {
      is bounded by `expires_at` either way — but it is what lets the
      sweeper tell a closed tab from a quiet one. */
   useEffect(() => {
-    if (!call?.ok) return undefined
+    if (!call?.ok || !call.expiresAt) return undefined
     const beat = setInterval(() => heartbeat(id), 20_000)
     return () => clearInterval(beat)
   }, [call, id])
+
+  /* CONNECTING (5 Oct 2026). The money is held but the clock waits for
+     both of you to be in the room — the server checks the room's own list
+     of who is there on each of these beats, and starts the paid minutes
+     the moment both are. A call that does not connect in time ends here,
+     at ₹0, and says so. */
+  useEffect(() => {
+    if (!call?.ok || call.expiresAt) return undefined
+    let alive = true
+    const check = async () => {
+      const h = await heartbeat(id)
+      if (!alive || h?.unreachable) return
+      if (h?.live === false) {
+        alive = false
+        showToast(
+          h.never_connected
+            ? 'The call did not connect. Nothing was charged.'
+            : 'The call has ended.',
+        )
+        await refreshWallet(session?.user?.id)
+        navigate('/consult', { replace: true })
+        return
+      }
+      if (h?.connecting === false && h.expires_at) {
+        setCall((c) => ({ ...c, expiresAt: h.expires_at, connecting: false }))
+      }
+    }
+    check()
+    const timer = setInterval(check, 3000)
+    return () => {
+      alive = false
+      clearInterval(timer)
+    }
+  }, [call, id, navigate, refreshWallet, session, showToast])
 
   const finish = useCallback(async () => {
     if (leaving) return
@@ -121,7 +156,7 @@ export default function Call() {
 
   if (call === null) {
     return (
-      <div className="flex min-h-full animate-breathe items-center justify-center bg-ink">
+      <div className="full-bleed flex min-h-full animate-breathe items-center justify-center bg-ink">
         <p className="caps-sm on-ink">Opening the call</p>
       </div>
     )
@@ -132,7 +167,7 @@ export default function Call() {
      without pretending to know more. */
   if (!call.ok && call.retry) {
     return (
-      <div className="flex min-h-full animate-fade flex-col items-center justify-center bg-ink px-6 text-center">
+      <div className="full-bleed flex min-h-full animate-fade flex-col items-center justify-center bg-ink px-6 text-center">
         <span className="block h-2.5 w-2.5 animate-pulse rounded-full bg-live" />
         <p className="mt-6 text-lead font-semibold on-ink">Ringing</p>
         <p className="mt-3 max-w-measure text-meta text-white/60">
@@ -159,7 +194,7 @@ export default function Call() {
 
   if (!call.ok) {
     return (
-      <div className="flex min-h-full flex-col justify-center px-6 pb-10 text-center">
+      <div className="full-bleed flex min-h-full flex-col justify-center px-6 pb-10 text-center">
         <p className="text-micro uppercase tracking-caps text-t3">Not connected</p>
         <h1 className="mx-auto mt-5 max-w-[16ch] text-display font-semibold">
           The call did not open.
@@ -191,7 +226,7 @@ export default function Call() {
   }
 
   return (
-    <div className="relative h-full bg-ink">
+    <div className="full-bleed relative h-full bg-ink">
       <iframe
         title="Call"
         src={embedUrl(call)}
@@ -205,9 +240,17 @@ export default function Call() {
       <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/45 px-3 py-1.5 backdrop-blur-sm">
         <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
-          {left ?? '—'} left
+          {call.expiresAt ? `${left ?? '—'} left` : 'Connecting'}
         </span>
       </div>
+
+      {/* Said once, at the foot, while the call connects: the clock waits
+          for both of you, so nobody pays for a ringing screen. */}
+      {!call.expiresAt && (
+        <p className="pointer-events-none absolute inset-x-4 bottom-6 z-10 mx-auto max-w-xs rounded-full bg-black/55 px-4 py-2 text-center text-[12px] text-white backdrop-blur-sm">
+          Billing starts when you are both in the call.
+        </p>
+      )}
 
       {/* Leave is ours, not the frame's. Daily's own leave button closes
           a window; it does not stop a meter. */}
