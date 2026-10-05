@@ -5599,5 +5599,13 @@ not, and a call must ring the phone like a phone call.
 - **Keys.** Public VAPID key in settings (it is public); the private key
   is `VAPID_PRIVATE_KEY` on namo-api only — not in the repository.
 
+- **A chat request waits under its own screen** (owner, 6 Oct): no
+  "Ringing" — "Request sent to <name>", the reveal's saffron sky, the orbit
+  round their initials, a 45 s accept ring and rotating tips; busy reads
+  "<name> is guiding another seeker". `ChatWaiting` in `src/screens/Connect.jsx`.
+- **Masked phone calls** (asked): Daily can dial PSTN, but Indian rules let
+  only licensed operators bridge internet calls to phone numbers. Exotel or
+  Knowlarity is the route (AstroTalk's); needs the owner's account. Not built.
+
 Tests: 963. Not yet proven on a real phone — needs the API deploy with the
 private key, then a consultant turning Online once to allow notifications.

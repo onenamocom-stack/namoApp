@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { cancelRequest, listSessions, requestChat } from '../lib/chat.js'
 import { getConsultant } from '../lib/consultants.js'
 import { BackButton } from '../components/Chrome.jsx'
+import { Orbit, Stars } from '../components/Cosmos.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -38,6 +39,7 @@ export default function Connect() {
   const [message, setMessage] = useState(null)
   const [retryIn, setRetryIn] = useState(0)
   const sessionId = useRef(null)
+  const ringStart = useRef(null)
   const startedAt = useRef(Date.now())
   const alive = useRef(true)
 
@@ -73,6 +75,7 @@ export default function Connect() {
         navigate(`/call/${result.session_id}`, { replace: true })
         return
       }
+      ringStart.current = Date.now()
       setPhase('ringing')
       return
     }
@@ -143,6 +146,18 @@ export default function Connect() {
   }
 
   const name = who?.name ?? ''
+  if (via === 'chat' && phase !== 'done') {
+    return (
+      <ChatWaiting
+        name={name}
+        rate={who?.perMinute ? `₹${rupees(who.perMinute.price_paise)}/min` : ''}
+        phase={phase}
+        retryIn={retryIn}
+        ringStart={ringStart.current}
+        onCancel={phase === 'ringing' ? cancel : () => navigate(-1)}
+      />
+    )
+  }
   const what = via === 'chat' ? 'chat' : via === 'audio' ? 'audio call' : 'video call'
   const rate = who?.perMinute ? `₹${rupees(who.perMinute.price_paise)}/min` : ''
 
@@ -237,6 +252,124 @@ function Shell({ onBack, title }) {
 }
 
 function initials(name) {
+  return (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
+
+/* ── A chat request, waiting (6 Oct 2026) ─────────────────────────────────
+   A chat is not a phone call, so nothing here says "ringing". The seeker
+   sees the request travel to the astrologer under the app's own sky: the
+   saffron dusk of the kundli reveal, its stars, and the orbit turning
+   round the astrologer's initials, with the time they have left to accept
+   drawn as a ring. The chat opens by itself the moment they do. */
+const RING_FOR = 45 // seconds; apps/chat/services.py RING_SECONDS
+const TIPS = [
+  'Keep your question to one line — the clearest readings start from one.',
+  'Have your birth time ready if you know it.',
+  'Ask about one area at a time: career, marriage, health or money.',
+  'You pay only for the minutes you chat, from when they accept.',
+]
+
+function ChatWaiting({ name, rate, phase, retryIn, ringStart, onCancel }) {
+  const [now, setNow] = useState(Date.now())
+  const [tip, setTip] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250)
+    const u = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 4500)
+    return () => {
+      clearInterval(t)
+      clearInterval(u)
+    }
+  }, [])
+
+  const waited = ringStart ? (now - ringStart) / 1000 : 0
+  const left = Math.max(0, Math.ceil(RING_FOR - waited))
+  const share = phase === 'ringing' ? Math.min(1, waited / RING_FOR) : 0
+  const R = 92
+  const C = 2 * Math.PI * R
+
+  const title =
+    phase === 'busy'
+      ? `${name} is guiding another seeker`
+      : phase === 'ringing'
+        ? `Request sent to ${name}`
+        : `Reaching ${name}`
+  const sub =
+    phase === 'busy'
+      ? `We will send your request the moment they are free${retryIn > 0 ? ` — next try in ${retryIn}s` : '…'}`
+      : phase === 'ringing'
+        ? 'The chat opens by itself as soon as they accept.'
+        : 'One moment…'
+
+  return (
+    <div className="full-bleed cosmic-night relative flex min-h-full flex-col overflow-hidden">
+      <Stars />
+      <div className="relative z-10 px-4 pt-4">
+        <BackButton dark onClick={onCancel} />
+      </div>
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center">
+        <div className="relative flex h-[220px] w-[220px] items-center justify-center">
+          {/* The time they have to accept, as a ring that fills. */}
+          <svg viewBox="0 0 220 220" className="absolute inset-0 -rotate-90" aria-hidden="true">
+            <circle cx="110" cy="110" r={R} fill="none" stroke="rgba(255,255,255,.18)" strokeWidth="4" />
+            {phase === 'ringing' && (
+              <circle
+                cx="110"
+                cy="110"
+                r={R}
+                fill="none"
+                stroke="#ffe0c2"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={C}
+                strokeDashoffset={C * share}
+                style={{ transition: 'stroke-dashoffset .25s linear' }}
+              />
+            )}
+          </svg>
+          {/* Orbit sets its own `relative`, so it is centred by a layer of
+              its own rather than by an `absolute` class it would override. */}
+          <span className="absolute inset-0 flex items-center justify-center opacity-90">
+            <Orbit size={168} />
+          </span>
+          <span className="relative flex h-24 w-24 flex-none items-center justify-center rounded-full bg-white/15 text-title font-semibold text-white shadow-[0_0_40px_rgba(255,190,140,.45)] backdrop-blur-sm">
+            {initialsOf(name)}
+          </span>
+        </div>
+
+        <p className="mt-8 max-w-[22ch] text-lead font-semibold leading-snug text-white">{title}</p>
+        <p className="mt-2 max-w-measure text-meta text-white/80">{sub}</p>
+        <p className="mt-3 caps-sm text-white/60">
+          Chat{rate ? ` · ${rate}` : ''}
+          {phase === 'ringing' ? ` · ${left}s` : ''}
+        </p>
+
+        <p key={tip} className="mt-10 max-w-measure animate-fade text-meta italic text-white/85">
+          {TIPS[tip]}
+        </p>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-10 rounded-full border border-white/40 px-6 py-2.5 text-meta font-semibold text-white transition-colors hover:bg-white/10"
+        >
+          Cancel request
+        </button>
+        <p className="mt-3 text-micro text-white/60">Nothing is charged until they accept.</p>
+      </div>
+    </div>
+  )
+}
+
+function initialsOf(name) {
   return (name || '')
     .split(' ')
     .filter(Boolean)

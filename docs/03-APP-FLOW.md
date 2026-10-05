@@ -1031,7 +1031,9 @@ Refunds are a separate forward transition, never a mutation of the original.
 - **Busy** shows beside the consultant's name while a request rings for them or
   a session is live; it clears by itself when that ends.
 - **A chat** opens the chat panel on that conversation for both people; **a call**
-  opens the call screen. The consultant's request bar says Chat, Video call or
+  opens the call screen. While a chat request waits the seeker sees "Request
+  sent to <name>" under the saffron sky with the orbit and a 45-second ring —
+  never "Ringing", which is a call's word (6 Oct 2026). The consultant's request bar says Chat, Video call or
   Audio call, and its button says Accept or Answer.
 - **The call screen** reads "Connecting" until both are in, then the minutes left.
 - **History:** the chat panel's Consultant tab lists only people you have
