@@ -5462,7 +5462,22 @@ were. The per-category banner under the pills is removed, with its four
   five ledger rows, `ref_type` adjustment (−₹126.50, +₹20, +₹40, +₹37, +₹37), note
   "Owner request, 5 Oct 2026".
 
-## 53. Calls and chats rebuilt: one caller at a time, billing from connect — 5 Oct 2026 (built; not migrated, deployed or pushed)
+## 53. Calls and chats rebuilt: one caller at a time, billing from connect — 5 Oct 2026
+
+**Live since 6 Oct 00:15 IST**: `chat/0003` migrated, `namo-api-00075`
+(with `SWEEP_TOKEN`) and `namo-console-00015`, front end pushed, and
+pg_cron's `session-sweep` now POSTs to `/v1/chat/sweep/` through pg_net —
+verified: the 18:45 UTC run answered 200. `manage.py use_api_sweeper
+--revert` puts the SQL sweep back. Not yet walked with two real phones.
+
+**Deploy trap, cost an evening.** Two deploys (16:13 and 18:28 UTC, 5 Oct)
+ran `gcloud run deploy --source .` from the repo ROOT: buildpacks built the
+Vite site as a Node app, the container crashed ("Cannot find module
+/workspace/index.js") and Cloud Run kept the old revision — silently, for
+anyone who did not read the error. The next deploy from `backend-django`
+then refused with "Missing required argument [--clear-base-image]", because
+the failed Node builds had set a base image on both services. Deploy from
+`backend-django`, and pass `--clear-base-image` once.
 
 What the owner found testing: a call's minutes ran from Answer, before
 anyone was in the room; a chat request opened the consultant's camera;
