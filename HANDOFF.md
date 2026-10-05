@@ -5500,7 +5500,10 @@ Built (design: `docs/02-TRD.md` "Live sessions", state machine
   Sessions tab lists calls and chats with cost; Alerts shows an unread
   count; Find a consultant closes the panel and goes to Consult. Alerts older
   than 183 days are deleted by the sweep.
-- **Pooja** is under the tab bar again, with the deities as pills in its header.
+- **Pooja** is under the tab bar again (owner's request). Atharv's marble-
+  mandir redesign of the same evening is the screen; only the route moved
+  into the tab layout, and `main:has(.darshan)` no longer cancels the nav's
+  56px.
 
 Tests: 947 (new: `test_session_engine.py`, `test_session_scenarios.py` — the
 two-caller race, never-connected refunds, busy, a full video call by HTTP).

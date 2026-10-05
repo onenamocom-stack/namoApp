@@ -306,13 +306,10 @@ export default function Pooja() {
   return (
     /* relative, because the murti sheet is absolute against this screen
        rather than against the phone frame, so it covers the shrine and not
-       the whole app. It used to be phrased as "should not cover the tab
-       bar"; there is no tab bar here since the shrine moved to `/darshan`
-       on 9 Sep 2026, but the containment is still what we want.
-
-       `h-full` needs `.darshan` on the scroller — see index.css. Every other
-       screen reserves 56px at the bottom for the nav, and this route has no
-       nav to reserve for. */
+       the whole app — and does not cover the tab bar, which is under the
+       shrine again since 5 Oct 2026 (owner's request; it was off the tab bar
+       from 9 Sep). `h-full` is the scroller's content box, which already
+       stops 56px short of the bottom for the nav. */
     <div className="darshan relative flex h-full flex-col">
       {/* ── The shrine is the whole page ─────────────────────────────── */}
       {/* Image scaling: `object-scale-down` by default keeps the whole murti,
