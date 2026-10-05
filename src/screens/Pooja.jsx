@@ -308,7 +308,7 @@ export default function Pooja() {
           which fills the box and crops edges. The crop position is optimized
           for each device height. */}
       <section
-        className="relative min-h-0 flex-1 touch-none overflow-hidden bg-[#e4ddd1]"
+        className="relative min-h-0 flex-1 touch-none overflow-hidden bg-[#e4ddd1] [container-type:inline-size]"
         onPointerDown={startSwipe}
         onPointerUp={endSwipe}
         onPointerCancel={() => (swipe.current = null)}
@@ -360,8 +360,8 @@ export default function Pooja() {
           ))}
         </span>
 
-        {/* The temple doorway around the murti (5 Oct 2026). Under the
-            controls, over the image and the falling flowers' edges. */}
+        {/* The carved mandir doorway around the murti (5 Oct 2026). Under
+            the controls, over the image and the falling flowers. */}
         <TempleFrame />
 
         <HangingBell side="left" ringing={ringing} />

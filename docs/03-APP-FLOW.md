@@ -407,9 +407,12 @@ from "Indian Temple Bell" by ganiket (Freesound #466652, CC0) on 5 Oct 2026 — 
 synthesised bell before it did not sound like one.
 
 **The shrine stands in a temple doorway** (5 Oct 2026, `TempleFrame` in
-`PujaProps.jsx`): brass pillars, a lintel with a lotus, a scalloped arch, a
-marigold toran, and a threshold the diyas and thali stand on. The controls sit
-just inside the pillars; the bells hang from the lintel. Flowers fall as whole
+`PujaProps.jsx`): a photograph of a carved sandstone mandir doorway
+(`public/puja/mandir-frame.webp`, doors cut out) with jambs, a scalloped arch,
+and the first step the diyas and thali stand on. It is laid on as a CSS
+border-image sized in `cqw`, so the arch scales with the shrine's width and only
+the jambs tile to its height. It replaced a drawn SVG frame the owner called
+"AI created". The bells hang from the arch. Flowers fall as whole
 genda phool. The thali no longer spins on the spot: a tap begins or ends the
 aarti, and it only circles in front of the murti. A knob opens the murti picker,
 which is **the only place the image attribution appears** and therefore cannot
