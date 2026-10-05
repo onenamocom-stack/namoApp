@@ -5503,7 +5503,10 @@ Built (design: `docs/02-TRD.md` "Live sessions", state machine
 - **Pooja** is under the tab bar again (owner's request). Atharv's marble-
   mandir redesign of the same evening is the screen; only the route moved
   into the tab layout, and `main:has(.darshan)` no longer cancels the nav's
-  56px.
+  56px. On 6 Oct the marble is drawn at 75% (`FRAME_SCALE` in
+  `PujaProps.jsx` — every frame measure goes through `frameCqw`, so the
+  bells and nameplate move with it) and the murti is `object-contain`, so it
+  grows to fill the larger doorway (owner's request).
 
 Tests: 947 (new: `test_session_engine.py`, `test_session_scenarios.py` — the
 two-caller race, never-connected refunds, busy, a full video call by HTTP).

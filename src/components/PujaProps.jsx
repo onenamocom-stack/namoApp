@@ -341,7 +341,12 @@ const FRAME_SRC = {
   bottom: 225, // threshold and steps
   apex: 567, // the top of the doorway, under the arch's crown
 }
-export const frameCqw = (px) => `${((px / FRAME_SRC.w) * 100).toFixed(3)}cqw`
+// The marble is drawn at three-quarters of the page's width-scale (6 Oct
+// 2026, owner's request: "the mandir a little smaller, the deity bigger").
+// Every frame measure — the border, the doorway, the bells, the nameplate —
+// goes through this one function, so they shrink together and stay aligned.
+const FRAME_SCALE = 0.75
+export const frameCqw = (px) => `${((px / FRAME_SRC.w) * 100 * FRAME_SCALE).toFixed(3)}cqw`
 
 /* The doorway itself, as absolute insets: the murti and its light go here. */
 export const FRAME_OPENING = {

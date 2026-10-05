@@ -312,8 +312,10 @@ export default function Pooja() {
        stops 56px short of the bottom for the nav. */
     <div className="darshan relative flex h-full flex-col">
       {/* ── The shrine is the whole page ─────────────────────────────── */}
-      {/* Image scaling: `object-scale-down` by default keeps the whole murti,
-          letterboxed inside the doorway on the sanctum's lamp-lit dark.
+      {/* Image scaling: `object-contain` by default keeps the whole murti and
+          lets it grow to fill the doorway (6 Oct 2026; `object-scale-down`
+          never drew a picture larger than its file, so small murtis sat
+          small in a big doorway).
           `setting:croppedDeityImage` (Profile → Settings) opts into `cover`,
           which fills the doorway and crops the painting's edges. */}
       <section
@@ -330,7 +332,7 @@ export default function Pooja() {
             key={image.f}
             src={`${import.meta.env.BASE_URL}deities/${image.f}`}
             alt={`${deity.name} — ${image.label}`}
-            className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-scale-down' : 'object-cover'}`}
+            className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-contain' : 'object-cover'}`}
             style={{ objectPosition: fullImage ? '50% 70%' : '50% 32%' }}
           />
         </span>
