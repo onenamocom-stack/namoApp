@@ -99,7 +99,8 @@ class TestAVideoCallStory:
         # Both join the room. Only the consultant is in at first.
         for who in ("seeker", "pro"):
             j = people["post"](who, f"/v1/video/sessions/{sid}/join/")
-            assert j["ok"] and j["connecting"] is True and j["expires_at"] is None
+            # A provisional end, never empty — old apps hung up on an empty one.
+            assert j["ok"] and j["connecting"] is True and j["expires_at"]
         daily["present"] = {_id(PRO)}
         hb = people["post"]("seeker", f"/v1/chat/sessions/{sid}/heartbeat/")
         assert hb["connecting"] is True and hb["seconds_left"] is None

@@ -82,7 +82,9 @@ export default function Call() {
      right answer instead of one two minutes stale. */
   useEffect(() => {
     // Nothing to count while the call connects — the clock has not started.
-    if (!call?.ok || !call.expiresAt) return undefined
+    // `connecting`, not an empty end: the server sends a provisional end
+    // then, so a phone still on an older build cannot read it as 0:00.
+    if (!call?.ok || call.connecting || !call.expiresAt) return undefined
     const tick = () => {
       const remaining = timeLeft(call.expiresAt)
       setLeft(remaining)
@@ -102,7 +104,7 @@ export default function Call() {
      is bounded by `expires_at` either way — but it is what lets the
      sweeper tell a closed tab from a quiet one. */
   useEffect(() => {
-    if (!call?.ok || !call.expiresAt) return undefined
+    if (!call?.ok || call.connecting) return undefined
     const beat = setInterval(() => heartbeat(id), 20_000)
     return () => clearInterval(beat)
   }, [call, id])
@@ -113,7 +115,7 @@ export default function Call() {
      the moment both are. A call that does not connect in time ends here,
      at ₹0, and says so. */
   useEffect(() => {
-    if (!call?.ok || call.expiresAt) return undefined
+    if (!call?.ok || !call.connecting) return undefined
     let alive = true
     const check = async () => {
       const h = await heartbeat(id)
@@ -240,13 +242,13 @@ export default function Call() {
       <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/45 px-3 py-1.5 backdrop-blur-sm">
         <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
-          {call.expiresAt ? `${left ?? '—'} left` : 'Connecting'}
+          {call.connecting ? 'Connecting' : `${left ?? '—'} left`}
         </span>
       </div>
 
       {/* Said once, at the foot, while the call connects: the clock waits
           for both of you, so nobody pays for a ringing screen. */}
-      {!call.expiresAt && (
+      {call.connecting && (
         <p className="pointer-events-none absolute inset-x-4 bottom-6 z-10 mx-auto max-w-xs rounded-full bg-black/55 px-4 py-2 text-center text-[12px] text-white backdrop-blur-sm">
           Billing starts when you are both in the call.
         </p>

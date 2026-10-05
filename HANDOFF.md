@@ -5562,6 +5562,15 @@ was charged (each hold refunded whole). Two fixes:
   "already exists", refused for a retry. It now reads the existing room.
   Needs an API deploy.
 
+**Still hanging up, 6 Oct 01:00** — same cause, a seeker phone that had
+not reloaded (its tab never sent a connecting heartbeat and called End on
+its first successful join), while the auto-reload build sat in GitHub's
+Pages queue for an hour. Made the server immune to old builds: a join
+while connecting now returns the ROOM's end as `expires_at` (never null)
+with `connecting: true`; current apps read `connecting`, old ones see a
+future end and do not hang up. Billing is unchanged — it waits for
+`started_at`.
+
 Also: Consult's free-tool circles are full colour with white icons
 (`toolStyle` in `src/lib/tiles.js`), owner's "these look dull".
 

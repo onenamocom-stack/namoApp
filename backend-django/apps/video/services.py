@@ -153,9 +153,13 @@ def join(actor_id, session_id, now=None):
         # read from the session, never from the room — the room's own
         # `exp` is a copy, and two clocks disagreeing over somebody's
         # money is the complaint this product already avoided once.
-        # Empty while the call connects: the countdown has nothing to count
-        # until the clock starts, and the heartbeat says when it does.
-        "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+        # While the call connects this is the ROOM's end (connect window +
+        # every minute held), never empty. An app loaded before 5 Oct read an
+        # empty end as "0:00 left" and hung up the call it had just joined;
+        # a phone that has not reloaded must not be able to do that. The
+        # money is unaffected: billing waits for `started_at`, and current
+        # apps read `connecting`, not this, to know the clock has not begun.
+        "expires_at": (session.expires_at or room_until).isoformat(),
         "connecting": session.started_at is None,
         "is_owner": is_consultant,
     }
