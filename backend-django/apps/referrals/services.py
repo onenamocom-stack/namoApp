@@ -203,20 +203,45 @@ def claim_signup(referee_id, code, now=None):
 def _notify_referrer(referral, grant):
     """Tell the person whose code it was. Written in the same transaction
     as nothing — a notification that fails must not undo a referral that
-    succeeded, so this is deliberately outside the atomic block above."""
+    succeeded, so this is deliberately outside the atomic block above.
+
+    It names who joined (owner's request, 5 Oct 2026): "Someone" told the
+    referrer nothing they could act on. A sign-up that claims before the
+    name is saved is named by the last digits of their number instead.
+    """
     from apps.notifications import services as notify
+    from apps.profiles.models import Profile
+
+    who = Profile.objects.filter(pk=referral.referee_id).values("name", "phone").first() or {}
+    name = (who.get("name") or "").strip()
+    if not name:
+        digits = "".join(ch for ch in (who.get("phone") or "") if ch.isdigit())
+        name = f"A new member (number ending {digits[-4:]})" if len(digits) >= 4 else "A new member"
+
+    if grant.get("until"):
+        until = _day(grant["until"])
+        perk = (f"You both get {grant['daily']} free questions a day with Namo AI, "
+                f"from tomorrow until {until}.")
+    else:
+        perk = (f"You both get {grant['daily']} free questions a day with Namo AI "
+                f"for {grant['days']} days, once your welcome questions are used.")
 
     notify.push(
         referral.referrer_id,
         kind="referral.signup",
-        title="Someone joined with your code",
-        body=(
-            f"You both get {grant['daily']} free questions a day with Namo AI, "
-            f"starting tomorrow, until {grant['until']}."
-        ),
+        title=f"{name} joined with your code",
+        body=perk,
         ref_type="referral",
         ref_id=str(referral.id),
     )
+
+
+def _day(iso):
+    """2026-10-06 → 6 Oct. A date a person reads, not a database's."""
+    from datetime import date
+
+    d = date.fromisoformat(str(iso)[:10])
+    return f"{d.day} {d.strftime('%b')}"
 
 
 REFUSAL_CONSULTANT_LINK_NOT_YOURS = (

@@ -155,6 +155,20 @@ class TestSignupReferral:
         assert note.kind == "referral.signup"
         assert "3 free questions a day" in note.body
 
+    def test_the_alert_names_who_joined(self, people):
+        """Owner's request, 5 Oct 2026: never "Someone"."""
+        name = Profile.objects.get(pk=FRIEND).name
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        note = Notification.objects.get(profile_id=BUYER)
+        assert note.title == f"{name} joined with your code"
+        assert "None" not in note.body
+
+    def test_no_name_yet_is_named_by_the_number(self, people):
+        Profile.objects.filter(pk=FRIEND).update(name="", phone="919876504861")
+        services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
+        note = Notification.objects.get(profile_id=BUYER)
+        assert note.title == "A new member (number ending 4861) joined with your code"
+
     def test_a_signup_referral_pays_no_money_at_all(self, people):
         services.claim_signup(FRIEND, _code(BUYER, ReferralCode.Kind.SEEKER))
         assert Cashback.objects.count() == 0

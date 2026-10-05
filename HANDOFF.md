@@ -5344,3 +5344,15 @@ Raghu. Only the author changed.
 A JSON backup of every touched row is in the session scratchpad
 (`fake-users-backup-2026-10-05.json`), not in the repository — it holds
 phone numbers.
+
+## 45. The referral alert names who joined — 5 Oct 2026 (pushed, needs an API deploy)
+
+"Someone joined with your code" now reads "Vidhi joined with your code".
+A sign-up that claims before a name is saved (the older `VerifyOtp.jsx`
+path) is named "A new member (number ending 4861)". The end date reads
+"6 Oct", and a referee still on the welcome questions no longer gets an
+alert ending "until None". `apps/referrals/services.py::_notify_referrer`.
+
+The three alerts on Test Seeker ending "until 2075-…" are rows written by
+the 25 Sep referral tests, not a live bug; the real 3 Oct referral says
+2026-10-06. Old alerts keep their old text.
