@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "project-5e5df107-b8f8-4649-9d1"
+  },
+  "targets": {
+    "project-5e5df107-b8f8-4649-9d1": {
+      "hosting": {
+        "web": [
+          "namo-web"
+        ],
+        "pro": [
+          "namo-pro"
+        ]
+      }
+    }
+  }
+}
