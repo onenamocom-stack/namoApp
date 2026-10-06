@@ -117,8 +117,13 @@ export async function fetchProduct(key) {
       seoDescription: row.seo_description || '',
     }
   } catch (err) {
-    if (err.status === 404) return null
-    throw err
+    if (err.status !== 404) throw err
+    /* Not found — or an API from before this endpoint existed (the app
+       and the API deploy separately). Look in the catalogue, so a card
+       still opens a page with what the list knows. */
+    const all = await fetchProducts()
+    const hit = all.find((p) => p.id === key || p.slug === key)
+    return hit ? { ...hit, description: '', faq: [], seoTitle: hit.name, seoDescription: hit.subtitle || '' } : null
   }
 }
 
