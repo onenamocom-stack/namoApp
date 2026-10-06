@@ -114,15 +114,27 @@ def delete_address(profile_id, address_id):
 
 
 def lookup_pincode(pincode):
+    """{city, state, areas} for a pincode, or None. India Post first (no
+    sign-in, and it lists the areas), Shiprocket when India Post does not
+    answer. Cached a day: a pincode's district does not move."""
+    from django.core.cache import cache
+
     if not PINCODE.match(pincode or ""):
         return None
-    place = None
-    if shiprocket.is_configured():
+    key = f"pincode:{pincode}"
+    cached = cache.get(key)
+    if cached:
+        return cached
+    place = shiprocket.india_post(pincode)
+    if place is None and shiprocket.is_configured():
         try:
             place = shiprocket.pincode_details(pincode)
         except shiprocket.ShiprocketError:
             place = None
-    return place or shiprocket.india_post(pincode)
+    if place:
+        place.setdefault("areas", [])
+        cache.set(key, place, 24 * 3600)
+    return place
 
 
 # ── the quote ──────────────────────────────────────────────────────────────
@@ -147,7 +159,11 @@ def make_quote(profile_id, address_id, lines):
     weight = cart_weight(lines)
     try:
         found = shiprocket.quote(address.pincode, weight)
-    except shiprocket.ShiprocketError:
+    except shiprocket.ShiprocketError as exc:
+        # Said in the log, not only to the seeker: "could not reach" hid a
+        # refused sign-in for a day (6 Oct 2026). The message has no
+        # credentials in it — shiprocket.py never echoes their body.
+        logger.error("[delivery] quote failed: %s", exc)
         return {"ok": False, "reason": UNREACHABLE}
     if found is None:
         return {"ok": False, "reason": NOT_SERVED}

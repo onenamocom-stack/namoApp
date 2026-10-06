@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { deleteAddress, deliveryQuote, fetchAddresses, lookupPincode, saveAddress } from '../lib/shop.js'
 import { rupees } from '../store.jsx'
 import { PopButton } from './Pop.jsx'
@@ -200,13 +200,32 @@ function AddressForm({ onSaved, onCancel, canCancel }) {
   const [error, setError] = useState(null)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  // Six digits in, city and state out. Typed ones are never overwritten.
+  /* The pincode comes first and fills the rest (6 Oct 2026): six digits in,
+     city and state filled, and the areas that pincode covers offered as
+     one-tap choices for "Area". A city or state the person typed is never
+     overwritten; one this form filled follows a changed pincode. */
+  const [lookup, setLookup] = useState({ state: 'idle', areas: [] })
+  const filled = useRef({ city: '', state: '' })
   useEffect(() => {
-    if (!/^[1-9][0-9]{5}$/.test(form.pincode)) return
+    if (!/^[1-9][0-9]{5}$/.test(form.pincode)) {
+      setLookup({ state: 'idle', areas: [] })
+      return undefined
+    }
     let live = true
+    setLookup({ state: 'finding', areas: [] })
     lookupPincode(form.pincode).then((place) => {
-      if (!live || !place) return
-      setForm((f) => ({ ...f, city: f.city || place.city, state: f.state || place.state }))
+      if (!live) return
+      if (!place) {
+        setLookup({ state: 'unknown', areas: [] })
+        return
+      }
+      setForm((f) => {
+        const city = !f.city || f.city === filled.current.city ? place.city : f.city
+        const state = !f.state || f.state === filled.current.state ? place.state : f.state
+        filled.current = { city: place.city, state: place.state }
+        return { ...f, city, state }
+      })
+      setLookup({ state: 'found', areas: place.areas ?? [], where: `${place.city}, ${place.state}` })
     })
     return () => {
       live = false
@@ -239,14 +258,22 @@ function AddressForm({ onSaved, onCancel, canCancel }) {
         autoComplete="tel"
         placeholder="The courier calls this"
       />
-      <Field
-        label="Pincode"
-        required
-        value={form.pincode}
-        onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
-        inputMode="numeric"
-        autoComplete="postal-code"
-      />
+      <div>
+        <Field
+          label="Pincode"
+          required
+          value={form.pincode}
+          onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          placeholder="6 digits — city and state fill in"
+        />
+        {lookup.state === 'finding' && <p className="mt-1.5 text-micro t-faint">Finding your area…</p>}
+        {lookup.state === 'found' && <p className="mt-1.5 text-micro text-ok">✓ {lookup.where}</p>}
+        {lookup.state === 'unknown' && (
+          <p className="mt-1.5 text-micro t-faint">Pincode not found. Type the city and state below.</p>
+        )}
+      </div>
       <Field
         label="House, flat, street"
         required
@@ -254,7 +281,23 @@ function AddressForm({ onSaved, onCancel, canCancel }) {
         onChange={set('line1')}
         autoComplete="address-line1"
       />
-      <Field label="Area, landmark" value={form.line2} onChange={set('line2')} autoComplete="address-line2" />
+      <div>
+        <Field label="Area, landmark" value={form.line2} onChange={set('line2')} autoComplete="address-line2" />
+        {lookup.areas.length > 0 && (
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
+            {lookup.areas.map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, line2: f.line2 && !lookup.areas.includes(f.line2) ? `${f.line2}, ${a}` : a }))}
+                className={`pill flex-none text-[12px] ${form.line2 === a ? 'border-gold-fill' : ''}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="City" required value={form.city} onChange={set('city')} autoComplete="address-level2" />
         <Field label="State" required value={form.state} onChange={set('state')} autoComplete="address-level1" />

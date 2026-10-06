@@ -247,18 +247,27 @@ def pincode_details(pincode):
 
 
 def india_post(pincode):
-    """{city, state} from India Post's public pincode directory — the
-    fallback when Shiprocket knows nothing. The district is what it calls
-    the city ("Gautam Buddha Nagar" for Noida), which the seeker can edit."""
+    """{city, state, areas} from India Post's public pincode directory —
+    asked FIRST since 6 Oct 2026: it needs no sign-in, so a Shiprocket
+    account problem cannot slow the form, and it names the localities the
+    pincode covers ("Crossing Republik"), which the form offers for "Area".
+    The district is what it calls the city ("Gautam Buddha Nagar" for
+    Noida), which the seeker can edit."""
     try:
-        response = requests.get(f"https://api.postalpincode.in/pincode/{pincode}", timeout=8)
+        response = requests.get(f"https://api.postalpincode.in/pincode/{pincode}", timeout=6)
         rows = response.json()
-        office = ((rows or [{}])[0].get("PostOffice") or [{}])[0]
+        offices = (rows or [{}])[0].get("PostOffice") or []
     except (requests.RequestException, ValueError, AttributeError, IndexError, TypeError):
         return None
-    if not office.get("District"):
+    first = offices[0] if offices else {}
+    if not first.get("District"):
         return None
-    return {"city": office.get("District") or "", "state": office.get("State") or ""}
+    areas = []
+    for office in offices:
+        name = (office.get("Name") or "").strip()
+        if name and name not in areas:
+            areas.append(name)
+    return {"city": first.get("District") or "", "state": first.get("State") or "", "areas": areas[:12]}
 
 
 def check():

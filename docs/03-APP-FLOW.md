@@ -934,8 +934,13 @@ same day. **Ask AI left the panel on 30 Sep
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.
 Under the lines sits **Deliver to**: the saved addresses (the last one chosen
-is preselected) or, when there are none, the address form — a six-digit
-pincode fills city and state. Choosing an address asks the server for the
+is preselected) or, when there are none, the address form — the pincode
+first: six digits fill city and state (a typed one is never overwritten), say
+"✓ Ghaziabad, Uttar Pradesh" or that it was not found, and offer the areas
+that pincode covers as one-tap choices for "Area, landmark" (India Post's
+directory, then Shiprocket's; 6 Oct 2026). The quantity steppers are drawn
+− and + centred in their circles. **Clear asks first** — "Clear your cart?",
+Keep items or Clear cart — since one tap emptied a built cart. Choosing an address asks the server for the
 delivery charge; the sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
 Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online

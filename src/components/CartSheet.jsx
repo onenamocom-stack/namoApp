@@ -15,6 +15,21 @@ import { rupees, useStore } from '../store.jsx'
  * items, so the total is computed rather than typed and checkout can actually
  * draw against the wallet.
  */
+/* The quantity steppers (6 Oct 2026): drawn, not typed. A "−" and a "+"
+   set as text sat left of centre — the caps letter-spacing and the glyphs'
+   own side bearings — so each is two strokes centred in the circle. */
+const STEP =
+  'inline-flex h-8 w-8 flex-none items-center justify-center rounded-full border border-stroke bg-surface shadow-sm t-body transition-transform active:scale-90'
+
+function StepIcon({ plus = false }) {
+  return (
+    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <line x1="2" y1="6" x2="10" y2="6" />
+      {plus && <line x1="6" y1="2" x2="6" y2="10" />}
+    </svg>
+  )
+}
+
 export default function CartSheet() {
   const {
     cartOpen,
@@ -39,6 +54,8 @@ export default function CartSheet() {
      from the server. Pay waits for it — a parcel needs somewhere to go,
      and the total on the button must be the total charged. */
   const [delivery, setDelivery] = useState(null)
+  // Clear asks first (6 Oct 2026): one tap emptied a cart somebody built.
+  const [confirmClear, setConfirmClear] = useState(false)
   const [nonce, setNonce] = useState(0)
   /* How it is paid (6 Oct 2026): online — Razorpay's checkout for this
      order, UPI, card or netbanking; the wallet is for chat, not the shop —
@@ -106,18 +123,18 @@ export default function CartSheet() {
                     type="button"
                     onClick={() => setQty(l.id, l.qty - 1)}
                     aria-label={`Fewer ${l.name}`}
-                    className="caps-sm h-8 w-8 rounded-full border border-stroke bg-surface shadow-sm t-body transition-transform active:scale-90"
+                    className={STEP}
                   >
-                    −
+                    <StepIcon />
                   </button>
                   <span className="w-5 text-center text-meta tnum t-heading">{l.qty}</span>
                   <button
                     type="button"
                     onClick={() => setQty(l.id, l.qty + 1)}
                     aria-label={`More ${l.name}`}
-                    className="caps-sm h-8 w-8 rounded-full border border-stroke bg-surface shadow-sm t-body transition-transform active:scale-90"
+                    className={STEP}
                   >
-                    +
+                    <StepIcon plus />
                   </button>
                 </div>
 
@@ -222,8 +239,33 @@ export default function CartSheet() {
             />
           </div>
 
+          {confirmClear && (
+            <div role="alertdialog" aria-label="Clear the cart?" className="mt-5 rounded-2xl border border-live/40 bg-live/5 p-4">
+              <p className="text-meta font-semibold t-heading">Clear your cart?</p>
+              <p className="mt-1 text-meta t-sub">
+                {cart.length === 1 ? 'The item is removed.' : `All ${cart.length} items are removed.`} Nothing has been
+                charged.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <PopButton size="sm" onClick={() => setConfirmClear(false)} className="flex-1" full={false}>
+                  Keep items
+                </PopButton>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearCart()
+                    setConfirmClear(false)
+                  }}
+                  className="flex-1 rounded-xl border-2 border-live bg-white px-3 py-2 caps-sm text-live transition-transform active:scale-95"
+                >
+                  Clear cart
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5 flex gap-2">
-            <PopButton size="sm" onClick={clearCart}>
+            <PopButton size="sm" onClick={() => setConfirmClear(true)} disabled={confirmClear}>
               Clear
             </PopButton>
             {/* The amount is ON the button. A button that says only "Pay"

@@ -317,18 +317,31 @@ class TestWebhook:
 
 
 class TestPincode:
-    def test_shiprocket_city_is_read_loosely(self, db):
-        with mock.patch("apps.shop.shiprocket._call",
-                        return_value={"success": True, "postcode_details": {"city": "Noida", "state": "Uttar Pradesh"}}):
-            assert delivery.lookup_pincode("201301") == {"city": "Noida", "state": "Uttar Pradesh"}
-
-    def test_india_post_fills_in_when_shiprocket_has_nothing(self, db):
+    def test_india_post_first_with_the_areas(self, db):
+        """India Post is asked first since 6 Oct 2026 — no sign-in, and it
+        lists the localities — and Shiprocket is not asked at all."""
+        cache.clear()
         post = mock.Mock()
         post.json.return_value = [{"Status": "Success", "PostOffice": [
-            {"District": "Gautam Buddha Nagar", "State": "Uttar Pradesh"}]}]
-        with mock.patch("apps.shop.shiprocket._call", return_value={"success": True}), \
-             mock.patch("apps.shop.shiprocket.requests.get", return_value=post):
-            assert delivery.lookup_pincode("201301") == {"city": "Gautam Buddha Nagar", "state": "Uttar Pradesh"}
+            {"Name": "Crossing Republik", "District": "Ghaziabad", "State": "Uttar Pradesh"},
+            {"Name": "Vijay Nagar", "District": "Ghaziabad", "State": "Uttar Pradesh"}]}]
+        with mock.patch("apps.shop.shiprocket.requests.get", return_value=post),              mock.patch("apps.shop.shiprocket._call") as call:
+            got = delivery.lookup_pincode("201016")
+        assert got == {"city": "Ghaziabad", "state": "Uttar Pradesh",
+                       "areas": ["Crossing Republik", "Vijay Nagar"]}
+        call.assert_not_called()
+        # Cached: a second lookup asks nobody.
+        with mock.patch("apps.shop.shiprocket.requests.get") as again:
+            assert delivery.lookup_pincode("201016")["city"] == "Ghaziabad"
+        again.assert_not_called()
+
+    def test_shiprocket_when_india_post_is_down(self, db):
+        import requests as http
+
+        cache.clear()
+        with mock.patch("apps.shop.shiprocket.requests.get", side_effect=http.ConnectionError()),              mock.patch("apps.shop.shiprocket._call",
+                        return_value={"success": True, "postcode_details": {"city": "Noida", "state": "Uttar Pradesh"}}):
+            assert delivery.lookup_pincode("201301") == {"city": "Noida", "state": "Uttar Pradesh", "areas": []}
 
     def test_a_bad_pincode_asks_nobody(self, db):
         with mock.patch("apps.shop.shiprocket._call") as call:

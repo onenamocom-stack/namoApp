@@ -5902,3 +5902,17 @@ link should come with its image and full name.
 - Open: a signed-out visitor following a product or blog link lands on
   onboarding, not the page — the app requires sign-in everywhere.
 
+## 64. The cart, 6 Oct afternoon: courier error, pincode, Clear, steppers
+
+- **"Could not reach the courier service" — cause found, owner to fix.**
+  Shiprocket answers the API user's sign-in (`support@1namo.com`, password
+  set on namo-api) with **403**, not the 400 a wrong password gets: the API
+  user's **Allowed IPs** is set, and Cloud Run has no fixed outgoing IP.
+  Fix: Shiprocket → Settings → API → the API user → clear Allowed IPs. Until
+  then no quote, so no order, online or COD. The quote's failure reason is
+  now logged (`[delivery] quote failed: …`).
+- **Pincode** (`DeliveryStep.jsx`, `delivery.lookup_pincode`): India Post
+  first (no sign-in; lists the areas), Shiprocket second, cached a day;
+  the form says what it found and offers the areas as chips. Tests updated.
+- **Clear** asks first; the − / + are drawn and centred (measured 0 px off).
+
