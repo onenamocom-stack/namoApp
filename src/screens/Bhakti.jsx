@@ -7,7 +7,6 @@ import { createPortal } from 'react-dom'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard } from '../components/Pop.jsx'
-import { Search } from '../components/Primitives.jsx'
 import {
   composeStatus,
   download,
@@ -184,15 +183,10 @@ export default function Bhakti() {
     <>
       {/* No "Bhakti" tag in the header since 30 Sep — the tab bar already
           names the screen. Search leads, above the tiles (owner's call). */}
-      {/* Bhakti searches its own aartis and mantras, below; a second box in
-          the header would be two searches on one screen. */}
-      <TabHeader search={false} />
-
-      <Search
-        value={query}
-        onChange={setQuery}
-        placeholder={`Search ${meta ? meta.label.toLowerCase() : 'bhakti'}`}
-        label="Search bhakti"
+      {/* Bhakti's search is the header's box (6 Oct 2026, Rahul): a field
+          that filters this library as you type, not a row of its own. */}
+      <TabHeader
+        search={{ value: query, onChange: setQuery, placeholder: `Search ${meta ? meta.label.toLowerCase() : 'bhakti'}` }}
       />
 
       {/* Circle tiles, not a segmented control — same grammar as Consult's

@@ -505,8 +505,8 @@ product's page — they were `mock.js` products.
 The box sits **in the header** between the mark and the wallet on Home, Shop
 and Consult (Rahul's design: no tab spends a row on search). It opens
 `/search` on that tab's kind — Shop on Products, Consult on Astrologers.
-Bhakti keeps its own library search and shows no header box; the consultant
-app has none. Shop's cart moved into the header's action slot. Topic words
+On Bhakti the header's box is a real field that filters the library as you
+type (its row is gone too); the consultant app has none. Shop's cart moved into the header's action slot. Topic words
 match in both scripts — "shani" finds शनि, "kundli" finds कुंडली — from a
 list of about thirty astrology topics.
 

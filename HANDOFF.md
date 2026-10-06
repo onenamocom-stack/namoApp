@@ -5956,4 +5956,6 @@ link should come with its image and full name.
   were required by the model's NOT NULL columns, so an upload alone never
   saved. The form now takes an upload or a link; Source is optional
   (`apps/bhakti/admin.py`, 2 tests). Console deployed.
+- **Bhakti's search** moved into the header too (Rahul): `TabHeader`'s
+  `search` takes `{value, onChange, placeholder}` for an in-bar field.
 

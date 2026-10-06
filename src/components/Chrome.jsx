@@ -147,6 +147,9 @@ export function BottomNav({ tabs = TABS }) {
    thing, or everything. */
 const SEARCH_SCOPE = { '/shop': 'products', '/consult': 'people' }
 
+/* `search`: true (a box that opens /search), false (none), or
+   {value, onChange, placeholder} — a real field in the bar that filters the
+   screen below as you type (Bhakti's library, 6 Oct 2026). */
 export function TabHeader({ action = null, search = true }) {
   const { openChat, me, t, balance, lang } = useStore()
   const { pathname } = useLocation()
@@ -173,7 +176,23 @@ export function TabHeader({ action = null, search = true }) {
           gap between the mark and the knobs, so no tab spends a row on a
           search field. A button — it opens /search, starting on this tab's
           own kind of thing. The consultant app has no search. */}
-      {search && !isPro ? (
+      {search && typeof search === 'object' ? (
+        <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-stroke bg-surface-2 px-3 text-meta focus-within:border-gold">
+          <span aria-hidden="true" className="flex-none t-faint">⌕</span>
+          <input
+            value={search.value}
+            onChange={(e) => search.onChange(e.target.value)}
+            placeholder={search.placeholder || 'Search'}
+            aria-label={search.placeholder || 'Search'}
+            className="min-w-0 flex-1 bg-transparent t-heading outline-none placeholder:text-t4"
+          />
+          {search.value && (
+            <button type="button" aria-label="Clear search" onClick={() => search.onChange('')} className="flex-none t-faint">
+              ✕
+            </button>
+          )}
+        </label>
+      ) : search && !isPro ? (
         <Link
           to={`/search${SEARCH_SCOPE[pathname] ? `?in=${SEARCH_SCOPE[pathname]}` : ''}`}
           aria-label="Search"
