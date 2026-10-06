@@ -5878,3 +5878,26 @@ link should come with its image and full name.
   (the three TXT records) is in and visible; Firebase is still validating
   the certificates. Round 2 (the A record and the `pro` CNAME) waits on them.
 
+## 63. 1namo.com is on Firebase — 6 Oct 2026
+
+- **DNS round 2 done by the owner** (~13:00 IST): `@` A → `199.36.158.100`,
+  `pro` CNAME → `namo-pro.web.app`; seen at 8.8.8.8 and 1.1.1.1. Firebase:
+  1namo.com `HOST_ACTIVE` / `OWNERSHIP_ACTIVE`, certificate propagating;
+  pro.1namo.com still `HOST_MISMATCH` at the first check (404 for minutes
+  until Firebase re-checks).
+- **Checked live:** `version.json` is the current build; `/`, `/shop`,
+  `/shop/p/…`, `/read/…`, `/og/…`, `/privacy.html` all 200; the lava bracelet
+  link previews as "Lava Bracelet – Natural Black Lava Stone | Saturn &
+  Grounding Bracelet · ₹599" with its photo; old `#/` links redirect.
+- **Not checked signed in:** the test seeker's session had been revoked —
+  its tokens were copied into a localhost build during testing and both
+  refreshed, which Supabase treats as reuse. Real users are on the same
+  origin and keep their sessions. A signed-in walk needs a fresh OTP.
+- **Mail:** support@1namo.com on Zoho — MX (mx/mx2/mx3.zoho.in), SPF and the
+  `zmail` DKIM key are published. The SPF record names the same include
+  twice (harmless).
+- **Left for the owner:** turn GitHub Pages off in `namoApp` and `namo-pro`
+  (Settings → Pages); nothing serves from them now.
+- Open: a signed-out visitor following a product or blog link lands on
+  onboarding, not the page — the app requires sign-in everywhere.
+
