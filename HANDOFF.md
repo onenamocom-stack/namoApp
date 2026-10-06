@@ -5872,4 +5872,9 @@ link should come with its image and full name.
 - **For the owner:** in Razorpay's dashboard the webhook must send
   `payment.captured` (it already does for top-ups) — no change. Wallet
   orders from an app that has not reloaded are still accepted.
+- **API deployed** (6 Oct, 12:40 IST, revision `namo-api-00084`, at the
+  owner's word): everything in §57–§62 is on the API — confirm/abandon and
+  edit answer 401 unsigned, previews and categories 200. GoDaddy round 1
+  (the three TXT records) is in and visible; Firebase is still validating
+  the certificates. Round 2 (the A record and the `pro` CNAME) waits on them.
 
