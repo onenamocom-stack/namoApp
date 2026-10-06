@@ -5689,10 +5689,11 @@ photos and videos per product, like a marketplace).
   the shop and the product page walked in a browser on the local build with
   a sample product answered locally — no test product was written to the
   live database.
-- **Not live.** Needs, in this order: the migration on production, then the
-  API deploy (the deployed code cannot create a product once `sku` is
-  required — run them together), then the Pages build (GitHub Actions
-  outage, §56). Products have no descriptions, galleries or FAQs until
+- **Migration applied to production** (6 Oct, owner's go): the 11 products
+  are NAMO-0001 to NAMO-0011, oldest first, each with a slug (NAMO-0011 is
+  the taken-down "Race Test" row). The Pages build is live. **Waiting on the
+  API deploy** — until it runs, the deployed code cannot create a product
+  (it does not know `sku`), and product pages show only the list's fields. Products have no descriptions, galleries or FAQs until
   somebody fills them in the console or the sheet.
 - **SEO, honestly:** the page sets its title, meta description and a
   schema.org Product block, but the app is a hash-routed single page on
