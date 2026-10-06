@@ -68,3 +68,5 @@ mocks/
 _local/
 # Firebase CLI's local cache.
 .firebase/
+firebase-debug.log
+firebase-debug.*.log

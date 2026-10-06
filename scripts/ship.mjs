@@ -44,7 +44,9 @@ function fail(msg) {
 }
 function run(cmd) {
   console.log(`\n$ ${cmd}`)
-  execSync(cmd, { cwd: ROOT, stdio: 'inherit' })
+  // No input: a tool that finds a terminal to read from can wait on it
+  // forever (the Firebase CLI did, twice, on 6 Oct 2026). Output still shows.
+  execSync(cmd, { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'] })
 }
 function readEnvFile(name) {
   const path = join(ROOT, name)
