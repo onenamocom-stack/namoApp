@@ -83,8 +83,7 @@ for (const t of targets) run(APPS[t].build)
 const message = `${sha}${status ? ' dirty' : ''} ${subject}`.replace(/[^\w .,:/-]/g, ' ').slice(0, 200)
 const only_ = targets.map((t) => `hosting:${t}`).join(',')
 const cli = join(ROOT, 'node_modules', 'firebase-tools', 'lib', 'bin', 'firebase.js')
-console.log(`
-$ firebase deploy --only ${only_}`)
+console.log(`\n$ firebase deploy --only ${only_}`)
 execFileSync(process.execPath, [cli, 'deploy', '--only', only_, '--message', message, '--non-interactive'], {
   cwd: ROOT,
   stdio: ['ignore', 'inherit', 'inherit'],
