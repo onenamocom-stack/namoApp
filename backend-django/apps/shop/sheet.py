@@ -38,6 +38,8 @@ COLUMNS = (
     ("subtitle", "One line under the name."),
     ("category", "Required. Must be a category that exists in the console."),
     ("subcategory", "Optional. Must belong to the category."),
+    ("also_categories", "Other categories it also shows under, separated by ;"),
+    ("also_subcategories", "Other subcategories, each written Category > Subcategory, separated by ;"),
     ("price_rupees", "Required. What is charged, in rupees: 1850 not 185000."),
     ("mrp_rupees", "Optional. The struck-through price; must be above the price."),
     ("stock", "Required. Whole number, 0 or more."),
@@ -78,6 +80,8 @@ def export_workbook(products):
             p.sku, p.name, p.brand or "", p.subtitle or "",
             p.category.name if p.category_id else "",
             p.subcategory.name if p.subcategory_id else "",
+            "; ".join(c.name for c in p.also_categories.all()),
+            "; ".join(f"{s.category.name} > {s.name}" for s in p.also_subcategories.select_related("category")),
             _rupees(p.price_paise), _rupees(p.mrp_paise),
             p.stock, p.weight_grams, p.tax_rate_bps / 100,
             "yes" if p.featured else "no", "yes" if p.active else "no",
@@ -220,6 +224,25 @@ def read_workbook(data):
             if subcategory is None:
                 problems.append(f"subcategory “{sub_name}” is not under {category.name}")
 
+        also_cats, also_subs = [], []
+        for name in [x.strip() for x in _text(get("also_categories")).split(";") if x.strip()]:
+            found = categories.get(name.lower())
+            if found is None:
+                problems.append(f"also_categories: “{name}” does not exist")
+            elif found not in also_cats:
+                also_cats.append(found)
+        for pair in [x.strip() for x in _text(get("also_subcategories")).split(";") if x.strip()]:
+            if ">" not in pair:
+                problems.append(f"also_subcategories: write “{pair}” as Category > Subcategory")
+                continue
+            cat_name, sub_name = (x.strip() for x in pair.split(">", 1))
+            cat = categories.get(cat_name.lower())
+            sub = subcategories.get((cat.id, sub_name.lower())) if cat else None
+            if sub is None:
+                problems.append(f"also_subcategories: “{pair}” does not exist")
+            elif sub not in also_subs:
+                also_subs.append(sub)
+
         price, e1 = _money(get("price_rupees"), "price", True)
         mrp, e2 = _money(get("mrp_rupees"), "MRP", False)
         stock, e3 = _whole(get("stock"), "stock")
@@ -280,6 +303,7 @@ def read_workbook(data):
             continue
         plans.append({
             "row": n, "sku": sku, "product": product,
+            "also": (also_cats, also_subs) if ("also_categories" in col or "also_subcategories" in col) else None,
             "fields": {
                 "name": name, "brand": _text(get("brand")) or None,
                 "subtitle": _text(get("subtitle")) or None,
@@ -309,6 +333,9 @@ def apply(plans):
                 for field, value in plan["fields"].items():
                     setattr(product, field, value)
                 product.save()
+                if plan.get("also") is not None:
+                    product.also_categories.set(plan["also"][0])
+                    product.also_subcategories.set(plan["also"][1])
                 added += 1
                 changes.append({"sku": plan["sku"], "added": True})
                 continue
@@ -318,6 +345,14 @@ def apply(plans):
                 if before != value:
                     moved[field] = [_plain(before), _plain(value)]
                     setattr(product, field, value)
+            if plan.get("also") is not None:
+                cats, subs = plan["also"]
+                if {c.pk for c in product.also_categories.all()} != {c.pk for c in cats}:
+                    moved["also_categories"] = [[c.name for c in product.also_categories.all()], [c.name for c in cats]]
+                    product.also_categories.set(cats)
+                if {s.pk for s in product.also_subcategories.all()} != {s.pk for s in subs}:
+                    moved["also_subcategories"] = [[s.name for s in product.also_subcategories.all()], [s.name for s in subs]]
+                    product.also_subcategories.set(subs)
             if moved:
                 product.save()
                 updated += 1

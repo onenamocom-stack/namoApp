@@ -77,7 +77,7 @@ class TestDownloadThenUpload:
         data = sheet.export_workbook(Product.objects.all())
         header, rows = _rows(data)
         assert list(header) == sheet.HEADERS
-        assert rows[0][0] == "NAMO-0001" and rows[0][6] == 1000
+        assert rows[0][0] == "NAMO-0001" and rows[0][list(header).index("price_rupees")] == 1000
         plans, errors = sheet.read_workbook(data)
         assert errors == []
         added, updated, changes = sheet.apply(plans)
@@ -172,3 +172,30 @@ class TestTheConsolePages:
         for label in (b"Add photos or videos", b"Gallery", b"FAQ", b"Search and sharing", b"NAMO-0001"):
             assert label in page.content
         assert uuid  # imported for the id column fixtures
+
+
+@pytest.mark.django_db
+def test_a_product_on_more_than_one_shelf(shelf):
+    """6 Oct 2026: one product, more than one category and subcategory —
+    set from the sheet, read back by the shop, filtered by either."""
+    from rest_framework.test import APIClient
+
+    gems, ruby = shelf
+    rudra = ShopCategory.objects.get(name="Rudraksha")
+    header = sheet.HEADERS
+    data = _sheet(header, [_row(header, sku="NAMO-0001", name="Ruby", category="Gemstones",
+                                also_categories="Rudraksha", also_subcategories="Gemstones > Neelam",
+                                price_rupees=1000, stock=4, weight_grams=10)])
+    plans, errors = sheet.read_workbook(data)
+    assert errors == []
+    sheet.apply(plans)
+    assert [c.name for c in ruby.also_categories.all()] == ["Rudraksha"]
+    row = APIClient().get("/v1/shop/").json()[0]
+    assert row["categories"] == ["Gemstones", "Rudraksha"]
+    assert row["subcategories"] == ["Neelam"]
+    assert [p["sku"] for p in APIClient().get("/v1/shop/?category=Rudraksha").json()] == ["NAMO-0001"]
+    # A shelf that does not exist is refused, like a main category.
+    bad = _sheet(header, [_row(header, sku="NAMO-0001", name="Ruby", category="Gemstones",
+                               also_categories="Crystals", price_rupees=1000, stock=4, weight_grams=10)])
+    assert any("Crystals" in m for _, m in sheet.read_workbook(bad)[1])
+    assert rudra

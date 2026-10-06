@@ -73,6 +73,9 @@ export default function UserProfile() {
   // Nobody by that id has published anything, so there is nothing to show and
   // no name to print. Not a 404 screen — the feed is where they came from.
   if (author === null) return <Navigate to="/home" replace />
+  // One page per consultant (6 Oct 2026): their posts, followers and
+  // bookings all live on /consult/:id; this page is for everyone else.
+  if (author?.is_consultant) return <Navigate to={`/consult/${id}`} replace />
 
   const mine = session?.user?.id === id
   const initials = (author.name || '')

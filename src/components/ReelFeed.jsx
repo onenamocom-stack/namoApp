@@ -352,7 +352,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           </button>
         </div>
 
-        <p className="mt-3 text-meta leading-snug text-white">{c.caption}</p>
+        <ReelCaption text={c.caption} />
         {/* Views, not the date (30 Sep, owner's call). Shown once there are
             any — before the API counted, every reel would have read 0. */}
         {views > 0 && (
@@ -409,3 +409,22 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
     </section>
   )
 }
+
+
+/** A reel's description, folded to two lines over the video with "more",
+ *  as a long one used to climb over the picture (6 Oct 2026). */
+function ReelCaption({ text }) {
+  const [open, setOpen] = useState(false)
+  if (!text) return null
+  const long = text.length > 90
+  return (
+    <p
+      onClick={() => long && setOpen((o) => !o)}
+      className={`mt-3 whitespace-pre-line text-meta leading-snug text-white ${long && !open ? 'line-clamp-2' : ''} ${long ? 'cursor-pointer' : ''}`}
+    >
+      {text}
+      {long && open && <span className="ml-1 text-white/70">less</span>}
+    </p>
+  )
+}
+

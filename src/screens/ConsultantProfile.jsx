@@ -21,11 +21,12 @@ import {
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
-import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
+import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
+import { PieceRow } from '../components/Pieces.jsx'
 
 const TABS = [
   { key: 'about', label: 'About' },
-  { key: 'work', label: 'Work' },
+  { key: 'work', label: 'Posts' },
   { key: 'reviews', label: 'Reviews' },
 ]
 
@@ -103,7 +104,7 @@ export default function ConsultantProfile() {
      only a placeholder. */
   useEffect(() => {
     let live = true
-    followerCount(id)
+    followCounts(id)
       .then((n) => live && setFollowers(n))
       .catch((err) => console.error('[followers] load failed:', err.message))
     return () => {
@@ -235,9 +236,11 @@ export default function ConsultantProfile() {
                   <>
                     <span aria-hidden="true">·</span>
                     <span className="font-bold t-sub">
-                      {followers.toLocaleString('en-IN')}
+                      {followers.followers.toLocaleString('en-IN')}
                     </span>{' '}
-                    {followers === 1 ? 'follower' : 'followers'}
+                    {followers.followers === 1 ? 'follower' : 'followers'}
+                    <span aria-hidden="true"> · </span>
+                    <span className="font-bold t-sub">{followers.following.toLocaleString('en-IN')}</span> following
                   </>
                 )}
               </p>
@@ -552,21 +555,16 @@ function Work({ c }) {
     )
   }
 
+  /* Each piece with its picture, and a tap that opens it (6 Oct 2026 — this
+     was a list of titles that went nowhere, and the same posts lived on a
+     second page, /u/:id, which now forwards here). */
   return (
-    <Section label={`${items.length} ${items.length === 1 ? 'piece' : 'pieces'}`}>
-      <ul>
+    <Section label={`${items.length} ${items.length === 1 ? 'post' : 'posts'}`}>
+      <div>
         {items.map((p) => (
-          <li
-            key={p.id}
-            className="flex items-baseline justify-between gap-4 border-b border-rule py-3.5"
-          >
-            <span className="min-w-0 truncate text-body text-t2">{p.title || p.caption}</span>
-            <span className="flex-none text-micro uppercase tracking-caps text-t3 tnum">
-              {p.kind === 'clip' ? 'Reel' : p.kind === 'article' ? 'Article' : 'Note'} · {p.time}
-            </span>
-          </li>
+          <PieceRow key={p.id} piece={p} />
         ))}
-      </ul>
+      </div>
       <Link to="/home" className="act-link mt-6 inline-block text-meta">
         See everything in the feed
       </Link>

@@ -186,11 +186,11 @@ export default function Shop() {
   const filters = ['All', ...catList.map((c) => c.name)]
   const q = query.trim().toLowerCase()
   const list = products.filter((p) => {
-    const inCat = cat === 'All' || p.category === cat
+    const inCat = cat === 'All' || p.categories.includes(cat)
     // The product's own subcategory; the name match stays for products the
     // console has not given one.
     const inSub =
-      !sub || p.subcategory === sub || `${p.name} ${p.subtitle}`.toLowerCase().includes(sub.toLowerCase())
+      !sub || p.subcategories.includes(sub) || `${p.name} ${p.subtitle}`.toLowerCase().includes(sub.toLowerCase())
     const inQuery =
       !q || [p.name, p.subtitle, p.category, p.brand, p.sku].some((f) => (f || '').toLowerCase().includes(q))
     return inCat && inSub && inQuery

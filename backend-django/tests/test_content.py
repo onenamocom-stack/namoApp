@@ -827,7 +827,8 @@ class TestFollowCountsAndAuthors:
         _publish(api_client, seeker_token, kind="post", caption="a photo")
         published = api_client.get(f"/v1/content/authors/{SEEKER}/")
         assert published.status_code == 200
-        assert published.json() == {"id": SEEKER, "name": "Tara Verma"}
+        # is_consultant: the app forwards a consultant to /consult/:id (6 Oct 2026).
+        assert published.json() == {"id": SEEKER, "name": "Tara Verma", "is_consultant": False}
 
         # A draft does not make an author.
         draft_author = str(uuid.uuid4())

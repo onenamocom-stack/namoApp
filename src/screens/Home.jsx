@@ -191,6 +191,16 @@ export default function Home() {
           the search field — see `FreeTools` there for why that reversed. */}
       <TabHeader />
 
+      {/* Search, as the other tabs have (6 Oct 2026). A button that opens
+          the search screen, so the feed below is not filtered by a box. */}
+      <Link
+        to="/search"
+        className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-stroke bg-surface px-4 py-3 text-body t-faint transition-colors active:bg-surface-2"
+      >
+        <span aria-hidden="true">⌕</span>
+        <span>Search astrologers, products, posts</span>
+      </Link>
+
       <section className="px-4 pt-3">
         <Segmented
           items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}

@@ -5916,3 +5916,26 @@ link should come with its image and full name.
   the form says what it found and offers the areas as chips. Tests updated.
 - **Clear** asks first; the − / + are drawn and centred (measured 0 px off).
 
+## 65. Rahul's list, 6 Oct evening: search, one profile, captions, shelves
+
+1. **Search on Home — built.** `/search` (`src/screens/SearchScreen.jsx`),
+   opened from a bar under Home's header. Client-side over the roster, the
+   catalogue and the newest 200 posts; checked on live data ("rahul",
+   "lava", "shani"). A server search is the next step at scale.
+2. **Two profile pages — one now.** `fetch_author` returns `is_consultant`;
+   `/u/:id` forwards a consultant to `/consult/:id`, whose Posts tab lists
+   real thumbnails that open (`PieceRow`) and whose line shows following.
+   `/pro/profile` stays the consultant's own editing view.
+3. **Lines on photo and video posts — already there.** The composer's
+   caption box is on Photo and Reel (required), the feed shows it with
+   "more". The reels viewer showed a long one over the video unfolded; it
+   folds to two lines now.
+4. **Multiple images per product — already there** (§57: "Add photos or
+   videos", several at once, and the sheet's `gallery` column).
+5. **One product in several categories / subcategories — built.**
+   `also_categories`, `also_subcategories` (migration `shop/0007`, **applied
+   to production**); the console's "Also shows under" checkboxes; the
+   sheet's `also_categories` (`A; B`) and `also_subcategories`
+   (`Category > Sub; …`) columns; the shop filters on every shelf. Tests: a
+   new sheet test; 1023 pass.
+

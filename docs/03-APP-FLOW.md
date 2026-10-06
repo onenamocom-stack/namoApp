@@ -500,6 +500,24 @@ tagged products under it, and **Like, Reply, Share and Save** as a post has
 Reshare. The feed's shop cards are the live catalogue, square, opening the
 product's page — they were `mock.js` products.
 
+### `/search` — from the bar on Home (6 Oct 2026)
+
+One box: astrologers (name, specialization, category, languages), products
+(name, subtitle, brand, every category and subcategory) and posts and blogs
+(title, caption, body, author). Chips All / Astrologers / Products / Posts,
+each with its count; All shows five of each with "See all". Matched on the
+phone over the roster, the catalogue and the newest 200 posts — older posts
+are not found. A row opens the consultant, the product, the blog, the reel,
+or a post's author.
+
+**One public page per consultant** (6 Oct 2026): `/u/:id` forwards to
+`/consult/:id` when the person is an approved consultant (the author lookup
+says `is_consultant`), so reshare and comment links that pointed at the
+thinner page land on the one with bookings. `/consult/:id` shows followers
+and following, and its **Posts** tab (was "Work", a list of titles) lists
+each post with its picture and opens it. A reel's caption in the reels
+viewer folds to two lines; a tap opens it.
+
 ### `/shop/p/:key` — a product's page (6 Oct 2026)
 
 `key` is the slug or the id. Top bar: back to the shop, the brand (or the

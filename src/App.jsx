@@ -54,6 +54,7 @@ import Muhurat from './screens/Muhurat.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
+import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
@@ -358,6 +359,7 @@ function Frame() {
                 <Route path="/read/:id" element={<Article />} />
                 {/* A product's own page (6 Oct 2026), by slug or id. */}
                 <Route path="/shop/p/:key" element={<ProductPage />} />
+                <Route path="/search" element={<SearchScreen />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
                     anybody bookable. */}

@@ -79,6 +79,16 @@ class Product(models.Model):
         ShopSubcategory, null=True, blank=True, on_delete=models.DO_NOTHING,
         db_column="subcategory_id", related_name="products",
     )
+    # A product shelved in more places than its main one (6 Oct 2026, Rahul:
+    # "tag one product in more than one category or subcategory"). The main
+    # category stays required — the product's home, its slug's sense, the
+    # sheet's first column; these add tiles and pills it also appears under.
+    also_categories = models.ManyToManyField(
+        ShopCategory, blank=True, related_name="also_products", db_table="product_also_categories",
+    )
+    also_subcategories = models.ManyToManyField(
+        ShopSubcategory, blank=True, related_name="also_products", db_table="product_also_subcategories",
+    )
     name = models.TextField()
     subtitle = models.TextField(null=True, blank=True)
     image_url = models.TextField(null=True, blank=True)

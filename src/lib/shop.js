@@ -69,6 +69,9 @@ function toProduct(row) {
     brand: row.brand || '',
     category: row.category,
     subcategory: row.subcategory,
+    // Every shelf the product is on (6 Oct 2026); the main one first.
+    categories: row.categories ?? (row.category ? [row.category] : []),
+    subcategories: row.subcategories ?? (row.subcategory ? [row.subcategory] : []),
     price: row.price_paise / 100,
     mrp: row.mrp_paise ? row.mrp_paise / 100 : null,
     image: row.image_url || null,

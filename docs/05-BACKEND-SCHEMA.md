@@ -660,6 +660,13 @@ products (
 )
 ```
 
+**More shelves** (migration `shop/0007`, 6 Oct 2026): two link tables,
+`product_also_categories (product_id, shopcategory_id)` and
+`product_also_subcategories (product_id, shopsubcategory_id)` — the other
+categories and subcategories a product also shows under. `category_id`
+stays required: the product's main shelf. The API's product row carries
+`categories` and `subcategories`, the main one first.
+
 `sku` is unique in the database and filled by `Product.save()` when a
 caller leaves it blank (backend/INSTRUCTIONS.md §11). Migration
 `shop/0004_product_page` added everything from `brand` down to `sku`,

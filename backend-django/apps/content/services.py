@@ -844,7 +844,10 @@ def fetch_author(profile_id):
     name = gateway.profile_name(profile_id)
     if name is None:
         return None
-    return {"id": str(profile_id), "name": name}
+    # A consultant's one public page is /consult/:id (6 Oct 2026): the app
+    # forwards /u/:id there when this is true.
+    return {"id": str(profile_id), "name": name,
+            "is_consultant": bool(gateway.is_approved_consultant(profile_id))}
 
 
 # ── reporting and moderation ────────────────────────────────────────────────

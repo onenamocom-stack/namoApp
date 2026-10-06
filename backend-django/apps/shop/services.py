@@ -50,7 +50,7 @@ import logging
 from datetime import timedelta
 import uuid
 
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import F
 from django.utils import timezone
 
@@ -85,9 +85,15 @@ def list_products(*, category=None, include_sold_out=True):
     ones ARE returned: a shelf with a greyed-out label is a shop; a shelf
     that silently loses items is a bug report.
     """
-    rows = Product.objects.filter(active=True).select_related("category", "subcategory")
+    rows = (
+        Product.objects.filter(active=True)
+        .select_related("category", "subcategory")
+        .prefetch_related("also_categories", "also_subcategories")
+    )
     if category:
-        rows = rows.filter(category__name__iexact=category)
+        rows = rows.filter(
+            models.Q(category__name__iexact=category) | models.Q(also_categories__name__iexact=category)
+        ).distinct()
     if not include_sold_out:
         rows = rows.filter(stock__gt=0)
     return list(rows)
@@ -129,6 +135,14 @@ def unique_slug(name, exclude_pk=None):
     return slug
 
 
+def _names(main, extras):
+    out = [main.name] if main is not None else []
+    for row in extras:
+        if row.name not in out:
+            out.append(row.name)
+    return out
+
+
 def product_images(product):
     """The cover, then the gallery, in order, each once."""
     seen, out = set(), []
@@ -149,6 +163,10 @@ def product_row(product):
         "brand": product.brand or "",
         "category": product.category.name if product.category_id else "",
         "subcategory": product.subcategory.name if product.subcategory_id else "",
+        # Every shelf it is on, the main one first (6 Oct 2026).
+        "categories": _names(product.category if product.category_id else None, product.also_categories.all()),
+        "subcategories": _names(product.subcategory if product.subcategory_id else None,
+                                product.also_subcategories.all()),
         "image_url": product.image_url or "",
         "images": product_images(product),
         "media": [{"url": u, "kind": media_kind(u)} for u in product_images(product)],

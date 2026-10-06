@@ -144,11 +144,14 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = (
-            "sku", "name", "brand", "subtitle", "category", "subcategory", "image_url",
+            "sku", "name", "brand", "subtitle", "category", "subcategory",
+            "also_categories", "also_subcategories", "image_url",
             "description", "slug", "seo_title", "seo_description",
             "stock", "weight_grams", "tax_rate_bps", "featured", "active",
         )
         widgets = {
+            "also_categories": forms.CheckboxSelectMultiple,
+            "also_subcategories": forms.CheckboxSelectMultiple,
             "sku": forms.TextInput(attrs={"size": 20}),
             "image_url": forms.TextInput(attrs={"size": 80}),
             "brand": forms.TextInput(attrs={"size": 40}),
@@ -158,6 +161,8 @@ class ProductForm(forms.ModelForm):
             "seo_description": forms.Textarea(attrs={"rows": 2, "cols": 90, "maxlength": 170}),
         }
         help_texts = {
+            "also_categories": "Other categories it also shows under. The main one above stays its home.",
+            "also_subcategories": "Other subcategories it also shows under.",
             "sku": "The product ID — one product, one SKU; the database refuses a second. Blank makes the next NAMO-####. The spreadsheet upload matches on this.",
             "description": "What it is, what it is for, how to use or wear it. Plain text; a blank line starts a new paragraph.",
             "slug": "The page address: 1namo.com/shop/p/<this>. Left blank, it is made from the name.",
@@ -267,6 +272,7 @@ class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
     list_per_page = 50
     fieldsets = (
         (None, {"fields": ("sku", "name", "brand", "subtitle", "category", "subcategory")}),
+        ("Also shows under", {"fields": ("also_categories", "also_subcategories")}),
         ("Price and stock", {"fields": ("price", "mrp", "stock", "weight_grams", "tax_rate_bps", "featured", "active")}),
         ("Photos", {"fields": ("upload", "image_url", "gallery_upload", "gallery_text")}),
         ("Product page", {"fields": ("description", "faq_text")}),
