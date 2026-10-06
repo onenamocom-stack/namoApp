@@ -82,7 +82,7 @@ class TestStats:
             {"joined_on": "2026-10-02", "bought_on": "2026-10-03"},
         ]
         assert body["code"].startswith("N")
-        assert body["link"].endswith(f"/#/onboarding?ref={body['code']}")
+        assert body["link"].endswith(f"/onboarding?ref={body['code']}")
 
 
 @pytest.mark.django_db

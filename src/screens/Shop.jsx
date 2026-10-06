@@ -535,15 +535,11 @@ export default function Shop() {
 }
 
 /**
- * The product a link points at (`?p=<uuid>`), read once on arrival — the
- * same hash-query parsing as the referral below, for the same HashRouter
- * reason. Anything that is not a UUID is ignored rather than looked up.
+ * The product a link points at (`?p=<uuid>`), read once on arrival. Anything that is not a UUID is ignored rather than looked up.
  */
 function useFocusedProduct() {
   const [id] = useState(() => {
-    const hash = window.location.hash
-    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : ''
-    const found = new URLSearchParams(q).get('p')
+    const found = new URLSearchParams(window.location.search).get('p')
     return found && /^[0-9a-f-]{36}$/i.test(found) ? found.toLowerCase() : null
   })
   return id
@@ -572,11 +568,7 @@ function useReferralFromLink() {
   })
 
   useEffect(() => {
-    // HashRouter puts the query after the hash, so `location.search` is
-    // empty and the params live in the hash's own query string.
-    const hash = window.location.hash
-    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : ''
-    const found = new URLSearchParams(q).get('ref')
+    const found = new URLSearchParams(window.location.search).get('ref')
     if (!found || !looksLikeReferral(found) || !found.toUpperCase().startsWith('A')) return
     const upper = found.toUpperCase()
     setCode(upper)

@@ -9,7 +9,8 @@
  * This replaced toasts that said "link copied" and copied nothing.
  */
 export async function shareLink(path, { title } = {}) {
-  const url = `${window.location.origin}${window.location.pathname}#${path}`
+  // A real address since the move off the hash router (6 Oct 2026).
+  const url = `${window.location.origin}${path}`
   if (navigator.share) {
     try {
       await navigator.share({ url, title })

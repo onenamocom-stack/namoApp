@@ -463,9 +463,8 @@ function Frame() {
 }
 
 export default function App() {
-  /* Page views, from one place. HashRouter means every route change is a
-     `hashchange`, so the listener catches every screen without a hook in
-     each of them — and without anything in a screen being able to forget.
+  /* Page views, from one place: the listener sees every navigation (it
+     wraps history), so no screen needs a hook and none can forget.
 
      Outside the provider on purpose: analytics must not be able to delay
      or break the app's own mount, and nothing here reads store state. */

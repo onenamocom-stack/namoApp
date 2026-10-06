@@ -160,7 +160,7 @@ class ProductForm(forms.ModelForm):
         help_texts = {
             "sku": "The product ID — one product, one SKU; the database refuses a second. Blank makes the next NAMO-####. The spreadsheet upload matches on this.",
             "description": "What it is, what it is for, how to use or wear it. Plain text; a blank line starts a new paragraph.",
-            "slug": "The page address: 1namo.com/#/shop/p/<this>. Left blank, it is made from the name.",
+            "slug": "The page address: 1namo.com/shop/p/<this>. Left blank, it is made from the name.",
             "seo_title": "What a search result and a shared link show as the title. Blank uses the name. Under 60 characters reads best.",
             "seo_description": "The line under it. Blank uses the description's first line. Under 160 characters.",
         }

@@ -5701,3 +5701,45 @@ photos and videos per product, like a marketplace).
   front page. Real search indexing needs server-rendered product pages at
   real URLs — not built.
 
+## 58. Off GitHub: Cloudflare Pages and real addresses — 6 Oct 2026, in progress
+
+Owner: "start migration, move everything, nothing should be based on
+GitHub". GitHub now only stores the code; nothing runs from it.
+
+- **Done in code** (committed, not yet live):
+  - React Router: `HashRouter` → `BrowserRouter`. Addresses are real
+    (`1namo.com/shop/p/x`). `src/main.jsx` rewrites any `#/…` address to
+    its path before the router reads it, so every link already shared
+    (WhatsApp, reels, referral codes, notifications) still lands.
+  - Everything that built or read a `#` link: share links
+    (`src/lib/share.js`), the Bhakti invite, the error screen's way home,
+    the service worker's notification tap, the shop's `?p=`/`?ref=`
+    readers, the favicon paths, and the server's affiliate and influencer
+    links (`apps/referrals`).
+  - Analytics counted a page view on `hashchange`, which a real-address
+    router never fires; it now wraps history and records real paths.
+  - `public/_headers`: the page and `version.json` never cached, built
+    assets cached a year. No `404.html`, so Cloudflare serves the app for
+    any address. `public/CNAME` removed. Build id from `git rev-parse`.
+  - **Deploys:** `npm run ship` (`scripts/ship.mjs`) — refuses uncommitted
+    changes, checks `.env.local`, lints, builds both apps, uploads with
+    wrangler to Pages projects `namo-web` and `namo-pro`. Credentials in
+    `.env.deploy` (gitignored). `.github/workflows/deploy.yml` and `api.yml`
+    deleted: no push deploys or tests anything. The `namo-pro` repo and its
+    `PRO_DISPATCH_TOKEN` are retired. Backend tests run locally
+    (CLAUDE.md's command).
+- **Verified:** lint, both builds, 983 backend tests (one test failed once
+  in four full runs and passed on rerun — flaky, not yet identified); on
+  the local build, deep links load, old `#/` links land with their query,
+  Back and reload keep the screen, analytics records real paths.
+- **Still serving:** 1namo.com and pro.1namo.com are GitHub Pages' last
+  hash-router build until the domain moves — the new code must not go to
+  GitHub Pages (it cannot serve deep links), which is why the workflow was
+  removed in the same commit.
+- **Needs the owner:** a Cloudflare account; 1namo.com added to it and
+  GoDaddy's nameservers changed to Cloudflare's (DNS is at GoDaddy,
+  `domaincontrol.com`); an API token (Account › Cloudflare Pages › Edit)
+  and the account id in `.env.deploy`. Then: `npm run ship`, attach
+  1namo.com and pro.1namo.com to the two projects, check, and turn GitHub
+  Pages off for both repos.
+

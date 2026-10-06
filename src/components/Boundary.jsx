@@ -61,7 +61,7 @@ export default class Boundary extends Component {
             crash inside a route can leave its context in a state where a soft
             navigation re-renders straight back into the throw. The hash reload
             is the one exit that always works. */}
-        <a href="#/home" onClick={() => window.location.reload()} className="mt-10 text-body underline">
+        <a href="/home" onClick={() => window.location.reload()} className="mt-10 text-body underline">
           Back to home
         </a>
       </div>

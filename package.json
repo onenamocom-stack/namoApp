@@ -10,7 +10,8 @@
     "build:pro": "vite build --mode pro",
     "preview": "vite preview",
     "preview:pro": "vite preview --mode pro --outDir dist-pro",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -28,6 +29,7 @@
     "globals": "^17.12.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "wrangler": "^4.147.0"
   }
 }

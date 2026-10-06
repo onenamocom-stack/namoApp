@@ -281,8 +281,10 @@ still open — they gate the first deployment, not the code.
 
 ## 8. Hosting, answered
 
-- **Front end (both apps): GitHub Pages until launch traffic, then off it.**
-  Rewritten 6 Oct 2026; it said "enough, indefinitely". Pages carries a
+- **Front end (both apps): moving to Cloudflare Pages now** (owner, 6 Oct
+  2026: "nothing should be based on GitHub"; HANDOFF §58 has the state).
+  The trigger below was overtaken; the reasons stand. Rewritten 6 Oct 2026;
+  it said "enough, indefinitely". Pages carries a
   static SPA, but it cannot serve a real URL per page — the apps route
   behind `#`, and Google treats everything after `#` as one page, so no
   product, astrologer or horoscope can be found by search, and a shared

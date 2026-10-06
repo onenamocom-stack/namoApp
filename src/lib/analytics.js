@@ -45,8 +45,8 @@ function visitId() {
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 
-function cleanPath(hash) {
-  const path = (hash || '').split('?')[0].replace(/^#/, '') || '/'
+function cleanPath(pathname) {
+  const path = (pathname || '').split('?')[0] || '/'
   return path.replace(UUID, ':id').replace(/\/\d+(?=\/|$)/g, '/:n').slice(0, 160)
 }
 
@@ -81,7 +81,7 @@ export function track(name, props = {}) {
   try {
     queue.push({
       name,
-      path: cleanPath(window.location.hash),
+      path: cleanPath(window.location.pathname),
       visit_id: visitId(),
       props,
       platform: /android/i.test(navigator.userAgent)
@@ -107,16 +107,40 @@ export function trackPageView() {
 /** Start listening. Called once from the app shell. */
 export function startAnalytics() {
   if (!API) return () => {}
-  trackPageView()
-  const onHash = () => trackPageView()
+  /* One page view per screen. The router moves with history.pushState and
+     replaceState, which fire no event of their own, so both are wrapped;
+     the back button is popstate. A change of query alone (the same screen)
+     is not a new view. (Under the hash router this was `hashchange`, until
+     6 Oct 2026.) */
+  let last = null
+  const onNav = () => {
+    const now = cleanPath(window.location.pathname)
+    if (now === last) return
+    last = now
+    trackPageView()
+  }
+  onNav()
+  const wrap = (key) => {
+    const original = window.history[key]
+    window.history[key] = function (...args) {
+      const result = original.apply(this, args)
+      onNav()
+      return result
+    }
+    return () => {
+      window.history[key] = original
+    }
+  }
+  const unwrap = [wrap('pushState'), wrap('replaceState')]
   const onLeave = () => flush({ keepalive: true })
-  window.addEventListener('hashchange', onHash)
+  window.addEventListener('popstate', onNav)
   window.addEventListener('pagehide', onLeave)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') onLeave()
   })
   return () => {
-    window.removeEventListener('hashchange', onHash)
+    unwrap.forEach((u) => u())
+    window.removeEventListener('popstate', onNav)
     window.removeEventListener('pagehide', onLeave)
     flush({ keepalive: true })
   }

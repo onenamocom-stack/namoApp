@@ -24,14 +24,16 @@ npm run build:pro    # consultant → dist-pro/
 
 ## The two deployments
 
-| App | Repo | URL |
-|---|---|---|
-| **Seeker** (this repo) | `onenamocom-stack/namoApp` | https://onenamocom-stack.github.io/namoApp/ |
-| **Consultant** | [`onenamocom-stack/namo-pro`](https://github.com/onenamocom-stack/namo-pro) | https://onenamocom-stack.github.io/namo-pro/ |
+| App | Build | Cloudflare Pages project | URL |
+|---|---|---|---|
+| **Seeker** | `npm run build` → `dist/` | `namo-web` | https://1namo.com |
+| **Consultant** | `npm run build:pro` → `dist-pro/` | `namo-pro` | https://pro.1namo.com |
 
-Pushing to `main` of this repo deploys the seeker app to the test URL
-automatically. The consultant app deploys from the namo-pro repo's
-workflow, which builds this repo's `--mode pro` target — see its README.
+Both deploy from this repo with **`npm run ship`** (`scripts/ship.mjs`):
+it refuses uncommitted changes, checks `.env.local`, lints, builds and
+uploads with wrangler. Cloudflare credentials live in `.env.deploy`
+(gitignored). Nothing deploys on a push — GitHub holds the code and runs
+nothing (6 Oct 2026). The `namo-pro` repo is retired.
 
 1namo.com still serves the previous deployment from the original repo
 (`atharvborse2004-ops/aether-mono`). The domain moves here only after the

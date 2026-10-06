@@ -153,12 +153,9 @@ export const supabase = createClient(
       storage: durableStorage,
       persistSession: true,
       autoRefreshToken: true,
-      /* OFF, and it has to be. This app is a HashRouter, so every URL carries
-         a hash like `#/onboarding/phone?next=pro` — and URL session detection
-         parses the hash looking for an auth callback it will never find here,
-         because the only way in is a phone OTP. No magic links, no OAuth,
-         nothing that arrives in a URL. Leaving it on is a parser pointed at
-         the router's own state for no benefit. */
+      /* OFF. The only way in is a phone OTP — no magic links, no OAuth,
+         nothing that arrives in a URL — so there is no auth callback for URL
+         session detection to find. */
       detectSessionInUrl: false,
     },
   },

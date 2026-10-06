@@ -65,7 +65,7 @@ self.addEventListener('notificationclick', (event) => {
           return
         }
       }
-      await self.clients.openWindow(`/#${path}`)
+      await self.clients.openWindow(path)
     })(),
   )
 })

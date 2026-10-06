@@ -398,7 +398,7 @@ const LISTENED = new Set(['bhajan', 'mantra', 'tune'])
 
 export async function inviteMessage(asset) {
   const code = await myInviteCode()
-  const link = code ? `${SEEKER_APP_URL}#/onboarding?ref=${code}` : SEEKER_APP_URL
+  const link = code ? `${SEEKER_APP_URL}onboarding?ref=${code}` : SEEKER_APP_URL
   const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on Namo` : `“${asset.title}”, from Namo`
   return [
     `${what}: bhajans, mantras and daily darshan in one app.`,

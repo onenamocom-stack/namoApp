@@ -2,7 +2,7 @@
 
 An influencer is a profile with `influencer = true`, granted in the console.
 Their code is their ordinary seeker invite code (N…); the link that carries
-it is `/#/onboarding?ref=N…`, which pre-fills it at sign-up.
+it is `/onboarding?ref=N…`, which pre-fills it at sign-up.
 
 Two numbers, by the owner's call — views are left for later:
 
@@ -45,7 +45,7 @@ def _in(when, lo, hi):
 
 
 def link_for(code):
-    return f"{settings.APP_PUBLIC_URL.rstrip('/')}/#/onboarding?ref={code}"
+    return f"{settings.APP_PUBLIC_URL.rstrip('/')}/onboarding?ref={code}"
 
 
 def stats(profile_id, now=None):

@@ -265,11 +265,11 @@ def affiliate_link(consultant_id, product_id=None):
         query += f"&p={product_id}"
     return {
         "code": code.code,
-        "url": f"{base}/#/shop?{query}",
+        "url": f"{base}/shop?{query}",
         "product_id": str(product_id) if product_id else None,
         "share_text": (
             "I use this one. Buy it here and you get 10% back in your Namo "
-            f"wallet on your first order: {base}/#/shop?{query}"
+            f"wallet on your first order: {base}/shop?{query}"
         ),
     }
 

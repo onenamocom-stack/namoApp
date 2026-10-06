@@ -66,3 +66,5 @@ mocks/
 # Git history is permanent — a credential committed once stays in every
 # clone forever, so these live here and go to Drive by hand.
 _local/
+# Cloudflare deploy credentials for npm run ship (6 Oct 2026).
+.env.deploy

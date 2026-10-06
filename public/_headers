@@ -1,0 +1,22 @@
+# Cloudflare Pages response headers (6 Oct 2026).
+
+# The page itself and the build id are never cached: a deploy must reach a
+# phone on its next load (src/lib/update.js reloads into a newer build).
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/version.json
+  Cache-Control: no-store
+/sw.js
+  Cache-Control: no-cache
+
+# Vite names every built file by its content hash, so a file never changes
+# under its name — cache it for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), microphone=(self), camera=(self)

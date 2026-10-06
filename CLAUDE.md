@@ -1,6 +1,8 @@
 # Namo (aether-mono)
 
-Astrology marketplace for India. Vite · React 18 · Tailwind · HashRouter.
+Astrology marketplace for India. Vite · React 18 · Tailwind · BrowserRouter
+(real paths; old `#/` links are rewritten on load). Web apps on Cloudflare
+Pages, deployed with `npm run ship`; the API on Cloud Run.
 Two apps, one codebase: the seeker app (default build) and the consultant
 app (`--mode pro`; see `src/side.js` and HANDOFF §9). An admin console is
 planned and unbuilt.
