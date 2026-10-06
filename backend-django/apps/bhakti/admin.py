@@ -49,8 +49,18 @@ class BhaktiAssetForm(forms.ModelForm):
             "title": "The caption, e.g. Ganesh — good beginnings",
             "artist": "Shown under the caption, e.g. Raja Ravi Varma",
             "licence": "Shown after the artist, e.g. Public domain",
-            "source": "Where the file came from (a URL), for attribution",
+            "source": "Optional. Where the file came from — a link, or e.g. “Own recording” — for attribution.",
+            "media_url": "Leave empty when you upload a file: it fills itself. Or paste a link to a file instead of uploading.",
         }
+
+    def __init__(self, *args, **kwargs):
+        # Upload OR link (6 Oct 2026): the model's columns are NOT NULL, so
+        # the form marked both required and an upload alone never saved.
+        # The link is written by save_model from the upload; the source is
+        # an attribution note, empty when there is nothing to credit.
+        super().__init__(*args, **kwargs)
+        self.fields["media_url"].required = False
+        self.fields["source"].required = False
 
     def clean(self):
         data = super().clean()
@@ -66,6 +76,8 @@ class BhaktiAssetForm(forms.ModelForm):
                 raise forms.ValidationError({"upload": str(exc)}) from None
         elif not data.get("media_url"):
             raise forms.ValidationError({"upload": "Add a file, or paste its URL above."})
+        data["source"] = data.get("source") or ""
+        data["media_url"] = data.get("media_url") or ""
         return data
 
 

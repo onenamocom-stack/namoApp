@@ -5952,4 +5952,8 @@ link should come with its image and full name.
   in settings now, but the password itself is not the API user's.
   **Needs the owner:** reset the API user's password in Shiprocket and set
   it on namo-api and namo-console.
+- **Bhakti asset form** (Rahul, adding a tune): "Media url" and "Source"
+  were required by the model's NOT NULL columns, so an upload alone never
+  saved. The form now takes an upload or a link; Source is optional
+  (`apps/bhakti/admin.py`, 2 tests). Console deployed.
 
