@@ -50,7 +50,23 @@ export function Thumb({ piece, size = 56 }) {
   )
 }
 
-export function PieceRow({ piece }) {
+export function PieceRow({ piece, onEdit }) {
+  if (onEdit) {
+    return (
+      <div className="flex items-center gap-2 border-b border-rule last:border-b-0">
+        <div className="min-w-0 flex-1 [&>*]:border-b-0">
+          <PieceRowInner piece={piece} />
+        </div>
+        <button type="button" onClick={onEdit} className="flex-none rounded-full border border-stroke px-3 py-1 caps-sm t-sub">
+          Edit
+        </button>
+      </div>
+    )
+  }
+  return <PieceRowInner piece={piece} />
+}
+
+function PieceRowInner({ piece }) {
   const [photo, setPhoto] = useState(false)
   const title = piece.title || piece.caption || KIND[piece.kind] || 'Post'
 

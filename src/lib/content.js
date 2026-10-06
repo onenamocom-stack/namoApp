@@ -326,6 +326,26 @@ export async function fetchOne(contentId) {
   }
 }
 
+/** Change your own post, reel or blog (6 Oct 2026). Only the fields given
+ *  are sent; `productIds`, when given, replaces the tags. */
+export async function editContent(id, { title, body, caption, mediaUrl, productIds } = {}) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in first')
+  const payload = {}
+  if (title !== undefined) payload.title = title
+  if (body !== undefined) payload.body = body
+  if (caption !== undefined) payload.caption = caption
+  if (mediaUrl !== undefined) payload.media_url = mediaUrl
+  if (productIds !== undefined) payload.product_ids = productIds
+  return api(`/content/${id}/edit/`, { method: 'POST', token, body: payload })
+}
+
+/** True when this row is the signed-in person's own. Ids compared without
+ *  dashes: some reach the app as 32 hex characters. */
+export function isMine(authorId, me) {
+  return !!authorId && !!me && String(authorId).replace(/-/g, '') === String(me).replace(/-/g, '')
+}
+
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const rows = await api(`/content/by-author/?author_id=${authorId}&limit=${limit}`)
   return (rows ?? []).map(shape)

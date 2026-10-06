@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { apiSupportsTags, publish, uploadMedia } from '../lib/content.js'
+import { apiSupportsTags, editContent, publish, uploadMedia } from '../lib/content.js'
 import { fetchProducts } from '../lib/shop.js'
 import Plate from './Plate.jsx'
 import { Kicker, PopButton } from './Pop.jsx'
@@ -82,10 +82,26 @@ function loadDraft(kind) {
   }
 }
 
-export default function Composer({ kinds = ['post', 'article'], onPublished, tagProducts = false }) {
+/* `editing` — an existing piece (the shape lib/content.js gives) to change
+   in place: its own kind only, its fields filled in, no draft kept, and the
+   button saves instead of publishing (6 Oct 2026). */
+function fromPiece(piece) {
+  return {
+    caption: piece.caption ?? '',
+    title: piece.title ?? '',
+    body: piece.body ?? '',
+    media: piece.mediaUrl
+      ? { url: piece.mediaUrl, type: piece.kind === 'clip' ? 'video/mp4' : 'image/*' }
+      : null,
+    tagged: piece.products ?? [],
+  }
+}
+
+export default function Composer({ kinds = ['post', 'article'], onPublished, tagProducts = false, editing = null }) {
   const { showToast } = useStore()
+  if (editing) kinds = [editing.kind]
   const [tab, setTab] = useState(kinds[0])
-  const first = loadDraft(kinds[0])
+  const first = editing ? fromPiece(editing) : loadDraft(kinds[0])
   const [caption, setCaption] = useState(first.caption)
   const [title, setTitle] = useState(first.title)
   const [body, setBody] = useState(first.body)
@@ -106,6 +122,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
   const draft = { caption, title, body, media, tagged }
   const saving = useRef(null)
   useEffect(() => {
+    if (editing) return undefined
     clearTimeout(saving.current)
     saving.current = setTimeout(() => {
       try {
@@ -159,6 +176,17 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
         tab === 'article'
           ? { title: title.trim(), body: body.trim() }
           : { caption: caption.trim() }
+      if (editing) {
+        const changes = {
+          ...fields,
+          mediaUrl: media?.url ?? null,
+          ...(canTag ? { productIds: tagged.map((p) => p.id) } : {}),
+        }
+        await editContent(editing.id, changes)
+        showToast('Saved')
+        onPublished?.({ ...fields, mediaUrl: media?.url ?? null, products: tagged })
+        return
+      }
       await publish({
         kind: tab,
         mediaUrl: media?.url,
@@ -191,7 +219,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
 
   /** Why the button is not offering to publish yet, in one short sentence. */
   function blockedBecause() {
-    if (busy) return 'Publishing'
+    if (busy) return editing ? 'Saving' : 'Publishing'
     if (uploading) return 'Uploading'
     if (tab === 'article') {
       if (!title.trim()) return 'Needs a title'
@@ -228,7 +256,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
 
       <div key={tab} className="animate-fade">
         <section className="border-b border-rule px-5 py-6">
-          <Kicker>{spec.heading}</Kicker>
+          <Kicker>{editing ? `Edit ${spec.label.toLowerCase()}` : spec.heading}</Kicker>
 
           {/* A Plate stands in until a file is chosen, which is also the whole
               preview for a blog post with no cover. */}
@@ -291,7 +319,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
             disabled={!ready || busy || uploading}
             onClick={send}
           >
-            {blockedBecause() ?? `Publish ${spec.label.toLowerCase()}`}
+            {blockedBecause() ?? (editing ? 'Save changes' : `Publish ${spec.label.toLowerCase()}`)}
           </PopButton>
         </section>
       </div>

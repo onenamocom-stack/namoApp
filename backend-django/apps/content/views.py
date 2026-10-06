@@ -36,6 +36,16 @@ class PublishInput(serializers.Serializer):
     )
 
 
+class EditInput(serializers.Serializer):
+    """Only what the author may change. A field left out is left alone."""
+
+    title = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    body = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    caption = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    media_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    product_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+
+
 class FeedQuery(serializers.Serializer):
     kinds = serializers.CharField(required=False, default="")
     limit = serializers.IntegerField(required=False, default=40, min_value=1, max_value=200)
@@ -157,6 +167,21 @@ def publish(request):
         product_ids=data["product_ids"],
     )
     return Response({"id": str(row.id)}, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def edit(request, content_id):
+    """The author's own post, reel or blog, changed in place (6 Oct 2026)."""
+    serializer = EditInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = dict(serializer.validated_data)
+    product_ids = data.pop("product_ids", None)
+    row = services.edit_content(
+        content_id, request.user.pk, getattr(request.user, "role", ""),
+        product_ids=product_ids, **data,
+    )
+    return Response({"ok": True, "id": str(row.id)})
 
 
 class RepostsQuery(serializers.Serializer):

@@ -1,7 +1,8 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { fetchByAuthor, fetchFeed, fetchOne } from '../lib/content.js'
+import { fetchByAuthor, fetchFeed, fetchOne, isMine } from '../lib/content.js'
+import EditSheet from '../components/EditSheet.jsx'
 import { isPro } from '../side.js'
 import { ActionRow, Cover, ProductStrip, authorHref, readMins } from './Home.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
@@ -34,6 +35,7 @@ export default function Article() {
      the expensive kind of tidy. */
   const [articles, setArticles] = useState(null)
   const [commenting, setCommenting] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [commentCount, setCommentCount] = useState(null)
 
   useEffect(() => {
@@ -98,18 +100,32 @@ export default function Article() {
         backTo={home}
         sub={mins}
         right={
-          <button
-            type="button"
-            onClick={async () => {
-              const said = await shareLink(`/read/${b.id}`, { title: b.title })
-              if (said) showToast(said)
-            }}
-            className="text-label uppercase tracking-label text-t2"
-          >
-            Share
-          </button>
+          <span className="flex items-center gap-3">
+            {isMine(b.authorId, session?.user?.id) && (
+              <button type="button" onClick={() => setEditing(true)} className="text-label uppercase tracking-label text-t2">
+                Edit
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                const said = await shareLink(`/read/${b.id}`, { title: b.title })
+                if (said) showToast(said)
+              }}
+              className="text-label uppercase tracking-label text-t2"
+            >
+              Share
+            </button>
+          </span>
         }
       />
+      {editing && (
+        <EditSheet
+          piece={b}
+          onClose={() => setEditing(false)}
+          onSaved={(f) => setArticles((list) => list.map((x) => (x.id === b.id ? { ...x, ...f } : x)))}
+        />
+      )}
 
       {/* The cover the author uploaded, 16:9 as on the feed card. */}
       <Cover src={b.mediaUrl} seed={b.id} className="aspect-video w-full" />

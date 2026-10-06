@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { fetchByAuthor } from '../lib/content.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Composer from '../components/Composer.jsx'
+import EditSheet from '../components/EditSheet.jsx'
 import { Kicker } from '../components/Pop.jsx'
 import { PieceRow } from '../components/Pieces.jsx'
 import { useStore } from '../store.jsx'
@@ -22,6 +23,7 @@ const KINDS = ['clip', 'post', 'article']
 export default function ProStudio() {
   const { session } = useStore()
   const [published, setPublished] = useState([])
+  const [editing, setEditing] = useState(null)
   const [reload, setReload] = useState(0)
 
   /* What this consultant has already published, read back from the same view
@@ -78,7 +80,7 @@ export default function ProStudio() {
           {/* Your own posts only, each with its thumbnail and views, and a tap
               that opens it (4 Oct 2026; they were untappable text rows). */}
           {published.map((c) => (
-            <PieceRow key={c.id} piece={c} />
+            <PieceRow key={c.id} piece={c} onEdit={() => setEditing(c)} />
           ))}
           {/* An empty studio says so. The counts above are COUNTED, never
               quoted — the mock said three pieces with 12.1k views against
@@ -92,6 +94,7 @@ export default function ProStudio() {
       </section>
 
       <div className="h-24" />
+      <EditSheet piece={editing} onClose={() => setEditing(null)} onSaved={() => setReload((n) => n + 1)} />
     </>
   )
 }

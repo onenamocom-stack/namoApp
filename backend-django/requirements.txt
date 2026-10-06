@@ -16,3 +16,5 @@ py-vapid==1.9.2
 http-ece==1.2.1
 # The shop's spreadsheet upload and download in the console (6 Oct 2026).
 openpyxl==3.1.5
+# Link-preview thumbnails for shared blogs and products (6 Oct 2026).
+Pillow==11.3.0

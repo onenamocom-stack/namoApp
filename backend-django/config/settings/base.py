@@ -312,6 +312,10 @@ REFERRAL_AI_DAYS = int(os.environ.get("REFERRAL_AI_DAYS", "3"))
 # into WhatsApp and lives for months, so the shape of it is a contract and
 # belongs somewhere one change fixes every link made after it.
 APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "https://1namo.com")
+# The seeker app's index.html at its hosting site's own address, read by the
+# link-preview pages (apps/content/share.py) — not through 1namo.com, whose
+# /read/** is rewritten back to this API.
+APP_INDEX_URL = os.environ.get("APP_INDEX_URL", "https://namo-web.web.app/index.html")
 
 
 # The retired per-minute meter still reads this. Nothing new should.

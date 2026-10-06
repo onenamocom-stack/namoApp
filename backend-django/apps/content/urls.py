@@ -13,6 +13,7 @@ urlpatterns = [
     path("follows/<str:which>/", views.follow_list, name="content-follow-list"),
     path("authors/<uuid:profile_id>/", views.author, name="content-author"),
     path("<uuid:content_id>/remove/", views.remove, name="content-remove"),
+    path("<uuid:content_id>/edit/", views.edit, name="content-edit"),
     path("<uuid:content_id>/view/", views.record_view, name="content-view"),
     path("<uuid:content_id>/comments/", views.comments, name="content-comments"),
     path("comments/<uuid:comment_id>/remove/", views.remove_comment,

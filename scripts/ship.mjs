@@ -77,5 +77,5 @@ for (const t of targets) run(APPS[t].build)
 // 4. deploy
 const message = `${sha}${status ? ' (dirty)' : ''} ${subject}`.slice(0, 250).replace(/"/g, "'")
 const only_ = targets.map((t) => `hosting:${t}`).join(',')
-run(`npx firebase-tools deploy --only ${only_} --message "${message}" --non-interactive`)
+run(`npx --no-install firebase deploy --only ${only_} --message "${message}" --non-interactive`)
 for (const t of targets) console.log(`✓ ${t}: ${APPS[t].domain} (and ${APPS[t].site}.web.app) now serves ${sha}`)

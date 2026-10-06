@@ -549,6 +549,48 @@ def attach_products(rows):
     return rows
 
 
+_UNSET = object()
+
+
+def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, caption=_UNSET,
+                 media_url=_UNSET, product_ids=None):
+    """The author changes their own post, reel or blog (6 Oct 2026, Rahul:
+    "edit button in blog and all posts"). Owner-scoped like remove, admin
+    excepted. The kind never changes — a reel is not edited into a blog —
+    and a removed post stays removed. Only the fields sent are touched;
+    `product_ids`, when sent, replaces the tags in one write with the rest,
+    under the same rules as publishing them."""
+    row = Content.objects.filter(pk=content_id).first()
+    if row is None or row.status == Content.Status.REMOVED:
+        raise NotFound("That post is not available.")
+    if str(row.author_id) != str(actor_id) and role != "admin":
+        raise PermissionDenied("You can only edit your own posts.")
+    changes = {k: v for k, v in (("title", title), ("body", body), ("caption", caption),
+                                  ("media_url", media_url)) if v is not _UNSET}
+    after = {f: changes.get(f, getattr(row, f)) for f in ("title", "body", "caption", "media_url")}
+    if row.kind == Content.Kind.ARTICLE and not ((after["title"] or "").strip() and (after["body"] or "").strip()):
+        raise ValidationError({"body": "A blog needs a title and a body."})
+    if row.kind == Content.Kind.CLIP and not after["media_url"]:
+        raise ValidationError({"media_url": "A reel needs its video."})
+    products = None if product_ids is None else _checked_products(row.author_id, role, product_ids)
+    with transaction.atomic():
+        for field, value in changes.items():
+            setattr(row, field, value)
+        if changes:
+            row.save(update_fields=list(changes))
+        if products is not None:
+            ContentProduct.objects.filter(content=row).delete()
+            ContentProduct.objects.bulk_create(
+                ContentProduct(content=row, product=p, sort=i) for i, p in enumerate(products)
+            )
+    if products:
+        from apps.referrals import services as referral_services
+        from apps.referrals.models import CodeKind
+
+        referral_services.code_for(row.author_id, CodeKind.CONSULTANT)
+    return row
+
+
 def publish_draft(content_id, actor_id, role):
     """Own draft -> live. Stamps published_at; removing is one-way."""
     row = Content.objects.filter(pk=content_id).first()

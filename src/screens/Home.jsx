@@ -3,13 +3,14 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { fetchFeed, fetchReposts, productHref } from '../lib/content.js'
+import { fetchFeed, fetchReposts, isMine, productHref } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
+import EditSheet from '../components/EditSheet.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
@@ -305,7 +306,7 @@ function FollowButton({ item }) {
   )
 }
 
-function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow }) {
+function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow, onEdit }) {
   const who = (
     <>
       <RingAvatar initials={initials} size={30} />
@@ -328,6 +329,12 @@ function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow }) 
       )}
       {follow && <FollowButton item={follow} />}
       {tag && <PopTag>{tag}</PopTag>}
+      {/* Your own post: Edit, where somebody else's has Report. */}
+      {onEdit && (
+        <button type="button" onClick={onEdit} className="flex-none rounded-full border border-stroke px-3 py-1 caps-sm t-sub">
+          Edit
+        </button>
+      )}
       {onMore && (
         <button
           type="button"
@@ -592,8 +599,12 @@ function ResharedLine({ by }) {
   )
 }
 
-function PostCard({ post: p, resharedBy }) {
-  const { showToast } = useStore()
+function PostCard({ post, resharedBy }) {
+  const { showToast, session } = useStore()
+  const [edited, setEdited] = useState(null)
+  const p = edited ? { ...post, ...edited } : post
+  const [editing, setEditing] = useState(false)
+  const mine = !resharedBy && isMine(p.authorId, session?.user?.id)
   const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(p.comments ?? 0)
@@ -614,8 +625,9 @@ function PostCard({ post: p, resharedBy }) {
         name={p.consultant}
         to={authorHref(p)}
         follow={p}
-        onMore={() => setReporting(true)}
+        onMore={mine ? undefined : () => setReporting(true)}
         moreLabel="Report this post"
+        onEdit={mine ? () => setEditing(true) : undefined}
       />
 
       {p.mediaUrl && <img src={p.mediaUrl} alt="" className="max-h-[32rem] w-full object-cover" />}
@@ -654,6 +666,7 @@ function PostCard({ post: p, resharedBy }) {
       />
 
       <ReportSheet open={reporting} onClose={() => setReporting(false)} contentId={p.id} />
+      {editing && <EditSheet piece={p} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
       <CommentSheet
         open={commenting}
         onClose={() => setCommenting(false)}
@@ -751,8 +764,12 @@ function useFeedTurn(ref) {
   }
 }
 
-function ReelCard({ reel: r, resharedBy }) {
-  const { showToast } = useStore()
+function ReelCard({ reel, resharedBy }) {
+  const { showToast, session } = useStore()
+  const [edited, setEdited] = useState(null)
+  const r = edited ? { ...reel, ...edited } : reel
+  const [editing, setEditing] = useState(false)
+  const mine = !resharedBy && isMine(r.authorId, session?.user?.id)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(r.comments ?? 0)
   const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
@@ -777,7 +794,14 @@ function ReelCard({ reel: r, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
-      <PostHead initials={r.initials} name={r.consultant} to={authorHref(r)} follow={r} />
+      <PostHead
+        initials={r.initials}
+        name={r.consultant}
+        to={authorHref(r)}
+        follow={r}
+        onEdit={mine ? () => setEditing(true) : undefined}
+      />
+      {editing && <EditSheet piece={r} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
 
       <Link ref={frame} to={`/reels/${r.id}`} className="group relative block">
         <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
@@ -1004,8 +1028,12 @@ export function readMins(body) {
   return Math.max(1, Math.ceil(words / 200))
 }
 
-function ArticleCard({ read: b }) {
-  const { t, showToast } = useStore()
+function ArticleCard({ read }) {
+  const { t, showToast, session } = useStore()
+  const [edited, setEdited] = useState(null)
+  const b = edited ? { ...read, ...edited } : read
+  const [editing, setEditing] = useState(false)
+  const mine = isMine(b.authorId, session?.user?.id)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(b.comments ?? 0)
   return (
@@ -1016,7 +1044,9 @@ function ArticleCard({ read: b }) {
         note={t('home.publishedArticle')}
         to={authorHref(b)}
         follow={b}
+        onEdit={mine ? () => setEditing(true) : undefined}
       />
+      {editing && <EditSheet piece={b} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
 
       {/* The cover — the uploaded image, or the plate when there is none —
           with the title over a scrim at its foot. 16:9, the shape the

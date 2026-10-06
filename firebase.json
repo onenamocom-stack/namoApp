@@ -8,6 +8,27 @@
       ],
       "rewrites": [
         {
+          "source": "/read/**",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
+          "source": "/shop/p/**",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
+          "source": "/og/**",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }

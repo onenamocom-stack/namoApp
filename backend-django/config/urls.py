@@ -13,7 +13,9 @@ without the phone app noticing.
 """
 
 from django.conf import settings
-from django.urls import include, path
+from django.urls import include, path, re_path
+
+from apps.content import share
 
 urlpatterns = []
 
@@ -36,6 +38,12 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/events/", include("apps.analytics.urls")),
         path("v1/shop/", include("apps.shop.urls")),
         path("v1/appearance/", include("apps.appearance.urls")),
+        # Link previews (apps/content/share.py): Firebase Hosting sends these
+        # addresses of 1namo.com here. No trailing slash — they are the app's
+        # own addresses, and a redirect would break the shared link.
+        re_path(r"^read/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.blog_page, name="share-blog"),
+        re_path(r"^shop/p/(?P<key>[^/]+)/?$", share.product_page, name="share-product"),
+        re_path(r"^og/(?P<kind>blog|product)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
     ]
 
 if settings.ADMIN_ENABLED:
