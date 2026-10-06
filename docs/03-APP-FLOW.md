@@ -407,51 +407,44 @@ lit. The Bell offering rings a real ghanta: one 4.2 s strike, `public/puja/ghant
 from "Indian Temple Bell" by ganiket (Freesound #466652, CC0) on 5 Oct 2026 — the
 synthesised bell before it did not sound like one.
 
-**The whole page is a mandir entrance** (5 Oct 2026, `TempleFrame` in
-`PujaProps.jsx`): a photograph of a carved white-marble entrance with pillars,
-an elephant frieze, a layered scalloped arch and marble steps
-(`public/puja/mandir-marble.webp`, Canva design DAHXKTEtMaA, doorway
-green-screened and keyed). It is laid on as a CSS border-image sized in `cqw`,
-so the frieze and arch scale with the page's width and only the pillar shafts
-stretch to its height. The murti stands **inside the doorway**
-(`FRAME_OPENING`) on a lamp-lit dark sanctum, not behind the pillars. It
-replaced a sandstone door frame and, before that, a drawn SVG frame the owner
-called "AI created".
+**The darshan page, as the owner's reference** (6 Oct 2026, "same to same"):
+top to bottom —
+
+- **Deity pills** in a scrolling row, with **back** at the left end and
+  **sangeet** at the right (gold with moving bars while something plays). The
+  row follows a swipe, so the chosen pill stays in view.
+- A **gold band** across the shrine (`public/puja/gold-band.webp`, Canva design
+  DAHXQAKkIg0, keyed). Its two pendants carry the **ghantis**, which ring when
+  touched.
+- The **mandir's plaque** hung from the band: "Shri Ganesh Mandir", and under it
+  the murti's name and its place in the stack (1/4). Tapping it opens the
+  **murti sheet**, which is **the only place the image attribution appears**,
+  so it cannot be removed without removing the images. The plaque names the
+  deity's mandir, not a real temple, because the murtis are paintings, not
+  photographs of a temple's murti.
+- The **murti** fills the page over a blurred, darkened copy of itself, so a
+  painting that does not match the phone's shape still reaches every edge.
+  `setting:croppedDeityImage` fills and crops instead.
+- A **white marble altar slab** across the bottom
+  (`public/puja/marble-slab.webp`, from the same design). The agarbatti, both
+  diyas, the thali and a brass bowl of marigolds stand on it.
+
+This replaced, the same day, a full-page mandir entrance (white marble, then a
+choice of marble, sandstone, gold or granite) whose doorway the murti stood in.
 
 **No offering buttons: you touch the samagri** (5 Oct 2026, the owner's pick
 over brass roundels on the pillars, a samagri tray, or a fan-out from the
-thali). The two ghantis hang at the doorway's edges and ring when touched. On the
-steps, the agarbatti stand and both diyas light when touched, and a brass bowl
-of marigolds (`public/puja/pushpa.webp`) showers flowers. The thali in the
-middle still begins the aarti. Until the first offering, each object breathes a
-saffron glow, and a one-time toast says "Touch the ghanti, diya, dhoop or
-flowers to offer". The `namo.puja.touched` localStorage key remembers it per
-device. The rail of dark round buttons down the pillar is gone.
+thali). The ghantis ring, the agarbatti and both diyas light, the bowl of
+marigolds (`public/puja/pushpa.webp`) showers flowers, and the thali begins or
+ends the aarti. It never spins on the spot: it rises and circles in front of the
+murti. Until the first offering, each object breathes a saffron glow, and a
+one-time toast says what to touch (`namo.puja.touched` remembers it per device).
 
-**Four mandirs to choose from** (5 Oct 2026): white marble, pink sandstone, gold
-and black granite with brass (`MANDIRS` in `PujaProps.jsx`, files
-`public/puja/mandir-{id}.webp` plus a `-thumb`). Each is measured in its own
-pixels (top, side, bottom, apex, plate), so the doorway, bells and nameplate
-follow whichever is chosen. The choice is in the Darshan sheet under **Mandir**,
-changes the page behind the sheet at once, and is remembered per device
-(`namo.puja.mandir`).
-
-**Back** and **sangeet** sit in the top corners over the frieze. The deity's
-**nameplate** (its murti, its name, one dot per murti) is centred on the band
-under the frieze, where the owner placed it on the marble; each mandir's
-`plate` says where that band is. The nameplate opens the **Darshan sheet**: deities in a
-grid, then that deity's murtis, then the mandir. Tapping a deity changes the doorway behind the
-sheet at once and keeps the sheet open on its murtis; tapping a murti closes
-it. This sheet replaced the deity chip row and the eye button, and it is **the
-only place the image attribution appears**, so it cannot be removed without
-removing the images. **Sangeet** opens with the current deity's own bhajans and
-mantras first ("For Ganesh"), matched loosely on Bhakti's deity field and title,
-then the Bhajans/Mantras tabs. While something plays, the button turns gold
-with moving bars. A pushpanjali showers 36 photographed marigolds and loose genda
-and rose petals (`public/puja/{flower,petal}-*.webp`) in front of the marble;
-petals flutter edge-on as they fall, and each one's size and speed differ. The thali never spins on
-the spot: a tap begins or ends the aarti, and it only circles in front of the
-murti.
+**Sangeet** opens with the current deity's own bhajans and mantras first ("For
+Ganesh"), matched loosely on Bhakti's deity field and title, then the
+Bhajans/Mantras tabs. A pushpanjali showers 36 photographed marigolds and loose
+genda and rose petals (`public/puja/{flower,petal}-*.webp`); petals flutter
+edge-on as they fall, and each one's size and speed differ.
 
 No money anywhere. Nothing books a pandit.
 
