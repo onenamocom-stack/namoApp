@@ -784,6 +784,8 @@ its `item_id` is the order's own id — the shipment's key.
 | `orders.payment_method` | `wallet` (default, database-level) or `cod`. Raw-SQL inserts (bookings, the chat meter) need not name it |
 | `orders.cod_fee_paise` | The COD fee inside `total_paise`; 0 (database default) for every other order. Not an `order_items` row: production's `item_type` CHECK would refuse a new kind |
 | `shipping_quotes.cod_available` | Whether any courier at the pincode takes cash, from Shiprocket's serviceability with `cod=1` |
+| `orders.payment_method = 'online'` | Razorpay checkout per order (migration `shop/0006`, a choice only). `pending` with `expires_at` = 15 minutes; `paid` on capture; `cancelled` past it (the minute's sweep, `lapse_unpaid`) |
+| `payments.shop_order_id` | Nullable (migration `wallet/0003`). Set on the `created` row of a Razorpay order opened for a shop order; the capture settles that order instead of crediting the wallet — or credits the wallet when the order had already lapsed |
 
 A COD order's `status`: `pending` at checkout → `paid` when its shipment is
 delivered, or → `cancelled` (stock put back) when returned or cancelled first

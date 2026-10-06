@@ -5837,3 +5837,39 @@ through the full flow; online (Razorpay) vs COD; hope Shiprocket handles it."
 - **Not live:** needs the API deploy and the app reaching 1namo.com (the
   DNS switch, §58).
 
+## 62. The shop pays through Razorpay; the wallet is for chat — 6 Oct 2026
+
+Rahul: "Store me seedha payment gateway open kardo, instead of wallet.
+Wallet will be for chat." Also: a video on a product, and a shared product
+link should come with its image and full name.
+
+- **Built, server:** `payment: "online"` (the app's default) writes a
+  `pending` order with `expires_at` 15 minutes on, holds the stock, puts the
+  shipment at `awaiting_payment`, and after the transaction opens a Razorpay
+  order (`wallet.open_shop_payment`, the `created` payments row carrying
+  `shop_order_id`). Settled by `POST /v1/shop/orders/<id>/confirm/` (the
+  checkout's signature over `order_id|payment_id`, checked with the key
+  secret) or by the existing webhook — once, the payments row's unique
+  `provider_payment_id` catching the second. Paid → `paid`, shipment
+  `ready`, dispatched. `abandon/` and the minute's sweep (`lapse_unpaid`,
+  from `apps/chat/views.sweep`) cancel an unpaid one: stock back, shipment
+  and pending cashback cancelled. A capture after a lapse is credited to the
+  wallet. Dispatch refuses an unpaid online order. Razorpay down → the order
+  lapses at once. 10 tests; 1022 pass. Migrations `wallet/0003`, `shop/0006`
+  **applied to production**.
+- **Built, app:** the cart's Pay online / Cash on delivery; Razorpay opens
+  for the order; paid clears the cart, closed releases it. The wallet line
+  and the top-up-the-gap flow (§61) are gone from the cart. Walked on the
+  local build with Razorpay stubbed both ways.
+- **Video on a product:** already built (§57 — the console's "Add photos or
+  videos", up to 30 MB). Live with the API deploy.
+- **The WhatsApp card:** the link shared was `1namo.com/#/shop/p/…` — the
+  GitHub Pages build — and a crawler drops everything after `#`, so it
+  previewed the front page. The real-address link with its image and full
+  name works after the DNS switch and the API deploy (§58, §60). The share
+  text now carries the product's full name and price (WhatsApp ignores the
+  share sheet's title).
+- **For the owner:** in Razorpay's dashboard the webhook must send
+  `payment.captured` (it already does for top-ups) — no change. Wallet
+  orders from an app that has not reloaded are still accepted.
+

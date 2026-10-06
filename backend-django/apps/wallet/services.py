@@ -395,6 +395,55 @@ def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
     }
 
 
+def open_shop_payment(profile_id, amount_paise, shop_order_id, client=None):
+    """A Razorpay order for one shop order (6 Oct 2026). The 'created' row
+    carries `shop_order_id`, so the capture settles that order instead of
+    crediting the wallet. No top-up band: the amount is the order's own.
+    Returns {order_id, amount_paise, key_id} or raises Refusal."""
+    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
+    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
+    if not key_id or not key_secret:
+        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
+    client = client or RazorpayClient(
+        key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
+    )
+    try:
+        order = client.create_order(
+            amount_paise, notes={"profile_id": str(profile_id), "shop_order_id": str(shop_order_id)}
+        )
+    except RazorpayError as exc:
+        logger.error("[shop-pay] razorpay refused: %s", exc.status)
+        raise Refusal(502, REFUSAL_PROVIDER) from None
+    Payment.objects.create(
+        profile_id=profile_id, provider_order_id=order["id"], amount_paise=amount_paise,
+        status=PaymentStatus.CREATED, shop_order_id=shop_order_id,
+    )
+    return {"order_id": order["id"], "amount_paise": amount_paise, "key_id": key_id}
+
+
+def confirm_checkout(profile_id, provider_order_id, provider_payment_id, signature):
+    """The checkout's own proof of payment, so the order is settled the
+    moment Razorpay's sheet closes rather than when the webhook lands.
+    Razorpay signs `order_id|payment_id` with the key secret; a match is a
+    captured payment for that order. The webhook, arriving later with the
+    same payment id, finds it recorded and changes nothing."""
+    secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
+    expected = signature_hex(secret, f"{provider_order_id}|{provider_payment_id}".encode("utf-8"))
+    if not secret or not signatures_match(signature or "", expected):
+        return {"ok": False, "reason": "That payment could not be confirmed."}
+    created = Payment.objects.filter(
+        provider_order_id=str(provider_order_id), status=PaymentStatus.CREATED, profile_id=profile_id,
+    ).first()
+    if created is None:
+        return {"ok": False, "reason": "That payment could not be confirmed."}
+    result = payment_capture(
+        event_id=None, order_id=provider_order_id, payment_id=provider_payment_id,
+        amount_paise=created.amount_paise, status=PaymentStatus.CAPTURED,
+        raw={"source": "checkout"},
+    )
+    return {"ok": True, **{k: v for k, v in result.items() if k != "ok"}}
+
+
 def topup_status(profile_id, order_id):
     """The client-visible outcome of one top-up — the latest payments row
     for this caller's own order (the payments_select_own policy as a
@@ -439,7 +488,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         raise CaptureFailed(f"payment {payment_id} has no positive amount")
     with connection.cursor() as cursor:
         cursor.execute(
-            "select profile_id, amount_paise from payments"
+            "select profile_id, amount_paise, shop_order_id from payments"
             " where provider_order_id = %s and status = 'created'"
             " order by created_at desc limit 1",
             [str(order_id)],
@@ -447,7 +496,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         created = cursor.fetchone()
     if created is None:
         raise CaptureFailed(f"no order {order_id} on this system")
-    profile_id, order_amount = created
+    profile_id, order_amount, shop_order_id = created
     # Canonical dashed form whatever the backend stored (Django keeps
     # UUIDFields dashless on SQLite) — the value is returned to the
     # webhook log and feeds the ORM payment row.
@@ -467,8 +516,21 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                 amount_paise=amount_paise,
                 status=status,
                 raw=raw,
+                shop_order_id=shop_order_id,
             )
-            if status == PaymentStatus.CAPTURED:
+            if status == PaymentStatus.CAPTURED and shop_order_id:
+                # A shop order paid directly (6 Oct 2026): the order is
+                # settled, nothing is credited. If it had already lapsed —
+                # the window closed, the stock went back — the money is
+                # not lost: it goes to the wallet, and the log says why.
+                from apps.shop import services as shop_services
+
+                settled = shop_services.order_paid(shop_order_id)
+                if settled == "lapsed":
+                    logger.warning("[shop-pay] %s paid after its order lapsed; credited to wallet", shop_order_id)
+                    credit(profile_id, amount_paise, "Shop payment after the order lapsed",
+                           ref_type=RefType.PAYMENT)
+            elif status == PaymentStatus.CAPTURED:
                 # The balance is not touched here. The after-insert
                 # trigger on `ledger` moves it (003), emulated by
                 # insert_ledger on SQLite — so the credit and the cache

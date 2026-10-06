@@ -54,6 +54,39 @@ def product(request, key):
     return Response(services.product_detail(found))
 
 
+class ConfirmInput(serializers.Serializer):
+    razorpay_order_id = serializers.CharField(max_length=64)
+    razorpay_payment_id = serializers.CharField(max_length=64)
+    razorpay_signature = serializers.CharField(max_length=256)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def confirm_payment(request, order_id):
+    """Razorpay's checkout succeeded: its signed answer settles the order
+    now (the webhook confirms it again later, harmlessly)."""
+    from apps.wallet import services as wallet_services
+
+    form = ConfirmInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    d = form.validated_data
+    result = wallet_services.confirm_checkout(
+        request.user.id, d["razorpay_order_id"], d["razorpay_payment_id"], d["razorpay_signature"],
+    )
+    if not result.get("ok"):
+        return Response(result)
+    order = Order.objects.filter(pk=order_id, profile_id=request.user.id).first()
+    return Response({"ok": True, "status": order.status if order else None})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def abandon_payment(request, order_id):
+    """The buyer closed Razorpay without paying: the order lapses now and
+    the stock goes back, rather than in fifteen minutes."""
+    return Response({"ok": True, "lapsed": services.lapse(order_id, profile_id=request.user.id)})
+
+
 class Line(serializers.Serializer):
     product_id = serializers.UUIDField()
     qty = serializers.IntegerField(min_value=1, max_value=services.MAX_QTY_PER_LINE)
@@ -74,7 +107,7 @@ class BuyInput(serializers.Serializer):
     address_id = serializers.UUIDField()
     quote_id = serializers.UUIDField()
     # How it is paid (6 Oct 2026): the wallet now, or cash to the courier.
-    payment = serializers.ChoiceField(choices=["wallet", "cod"], required=False, default="wallet")
+    payment = serializers.ChoiceField(choices=["online", "wallet", "cod"], required=False, default="wallet")
 
 
 @api_view(["POST"])

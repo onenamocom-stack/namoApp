@@ -284,9 +284,13 @@ computed discount badge. Two products are sold out.
 **Delivery — decided 5 Oct 2026; cash on delivery added 6 Oct 2026** (it was
 prepaid only). Two ways to pay at checkout:
 
-- **Online** — the wallet pays for the goods and the delivery together; when
-  the wallet is short, Razorpay adds the gap (at least ₹100, the top-up
-  minimum) in the same tap.
+- **Online** — Razorpay's checkout for that order: UPI, card or netbanking,
+  goods and delivery together. **The wallet is not used in the shop** (owner
+  and Rahul, 6 Oct 2026: "wallet will be for chat"; it replaced paying shop
+  orders from the wallet). The items are held for 15 minutes while checkout
+  is open; closing it, or letting the window run out, releases them and
+  charges nothing. A payment that lands after the window closed is kept as
+  wallet balance, never lost.
 - **Cash on delivery** — nothing leaves the wallet; the courier collects the
   total, which carries a **2% fee** on goods plus delivery, rounded up to the
   rupee. Offered only where a courier at the pincode takes cash, for orders

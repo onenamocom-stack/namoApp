@@ -103,7 +103,9 @@ export default function ProductPage() {
   const share = async () => {
     const url = window.location.href
     try {
-      if (navigator.share) await navigator.share({ title: p.name, text: p.seoDescription || p.subtitle, url })
+      // WhatsApp shows `text` and the link, not `title`: the full name and
+      // the price go in the text (6 Oct 2026 — only the subtitle showed).
+      if (navigator.share) await navigator.share({ title: p.name, text: `${p.name} · ₹${p.price.toLocaleString('en-IN')}`, url })
       else {
         await navigator.clipboard.writeText(url)
         showToast(t('shop.pp.copied'))

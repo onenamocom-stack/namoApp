@@ -190,6 +190,10 @@ class Payment(models.Model):
     provider_payment_id = models.TextField(null=True, blank=True, unique=True)
     provider_event_id = models.TextField(null=True, blank=True, unique=True)
     amount_paise = models.IntegerField()
+    # A shop order paid straight through Razorpay (6 Oct 2026). Null for a
+    # wallet top-up. Set on the 'created' row; the capture reads it there,
+    # never from the payload.
+    shop_order_id = models.UUIDField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=PaymentStatus.choices, default=PaymentStatus.CREATED
     )

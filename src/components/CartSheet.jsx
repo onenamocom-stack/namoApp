@@ -26,8 +26,6 @@ export default function CartSheet() {
     clearCart,
     checkoutCart,
     spending,
-    balance,
-    topup,
   } = useStore()
 
   /* An astrologer's code, typed here or carried in from their link. This
@@ -42,21 +40,18 @@ export default function CartSheet() {
      and the total on the button must be the total charged. */
   const [delivery, setDelivery] = useState(null)
   const [nonce, setNonce] = useState(0)
-  /* How it is paid (6 Oct 2026): online — the wallet, topped up through
-     Razorpay right here when it is short — or cash on delivery, 2% more,
-     where a courier at that pincode will take cash. */
-  const [payment, setPayment] = useState('wallet')
+  /* How it is paid (6 Oct 2026): online — Razorpay's checkout for this
+     order, UPI, card or netbanking; the wallet is for chat, not the shop —
+     or cash on delivery, 2% more, where a courier at that pincode takes
+     cash. */
+  const [payment, setPayment] = useState('online')
   const goodsAndDelivery = cartTotal * 100 + (delivery?.amountPaise ?? 0)
   const codOffered = !!delivery?.codAvailable
   const cod = payment === 'cod' && codOffered
   const fee = cod ? codFeePaise(goodsAndDelivery, delivery.codFeeBps) : 0
   const totalPaise = goodsAndDelivery + fee
   const overCap = cod && delivery?.codMaxPaise != null && totalPaise > delivery.codMaxPaise
-  const short = !cod && balance !== null && balance < totalPaise
-  // What Razorpay adds when the wallet is short: the gap, to the rupee, and
-  // never under the ₹100 a top-up can be (apps/wallet MIN_PAISE).
-  const toAdd = short ? Math.max(Math.ceil((totalPaise - balance) / 100) * 100, 10_000) : 0
-  const [adding, setAdding] = useState(false)
+
 
   const [coupon, setCoupon] = useState(() => {
     try {
@@ -71,21 +66,8 @@ export default function CartSheet() {
      else — so the last item could be sold to everyone holding it in a
      cart. Still awaited: without it a refusal reads as truthy and clears
      a cart nobody paid for. */
-  /* Paying online with too little in the wallet: Razorpay adds what is
-     missing (rounded up to the rupee), then the order goes through — one
-     tap, rather than a dead button and a trip to the Wallet screen. */
-  const addAndPay = async () => {
-    setAdding(true)
-    try {
-      const added = await topup(toAdd)
-      if (added) await checkout()
-    } finally {
-      setAdding(false)
-    }
-  }
-
   const checkout = async () => {
-    const result = await checkoutCart(coupon, delivery, cod ? 'cod' : 'wallet')
+    const result = await checkoutCart(coupon, delivery, cod ? 'cod' : 'online')
     if (result?.ok) {
       clearCart()
       setCartOpen(false)
@@ -187,7 +169,7 @@ export default function CartSheet() {
               <p className="caps-sm t-faint">Pay</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {[
-                  { key: 'wallet', title: 'Online', note: 'Wallet · UPI, card via Razorpay' },
+                  { key: 'online', title: 'Pay online', note: 'UPI, card or netbanking' },
                   {
                     key: 'cod',
                     title: 'Cash on delivery',
@@ -219,23 +201,7 @@ export default function CartSheet() {
             </div>
           )}
 
-          {/* What leaves and what is left, before the button that does it.
-              Buy used to charge on the tap with none of this on screen —
-              a gold button two taps from Add, and the money was gone
-              before the page changed. Not for cash on delivery: the wallet
-              is not touched. */}
-          {!cod && <div className="mt-2 flex items-baseline justify-between">
-            <span className="caps-sm t-faint">Wallet after</span>
-            <span
-              className={`text-meta tnum ${short ? 'text-live' : 't-sub'}`}
-            >
-              {balance === null
-                ? '—'
-                : short
-                  ? `short by ₹${rupees(totalPaise - balance)}`
-                  : `₹${rupees(balance - totalPaise)}`}
-            </span>
-          </div>}
+
 
           {/* The coupon goes HERE, between the total and the payment, which
               is the last moment it can change what happens and the first
@@ -266,25 +232,23 @@ export default function CartSheet() {
             <PopButton
               size="sm"
               variant="gold"
-              disabled={spending || adding || !delivery || overCap}
-              onClick={short ? addAndPay : checkout}
+              disabled={spending || !delivery || overCap}
+              onClick={checkout}
             >
-              {spending || adding
+              {spending
                 ? cod ? 'Placing…' : 'Paying…'
                 : !delivery
                   ? 'Choose an address'
                   : cod
                     ? `Place order · ₹${rupees(totalPaise)} on delivery`
-                    : short
-                      ? `Add ₹${rupees(toAdd)} and pay`
-                      : `Pay ₹${rupees(totalPaise)}`}
+                    : `Pay ₹${rupees(totalPaise)}`}
             </PopButton>
           </div>
 
           <p className="mt-4 text-center text-meta t-faint">
             {cod
               ? 'Pay the courier in cash when the parcel arrives. Nothing is taken from your wallet. Stock is claimed when you place the order.'
-              : 'Paid from your wallet, delivery included; anything missing is added through Razorpay first. Stock is claimed when you pay, so nothing is held for you until then.'}
+              : 'Pay securely through Razorpay, delivery included. Your items are held for 15 minutes while you pay; close the payment and nothing is charged.'}
           </p>
         </>
       )}

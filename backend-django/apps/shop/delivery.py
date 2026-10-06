@@ -253,6 +253,12 @@ def dispatch(order_id, force=False):
             return "too-old"
         if RANK.get(shipment.status, 0) >= RANK[Shipment.Status.DELIVERED]:
             return "finished"
+        # An online order whose payment has not been captured is not sent
+        # (6 Oct 2026); order_paid dispatches it when it is. Read off the
+        # ORDER: a cash-on-delivery order is pending too, and ships.
+        order = shipment.order
+        if order.status != Order.Status.PAID and order.payment_method == Order.PaymentMethod.ONLINE:
+            return "awaiting-payment"
         # The failure is caught INSIDE the transaction, so whatever step
         # did succeed (a push that got its id) commits rather than being
         # rolled back and pushed twice next time.

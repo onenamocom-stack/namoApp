@@ -204,4 +204,8 @@ def sweep(request):
     from apps.notifications.services import flush_old
 
     result["alerts_flushed"] = flush_old()
+    # Shop orders whose Razorpay window closed unpaid (6 Oct 2026).
+    from apps.shop.services import lapse_unpaid
+
+    result["shop_orders_lapsed"] = lapse_unpaid()
     return JsonResponse({"ok": True, **result})

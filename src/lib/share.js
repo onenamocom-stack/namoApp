@@ -13,7 +13,8 @@ export async function shareLink(path, { title } = {}) {
   const url = `${window.location.origin}${path}`
   if (navigator.share) {
     try {
-      await navigator.share({ url, title })
+      // `text` too: WhatsApp drops `title` and shows only text and link.
+      await navigator.share({ url, title, ...(title ? { text: title } : {}) })
       return null
     } catch (err) {
       if (err?.name === 'AbortError') return null

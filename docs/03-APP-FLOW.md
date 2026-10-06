@@ -938,18 +938,20 @@ is preselected) or, when there are none, the address form — a six-digit
 pincode fills city and state. Choosing an address asks the server for the
 delivery charge; the sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
-Then **Pay**: **Online** or **Cash on delivery** (6 Oct 2026). Online shows
-"Wallet after" and the button reads "Pay ₹X", or "Add ₹Y and pay" when the
-wallet is short — Razorpay opens for the gap and the order goes through
-after it. Cash on delivery adds a "Cash on delivery fee · 2%" line, the total
+Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online
+— the default — reads "Pay ₹X" and opens Razorpay's checkout for the order
+(the name, email and phone filled in). Paid: "Paid · ordered", the cart
+clears. Closed or failed: "Payment not completed. Nothing was charged.", the
+cart stays and the items are released at once. The wallet plays no part in
+the shop. Cash on delivery adds a "Cash on delivery fee · 2%" line, the total
 becomes "To pay on delivery", and the button reads "Place order · ₹X on
 delivery"; where no courier takes cash it is disabled and says "Not at this
 pincode", and over the cap a line says to pay online. A refused payment asks
 for the charge again. After a successful order the app asks the server to
 dispatch the parcel and does not wait for the answer.
 
-**Orders** says what happened to the money: "Paid" or "Returned" for an
-online order; "Pay in cash on delivery", "Paid in cash" or "Nothing to pay"
+**Orders** says what happened to the money: "Paid", "Waiting for payment" or
+"Not paid · nothing charged" for an online order; "Pay in cash on delivery", "Paid in cash" or "Nothing to pay"
 for a COD one, with its fee as a line. It shows each parcel as four steps — Ordered, Packed, Shipped,
 Delivered — with the courier's last status line, the AWB, and a **Track
 parcel** link to the courier's public tracking page.
@@ -967,7 +969,7 @@ arithmetic in the browser any more.
 
 | # | Path | Effect |
 |---|---|---|
-| 1 | Cart checkout, online | Debits the cart total plus the quoted delivery charge (after a Razorpay top-up of any gap), clears the cart |
+| 1 | Cart checkout, online | Writes a `pending` order holding the stock for 15 minutes and opens Razorpay for its total; the checkout's signed answer (or the webhook) makes it `paid` and sends the parcel; closed or lapsed → `cancelled`, stock back, nothing charged |
 | 1a | Cart checkout, cash on delivery | Debits nothing; claims the stock and writes a `pending` order whose total carries the 2% fee; delivered → `paid`, returned or cancelled → `cancelled` and restocked |
 | 2 | Shop *Buy now* | Debits the product price |
 | 3 | Reports *Buy now* | Debits the report price |

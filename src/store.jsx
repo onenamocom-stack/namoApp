@@ -16,7 +16,7 @@ import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 import { createWalletApi } from './lib/wallet.js'
 import { createProfileApi } from './lib/profile.js'
-import { buy as buyFromShop, dispatchOrder } from './lib/shop.js'
+import { buy as buyFromShop, dispatchOrder, payOrder } from './lib/shop.js'
 
 /**
  * In-memory store for prototype state (cart, remaining AI questions, toast
@@ -674,7 +674,7 @@ export function AppProvider({ children }) {
    * the only place a coupon can be applied to a multi-item basket.
    */
   const checkoutCart = useCallback(
-    async (coupon = null, delivery = null, payment = 'wallet') => {
+    async (coupon = null, delivery = null, payment = 'online') => {
       if (!cart.length) return null
       if (spendingRef.current) {
         showToast('One payment at a time.')
@@ -694,6 +694,28 @@ export function AppProvider({ children }) {
           return result
         }
         const back = result.cashback_paise ? ` · ₹${rupees(result.cashback_paise)} back after delivery` : ''
+        /* Online (6 Oct 2026): the order holds its stock while Razorpay is
+           open; it is the seeker's only once paid. A closed sheet gives it
+           up and nothing is charged. */
+        if (result.razorpay) {
+          const paid = await payOrder(result.order_id, result.razorpay, {
+            prefill: {
+              name: profileRef.current?.name ?? '',
+              email: profileRef.current?.email ?? '',
+              contact: sessionRef.current?.user?.phone ?? '',
+            },
+          })
+          if (paid === 'closed') {
+            showToast('Payment not completed. Nothing was charged.')
+            return { ok: false, reason: 'closed' }
+          }
+          showToast(
+            paid === 'paid'
+              ? `Paid · ordered${back}`
+              : 'Payment received. Your order confirms in a moment.',
+          )
+          return result
+        }
         showToast(
           result.payment_method === 'cod'
             ? `Ordered · pay ₹${rupees(result.total_paise)} in cash on delivery${back}`

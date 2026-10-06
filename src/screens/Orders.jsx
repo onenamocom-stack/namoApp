@@ -189,6 +189,10 @@ function moneyLine(o, t) {
     if (o.status === 'paid') return t('ord.codPaid')
     return t('ord.codNone')
   }
+  if (o.paymentMethod === 'online') {
+    if (o.status === 'pending') return t('ord.payWaiting')
+    if (o.status === 'cancelled') return t('ord.notPaid')
+  }
   return o.status === 'refunded' || o.status === 'cancelled' ? t('ord.moneyBack') : t('ord.paid')
 }
 

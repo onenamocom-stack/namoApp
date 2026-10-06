@@ -47,10 +47,12 @@ server, and `hold_stock` below is where it would go.
 """
 
 import logging
+from datetime import timedelta
 import uuid
 
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 
 from apps.wallet import services as wallet_services
 
@@ -279,7 +281,7 @@ class Refused(Exception):
         self.payload = {"ok": False, "reason": reason, **extra}
 
 
-def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet"):
+def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet", client=None):
     """One purchase: stock, money, order — all of it or none of it.
 
     `lines` is [{product_id, qty}]. `payment` is "wallet" (the default:
@@ -311,11 +313,94 @@ def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet"):
 
     try:
         with transaction.atomic():
-            return _purchase(profile_id, wanted, coupon_code, delivery, payment)
+            result = _purchase(profile_id, wanted, coupon_code, delivery, payment)
     except Refused as refusal:
         return refusal.payload
     except DeliveryRefused as refusal:
         return {"ok": False, "reason": refusal.reason}
+
+    # Paying online (6 Oct 2026): the order and the held stock are
+    # committed; now Razorpay opens an order for the total. Outside the
+    # transaction, so a slow payment provider holds no row locks. If it
+    # cannot open one, the order lapses at once and nothing is held.
+    if result.get("payment_method") == Order.PaymentMethod.ONLINE:
+        if result["total_paise"] <= 0:
+            order_paid(result["order_id"])
+            result["paid"] = True
+            return result
+        try:
+            result["razorpay"] = wallet_services.open_shop_payment(
+                profile_id, result["total_paise"], result["order_id"], client=client
+            )
+        except wallet_services.Refusal as refusal:
+            lapse(result["order_id"])
+            return {"ok": False, "reason": refusal.reason}
+    return result
+
+
+# How long a Razorpay checkout holds the stock (6 Oct 2026).
+PAY_WINDOW_MINUTES = 15
+
+
+def order_paid(order_id):
+    """A captured Razorpay payment settles its shop order. Returns "paid"
+    (it moved now), "already" (a second confirmation — the webhook after
+    the checkout's own), or "lapsed" (the window closed first: the stock
+    went back, and the caller credits the money to the wallet)."""
+    with transaction.atomic():
+        order = Order.objects.select_for_update().filter(pk=order_id).first()
+        if order is None or order.status == Order.Status.CANCELLED:
+            return "lapsed"
+        if order.status != Order.Status.PENDING:
+            return "already"
+        order.status = Order.Status.PAID
+        order.save(update_fields=["status"])
+        Shipment.objects.filter(pk=order.pk, status=Shipment.Status.AWAITING_PAYMENT).update(
+            status=Shipment.Status.READY, updated_at=timezone.now()
+        )
+
+        def ship():
+            from . import delivery
+
+            delivery.dispatch(order.pk)
+
+        transaction.on_commit(ship)
+    return "paid"
+
+
+def lapse(order_id, profile_id=None):
+    """An online order whose payment never came: CANCELLED, its stock back,
+    its shipment cancelled, its pending cashback cancelled. Only a PENDING
+    online order moves, under its row lock; `profile_id` limits it to the
+    buyer's own (the abandon endpoint)."""
+    from apps.referrals import services as referral_services
+
+    with transaction.atomic():
+        rows = Order.objects.select_for_update().filter(
+            pk=order_id, status=Order.Status.PENDING, payment_method=Order.PaymentMethod.ONLINE,
+        )
+        if profile_id is not None:
+            rows = rows.filter(profile_id=profile_id)
+        order = rows.first()
+        if order is None:
+            return False
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=["status"])
+        for item in order.items.filter(item_type="product"):
+            release_stock(item.item_id, item.qty)
+        Shipment.objects.filter(pk=order.pk).update(status=Shipment.Status.CANCELLED, updated_at=timezone.now())
+    referral_services.on_shipment_status(order.pk, Shipment.Status.CANCELLED)
+    return True
+
+
+def lapse_unpaid(now=None):
+    """Every online order past its payment window — run by the minute's
+    sweep (apps/chat/views.sweep). Returns how many lapsed."""
+    now = now or timezone.now()
+    due = Order.objects.filter(
+        status=Order.Status.PENDING, payment_method=Order.PaymentMethod.ONLINE, expires_at__lt=now,
+    ).values_list("pk", flat=True)
+    return sum(1 for pk in list(due) if lapse(pk))
 
 
 REFUSAL_COD_PINCODE = "Cash on delivery is not available at this pincode. Pay online instead."
@@ -412,6 +497,10 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
             raise Refused(REFUSAL_COD_OPEN.format(n=open_cod))
         total += fee
         paid = {"ok": True, "balance_paise": None}
+    elif payment == Order.PaymentMethod.ONLINE:
+        # Razorpay, after this transaction commits (buy, above). Nothing is
+        # taken here; the stock is held for PAY_WINDOW_MINUTES.
+        paid = {"ok": True, "balance_paise": None}
     else:
         # The wallet takes its own row lock inside this transaction. It is
         # the LAST lock taken, after every product row, which is what keeps
@@ -421,11 +510,14 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
             raise Refused(paid.get("reason"), balance_paise=paid.get("balance_paise"))
 
     cod = payment == Order.PaymentMethod.COD
+    online = payment == Order.PaymentMethod.ONLINE
     order = Order.objects.create(
         id=uuid.uuid4(), profile_id=profile_id,
-        status=Order.Status.PENDING if cod else Order.Status.PAID, total_paise=total,
-        payment_method=Order.PaymentMethod.COD if cod else Order.PaymentMethod.WALLET,
+        status=Order.Status.PENDING if (cod or online) else Order.Status.PAID, total_paise=total,
+        payment_method=(Order.PaymentMethod.COD if cod
+                        else Order.PaymentMethod.ONLINE if online else Order.PaymentMethod.WALLET),
         cod_fee_paise=fee,
+        expires_at=timezone.now() + timedelta(minutes=PAY_WINDOW_MINUTES) if online else None,
     )
     for product, qty in products.values():
         OrderItem.objects.create(
@@ -444,7 +536,9 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
         Shipment.objects.create(
             order=order, address=snapshot(address), pincode=address.pincode,
             weight_grams=weight,
-            shipping_paise=shipping, status=Shipment.Status.READY,
+            shipping_paise=shipping,
+            # An online order's parcel waits for its payment (order_paid).
+            status=Shipment.Status.AWAITING_PAYMENT if online else Shipment.Status.READY,
         )
 
     if coupon is not None:

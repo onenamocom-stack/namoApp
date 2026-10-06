@@ -806,6 +806,8 @@ export const strings = {
   'ord.codPaid': { en: 'Paid in cash', hi: 'नकद चुकाया' },
   'ord.codNone': { en: 'Nothing to pay', hi: 'कुछ नहीं देना' },
   'ord.codFee': { en: 'Cash on delivery fee', hi: 'कैश ऑन डिलीवरी शुल्क' },
+  'ord.payWaiting': { en: 'Waiting for payment', hi: 'भुगतान का इंतज़ार' },
+  'ord.notPaid': { en: 'Not paid · nothing charged', hi: 'भुगतान नहीं हुआ · कुछ नहीं कटा' },
   'ord.courier': { en: 'Courier', hi: 'कूरियर' },
   /* One sentence around a link: "{notOrders} [wallet]{notOrdersEnd}". */
   'ord.notOrders': {

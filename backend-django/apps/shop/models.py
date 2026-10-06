@@ -147,7 +147,12 @@ class Order(models.Model):
         CANCELLED = "cancelled"
 
     class PaymentMethod(models.TextChoices):
-        # The wallet, which Razorpay tops up — paid before the parcel moves.
+        # Razorpay checkout for this order (6 Oct 2026; the shop's default —
+        # the wallet is for chat). PENDING with `expires_at` until the
+        # payment is captured, then PAID; unpaid past it, CANCELLED.
+        ONLINE = "online"
+        # The wallet — the shop's way to pay until 6 Oct 2026; still
+        # accepted from an app that has not reloaded.
         WALLET = "wallet"
         # Cash on delivery (6 Oct 2026): the courier collects `total_paise`,
         # which includes `cod_fee_paise`. PENDING until delivered, then PAID;

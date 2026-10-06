@@ -194,6 +194,62 @@ export function deliveryQuote(addressId, lines) {
 
 /** Send a paid parcel. Fire-and-forget after Buy; idempotent on the server,
  *  and the console finishes any that stop half-way. */
+/**
+ * Pay one shop order in Razorpay's checkout (6 Oct 2026 — the shop pays
+ * directly; the wallet is for chat). Resolves 'paid' (the server has
+ * checked Razorpay's signature and settled the order), 'closed' (the sheet
+ * was dismissed or the payment failed — the order is given up and its stock
+ * released), or 'unconfirmed' (Razorpay said paid but the confirmation did
+ * not get through — the webhook will settle it; nothing to do).
+ */
+export async function payOrder(orderId, razorpay, { prefill = {} } = {}) {
+  const { loadCheckout } = await import('./wallet.js')
+  try {
+    await loadCheckout()
+  } catch {
+    await abandonOrder(orderId)
+    return 'closed'
+  }
+  const answer = await new Promise((resolve) => {
+    const rzp = new window.Razorpay({
+      key: razorpay.key_id,
+      order_id: razorpay.order_id,
+      amount: razorpay.amount_paise,
+      currency: 'INR',
+      name: 'Namo',
+      description: 'Shop order',
+      prefill,
+      theme: { color: '#1a1a1a' },
+      handler: (response) => resolve(response),
+      modal: { ondismiss: () => resolve(null) },
+    })
+    rzp.on('payment.failed', () => resolve(null))
+    rzp.open()
+  })
+  if (!answer) {
+    await abandonOrder(orderId)
+    return 'closed'
+  }
+  try {
+    const done = await api(`/orders/${orderId}/confirm/`, {
+      method: 'POST',
+      body: {
+        razorpay_order_id: answer.razorpay_order_id,
+        razorpay_payment_id: answer.razorpay_payment_id,
+        razorpay_signature: answer.razorpay_signature,
+      },
+    })
+    return done?.ok ? 'paid' : 'unconfirmed'
+  } catch {
+    return 'unconfirmed'
+  }
+}
+
+/** The buyer closed checkout: give the order up now, not in 15 minutes. */
+export function abandonOrder(orderId) {
+  return api(`/orders/${orderId}/abandon/`, { method: 'POST' }).catch(() => null)
+}
+
 export function dispatchOrder(orderId) {
   return api(`/orders/${orderId}/dispatch/`, { method: 'POST' }).catch((err) => {
     console.error('[orders] dispatch:', err?.message)
