@@ -281,19 +281,33 @@ still open — they gate the first deployment, not the code.
 
 ## 8. Hosting, answered
 
-- **Front end (both apps): GitHub Pages is enough, indefinitely.** The
-  apps are static SPAs; Pages + the existing deploy workflow carries them.
-  The production deploy does not change during any of this.
+- **Front end (both apps): GitHub Pages until launch traffic, then off it.**
+  Rewritten 6 Oct 2026; it said "enough, indefinitely". Pages carries a
+  static SPA, but it cannot serve a real URL per page — the apps route
+  behind `#`, and Google treats everything after `#` as one page, so no
+  product, astrologer or horoscope can be found by search, and a shared
+  link previews as the front page. It also has a soft 100 GB/month
+  bandwidth limit, no control of headers or caching, and builds that
+  stalled for two hours in the 6 Oct Actions outage.
+  **The move, when it comes:** both builds to Cloudflare Pages (no
+  bandwidth charge; the media is already on Cloudflare R2), routes from
+  `#/shop/p/x` to `/shop/p/x` with the old `#` links redirected, and the
+  public pages — product, astrologer, daily horoscope, article — rendered
+  with their title, description, image and schema.org data in the HTML
+  (by the API on Cloud Run or a Pages function), plus `sitemap.xml` and
+  Search Console. **Trigger:** whichever comes first — paid acquisition
+  starting, search or WhatsApp sharing becoming a channel, or Pages'
+  bandwidth warning. An early step that needs no move: link previews for
+  product and astrologer links served from a subdomain.
 - **The APK**: same codebase wrapped by Capacitor later — assets ship
   inside the APK, API calls go to wherever the Django API lives. No
-  separate "app build" pipeline to buy.
-- **GCP**: not needed now. When the Django API needs production hosting,
-  Cloud Run is the default answer (stateless containers, scales to zero,
-  cheap at this volume) — that decision belongs to phase 8's cutover, not
-  today. Buy compute when there is compute to run; until the API ships,
-  there isn't.
-- **The pro app**: static build, same answer — Pages (or a second repo's
-  Pages) whenever its hosting is decided; no server of its own, ever.
+  separate "app build" pipeline to buy. Search does not see the app; it
+  sees the public pages above, which hand people to the app.
+- **The API: Cloud Run** (`namo-api`, since phase 8's cutover) and the
+  console (`namo-console`). The API belongs in the database's region,
+  asia-southeast1 (docs/02-TRD.md, NFRs).
+- **The pro app**: static build, same answer as the seeker app; it needs no
+  search pages, only the move off `#` routing with the rest.
 
 ## 9. What this plan deliberately does not do
 
