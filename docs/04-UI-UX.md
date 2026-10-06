@@ -455,6 +455,20 @@ crash.
 
 ## 7. Imagery
 
+### Uploaded images: one shape per kind, on every screen (6 Oct 2026)
+
+| What | Shape | Upload at |
+|---|---|---|
+| Shop product (card, feed card, product page) | 1:1 square | 1200 × 1200 px |
+| Blog cover (feed card, reader, composer) | 16:9 | 1600 × 900 px |
+| Photo post | 4:5 | 1080 × 1350 px |
+| Reel | 9:16 | 1080 × 1920 px |
+
+JPG or WebP, under 1 MB for a photo (the limit is 10 MB). Cards crop to the
+shape (`object-cover`); a product page's gallery shows the whole image
+(`object-contain`), so an off-shape photo is letterboxed there and cropped on
+the card. The plate below stands in only where nothing was uploaded.
+
 ### Generated, by default
 
 `Plate.jsx` draws greyscale SVG procedurally from a seed string: a deterministic

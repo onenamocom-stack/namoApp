@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiSupportsTags, publish, uploadMedia } from '../lib/content.js'
 import { fetchProducts } from '../lib/shop.js'
 import Plate from './Plate.jsx'
@@ -55,7 +55,7 @@ const SPEC = {
     heading: 'New blog post',
     accept: 'image/*',
     required: false,
-    add: 'Add a cover image',
+    add: 'Add a cover image (16:9, e.g. 1600 × 900)',
     swap: 'Change the cover',
   },
 }
@@ -65,34 +65,75 @@ const MAX_TAGS = 3
 
 /**
  * `tagProducts` — the consultant studio's composer can tag shop products on
- * a photo or a reel (not a blog post), and the server refuses anyone else,
- * so the prop only decides whether the picker is shown.
+ * any kind — reel, photo or blog (6 Oct 2026: a blog could not, and a
+ * consultant who left the Blog tab to look for the picker lost the blog) —
+ * and the server refuses anyone else, so the prop only decides whether the
+ * picker is shown.
  */
+const EMPTY = { caption: '', title: '', body: '', media: null, tagged: [] }
+const DRAFT_KEY = (kind) => `namo.draft.${kind}`
+
+function loadDraft(kind) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY(kind)) || 'null')
+    return saved ? { ...EMPTY, ...saved } : EMPTY
+  } catch {
+    return EMPTY
+  }
+}
+
 export default function Composer({ kinds = ['post', 'article'], onPublished, tagProducts = false }) {
   const { showToast } = useStore()
   const [tab, setTab] = useState(kinds[0])
-  const [caption, setCaption] = useState('')
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
+  const first = loadDraft(kinds[0])
+  const [caption, setCaption] = useState(first.caption)
+  const [title, setTitle] = useState(first.title)
+  const [body, setBody] = useState(first.body)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [media, setMedia] = useState(null)
-  const [tagged, setTagged] = useState([])
+  const [media, setMedia] = useState(first.media)
+  const [tagged, setTagged] = useState(first.tagged)
 
   const spec = SPEC[tab]
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
-  const canTag = tagProducts && tab !== 'article'
+  const canTag = tagProducts
 
-  /* Switching tabs clears the composer. A video chosen for a reel is not a
-     cover image for a blog post, and carrying it across is how the wrong file
-     gets published. */
+  /* Every tab keeps its own draft, in this phone's storage, as it is typed
+     (6 Oct 2026). Switching tabs used to clear the composer, and a blog of
+     eleven thousand characters went with it; a reload or a closed tab did
+     the same. Each kind is its own draft, so a video chosen for a reel is
+     still never carried to a blog's cover. */
+  const draft = { caption, title, body, media, tagged }
+  const saving = useRef(null)
+  useEffect(() => {
+    clearTimeout(saving.current)
+    saving.current = setTimeout(() => {
+      try {
+        const empty = !caption && !title && !body && !media && !tagged.length
+        if (empty) localStorage.removeItem(DRAFT_KEY(tab))
+        else localStorage.setItem(DRAFT_KEY(tab), JSON.stringify(draft))
+      } catch {
+        /* private window or full storage: the draft is still on screen */
+      }
+    }, 400)
+    return () => clearTimeout(saving.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, caption, title, body, media, tagged])
+
   function pick(next) {
+    if (next === tab) return
+    try {
+      localStorage.setItem(DRAFT_KEY(tab), JSON.stringify(draft))
+    } catch {
+      /* the draft stays only for this visit */
+    }
+    const d = loadDraft(next)
     setTab(next)
-    setMedia(null)
-    setCaption('')
-    setTitle('')
-    setBody('')
-    setTagged([])
+    setMedia(d.media)
+    setCaption(d.caption)
+    setTitle(d.title)
+    setBody(d.body)
+    setTagged(d.tagged)
   }
 
   async function onFile(e) {
@@ -129,6 +170,11 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
       setBody('')
       setMedia(null)
       setTagged([])
+      try {
+        localStorage.removeItem(DRAFT_KEY(tab))
+      } catch {
+        /* nothing to clear */
+      }
       showToast('Published to your feed')
       onPublished?.()
     } catch (err) {
@@ -220,6 +266,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
                 <Field k="Words" v={words.toLocaleString('en-IN')} />
                 <Field k="Read time" v={`${Math.max(1, Math.ceil(words / 200))} min`} />
               </div>
+              {canTag && <ProductPicker tagged={tagged} onChange={setTagged} />}
             </>
           ) : (
             <>
@@ -363,7 +410,9 @@ function ProductPicker({ tagged, onChange }) {
 
 /** The chosen file, or the procedural stand-in until there is one. */
 function MediaPreview({ media, tab, seed }) {
-  const shape = tab === 'article' ? 'aspect-[16/9]' : 'aspect-[4/5]'
+  // The shapes the feed and the reader show them in (6 Oct 2026): a blog
+  // cover 16:9 on every screen, a photo 4:5.
+  const shape = tab === 'article' ? 'aspect-video' : 'aspect-[4/5]'
 
   if (!media) return <Plate seed={seed} className={`mt-4 w-full ${shape}`} />
 

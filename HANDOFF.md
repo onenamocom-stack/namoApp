@@ -5751,3 +5751,30 @@ moved, since it only serves an apex domain whose DNS it runs).
   Pages in both repos. A stray empty Google project
   (`project-5e5df107-b8f8-46-430bc`, created by mistake on 6 Oct) can be
   deleted.
+
+## 59. Rahul's list, 6 Oct morning: blogs, images — 6 Oct 2026
+
+- **A blog vanished** when Rahul went to add a product: the Blog tab had no
+  product picker, and switching tabs wiped the composer. Now every tab keeps
+  its own draft in `localStorage` (`namo.draft.<kind>`), through tab
+  switches and reloads, and blogs can tag products
+  (`src/components/Composer.jsx`). Verified on the local consultant build.
+- **"Blog saved, image did not"**: the image did save (the row's
+  `media_url` is a live R2 PNG) — the feed card and the reader drew the
+  plate and never read it. Both show the cover now, 16:9, the composer's
+  shape (`Cover` in `src/screens/Home.jsx`). Verified on his post.
+- **Like, comment, share on blogs**: a blog had Save only. The feed card
+  and the reader now carry Like, Reply (the comment sheet), Share (the
+  blog's own address — Share on the reader toasted "copied" and copied
+  nothing) and Save. The server already accepted all of them.
+- **Image sizes and one proportion everywhere**: `docs/04-UI-UX.md` §7
+  table — products 1:1, blog covers 16:9, photos 4:5, reels 9:16. The
+  feed's shop cards were `mock.js` products (invented, drawn, and an Add
+  that carted a product that does not exist); they are the live catalogue
+  now, square, opening the product page. Tagged products open the product
+  page too, the referral code carried (`src/lib/shopRef.js`, shared by the
+  shop and the page).
+- **Not live yet:** 1namo.com is still GitHub Pages' last build, which no
+  longer updates (§58). These reach phones at the DNS switch; deployed to
+  namo-web.web.app / namo-pro.web.app meanwhile.
+

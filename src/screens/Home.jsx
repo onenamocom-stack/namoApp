@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { courses, feed, products } from '../data/mock.js'
+import { courses, feed } from '../data/mock.js'
+import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
+import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, productHref } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
@@ -34,7 +36,7 @@ export function authorHref(c) {
  */
 const SOURCES = {
   course: courses,
-  product: products,
+  product: [], // filled from the live catalogue, below
 }
 
 /** `content.kind` in the database → which card renders it. */
@@ -119,6 +121,21 @@ export default function Home() {
     }
   }, [])
 
+  /* The feed's shop cards are the real catalogue (6 Oct 2026; they were
+     mock.js's products — invented names, a drawn plate, and an Add that put
+     a product that does not exist in the cart). Featured and in stock
+     first; each product slot in the hand-ordered list takes the next one. */
+  const [catalogue, setCatalogue] = useState([])
+  useEffect(() => {
+    let active = true
+    fetchProducts()
+      .then((rows) => active && setCatalogue(rows.filter((r) => !r.soldOut).sort((a, b) => b.featured - a.featured)))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
   const posts = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
   const reshared = reshares
     .filter((r) => CARD_FOR_KIND[r.post.kind] !== 'article')
@@ -140,9 +157,14 @@ export default function Home() {
      interleaving would need a rank to interleave on and there is no ranking
      yet. When phase 10 makes these queries too, this list goes away and
      the sort above is already the right one. */
+  let nextProduct = 0
   const stillMock = feed
     .filter((f) => SOURCES[f.kind])
     .map((f) => {
+      if (f.kind === 'product') {
+        const live = catalogue[nextProduct++]
+        return live ? { ...f, id: `shop:${live.id}`, data: live } : null
+      }
       const found = SOURCES[f.kind]?.find((x) => x.id === f.refId)
       return found ? { ...f, data: found } : null
     })
@@ -351,7 +373,7 @@ function Count({ n }) {
   return n > 0 ? <span className="-ml-2 text-meta font-semibold tnum text-t1">{n.toLocaleString('en-IN')}</span> : null
 }
 
-function ActionRow({ id, like = true, onComment, onShare, authorId, likes = null, comments = 0, reposts = 0 }) {
+export function ActionRow({ id, like = true, onComment, onShare, authorId, likes = null, comments = 0, reposts = 0 }) {
   const { hasFlag, toggleFlag, session, t } = useStore()
   const me = session?.user?.id
   const canReshare =
@@ -489,7 +511,33 @@ function CtaStrip({ to, onClick, children, tone = 'orange' }) {
  * each opening that product in the shop with the author's code attached
  * (`productHref`). Nothing renders for an untagged post.
  */
-function ProductStrip({ tagged = [], shopRef }) {
+/** An image with the plate behind it: the plate shows while there is no
+ *  image or when it fails to load. Children sit over both. */
+export function Cover({ src, seed, className = '', children }) {
+  const [broken, setBroken] = useState(false)
+  if (!src || broken) {
+    return (
+      <Plate seed={seed} className={`${className} !rounded-none`}>
+        {children}
+      </Plate>
+    )
+  }
+  return (
+    <div className={`relative overflow-hidden bg-surface-2 ${className}`}>
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(true)}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {children}
+    </div>
+  )
+}
+
+export function ProductStrip({ tagged = [], shopRef }) {
   const { t } = useStore()
   if (!tagged.length) return null
   return (
@@ -957,7 +1005,9 @@ export function readMins(body) {
 }
 
 function ArticleCard({ read: b }) {
-  const { t } = useStore()
+  const { t, showToast } = useStore()
+  const [commenting, setCommenting] = useState(false)
+  const [comments, setComments] = useState(b.comments ?? 0)
   return (
     <article className="border-b border-rule bg-white">
       <PostHead
@@ -968,21 +1018,43 @@ function ArticleCard({ read: b }) {
         follow={b}
       />
 
-      {/* The cover: the plate, with the title set over a scrim at its foot. */}
+      {/* The cover — the uploaded image, or the plate when there is none —
+          with the title over a scrim at its foot. 16:9, the shape the
+          composer and the reader use too (6 Oct 2026: the image was saved
+          and never shown). */}
       <Link to={`/read/${b.id}`} className="relative block">
-        <Plate seed={b.id} className="aspect-[16/10] w-full !rounded-none">
+        <Cover src={b.mediaUrl} seed={b.id} className="aspect-video w-full">
           <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-4 pb-4 pt-12">
             <span className="block text-lead font-semibold leading-snug text-white">{b.title}</span>
           </span>
-        </Plate>
+        </Cover>
       </Link>
       {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
           one goes stale the first time the article is edited. */}
+      <ProductStrip tagged={b.products} shopRef={b.shopRef} />
       <CtaStrip to={`/read/${b.id}`}>{t('home.readArticle', { n: readMins(b.body) })}</CtaStrip>
 
-      {/* Save only, as before — an article never had a like. */}
-      <ActionRow id={b.id} like={false} />
+      {/* Like, reply, share and save, as a post has (6 Oct 2026: a blog had
+          Save only). No reshare: a reshared blog has no card in the feed's
+          reshare weave. Share sends the blog's own page. */}
+      <ActionRow
+        id={b.id}
+        likes={b.likes}
+        comments={comments}
+        onComment={() => setCommenting(true)}
+        onShare={async () => {
+          const said = await shareLink(`/read/${b.id}`, { title: b.title })
+          if (said) showToast(said)
+        }}
+      />
       <div className="h-3" />
+      <CommentSheet
+        open={commenting}
+        onClose={() => setCommenting(false)}
+        contentId={b.id}
+        postAuthorId={b.authorId}
+        onCount={setComments}
+      />
     </article>
   )
 }
@@ -1037,8 +1109,9 @@ function ProductCard({ product: p }) {
   return (
     <article className="border-b border-rule bg-white">
       <HouseHead name={t('home.namoShop')} note={t('home.forChart')} to="/shop" />
-      <Link to="/shop" className="block">
-        <Plate seed={p.id} className="aspect-square w-full !rounded-none" />
+      {/* Square, as on the shop's grid and the product page. */}
+      <Link to={pageOf(p)} className="block">
+        <ProductArt product={p} className="aspect-square w-full" />
       </Link>
       <CtaStrip onClick={() => addToCart(p)} tone="green">
         {t('home.addToCart', { price: p.price.toLocaleString('en-IN') })}

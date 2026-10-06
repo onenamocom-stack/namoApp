@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
-import { looksLikeReferral } from '../lib/referrals.js'
+import { useReferralFromLink } from '../lib/shopRef.js'
 import { useMyChart } from '../lib/astro.js'
 import { tileStyle } from '../lib/tiles.js'
 
@@ -543,41 +543,4 @@ function useFocusedProduct() {
     return found && /^[0-9a-f-]{36}$/i.test(found) ? found.toLowerCase() : null
   })
   return id
-}
-
-/**
- * The referral code a link brought, if any.
- *
- * Kept in sessionStorage as well as state. The journey from a shared link
- * is rarely one page — arrive, browse, sign in, then buy — and a code
- * that lived only in `location.hash` would be gone by the time it
- * mattered, with nobody able to explain why the consultant was not
- * credited. Session storage, not local: it belongs to this visit.
- *
- * Only A… codes. An N… code is a sign-up code claimed once at onboarding,
- * and silently treating one as a shop coupon would send a seeker to a
- * till to be told, correctly but uselessly, that it is the wrong kind.
- */
-function useReferralFromLink() {
-  const [code, setCode] = useState(() => {
-    try {
-      return sessionStorage.getItem('namo.ref') || null
-    } catch {
-      return null
-    }
-  })
-
-  useEffect(() => {
-    const found = new URLSearchParams(window.location.search).get('ref')
-    if (!found || !looksLikeReferral(found) || !found.toUpperCase().startsWith('A')) return
-    const upper = found.toUpperCase()
-    setCode(upper)
-    try {
-      sessionStorage.setItem('namo.ref', upper)
-    } catch {
-      /* private window, blocked storage — the code still works this page */
-    }
-  }, [])
-
-  return code
 }

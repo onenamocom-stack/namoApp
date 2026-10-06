@@ -143,9 +143,9 @@ function shape(row) {
  * exactly as one of those does.
  */
 export function productHref(product, shopRef) {
-  const q = new URLSearchParams({ p: product.id })
-  if (shopRef) q.set('ref', shopRef)
-  return `/shop?${q}`
+  // The product's own page since 6 Oct 2026, the author's code carried.
+  const q = shopRef ? `?${new URLSearchParams({ ref: shopRef })}` : ''
+  return `/shop/p/${encodeURIComponent(product.slug || product.id)}${q}`
 }
 
 /** "2h", "5d". Short by design — the cards have room for two characters. */

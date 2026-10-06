@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { fetchByAuthor, fetchFeed, fetchOne } from '../lib/content.js'
 import { isPro } from '../side.js'
-import { authorHref, readMins } from './Home.jsx'
+import { ActionRow, Cover, ProductStrip, authorHref, readMins } from './Home.jsx'
+import CommentSheet from '../components/CommentSheet.jsx'
+import { shareLink } from '../lib/share.js'
 import { TopBar } from '../components/Chrome.jsx'
-import Plate from '../components/Plate.jsx'
-import { Acts, Avatar, Button, Row, Section, Stub, Tag } from '../components/Primitives.jsx'
+import { Avatar, Button, Row, Section, Stub, Tag } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
 
 /**
@@ -23,7 +24,7 @@ import { useStore } from '../store.jsx'
  */
 export default function Article() {
   const { id } = useParams()
-  const { showToast, hasFlag, toggleFlag, session } = useStore()
+  const { showToast, session, t } = useStore()
   const home = isPro ? '/pro/studio' : '/home'
   const me = session?.user?.id ?? null
 
@@ -32,6 +33,8 @@ export default function Article() {
      request also answers "read next" — two round trips for one screen would be
      the expensive kind of tidy. */
   const [articles, setArticles] = useState(null)
+  const [commenting, setCommenting] = useState(false)
+  const [commentCount, setCommentCount] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -75,14 +78,15 @@ export default function Article() {
 
   const b = articles[idx]
   const next = articles[(idx + 1) % articles.length]
-  const saved = hasFlag(`save:${b.id}`)
+  const comments = commentCount ?? b.comments ?? 0
+  const setComments = setCommentCount
 
   /* One text column in the database, paragraphs on screen. Splitting on blank
      lines is what a writer typing into the studio's textarea actually produces,
      and it keeps the stored value the thing they typed (§1.5). */
   const paras = (b.body || '')
     .split(/\n\s*\n/)
-    .map((t) => t.trim())
+    .map((x) => x.trim())
     .filter(Boolean)
   const mins = `${readMins(b.body)} min`
 
@@ -96,7 +100,10 @@ export default function Article() {
         right={
           <button
             type="button"
-            onClick={() => showToast('Article link copied')}
+            onClick={async () => {
+              const said = await shareLink(`/read/${b.id}`, { title: b.title })
+              if (said) showToast(said)
+            }}
             className="text-label uppercase tracking-label text-t2"
           >
             Share
@@ -104,7 +111,9 @@ export default function Article() {
         }
       />
 
-      <Plate seed={b.id} className="h-44 w-full" />
+      {/* The cover the author uploaded, 16:9 as on the feed card. */}
+      <Cover src={b.mediaUrl} seed={b.id} className="aspect-video w-full" />
+      <ProductStrip tagged={b.products} shopRef={b.shopRef} />
 
       <section className="section pt-8">
         <div className="mb-6 flex items-center justify-between gap-4">
@@ -144,21 +153,31 @@ export default function Article() {
 
         <Stub className="my-10" />
 
-        <Acts
-          className="justify-center"
-          items={[
-            {
-              label: 'Save for later',
-              onLabel: 'Saved for later',
-              on: saved,
-              onClick: () =>
-                toggleFlag(`save:${b.id}`, {
-                  on: 'Saved to your reading list',
-                  off: 'Removed from your reading list',
-                }),
-            },
-            { label: 'Share', onClick: () => showToast('Article link copied') },
-          ]}
+        {/* Like, reply, share and save under the text, as on the feed card
+            (6 Oct 2026). */}
+        <div className="-mx-3">
+          <ActionRow
+            id={b.id}
+            likes={b.likes}
+            comments={comments}
+            onComment={() => setCommenting(true)}
+            onShare={async () => {
+              const said = await shareLink(`/read/${b.id}`, { title: b.title })
+              if (said) showToast(said)
+            }}
+          />
+          {comments > 0 && (
+            <button type="button" onClick={() => setCommenting(true)} className="mt-2 px-3 text-meta text-t3">
+              {comments === 1 ? t('home.comment1') : t('home.comments', { n: comments.toLocaleString('en-IN') })}
+            </button>
+          )}
+        </div>
+        <CommentSheet
+          open={commenting}
+          onClose={() => setCommenting(false)}
+          contentId={b.id}
+          postAuthorId={b.authorId}
+          onCount={setComments}
         />
       </article>
 

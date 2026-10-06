@@ -480,6 +480,13 @@ carry. A subcategory pill matches the product's subcategory. **Tapping a
 card opens the product's page.** Its cover photo is on the card when it has
 one, the engraved plate when it does not.
 
+**Blogs on the feed and at `/read/:id`** (6 Oct 2026): the uploaded cover,
+16:9 on both (it was saved and never shown — a drawn plate stood in), the
+tagged products under it, and **Like, Reply, Share and Save** as a post has
+(Save was the only action). Share sends the blog's own page; a blog has no
+Reshare. The feed's shop cards are the live catalogue, square, opening the
+product's page — they were `mock.js` products.
+
 ### `/shop/p/:key` — a product's page (6 Oct 2026)
 
 `key` is the slug or the id. Top bar: back to the shop, the brand (or the
@@ -834,7 +841,12 @@ screen applies it only on Thursday, so the two views already disagree. One
 endpoint fixes it.
 
 ### `/pro/studio`
-Compose a reel, a photo or a blog post. **Already published** lists the
+Compose a reel, a photo or a blog post. **Each tab keeps its own draft**, in
+the phone's storage as it is typed: switching tabs, a reload or a closed tab
+loses nothing, and publishing clears that tab's draft (6 Oct 2026 — switching
+tabs used to wipe the composer, and a long blog went with it). **Products
+can be tagged on all three**, a blog included; a tagged product opens its
+own page with the author's code. A blog's cover is 16:9. **Already published** lists the
 consultant's own posts only — a thumbnail (a reel's frame at half a second, a
 photo, or a plate for a blog post), views, likes and comments — and a tap opens
 it: a reel in the reel viewer, a blog post at `/read/:id`, a photo full screen.
