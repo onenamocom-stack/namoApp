@@ -281,9 +281,13 @@ still open — they gate the first deployment, not the code.
 
 ## 8. Hosting, answered
 
-- **Front end (both apps): moving to Cloudflare Pages now** (owner, 6 Oct
+- **Front end (both apps): moving to Firebase Hosting now** (owner, 6 Oct
   2026: "nothing should be based on GitHub"; HANDOFF §58 has the state).
-  The trigger below was overtaken; the reasons stand. Rewritten 6 Oct 2026;
+  Firebase, not the Cloudflare Pages described below: the owner keeps the
+  domain's DNS at GoDaddy, and Cloudflare serves an apex domain only when
+  it runs the DNS. Firebase sits in the API's own Google project, so the
+  rendered public pages can be a Hosting rewrite to Cloud Run on the same
+  domain. The trigger below was overtaken; the reasons stand. Rewritten 6 Oct 2026;
   it said "enough, indefinitely". Pages carries a
   static SPA, but it cannot serve a real URL per page — the apps route
   behind `#`, and Google treats everything after `#` as one page, so no
