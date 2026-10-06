@@ -1036,6 +1036,14 @@ Refunds are a separate forward transition, never a mutation of the original.
   never "Ringing", which is a call's word (6 Oct 2026). The consultant's request bar says Chat, Video call or
   Audio call, and its button says Accept or Answer.
 - **The call screen** reads "Connecting" until both are in, then the minutes left.
+- **A paid chat reopens itself.** Opening the app with a chat session live —
+  after a reload, a closed tab, a phone that slept — opens the chat panel on
+  that conversation, for either side. A call needs nothing: its screen is
+  in the URL.
+- **How fast each side learns.** A waiting chat asks every second whether it
+  was accepted; a consultant's queue is asked every 2 s while the app is on
+  screen (8 s hidden; a closed app is rung by web push); an open
+  conversation every 1.5 s.
 - **Sending a chat message** empties the box at once and puts the bubble in
   the conversation marked *Sending*; it settles to its time when the server
   has it. A dropped connection is retried on its own; if every try fails the

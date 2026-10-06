@@ -697,7 +697,12 @@ database through Supabase's transaction pooler (port 6543)**, where Django
 keeps no connection and uses no server-side cursors (`parse_database_url`).
 The p95 is the consultant list (~620 ms, two queries per consultant until
 5 Oct). The database is in Singapore and the API in Mumbai, so every query
-pays the distance; the regions should match.
+pays the distance — measured 6 Oct at about 60 ms a trip: a chat send of
+thirteen trips took ~800 ms against a two-trip heartbeat's ~170 ms. **The
+API belongs in the database's region (asia-southeast1)**; until it moves,
+a hot path is written to the fewest trips, and a test holds the chat send to
+its budget (`test_send_is_a_few_database_trips`: claim the key, check the
+session, insert, store the answer).
 
 ### Accessibility
 

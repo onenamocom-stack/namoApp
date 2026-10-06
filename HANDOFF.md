@@ -5631,6 +5631,33 @@ until you backspace, and "That session has ended" mid-session.
   to retry*. The box empties itself and ends an Android keyboard's
   composition first. Polls every 1.5 s on screen, 6 s hidden, and at once on
   return to the tab.
-- **Needs the API deploy** for the server half; the app half ships with the
-  Pages build. Not yet tried on a phone.
+- **Tested live, 6 Oct ~02:00 IST**, two headless Chromes: Test Seeker
+  (8447284861, OTP from the owner) and the owner's consultant account Raghu
+  (7011921246, ₹10/min). Three paid chat sessions on production; the new
+  builds served from `localhost:5260` against the live API, because Pages
+  could not deploy (below). ₹200 added to Test Seeker first (ledger kind
+  "Added for testing", note "Owner request, chat test 6 Oct 2026").
+  - Request → accept → chat open on both sides; waiting screen reads
+    "Request sent to Raghu" with the 45 s ring.
+  - Own bubble on screen in 9–20 ms (was ~850 ms); the box empties every
+    time; five rapid sends arrive once each, in order, on both sides.
+  - Timer agrees on both sides to the second and counts true over 30 s.
+  - Reload mid-chat: the chat reopens itself with its history (new build).
+  - Offline send: the bubble waits as *Sending* and lands once on reconnect.
+  - End: "Session ended · 2 min · ₹15", composer gone, consultant sees it;
+    closing both browsers mid-session was settled by the sweeper after the
+    60 s grace.
+  - Money, all three: 137 s → ₹25, 65 s → ₹15, 165 s → ₹30 (30 s blocks at
+    ₹10/min); hold and refund rows exact; earnings gross/fee 18%/net exact;
+    wallet ₹212 → ₹142.
+- **What made it slow** (fixed in code, needs the API deploy): a send was
+  thirteen database trips at ~60 ms each — the API is in Mumbai and the
+  database in Singapore. Now four (`test_send_is_a_few_database_trips`). The
+  request appeared to the consultant after ~6 s and the chat opened for the
+  seeker ~4.5 s after accept, both polling cadences: now 2 s and 1 s. Moving
+  `namo-api` to asia-southeast1 is the rest of the fix (`docs/02-TRD.md`).
+- **GitHub Actions incident** from 00:41 IST 6 Oct: every Pages deploy since
+  `7070e99` was cancelled with no runner, so 1namo.com and pro.1namo.com
+  still serve the 00:20 build — none of §53–§56's app changes are live until
+  a deploy runs. Tests: 964.
 
