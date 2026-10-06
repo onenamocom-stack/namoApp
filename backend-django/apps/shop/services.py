@@ -179,6 +179,19 @@ def product_row(product):
     }
 
 
+def plain_text(text):
+    """A description without its formatting marks (## , **, ==, - , > )."""
+    import re
+
+    text = text or ""
+    text = re.sub(r"(?m)^#{2,3}\s+", "", text)
+    text = re.sub(r"(?m)^>\s?", "", text)
+    text = re.sub(r"(?m)^\s*([-*•]|\d+[.)])\s+", "", text)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"==([^=]+)==", r"\1", text)
+    return re.sub(r"\*([^*\s][^*]*)\*", r"\1", text)
+
+
 def product_detail(product):
     """The product page: the list row plus the long text. The search and
     share text fall back to the name and the description's first lines, so
@@ -194,7 +207,7 @@ def product_detail(product):
         ],
         "seo_title": product.seo_title or product.name,
         "seo_description": product.seo_description
-        or (description.strip().split("\n")[0][:160] if description else (product.subtitle or "")),
+        or (plain_text(description).strip().split("\n")[0][:160] if description else (product.subtitle or "")),
     })
     return row
 

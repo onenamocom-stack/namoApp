@@ -5959,3 +5959,16 @@ link should come with its image and full name.
 - **Bhakti's search** moved into the header too (Rahul): `TabHeader`'s
   `search` takes `{value, onChange, placeholder}` for an in-bar field.
 
+## 67. Consult's extra lines gone; formatted product descriptions — 6 Oct 2026
+
+- Consult: "Every session is 20 min · unlimited questions" and "Booking a
+  slot costs 20% less…" removed above the roster (Rahul: extra text).
+- Product descriptions take formatting marks — heading, bold, highlight,
+  italic, lists, quote — rendered by `RichText.jsx` (React elements only;
+  typed text can never become markup). The console's description field has
+  a toolbar (`FormattedTextarea` in `apps/shop/admin.py`, inline script, no
+  library) and the same marks work in the sheet. Previews and the SEO
+  fallback use the words without marks (`shop.services.plain_text`).
+  Checked in a browser: the toolbar's buttons insert the marks; the page
+  renders them.
+

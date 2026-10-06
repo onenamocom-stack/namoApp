@@ -528,8 +528,12 @@ video, thumbnails under it to jump; a video plays in place. Brand, name,
 subtitle, price, MRP and the discount, "Inclusive of all taxes. Delivery is
 added at checkout.", stock ("Only 2 left" at three or fewer), chips for
 category, subcategory and SKU, and **Share** (the phone's share sheet, or
-the link copied). Then **About this product** (the description, a blank
-line a new paragraph) and **Questions people ask** (each opens in place).
+the link copied). Then **About this product** — the description with its
+formatting (6 Oct 2026): `## heading`, `### smaller heading`, `**bold**`,
+`==highlight==` (saffron), `*italic*`, `- ` bullets, `1. ` numbers, `> `
+a quote box, a blank line a new paragraph; built as elements, never HTML
+(`src/components/RichText.jsx`). The console's description box has buttons
+that add the marks; the sheet takes the same marks and **Questions people ask** (each opens in place).
 **Add to cart** and **Buy** stay pinned at the bottom. A product taken
 down, or a key that matches nothing: "That product is no longer in the
 shop", with the way back. The tab title, meta description and a

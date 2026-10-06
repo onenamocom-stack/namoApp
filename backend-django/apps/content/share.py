@@ -142,7 +142,9 @@ def product_page(request, key):
         return _page(_tags(title="Namo shop", description="Gemstones, rudraksha, maalas and remedies.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     price = f"₹{p.price_paise / 100:,.0f}"
-    description = p.seo_description or _summary(p.description) or p.subtitle or ""
+    from apps.shop.services import plain_text
+
+    description = p.seo_description or _summary(plain_text(p.description)) or p.subtitle or ""
     image = f"{_site()}/og/product/{p.id}.jpg" if p.image_url else f"{_site()}{FALLBACK_IMAGE}"
     return _page(_tags(title=f"{p.seo_title or p.name} · {price}", description=description,
                        image=image, url=url, kind="product"), url)

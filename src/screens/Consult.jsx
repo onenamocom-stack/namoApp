@@ -331,12 +331,8 @@ export default function Consult() {
           the roster below it. */}
       {/* ── Available now — the full roster ───────────────────────────── */}
       <section ref={listRef} className="px-5 pt-8">
-        <p className="mb-3 caps-sm t-faint">
-          {t('con.everySession', { ...SV, promise: SESSION.promise.toLowerCase() })}
-        </p>
-        {/* Said once for the list, not under every card. */}
-        <p className="mb-3 text-meta gold">{t('con.bookSaves')}</p>
-
+        {/* "Every session is 20 min · unlimited questions" and "Booking a
+            slot costs 20% less" left on 6 Oct 2026 (Rahul: extra text). */}
         <Kicker>
           {`${t(list.length === 1 ? 'con.person' : 'con.people', { n: list.length })}${
             featured.length > 0 ? ` · ${t('con.verified', { n: featured.length })}` : ''

@@ -109,6 +109,39 @@ def text_to_faq(text):
     return out
 
 
+class FormattedTextarea(forms.Textarea):
+    """The description box with a row of buttons that add the formatting
+    marks the product page renders (6 Oct 2026): heading, bold, highlight,
+    bullets, numbers, quote. Plain JavaScript on the textarea itself — no
+    library, nothing loaded from elsewhere."""
+
+    BUTTONS = (
+        ("Heading", "line", "## "), ("Bold", "wrap", "**"), ("Highlight", "wrap", "=="),
+        ("Italic", "wrap", "*"), ("• List", "line", "- "), ("1. List", "line", "1. "), ("Quote", "line", "> "),
+    )
+
+    def render(self, name, value, attrs=None, renderer=None):
+        from django.utils.html import format_html_join
+
+        box = super().render(name, value, attrs, renderer)
+        field_id = (attrs or {}).get("id", f"id_{name}")
+        buttons = format_html_join(
+            "", '<button type="button" class="button" style="margin:0 6px 6px 0" '
+            'onclick="namoFormat(\'{}\', \'{}\', \'{}\')">{}</button>',
+            ((field_id, kind, mark, label) for label, kind, mark in self.BUTTONS),
+        )
+        script = mark_safe(  # noqa: S308 — a fixed script, nothing interpolated
+            "<script>window.namoFormat=window.namoFormat||function(id,kind,mark){"
+            "var t=document.getElementById(id);if(!t)return;var s=t.selectionStart,e=t.selectionEnd,v=t.value;"
+            "if(kind==='wrap'){var w=v.slice(s,e)||'text';t.value=v.slice(0,s)+mark+w+mark+v.slice(e);"
+            "t.selectionStart=s+mark.length;t.selectionEnd=s+mark.length+w.length;}"
+            "else{var a=v.lastIndexOf('\\n',s-1)+1,b=v.indexOf('\\n',e);if(b<0)b=v.length;"
+            "var lines=v.slice(a,b).split('\\n').map(function(l,i){return (mark==='1. '?(i+1)+'. ':mark)+l;}).join('\\n');"
+            "t.value=v.slice(0,a)+lines+v.slice(b);t.selectionStart=a;t.selectionEnd=a+lines.length;}t.focus();};</script>"
+        )
+        return format_html('<div style="margin-bottom:4px">{}</div>{}{}', buttons, box, script)
+
+
 class ProductForm(forms.ModelForm):
     price = RupeeField(label="Price")
     mrp = RupeeField(label="MRP (struck through)", required=False)
@@ -156,7 +189,7 @@ class ProductForm(forms.ModelForm):
             "image_url": forms.TextInput(attrs={"size": 80}),
             "brand": forms.TextInput(attrs={"size": 40}),
             "subtitle": forms.TextInput(attrs={"size": 80}),
-            "description": forms.Textarea(attrs={"rows": 8, "cols": 90}),
+            "description": FormattedTextarea(attrs={"rows": 10, "cols": 90}),
             "seo_title": forms.TextInput(attrs={"size": 80, "maxlength": 70}),
             "seo_description": forms.Textarea(attrs={"rows": 2, "cols": 90, "maxlength": 170}),
         }
@@ -164,7 +197,9 @@ class ProductForm(forms.ModelForm):
             "also_categories": "Other categories it also shows under. The main one above stays its home.",
             "also_subcategories": "Other subcategories it also shows under.",
             "sku": "The product ID — one product, one SKU; the database refuses a second. Blank makes the next NAMO-####. The spreadsheet upload matches on this.",
-            "description": "What it is, what it is for, how to use or wear it. Plain text; a blank line starts a new paragraph.",
+            "description": "What it is, what it is for, how to use or wear it. Select words and use the buttons: "
+                           "## Heading · **bold** · ==highlight== · *italic* · - list · 1. list · > quote. "
+                           "A blank line starts a new paragraph. The same marks work in the spreadsheet.",
             "slug": "The page address: 1namo.com/shop/p/<this>. Left blank, it is made from the name.",
             "seo_title": "What a search result and a shared link show as the title. Blank uses the name. Under 60 characters reads best.",
             "seo_description": "The line under it. Blank uses the description's first line. Under 160 characters.",

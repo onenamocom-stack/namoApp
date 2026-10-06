@@ -6,6 +6,7 @@ import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
 import { fetchProduct } from '../lib/shop.js'
+import RichText from '../components/RichText.jsx'
 import { useReferralFromLink } from '../lib/shopRef.js'
 import { useStore } from '../store.jsx'
 
@@ -98,7 +99,7 @@ export default function ProductPage() {
 
   const p = product
   const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
-  const paragraphs = p.description.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean)
+  const hasDescription = !!p.description.trim()
 
   const share = async () => {
     const url = window.location.href
@@ -151,14 +152,11 @@ export default function ProductPage() {
         </div>
       </section>
 
-      {paragraphs.length > 0 && (
+      {hasDescription && (
         <section className="px-5 pt-7">
           <h2 className="caps-sm t-faint">{t('shop.pp.about')}</h2>
-          {paragraphs.map((para, i) => (
-            <p key={i} className="mt-3 whitespace-pre-line text-body t-body">
-              {para}
-            </p>
-          ))}
+          {/* Headings, bold, highlights and lists (6 Oct 2026). */}
+          <RichText text={p.description} className="mt-3" />
         </section>
       )}
 
