@@ -5883,8 +5883,9 @@ link should come with its image and full name.
 - **DNS round 2 done by the owner** (~13:00 IST): `@` A → `199.36.158.100`,
   `pro` CNAME → `namo-pro.web.app`; seen at 8.8.8.8 and 1.1.1.1. Firebase:
   1namo.com `HOST_ACTIVE` / `OWNERSHIP_ACTIVE`, certificate propagating;
-  pro.1namo.com still `HOST_MISMATCH` at the first check (404 for minutes
-  until Firebase re-checks).
+  pro.1namo.com came up within the hour; its bare `/` kept a 404 the CDN
+  had cached before the switch, cleared by redeploying pro (`npm run ship --
+  pro`). Both domains 200.
 - **Checked live:** `version.json` is the current build; `/`, `/shop`,
   `/shop/p/…`, `/read/…`, `/og/…`, `/privacy.html` all 200; the lava bracelet
   link previews as "Lava Bracelet – Natural Black Lava Stone | Saturn &
