@@ -5701,12 +5701,15 @@ photos and videos per product, like a marketplace).
   front page. Real search indexing needs server-rendered product pages at
   real URLs — not built.
 
-## 58. Off GitHub: Cloudflare Pages and real addresses — 6 Oct 2026, in progress
+## 58. Off GitHub: Firebase Hosting and real addresses — 6 Oct 2026, in progress
 
 Owner: "start migration, move everything, nothing should be based on
-GitHub". GitHub now only stores the code; nothing runs from it.
+GitHub". GitHub now only stores the code; nothing runs from it. Hosting is
+**Firebase Hosting**, not Cloudflare (owner chose it so the domain's DNS
+stays at GoDaddy; Cloudflare Pages would have needed GoDaddy's nameservers
+moved, since it only serves an apex domain whose DNS it runs).
 
-- **Done in code** (committed, not yet live):
+- **Done in code:**
   - React Router: `HashRouter` → `BrowserRouter`. Addresses are real
     (`1namo.com/shop/p/x`). `src/main.jsx` rewrites any `#/…` address to
     its path before the router reads it, so every link already shared
@@ -5718,28 +5721,33 @@ GitHub". GitHub now only stores the code; nothing runs from it.
     links (`apps/referrals`).
   - Analytics counted a page view on `hashchange`, which a real-address
     router never fires; it now wraps history and records real paths.
-  - `public/_headers`: the page and `version.json` never cached, built
-    assets cached a year. No `404.html`, so Cloudflare serves the app for
-    any address. `public/CNAME` removed. Build id from `git rev-parse`.
+  - `firebase.json` / `.firebaserc`: sites `namo-web` (dist) and
+    `namo-pro` (dist-pro) in the API's own project
+    (`project-5e5df107-b8f8-4649-9d1`, where Firebase was added on 6 Oct).
+    Every address that is not a file serves the app; pages and
+    `version.json` are never cached, `/assets/**` a year — checked with
+    real response headers. `public/CNAME` removed; build id from git.
   - **Deploys:** `npm run ship` (`scripts/ship.mjs`) — refuses uncommitted
-    changes, checks `.env.local`, lints, builds both apps, uploads with
-    wrangler to Pages projects `namo-web` and `namo-pro`. Credentials in
-    `.env.deploy` (gitignored). `.github/workflows/deploy.yml` and `api.yml`
-    deleted: no push deploys or tests anything. The `namo-pro` repo and its
-    `PRO_DISPATCH_TOKEN` are retired. Backend tests run locally
-    (CLAUDE.md's command).
+    changes, checks `.env.local`, lints, builds both apps, deploys with the
+    Firebase CLI (logged in on the owner's laptop as the project owner).
+    `.github/workflows/deploy.yml` and `api.yml` deleted: no push deploys or
+    tests anything. The `namo-pro` repo and its `PRO_DISPATCH_TOKEN` are
+    retired. Backend tests run locally (CLAUDE.md's command).
+- **Live on Firebase's own addresses:** https://namo-web.web.app and
+  https://namo-pro.web.app serve the current commit. The API refuses those
+  origins (CORS), so they load but cannot fetch — the full check happens on
+  the real domains.
 - **Verified:** lint, both builds, 983 backend tests (one test failed once
-  in four full runs and passed on rerun — flaky, not yet identified); on
-  the local build, deep links load, old `#/` links land with their query,
-  Back and reload keep the screen, analytics records real paths.
-- **Still serving:** 1namo.com and pro.1namo.com are GitHub Pages' last
-  hash-router build until the domain moves — the new code must not go to
-  GitHub Pages (it cannot serve deep links), which is why the workflow was
-  removed in the same commit.
-- **Needs the owner:** a Cloudflare account; 1namo.com added to it and
-  GoDaddy's nameservers changed to Cloudflare's (DNS is at GoDaddy,
-  `domaincontrol.com`); an API token (Account › Cloudflare Pages › Edit)
-  and the account id in `.env.deploy`. Then: `npm run ship`, attach
-  1namo.com and pro.1namo.com to the two projects, check, and turn GitHub
-  Pages off for both repos.
-
+  in four full runs and passed on rerun — flaky, not identified); on the
+  local build, deep links load, old `#/` links land with their query, Back
+  and reload keep the screen, analytics records real paths.
+- **The domain switch, in GoDaddy:** custom domains 1namo.com → namo-web and
+  pro.1namo.com → namo-pro are created in Firebase. Round 1 adds three TXT
+  records (`hosting-site=namo-web` on `@`, an `_acme-challenge` for each)
+  so the certificates issue while GitHub still serves; round 2 replaces the
+  four GitHub A records on `@` with `199.36.158.100` and points the `pro`
+  CNAME at `namo-pro.web.app`. Until round 2, 1namo.com and pro.1namo.com
+  are still GitHub Pages' last hash-router build. After it: turn off GitHub
+  Pages in both repos. A stray empty Google project
+  (`project-5e5df107-b8f8-46-430bc`, created by mistake on 6 Oct) can be
+  deleted.
