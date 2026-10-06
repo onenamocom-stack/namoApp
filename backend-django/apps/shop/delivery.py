@@ -24,11 +24,12 @@ import re
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from . import shiprocket
-from .models import Product, Shipment, ShippingAddress, ShippingQuote
+from .models import Order, Product, Shipment, ShippingAddress, ShippingQuote
 
 logger = logging.getLogger("apps.shop.delivery")
 
@@ -150,20 +151,30 @@ def make_quote(profile_id, address_id, lines):
         return {"ok": False, "reason": UNREACHABLE}
     if found is None:
         return {"ok": False, "reason": NOT_SERVED}
+    # Cash on delivery is asked separately: a pincode a courier serves
+    # prepaid may have none that will collect cash. A failure here only
+    # takes COD off the table; paying online still works.
+    try:
+        cod = shiprocket.cod_available(address.pincode, weight)
+    except shiprocket.ShiprocketError:
+        cod = False
     quote = ShippingQuote.objects.create(
         profile_id=profile_id, pincode=address.pincode, weight_grams=weight,
         amount_paise=found["amount_paise"], courier=found["courier"] or None,
-        etd_days=found["etd_days"], expires_at=timezone.now() + QUOTE_TTL,
+        etd_days=found["etd_days"], cod_available=cod,
+        expires_at=timezone.now() + QUOTE_TTL,
     )
     return {
         "ok": True, "quote_id": str(quote.id), "amount_paise": quote.amount_paise,
         "courier": found["courier"], "etd_days": found["etd_days"],
+        "cod_available": cod, "cod_fee_bps": settings.COD_FEE_BPS,
+        "cod_max_paise": settings.COD_MAX_PAISE,
     }
 
 
 def use_quote(profile_id, address_id, quote_id, weight_grams):
     """Inside the purchase transaction. Burns the quote; returns
-    (address, amount_paise) or raises DeliveryRefused."""
+    (address, amount_paise, cod_available) or raises DeliveryRefused."""
     address = ShippingAddress.objects.filter(pk=address_id, profile_id=profile_id).first()
     if address is None:
         raise DeliveryRefused("Choose a delivery address.")
@@ -177,7 +188,35 @@ def use_quote(profile_id, address_id, quote_id, weight_grams):
     burned = ShippingQuote.objects.filter(pk=quote.pk, used_at=None).update(used_at=timezone.now())
     if not burned:
         raise DeliveryRefused(stale)
-    return address, quote.amount_paise
+    return address, quote.amount_paise, quote.cod_available
+
+
+def order_follows_shipment(order_id, status):
+    """A cash-on-delivery order is settled by its parcel (6 Oct 2026).
+    Delivered: the courier has the cash, the order is PAID. Returned or
+    cancelled before that: nothing was paid, the order is CANCELLED and its
+    stock goes back on the shelf. Once only — the row is locked and only a
+    PENDING order moves. A wallet order is not touched: it was paid at
+    checkout, and a returned prepaid parcel is refunded by hand
+    (docs/01-PRD.md §4.6)."""
+    from django.db.models import F
+
+    with transaction.atomic():
+        order = Order.objects.select_for_update().filter(pk=order_id).first()
+        if order is None or order.payment_method != Order.PaymentMethod.COD:
+            return None
+        if order.status != Order.Status.PENDING:
+            return order.status
+        if status == Shipment.Status.DELIVERED:
+            order.status = Order.Status.PAID
+        elif status in (Shipment.Status.RETURNED, Shipment.Status.CANCELLED):
+            order.status = Order.Status.CANCELLED
+            for item in order.items.filter(item_type="product"):
+                Product.objects.filter(pk=item.item_id).update(stock=F("stock") + item.qty)
+        else:
+            return order.status
+        order.save(update_fields=["status"])
+        return order.status
 
 
 def snapshot(address):
@@ -269,6 +308,7 @@ def apply_tracking(shipment, raw_status, when=None):
         moved = True
     Shipment.objects.filter(pk=shipment.pk).update(**fields)
     if moved:
+        order_follows_shipment(shipment.order_id, fields["status"])
         referral_services.on_shipment_status(shipment.order_id, fields["status"])
     return moved
 

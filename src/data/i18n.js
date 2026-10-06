@@ -801,6 +801,11 @@ export const strings = {
   'ord.toShop': { en: 'Go to the shop', hi: 'दुकान पर जाएं' },
   'ord.moneyBack': { en: 'Returned', hi: 'वापस' },
   'ord.paid': { en: 'Paid', hi: 'चुकाया' },
+  // Cash on delivery (6 Oct 2026)
+  'ord.codDue': { en: 'Pay in cash on delivery', hi: 'डिलीवरी पर नकद दें' },
+  'ord.codPaid': { en: 'Paid in cash', hi: 'नकद चुकाया' },
+  'ord.codNone': { en: 'Nothing to pay', hi: 'कुछ नहीं देना' },
+  'ord.codFee': { en: 'Cash on delivery fee', hi: 'कैश ऑन डिलीवरी शुल्क' },
   'ord.courier': { en: 'Courier', hi: 'कूरियर' },
   /* One sentence around a link: "{notOrders} [wallet]{notOrdersEnd}". */
   'ord.notOrders': {

@@ -577,8 +577,11 @@ class OrderAdmin(dj.ModelAdmin):
     only honest way to move money after the fact.
     """
 
-    list_display = ("id", "created_at", "who", "kinds", "total", "status")
-    list_filter = ("status", "created_at")
+    list_display = ("id", "created_at", "who", "kinds", "total", "paid_by", "status")
+    # Online (wallet) or cash on delivery, side by side (6 Oct 2026): a COD
+    # order is `pending` until the courier delivers, then `paid`, or
+    # `cancelled` if the parcel came back.
+    list_filter = ("payment_method", "status", "created_at")
     search_fields = ("id", "profile_id")
     date_hierarchy = "created_at"
     inlines = (OrderItemInline,)
@@ -592,6 +595,12 @@ class OrderAdmin(dj.ModelAdmin):
         return f"{p.name or '—'} · {p.phone}" if p else str(obj.profile_id)
 
     @dj.display(description="Contains")
+    @dj.display(description="Paid by", ordering="payment_method")
+    def paid_by(self, obj):
+        if obj.payment_method == "cod":
+            return format_html("Cash on delivery <span style='color:#888'>(fee {})</span>", rupees(obj.cod_fee_paise))
+        return "Online (wallet)"
+
     def kinds(self, obj):
         return ", ".join(sorted({i.item_type for i in obj.items.all()})) or "—"
 
@@ -733,6 +742,7 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
         if "status" in form.changed_data:
             from apps.referrals import services as referral_services
 
+            delivery.order_follows_shipment(obj.order_id, obj.status)
             referral_services.on_shipment_status(obj.order_id, obj.status)
 
 

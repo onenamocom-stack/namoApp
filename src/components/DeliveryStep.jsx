@@ -62,7 +62,18 @@ export default function DeliveryStep({ lines, nonce = 0, onQuote }) {
       .then((q) => {
         if (!live) return
         setQuote(q)
-        onQuote(q?.ok ? { addressId: chosen, quoteId: q.quote_id, amountPaise: q.amount_paise } : null)
+        onQuote(
+          q?.ok
+            ? {
+                addressId: chosen,
+                quoteId: q.quote_id,
+                amountPaise: q.amount_paise,
+                codAvailable: !!q.cod_available,
+                codFeeBps: q.cod_fee_bps ?? 200,
+                codMaxPaise: q.cod_max_paise ?? null,
+              }
+            : null,
+        )
       })
       .catch((err) => live && setQuote({ ok: false, reason: err.message }))
       .finally(() => live && setAsking(false))

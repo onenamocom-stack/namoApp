@@ -153,10 +153,12 @@ def _order_payload(shipment):
         "billing_phone": address.get("phone", ""),
         "shipping_is_billing": True,
         "order_items": items,
-        # Prepaid always: the wallet was already debited, and a courier
-        # collecting cash for something already paid for is a refund
-        # conversation nobody wants.
-        "payment_method": "Prepaid",
+        # A wallet order is Prepaid — the wallet was debited before this ran,
+        # and a courier collecting cash for it would be a refund
+        # conversation. A cash-on-delivery order is COD, and `sub_total` is
+        # then exactly what the courier collects: goods after any coupon,
+        # delivery and the COD fee — the order's total, to the paisa.
+        "payment_method": "COD" if shipment.order.payment_method == "cod" else "Prepaid",
         "sub_total": f"{shipment.order.total_paise / 100:.2f}",
         # Shiprocket wants centimetres and kilograms.
         "length": 15, "breadth": 12, "height": 8,
@@ -276,6 +278,19 @@ def check():
         else "No courier for 110001 — check the account's couriers."
     )
     return lines
+
+
+def cod_available(delivery_pincode, weight_grams):
+    """Whether any courier will collect cash at this pincode (6 Oct 2026).
+    The same serviceability call with cod=1; an empty list is a no."""
+    origin = pickup()["pincode"]
+    weight = max(weight_grams, 50) / 1000
+    data = _call(
+        "GET",
+        f"/courier/serviceability/?pickup_postcode={origin}"
+        f"&delivery_postcode={delivery_pincode}&weight={weight}&cod=1",
+    )
+    return bool((data.get("data") or {}).get("available_courier_companies"))
 
 
 def quote(delivery_pincode, weight_grams):

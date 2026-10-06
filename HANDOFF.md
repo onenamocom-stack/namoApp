@@ -5804,3 +5804,36 @@ moved, since it only serves an apex domain whose DNS it runs).
   on inherited input); `scripts/ship.mjs` now gives no step any input, and
   the CLI is a pinned dev dependency (`firebase-tools@14`). Tests: 997.
 
+## 61. Cash on delivery — 6 Oct 2026
+
+Owner: "COD bhi add karo, for COD take 2% extra; the status should update
+through the full flow; online (Razorpay) vs COD; hope Shiprocket handles it."
+
+- **Rules** (`docs/01-PRD.md` §4.6): 2% of goods plus delivery, rounded up;
+  only where a courier takes cash at the pincode; up to ₹10,000; at most two
+  undelivered COD orders an account. The cap and the count are defaults set
+  on 6 Oct, not the owner's figures — settings `COD_MAX_PAISE`,
+  `COD_MAX_OPEN`, `COD_FEE_BPS`.
+- **Server:** `orders.payment_method`, `orders.cod_fee_paise`,
+  `shipping_quotes.cod_available` (migration `shop/0005`, **applied to
+  production**: database defaults, the 50 existing orders read `wallet`).
+  The quote asks Shiprocket with `cod=1`; buy takes `payment`; a COD order
+  debits nothing and is `pending`; the parcel settles it
+  (`order_follows_shipment`: delivered → `paid`, returned or cancelled →
+  `cancelled` and restocked). Shiprocket gets `payment_method: "COD"` and
+  `sub_total` = the amount to collect. The referral cashback's base excludes
+  the fee (`referrals.cashback_base`); a pending COD order is not yet a
+  consultant's sale. Console: a "Paid by" column and filter on orders.
+  15 tests; 1012 pass.
+- **App:** the cart's Online / Cash on delivery choice, the fee line, "Add ₹Y
+  and pay" through Razorpay when the wallet is short, Orders' money lines.
+  Walked on the local build with the quote answered locally.
+- **Shiprocket's side, for the owner:** COD must be enabled on the Shiprocket
+  account (it needs the KYC and a bank account for remittance). Shiprocket
+  remits collected cash on its own cycle, minus its COD charge — the 2% is
+  meant to cover that.
+- **Not built:** refunds of a returned online order (still by hand); a
+  seeker cancelling a COD order before it ships.
+- **Not live:** needs the API deploy and the app reaching 1namo.com (the
+  DNS switch, §58).
+

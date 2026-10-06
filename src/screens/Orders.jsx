@@ -82,10 +82,15 @@ export default function Orders() {
               )}
             </ul>
 
+            {o.codFeePaise > 0 && (
+              <div className="mt-1 flex items-baseline justify-between gap-3">
+                <span className="text-meta t-sub">{t('ord.codFee')}</span>
+                <span className="text-meta t-sub tnum">₹{rupees(o.codFeePaise)}</span>
+              </div>
+            )}
+
             <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-rule pt-3">
-              <span className="caps-sm t-faint">
-                {o.status === 'refunded' || o.status === 'cancelled' ? t('ord.moneyBack') : t('ord.paid')}
-              </span>
+              <span className="caps-sm t-faint">{moneyLine(o, t)}</span>
               <span className="text-meta t-heading tnum">₹{rupees(o.totalPaise)}</span>
             </div>
 
@@ -174,6 +179,17 @@ function Track({ shipment, t }) {
 
 function titleCase(s) {
   return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** What happened to the money, online or cash on delivery (6 Oct 2026). A
+ *  cancelled cash order had nothing taken, so it never says "Returned". */
+function moneyLine(o, t) {
+  if (o.paymentMethod === 'cod') {
+    if (o.status === 'pending') return t('ord.codDue')
+    if (o.status === 'paid') return t('ord.codPaid')
+    return t('ord.codNone')
+  }
+  return o.status === 'refunded' || o.status === 'cancelled' ? t('ord.moneyBack') : t('ord.paid')
 }
 
 /** "Paid" is the least interesting true thing about a parcel. */

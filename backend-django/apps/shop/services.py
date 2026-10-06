@@ -279,10 +279,13 @@ class Refused(Exception):
         self.payload = {"ok": False, "reason": reason, **extra}
 
 
-def buy(profile_id, lines, coupon_code=None, delivery=None):
+def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet"):
     """One purchase: stock, money, order — all of it or none of it.
 
-    `lines` is [{product_id, qty}]. `delivery` is {address_id, quote_id};
+    `lines` is [{product_id, qty}]. `payment` is "wallet" (the default:
+    debited now) or "cod" (cash on delivery, 6 Oct 2026: nothing debited, a
+    fee added, the order PENDING until the parcel arrives).
+    `delivery` is {address_id, quote_id};
     the view requires it (a parcel needs somewhere to go and the fee is
     part of the total). None writes no shipment — internal callers and the
     tests of stock and money, which are about neither.
@@ -308,14 +311,28 @@ def buy(profile_id, lines, coupon_code=None, delivery=None):
 
     try:
         with transaction.atomic():
-            return _purchase(profile_id, wanted, coupon_code, delivery)
+            return _purchase(profile_id, wanted, coupon_code, delivery, payment)
     except Refused as refusal:
         return refusal.payload
     except DeliveryRefused as refusal:
         return {"ok": False, "reason": refusal.reason}
 
 
-def _purchase(profile_id, wanted, coupon_code, delivery=None):
+REFUSAL_COD_PINCODE = "Cash on delivery is not available at this pincode. Pay online instead."
+REFUSAL_COD_OPEN = "You already have {n} cash-on-delivery orders on the way. Pay online, or wait for one to arrive."
+
+
+def cod_fee(total_paise):
+    """The cash-on-delivery fee: COD_FEE_BPS of the total, delivery
+    included, rounded UP to the whole rupee."""
+    import math
+
+    from django.conf import settings
+
+    return math.ceil(total_paise * settings.COD_FEE_BPS / 10_000 / 100) * 100
+
+
+def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
     products = {}
     for product_id, qty in wanted:
         product = Product.objects.filter(pk=product_id, active=True).first()
@@ -364,24 +381,51 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None):
     # Delivery is added AFTER the discount: a coupon takes money off the
     # goods, never off what the courier charges. The quote is burned here,
     # in the same transaction, so a refused purchase does not spend it.
-    address, shipping = None, 0
+    address, shipping, cod_ok = None, 0, False
     if delivery is not None:
         weight = sum((p.weight_grams or 100) * q for p, q in products.values())
-        address, shipping = use_quote(
+        address, shipping, cod_ok = use_quote(
             profile_id, delivery["address_id"], delivery["quote_id"], weight
         )
         total += shipping
 
-    # The wallet takes its own row lock inside this transaction. It is the
-    # LAST lock taken, after every product row, which is what keeps the
-    # ordering consistent across every purchase in the system.
-    paid = wallet_services.debit(profile_id, total, _label(products)) if total else {"ok": True}
-    if not paid.get("ok"):
-        raise Refused(paid.get("reason"), balance_paise=paid.get("balance_paise"))
+    # CASH ON DELIVERY (6 Oct 2026). Nothing leaves the wallet: the courier
+    # collects the total, which carries the COD fee, and the order stays
+    # PENDING until the parcel is delivered (delivery.order_follows_shipment).
+    fee = 0
+    if payment == Order.PaymentMethod.COD:
+        from django.conf import settings
 
+        if address is None or not cod_ok:
+            raise Refused(REFUSAL_COD_PINCODE)
+        fee = cod_fee(total)
+        if total + fee > settings.COD_MAX_PAISE:
+            raise Refused(
+                f"Cash on delivery is for orders up to ₹{settings.COD_MAX_PAISE // 100:,}. "
+                "Pay online for this one."
+            )
+        open_cod = Order.objects.filter(
+            profile_id=profile_id, payment_method=Order.PaymentMethod.COD,
+            status=Order.Status.PENDING,
+        ).count()
+        if open_cod >= settings.COD_MAX_OPEN:
+            raise Refused(REFUSAL_COD_OPEN.format(n=open_cod))
+        total += fee
+        paid = {"ok": True, "balance_paise": None}
+    else:
+        # The wallet takes its own row lock inside this transaction. It is
+        # the LAST lock taken, after every product row, which is what keeps
+        # the ordering consistent across every purchase in the system.
+        paid = wallet_services.debit(profile_id, total, _label(products)) if total else {"ok": True}
+        if not paid.get("ok"):
+            raise Refused(paid.get("reason"), balance_paise=paid.get("balance_paise"))
+
+    cod = payment == Order.PaymentMethod.COD
     order = Order.objects.create(
         id=uuid.uuid4(), profile_id=profile_id,
-        status=Order.Status.PAID, total_paise=total,
+        status=Order.Status.PENDING if cod else Order.Status.PAID, total_paise=total,
+        payment_method=Order.PaymentMethod.COD if cod else Order.PaymentMethod.WALLET,
+        cod_fee_paise=fee,
     )
     for product, qty in products.values():
         OrderItem.objects.create(
@@ -424,7 +468,8 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None):
     return {
         "ok": True, "order_id": str(order.id),
         "subtotal_paise": subtotal, "discount_paise": discount,
-        "shipping_paise": shipping,
+        "shipping_paise": shipping, "cod_fee_paise": fee,
+        "payment_method": order.payment_method,
         "total_paise": total, "balance_paise": paid.get("balance_paise"),
         # Not a discount and deliberately named so. The client says
         # "₹X back after delivery", never "₹X off".
@@ -487,6 +532,8 @@ def order_history(profile_id, limit=50):
             "id": str(order.id),
             "created_at": order.created_at.isoformat(),
             "status": order.status,
+            "payment_method": order.payment_method,
+            "cod_fee_paise": order.cod_fee_paise,
             "total_paise": order.total_paise,
             "items": [
                 {

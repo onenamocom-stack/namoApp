@@ -674,7 +674,7 @@ export function AppProvider({ children }) {
    * the only place a coupon can be applied to a multi-item basket.
    */
   const checkoutCart = useCallback(
-    async (coupon = null, delivery = null) => {
+    async (coupon = null, delivery = null, payment = 'wallet') => {
       if (!cart.length) return null
       if (spendingRef.current) {
         showToast('One payment at a time.')
@@ -687,15 +687,17 @@ export function AppProvider({ children }) {
           cart.map((l) => ({ product_id: l.id, qty: l.qty })),
           coupon || null,
           delivery,
+          payment,
         )
         if (!result.ok) {
           showToast(result.reason)
           return result
         }
+        const back = result.cashback_paise ? ` · ₹${rupees(result.cashback_paise)} back after delivery` : ''
         showToast(
-          result.cashback_paise
-            ? `Ordered · ₹${rupees(result.cashback_paise)} back after delivery`
-            : 'Ordered',
+          result.payment_method === 'cod'
+            ? `Ordered · pay ₹${rupees(result.total_paise)} in cash on delivery${back}`
+            : `Ordered${back}`,
         )
         // Not awaited: the courier booking is the server's job and the
         // seeker should not wait on Shiprocket to see their order placed.

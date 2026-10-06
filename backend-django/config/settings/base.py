@@ -312,6 +312,13 @@ REFERRAL_AI_DAYS = int(os.environ.get("REFERRAL_AI_DAYS", "3"))
 # into WhatsApp and lives for months, so the shape of it is a contract and
 # belongs somewhere one change fixes every link made after it.
 APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "https://1namo.com")
+# Cash on delivery (6 Oct 2026; amounts in docs/01-PRD.md §4.6). The fee is
+# basis points of the order total, delivery included, rounded up to the
+# rupee. A cap on one COD order's total, and on how many may be undelivered
+# at once per account: a refused parcel costs the courier both ways.
+COD_FEE_BPS = int(os.environ.get("COD_FEE_BPS", "200"))
+COD_MAX_PAISE = int(os.environ.get("COD_MAX_PAISE", str(10_000 * 100)))
+COD_MAX_OPEN = int(os.environ.get("COD_MAX_OPEN", "2"))
 # The seeker app's index.html at its hosting site's own address, read by the
 # link-preview pages (apps/content/share.py) — not through 1namo.com, whose
 # /read/** is rewritten back to this API.

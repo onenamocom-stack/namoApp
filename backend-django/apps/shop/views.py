@@ -73,6 +73,8 @@ class BuyInput(serializers.Serializer):
     # every product is a parcel, and the fee is part of the total.
     address_id = serializers.UUIDField()
     quote_id = serializers.UUIDField()
+    # How it is paid (6 Oct 2026): the wallet now, or cash to the courier.
+    payment = serializers.ChoiceField(choices=["wallet", "cod"], required=False, default="wallet")
 
 
 @api_view(["POST"])
@@ -86,6 +88,7 @@ def buy(request):
         coupon_code=form.validated_data.get("coupon"),
         delivery={"address_id": form.validated_data["address_id"],
                   "quote_id": form.validated_data["quote_id"]},
+        payment=form.validated_data["payment"],
     )
     # 200 on a refusal: "out of stock" is an answer the screen shows, not a
     # transport failure, and the client's one error path stays the network.

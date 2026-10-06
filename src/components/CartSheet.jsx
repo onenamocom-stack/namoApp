@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Sheet } from './Chrome.jsx'
 import CodeField from './CodeField.jsx'
 import DeliveryStep from './DeliveryStep.jsx'
-import Plate from './Plate.jsx'
+import ProductArt from './ProductArt.jsx'
+import { codFeePaise } from '../lib/shop.js'
 import { PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
 
@@ -26,6 +27,7 @@ export default function CartSheet() {
     checkoutCart,
     spending,
     balance,
+    topup,
   } = useStore()
 
   /* An astrologer's code, typed here or carried in from their link. This
@@ -40,8 +42,21 @@ export default function CartSheet() {
      and the total on the button must be the total charged. */
   const [delivery, setDelivery] = useState(null)
   const [nonce, setNonce] = useState(0)
-  const totalPaise = cartTotal * 100 + (delivery?.amountPaise ?? 0)
-  const short = balance !== null && balance < totalPaise
+  /* How it is paid (6 Oct 2026): online — the wallet, topped up through
+     Razorpay right here when it is short — or cash on delivery, 2% more,
+     where a courier at that pincode will take cash. */
+  const [payment, setPayment] = useState('wallet')
+  const goodsAndDelivery = cartTotal * 100 + (delivery?.amountPaise ?? 0)
+  const codOffered = !!delivery?.codAvailable
+  const cod = payment === 'cod' && codOffered
+  const fee = cod ? codFeePaise(goodsAndDelivery, delivery.codFeeBps) : 0
+  const totalPaise = goodsAndDelivery + fee
+  const overCap = cod && delivery?.codMaxPaise != null && totalPaise > delivery.codMaxPaise
+  const short = !cod && balance !== null && balance < totalPaise
+  // What Razorpay adds when the wallet is short: the gap, to the rupee, and
+  // never under the ₹100 a top-up can be (apps/wallet MIN_PAISE).
+  const toAdd = short ? Math.max(Math.ceil((totalPaise - balance) / 100) * 100, 10_000) : 0
+  const [adding, setAdding] = useState(false)
 
   const [coupon, setCoupon] = useState(() => {
     try {
@@ -56,8 +71,21 @@ export default function CartSheet() {
      else — so the last item could be sold to everyone holding it in a
      cart. Still awaited: without it a refusal reads as truthy and clears
      a cart nobody paid for. */
+  /* Paying online with too little in the wallet: Razorpay adds what is
+     missing (rounded up to the rupee), then the order goes through — one
+     tap, rather than a dead button and a trip to the Wallet screen. */
+  const addAndPay = async () => {
+    setAdding(true)
+    try {
+      const added = await topup(toAdd)
+      if (added) await checkout()
+    } finally {
+      setAdding(false)
+    }
+  }
+
   const checkout = async () => {
-    const result = await checkoutCart(coupon, delivery)
+    const result = await checkoutCart(coupon, delivery, cod ? 'cod' : 'wallet')
     if (result?.ok) {
       clearCart()
       setCartOpen(false)
@@ -81,7 +109,7 @@ export default function CartSheet() {
           <ul>
             {cart.map((l) => (
               <li key={l.id} className="flex items-center gap-3 border-b border-rule py-3">
-                <Plate seed={l.id} className="h-14 w-14 flex-none" />
+                <ProductArt product={l} className="h-14 w-14 flex-none rounded-lg" />
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-meta t-heading">{l.name}</p>
@@ -140,17 +168,63 @@ export default function CartSheet() {
                 {delivery ? `₹${rupees(delivery.amountPaise)}` : '—'}
               </span>
             </div>
+            {cod && (
+              <div className="flex items-baseline justify-between">
+                <span className="caps-sm t-faint">Cash on delivery fee · {delivery.codFeeBps / 100}%</span>
+                <span className="text-meta tnum t-sub">₹{rupees(fee)}</span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between pt-1">
-              <span className="caps-sm t-faint">Total</span>
+              <span className="caps-sm t-faint">{cod ? 'To pay on delivery' : 'Total'}</span>
               <span className="text-lead tnum t-heading">₹{rupees(totalPaise)}</span>
             </div>
           </div>
 
+          {/* How to pay. Cash on delivery only where a courier at this
+              pincode takes cash, and said so rather than hidden. */}
+          {delivery && (
+            <div className="mt-4" role="radiogroup" aria-label="How to pay">
+              <p className="caps-sm t-faint">Pay</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {[
+                  { key: 'wallet', title: 'Online', note: 'Wallet · UPI, card via Razorpay' },
+                  {
+                    key: 'cod',
+                    title: 'Cash on delivery',
+                    note: codOffered ? `${delivery.codFeeBps / 100}% extra` : 'Not at this pincode',
+                    off: !codOffered,
+                  },
+                ].map((o) => (
+                  <button
+                    key={o.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={(o.key === 'cod') === cod}
+                    disabled={o.off}
+                    onClick={() => setPayment(o.key)}
+                    className={`rounded-xl border px-3 py-2.5 text-left transition-colors disabled:opacity-45 ${
+                      (o.key === 'cod') === cod ? 'border-gold-fill bg-gold-fill/10' : 'border-stroke bg-surface'
+                    }`}
+                  >
+                    <span className="block text-meta font-semibold t-heading">{o.title}</span>
+                    <span className="block text-micro t-faint">{o.note}</span>
+                  </button>
+                ))}
+              </div>
+              {overCap && (
+                <p className="mt-2 text-micro text-live">
+                  Cash on delivery is for orders up to ₹{rupees(delivery.codMaxPaise)}. Pay online for this one.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* What leaves and what is left, before the button that does it.
               Buy used to charge on the tap with none of this on screen —
               a gold button two taps from Add, and the money was gone
-              before the page changed. */}
-          <div className="mt-2 flex items-baseline justify-between">
+              before the page changed. Not for cash on delivery: the wallet
+              is not touched. */}
+          {!cod && <div className="mt-2 flex items-baseline justify-between">
             <span className="caps-sm t-faint">Wallet after</span>
             <span
               className={`text-meta tnum ${short ? 'text-live' : 't-sub'}`}
@@ -161,7 +235,7 @@ export default function CartSheet() {
                   ? `short by ₹${rupees(totalPaise - balance)}`
                   : `₹${rupees(balance - totalPaise)}`}
             </span>
-          </div>
+          </div>}
 
           {/* The coupon goes HERE, between the total and the payment, which
               is the last moment it can change what happens and the first
@@ -192,22 +266,25 @@ export default function CartSheet() {
             <PopButton
               size="sm"
               variant="gold"
-              disabled={spending || short || !delivery}
-              onClick={checkout}
+              disabled={spending || adding || !delivery || overCap}
+              onClick={short ? addAndPay : checkout}
             >
-              {spending
-                ? 'Paying…'
+              {spending || adding
+                ? cod ? 'Placing…' : 'Paying…'
                 : !delivery
                   ? 'Choose an address'
-                  : short
-                    ? 'Not enough balance'
-                    : `Pay ₹${rupees(totalPaise)}`}
+                  : cod
+                    ? `Place order · ₹${rupees(totalPaise)} on delivery`
+                    : short
+                      ? `Add ₹${rupees(toAdd)} and pay`
+                      : `Pay ₹${rupees(totalPaise)}`}
             </PopButton>
           </div>
 
           <p className="mt-4 text-center text-meta t-faint">
-            Paid from your wallet, delivery included. Stock is claimed when
-            you pay, so nothing is held for you until then.
+            {cod
+              ? 'Pay the courier in cash when the parcel arrives. Nothing is taken from your wallet. Stock is claimed when you place the order.'
+              : 'Paid from your wallet, delivery included; anything missing is added through Razorpay first. Stock is claimed when you pay, so nothing is held for you until then.'}
           </p>
         </>
       )}

@@ -777,6 +777,20 @@ timestamps exists to meter against.
 The delivery fee is an `order_items` row with `item_type = 'shipping'`, and
 its `item_id` is the order's own id — the shipment's key.
 
+**Cash on delivery — 6 Oct 2026** (migration `shop/0005`):
+
+| Column | What it holds |
+|---|---|
+| `orders.payment_method` | `wallet` (default, database-level) or `cod`. Raw-SQL inserts (bookings, the chat meter) need not name it |
+| `orders.cod_fee_paise` | The COD fee inside `total_paise`; 0 (database default) for every other order. Not an `order_items` row: production's `item_type` CHECK would refuse a new kind |
+| `shipping_quotes.cod_available` | Whether any courier at the pincode takes cash, from Shiprocket's serviceability with `cod=1` |
+
+A COD order's `status`: `pending` at checkout → `paid` when its shipment is
+delivered, or → `cancelled` (stock put back) when returned or cancelled first
+— `apps/shop/delivery.order_follows_shipment`, called by the webhook, the
+tracking refresh and the console's shipment edit. A wallet order is `paid` at
+checkout and its parcel never moves it.
+
 ### 4.8 Payments
 
 ```sql

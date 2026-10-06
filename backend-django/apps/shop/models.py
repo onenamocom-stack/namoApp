@@ -146,12 +146,29 @@ class Order(models.Model):
         REFUNDED = "refunded"
         CANCELLED = "cancelled"
 
+    class PaymentMethod(models.TextChoices):
+        # The wallet, which Razorpay tops up — paid before the parcel moves.
+        WALLET = "wallet"
+        # Cash on delivery (6 Oct 2026): the courier collects `total_paise`,
+        # which includes `cod_fee_paise`. PENDING until delivered, then PAID;
+        # a return or a courier cancel before that makes it CANCELLED and
+        # puts the stock back. Shiprocket remits the cash to the business.
+        COD = "cod"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile_id = models.UUIDField()
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PAID)
     total_paise = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
+    # Database defaults, not only Django ones: bookings and the chat meter
+    # insert orders by raw SQL (apps/consultants/gateway.py) and must keep
+    # working without naming these columns.
+    payment_method = models.CharField(
+        max_length=8, choices=PaymentMethod.choices,
+        default=PaymentMethod.WALLET, db_default=PaymentMethod.WALLET,
+    )
+    cod_fee_paise = models.IntegerField(default=0, db_default=0)
 
     class Meta:
         db_table = "orders"
@@ -253,6 +270,8 @@ class ShippingQuote(models.Model):
     amount_paise = models.IntegerField()
     courier = models.TextField(null=True, blank=True)
     etd_days = models.SmallIntegerField(null=True, blank=True)
+    # Whether any courier will collect cash at this pincode (6 Oct 2026).
+    cod_available = models.BooleanField(default=False, db_default=False)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)

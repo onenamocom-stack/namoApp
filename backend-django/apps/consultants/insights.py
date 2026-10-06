@@ -102,7 +102,8 @@ def shop_sales(consultant_id):
     orders = Referral.objects.filter(
         kind=ReferralKind.PURCHASE, referrer_id=consultant_id, order__isnull=False
     ).exclude(
-        order__status__in=[Order.Status.REFUNDED, Order.Status.CANCELLED]
+        # A cash-on-delivery order still on its way is not a sale yet.
+        order__status__in=[Order.Status.REFUNDED, Order.Status.CANCELLED, Order.Status.PENDING]
     ).values_list("order_id", flat=True)
 
     lines = (

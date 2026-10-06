@@ -281,12 +281,26 @@ Physical remedial goods: gemstones, maalas, rudraksha, remedies.
 **₹640 to ₹26,400**, with strike-through MRPs from ₹1,200 to ₹24,000 driving a
 computed discount badge. Two products are sold out.
 
-**Delivery — decided 5 Oct 2026.** Prepaid only: the wallet pays for the goods
-and the delivery together, and no courier collects cash. The delivery charge is
+**Delivery — decided 5 Oct 2026; cash on delivery added 6 Oct 2026** (it was
+prepaid only). Two ways to pay at checkout:
+
+- **Online** — the wallet pays for the goods and the delivery together; when
+  the wallet is short, Razorpay adds the gap (at least ₹100, the top-up
+  minimum) in the same tap.
+- **Cash on delivery** — nothing leaves the wallet; the courier collects the
+  total, which carries a **2% fee** on goods plus delivery, rounded up to the
+  rupee. Offered only where a courier at the pincode takes cash, for orders
+  **up to ₹10,000**, and **at most 2 undelivered COD orders per account**
+  (all three: `COD_FEE_BPS`, `COD_MAX_PAISE`, `COD_MAX_OPEN`). Shiprocket
+  collects the cash and remits it to the business. The order is pending until
+  delivered; a COD parcel that comes back is cancelled and nothing is owed.
+
+The delivery charge is
 Shiprocket's own rate for the seeker's pincode and the parcel's weight, rounded
 up to the whole rupee, shown before Pay. There is no free-delivery threshold.
 A coupon comes off the goods, never off delivery, and an astrologer's 10%
-cashback is paid on the goods alone. Returns are handled by hand for now.
+cashback is paid on the goods alone (not on the COD fee). Returns of an
+online order are refunded by hand for now.
 
 **Every product has a page — decided 6 Oct 2026** (owner and Rahul's list).
 Photos and videos in order, the brand, the price against MRP, stock, the

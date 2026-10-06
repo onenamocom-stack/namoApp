@@ -74,9 +74,9 @@ def _address(profile_id=BUYER, **over):
     return row
 
 
-def _quote(profile_id, address_id, lines, amount=6_800):
+def _quote(profile_id, address_id, lines, amount=6_800, cod=False):
     with mock.patch("apps.shop.shiprocket.quote",
-                    return_value={"amount_paise": amount, "courier": "Delhivery", "etd_days": 4}):
+                    return_value={"amount_paise": amount, "courier": "Delhivery", "etd_days": 4}),             mock.patch("apps.shop.shiprocket.cod_available", return_value=cod):
         return delivery.make_quote(profile_id, address_id, lines)
 
 

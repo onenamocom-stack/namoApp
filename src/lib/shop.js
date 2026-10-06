@@ -137,15 +137,24 @@ export function productHref(p) {
  * {ok:false, reason} — a refusal is an answer, not an exception, and
  * `reason` is the server's sentence shown verbatim.
  */
-export function buy(lines, coupon = null, delivery = null) {
+export function buy(lines, coupon = null, delivery = null, payment = 'wallet') {
   return api('/buy/', {
     method: 'POST',
     body: {
       lines,
       ...(coupon ? { coupon } : {}),
       ...(delivery ? { address_id: delivery.addressId, quote_id: delivery.quoteId } : {}),
+      // 'wallet' (paid now) or 'cod' (cash to the courier, 6 Oct 2026).
+      payment,
     },
   })
+}
+
+/** The cash-on-delivery fee the server will add: `bps` of the total,
+ *  rounded UP to the rupee — apps/shop/services.cod_fee, for the screen.
+ *  The server's own number is the one charged. */
+export function codFeePaise(totalPaise, bps) {
+  return Math.ceil((totalPaise * bps) / 10000 / 100) * 100
 }
 
 /* ── delivery (5 Oct 2026) ───────────────────────────────────────────────
@@ -209,6 +218,8 @@ export async function fetchOrders() {
       placedAt: o.created_at,
       status: o.status,
       totalPaise: o.total_paise,
+      paymentMethod: o.payment_method ?? 'wallet',
+      codFeePaise: o.cod_fee_paise ?? 0,
       items: (o.items ?? []).map((i) => ({
         title: i.title,
         qty: i.qty,
