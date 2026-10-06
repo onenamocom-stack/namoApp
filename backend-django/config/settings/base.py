@@ -201,8 +201,10 @@ ASTRO_TIMEOUT_SECONDS = float(os.environ.get("ASTRO_TIMEOUT_SECONDS", "10"))
 # --- Shiprocket (stage 5; Namo's own account from 5 Oct 2026) -------------
 # An API user (Shiprocket → Settings → API), not the login: Shiprocket
 # refuses an API user with the same email as the account.
-SHIPROCKET_EMAIL = os.environ.get("SHIPROCKET_EMAIL", "")
-SHIPROCKET_PASSWORD = os.environ.get("SHIPROCKET_PASSWORD", "")
+# Stripped: a password pasted into the Cloud Run console carried a trailing
+# space (6 Oct 2026), and Shiprocket's refusal does not say why.
+SHIPROCKET_EMAIL = os.environ.get("SHIPROCKET_EMAIL", "").strip()
+SHIPROCKET_PASSWORD = os.environ.get("SHIPROCKET_PASSWORD", "").strip()
 # The pickup address's nickname on the account. Blank uses the account's
 # primary address — see shiprocket.pickup().
 SHIPROCKET_PICKUP = os.environ.get("SHIPROCKET_PICKUP", "")

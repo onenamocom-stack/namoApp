@@ -5939,3 +5939,17 @@ link should come with its image and full name.
    (`Category > Sub; …`) columns; the shop filters on every shelf. Tests: a
    new sheet test; 1023 pass.
 
+## 66. Search in the header; Shiprocket's real refusal — 6 Oct 2026
+
+- **Rahul's design:** search is a box in `TabHeader` (Home, Shop, Consult),
+  opening `/search?in=…`; the separate rows on Home, Shop and Consult are
+  gone and Shop's cart is in the header. Topic aliases in both scripts in
+  `SearchScreen.jsx` — checked live: "kundli" now finds his Hindi posts.
+- **Checkout — corrected diagnosis.** §64 blamed Allowed IPs. Wrong: with
+  the body read, Shiprocket says **"Invalid email and password
+  combination"** (it answers 403 for a bad password too). The saved
+  `SHIPROCKET_PASSWORD` on namo-api also carried a trailing space; stripped
+  in settings now, but the password itself is not the API user's.
+  **Needs the owner:** reset the API user's password in Shiprocket and set
+  it on namo-api and namo-console.
+

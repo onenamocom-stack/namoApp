@@ -5,7 +5,6 @@ import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
-import { Search } from '../components/Primitives.jsx'
 import { useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import Icon from '../components/Icon.jsx'
@@ -100,7 +99,8 @@ export default function Shop() {
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   const [cat, setCat] = useState('All')
-  const [query, setQuery] = useState('')
+  // The header's box searches now (6 Oct 2026); nothing narrows here.
+  const query = ''
   const [slide, setSlide] = useState(0)
   const [sub, setSub] = useState(null)
   const rail = useRef(null)
@@ -204,7 +204,25 @@ export default function Shop() {
     <>
       {/* The cart was a knob in the header until 10 Sep 2026, then a
           floating button until 3 Oct; it now sits beside the search. */}
-      <TabHeader />
+      {/* The cart rides in the header's action slot and search is the
+          header's box (6 Oct 2026, Rahul's design) — no row of its own. */}
+      <TabHeader
+        action={
+          <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
+                className="pop-tap relative inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-ink shadow-sm"
+              >
+                <Icon name="cart" size={18} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+        }
+      />
 
       {/* Said BEFORE anything is tapped, and said as cashback.
           A seeker who discovers after paying that the 10% was not taken
@@ -223,27 +241,6 @@ export default function Shop() {
           a floating button over the grid from 10 Sep, and wherever it
           floated it sat on some product's Buy. Here it covers nothing and
           never scrolls away. */}
-      <Search
-        value={query}
-        onChange={setQuery}
-        placeholder={t('shop.searchPh')}
-        className="sticky top-[52px] z-10 bg-bg px-4 pb-2 pt-3"
-        trailing={
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
-            className="pop-tap relative inline-flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-ink shadow-md"
-          >
-            <Icon name="cart" size={22} />
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-bold tnum text-white ring-2 ring-bg">
-                {cartCount}
-              </span>
-            )}
-          </button>
-        }
-      />
 
       {/* ── Categories, as circles ─────────────────────────────────────── */}
       <section className="pb-1 pt-1">

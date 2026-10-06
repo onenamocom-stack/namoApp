@@ -1,5 +1,6 @@
 import { useAppearance } from '../lib/appearance.js'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { isPro } from '../side.js'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
 import PresenceToggle from './PresenceToggle.jsx'
@@ -142,8 +143,13 @@ export function BottomNav({ tabs = TABS }) {
  * `action` is the one slot that varies: Shop puts the cart there and
  * ProConsult its waiting count. Everything else passes nothing.
  */
-export function TabHeader({ action = null }) {
+/* Where the header's search box starts on each tab: the tab's own kind of
+   thing, or everything. */
+const SEARCH_SCOPE = { '/shop': 'products', '/consult': 'people' }
+
+export function TabHeader({ action = null, search = true }) {
   const { openChat, me, t, balance, lang } = useStore()
+  const { pathname } = useLocation()
   // A festive greeting from the console's live theme, under the bar (4 Oct 2026).
   const theme = useAppearance()?.theme
   const greeting = theme ? (lang === 'hi' && theme.greeting_hi) || theme.greeting : ''
@@ -163,7 +169,22 @@ export function TabHeader({ action = null }) {
         />
       </Link>
 
-      <span className="flex-1" />
+      {/* Search in the bar itself (6 Oct 2026, Rahul's design): it fills the
+          gap between the mark and the knobs, so no tab spends a row on a
+          search field. A button — it opens /search, starting on this tab's
+          own kind of thing. The consultant app has no search. */}
+      {search && !isPro ? (
+        <Link
+          to={`/search${SEARCH_SCOPE[pathname] ? `?in=${SEARCH_SCOPE[pathname]}` : ''}`}
+          aria-label="Search"
+          className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-stroke bg-surface-2 px-3 text-meta t-faint transition-colors active:bg-surface"
+        >
+          <span aria-hidden="true" className="flex-none">⌕</span>
+          <span className="truncate">Search</span>
+        </Link>
+      ) : (
+        <span className="flex-1" />
+      )}
 
       {/* The consultant's online switch. First of the controls, because it
           is the one that decides whether anything else on this screen

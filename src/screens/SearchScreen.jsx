@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import Plate from '../components/Plate.jsx'
@@ -26,17 +26,37 @@ const TABS = [
   { key: 'posts', label: 'Posts' },
 ]
 
-const fold = (s) => (s || '').toString().toLowerCase().normalize('NFKD')
+const fold = (s) => (s || '').toString().toLowerCase().normalize('NFC')
+
+/* Topics, in both scripts (6 Oct 2026: Rahul looked for his शनि ग्रह
+   article). A word typed in Latin letters also finds its Devanagari, and
+   the reverse — people write "shani", "Shani dev" and "शनि" for one thing. */
+const TOPICS = [
+  ['shani', 'saturn', 'शनि'], ['surya', 'sun', 'सूर्य'], ['chandra', 'moon', 'चंद्र', 'चन्द्र'],
+  ['mangal', 'mars', 'मंगल'], ['budh', 'mercury', 'बुध'], ['guru', 'brihaspati', 'jupiter', 'गुरु', 'बृहस्पति'],
+  ['shukra', 'venus', 'शुक्र'], ['rahu', 'राहु'], ['ketu', 'केतु'], ['grah', 'graha', 'planet', 'ग्रह'],
+  ['kundli', 'kundali', 'horoscope', 'कुंडली', 'कुण्डली'], ['rashi', 'sign', 'राशि'], ['dosh', 'dosha', 'दोष'],
+  ['bhav', 'bhava', 'house', 'भाव'], ['vivah', 'shaadi', 'marriage', 'विवाह', 'शादी'],
+  ['career', 'naukri', 'job', 'करियर', 'नौकरी'], ['dhan', 'money', 'paisa', 'धन', 'पैसा'],
+  ['sade sati', 'sadesati', 'साढ़े साती', 'साढ़ेसाती'], ['upay', 'remedy', 'remedies', 'उपाय'],
+  ['ratna', 'gem', 'gemstone', 'रत्न'], ['rudraksha', 'रुद्राक्ष'], ['mantra', 'मंत्र', 'मन्त्र'],
+  ['puja', 'pooja', 'पूजा'], ['yog', 'yoga', 'योग'], ['nakshatra', 'नक्षत्र'], ['lagna', 'ascendant', 'लग्न'],
+  ['neelam', 'blue sapphire', 'नीलम'], ['pukhraj', 'yellow sapphire', 'पुखराज'], ['tarot', 'टैरो'],
+]
+const ALIASES = new Map()
+for (const group of TOPICS) for (const word of group) ALIASES.set(word, group)
 
 function matches(q, ...fields) {
-  const words = fold(q).split(/\s+/).filter(Boolean)
   const hay = fold(fields.flat().join(' '))
-  return words.every((w) => hay.includes(w))
+  const words = fold(q).split(/\s+/).filter(Boolean)
+  // Each word must be found — as typed, or as any spelling of its topic.
+  return words.every((w) => (ALIASES.get(w) ?? [w]).some((form) => hay.includes(form)))
 }
 
 export default function SearchScreen() {
+  const [params] = useSearchParams()
   const [query, setQuery] = useState('')
-  const [tab, setTab] = useState('all')
+  const [tab, setTab] = useState(() => (['people', 'products', 'posts'].includes(params.get('in')) ? params.get('in') : 'all'))
   const [data, setData] = useState(null)
   const box = useRef(null)
 

@@ -500,7 +500,16 @@ tagged products under it, and **Like, Reply, Share and Save** as a post has
 Reshare. The feed's shop cards are the live catalogue, square, opening the
 product's page — they were `mock.js` products.
 
-### `/search` — from the bar on Home (6 Oct 2026)
+### `/search` — from the header's search box (6 Oct 2026)
+
+The box sits **in the header** between the mark and the wallet on Home, Shop
+and Consult (Rahul's design: no tab spends a row on search). It opens
+`/search` on that tab's kind — Shop on Products, Consult on Astrologers.
+Bhakti keeps its own library search and shows no header box; the consultant
+app has none. Shop's cart moved into the header's action slot. Topic words
+match in both scripts — "shani" finds शनि, "kundli" finds कुंडली — from a
+list of about thirty astrology topics.
+
 
 One box: astrologers (name, specialization, category, languages), products
 (name, subtitle, brand, every category and subcategory) and posts and blogs

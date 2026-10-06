@@ -184,7 +184,9 @@ export default function Bhakti() {
     <>
       {/* No "Bhakti" tag in the header since 30 Sep — the tab bar already
           names the screen. Search leads, above the tiles (owner's call). */}
-      <TabHeader />
+      {/* Bhakti searches its own aartis and mantras, below; a second box in
+          the header would be two searches on one screen. */}
+      <TabHeader search={false} />
 
       <Search
         value={query}

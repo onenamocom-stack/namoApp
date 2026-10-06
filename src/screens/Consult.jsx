@@ -7,7 +7,6 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
-import { Search } from '../components/Primitives.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
@@ -143,7 +142,8 @@ export default function Consult() {
      dropped it. */
   const [consultants, setConsultants] = useState(null)
   const [cat, setCat] = useState('All')
-  const [query, setQuery] = useState('')
+  // The header's box searches now (6 Oct 2026); nothing narrows here.
+  const query = ''
   const [slide, setSlide] = useState(0)
   const rail = useRef(null)
   const listRef = useRef(null)
@@ -234,10 +234,8 @@ export default function Consult() {
     <>
       <TabHeader />
 
-      {/* Search leads. Somebody arriving here already has a question, and the
-          tiles below are the free answers to it — furniture above the field
-          they came to type in was the wrong order. */}
-      <Search value={query} onChange={setQuery} placeholder={t('con.searchPh')} />
+      {/* Search is the header's box since 6 Oct 2026 (Rahul's design): it
+          opens /search on Astrologers, and this tab spends no row on it. */}
 
       <FreeTools />
 
