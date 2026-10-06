@@ -5778,3 +5778,29 @@ moved, since it only serves an apex domain whose DNS it runs).
   longer updates (§58). These reach phones at the DNS switch; deployed to
   namo-web.web.app / namo-pro.web.app meanwhile.
 
+## 60. Rahul's list, 6 Oct 11:13: edit, banner, actions, WhatsApp — 6 Oct 2026
+
+1. **Edit on blogs and all posts — built.** `POST /v1/content/<id>/edit/`
+   (`apps/content/services.edit_content`): owner or admin, kind fixed,
+   removed stays removed, a blog keeps a title and body, a reel its video,
+   `product_ids` replaces the tags under the publishing rules. App: Edit on
+   own feed cards (where Report was), beside each piece in the Studio, in
+   the blog reader; `src/components/EditSheet.jsx` is the composer in edit
+   mode. 7 tests; the flow walked on the local consultant build.
+2. **Banner image in blog — done** (§59): it was saved, never shown.
+3. **Like, share, comment on blog — done** (§59).
+4. **WhatsApp share with the banner as thumbnail — built.** Firebase sends
+   `/read/**`, `/shop/p/**` and `/og/**` to `namo-api`
+   (`firebase.json` rewrites; asia-south1 accepted). `apps/content/share.py`
+   answers with the app's own index.html (`APP_INDEX_URL`, cached a minute)
+   with that blog's or product's Open Graph and Twitter tags, and
+   `/og/<blog|product>/<id>.jpg` is a 1200 × 630 JPEG cut from the cover
+   (Pillow, new dependency) — the original was a 2.4 MB PNG, which WhatsApp
+   skips. 7 tests.
+- **Order matters:** the rewrite is live on namo-web.web.app and answers 404
+  until the API is deployed with these routes. **Deploy the API before the
+  DNS switch**, or blog and product links 404 on 1namo.com.
+- Deploys: `npm run ship` hung twice at the Firebase step (the CLI waiting
+  on inherited input); `scripts/ship.mjs` now gives no step any input, and
+  the CLI is a pinned dev dependency (`firebase-tools@14`). Tests: 997.
+

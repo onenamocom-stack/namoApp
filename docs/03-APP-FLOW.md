@@ -480,6 +480,19 @@ carry. A subcategory pill matches the product's subcategory. **Tapping a
 card opens the product's page.** Its cover photo is on the card when it has
 one, the engraved plate when it does not.
 
+**Edit, on your own post, reel or blog** (6 Oct 2026): an **Edit** button
+where somebody else's post has the ⋯ report menu — on the feed card, beside
+each piece in the Studio's "Already published", and in the blog reader's
+top bar. It opens the composer over the screen, that kind only, filled in:
+change the text, the image or video, and (a consultant) the tagged
+products; **Save changes** updates the card in place. A removed post cannot
+be edited.
+
+**Sharing a blog or a product** shows its own card — title, a line of the
+text, and the cover (or product photo) as the thumbnail — in WhatsApp and
+anywhere else that previews links (6 Oct 2026; every link previewed as
+Namo's front page).
+
 **Blogs on the feed and at `/read/:id`** (6 Oct 2026): the uploaded cover,
 16:9 on both (it was saved and never shown — a drawn plate stood in), the
 tagged products under it, and **Like, Reply, Share and Save** as a post has
