@@ -22,7 +22,7 @@
  * (`npx.cmd firebase-tools login`, once, as the Google account that owns
  * the project). Nothing is stored in this repo.
  */
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -77,7 +77,16 @@ run('npm run lint')
 for (const t of targets) run(APPS[t].build)
 
 // 4. deploy
-const message = `${sha}${status ? ' (dirty)' : ''} ${subject}`.slice(0, 250).replace(/"/g, "'")
+// Plain characters only, and no shell: on Windows `npx` is a batch file,
+// and a message with brackets, a semicolon or a % sign made it hang (three
+// deploys on 6 Oct 2026). The CLI's own entry point, run by this node.
+const message = `${sha}${status ? ' dirty' : ''} ${subject}`.replace(/[^\w .,:/-]/g, ' ').slice(0, 200)
 const only_ = targets.map((t) => `hosting:${t}`).join(',')
-run(`npx --no-install firebase deploy --only ${only_} --message "${message}" --non-interactive`)
+const cli = join(ROOT, 'node_modules', 'firebase-tools', 'lib', 'bin', 'firebase.js')
+console.log(`
+$ firebase deploy --only ${only_}`)
+execFileSync(process.execPath, [cli, 'deploy', '--only', only_, '--message', message, '--non-interactive'], {
+  cwd: ROOT,
+  stdio: ['ignore', 'inherit', 'inherit'],
+})
 for (const t of targets) console.log(`✓ ${t}: ${APPS[t].domain} (and ${APPS[t].site}.web.app) now serves ${sha}`)
