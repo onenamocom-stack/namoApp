@@ -13,6 +13,7 @@ columns render rupees from paise. Nothing here stores a float.
 from decimal import Decimal
 
 from django import forms
+from django.utils.text import slugify
 from django.contrib import admin as dj, messages
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -22,9 +23,12 @@ from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
+from django.http import HttpResponse
+from django.template.response import TemplateResponse
+from django.urls import path
 from django.utils import timezone
 
-from . import delivery, shiprocket
+from . import delivery, sheet, shiprocket
 
 from .models import (
     Coupon, Order, OrderItem, Product, Shipment, ShippingAddress,
@@ -63,6 +67,48 @@ class RupeeField(forms.DecimalField):
         return None if amount is None else int(round(amount * 100))
 
 
+# A product video comes through the console's own request, and Cloud Run
+# refuses a request body over 32 MB; a longer one goes in as a link.
+PRODUCT_VIDEO_MAX = 30 * 1024 * 1024
+
+
+class MultipleImages(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.FileField):
+    """Several photos or videos in one pick. Django's FileField takes one;
+    this takes a list and validates each."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleImages(attrs={"accept": "image/*,video/*"}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single(d, initial) for d in data if d]
+        return [single(data, initial)] if data else []
+
+
+def faq_to_text(items):
+    return "\n\n".join(f"{i.get('q', '')}\n{i.get('a', '')}" for i in items or [] if isinstance(i, dict))
+
+
+def text_to_faq(text):
+    """Blocks separated by a blank line; each block's first line is the
+    question and the rest is the answer."""
+    out = []
+    for block in (text or "").replace("\r\n", "\n").split("\n\n"):
+        lines = [ln.strip() for ln in block.strip().split("\n") if ln.strip()]
+        if not lines:
+            continue
+        if len(lines) < 2:
+            raise forms.ValidationError(f"“{lines[0][:60]}” has no answer. Put the answer on the line under the question.")
+        out.append({"q": lines[0], "a": " ".join(lines[1:])})
+    return out
+
+
 class ProductForm(forms.ModelForm):
     price = RupeeField(label="Price")
     mrp = RupeeField(label="MRP (struck through)", required=False)
@@ -74,23 +120,106 @@ class ProductForm(forms.ModelForm):
     # uploaded it can see and fix. Nothing decodes it, so it is not a way in.
     upload = forms.FileField(
         required=False,
-        label="Photo",
-        help_text="Goes to R2. The database keeps the URL, never the bytes.",
+        label="Cover photo",
+        help_text="The first photo, on the card and the page. Goes to R2; the database keeps the URL.",
+    )
+    gallery_upload = MultipleImageField(
+        required=False,
+        label="Add photos or videos",
+        help_text="Pick several at once. Photos up to 10 MB, videos up to 30 MB (MP4 or WebM). They join the end of the gallery below.",
+    )
+    gallery_text = forms.CharField(
+        required=False,
+        label="Gallery",
+        widget=forms.Textarea(attrs={"rows": 5, "cols": 90}),
+        help_text="One URL per line, photos and videos, in the order they show after the cover. Delete a line to remove it; move a line to reorder.",
+    )
+    faq_text = forms.CharField(
+        required=False,
+        label="FAQ",
+        widget=forms.Textarea(attrs={"rows": 8, "cols": 90}),
+        help_text="Question on one line, answer on the next. A blank line between questions.",
     )
 
     class Meta:
         model = Product
         fields = (
-            "name", "subtitle", "category", "subcategory", "image_url",
+            "sku", "name", "brand", "subtitle", "category", "subcategory", "image_url",
+            "description", "slug", "seo_title", "seo_description",
             "stock", "weight_grams", "tax_rate_bps", "featured", "active",
         )
-        widgets = {"image_url": forms.TextInput(attrs={"size": 80})}
+        widgets = {
+            "sku": forms.TextInput(attrs={"size": 20}),
+            "image_url": forms.TextInput(attrs={"size": 80}),
+            "brand": forms.TextInput(attrs={"size": 40}),
+            "subtitle": forms.TextInput(attrs={"size": 80}),
+            "description": forms.Textarea(attrs={"rows": 8, "cols": 90}),
+            "seo_title": forms.TextInput(attrs={"size": 80, "maxlength": 70}),
+            "seo_description": forms.Textarea(attrs={"rows": 2, "cols": 90, "maxlength": 170}),
+        }
+        help_texts = {
+            "sku": "The product ID — one product, one SKU; the database refuses a second. Blank makes the next NAMO-####. The spreadsheet upload matches on this.",
+            "description": "What it is, what it is for, how to use or wear it. Plain text; a blank line starts a new paragraph.",
+            "slug": "The page address: 1namo.com/#/shop/p/<this>. Left blank, it is made from the name.",
+            "seo_title": "What a search result and a shared link show as the title. Blank uses the name. Under 60 characters reads best.",
+            "seo_description": "The line under it. Blank uses the description's first line. Under 160 characters.",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["sku"].required = False
         if self.instance and self.instance.pk:
             self.fields["price"].initial = self.instance.price_paise
             self.fields["mrp"].initial = self.instance.mrp_paise
+            self.fields["gallery_text"].initial = "\n".join(self.instance.gallery or [])
+            self.fields["faq_text"].initial = faq_to_text(self.instance.faq)
+
+    def clean_sku(self):
+        from .services import next_sku
+
+        sku = (self.cleaned_data.get("sku") or "").strip().upper()
+        if not sku:
+            return self.instance.sku if self.instance.pk and self.instance.sku else next_sku()
+        if Product.objects.filter(sku=sku).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError(f"{sku} is already another product. One product, one SKU.")
+        return sku
+
+    def clean_gallery_upload(self):
+        files = self.cleaned_data.get("gallery_upload") or []
+        for f in files:
+            mime = getattr(f, "content_type", "") or ""
+            if mime.startswith("video/"):
+                if not mime.startswith(("video/mp4", "video/webm", "video/quicktime")):
+                    raise forms.ValidationError(f"{f.name}: use MP4 or WebM ({mime}).")
+                if f.size > PRODUCT_VIDEO_MAX:
+                    raise forms.ValidationError(f"{f.name} is over 30 MB. Upload it elsewhere and paste the link in the gallery.")
+                continue
+            if not mime.startswith("image/"):
+                raise forms.ValidationError(f"{f.name} is not a photo or a video ({mime}).")
+            try:
+                media.validate_upload("image", f.name, f.size, mime)
+            except media.ValidationError as exc:
+                raise forms.ValidationError(f"{f.name}: {exc}") from None
+        return files
+
+    def clean_gallery_text(self):
+        urls = [ln.strip() for ln in (self.cleaned_data.get("gallery_text") or "").splitlines() if ln.strip()]
+        for url in urls:
+            if not url.startswith(("https://", "http://")):
+                raise forms.ValidationError(f"“{url[:60]}” is not a web address.")
+        return urls
+
+    def clean_faq_text(self):
+        return text_to_faq(self.cleaned_data.get("faq_text"))
+
+    def clean_slug(self):
+        """Typed: must be free. Blank: the model makes one from the name."""
+        slug = slugify(self.cleaned_data.get("slug") or "")[:110]
+        if not slug:
+            return self.instance.slug if self.instance.pk else None
+        if Product.objects.filter(slug=slug).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Another product already uses this address.")
+        return slug
 
     def clean(self):
         data = super().clean()
@@ -119,6 +248,8 @@ class ProductForm(forms.ModelForm):
         product = super().save(commit=False)
         product.price_paise = self.cleaned_data["price"]
         product.mrp_paise = self.cleaned_data.get("mrp")
+        product.gallery = self.cleaned_data.get("gallery_text") or []
+        product.faq = self.cleaned_data.get("faq_text") or []
         if commit:
             product.save()
         return product
@@ -128,12 +259,69 @@ class ProductForm(forms.ModelForm):
 class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
     audit_target = "product"
     form = ProductForm
-    list_display = ("thumb", "name", "category", "price", "mrp", "stock_state", "featured", "active")
+    list_display = ("thumb", "sku", "name", "brand", "category", "price", "mrp", "stock_state", "featured", "active")
     list_filter = ("active", "featured", "category", "subcategory")
-    search_fields = ("name", "subtitle")
+    search_fields = ("sku", "name", "subtitle", "brand")
     list_editable = ("featured", "active")
     actions = ("mark_out_of_stock", "restock_one", "make_live", "take_down")
     list_per_page = 50
+    fieldsets = (
+        (None, {"fields": ("sku", "name", "brand", "subtitle", "category", "subcategory")}),
+        ("Price and stock", {"fields": ("price", "mrp", "stock", "weight_grams", "tax_rate_bps", "featured", "active")}),
+        ("Photos", {"fields": ("upload", "image_url", "gallery_upload", "gallery_text")}),
+        ("Product page", {"fields": ("description", "faq_text")}),
+        ("Search and sharing", {"fields": ("slug", "seo_title", "seo_description")}),
+    )
+
+    change_list_template = "admin/shop/product/change_list.html"
+
+    def get_urls(self):
+        """The spreadsheet's two pages hang off the product list, so they
+        carry its permission checks."""
+        return [
+            path("sheet/download/", site.admin_view(self.sheet_download), name="shop_product_export"),
+            path("sheet/upload/", site.admin_view(self.sheet_upload), name="shop_product_import"),
+        ] + super().get_urls()
+
+    def sheet_download(self, request):
+        """Every product, live and taken down — the whole catalogue, for the
+        audit trail and as the upload's template."""
+        if not self.has_view_permission(request):
+            return HttpResponse("Not your tier.", status=403)
+        products = Product.objects.select_related("category", "subcategory").order_by("sku")
+        data = sheet.export_workbook(products)
+        record(request, "product.sheet_download", "product", rows=products.count())
+        stamp = timezone.localtime().strftime("%Y-%m-%d-%H%M")
+        response = HttpResponse(
+            data, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = f'attachment; filename="namo-products-{stamp}.xlsx"'
+        return response
+
+    def sheet_upload(self, request):
+        """Check every row, then write all of them or none."""
+        if not at_least(request, Tier.FULFILMENT):
+            return HttpResponse("Not your tier.", status=403)
+        context = {**site.each_context(request), "title": "Upload products sheet", "opts": self.model._meta}
+        if request.method == "POST":
+            upload = request.FILES.get("sheet")
+            if upload is None:
+                context["errors"] = [(0, "Choose the .xlsx file first.")]
+            elif upload.size > 10 * 1024 * 1024:
+                context["errors"] = [(0, "That file is over 10 MB. A sheet of products is far smaller; check it is the right file.")]
+            else:
+                plans, errors = sheet.read_workbook(upload.read())
+                if errors:
+                    context["errors"] = errors
+                    record(request, "product.sheet_refused", "product", file=upload.name,
+                           problems=len(errors))
+                else:
+                    added, updated, changes = sheet.apply(plans)
+                    context["done"] = {"added": added, "updated": updated,
+                                       "same": len(plans) - added - updated}
+                    record(request, "product.sheet_upload", "product", file=upload.name,
+                           added=added, updated=updated, changes=changes)
+        return TemplateResponse(request, "console/shop_import.html", context)
 
     @dj.display(description="")
     def thumb(self, obj):
@@ -201,6 +389,20 @@ class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
             )
             record(request, "product.photo", "product", target_id=obj.pk,
                    bucket_key=key, size_bytes=upload.size)
+        for extra in form.cleaned_data.get("gallery_upload") or []:
+            admin = admin_row(request)
+            owner = str(admin.profile_id) if admin else "console"
+            mime = extra.content_type or "image/jpeg"
+            video = mime.startswith("video/")
+            key = media.make_bucket_key(owner, "reel" if video else "image", extra.name)
+            url = media.get_provider().put_bytes(key, extra.read(), mime)
+            MediaAsset.objects.create(
+                owner=owner, kind=MediaKind.REEL if video else MediaKind.IMAGE,
+                bucket_key=key, mime=mime, size_bytes=extra.size, status=MediaStatus.READY,
+            )
+            obj.gallery = [*(obj.gallery or []), url]
+            record(request, "product.gallery_photo", "product", target_id=obj.pk,
+                   bucket_key=key, size_bytes=extra.size)
         super().save_model(request, obj, form, change)
 
     def _bulk(self, request, queryset, verb, **fields):

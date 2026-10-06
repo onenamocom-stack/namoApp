@@ -288,6 +288,17 @@ up to the whole rupee, shown before Pay. There is no free-delivery threshold.
 A coupon comes off the goods, never off delivery, and an astrologer's 10%
 cashback is paid on the goods alone. Returns are handled by hand for now.
 
+**Every product has a page — decided 6 Oct 2026** (owner and Rahul's list).
+Photos and videos in order, the brand, the price against MRP, stock, the
+description, the questions people ask, a share link, and the search and
+share text. **Every product has one product id (SKU), and there are never
+two products under one id.** The console edits a product field by field,
+uploads several photos or videos at once, and **downloads the whole
+catalogue as a spreadsheet and uploads it back** — the download is the audit
+copy and the template; the upload adds and changes many products at once,
+matching on the SKU, all rows or none. **Categories and subcategories are the
+console's:** a rename or a new category there is the app's on the next load.
+
 ### 4.7 Academy
 
 Courses ₹1,999 · ₹2,499 · ₹3,499 · ₹4,299.

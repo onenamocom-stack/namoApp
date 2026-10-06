@@ -14,3 +14,5 @@ whitenoise==6.8.2
 pywebpush==1.14.1
 py-vapid==1.9.2
 http-ece==1.2.1
+# The shop's spreadsheet upload and download in the console (6 Oct 2026).
+openpyxl==3.1.5

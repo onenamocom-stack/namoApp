@@ -303,3 +303,26 @@ is a redirect taking thirty seconds and an item must not be sold from
 under a basket. Here the wallet is debited in the same transaction as the
 decrement — there is no window to reserve across. It becomes worth
 building the day checkout leaves the server.
+
+## 11. One thing, one id — and the database is what refuses the second
+
+**Owner's rule, 6 Oct 2026: never two products under one product id.** It
+holds for anything people refer to by a code they read or type — a product's
+SKU today, and the same shape for anything sold or imported later.
+
+- **The uniqueness is a database constraint, not a form check.** A form
+  check guards one door; the spreadsheet upload, a script and a second
+  console tab are other doors. `products.sku` is `unique not null`, so every
+  path meets the same refusal.
+- **The model fills the id when a caller does not.** `Product.save()` takes
+  the next `NAMO-####` (and a slug from the name), so a path that forgets
+  cannot write a blank, and a blank cannot become a second "empty" id.
+- **A bulk import keys on that id and refuses a row without one.** Upsert by
+  SKU: a known SKU updates, a new one adds. A row with no SKU would be added
+  again every time the same sheet went up — so it is refused, and uploading
+  the same file twice changes nothing the second time.
+- **A bulk import checks every row before it writes any, and writes all or
+  none.** A half-applied price list cannot be told apart from a whole one.
+  Every problem is listed with its row number. `apps/shop/sheet.py`.
+- **What an import changed goes in the audit log**, field by field, before
+  and after (`product.sheet_upload`); the download is logged too.

@@ -625,6 +625,47 @@ purchase whose price the server looks up for itself.
 test wallet is funded by inserting a ledger row directly, which the trigger
 above carries into the balance.
 
+### 4.6a `products` — the shop's catalogue (columns of 6 Oct 2026)
+
+Came across in the migration with no model; `apps/shop/models.py` maps it.
+`shop_categories (id, name, sort)` and `shop_subcategories (id,
+category_id, name, sort)` beside it — the app reads both from
+`GET /v1/shop/categories/`, never a list of its own.
+
+```sql
+products (
+  id              uuid primary key,
+  sku             varchar(64) not null unique,   -- THE product id; NAMO-#### by default
+  legacy_id       text,
+  category_id     uuid not null references shop_categories(id),
+  subcategory_id  uuid references shop_subcategories(id),
+  name            text not null,
+  subtitle        text,
+  brand           text,
+  description     text,                           -- the page's text; blank lines are paragraphs
+  image_url       text,                           -- the cover
+  gallery         jsonb not null default '[]',    -- more URLs, in order; .mp4/.webm/.mov/.m4v are videos
+  faq             jsonb not null default '[]',    -- [{"q": text, "a": text}]
+  slug            varchar(120) unique,            -- /shop/p/<slug>; made from the name once, then kept
+  seo_title       text,                           -- blank: the name
+  seo_description text,                           -- blank: the description's first line
+  price_paise     integer not null,               -- charged; GST inclusive
+  mrp_paise       integer,                        -- struck through; above price or null (console check)
+  tax_rate_bps    smallint not null default 0,    -- recorded on the order line, not added
+  stock           integer not null default 0,
+  weight_grams    integer not null,               -- Shiprocket prices on it
+  featured        boolean not null default false,
+  active          boolean not null default true,  -- the console's delete
+  created_at      timestamptz not null
+)
+```
+
+`sku` is unique in the database and filled by `Product.save()` when a
+caller leaves it blank (backend/INSTRUCTIONS.md §11). Migration
+`shop/0004_product_page` added everything from `brand` down to `sku`,
+numbering the products already on sale NAMO-0001… oldest first and giving
+each a slug.
+
 ### 4.7 Orders — where the sellable things become one shape
 
 ```sql

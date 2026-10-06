@@ -91,14 +91,65 @@ def list_products(*, category=None, include_sold_out=True):
     return list(rows)
 
 
+VIDEO_EXTENSIONS = (".mp4", ".webm", ".mov", ".m4v")
+
+
+def media_kind(url):
+    """'video' for a video file, 'image' for everything else. Read off the
+    extension, query string ignored — the gallery is a list of plain URLs so
+    the spreadsheet can carry it in one cell."""
+    path = (url or "").split("?", 1)[0].lower()
+    return "video" if path.endswith(VIDEO_EXTENSIONS) else "image"
+
+
+def next_sku():
+    """The next free NAMO-#### number."""
+    import re
+
+    highest = 0
+    for sku in Product.objects.filter(sku__startswith="NAMO-").values_list("sku", flat=True):
+        match = re.fullmatch(r"NAMO-(\d+)", sku)
+        if match:
+            highest = max(highest, int(match.group(1)))
+    return f"NAMO-{highest + 1:04d}"
+
+
+def unique_slug(name, exclude_pk=None):
+    """A page address from the name, with -2, -3… if it is taken."""
+    from django.utils.text import slugify
+
+    base = slugify(name or "")[:110] or "product"
+    slug, n = base, 1
+    taken = Product.objects.exclude(pk=exclude_pk) if exclude_pk else Product.objects.all()
+    while taken.filter(slug=slug).exists():
+        n += 1
+        slug = f"{base}-{n}"
+    return slug
+
+
+def product_images(product):
+    """The cover, then the gallery, in order, each once."""
+    seen, out = set(), []
+    for url in [product.image_url, *(product.gallery or [])]:
+        if isinstance(url, str) and url.strip() and url not in seen:
+            seen.add(url)
+            out.append(url.strip())
+    return out
+
+
 def product_row(product):
     return {
         "id": str(product.id),
+        "sku": product.sku,
+        "slug": product.slug or "",
         "name": product.name,
         "subtitle": product.subtitle or "",
+        "brand": product.brand or "",
         "category": product.category.name if product.category_id else "",
         "subcategory": product.subcategory.name if product.subcategory_id else "",
         "image_url": product.image_url or "",
+        "images": product_images(product),
+        "media": [{"url": u, "kind": media_kind(u)} for u in product_images(product)],
         "price_paise": product.price_paise,
         "mrp_paise": product.mrp_paise,
         "stock": product.stock,
@@ -106,6 +157,55 @@ def product_row(product):
         "featured": product.featured,
         "weight_grams": product.weight_grams,
     }
+
+
+def product_detail(product):
+    """The product page: the list row plus the long text. The search and
+    share text fall back to the name and the description's first lines, so
+    a product nobody wrote SEO for still shows something true."""
+    row = product_row(product)
+    description = product.description or ""
+    row.update({
+        "description": description,
+        "faq": [
+            {"q": str(item.get("q", "")).strip(), "a": str(item.get("a", "")).strip()}
+            for item in (product.faq or [])
+            if isinstance(item, dict) and str(item.get("q", "")).strip()
+        ],
+        "seo_title": product.seo_title or product.name,
+        "seo_description": product.seo_description
+        or (description.strip().split("\n")[0][:160] if description else (product.subtitle or "")),
+    })
+    return row
+
+
+def find_product(key):
+    """A live product by id or by slug, or None."""
+    rows = Product.objects.filter(active=True).select_related("category", "subcategory")
+    try:
+        import uuid as _uuid
+
+        return rows.filter(pk=_uuid.UUID(str(key))).first()
+    except ValueError:
+        return rows.filter(slug=str(key)).first()
+
+
+def list_categories():
+    """The shop's categories and their subcategories, as the console has
+    them — names, order and all. The app draws its tiles and pills from
+    this, so a rename in the console is a rename in the app (6 Oct 2026:
+    the tiles were a list in the app's code, and a renamed category
+    emptied its own tile)."""
+    from .models import ShopCategory
+
+    return [
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "subcategories": [s.name for s in c.subcategories.all()],
+        }
+        for c in ShopCategory.objects.prefetch_related("subcategories").order_by("sort", "name")
+    ]
 
 
 # ── buying ───────────────────────────────────────────────────────────────────

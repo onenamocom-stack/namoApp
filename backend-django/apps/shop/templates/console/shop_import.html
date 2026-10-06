@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<style>
+  .sheet-note { max-width: 760px; line-height: 1.55; }
+  .sheet-note li { margin: 4px 0; }
+  .sheet-err { color: #cf3a25; }
+  .sheet-ok { color: #1a7f37; }
+  table.sheet-errors td { padding: 4px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+</style>
+<div class="sheet-note">
+  <p>Upload the products sheet to add and change many products at once.</p>
+  <ul>
+    <li>Start from <a href="{% url 'admin:shop_product_export' %}">the downloaded sheet</a> — it has every product, in the columns this reads, and a "How to fill" tab.</li>
+    <li><b>The SKU is the product ID.</b> A row whose SKU exists changes that product; a new SKU adds one. A row without a SKU is refused, so the same sheet uploaded twice changes nothing the second time.</li>
+    <li><b>Everything or nothing.</b> Every row is checked first. If any row has a problem, nothing is saved and every problem is listed below.</li>
+    <li>Photos and videos go in as web addresses: the cover in <code>cover_url</code>, the rest in <code>gallery</code>, one per line. Upload files on a product's own page.</li>
+  </ul>
+
+  {% if errors %}
+    <h2 class="sheet-err">Nothing was saved. {{ errors|length }} problem{{ errors|length|pluralize }}:</h2>
+    <table class="sheet-errors">
+      {% for row, message in errors %}<tr><td>Row {{ row }}</td><td>{{ message }}</td></tr>{% endfor %}
+    </table>
+  {% endif %}
+  {% if done %}
+    <h2 class="sheet-ok">Saved: {{ done.added }} added, {{ done.updated }} changed, {{ done.same }} unchanged.</h2>
+    <p><a href="{% url 'admin:shop_product_changelist' %}">Back to products</a></p>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p><input type="file" name="sheet" accept=".xlsx" required></p>
+    <p><input type="submit" value="Check and save" class="default"></p>
+  </form>
+</div>
+{% endblock %}

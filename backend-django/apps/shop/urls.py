@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path("", views.catalogue, name="shop-catalogue"),
+    path("categories/", views.categories, name="shop-categories"),
+    path("p/<str:key>/", views.product, name="shop-product"),
     path("buy/", views.buy, name="shop-buy"),
     path("orders/", views.orders, name="shop-orders"),
     path("orders/<uuid:order_id>/dispatch/", views.dispatch, name="shop-dispatch"),

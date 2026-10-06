@@ -37,6 +37,23 @@ def catalogue(request):
     return Response([services.product_row(p) for p in products])
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def categories(request):
+    """The category tiles and subcategory pills, in the console's order."""
+    return Response(services.list_categories())
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def product(request, key):
+    """One product's page, by id or slug. A product taken down is a 404."""
+    found = services.find_product(key)
+    if found is None:
+        return Response({"ok": False, "reason": "That product is not in the shop."}, status=404)
+    return Response(services.product_detail(found))
+
+
 class Line(serializers.Serializer):
     product_id = serializers.UUIDField()
     qty = serializers.IntegerField(min_value=1, max_value=services.MAX_QTY_PER_LINE)

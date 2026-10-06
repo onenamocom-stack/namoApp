@@ -1,7 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { shopCategories, shopSubcategories } from '../data/mock.js'
-import { fetchProducts } from '../lib/shop.js'
+import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
+import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
@@ -75,6 +75,20 @@ const CAT_TILE = {
   Rudraksha: { icon: 'rudraksha', hue: '#a0522d' },
   Remedies: { icon: 'remedy', hue: '#1e9e5a' },
 }
+/* A category the console adds or renames has no entry above: it gets an
+   icon matched on its name and a colour from this ring, by position, so a
+   new category is a tile like the others rather than a blank. */
+const CAT_HUES = ['#2f7fd1', '#8e44ad', '#a0522d', '#1e9e5a', '#c2410c', '#0f766e', '#b45309', '#7c3aed']
+function tileFor(name, i) {
+  if (CAT_TILE[name]) return CAT_TILE[name]
+  const n = name.toLowerCase()
+  const icon = /gem|stone|ratna|crystal/.test(n) ? 'gem'
+    : /maal|mala|bead/.test(n) ? 'mala'
+    : /rudra/.test(n) ? 'rudraksha'
+    : /remed|yantra|puja|pooja/.test(n) ? 'remedy'
+    : 'cart'
+  return { icon, hue: CAT_HUES[i % CAT_HUES.length] }
+}
 
 export default function Shop() {
   const { cartCount, addToCart, buyNow, setCartOpen, session, sessionReady, showToast, t, lang } =
@@ -102,7 +116,7 @@ export default function Shop() {
 
   /* `?p=<id>` — a product tapped on a post or reel, or an affiliate link
      for one product. The shop opens on All with that product scrolled into
-     view and ringed in saffron; there is no separate product page. */
+     view and ringed in saffron; tapping it opens its page. */
   const focusId = useFocusedProduct()
 
   // One banner's worth of scroll, measured off the DOM rather than derived
@@ -142,6 +156,20 @@ export default function Shop() {
 
   useEffect(loadProducts, [loadProducts])
 
+  /* The tiles and pills are the console's categories (6 Oct 2026). Until
+     they load — or if they cannot — the categories the products carry,
+     so a slow request never leaves a shop with no tiles. */
+  const [categories, setCategories] = useState(null)
+  useEffect(() => {
+    fetchCategories()
+      .then(setCategories)
+      .catch((err) => console.error('[shop] categories failed:', err.message))
+  }, [])
+  const catList = categories?.length
+    ? categories
+    : [...new Set(products.map((p) => p.category).filter(Boolean))].map((name) => ({ name, subcategories: [] }))
+  const subsOf = (name) => catList.find((c) => c.name === name)?.subcategories ?? []
+
   /* Once the grid exists, bring the linked product to the middle of the
      screen. A product retired since the post went out says so, rather than
      leaving somebody to hunt the grid for a thing that is not in it. */
@@ -155,14 +183,16 @@ export default function Shop() {
   }, [loadingShop, focusId])
   const focusRing = 'ring-2 ring-gold-fill ring-offset-2 ring-offset-bg'
 
-  const filters = ['All', ...shopCategories]
+  const filters = ['All', ...catList.map((c) => c.name)]
   const q = query.trim().toLowerCase()
   const list = products.filter((p) => {
     const inCat = cat === 'All' || p.category === cat
-    // Products carry no subcategory field; matching on the name is the cheap
-    // honest join for mock data, and it fails open rather than showing zero.
-    const inSub = !sub || `${p.name} ${p.subtitle}`.toLowerCase().includes(sub.toLowerCase())
-    const inQuery = !q || [p.name, p.subtitle, p.category].some((f) => f.toLowerCase().includes(q))
+    // The product's own subcategory; the name match stays for products the
+    // console has not given one.
+    const inSub =
+      !sub || p.subcategory === sub || `${p.name} ${p.subtitle}`.toLowerCase().includes(sub.toLowerCase())
+    const inQuery =
+      !q || [p.name, p.subtitle, p.category, p.brand, p.sku].some((f) => (f || '').toLowerCase().includes(q))
     return inCat && inSub && inQuery
   })
 
@@ -218,8 +248,8 @@ export default function Shop() {
       {/* ── Categories, as circles ─────────────────────────────────────── */}
       <section className="pb-1 pt-1">
         <ul className="tile-rail">
-          {filters.map((f) => {
-            const tile = CAT_TILE[f] || CAT_TILE.All
+          {filters.map((f, i) => {
+            const tile = tileFor(f, i)
             const on = cat === f
             return (
               <li key={f} className="flex-none">
@@ -252,7 +282,9 @@ export default function Shop() {
             <button
               key={b.id}
               type="button"
-              onClick={() => (b.remote ? followBanner(b, navigate) : setCat(b.cat))}
+              onClick={() =>
+                b.remote ? followBanner(b, navigate) : setCat(filters.includes(b.cat) ? b.cat : 'All')
+              }
               className="banner h-[150px] w-[86%] p-3 text-left"
               style={{
                 ...bannerStyle(b),
@@ -314,8 +346,8 @@ export default function Shop() {
           {t('a.all')}
         </button>
         {(cat === 'All'
-          ? shopCategories.flatMap((c) => (shopSubcategories[c] || []).map((sc) => [c, sc]))
-          : (shopSubcategories[cat] || []).map((sc) => [cat, sc])
+          ? catList.flatMap((c) => c.subcategories.map((sc) => [c.name, sc]))
+          : subsOf(cat).map((sc) => [cat, sc])
         ).map(([c, sc]) => (
           <button
             key={`${c}-${sc}`}
@@ -340,13 +372,14 @@ export default function Shop() {
           <PopCard
             raised
             tap
+            onClick={() => navigate(productHref(hero))}
             className={`mt-3 overflow-hidden ${focusId === hero.id ? focusRing : ''}`}
           >
-            <Plate seed={hero.id} className="aspect-[16/10] w-full">
+            <ProductArt product={hero} className="aspect-[16/10] w-full">
               <span className="absolute left-3 top-3">
                 <PopTag tone="gold">{hero.category}</PopTag>
               </span>
-            </Plate>
+            </ProductArt>
             <div className="p-5">
               <p className="text-lead t-heading">{hero.name}</p>
               <p className="mt-1 text-meta t-faint">{hero.subtitle}</p>
@@ -361,14 +394,14 @@ export default function Shop() {
                 <p className="flex-1 text-title gold tnum">
                   ₹{hero.price.toLocaleString('en-IN')}
                 </p>
-                <PopButton size="sm" full={false} onClick={() => addToCart(hero)}>
+                <PopButton size="sm" full={false} onClick={(e) => { e.stopPropagation(); addToCart(hero) }}>
                   {t('shop.addToCart')}
                 </PopButton>
                 <PopButton
                   size="sm"
                   full={false}
                   variant="gold"
-                  onClick={() => buyNow(hero)}
+                  onClick={(e) => { e.stopPropagation(); buyNow(hero) }}
                 >
                   {t('shop.reviewBuy')}
                 </PopButton>
@@ -407,9 +440,14 @@ export default function Shop() {
                 <li key={p.id} id={`product-${p.id}`}>
                   <PopCard
                     tap
-                    className={`flex h-full flex-col overflow-hidden ${focusId === p.id ? focusRing : ''}`}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={p.name}
+                    onClick={() => navigate(productHref(p))}
+                    onKeyDown={(e) => e.key === 'Enter' && navigate(productHref(p))}
+                    className={`flex h-full cursor-pointer flex-col overflow-hidden ${focusId === p.id ? focusRing : ''}`}
                   >
-                    <Plate seed={p.id} className="aspect-square w-full">
+                    <ProductArt product={p} className="aspect-square w-full">
                       {focusId === p.id && (
                         <span className="caps-sm absolute right-2 top-2 rounded-full bg-btn-deep px-2 py-1 text-white shadow-sm">
                           {t('shop.linked')}
@@ -427,9 +465,10 @@ export default function Shop() {
                           </span>
                         </span>
                       )}
-                    </Plate>
+                    </ProductArt>
 
                     <div className="flex flex-1 flex-col p-3">
+                      {p.brand && <p className="caps-sm t-faint">{p.brand}</p>}
                       <p className="text-meta t-heading">{p.name}</p>
                       <p className="mt-1 text-meta t-faint">{p.subtitle}</p>
 
@@ -453,7 +492,7 @@ export default function Shop() {
                         <PopButton
                           size="sm"
                           disabled={p.soldOut}
-                          onClick={() => addToCart(p)}
+                          onClick={(e) => { e.stopPropagation(); addToCart(p) }}
                           className="flex-1"
                           full={false}
                         >
@@ -464,7 +503,7 @@ export default function Shop() {
                             size="sm"
                             variant="gold"
                             full={false}
-                            onClick={() => buyNow(p)}
+                            onClick={(e) => { e.stopPropagation(); buyNow(p) }}
                             className="flex-1"
                           >
                             {t('shop.buy')}

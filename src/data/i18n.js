@@ -608,6 +608,17 @@ export const strings = {
   'shop.add': { en: 'Add', hi: 'जोड़ें' },
   'shop.buy': { en: 'Buy', hi: 'खरीदें' },
   'shop.viewCart': { en: 'View cart', hi: 'कार्ट देखें' },
+  // The product page (6 Oct 2026)
+  'shop.pp.title': { en: 'Product', hi: 'प्रोडक्ट' },
+  'shop.pp.toShop': { en: 'Back to the shop', hi: 'दुकान पर वापस' },
+  'shop.pp.mrp': { en: 'MRP', hi: 'एमआरपी' },
+  'shop.pp.taxes': { en: 'Inclusive of all taxes. Delivery is added at checkout.', hi: 'सभी टैक्स शामिल। डिलीवरी का खर्च चेकआउट पर जुड़ता है।' },
+  'shop.pp.few': { en: 'Only {n} left', hi: 'सिर्फ़ {n} बचे हैं' },
+  'shop.pp.inStock': { en: 'In stock', hi: 'स्टॉक में है' },
+  'shop.pp.share': { en: 'Share', hi: 'शेयर करें' },
+  'shop.pp.copied': { en: 'Link copied', hi: 'लिंक कॉपी हो गया' },
+  'shop.pp.about': { en: 'About this product', hi: 'इस प्रोडक्ट के बारे में' },
+  'shop.pp.faq': { en: 'Questions people ask', hi: 'लोग क्या पूछते हैं' },
   'shop.disclaimer': {
     en: 'A stone is a reminder of your intention, not a cure. Choose the one that speaks to you.',
     hi: 'रत्न आपके संकल्प की याद दिलाता है, इलाज नहीं। वही चुनें जो आपको सही लगे।',

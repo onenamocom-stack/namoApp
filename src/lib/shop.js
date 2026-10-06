@@ -62,13 +62,18 @@ async function api(path, { method = 'GET', body } = {}) {
 function toProduct(row) {
   return {
     id: row.id,
+    sku: row.sku ?? null,
+    slug: row.slug || null,
     name: row.name,
     subtitle: row.subtitle,
+    brand: row.brand || '',
     category: row.category,
     subcategory: row.subcategory,
     price: row.price_paise / 100,
     mrp: row.mrp_paise ? row.mrp_paise / 100 : null,
     image: row.image_url || null,
+    // The cover then the gallery, photos and videos (6 Oct 2026).
+    media: row.media ?? (row.image_url ? [{ url: row.image_url, kind: 'image' }] : []),
     stock: row.stock,
     // The screen's existing flag. It is a RENDER hint and never a
     // decision: the last read can be stale by the time somebody taps, and
@@ -88,6 +93,38 @@ function toProduct(row) {
 export async function fetchProducts() {
   const rows = await api('/')
   return (rows ?? []).map(toProduct)
+}
+
+/** The categories and their subcategories, in the console's names and
+ *  order (6 Oct 2026: they were a list in this app's code, so a rename in
+ *  the console emptied its own tile). [{id, name, subcategories:[name]}] */
+export async function fetchCategories() {
+  return (await api('/categories/')) ?? []
+}
+
+/** One product's page, by slug or id: the card's fields plus description,
+ *  faq [{q, a}], seo_title and seo_description. null when it is not in the
+ *  shop. */
+export async function fetchProduct(key) {
+  try {
+    const row = await api(`/p/${encodeURIComponent(key)}/`)
+    if (!row?.id) return null
+    return {
+      ...toProduct(row),
+      description: row.description || '',
+      faq: row.faq ?? [],
+      seoTitle: row.seo_title || row.name,
+      seoDescription: row.seo_description || '',
+    }
+  } catch (err) {
+    if (err.status === 404) return null
+    throw err
+  }
+}
+
+/** The page address for a product: its slug when it has one. */
+export function productHref(p) {
+  return `/shop/p/${encodeURIComponent(p.slug || p.id)}`
 }
 
 /**

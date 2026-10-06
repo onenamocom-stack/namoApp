@@ -5661,3 +5661,42 @@ until you backspace, and "That session has ended" mid-session.
   still serve the 00:20 build — none of §53–§56's app changes are live until
   a deploy runs. Tests: 964.
 
+## 57. Shop: product pages, one SKU per product, the spreadsheet — 6 Oct 2026
+
+Rahul's list (description, FAQ, SEO, more than one image, brand, an
+openable product page; a category rename not reaching the app) and the
+owner's (no two products under one id; upload and download as Excel;
+photos and videos per product, like a marketplace).
+
+- **Why a renamed category did nothing:** the tiles and pills were
+  `shopCategories` / `shopSubcategories` in `src/data/mock.js`. A rename in
+  the console changed the products' category name, so the old tile matched
+  nothing and showed zero; a new category never got a tile. The app now
+  reads `GET /v1/shop/categories/`; the mock lists are no longer imported.
+- **Built, server:** `products` gains `sku` (unique, required), brand,
+  description, `gallery` (photo and video URLs), `faq`, `slug`, SEO title and
+  description — migration `shop/0004_product_page`, which numbers existing
+  products NAMO-0001… and slugs them. `GET /v1/shop/categories/`,
+  `GET /v1/shop/p/<slug or id>/`. Console: the product form in five
+  sections, several photos/videos per upload (video ≤ 30 MB — Cloud Run's
+  request cap; longer as a link), gallery and FAQ as editable text, and
+  **Download sheet / Upload sheet** on the product list (`apps/shop/sheet.py`,
+  `openpyxl`): SKU-keyed upsert, all rows or none, every problem listed by
+  row, audited. Rule written down: backend/INSTRUCTIONS.md §11.
+- **Built, app:** `/shop/p/:key` (`src/screens/ProductPage.jsx`), cards open
+  it and show the real cover photo (`src/components/ProductArt.jsx`).
+- **Verified:** 983 backend tests (19 new); lint, build and the i18n check;
+  the shop and the product page walked in a browser on the local build with
+  a sample product answered locally — no test product was written to the
+  live database.
+- **Not live.** Needs, in this order: the migration on production, then the
+  API deploy (the deployed code cannot create a product once `sku` is
+  required — run them together), then the Pages build (GitHub Actions
+  outage, §56). Products have no descriptions, galleries or FAQs until
+  somebody fills them in the console or the sheet.
+- **SEO, honestly:** the page sets its title, meta description and a
+  schema.org Product block, but the app is a hash-routed single page on
+  GitHub Pages, so a crawler that does not run JavaScript sees only the
+  front page. Real search indexing needs server-rendered product pages at
+  real URLs — not built.
+

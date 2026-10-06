@@ -64,6 +64,12 @@ class Product(models.Model):
     the console's form, where somebody can be told why."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # THE PRODUCT ID people use (6 Oct 2026, owner's rule: never two products
+    # under one id). Unique in the database, not just in the form, so no
+    # path — the form, the spreadsheet upload, a script — can make a second
+    # row for the same thing. The spreadsheet upload matches on it: a known
+    # SKU updates that product, a new one adds a product.
+    sku = models.CharField(max_length=64, unique=True)
     legacy_id = models.TextField(null=True, blank=True)
     category = models.ForeignKey(
         ShopCategory, on_delete=models.DO_NOTHING, db_column="category_id",
@@ -85,6 +91,20 @@ class Product(models.Model):
     # comes out of the margin.
     weight_grams = models.IntegerField()
     featured = models.BooleanField(default=False)
+    # The product page (6 Oct 2026, owner's list): who made it, what it is,
+    # more than one photo or video, the questions people ask, and what a
+    # search engine or a shared link shows. `image_url` stays the cover;
+    # `gallery` is the URLs after it, in order — photos and videos, told
+    # apart by the file extension (services.media_kind). `faq` is
+    # [{"q": ..., "a": ...}].
+    # `slug` is the readable address (/shop/p/<slug>); the id still works.
+    brand = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    gallery = models.JSONField(default=list, blank=True)
+    faq = models.JSONField(default=list, blank=True)
+    slug = models.SlugField(max_length=120, null=True, blank=True, unique=True)
+    seo_title = models.TextField(null=True, blank=True)
+    seo_description = models.TextField(null=True, blank=True)
     # Soft delete. PRD §6 capability 6 again: a product in a dispute is
     # evidence, and an order item points at this row by id.
     active = models.BooleanField(default=True)
@@ -100,6 +120,23 @@ class Product(models.Model):
     @property
     def in_stock(self):
         return self.stock > 0
+
+    def save(self, *args, **kwargs):
+        # Every product has its id, whichever path made it — the form, the
+        # spreadsheet, a script. Two saves racing for the same next number
+        # meet the unique constraint, and the second is refused, not doubled.
+        if not self.sku:
+            from .services import next_sku
+
+            self.sku = next_sku()
+        self.sku = self.sku.strip().upper()
+        # And its page address, made from the name once and then kept, so a
+        # shared link does not break when the name is edited.
+        if not self.slug:
+            from .services import unique_slug
+
+            self.slug = unique_slug(self.name, exclude_pk=self.pk)
+        super().save(*args, **kwargs)
 
 
 class Order(models.Model):

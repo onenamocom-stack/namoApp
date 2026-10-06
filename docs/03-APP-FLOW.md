@@ -473,6 +473,28 @@ chart-matched hero when unfiltered.
 **Add** goes to the cart; **Buy now** charges the wallet immediately. Sold-out
 products keep their row with both controls dead.
 
+**The tiles and pills are the console's categories** (6 Oct 2026), in its
+order and names; a category with no icon of its own gets one matched on its
+name and a colour by position. Until they load, the categories the products
+carry. A subcategory pill matches the product's subcategory. **Tapping a
+card opens the product's page.** Its cover photo is on the card when it has
+one, the engraved plate when it does not.
+
+### `/shop/p/:key` — a product's page (6 Oct 2026)
+
+`key` is the slug or the id. Top bar: back to the shop, the brand (or the
+category), the cart. Then the gallery — swipe through every photo and
+video, thumbnails under it to jump; a video plays in place. Brand, name,
+subtitle, price, MRP and the discount, "Inclusive of all taxes. Delivery is
+added at checkout.", stock ("Only 2 left" at three or fewer), chips for
+category, subcategory and SKU, and **Share** (the phone's share sheet, or
+the link copied). Then **About this product** (the description, a blank
+line a new paragraph) and **Questions people ask** (each opens in place).
+**Add to cart** and **Buy** stay pinned at the bottom. A product taken
+down, or a key that matches nothing: "That product is no longer in the
+shop", with the way back. The tab title, meta description and a
+schema.org Product block are set while the page is open.
+
 
 ### `/academy`
 E-book / Courses / Events. E-book leads and opens by default (28 Sep 2026) — it is the only tab reading real content.
