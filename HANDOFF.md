@@ -6015,3 +6015,17 @@ the token — and 2 tests. Daily bills a participant who sends no video at its
 audio rate (about a quarter of video's, per Daily's pricing as understood on
 7 Oct — confirm in the Daily dashboard).
 
+## 71. Shiprocket signs in; checkout works — 7 Oct 2026
+
+- The owner reset the API user's password (`support@1namo.com`); it is set
+  on namo-api and namo-console as `SHIPROCKET_PASSWORD` (revision
+  namo-api-00094). Checked with the live value: pickup "Primary" (201301);
+  a 50 g parcel to 201011 quotes ₹78 by Delhivery, 3 days; COD available.
+- **Trap, for the next secret:** `gcloud.cmd run services update
+  --update-env-vars "^@@^NAME=value"` from PowerShell — `gcloud.cmd` is a
+  batch file and cmd.exe ate the `^` and a character of the value, creating
+  a variable named `@@SHIPROCKET_PASSWORD` (removed). Secrets go through the
+  Cloud Run Admin API instead (a script reading the value from a file,
+  printing only lengths), and the stored copy is compared before the file
+  is deleted.
+

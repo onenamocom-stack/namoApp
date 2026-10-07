@@ -70,3 +70,5 @@ _local/
 .firebase/
 firebase-debug.log
 firebase-debug.*.log
+# A credential handed to a deploy step; never committed.
+shiprocket-password.txt
