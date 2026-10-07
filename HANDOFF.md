@@ -6054,10 +6054,8 @@ person ends it. Product rule: `docs/01-PRD.md` §4.1; screens:
 - **Screens.** `src/components/SessionRecharge.jsx`, used by `Call.jsx`
   and `ChatPanel.jsx`. The call screen no longer ends itself at 0:00; it
   beats every 5 s once at zero and leaves when the server says ended.
-- **Not deployed yet.** Committed; `chat/0005_paused_seconds` is **not
-  applied to prod**, and neither namo-api nor the apps are deployed. Order
-  matters: migrate, then deploy the API, then `npm run ship` — the screens
-  call `/extend/`, which an old API answers 404.
+- **Live.** `chat/0005_paused_seconds` applied to prod; namo-api revision
+  namo-api-00095-qvr; both apps shipped at `424a0fc`.
 - **Tests:** `tests/test_session_pause.py` (11). Three video tests now
   expect the room and token to run 120 s past the money.
 - **Not verified on a phone.** The Daily mute uses an endpoint not yet seen
