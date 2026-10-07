@@ -127,6 +127,16 @@ def set_room_expiry(name, expires_at):
     }})
 
 
+def set_can_send(name, can_send):
+    """Change what everybody in the room may send, live (7 Oct 2026): False
+    while a session is paused for a recharge, so the pause is silent and not
+    a free two minutes; back to audio, or everything, when it resumes.
+    Raises UpstreamError."""
+    return _call("POST", f"/rooms/{name}/update-permissions", {
+        "data": {"*": {"canSend": can_send}},
+    })
+
+
 def present_user_ids(room_name):
     """Who is in the room right now, by the user_id on their token — or
     None when Daily cannot say. Never guesses: an unknown answer must not

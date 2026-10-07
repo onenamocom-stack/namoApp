@@ -54,6 +54,7 @@ export async function joinCall(sessionId) {
       expiresAt: data.expires_at,
       connecting: data.connecting === true,
       audioOnly: data.audio_only === true,
+      ratePaise: data.rate_paise ?? null,
       isOwner: data.is_owner,
     }
   } catch (err) {

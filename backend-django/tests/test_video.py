@@ -7,6 +7,7 @@ cannot open a call must not have been paid as though it happened.
 
 import uuid
 
+from apps.chat.services import PAUSE_SECONDS
 import pytest
 from django.utils import timezone
 
@@ -168,7 +169,9 @@ class TestWhenThereIsNoDoor:
         would eject them from two seconds later is a worse answer than
         saying so."""
         s = _session(minutes=10)
-        s.expires_at = timezone.now() - timezone.timedelta(seconds=1)
+        # Past the money AND the two minutes' pause for a recharge, inside
+        # which a rejoin is allowed (7 Oct 2026).
+        s.expires_at = timezone.now() - timezone.timedelta(seconds=PAUSE_SECONDS + 1)
         s.save()
         assert services.join(SEEKER, s.id)["reason"] == services.REFUSAL_EXPIRED
         assert fake_daily["rooms"] == []
@@ -211,14 +214,16 @@ class TestTheRoomDiesWithTheMoney:
         s = _session(minutes=7)
         services.join(SEEKER, s.id)
         _name, exp = fake_daily["rooms"][0]
-        assert exp == s.expires_at
+        # Plus the pause that waits for a recharge (7 Oct 2026); the pause
+        # is silenced and never billed, and the settle stops the meter.
+        assert exp == s.expires_at + timezone.timedelta(seconds=PAUSE_SECONDS)
 
     def test_the_token_expires_with_it(self, people, configured, fake_daily):
         """A token outliving the hold is a way back into a call that has
         been paid for and closed."""
         s = _session(minutes=7)
         services.join(SEEKER, s.id)
-        assert fake_daily["tokens"][0][3] == s.expires_at
+        assert fake_daily["tokens"][0][3] == s.expires_at + timezone.timedelta(seconds=PAUSE_SECONDS)
 
     def test_the_room_name_is_derived_and_stable(self, people, configured, fake_daily):
         s = _session()

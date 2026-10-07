@@ -759,6 +759,15 @@ default false, migration `consultants/0005`) and `sessions.free_seconds`
 `max(0, gross − free value)` (never more than the hold) and the earnings
 row's gross is every billed second, the free ones included.
 
+**The pause for a recharge** (7 Oct 2026): `sessions.paused_seconds`
+(integer, default 0, `chat/0005`) — the seconds of every pause that ended in
+a recharge. The settle bills from `started_at + paused_seconds` to
+`min(now, expires_at)`, so no pause is billed. "Paused" is not stored: it is
+a live session with `expires_at <= now < expires_at + 120 s`. A recharge
+(`POST /v1/chat/sessions/<id>/extend/`) writes one more `order` ledger row
+of `-extra` against the session's order and adds it to `hold_paise`; the
+single refund at the settle returns whatever of the whole hold was unused.
+
 **Commission is 40%, stored as `fee_bps = 4000`** (7 Oct 2026; 18% and `1800`
 before — each row keeps the rate it was written at), and
 `fee_paise = round(gross_paise * fee_bps / 10000)`. The `earnings_ledger` CHECK

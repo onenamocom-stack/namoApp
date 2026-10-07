@@ -114,14 +114,15 @@ def join(actor_id, session_id, now=None):
                            status=session.status)
         minutes = (session.hold_paise or 0) // session.rate_paise + (session.free_seconds or 0) / 60
         room_until = accepted + timezone.timedelta(seconds=CONNECT_SECONDS, minutes=minutes)
-    elif session.expires_at is None or session.expires_at <= stamp:
+    elif session.expires_at is None or session.expires_at + timezone.timedelta(
+            seconds=_pause_seconds()) <= stamp:
         # The sweeper will settle it within the minute. Refusing here
         # rather than opening a room that Daily would eject them from
         # two seconds later.
         return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
                        status=session.status)
     else:
-        room_until = session.expires_at
+        room_until = session.expires_at + timezone.timedelta(seconds=_pause_seconds())
 
     name = room_name(session.id)
     try:
@@ -164,6 +165,8 @@ def join(actor_id, session_id, now=None):
         "is_owner": is_consultant,
         # The call screen asks the browser for the microphone only.
         "audio_only": bool(session.audio_only),
+        # The recharge on the call screen prices its amounts in minutes.
+        "rate_paise": session.rate_paise,
     }
 
 
@@ -203,6 +206,27 @@ def both_present(session):
     return want <= ids
 
 
+def _pause_seconds():
+    from apps.chat.services import PAUSE_SECONDS
+
+    return PAUSE_SECONDS
+
+
+def hold_room(session, paused):
+    """Silence the room while the session is paused for a recharge, and give
+    it its voice back when the recharge lands (7 Oct 2026). The money never
+    depended on this — the pause is not billed either way — so a failure is
+    logged, not raised."""
+    if not providers.is_configured():
+        return
+    can_send = False if paused else (["audio"] if session.audio_only else True)
+    try:
+        providers.set_can_send(room_name(session.id), can_send)
+    except providers.UpstreamError as exc:
+        logger.error("[video] could not %s room %s: %s",
+                     "pause" if paused else "resume", session.id, exc)
+
+
 def clock_started(session):
     """The paid minutes began: the room now ends exactly when they do.
     Until this the room was cut to the connect window plus every minute
@@ -210,7 +234,13 @@ def clock_started(session):
     if not providers.is_configured() or session.expires_at is None:
         return
     try:
-        providers.set_room_expiry(room_name(session.id), session.expires_at)
+        from apps.chat.services import PAUSE_SECONDS
+
+        # Plus the pause that waits for a recharge (7 Oct 2026): the room
+        # outlives the money by that long, and is moved on again by a
+        # recharge. The settle, not the room, is what stops the meter.
+        providers.set_room_expiry(room_name(session.id), session.expires_at + timezone.timedelta(
+            seconds=PAUSE_SECONDS))
     except providers.UpstreamError as exc:
         # The settle is still on time — the money never depended on the
         # room. Logged, because a room outliving its money is worth knowing.

@@ -99,6 +99,14 @@ def end(request, session_id):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def extend(request, session_id):
+    """The seeker recharged mid-session: hold the new minutes and carry on,
+    running or paused (7 Oct 2026)."""
+    return Response(services.extend_session(request.user.pk, session_id))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def heartbeat(request, session_id):
     """Says "still here" and asks how long is left. A failed request is not
     an ended session: the {ok:false} answer distinguishes "the server says

@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 6 Oct 2026.
+Updated 7 Oct 2026.
 
 | Phase | State |
 |---|---|
@@ -6029,3 +6029,38 @@ audio rate (about a quarter of video's, per Daily's pricing as understood on
   printing only lengths), and the stored copy is compared before the file
   is deleted.
 
+
+## 72. Out of money pauses the session for a recharge — 7 Oct 2026
+
+Owner: instead of hanging up when the money runs out, pause, ask the seeker
+to recharge on the same screen, and end after two minutes or when either
+person ends it. Product rule: `docs/01-PRD.md` §4.1; screens:
+`docs/03-APP-FLOW.md`; column: `docs/05-BACKEND-SCHEMA.md`.
+
+- **Server.** `PAUSE_SECONDS = 120` in `apps/chat/services.py`. `_due` and
+  the sweeper settle "time ran out" only once `expires_at + 120 s` has
+  passed; the settle still stops at `expires_at`, so the pause is not
+  billed. New `extend_session` (`POST /v1/chat/sessions/<id>/extend/`,
+  seeker only): holds every whole minute the wallet buys, moves the end on
+  (running) or skips the pause into `paused_seconds` and runs on from the
+  old end (paused). The heartbeat answers `paused`, `resume_by` and
+  `pause_seconds_left`, and settles a pause that ran out — never a "silent"
+  session, because a beat is proof somebody is there.
+- **Calls go silent.** The Daily room and tokens now outlive the money by
+  the pause. A paused call's beats in the pause's first 20 s call Daily's
+  `POST /rooms/<name>/update-permissions` with `canSend: false` for
+  everybody; a recharge sets it back (`["audio"]` or `true`). The call
+  screen also covers Daily's controls while paused.
+- **Screens.** `src/components/SessionRecharge.jsx`, used by `Call.jsx`
+  and `ChatPanel.jsx`. The call screen no longer ends itself at 0:00; it
+  beats every 5 s once at zero and leaves when the server says ended.
+- **Not deployed yet.** Committed; `chat/0005_paused_seconds` is **not
+  applied to prod**, and neither namo-api nor the apps are deployed. Order
+  matters: migrate, then deploy the API, then `npm run ship` — the screens
+  call `/extend/`, which an old API answers 404.
+- **Tests:** `tests/test_session_pause.py` (11). Three video tests now
+  expect the room and token to run 120 s past the money.
+- **Not verified on a phone.** The Daily mute uses an endpoint not yet seen
+  answer from our account; if it refuses, the error is logged
+  (`[video] could not pause room`) and the overlay is all that stops talk
+  during the pause. Walk one real paid call to zero before relying on it.

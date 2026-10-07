@@ -93,6 +93,11 @@ class Session(models.Model):
     # Seconds of this session Namo pays for: a new seeker's first session
     # with a free-first consultant (7 Oct 2026). 0 for every other.
     free_seconds = models.IntegerField(default=0, db_default=0)
+    # Seconds the session stood paused waiting for a recharge, summed over
+    # every pause that ended in one (7 Oct 2026). Nobody pays for them and
+    # the consultant does not earn on them: billing counts from
+    # started_at + paused_seconds.
+    paused_seconds = models.IntegerField(default=0, db_default=0)
     order_id = models.UUIDField(null=True, blank=True)  # orders.id; module 8
     mode = models.CharField(max_length=16, choices=SessionMode.choices)
     # An audio call (5 Oct 2026): the same metered call, joined with the

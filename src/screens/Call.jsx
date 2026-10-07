@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { embedUrl, joinCall, timeLeft } from '../lib/video.js'
 import { cancelRequest, endChat, heartbeat } from '../lib/chat.js'
 import { useStore } from '../store.jsx'
+import SessionRecharge from '../components/SessionRecharge.jsx'
 
 /**
  * The call. Both sides land here; the URL carries the session.
@@ -29,6 +30,9 @@ export default function Call() {
 
   const [call, setCall] = useState(null)      // null | {ok} | {ok:false}
   const [left, setLeft] = useState(null)
+  const [secs, setSecs] = useState(null)
+  // When the pause for a recharge ends (7 Oct 2026): set by the heartbeat.
+  const [resumeBy, setResumeBy] = useState(null)
   const [leaving, setLeaving] = useState(false)
   const ended = useRef(false)
 
@@ -76,10 +80,13 @@ export default function Call() {
     }
   }, [id])
 
-  /* The countdown, and the thing that ends the call when it runs out.
-     Driven off the session's expiry rather than a decrementing number:
-     a tab that was backgrounded for two minutes comes back with the
-     right answer instead of one two minutes stale. */
+  /* The countdown. Driven off the session's expiry rather than a
+     decrementing number: a tab that was backgrounded for two minutes comes
+     back with the right answer instead of one two minutes stale.
+
+     At 0:00 the call no longer ends here (7 Oct 2026): it PAUSES, silent,
+     for two minutes while the seeker is asked to recharge. The server ends
+     it when the pause runs out, and the heartbeat below says so. */
   useEffect(() => {
     // Nothing to count while the call connects — the clock has not started.
     // `connecting`, not an empty end: the server sends a provisional end
@@ -88,26 +95,46 @@ export default function Call() {
     const tick = () => {
       const remaining = timeLeft(call.expiresAt)
       setLeft(remaining)
-      if (remaining === '0:00' && !ended.current) {
-        ended.current = true
-        showToast('Time is up. The call has ended.')
-        finish()
-      }
+      setSecs(Math.max(0, Math.round((new Date(call.expiresAt).getTime() - Date.now()) / 1000)))
     }
     tick()
     const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [call])
 
   /* The same heartbeat the chat meter uses. It is advisory — the money
      is bounded by `expires_at` either way — but it is what lets the
-     sweeper tell a closed tab from a quiet one. */
+     sweeper tell a closed tab from a quiet one. It also carries the end
+     moving on when the seeker recharges, and the end of a pause nobody
+     recharged in — every five seconds once the clock reads zero, so both
+     screens hear either at once. */
+  const outOfTime = secs === 0
   useEffect(() => {
     if (!call?.ok || call.connecting) return undefined
-    const beat = setInterval(() => heartbeat(id), 20_000)
-    return () => clearInterval(beat)
-  }, [call, id])
+    let alive = true
+    const beat = async () => {
+      const h = await heartbeat(id)
+      if (!alive || !h || h.unreachable) return
+      if (h.live === false) {
+        if (ended.current) return
+        ended.current = true
+        showToast('The call has ended.')
+        await refreshWallet(session?.user?.id)
+        navigate('/consult', { replace: true })
+        return
+      }
+      setResumeBy(h.resume_by ?? null)
+      if (h.expires_at && h.expires_at !== call.expiresAt) {
+        setCall((c) => ({ ...c, expiresAt: h.expires_at }))
+      }
+    }
+    if (outOfTime) beat()
+    const timer = setInterval(beat, outOfTime ? 5_000 : 20_000)
+    return () => {
+      alive = false
+      clearInterval(timer)
+    }
+  }, [call, id, outOfTime, navigate, refreshWallet, session, showToast])
 
   /* CONNECTING (5 Oct 2026). The money is held but the clock waits for
      both of you to be in the room — the server checks the room's own list
@@ -238,13 +265,51 @@ export default function Call() {
         className="h-full w-full border-0"
       />
 
+      {/* Out of money (7 Oct 2026): the call is paused and silent, and
+          this covers Daily's controls so it stays that way, with the
+          recharge in the middle. The last minute gets a slim bar instead. */}
+      {secs === 0 && resumeBy ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl">
+            <SessionRecharge
+              dark
+              sessionId={id}
+              seeker={!call.isOwner}
+              secondsLeft={0}
+              resumeBy={resumeBy}
+              rate={call.ratePaise}
+              onExtended={(r) => {
+                setResumeBy(r.resume_by ?? null)
+                setCall((c) => ({ ...c, expiresAt: r.expires_at }))
+              }}
+              onEnd={finish}
+            />
+          </div>
+        </div>
+      ) : !call.connecting && !call.isOwner && secs != null && secs <= 60 ? (
+        <div className="absolute inset-x-3 top-14 z-10 overflow-hidden rounded-2xl">
+          <SessionRecharge
+            dark
+            sessionId={id}
+            seeker
+            secondsLeft={secs}
+            resumeBy={resumeBy}
+            rate={call.ratePaise}
+            onExtended={(r) => {
+              setResumeBy(r.resume_by ?? null)
+              setCall((c) => ({ ...c, expiresAt: r.expires_at }))
+            }}
+          />
+        </div>
+      ) : null}
+
       {/* Over the video, top-left, out of the way of Daily's own
           controls on the right. The number is the whole reason this
           overlay exists. */}
       <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/45 px-3 py-1.5 backdrop-blur-sm">
         <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
-          {call.connecting ? 'Connecting' : `${left ?? '—'} left`}
+          {call.connecting ? 'Connecting' : secs === 0 ? 'Paused' : `${left ?? '—'} left`}
         </span>
       </div>
 

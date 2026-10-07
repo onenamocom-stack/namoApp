@@ -103,6 +103,15 @@ RING_SECONDS = 45
 UNANSWERED = RING_SECONDS
 # An accepted call must connect — both people in the room — within this.
 CONNECT_SECONDS = 90
+# When the money runs out the session PAUSES for this long instead of ending
+# (7 Oct 2026, owner): the seeker is asked to recharge, and a recharge inside
+# it carries on the same session. No recharge, and it settles at the moment
+# the money ran out — the pause is never billed. Either person may end it
+# sooner. Paused is not stored: it is `expires_at <= now < expires_at + this`.
+PAUSE_SECONDS = 120
+# A paused call is silenced by the beats of the pause's first this-many
+# seconds; both screens beat every few seconds once their clock reads zero.
+MUTE_WINDOW_SECONDS = 20
 PREVIEW_CHARS = 120  # 016: left(body, 120) — characters, not bytes
 
 
@@ -127,6 +136,7 @@ REFUSAL_SESSION_ENDED = "That session has ended. Start another to reply."
 REFUSAL_NOT_PARTICIPANT = "You are not part of that conversation."
 REFUSAL_BUSY = "They are with another seeker right now. We will keep trying."
 REFUSAL_RING_OVER = "That call stopped ringing."
+REFUSAL_NOT_LIVE = "That session has ended."
 
 SESSION_ROW_FIELDS = (
     "id", "seeker_id", "consultant_id", "service_id", "thread_id", "order_id",
@@ -289,11 +299,21 @@ def _due(session, now):
         if session.heartbeat_at is not None and session.heartbeat_at < grace_before:
             return "connection lost"
         return None
-    if session.expires_at is not None and session.expires_at <= now:
+    if session.expires_at is not None and session.expires_at <= now - timezone.timedelta(
+            seconds=PAUSE_SECONDS):
+        # Out of money AND out of the pause that waited for a recharge.
         return "time ran out"
     if (session.heartbeat_at or session.started_at) < grace_before:
         return "connection lost"
     return None
+
+
+def _pause_over(session, now):
+    """Out of money and out of the pause that waited for a recharge. The
+    one ending a beat or a recharge may settle: they are proof somebody is
+    still there, so silence is never theirs to judge."""
+    return session.expires_at is not None and session.expires_at <= now - timezone.timedelta(
+        seconds=PAUSE_SECONDS)
 
 
 def is_busy(consultant_id, now=None):
@@ -597,17 +617,20 @@ def end_session(actor_id, session_id, reason=None, now=None):
             charged, minutes, gross = 0, 0, 0
         else:
             stop = min(now, session.expires_at)
+            # A pause that ended in a recharge is skipped, not billed: the
+            # meter counts from the start moved on by every paused second.
+            start = session.started_at + timezone.timedelta(seconds=session.paused_seconds or 0)
             # The free seconds of a first session (7 Oct 2026) are Namo's:
             # the time is worth `free_value`, the seeker pays only past it,
             # and the consultant earns on every second (`gross`).
             free_value = ((session.free_seconds or 0) * session.rate_paise) // 60
             gross = _billable_paise(
-                session.started_at, stop, session.hold_paise + free_value, session.rate_paise
+                start, stop, session.hold_paise + free_value, session.rate_paise
             )
             charged = min(max(0, gross - free_value), session.hold_paise)
             # Label only — what the earnings row says, not what anybody pays.
             minutes = _billable_minutes(
-                session.started_at, stop, session.hold_paise + free_value, session.rate_paise
+                start, stop, session.hold_paise + free_value, session.rate_paise
             )
         refund = session.hold_paise - charged
 
@@ -688,11 +711,97 @@ def heartbeat(actor_id, session_id, now=None):
         if session.started_at is None:
             return {"ok": True, "live": True, "connecting": True, "seconds_left": None,
                     "rate_paise": session.rate_paise}
+    if _pause_over(session, now):
+        # Nobody recharged in the pause: settled by whoever asks first, so
+        # both screens hear "ended" on this very beat.
+        end_session(None, session.id, reason="time ran out", now=now)
+        return {"ok": True, "live": False, "seconds_left": 0}
     Session.objects.filter(pk=session.id).update(heartbeat_at=now)
+    out = _clock(session, now)
+    if (out["paused"] and session.mode != Session.Mode.CHAT
+            and out["pause_seconds_left"] > PAUSE_SECONDS - MUTE_WINDOW_SECONDS):
+        # A call that ran out goes quiet. Asked only in the pause's first
+        # seconds, by the beats that arrive then, so Daily is not called on
+        # every beat of the two minutes.
+        from apps.video import services as video_services
+
+        video_services.hold_room(session, paused=True)
+    return out
+
+
+def _clock(session, now):
+    """How long is left, and whether the session is paused for a recharge."""
     remaining = session.expires_at - now
     seconds_left = max(0, int(remaining.total_seconds()))
+    resume_by = session.expires_at + timezone.timedelta(seconds=PAUSE_SECONDS)
+    paused = seconds_left == 0
     return {"ok": True, "live": True, "connecting": False, "seconds_left": seconds_left,
-            "expires_at": session.expires_at, "rate_paise": session.rate_paise}
+            "expires_at": session.expires_at, "rate_paise": session.rate_paise,
+            "paused": paused, "resume_by": resume_by,
+            "pause_seconds_left": max(0, int((resume_by - now).total_seconds())) if paused else None}
+
+
+# ── recharge and carry on (7 Oct 2026) ──────────────────────────────────────
+
+
+def extend_session(seeker_id, session_id, now=None):
+    """The seeker recharged: hold every further minute the wallet now buys
+    and move the end on. Works while the session is running (the low-balance
+    bar's recharge) and while it is paused (the money ran out; the pause
+    is skipped, never billed). One more hold row on the same order — the
+    settle refunds whatever of the whole hold was not used.
+
+    Lock order matches accept: the session row, then the wallet."""
+    now = now or timezone.now()
+    with transaction.atomic():
+        session = Session.objects.select_for_update().filter(pk=session_id).first()
+        if session is None:
+            return {"ok": False, "reason": REFUSAL_NO_SESSION}
+        if str(session.seeker_id) != str(seeker_id):
+            return {"ok": False, "reason": REFUSAL_NOT_YOURS}
+        if session.status != Session.Status.LIVE:
+            return {"ok": False, "reason": REFUSAL_NOT_LIVE}
+        if session.started_at is None or session.expires_at is None:
+            # A call still connecting has its whole hold ahead of it.
+            return {"ok": False, "reason": REFUSAL_NOT_LIVE}
+        if _pause_over(session, now):
+            # Past the pause: it is over, and the sweep has only not got to it.
+            end_session(None, session.id, reason="time ran out", now=now)
+            return {"ok": False, "reason": REFUSAL_NOT_LIVE}
+        balance = wallet_services.lock_wallet_balance(session.seeker_id)
+        minutes = _minutes_held(balance or 0, session.rate_paise)
+        if minutes < 1:
+            return {"ok": False, "reason": REFUSAL_SHORT_BALANCE, "balance_paise": balance or 0}
+        extra = minutes * session.rate_paise
+        added = timezone.timedelta(minutes=minutes)
+        was_paused = session.expires_at <= now
+        if was_paused:
+            # Paused: skip the pause, in whole seconds rounded up — the
+            # seeker's side of the rounding — and run on from the old end.
+            gap = now - session.expires_at
+            skipped = gap.days * 86400 + gap.seconds + (1 if gap.microseconds else 0)
+            session.paused_seconds = (session.paused_seconds or 0) + skipped
+            session.expires_at = session.expires_at + timezone.timedelta(seconds=skipped) + added
+        else:
+            session.expires_at = session.expires_at + added
+        session.hold_paise = (session.hold_paise or 0) + extra
+        session.heartbeat_at = now
+        session.save(update_fields=("expires_at", "hold_paise", "paused_seconds", "heartbeat_at"))
+        pro_name = gateway.profile_name(session.consultant_id)
+        wallet_services.insert_ledger(
+            session.seeker_id, -extra,
+            f"{pro_name or 'Consultation'} · {_what(session)} · {minutes} min more held",
+            ref_type="order", ref_id=session.order_id,
+        )
+    if session.mode != Session.Mode.CHAT:
+        from apps.video import services as video_services
+
+        video_services.clock_started(session)
+        if was_paused:
+            video_services.hold_room(session, paused=False)
+    out = _clock(session, now)
+    out["minutes_added"] = minutes
+    return out
 
 
 # ── the sweeper (014; 018 adds request expiry) ───────────────────────────────
@@ -724,7 +833,7 @@ def sweep_sessions(now=None):
         Session.objects.select_for_update(skip_locked=True)
         .filter(status=Session.Status.LIVE)
         .filter(
-            Q(expires_at__lte=now)
+            Q(expires_at__lte=now - timezone.timedelta(seconds=PAUSE_SECONDS))
             | Q(heartbeat_at__isnull=True, started_at__lt=grace_before)
             | Q(heartbeat_at__lt=grace_before)
             | Q(started_at__isnull=True,

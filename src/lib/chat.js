@@ -207,6 +207,21 @@ export async function endChat(sessionId) {
 }
 
 /**
+ * The seeker recharged mid-session: hold every further minute the wallet now
+ * buys and carry on — while running, or while paused because the money ran
+ * out (7 Oct 2026). The answer is the heartbeat's shape plus `minutes_added`,
+ * or `{ ok: false, reason }`.
+ */
+export async function extendSession(sessionId) {
+  try {
+    return await api(`/chat/sessions/${sessionId}/extend/`, { method: 'POST' })
+  } catch (err) {
+    console.error('[chat] extend failed:', err.message)
+    return { ok: false, reason: 'Could not reach the server. Try again.' }
+  }
+}
+
+/**
  * Says "still here" and asks how long is left.
  *
  * It does NOT advance the meter and cannot extend anything — the cutoff is

@@ -162,6 +162,16 @@ their usual 60%. Once that first session has started and ended, nobody is
 free for that seeker. A request never answered, or a call that never
 connected, does not use it up. (`FREE_FIRST_SECONDS`, 180.)
 
+**Out of money pauses, it does not hang up — decided 7 Oct 2026.** In the
+last minute of a chat or call the seeker sees the time left and a Recharge
+button on the same screen; a recharge adds every minute the new balance buys
+and the session runs on. When the money runs out the session **pauses for
+two minutes**: silent, no messages, not billed, and the seeker is asked "If
+you want to continue talking, please recharge your wallet." A recharge in
+those two minutes carries on the same session. Otherwise it ends at the
+moment the money ran out; either person may end it sooner. The consultant
+is not paid for the pause. (`PAUSE_SECONDS`, 120.)
+
 Each band carries the three bookable lengths and a per-minute rate for instant
 calls — **§5.1, decided.** The bands are rows in `price_bands`, and a
 consultant's price is refused by the database if it does not match one.

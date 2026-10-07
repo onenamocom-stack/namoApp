@@ -17,6 +17,7 @@ import {
   subscribeToThread,
 } from '../lib/chat.js'
 import MySessions from './MySessions.jsx'
+import SessionRecharge from './SessionRecharge.jsx'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -334,6 +335,8 @@ function Thread({ thread, myId, onBack }) {
   const [live, setLive] = useState(thread.live_session_id ?? null)
   const [left, setLeft] = useState(null)
   const [rate, setRate] = useState(null)
+  // When the pause for a recharge ends, if the money runs out (7 Oct 2026).
+  const [resumeBy, setResumeBy] = useState(null)
   const endRef = useRef(null)
 
   useEffect(() => {
@@ -401,6 +404,7 @@ function Thread({ thread, myId, onBack }) {
         }
         setLeft(h.seconds_left)
         setRate(h.rate_paise)
+        setResumeBy(h.resume_by ?? null)
       } else {
         setLeft((s) => (s === null ? null : Math.max(0, s - 1)))
       }
@@ -471,6 +475,7 @@ function Thread({ thread, myId, onBack }) {
   }
 
   const other = thread.seeker_id === myId ? thread.consultant_name : thread.seeker_name
+  const paused = !!live && left === 0 && resumeBy != null
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -489,13 +494,29 @@ function Thread({ thread, myId, onBack }) {
       {live && (
         <div className="flex flex-none items-center justify-between border-b border-rule bg-gold-fill/10 px-4 py-2">
           <span className="caps-sm t-faint tnum">
-            {left === null ? 'Starting' : `${clock(left)} left`}
+            {left === null ? 'Starting' : paused ? 'Paused' : `${clock(left)} left`}
             {rate ? ` · ₹${rupees(rate)}/min` : ''}
           </span>
           <button type="button" onClick={hangUp} className="caps-sm text-bad">
             End session
           </button>
         </div>
+      )}
+
+      {live && (
+        <SessionRecharge
+          sessionId={live}
+          seeker={thread.seeker_id === myId}
+          secondsLeft={left}
+          resumeBy={resumeBy}
+          rate={rate}
+          other={other}
+          onExtended={(r) => {
+            setLeft(r.seconds_left)
+            setResumeBy(r.resume_by ?? null)
+          }}
+          onEnd={hangUp}
+        />
       )}
 
       <div className="cosmic-dawn no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -519,7 +540,11 @@ function Thread({ thread, myId, onBack }) {
         <div ref={endRef} />
       </div>
 
-      {live ? (
+      {live && paused ? (
+        <div className="flex-none border-t border-rule px-4 py-4">
+          <p className="text-meta t-faint">Paused until the balance is recharged.</p>
+        </div>
+      ) : live ? (
         <Composer onSend={send} placeholder="Type a message" />
       ) : (
         <div className="flex-none border-t border-rule px-4 py-4">
