@@ -110,8 +110,12 @@ const bandCqw = (px) => `${((px / BAND.w) * 100).toFixed(3)}cqw`
 /* The altar slab, `public/puja/marble-slab.webp`: its height as a share of
    its width, and where its top surface meets its front edge. `slabCqw(f)` is
    f of the slab's height, in the page's width units. */
-const SLAB = { ratio: 225 / 865, edge: 0.47 }
+const SLAB = { ratio: 225 / 865, edge: 100 / 225 }
 const slabCqw = (f) => `${(SLAB.ratio * f * 100).toFixed(3)}cqw`
+/* Where the samagri stand: a few pixels behind the slab's front edge, on its
+   top surface (7 Oct 2026 — the thali stood 10px below the edge and hung
+   over the front of the counter). `lift` is the button's own padding. */
+const onCounter = (lift = 0) => `calc(${slabCqw(1 - SLAB.edge)} + ${6 - lift}px)`
 const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
@@ -335,7 +339,15 @@ export default function Pooja() {
        stops 56px short of the bottom for the nav. */
     <div className="darshan relative flex h-full flex-col">
       {/* ── Deity pills, with back and sangeet at the ends ───────────── */}
-      <div className="flex flex-none items-center gap-2 bg-bg px-3 py-2">
+      {/* Gold behind, white pills (7 Oct 2026, Rahul: the white strip did not
+          sit with the gold band under it). */}
+      <div
+        className="flex flex-none items-center gap-2 px-3 py-2"
+        style={{
+          background: 'linear-gradient(180deg, #f8df92 0%, #e3b44e 50%, #b98329 100%)',
+          boxShadow: 'inset 0 -1px 0 rgba(110,64,8,.55)',
+        }}
+      >
         <BackButton onClick={goBack} />
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
           {deities.map((d) => {
@@ -349,10 +361,10 @@ export default function Pooja() {
                     setDeity(d)
                     setPic(0)
                   }}
-                  className={`block rounded-full border px-4 py-2 text-[15px] leading-none transition duration-150 active:scale-95 ${
+                  className={`block rounded-full bg-white px-4 py-2 text-[15px] leading-none transition duration-150 active:scale-95 ${
                     on
-                      ? 'border-gold-fill bg-gold-fill font-semibold text-white shadow-sm'
-                      : 'border-stroke bg-white font-medium text-t1'
+                      ? 'font-semibold text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
+                      : 'font-medium text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
                   }`}
                 >
                   {lang === 'hi' ? d.nameHi : d.name}
@@ -361,18 +373,6 @@ export default function Pooja() {
             )
           })}
         </ul>
-        <button
-          type="button"
-          onClick={openMusic}
-          aria-haspopup="dialog"
-          aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
-          aria-pressed={Boolean(track)}
-          className={`inline-flex h-9 w-9 flex-none items-center justify-center rounded-full border transition active:scale-90 ${
-            track ? 'border-gold-fill bg-gold-fill text-white' : 'border-rule bg-white text-t1 shadow-sm'
-          }`}
-        >
-          {track ? <PlayingBars /> : <SangeetGlyph />}
-        </button>
       </div>
 
       {/* ── The shrine ────────────────────────────────────────────────── */}
@@ -435,6 +435,22 @@ export default function Pooja() {
           className="pointer-events-none absolute inset-x-0 top-0 block w-full"
           style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,.45))' }}
         />
+
+        {/* Sangeet, on the band's right corner — a step below the pill row,
+            where it used to sit (7 Oct 2026, Rahul). White, like the pills;
+            gold while something plays. */}
+        <button
+          type="button"
+          onClick={openMusic}
+          aria-haspopup="dialog"
+          aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
+          aria-pressed={Boolean(track)}
+          className={`absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full shadow-md transition active:scale-90 ${
+            track ? 'bg-gold-fill text-white' : 'bg-white text-[#b4400a]'
+          }`}
+        >
+          {track ? <PlayingBars /> : <SangeetGlyph />}
+        </button>
 
         {/* The mandir's plaque, hung from the band. Tap: choose the murti. */}
         <span
@@ -525,7 +541,7 @@ export default function Pooja() {
           hint={hint}
           onClick={() => offer('incense')}
           className="left-[4%]"
-          style={{ bottom: `calc(${slabCqw(1 - SLAB.edge)} + 6px)` }}
+          style={{ bottom: onCounter(4) }}
         >
           <PujaPhoto name="dhoop" width={40} fallback={<Dhoop size={58} lit={lit.incense} />} />
           {lit.incense &&
@@ -546,7 +562,7 @@ export default function Pooja() {
             hint={hint}
             onClick={() => offer('diya')}
             className={side === 'left' ? 'left-[16%]' : 'right-[17%]'}
-            style={{ bottom: `calc(${slabCqw(1 - SLAB.edge)} - 6px)` }}
+            style={{ bottom: onCounter(4) }}
           >
             {/* The left one mirrored, so the pair face the thali and its flame
                 is not hidden behind the agarbatti stand. */}
@@ -569,7 +585,7 @@ export default function Pooja() {
           hint={hint}
           onClick={() => offer('flower')}
           className="right-[2%]"
-          style={{ bottom: `calc(${slabCqw(1 - SLAB.edge)} - 4px)` }}
+          style={{ bottom: onCounter(4) }}
         >
           <PujaPhoto name="pushpa" width={54} fallback={<span className="block h-12 w-12" />} />
         </Samagri>
@@ -586,7 +602,7 @@ export default function Pooja() {
           aria-label={t(aarti ? 'puja.endAarti' : 'puja.aarti')}
           className="group absolute left-1/2 -translate-x-1/2"
           style={{
-            bottom: aarti ? '30%' : `calc(${slabCqw(1 - SLAB.edge)} - 10px)`,
+            bottom: aarti ? '30%' : onCounter(),
             transition: 'bottom .8s cubic-bezier(.2,.7,.3,1)',
           }}
         >
@@ -595,6 +611,7 @@ export default function Pooja() {
               className="relative isolate block"
               style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.45))' }}
             >
+              {!aarti && <ContactShadow />}
               {/* One photograph for both states; lit, it glows from behind. */}
               {aarti && (
                 <span
@@ -880,8 +897,21 @@ function Samagri({ label, pressed, hint, onClick, className, style, children }) 
       style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.4))', ...style }}
     >
       {hint && <Glow />}
+      {/* At the photo's base, inside the button's 4px padding. */}
+      <ContactShadow bottom="4px" />
       {children}
     </button>
+  )
+}
+
+/** The soft dark where a thing meets the marble — without it, it floats. */
+function ContactShadow({ bottom = '0px' }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{ bottom }}
+      className="pointer-events-none absolute left-1/2 -z-10 block h-2.5 w-[80%] -translate-x-1/2 translate-y-1/2 rounded-[50%] bg-black/40 blur-[3px]"
+    />
   )
 }
 

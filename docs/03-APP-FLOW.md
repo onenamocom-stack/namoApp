@@ -410,9 +410,11 @@ synthesised bell before it did not sound like one.
 **The darshan page, as the owner's reference** (6 Oct 2026, "same to same"):
 top to bottom —
 
-- **Deity pills** in a scrolling row, with **back** at the left end and
-  **sangeet** at the right (gold with moving bars while something plays). The
-  row follows a swipe, so the chosen pill stays in view.
+- **Deity pills**, white on a gold strip, in a scrolling row with **back** at
+  the left end. The row follows a swipe, so the chosen pill stays in view.
+  **Sangeet** is a white button on the gold band's right corner, a step below
+  the row (7 Oct 2026, Rahul), and turns gold with moving bars while something
+  plays.
 - A **gold band** across the shrine (`public/puja/gold-band.webp`, Canva design
   DAHXQAKkIg0, keyed). Its two pendants carry the **ghantis**, which ring when
   touched.
@@ -427,7 +429,9 @@ top to bottom —
   `setting:croppedDeityImage` fills and crops instead.
 - A **white marble altar slab** across the bottom
   (`public/puja/marble-slab.webp`, from the same design). The agarbatti, both
-  diyas, the thali and a brass bowl of marigolds stand on it.
+  diyas, the thali and a brass bowl of marigolds stand on its top surface, a
+  few pixels behind the front edge, each with a soft contact shadow
+  (`onCounter`, `SLAB.edge` measured off the photo).
 
 This replaced, the same day, a full-page mandir entrance (white marble, then a
 choice of marble, sandstone, gold or granite) whose doorway the murti stood in.
