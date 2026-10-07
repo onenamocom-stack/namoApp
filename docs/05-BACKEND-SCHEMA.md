@@ -752,6 +752,13 @@ partial unique index, wakes to a `23505` and never reaches the debit, so "no
 orphaned debit" is an ordering rather than a compensating write. Everything
 inside the block unwinds together, so a refusal leaves no order behind either.
 
+**A free first session** (7 Oct 2026): `consultants.free_first` (boolean,
+default false, migration `consultants/0005`) and `sessions.free_seconds`
+(integer, default 0, `chat/0004`). A session's free seconds extend its
+`expires_at` beyond the held minutes; at the settle the seeker is charged
+`max(0, gross − free value)` (never more than the hold) and the earnings
+row's gross is every billed second, the free ones included.
+
 **Commission is 40%, stored as `fee_bps = 4000`** (7 Oct 2026; 18% and `1800`
 before — each row keeps the rate it was written at), and
 `fee_paise = round(gross_paise * fee_bps / 10000)`. The `earnings_ledger` CHECK

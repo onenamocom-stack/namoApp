@@ -494,6 +494,12 @@ tagged products under it, and **Like, Reply, Share and Save** as a post has
 Reshare. The feed's shop cards are the live catalogue, square, opening the
 product's page — they were `mock.js` products.
 
+**A new seeker's free first session** (7 Oct 2026): consultants ticked
+"free first" in the console come first on Consult with a green "First 3
+min free" in place of their rate, and their page says "your first 3 minutes
+free"; a request goes through with an empty wallet. After the seeker's first
+session they show their rates like everyone else.
+
 **Round tiles look the same everywhere** (7 Oct 2026, Rahul): Consult's
 tools, Shop's categories and Bhakti's shelves are a beige face with the icon
 in its own colour; a selected one gets a ring of that colour. On shop cards

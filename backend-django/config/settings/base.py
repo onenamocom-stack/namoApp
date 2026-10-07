@@ -319,6 +319,9 @@ APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "https://1namo.com")
 # rupee. A cap on one COD order's total, and on how many may be undelivered
 # at once per account: a refused parcel costs the courier both ways.
 COD_FEE_BPS = int(os.environ.get("COD_FEE_BPS", "200"))
+# A new seeker's first session with a "free first call" consultant: this many
+# seconds are on Namo (7 Oct 2026; docs/01-PRD.md §4.1).
+FREE_FIRST_SECONDS = int(os.environ.get("FREE_FIRST_SECONDS", "180"))
 COD_MAX_PAISE = int(os.environ.get("COD_MAX_PAISE", str(10_000 * 100)))
 COD_MAX_OPEN = int(os.environ.get("COD_MAX_OPEN", "2"))
 # The seeker app's index.html at its hosting site's own address, read by the

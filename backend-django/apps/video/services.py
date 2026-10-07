@@ -112,7 +112,7 @@ def join(actor_id, session_id, now=None):
         if accepted + timezone.timedelta(seconds=CONNECT_SECONDS) <= stamp:
             return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
                            status=session.status)
-        minutes = (session.hold_paise or 0) // session.rate_paise
+        minutes = (session.hold_paise or 0) // session.rate_paise + (session.free_seconds or 0) / 60
         room_until = accepted + timezone.timedelta(seconds=CONNECT_SECONDS, minutes=minutes)
     elif session.expires_at is None or session.expires_at <= stamp:
         # The sweeper will settle it within the minute. Refusing here

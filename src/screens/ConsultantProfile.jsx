@@ -390,6 +390,7 @@ export default function ConsultantProfile() {
           <p className="mt-0.5 text-micro uppercase tracking-caps text-t3">
             {SESSION.label}
             {c.perMinutePaise != null && ` · ₹${rupees(c.perMinutePaise)}/min live`}
+            {c.freeFirst && ' · your first 3 minutes free'}
           </p>
         </div>
         {c.perMinute ? (

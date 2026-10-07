@@ -5994,6 +5994,13 @@ link should come with its image and full name.
 - **Tiles:** `tileStyle`/`toolStyle` are one beige face with a coloured icon
   on Consult, Shop and Bhakti. Shop cards: the discount beside the price.
   The header cart icon is white.
-- **Asked, not built:** a free first call — needs the owner's answers
-  (how long, chat and calls or calls only, and who pays the consultant).
+- **Free first session — built** (owner's answers: 3 minutes; Namo pays
+  the consultant 60%; only consultants ticked in the console, shown on top
+  to a seeker who has never had a session; paid for everyone once that
+  session ends). `consultants.free_first`, `sessions.free_seconds`
+  (migrations applied to production; nobody ticked yet), the list and
+  detail carry `free_first_offer` for a signed-in seeker (the app now sends
+  its token with them), the console's consultant list has the tick, and
+  the settle charges past the free value only while the earnings row counts
+  every second. 6 tests; 1031 pass.
 

@@ -184,6 +184,23 @@ def _billable_minutes(started_at, stop, hold_paise, rate_paise):
     return min(minutes, hold_paise // rate_paise)
 
 
+def free_first_eligible(seeker_id):
+    """A seeker gets a free first session until they have had one: no
+    session of theirs has ever started (7 Oct 2026). A request that was never
+    answered, or a call that never connected, does not use it up."""
+    if not seeker_id:
+        return False
+    return not Session.objects.filter(seeker_id=seeker_id, started_at__isnull=False).exists()
+
+
+def _free_seconds(seeker_id, consultant):
+    from django.conf import settings
+
+    if getattr(consultant, "free_first", False) and free_first_eligible(seeker_id):
+        return settings.FREE_FIRST_SECONDS
+    return 0
+
+
 def _touch_thread(thread_id, created_at, body):
     """016's touch_thread trigger, emulated on SQLite (the test fixture has
     no triggers); on Postgres prod's trigger does this job and the gateway
@@ -335,8 +352,10 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
     if mode not in Session.Mode.values:
         return {"ok": False, "reason": REFUSAL_BAD_MODE}
 
+    # A free first session (7 Oct 2026) needs no balance for its free part.
+    free = _free_seconds(seeker_id, service.consultant)
     balance = _balance_of(seeker_id)
-    if balance < service.price_paise:
+    if balance < service.price_paise and not free:
         return {"ok": False, "reason": REFUSAL_SHORT_BALANCE,
                 "rate_paise": service.price_paise}
 
@@ -369,6 +388,7 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
                     status=Session.Status.REQUESTED,
                     requested_at=now,
                     audio_only=bool(audio_only),
+                    free_seconds=free,
                 )
         except IntegrityError:
             # The unique indexes are the last word: somebody else is ringing.
@@ -378,7 +398,7 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
         # push service that is down never refuses a request.
         transaction.on_commit(lambda: _ring(session))
     return {"ok": True, "session_id": str(session.id), "rate_paise": session.rate_paise,
-            "mode": session.mode}
+            "mode": session.mode, "free_seconds": session.free_seconds}
 
 
 def _ring(session):
@@ -413,6 +433,7 @@ def _accepted_row(session):
         "mode": session.mode,
         "minutes_held": (session.hold_paise or 0) // session.rate_paise,
         "hold_paise": session.hold_paise,
+        "free_seconds": session.free_seconds,
         "expires_at": session.expires_at,
         "connecting": session.started_at is None,
     }
@@ -453,8 +474,12 @@ def accept_chat(consultant_id, session_id, now=None):
             balance = wallet_services.lock_wallet_balance(session.seeker_id)
             if balance is None:
                 return {"ok": False, "reason": REFUSAL_NO_WALLET}
+            # Asked again at the answer: a free first session another
+            # session started in the meantime is not free any more.
+            if session.free_seconds and not free_first_eligible(session.seeker_id):
+                session.free_seconds = 0
             minutes = _minutes_held(balance, session.rate_paise)
-            if minutes < 1:
+            if minutes < 1 and not session.free_seconds:
                 return {"ok": False, "reason": REFUSAL_SHORT_BALANCE,
                         "balance_paise": balance}
             hold = minutes * session.rate_paise
@@ -485,22 +510,26 @@ def accept_chat(consultant_id, session_id, now=None):
             session.order_id = order_id
             if session.mode == Session.Mode.CHAT:
                 session.started_at = now
-                session.expires_at = now + timezone.timedelta(minutes=minutes)
+                session.expires_at = now + timezone.timedelta(
+                    minutes=minutes, seconds=session.free_seconds)
             else:
                 session.started_at = None
                 session.expires_at = None
             session.save(
                 update_fields=(
                     "status", "accepted_at", "started_at", "expires_at", "heartbeat_at",
-                    "hold_paise", "thread_id", "order_id",
+                    "hold_paise", "thread_id", "order_id", "free_seconds",
                 )
             )
 
-            wallet_services.insert_ledger(
-                session.seeker_id, -hold,
-                f"{label} · {minutes} min held",
-                ref_type="order", ref_id=order_id,
-            )
+            # Nothing to hold when the wallet is empty and the session runs
+            # on its free minutes alone; the ledger refuses a zero row.
+            if hold:
+                wallet_services.insert_ledger(
+                    session.seeker_id, -hold,
+                    f"{label} · {minutes} min held",
+                    ref_type="order", ref_id=order_id,
+                )
     except IntegrityError:
         # sessions_one_live_per_consultant: the backstop under the lock.
         return {"ok": False, "reason": REFUSAL_ALREADY_LIVE}
@@ -524,7 +553,8 @@ def start_clock(session_id, now=None):
     minutes = (session.hold_paise or 0) // session.rate_paise
     return bool(Session.objects.filter(
         pk=session_id, status=Session.Status.LIVE, started_at__isnull=True,
-    ).update(started_at=now, expires_at=now + timezone.timedelta(minutes=minutes),
+    ).update(started_at=now,
+             expires_at=now + timezone.timedelta(minutes=minutes, seconds=session.free_seconds or 0),
              heartbeat_at=now))
 
 
@@ -564,15 +594,20 @@ def end_session(actor_id, session_id, reason=None, now=None):
         if session.started_at is None:
             # A call that never connected: nobody talked, nobody pays, and
             # the consultant has earned nothing (5 Oct 2026).
-            charged, minutes = 0, 0
+            charged, minutes, gross = 0, 0, 0
         else:
             stop = min(now, session.expires_at)
-            charged = _billable_paise(
-                session.started_at, stop, session.hold_paise, session.rate_paise
+            # The free seconds of a first session (7 Oct 2026) are Namo's:
+            # the time is worth `free_value`, the seeker pays only past it,
+            # and the consultant earns on every second (`gross`).
+            free_value = ((session.free_seconds or 0) * session.rate_paise) // 60
+            gross = _billable_paise(
+                session.started_at, stop, session.hold_paise + free_value, session.rate_paise
             )
+            charged = min(max(0, gross - free_value), session.hold_paise)
             # Label only — what the earnings row says, not what anybody pays.
             minutes = _billable_minutes(
-                session.started_at, stop, session.hold_paise, session.rate_paise
+                session.started_at, stop, session.hold_paise + free_value, session.rate_paise
             )
         refund = session.hold_paise - charged
 
@@ -600,16 +635,17 @@ def end_session(actor_id, session_id, reason=None, now=None):
         # The consultant earns what was USED — this is why earnings are
         # written here and not at accept: at accept nobody knows how long
         # anyone will talk.
-        if charged > 0:
+        earned = charged if session.started_at is None else gross
+        if earned > 0:
             seeker_name = gateway.profile_name(session.seeker_id)
-            fee = fee_paise(charged)
+            fee = fee_paise(earned)
             EarningsLedger.objects.create(
                 consultant_id=session.consultant_id,
                 booking=None,
-                gross_paise=charged,
+                gross_paise=earned,
                 fee_bps=FEE_BPS,
                 fee_paise=fee,
-                net_paise=charged - fee,
+                net_paise=earned - fee,
                 kind=f"{seeker_name or 'Session'} · {minutes} min {_what(session)}",
             )
     return {"ok": True, "minutes": minutes,

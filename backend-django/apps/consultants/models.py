@@ -110,6 +110,11 @@ class Consultant(models.Model):
 
     Status = ConsultantStatus
 
+    # Shown free for a new seeker's first session (7 Oct 2026, owner): the
+    # console ticks the in-house consultants who carry it. FREE_FIRST_SECONDS
+    # of that first session are on Namo; the consultant is paid for them.
+    free_first = models.BooleanField(default=False, db_default=False)
+
     class Meta:
         db_table = "consultants"
         constraints = [

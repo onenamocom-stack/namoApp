@@ -135,6 +135,9 @@ function shape(row, services = []) {
     // Two phones with two clocks would otherwise disagree about the same
     // dot, and the one that is wrong is always somebody's evening.
     online: row.online === true,
+    // Free for this seeker's first session (7 Oct 2026) — the server says
+    // so only to a signed-in seeker who has not had one.
+    freeFirst: row.free_first_offer === true,
     // Ringing for somebody or in a session (5 Oct 2026). Still callable:
     // the call waits and retries instead of failing.
     busy: row.busy === true,
@@ -152,7 +155,9 @@ function shape(row, services = []) {
 /** The approved consultants, best rating first. Anonymous, like the view. */
 export async function listConsultants() {
   try {
-    const rows = await api('/consultants/')
+    // Signed in when we can be: the server marks the free-first consultants
+    // for a new seeker, and needs to know who is asking.
+    const rows = await api('/consultants/', { token: await accessToken() })
     return rows.map((r) => shape(r, r.services ?? []))
   } catch (err) {
     console.error('[consultants] list failed:', err?.message)
@@ -165,7 +170,7 @@ export async function listConsultants() {
  *  URL cannot reach past it any more than it could under RLS). */
 export async function getConsultant(id) {
   try {
-    const row = await api(`/consultants/${id}/`)
+    const row = await api(`/consultants/${id}/`, { token: await accessToken() })
     return shape(row, row.services ?? [])
   } catch (err) {
     if (err?.status === 404) return null

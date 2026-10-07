@@ -152,6 +152,16 @@ basis points everywhere it is stored. A ₹1,499 session pays the consultant
 the consultant's earnings show what they take home, not the share taken;
 the console shows it. Earnings written before 7 Oct keep their 18% row.
 
+**A free first session — decided 7 Oct 2026.** The console ticks "free
+first" on chosen consultants (the in-house ones, four or five). A seeker
+who has never had a session sees them **at the top of Consult, marked
+"First 3 min free"**; the **first 3 minutes** of that seeker's first session
+with one of them cost nothing — it can start with an empty wallet — and the
+rest is the normal rate. **Namo pays the consultant for the free minutes**,
+their usual 60%. Once that first session has started and ended, nobody is
+free for that seeker. A request never answered, or a call that never
+connected, does not use it up. (`FREE_FIRST_SECONDS`, 180.)
+
 Each band carries the three bookable lengths and a per-minute rate for instant
 calls — **§5.1, decided.** The bands are rows in `price_bands`, and a
 consultant's price is refused by the database if it does not match one.

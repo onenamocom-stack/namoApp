@@ -27,8 +27,11 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
-    list_display = ("who", "category", "specialization", "status", "verified", "created_at")
-    list_filter = ("status", "verified", "category")
+    list_display = ("who", "category", "specialization", "status", "verified", "free_first", "created_at")
+    list_filter = ("status", "verified", "free_first", "category")
+    # Ticked here, straight from the list: the in-house consultants a new
+    # seeker sees free for their first session (7 Oct 2026).
+    list_editable = ("free_first",)
     # Tags are what a seeker searches by, so they are what an
     # operator should be able to search by too.
     search_fields = ("specialization", "bio", "category", "tags", "degree")

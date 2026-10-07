@@ -362,7 +362,14 @@ export default function Consult() {
                         </span>
                       )}
                     </span>
-                    <span className="flex-none text-body text-t1 tnum">
+                    {/* A new seeker's first session with this consultant is
+                        free for three minutes (7 Oct 2026). */}
+                    {c.freeFirst ? (
+                      <span className="flex-none rounded-full bg-ok px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.05em] text-white">
+                        First 3 min free
+                      </span>
+                    ) : null}
+                    <span className={`flex-none text-body text-t1 tnum ${c.freeFirst ? 'hidden' : ''}`}>
                       {/* The per-minute rate is its own service row, priced off
                           the same band. It is not `price / SESSION.mins` any
                           more — that division was the browser inventing a

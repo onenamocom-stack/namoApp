@@ -90,10 +90,20 @@ def list_consultants(request):
     # answer.
     consultants = list(services.public_consultants())
     by_owner = services.active_services_for([c.profile_id for c in consultants])
-    return Response([
-        _consultant_row(c, _service_rows(by_owner.get(c.profile_id, [])))
-        for c in consultants
-    ])
+    # A new seeker sees the free-first consultants on top, marked (7 Oct
+    # 2026). Signed out, or after their first session, nobody is.
+    from apps.chat.services import free_first_eligible
+
+    me = getattr(request.user, "pk", None) if getattr(request.user, "is_authenticated", False) else None
+    offer = bool(me) and free_first_eligible(me)
+    rows = []
+    for c in consultants:
+        row = _consultant_row(c, _service_rows(by_owner.get(c.profile_id, [])))
+        row["free_first_offer"] = offer and bool(c.free_first)
+        rows.append(row)
+    if offer:
+        rows.sort(key=lambda r: not r["free_first_offer"])  # stable: keeps online-first within each
+    return Response(rows)
 
 
 @api_view(["GET"])
@@ -107,12 +117,15 @@ def detail(request, consultant_id):
         return Response(
             refusal_body("not_found", "That consultant is not available."), status=404
         )
-    return Response(
-        _consultant_row(
-            consultant,
-            _service_rows(services.active_services(consultant.profile_id)),
-        )
+    from apps.chat.services import free_first_eligible
+
+    row = _consultant_row(
+        consultant,
+        _service_rows(services.active_services(consultant.profile_id)),
     )
+    me = getattr(request.user, "pk", None) if getattr(request.user, "is_authenticated", False) else None
+    row["free_first_offer"] = bool(me) and bool(consultant.free_first) and free_first_eligible(me)
+    return Response(row)
 
 
 @api_view(["GET"])

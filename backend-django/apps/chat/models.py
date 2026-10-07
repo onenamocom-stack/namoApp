@@ -90,6 +90,9 @@ class Session(models.Model):
         null=True,
         blank=True,
     )
+    # Seconds of this session Namo pays for: a new seeker's first session
+    # with a free-first consultant (7 Oct 2026). 0 for every other.
+    free_seconds = models.IntegerField(default=0, db_default=0)
     order_id = models.UUIDField(null=True, blank=True)  # orders.id; module 8
     mode = models.CharField(max_length=16, choices=SessionMode.choices)
     # An audio call (5 Oct 2026): the same metered call, joined with the
