@@ -1143,6 +1143,10 @@ Refunds are a separate forward transition, never a mutation of the original.
   never "Ringing", which is a call's word (6 Oct 2026). The consultant's request bar says Chat, Video call or
   Audio call, and its button says Accept or Answer.
 - **The call screen** reads "Connecting" until both are in, then the minutes left.
+  **An audio call is voice only** (7 Oct 2026): no camera, no screen share —
+  Daily's token lets each person send audio and nothing else, and the page
+  asks the browser for the microphone only. It used to start with the camera
+  off and let either person switch it on.
 - **A paid chat reopens itself.** Opening the app with a chat session live —
   after a reload, a closed tab, a phone that slept — opens the chat panel on
   that conversation, for either side. A call needs nothing: its screen is

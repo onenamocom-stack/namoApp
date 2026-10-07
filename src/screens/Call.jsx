@@ -232,7 +232,9 @@ export default function Call() {
       <iframe
         title="Call"
         src={embedUrl(call)}
-        allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
+        // A voice call asks for the microphone only — the browser never
+        // offers the camera (7 Oct 2026; the token also refuses video).
+        allow={call.audioOnly ? 'microphone; speaker; autoplay' : 'camera; microphone; fullscreen; speaker; display-capture; autoplay'}
         className="h-full w-full border-0"
       />
 

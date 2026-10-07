@@ -53,6 +53,7 @@ export async function joinCall(sessionId) {
       // room, and the heartbeat says when (5 Oct 2026).
       expiresAt: data.expires_at,
       connecting: data.connecting === true,
+      audioOnly: data.audio_only === true,
       isOwner: data.is_owner,
     }
   } catch (err) {

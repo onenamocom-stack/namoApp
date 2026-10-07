@@ -107,9 +107,14 @@ def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False, 
         # and the server can start the clock on its own evidence.
         payload["properties"]["user_id"] = str(user_id).replace("-", "")[:36]
     if audio_only:
-        # An audio call: the camera starts off for this person. They can
-        # still turn it on from the call's own controls.
+        # An audio call is VOICE ONLY (7 Oct 2026): the token lets this
+        # person send audio and nothing else — no camera, no screen — so it
+        # is enforced by Daily, not by a hidden button, and the call is
+        # billed at Daily's audio rate. It used to start with the camera off
+        # and let either person switch it on.
         payload["properties"]["start_video_off"] = True
+        payload["properties"]["enable_screenshare"] = False
+        payload["properties"]["permissions"] = {"canSend": ["audio"]}
     data = _call("POST", "/meeting-tokens", payload)
     return (data or {}).get("token")
 

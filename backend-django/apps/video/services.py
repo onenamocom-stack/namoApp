@@ -162,6 +162,8 @@ def join(actor_id, session_id, now=None):
         "expires_at": (session.expires_at or room_until).isoformat(),
         "connecting": session.started_at is None,
         "is_owner": is_consultant,
+        # The call screen asks the browser for the microphone only.
+        "audio_only": bool(session.audio_only),
     }
 
 

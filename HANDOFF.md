@@ -6004,3 +6004,14 @@ link should come with its image and full name.
   the settle charges past the free value only while the earnings row counts
   every second. 6 tests; 1031 pass.
 
+## 70. Audio calls are voice only — 7 Oct 2026
+
+Owner: use Daily's audio-only calling. An audio session's meeting tokens now
+carry `permissions: {canSend: ["audio"]}`, `start_video_off` and
+`enable_screenshare: false` (`apps/video/providers.meeting_token`); the join
+answer says `audio_only` and the call page's iframe asks for the microphone
+only. Video calls unchanged. Checked against Daily's live API — it accepts
+the token — and 2 tests. Daily bills a participant who sends no video at its
+audio rate (about a quarter of video's, per Daily's pricing as understood on
+7 Oct — confirm in the Daily dashboard).
+
