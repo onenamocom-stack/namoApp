@@ -1052,12 +1052,12 @@ function ArticleCard({ read }) {
           with the title over a scrim at its foot. 16:9, the shape the
           composer and the reader use too (6 Oct 2026: the image was saved
           and never shown). */}
-      <Link to={`/read/${b.id}`} className="relative block">
-        <Cover src={b.mediaUrl} seed={b.id} className="aspect-video w-full">
-          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-4 pb-4 pt-12">
-            <span className="block text-lead font-semibold leading-snug text-white">{b.title}</span>
-          </span>
-        </Cover>
+      {/* The banner whole, the title under it, as YouTube lays a video out
+          (7 Oct 2026, Rahul): a title over the picture hid the banner's own
+          lettering. */}
+      <Link to={`/read/${b.id}`} className="block">
+        <Cover src={b.mediaUrl} seed={b.id} className="aspect-video w-full" />
+        <span className="block px-3 pt-2.5 text-lead font-semibold leading-snug t-heading">{b.title}</span>
       </Link>
       {/* Read time is COMPUTED from the body, not stored (§1.5). A stored
           one goes stale the first time the article is edited. */}

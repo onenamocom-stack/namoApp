@@ -145,7 +145,7 @@ export function BottomNav({ tabs = TABS }) {
  */
 /* Where the header's search box starts on each tab: the tab's own kind of
    thing, or everything. */
-const SEARCH_SCOPE = { '/shop': 'products', '/consult': 'people' }
+const SEARCH_SCOPE = { '/shop': 'products', '/consult': 'people', '/bhakti': 'bhakti' }
 
 /* `search`: true (a box that opens /search), false (none), or
    {value, onChange, placeholder} — a real field in the bar that filters the

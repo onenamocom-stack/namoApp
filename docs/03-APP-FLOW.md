@@ -487,7 +487,8 @@ anywhere else that previews links (6 Oct 2026; every link previewed as
 Namo's front page).
 
 **Blogs on the feed and at `/read/:id`** (6 Oct 2026): the uploaded cover,
-16:9 on both (it was saved and never shown — a drawn plate stood in), the
+16:9 on both, whole — on the feed card the title sits under it, as YouTube
+lays out a video (7 Oct 2026; it was set over the picture) (it was saved and never shown — a drawn plate stood in), the
 tagged products under it, and **Like, Reply, Share and Save** as a post has
 (Save was the only action). Share sends the blog's own page; a blog has no
 Reshare. The feed's shop cards are the live catalogue, square, opening the
@@ -498,8 +499,10 @@ product's page — they were `mock.js` products.
 The box sits **in the header** between the mark and the wallet on Home, Shop
 and Consult (Rahul's design: no tab spends a row on search). It opens
 `/search` on that tab's kind — Shop on Products, Consult on Astrologers.
-On Bhakti the header's box is a real field that filters the library as you
-type (its row is gone too); the consultant app has none. Shop's cart moved into the header's action slot. Topic words
+Bhakti's box opens `/search` on its **Bhakti** chip like every tab (7 Oct
+2026; for a day it filtered in place); a Bhakti result returns to `/bhakti`
+on that shelf, filtered to it, with "Showing “…” · Clear". The consultant
+app has no search. Shop's cart moved into the header's action slot. Topic words
 match in both scripts — "shani" finds शनि, "kundli" finds कुंडली — from a
 list of about thirty astrology topics.
 
@@ -526,15 +529,19 @@ viewer folds to two lines; a tap opens it.
 category), the cart. Then the gallery — swipe through every photo and
 video, thumbnails under it to jump; a video plays in place. Brand, name,
 subtitle, price, MRP and the discount, "Inclusive of all taxes. Delivery is
-added at checkout.", stock ("Only 2 left" at three or fewer), chips for
-category, subcategory and SKU, and **Share** (the phone's share sheet, or
+added at checkout.", "Sold out" only when it is (the stock count and the
+SKU chip went on 7 Oct 2026, Rahul), chips for category and subcategory,
+and **Share** (the phone's share sheet, or
 the link copied). Then **About this product** — the description with its
 formatting (6 Oct 2026): `## heading`, `### smaller heading`, `**bold**`,
 `==highlight==` (saffron), `*italic*`, `- ` bullets, `1. ` numbers, `> `
 a quote box, a blank line a new paragraph; built as elements, never HTML
 (`src/components/RichText.jsx`). The console's description box has buttons
 that add the marks; the sheet takes the same marks and **Questions people ask** (each opens in place).
-**Add to cart** and **Buy** stay pinned at the bottom. A product taken
+Then **More from the shop** — six others, the same category first, each
+opening its page at the top (the disclaimer line that was here is gone).
+**Add to cart** and **Buy** are fixed to the screen's foot in the app's
+column (they were sticky and sat 56 px up, text showing beneath). A product taken
 down, or a key that matches nothing: "That product is no longer in the
 shop", with the way back. The tab title, meta description and a
 schema.org Product block are set while the page is open.

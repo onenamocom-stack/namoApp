@@ -9,6 +9,7 @@ import { Search } from '../components/Primitives.jsx'
 import { listConsultants } from '../lib/consultants.js'
 import { fetchFeed } from '../lib/content.js'
 import { fetchProducts, productHref } from '../lib/shop.js'
+import { fetchAssets } from '../lib/bhakti.js'
 import { authorHref } from './Home.jsx'
 
 /**
@@ -24,7 +25,9 @@ const TABS = [
   { key: 'people', label: 'Astrologers' },
   { key: 'products', label: 'Products' },
   { key: 'posts', label: 'Posts' },
+  { key: 'bhakti', label: 'Bhakti' },
 ]
+const BHAKTI_KIND = { status: 'Status', wallpaper: 'Wallpaper', bhajan: 'Bhajan', mantra: 'Mantra', tune: 'Tune', aarti: 'Aarti' }
 
 const fold = (s) => (s || '').toString().toLowerCase().normalize('NFC')
 
@@ -56,7 +59,7 @@ function matches(q, ...fields) {
 export default function SearchScreen() {
   const [params] = useSearchParams()
   const [query, setQuery] = useState('')
-  const [tab, setTab] = useState(() => (['people', 'products', 'posts'].includes(params.get('in')) ? params.get('in') : 'all'))
+  const [tab, setTab] = useState(() => (['people', 'products', 'posts', 'bhakti'].includes(params.get('in')) ? params.get('in') : 'all'))
   const [data, setData] = useState(null)
   const box = useRef(null)
 
@@ -66,7 +69,8 @@ export default function SearchScreen() {
       listConsultants().catch(() => []),
       fetchProducts().catch(() => []),
       fetchFeed({ kinds: ['post', 'clip', 'article'], limit: 200 }).catch(() => []),
-    ]).then(([people, products, posts]) => live && setData({ people, products, posts }))
+      fetchAssets().catch(() => []),
+    ]).then(([people, products, posts, bhakti]) => live && setData({ people, products, posts, bhakti }))
     box.current?.querySelector('input')?.focus()
     return () => {
       live = false
@@ -80,18 +84,19 @@ export default function SearchScreen() {
       people: data.people.filter((c) => matches(q, c.name, c.specialization, c.category, c.languages)),
       products: data.products.filter((p) => matches(q, p.name, p.subtitle, p.brand, p.categories, p.subcategories)),
       posts: data.posts.filter((p) => matches(q, p.title, p.caption, p.body, p.consultant)),
+      bhakti: data.bhakti.filter((a) => matches(q, a.title, a.deity, BHAKTI_KIND[a.kind] || a.kind)),
     }
   }, [data, query])
 
   const show = (k) => tab === 'all' || tab === k
   const cap = tab === 'all' ? 5 : 50
-  const none = found && !found.people.length && !found.products.length && !found.posts.length
+  const none = found && !found.people.length && !found.products.length && !found.posts.length && !found.bhakti.length
 
   return (
     <>
       <TopBar title="Search" back backTo="/home" />
       <div ref={box}>
-        <Search value={query} onChange={setQuery} placeholder="Astrologers, products, posts" />
+        <Search value={query} onChange={setQuery} placeholder="Astrologers, products, posts, bhakti" />
       </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
         {TABS.map((t) => (
@@ -106,7 +111,7 @@ export default function SearchScreen() {
         <Loader className="py-16" />
       ) : !found ? (
         <p className="px-6 py-12 text-center text-meta t-faint">
-          Type a name, a problem like “marriage” or “career”, a stone, or a word from a post.
+          Type a name, a problem like “marriage” or “career”, a stone, a deity, or a word from a post.
         </p>
       ) : none ? (
         <p className="px-6 py-12 text-center text-meta t-faint">Nothing matches “{query.trim()}”.</p>
@@ -161,6 +166,29 @@ export default function SearchScreen() {
                     <span className="block truncate text-meta font-semibold t-heading">{p.title || p.caption || p.body}</span>
                     <span className="block truncate text-micro t-faint">
                       {p.kind === 'article' ? 'Blog' : p.kind === 'clip' ? 'Reel' : 'Post'} · {p.consultant}
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </Group>
+          )}
+          {show('bhakti') && found.bhakti.length > 0 && (
+            <Group title="Bhakti" more={tab === 'all' && found.bhakti.length > cap} onMore={() => setTab('bhakti')}>
+              {found.bhakti.slice(0, cap).map((a) => (
+                <Link
+                  key={a.id}
+                  to={`/bhakti?${new URLSearchParams({ kind: a.kind, q: a.title })}`}
+                  className="flex items-center gap-3 px-4 py-2.5"
+                >
+                  {['status', 'wallpaper'].includes(a.kind) && (a.previewUrl || a.url) ? (
+                    <img src={a.previewUrl || a.url} alt="" loading="lazy" className="h-12 w-12 flex-none rounded-lg object-cover" />
+                  ) : (
+                    <Plate seed={a.id} className="h-12 w-12 flex-none !rounded-lg" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-meta font-semibold t-heading">{a.title}</span>
+                    <span className="block truncate text-micro t-faint">
+                      {[BHAKTI_KIND[a.kind] || a.kind, a.deity].filter(Boolean).join(' · ')}
                     </span>
                   </span>
                 </Link>

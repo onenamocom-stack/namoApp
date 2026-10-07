@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
-import { fetchProduct } from '../lib/shop.js'
+import { fetchProduct, fetchProducts, productHref } from '../lib/shop.js'
+import ProductArt from '../components/ProductArt.jsx'
 import RichText from '../components/RichText.jsx'
 import { useReferralFromLink } from '../lib/shopRef.js'
 import { useStore } from '../store.jsx'
@@ -34,6 +35,9 @@ export default function ProductPage() {
 
   useEffect(() => {
     let alive = true
+    // A product opened from "More from the shop" starts at its top.
+    window.scrollTo(0, 0)
+    document.querySelectorAll('main, [data-scroll]').forEach((el) => el.scrollTo?.(0, 0))
     setProduct(undefined)
     setFailed(false)
     fetchProduct(key)
@@ -138,14 +142,13 @@ export default function ProductPage() {
         </div>
         <p className="mt-1 text-micro t-faint">{t('shop.pp.taxes')}</p>
 
-        <p className={`mt-3 caps-sm ${p.soldOut ? 'text-bad' : p.stock <= 3 ? 'gold' : 't-faint'}`}>
-          {p.soldOut ? t('shop.soldOut') : p.stock <= 3 ? t('shop.pp.few', { n: p.stock }) : t('shop.pp.inStock')}
-        </p>
+        {/* Only when it cannot be bought (7 Oct 2026, Rahul: "Only 3 left"
+            and "In stock" were not needed). */}
+        {p.soldOut && <p className="mt-3 caps-sm text-bad">{t('shop.soldOut')}</p>}
 
         <div className="mt-3 flex flex-wrap gap-2">
           {p.category && <span className="pill caps-sm">{p.category}</span>}
           {p.subcategory && <span className="pill caps-sm">{p.subcategory}</span>}
-          {p.sku && <span className="pill caps-sm t-faint">{p.sku}</span>}
           <button type="button" onClick={share} className="pill caps-sm">
             <Icon name="share" size={14} /> {t('shop.pp.share')}
           </button>
@@ -179,11 +182,16 @@ export default function ProductPage() {
         </section>
       )}
 
-      <p className="px-5 pt-8 text-center text-micro t-faint">{t('shop.disclaimer')}</p>
+      {/* More from the shop where the disclaimer was (7 Oct 2026, Rahul) —
+          the same category first. */}
+      <MoreProducts current={p} />
       <div className="h-28" />
 
-      {/* Add and Buy stay under the thumb however far the page scrolls. */}
-      <div className="sticky bottom-0 z-10 flex gap-2 border-t border-rule bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
+      {/* Add and Buy stay under the thumb however far the page scrolls.
+          Fixed to the screen's foot within the app's column, not sticky:
+          sticky measured from the page container's bottom padding and sat
+          56 px up, with text scrolling through the gap (6 Oct 2026). */}
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[420px] gap-2 border-t border-rule bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
         <PopButton size="sm" disabled={p.soldOut} onClick={() => addToCart(p)} className="flex-1" full={false}>
           {p.soldOut ? t('shop.soldOut') : t('shop.addToCart')}
         </PopButton>
@@ -314,3 +322,44 @@ function useSeo(p) {
     }
   }, [p])
 }
+
+
+/** Other products, the same category first, live and in stock — a 2-up
+ *  grid of their photos and prices, each opening its page. */
+function MoreProducts({ current }) {
+  const [rows, setRows] = useState(null)
+  useEffect(() => {
+    let live = true
+    fetchProducts()
+      .then((all) => {
+        if (!live) return
+        const others = all.filter((x) => x.id !== current.id && !x.soldOut)
+        const same = (x) => (x.categories || []).some((c) => (current.categories || [current.category]).includes(c))
+        setRows([...others.filter(same), ...others.filter((x) => !same(x))].slice(0, 6))
+      })
+      .catch(() => live && setRows([]))
+    return () => {
+      live = false
+    }
+  }, [current.id, current.category, current.categories])
+  if (!rows?.length) return null
+  return (
+    <section className="px-5 pt-8">
+      <h2 className="caps-sm t-faint">More from the shop</h2>
+      <ul className="mt-3 grid grid-cols-2 gap-3">
+        {rows.map((x) => (
+          <li key={x.id}>
+            <Link to={productHref(x)} className="block overflow-hidden rounded-2xl border border-stroke bg-white">
+              <ProductArt product={x} className="aspect-square w-full" />
+              <span className="block p-2.5">
+                <span className="line-clamp-2 block text-meta t-heading">{x.name}</span>
+                <span className="mt-1 block text-meta gold tnum">₹{x.price.toLocaleString('en-IN')}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+

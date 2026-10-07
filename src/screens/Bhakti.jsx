@@ -1,6 +1,6 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { BackButton, TabHeader } from '../components/Chrome.jsx'
 import { createPortal } from 'react-dom'
@@ -122,9 +122,11 @@ export default function Bhakti() {
   const banners = useBanners('bhakti', BANNERS, lang)
   const [assets, setAssets] = useState(null) // null = loading
   const [failed, setFailed] = useState(false)
-  const [kind, setKind] = useState('status')
+  // A search result lands here as ?kind=…&q=… (7 Oct 2026).
+  const [params] = useSearchParams()
+  const [kind, setKind] = useState(() => params.get('kind') || 'status')
   const [deity, setDeity] = useState('All')
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => params.get('q') || '')
   const [busy, setBusy] = useState(null)
   const [sharing, setSharing] = useState(null) // the asset whose share sheet is open
 
@@ -183,11 +185,20 @@ export default function Bhakti() {
     <>
       {/* No "Bhakti" tag in the header since 30 Sep — the tab bar already
           names the screen. Search leads, above the tiles (owner's call). */}
-      {/* Bhakti's search is the header's box (6 Oct 2026, Rahul): a field
-          that filters this library as you type, not a row of its own. */}
-      <TabHeader
-        search={{ value: query, onChange: setQuery, placeholder: `Search ${meta ? meta.label.toLowerCase() : 'bhakti'}` }}
-      />
+      {/* Search opens the search screen, as on every tab (7 Oct 2026,
+          Rahul: "should be same"); a result comes back here as
+          ?kind=…&q=…, shown with a way to clear it. */}
+      <TabHeader />
+      {query && (
+        <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-stroke bg-surface px-3 py-2">
+          <span className="min-w-0 truncate text-meta t-sub">
+            Showing “{query}”
+          </span>
+          <button type="button" onClick={() => setQuery('')} className="flex-none caps-sm gold">
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Circle tiles, not a segmented control — same grammar as Consult's
           free-tools row, because both answer "pick a thing to do". */}

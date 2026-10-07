@@ -5972,3 +5972,15 @@ link should come with its image and full name.
   Checked in a browser: the toolbar's buttons insert the marks; the page
   renders them.
 
+## 68. Rahul's list, 7 Oct: Bhakti search, product page, blog card
+
+- Bhakti's header box opens `/search?in=bhakti` like every tab; search
+  covers Bhakti (`fetchAssets`: title, deity, kind); a result opens
+  `/bhakti?kind=…&q=…`, filtered, with Clear.
+- Product page: no stock line (Sold out only), no SKU chip, no disclaimer;
+  **More from the shop** (same category first, in-app links, scroll to top).
+  The Add/Buy bar was `sticky` and measured from `main`'s bottom padding —
+  56 px up, text showing under it on phone and desktop; now `fixed` to the
+  column's foot. Measured: bar bottom = screen bottom.
+- Blog feed card: title under the banner, not over it.
+
