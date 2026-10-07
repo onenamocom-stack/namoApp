@@ -146,8 +146,11 @@ The per-minute rate is the band over 20, rounded to ₹1 (₹749 → ₹37/min);
 ₹444 / ₹592 / ₹888 at ₹37/min. It replaced slot prices that equalled the meter,
 so nothing rewarded booking ahead. Video, audio and chat all run on the meter.
 
-**Platform commission: 18%**, expressed in basis points everywhere it is stored.
-A ₹1,499 session pays the consultant ₹1,229 and the platform ₹270.
+**Platform commission: 40%** (owner, 7 Oct 2026; it was 18%), expressed in
+basis points everywhere it is stored. A ₹1,499 session pays the consultant
+₹899 and the platform ₹600. **It is not stated anywhere in either app** —
+the consultant's earnings show what they take home, not the share taken;
+the console shows it. Earnings written before 7 Oct keep their 18% row.
 
 Each band carries the three bookable lengths and a per-minute rate for instant
 calls — **§5.1, decided.** The bands are rows in `price_bands`, and a

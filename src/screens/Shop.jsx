@@ -212,7 +212,7 @@ export default function Shop() {
                 type="button"
                 onClick={() => setCartOpen(true)}
                 aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart, empty'}
-                className="pop-tap relative inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-ink shadow-sm"
+                className="pop-tap relative inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-sm"
               >
                 <Icon name="cart" size={18} />
                 {cartCount > 0 && (
@@ -450,11 +450,6 @@ export default function Shop() {
                           {t('shop.linked')}
                         </span>
                       )}
-                      {off > 0 && !p.soldOut && (
-                        <span className="caps-sm absolute left-2 top-2 rounded-full bg-gold-fill px-2 py-1 text-ink shadow-sm tnum">
-                          {t('home.off', { n: off })}
-                        </span>
-                      )}
                       {p.soldOut && (
                         <span className="absolute inset-0 flex items-center justify-center bg-surface/70 backdrop-blur-[1px]">
                           <span className="caps-sm rounded-full bg-live px-2.5 py-1 text-white shadow-sm">
@@ -469,13 +464,16 @@ export default function Shop() {
                       <p className="text-meta t-heading">{p.name}</p>
                       <p className="mt-1 text-meta t-faint">{p.subtitle}</p>
 
-                      <p className="mt-2 flex items-baseline gap-2 tnum">
+                      {/* The discount beside the price (7 Oct 2026, Rahul) — it
+                          was a badge on the picture. */}
+                      <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 tnum">
                         <span className="text-body gold">₹{p.price.toLocaleString('en-IN')}</span>
                         {p.mrp && (
                           <span className="caps-sm t-faint line-through">
                             ₹{p.mrp.toLocaleString('en-IN')}
                           </span>
                         )}
+                        {off > 0 && <span className="text-meta font-semibold text-ok">{t('home.off', { n: off })}</span>}
                       </p>
 
                       {p.recommendedBy && (

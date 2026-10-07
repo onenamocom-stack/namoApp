@@ -729,7 +729,7 @@ class TestBookSession:
             (delta, kind, ref_type), = cursor.fetchall()
             assert delta == -service.price_paise
 
-    def test_earnings_row_is_gross_fee_net_at_1800_bps(self, api_client, seeker_token, roster):
+    def test_earnings_row_is_gross_fee_net_at_the_platform_share(self, api_client, seeker_token, roster):
         # Assertion 2, on this row and as the table-wide invariant.
         _, service = roster
         _fund(SEEKER, service.price_paise)
@@ -738,7 +738,7 @@ class TestBookSession:
         row = EarningsLedger.objects.get(booking_id=body["booking_id"])
         expected_fee = services.fee_paise(service.price_paise)
         assert row.gross_paise == service.price_paise
-        assert row.fee_bps == 1800
+        assert row.fee_bps == 4000  # 40% since 7 Oct 2026
         assert row.fee_paise == expected_fee
         assert row.net_paise == service.price_paise - expected_fee
         assert row.kind == "Tara Verma · 20 min"  # 013 fix 4: the consultant's

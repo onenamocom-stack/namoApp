@@ -370,7 +370,10 @@ class Booking(models.Model):
         ]
 
 
-FEE_BPS = 1800  # 18% in basis points, named once (012 / 01-PRD §4.1; rule 1)
+# The platform's share of a session, in basis points, named once (01-PRD
+# §4.1; rule 1). 40% from 7 Oct 2026 (owner) — it was 18%. Applies to
+# earnings written from then on; rows already written keep their own fee_bps.
+FEE_BPS = 4000
 
 
 class EarningsLedger(models.Model):

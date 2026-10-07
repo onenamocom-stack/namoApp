@@ -752,7 +752,8 @@ partial unique index, wakes to a `23505` and never reaches the debit, so "no
 orphaned debit" is an ordering rather than a compensating write. Everything
 inside the block unwinds together, so a refusal leaves no order behind either.
 
-**Commission is 18%, stored as `fee_bps = 1800`**, and
+**Commission is 40%, stored as `fee_bps = 4000`** (7 Oct 2026; 18% and `1800`
+before — each row keeps the rate it was written at), and
 `fee_paise = round(gross_paise * fee_bps / 10000)`. The `earnings_ledger` CHECK
 makes `gross − fee = net` an invariant rather than a convention, including on
 the negative rows a reversal writes.

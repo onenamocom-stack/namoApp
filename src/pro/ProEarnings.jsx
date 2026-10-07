@@ -198,11 +198,8 @@ function Earnings() {
                 ₹{rupees(sum.net_paise)}
               </p>
               <p className="mt-2 text-meta t-body">{line}</p>
-              {sum.count > 0 && (
-                <p className="mt-1 text-meta tnum t-faint">
-                  ₹{rupees(sum.gross_paise)} earned, less ₹{rupees(sum.fee_paise)} platform fee.
-                </p>
-              )}
+              {/* What the consultant takes home only: the platform's share is
+                  not shown in this app (7 Oct 2026, owner). */}
               {sum.upcoming_paise > 0 && (range === 'this_month' || range === 'lifetime') && (
                 <p className="mt-3 rounded-xl bg-surface2 px-3 py-2 text-meta t-body">
                   ₹{rupees(sum.upcoming_paise)} more is booked for sessions that have not happened
@@ -294,11 +291,6 @@ function Earnings() {
                     month: 'short',
                     timeZone: 'Asia/Kolkata',
                   })}{' '}
-                  {/* Absolute values: the sign lives on the net figure to the
-                      right, and a reversing row rendered raw reads
-                      "₹-1,499 − ₹-269.82", which is two minus signs saying one
-                      thing badly. */}
-                  · ₹{rupees(Math.abs(r.gross_paise))} − ₹{rupees(Math.abs(r.fee_paise))}
                 </span>
               </span>
               <span

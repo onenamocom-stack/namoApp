@@ -448,7 +448,7 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
 
 
 def fee_paise(amount_paise):
-    """18% in basis points, rounded like Postgres numeric round (012)."""
+    """FEE_BPS of the amount, rounded like Postgres numeric round (012)."""
     return int((Decimal(amount_paise) * FEE_BPS / 10000).quantize(
         Decimal("1"), rounding=ROUND_HALF_UP
     ))

@@ -347,7 +347,7 @@ function Application({ onDone, toast }) {
         {saving ? 'Sending…' : 'Send application'}
       </Button>
       <p className="mx-auto mt-4 max-w-measure text-center text-micro text-t3">
-        We take 18% of every session. Nothing else, and nothing up front.
+        Nothing to pay up front.
       </p>
     </>
   )

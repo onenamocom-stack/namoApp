@@ -5984,3 +5984,16 @@ link should come with its image and full name.
   column's foot. Measured: bar bottom = screen bottom.
 - Blog feed card: title under the banner, not over it.
 
+## 69. Commission 40%, unnamed; one tile look; discount by the price — 7 Oct 2026
+
+- **Commission 40%** (`FEE_BPS = 4000`, was 1800) for earnings written from
+  the API deploy on; earlier rows keep 18%. Not said in the apps: the
+  consultant's earnings show take-home only (the "less ₹X platform fee"
+  line and each row's gross − fee went), and the application's "We take 18%"
+  line is gone. Tests updated (148 pass in chat/consultants/earnings).
+- **Tiles:** `tileStyle`/`toolStyle` are one beige face with a coloured icon
+  on Consult, Shop and Bhakti. Shop cards: the discount beside the price.
+  The header cart icon is white.
+- **Asked, not built:** a free first call — needs the owner's answers
+  (how long, chat and calls or calls only, and who pays the consultant).
+

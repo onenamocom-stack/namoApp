@@ -546,7 +546,7 @@ class TestSettle:
         # Assertion 6: the consultant earns what was USED, gross − fee = net.
         assert EarningsLedger.objects.filter(consultant_id=PRO).count() == earn0 + 1
         gross = RATE * 10
-        fee = round(gross * 1800 / 10000)  # 135 exact at ₹75/min
+        fee = round(gross * FEE_BPS / 10000)  # the platform's share, 40% since 7 Oct 2026
         row = EarningsLedger.objects.get(consultant_id=PRO)
         assert row.gross_paise == gross and row.fee_bps == FEE_BPS
         assert row.fee_paise == fee and row.net_paise == gross - fee
@@ -611,22 +611,22 @@ class TestSettle:
         assert _counts(SEEKER)["ledger"] == led0  # settle wrote nothing back
 
     def test_fee_rounds_half_away_from_zero(self, pro_user):
-        # Postgres numeric round is half away from zero, never banker's:
-        # 225 paise gross -> 40.5 fee -> 41. A banker's-rounding default
-        # would say 40.
+        # The fee is rounded to whole paise like Postgres numeric round. At
+        # 40% (7 Oct 2026; it was 18%) a whole-paise gross never lands on a
+        # half, so these are exact: 225 -> 90, 5 -> 2, 25 -> 10.
         from apps.consultants.services import fee_paise
 
-        assert fee_paise(225) == 41
-        assert fee_paise(25) == 5  # 4.5 -> 5, the half boundary itself
+        assert fee_paise(225) == 90
+        assert fee_paise(5) == 2
+        assert fee_paise(25) == 10
         session, _ = _live_session(pro_user, minutes=20, fund=RATE * 20)
         t0 = _t0()
         _stamp(session, started_at=t0 - 3 * MIN, expires_at=t0 + 17 * MIN)
         services.end_session(SEEKER, session.id, now=t0)
         row = EarningsLedger.objects.get(consultant_id=PRO)
-        # Three minutes at ₹75: gross ₹225, fee ₹40.50 -> ₹41, net ₹184 —
-        # the 1 Sep walk's own arithmetic, in paise.
-        assert row.gross_paise == 22500 and row.fee_paise == 4050
-        assert row.net_paise == 18450
+        # Three minutes at ₹75: gross ₹225, fee 40% ₹90, net ₹135, in paise.
+        assert row.gross_paise == 22500 and row.fee_paise == 9000
+        assert row.net_paise == 13500
 
     def test_either_party_may_end(self, pro_user):
         session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)

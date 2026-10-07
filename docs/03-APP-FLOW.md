@@ -494,6 +494,12 @@ tagged products under it, and **Like, Reply, Share and Save** as a post has
 Reshare. The feed's shop cards are the live catalogue, square, opening the
 product's page — they were `mock.js` products.
 
+**Round tiles look the same everywhere** (7 Oct 2026, Rahul): Consult's
+tools, Shop's categories and Bhakti's shelves are a beige face with the icon
+in its own colour; a selected one gets a ring of that colour. On shop cards
+the discount sits beside the price ("68% off"), not on the picture. The
+header cart's icon is white. `/pro/earnings` shows take-home only.
+
 ### `/search` — from the header's search box (6 Oct 2026)
 
 The box sits **in the header** between the mark and the wallet on Home, Shop
