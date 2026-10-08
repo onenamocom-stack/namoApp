@@ -214,7 +214,6 @@ export const strings = {
   'tarot.conclusion': { en: 'Where it lands', hi: 'निष्कर्ष' },
   'tarot.todo': { en: 'What to do', hi: 'क्या करें' },
   'tarot.freeLeft': { en: 'free left this week', hi: 'इस सप्ताह निःशुल्क शेष' },
-  'tarot.aCard': { en: 'a card', hi: 'प्रति कार्ड' },
   'tarot.freeUsed': {
     en: 'Free cards used · ₹{price} each after that',
     hi: 'निःशुल्क कार्ड समाप्त · उसके बाद ₹{price} प्रति कार्ड',
@@ -223,12 +222,6 @@ export const strings = {
   'tarot.prompt': {
     en: 'One card is a prompt, not a reading. A tarot reader will do the other twenty minutes.',
     hi: 'एक कार्ड संकेत है, पूरा पाठ नहीं। बाकी बीस मिनट एक टैरो पाठक ही देगा।',
-  },
-  'tarot.stuck': { en: 'Still stuck', hi: 'फिर भी उलझन है' },
-  'tarot.askStars': { en: 'Ask the stars', hi: 'तारों से पूछें' },
-  'tarot.notDecide': {
-    en: 'A card will not decide it for you. Neither will a reader, but a reader will at least argue back.',
-    hi: 'कार्ड आपके लिए तय नहीं करेगा। पाठक भी नहीं, पर पाठक कम से कम बहस तो करेगा।',
   },
 
   'tarot.whichDeck': { en: 'Which cards?', hi: 'कौन से कार्ड?' },
@@ -767,12 +760,7 @@ export const strings = {
     hi: 'आपका रेफ़रल लग गया। कल से रोज़ 3 मुफ़्त सवाल।',
   },
   'ask.ph': { en: 'Message Namo AI', hi: 'नमो AI से पूछें' },
-  'ask.perQuestion': { en: '{price} a question from your wallet.', hi: 'आपके वॉलेट से {price} प्रति सवाल।' },
-  'ask.freeLeft': { en: '{n} free questions left.', hi: '{n} मुफ़्त सवाल बाकी।' },
   /* One sentence around a link: "{canBeWrong} [pros]{end}". */
-  'ask.canBeWrong': { en: 'Namo AI can be wrong —', hi: 'नमो AI गलत हो सकता है —' },
-  'ask.pros': { en: 'ask our pros', hi: 'हमारे ज्योतिषियों से पूछें' },
-  'ask.end': { en: '.', hi: '।' },
 
   // ── Premium ──────────────────────────────────────────────────────────────
   'prem.title': { en: 'Go deeper when you want to.', hi: 'जब चाहें, और गहराई में जाएं।' },

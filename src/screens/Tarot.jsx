@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { tarotDecks } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
-import { Kicker, PopButton, PopCard } from '../components/Pop.jsx'
+import { PopButton, PopCard } from '../components/Pop.jsx'
 import { Stub } from '../components/Primitives.jsx'
 import { priceLabel, pullCard, tarotState } from '../lib/tarot.js'
 import { useStore } from '../store.jsx'
@@ -85,13 +85,8 @@ export default function Tarot() {
         title={t('tarot.title')}
         back
         backTo="/home"
-        sub={
-          freeLeft === null
-            ? null
-            : freeLeft > 0
-              ? `${freeLeft} ${t('tarot.freeLeft')}`
-              : `${priceLabel(state.price_paise)} ${t('tarot.aCard')}`
-        }
+        // The free count only; no price under the title (9 Oct 2026, owner).
+        sub={freeLeft > 0 ? `${freeLeft} ${t('tarot.freeLeft')}` : null}
       />
 
       <section className="px-5 py-6">
@@ -118,17 +113,8 @@ export default function Tarot() {
         )}
       </section>
 
-      {/* Not under a yes/no answer: the partner's sheet is the whole of that
-          reading, and this was app copy, not the sheet (30 Sep 2026). */}
-      {deck?.key !== 'yesno' && (
-        <section className="border-t border-rule px-5 py-6">
-          <Kicker action={t('tarot.askStars')} to="/ask">
-            {t('tarot.stuck')}
-          </Kicker>
-          <p className="mt-2 text-meta t-body">{t('tarot.notDecide')}</p>
-        </section>
-      )}
-
+      {/* "Still stuck — ask the stars" sat here, under every deck but yes/no;
+          gone from all of them (9 Oct 2026, owner: no need for it). */}
       <div className="h-8" />
 
       {step === 'deck' && !result && (
@@ -146,7 +132,6 @@ export default function Tarot() {
                       <span className="caps-sm flex-none gold">{tradition(d)}</span>
                       <span className="min-w-0 flex-1 text-body font-semibold text-t1">{d.name}</span>
                     </span>
-                    <span className="mt-1 block text-meta text-t2">{d.line}</span>
                   </span>
                   <span aria-hidden="true" className="flex-none text-lead text-gold">›</span>
                 </button>

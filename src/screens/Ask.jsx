@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -152,16 +151,9 @@ export default function Ask() {
           </button>
         </form>
 
-        <p className="mt-2 text-center text-micro t-faint">
-          {outOfFree
-            ? `${t('ask.perQuestion', { price })} `
-            : `${t('ask.freeLeft', { n: freeLeft ?? '—' })} `}
-          {t('ask.canBeWrong')}{' '}
-          <Link to="/consult" className="underline">
-            {t('ask.pros')}
-          </Link>
-          {t('ask.end')}
-        </p>
+        {/* No line under the box (9 Oct 2026, owner): the free count and
+            price are in the header, and "Namo AI can be wrong — ask our
+            pros" is gone. */}
       </div>
     </div>
   )
