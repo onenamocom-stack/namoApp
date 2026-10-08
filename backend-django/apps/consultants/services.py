@@ -47,11 +47,12 @@ from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, connection, transaction
-from django.db.models import BooleanField, Case, F, Q, Value, When
+from django.db.models import BooleanField, Case, F, OuterRef, Q, Subquery, TextField, Value, When
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from apps.profiles import services as profile_services
+from apps.profiles.models import Profile
 
 from . import gateway
 from .models import (
@@ -308,6 +309,11 @@ def public_consultants():
         Consultant.objects.filter(status=ConsultantStatus.APPROVED)
         .annotate(
             name=_name_expr("profile_id"),
+            # The profile photo, for the roster card (8 Oct 2026).
+            avatar_url=Subquery(
+                Profile.objects.filter(id=OuterRef("profile_id")).values("avatar_url")[:1],
+                output_field=TextField(),
+            ),
             online=online_expr(),
             busy=busy_expr(),
             sessions_done=sessions_done_expr(),

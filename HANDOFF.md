@@ -6094,3 +6094,12 @@ Live. Screens: `docs/03-APP-FLOW.md`; look: `04-UI-UX`.
 - **Darshan's deity pills** use the chip type (`caps-sm`), white on gold kept.
 - Tests: `test_share_previews.py` gains three. Not checked in WhatsApp
   itself; WhatsApp caches a link's preview, so test with a new item.
+
+## 75. The compact Consult card — 8 Oct 2026
+
+Live. Rahul's reference layout, our colours (`docs/03-APP-FLOW.md`,
+`04-UI-UX`). The card is now ~196 px tall with two actions, Call and Chat;
+video and booking are on the profile. The roster rows carry `avatar_url`
+(the profile photo, one subquery in `public_consultants`). One consultant's
+`languages` was saved as the string `"['Hindi', 'English']"`; the client
+reads either shape now, and the row itself is still wrong in the database.

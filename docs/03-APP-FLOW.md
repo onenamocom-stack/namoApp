@@ -278,11 +278,15 @@ keeps that order through search and filters.
 Sessions tab) and the verified rail ("Unlimited questions in 20 min"), which
 repeated the roster below it.
 
-Per consultant: the row opens their profile; a call knob toasts; a message knob
-opens the chat overlay; Live goes to a real room when one is running. Nothing is
-disabled for being "offline" — there is no presence yet (phase 6), and a dot
-that is always green is worse than no dot. The rail above the list counts
-`verified`, which is a real column.
+Per consultant, one compact card (8 Oct 2026, Rahul's reference; it replaced
+a card with Video, Audio, Chat and Book buttons, milestone badges and two
+sentences): the photo (initials without one) with the online dot, the name
+with a tick when verified and "Busy" when they are on a session, the
+specialty, the stars and review count ("New" with none), and experience and
+languages on one line. Under a dashed rule, **Call** (an audio call) and
+**Chat**, each with the per-minute rate, or "First 3 min free" for a new
+seeker's free-first consultant. Offline, both read "Offline" and do nothing.
+The card opens the profile, which keeps video and booking.
 
 **Its own booking sheet is gone** — deleted as redundant with the one on
 `/consult/:id`, which is the only booking flow.

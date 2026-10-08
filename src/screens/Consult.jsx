@@ -1,4 +1,3 @@
-import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
@@ -6,7 +5,7 @@ import { categories, SESSION } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
-import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
+import { Kicker, PopButton } from '../components/Pop.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
@@ -124,12 +123,6 @@ const BANNERS = [
 /* Four ways to reach somebody, on every card (5 Oct 2026, the owner's
    call): video, audio and chat run on the per-minute meter now; Book takes a
    slot later at 20% under that rate (docs/01-PRD.md §4.1). */
-const CHANNELS = {
-  video: { icon: 'video', label: 'con.video' },
-  audio: { icon: 'phone', label: 'con.audio' },
-  chat: { icon: 'chat', label: 'con.chat' },
-}
-
 export default function Consult() {
   const { showToast, t, lang } = useStore()
   const navigate = useNavigate()
@@ -341,114 +334,93 @@ export default function Consult() {
 
         <ul className="mt-4 space-y-3">
           {list.map((c) => (
-            <li key={c.id} className="pop-card p-4">
-              <Link
-                to={`/consult/${c.id}`}
-                className="flex items-start gap-4 transition-opacity hover:opacity-60"
-              >
-                <TierRing count={c.sessionsDone} size={56}>
-                  <PopAvatar initials={c.initials} size={56} online={c.online} />
-                </TierRing>
+            /* The compact card (8 Oct 2026, Rahul's reference): photo left,
+               name and tick, the specialty, stars and reviews, experience and
+               languages on one line; under a dashed rule, Call and Chat with
+               their rate. The old card spent four buttons, badges and two
+               sentences on every row. Video and Book stay on the profile. */
+            <li key={c.id} className="pop-card p-3">
+              <Link to={`/consult/${c.id}`} className="flex items-start gap-3 transition-opacity hover:opacity-70">
+                <span className="relative flex-none">
+                  <span className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-gold bg-surface-2 text-lead font-semibold t-sub">
+                    {c.avatarUrl ? (
+                      <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      c.initials
+                    )}
+                  </span>
+                  {c.online && (
+                    <span className="absolute -bottom-1 -right-1 block h-3.5 w-3.5 rounded-full bg-ok ring-2 ring-surface" aria-label="Online" />
+                  )}
+                </span>
 
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-body text-t1">{c.name}</span>
-                      {/* On a call or ringing right now (5 Oct 2026). Still
-                          pressable — the call waits and retries for you. */}
-                      {c.online && c.busy && (
-                        <span className="flex-none rounded-full bg-gold-fill/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-gold">
-                          Busy
-                        </span>
-                      )}
-                    </span>
-                    {/* A new seeker's first session with this consultant is
-                        free for three minutes (7 Oct 2026). */}
-                    {c.freeFirst ? (
-                      <span className="flex-none rounded-full bg-ok px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.05em] text-white">
-                        First 3 min free
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-body font-semibold text-t1">{c.name}</span>
+                    {c.verified && (
+                      <span className="flex h-4 w-4 flex-none items-center justify-center rounded-full bg-ok text-white" aria-label="Verified">
+                        <Icon name="check" size={10} weight={3} />
                       </span>
-                    ) : null}
-                    <span className={`flex-none text-body text-t1 tnum ${c.freeFirst ? 'hidden' : ''}`}>
-                      {/* The per-minute rate is its own service row, priced off
-                          the same band. It is not `price / SESSION.mins` any
-                          more — that division was the browser inventing a
-                          price, which is the shape rule 3 exists to stop. */}
-                      ₹{c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}
-                      <span className="text-meta text-t3">{t('con.perMin')}</span>
-                    </span>
+                    )}
+                    {c.online && c.busy && (
+                      <span className="flex-none rounded-full bg-gold-fill/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-gold">
+                        Busy
+                      </span>
+                    )}
                   </span>
-                  <span className="mt-0.5 block truncate text-meta text-t3">{c.specialization}</span>
-                  {c.sessionsDone > 0 && (
-                    <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
+                  {(c.specialization || c.practices[0]) && (
+                    <span className="mt-1 inline-block max-w-full truncate rounded-md border border-gold/40 px-2 py-0.5 text-[11px] text-gold">
+                      {c.specialization || c.practices[0]}
+                    </span>
                   )}
-                  <span className="mt-1.5 flex items-center gap-2 text-micro uppercase tracking-caps text-t3 tnum">
-                    <span className="gold">{c.rating ?? t('con.new')}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{c.experienceYrs ? t('con.yrs', { n: c.experienceYrs }) : t('con.practising')}</span>
+                  <span className="mt-1 flex items-center gap-1.5 text-[12px] text-t2 tnum">
+                    {c.rating != null ? (
+                      <>
+                        <Stars value={c.rating} />
+                        <span className="text-t3">|</span>
+                        <span>({c.reviewCount ?? 0}) Reviews</span>
+                      </>
+                    ) : (
+                      <span className="text-gold">{t('con.new')}</span>
+                    )}
                   </span>
-                  <span className="mt-2 flex flex-wrap gap-1.5">
-                    {c.languages.map((spoken) => (
-                      <span key={spoken} className="rounded-md border border-stroke bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-t2">
-                        {spoken}
-                      </span>
-                    ))}
+                  <span className="mt-0.5 block truncate text-[12px] text-t3">
+                    {[
+                      c.experienceYrs ? `${t('con.yrs', { n: c.experienceYrs })} exp` : t('con.practising'),
+                      ...c.languages,
+                    ].join(' • ')}
                   </span>
                 </span>
               </Link>
 
-              {/* Call is a permanent stub — no calling infra exists. Chat opens
-                  the real panel and is the only one of the two that charges a
-                  wallet, so it takes the gold. Live was the third channel and
-                  the only gold one until live video was deleted on 9 Sep 2026;
-                  leaving the row all-ghost would have given a card with a
-                  working paid action no primary at all. */}
-              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-rule pt-4">
-                {['video', 'audio', 'chat'].map((kind) => (
-                  <PopButton
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-dashed border-stroke pt-3">
+                {['audio', 'chat'].map((kind) => (
+                  <button
                     key={kind}
-                    size="sm"
-                    variant="ghost"
-                    full={false}
-                    className="!px-1 flex-col gap-1 disabled:pointer-events-none disabled:opacity-40"
-                    /* Dead while they are offline — the same rule as the
-                       profile page. A card that offers Call to somebody
-                       asleep is the card that teaches a seeker the app
-                       does not work. */
+                    type="button"
                     disabled={!c.online || asking}
                     onClick={() => start(c, kind)}
+                    className={`flex flex-col items-center justify-center rounded-xl py-1.5 leading-tight transition active:scale-[0.98] disabled:pointer-events-none ${
+                      !c.online
+                        ? 'bg-stroke/70 text-t2'
+                        : kind === 'chat'
+                          ? 'bg-gold-fill text-white'
+                          : 'border border-gold text-gold'
+                    }`}
                   >
-                    <Icon name={CHANNELS[kind].icon} size={16} />
-                    <span className="text-[11px] leading-none">{t(CHANNELS[kind].label)}</span>
-                  </PopButton>
+                    <span className="text-[14px] font-semibold">
+                      {c.online ? (kind === 'chat' ? t('con.chat') : 'Call') : 'Offline'}
+                    </span>
+                    {/* A new seeker's first session with this consultant is
+                        free for three minutes (7 Oct 2026). */}
+                    <span className="text-[11px] tnum opacity-90">
+                      {c.freeFirst
+                        ? 'First 3 min free'
+                        : `₹${c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}${t('con.perMin')}`}
+                    </span>
+                  </button>
                 ))}
-                {/* Book works offline too — a slot is for later. It opens the
-                    booking sheet on the profile. */}
-                <PopButton
-                  size="sm"
-                  variant="gold"
-                  full={false}
-                  className="!px-1 flex-col gap-1"
-                  to={`/consult/${c.id}?book=1`}
-                >
-                  <Icon name="calendar" size={16} />
-                  <span className="text-[11px] leading-none">{t('con.book')}</span>
-                </PopButton>
               </div>
-
-              {/* Said, not left to two faded buttons. Booking still works,
-                  and that is the sentence's real job. */}
-              {!c.online && (
-                <p className="mt-2 text-micro t-faint">
-                  {t('con.offline')}
-                </p>
-              )}
-              {c.online && c.busy && (
-                <p className="mt-2 text-micro t-faint">
-                  {firstNameOf(c.name)} is with someone right now. Press any of the three
-                  and we will keep trying until they are free — nothing is charged while you wait.
-                </p>
-              )}
             </li>
           ))}
         </ul>
@@ -509,6 +481,15 @@ function NobodyYet() {
 }
 
 
-function firstNameOf(name) {
-  return (name || '').split(' ')[0]
+/** Five stars filled to the rating, a fraction shown as a part star. */
+function Stars({ value }) {
+  const pct = Math.max(0, Math.min(100, (Number(value) / 5) * 100))
+  return (
+    <span className="relative inline-block text-[13px] leading-none tracking-[1px]" aria-label={`${value} out of 5`}>
+      <span className="text-stroke">★★★★★</span>
+      <span className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-gold" style={{ width: `${pct}%` }}>
+        ★★★★★
+      </span>
+    </span>
+  )
 }

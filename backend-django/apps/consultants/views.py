@@ -41,6 +41,7 @@ def _consultant_row(consultant, service_rows):
     return {
         "profile_id": str(consultant.profile_id),
         "name": consultant.name,  # the 007 view's join
+        "avatar_url": getattr(consultant, "avatar_url", None),
         "category": consultant.category,
         "specialization": consultant.specialization or "",
         "languages": consultant.languages or [],

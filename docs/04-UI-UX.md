@@ -118,6 +118,12 @@ version over video. It replaced a bare "←".
 **Bhakti's shelf tiles each have a colour** — status saffron, wallpapers
 purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash
 with the icon in the colour, and the full colour with a halo when selected.
+**The Consult card** (8 Oct 2026): a 76 px square photo with rounded corners
+and a gold border, the online dot on its corner; a green tick for verified;
+the specialty in a gold outlined chip; gold stars filled to the rating; a
+dashed rule over two equal buttons — Call outlined in gold, Chat solid gold,
+both grey when offline.
+
 Darshan's deity pills keep their white-on-gold face with the same chip
 type (8 Oct 2026). No two tiles in a row share an icon: Mantras is a mala, Darshan the diya
 (8 Oct 2026, Rahul — both were the diya). The deity chips under them are

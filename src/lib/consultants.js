@@ -126,7 +126,12 @@ function shape(row, services = []) {
     // "Astrologer, Tarot" — a practitioner can practise more than one (5 Oct 2026).
     practices: String(row.category ?? '').split(',').map((x) => x.trim()).filter(Boolean),
     specialization: row.specialization ?? '',
-    languages: row.languages ?? [],
+    // One row was saved with the list as a string, "['Hindi', 'English']";
+    // read either shape as plain names (8 Oct 2026).
+    languages: (row.languages ?? [])
+      .flatMap((l) => String(l).replace(/[[\]'"]/g, '').split(','))
+      .map((l) => l.trim())
+      .filter(Boolean),
     experienceYrs: row.experience_yrs,
     bio: row.bio ?? '',
     credentials: row.credentials ?? [],
@@ -149,6 +154,8 @@ function shape(row, services = []) {
     perMinute,
     pricePaise: base?.price_paise ?? null,
     perMinutePaise: perMinute?.price_paise ?? null,
+    // The profile photo; null shows initials (8 Oct 2026).
+    avatarUrl: row.avatar_url ?? null,
   }
 }
 
