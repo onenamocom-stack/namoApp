@@ -558,8 +558,8 @@ viewer folds to two lines; a tap opens it.
 `key` is the slug or the id. Top bar: back to the shop, the brand (or the
 category), the cart. Then the gallery — swipe through every photo and
 video, thumbnails under it to jump; a video plays in place. Brand, name,
-subtitle, price, MRP and the discount, "Inclusive of all taxes. Delivery is
-added at checkout.", "Sold out" only when it is (the stock count and the
+subtitle, price, MRP and the discount, "Inclusive of all taxes. Free
+delivery." (8 Oct 2026), "Sold out" only when it is (the stock count and the
 SKU chip went on 7 Oct 2026, Rahul), chips for category and subcategory,
 and **Share** (the phone's share sheet, or
 the link copied). Then **About this product** — the description with its
@@ -1001,8 +1001,9 @@ first: six digits fill city and state (a typed one is never overwritten), say
 that pincode covers as one-tap choices for "Area, landmark" (India Post's
 directory, then Shiprocket's; 6 Oct 2026). The quantity steppers are drawn
 − and + centred in their circles. **Clear asks first** — "Clear your cart?",
-Keep items or Clear cart — since one tap emptied a built cart. Choosing an address asks the server for the
-delivery charge; the sheet then shows Items, Delivery and Total, and **Pay
+Keep items or Clear cart — since one tap emptied a built cart. Choosing an address asks the server whether a
+courier serves it (and for the charge, which is "Free" since 8 Oct 2026); the
+sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
 Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online
 — the default — reads "Pay ₹X" and opens Razorpay's checkout for the order

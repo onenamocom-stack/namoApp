@@ -195,6 +195,21 @@ class TestBuyWithDelivery:
         assert shipment.address["line1"] == "12 Some Road"
         assert shipment.pincode == "302001"
 
+    def test_free_delivery_charges_nothing_and_still_ships(self, client, mala, settings):
+        # Production (8 Oct 2026, Rahul): delivery is free; Namo pays the
+        # courier. The quote still checks the pincode and keeps the rate.
+        settings.DELIVERY_FREE = True
+        _wallet(BUYER, 500_000)
+        mine = _address()
+        quote = _quote(BUYER, mine["id"], [{"product_id": mala.id, "qty": 1}])
+        assert quote["amount_paise"] == 0 and quote["courier_paise"] == 6_800
+        got = self._buy(client, mala, mine["id"], quote["quote_id"])
+        assert got["ok"] is True and got["shipping_paise"] == 0
+        assert got["total_paise"] == 100_000
+        assert wallet_services.balance_of(BUYER) == 500_000 - 100_000
+        shipment = Shipment.objects.get(pk=got["order_id"])
+        assert shipment.status == Shipment.Status.READY and shipment.shipping_paise == 0
+
     def test_buy_without_an_address_is_refused(self, client, mala):
         _wallet(BUYER, 500_000)
         response = client.post("/v1/shop/buy/", {

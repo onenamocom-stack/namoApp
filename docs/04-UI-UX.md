@@ -118,6 +118,9 @@ version over video. It replaced a bare "←".
 **Bhakti's shelf tiles each have a colour** — status saffron, wallpapers
 purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash
 with the icon in the colour, and the full colour with a halo when selected.
+No two tiles in a row share an icon: Mantras is a mala, Darshan the diya
+(8 Oct 2026, Rahul — both were the diya). The deity chips under them are
+Consult's category chip exactly (`pill caps-sm`, 8 px apart).
 
 **Counts sit beside their icons** in the feed (♡ 12, comments, reshares), not
 in a line of text under the row; views, which have no icon, stay under it.

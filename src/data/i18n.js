@@ -606,7 +606,7 @@ export const strings = {
   'shop.pp.title': { en: 'Product', hi: 'प्रोडक्ट' },
   'shop.pp.toShop': { en: 'Back to the shop', hi: 'दुकान पर वापस' },
   'shop.pp.mrp': { en: 'MRP', hi: 'एमआरपी' },
-  'shop.pp.taxes': { en: 'Inclusive of all taxes. Delivery is added at checkout.', hi: 'सभी टैक्स शामिल। डिलीवरी का खर्च चेकआउट पर जुड़ता है।' },
+  'shop.pp.taxes': { en: 'Inclusive of all taxes. Free delivery.', hi: 'सभी टैक्स शामिल। डिलीवरी मुफ़्त।' },
   'shop.pp.few': { en: 'Only {n} left', hi: 'सिर्फ़ {n} बचे हैं' },
   'shop.pp.inStock': { en: 'In stock', hi: 'स्टॉक में है' },
   'shop.pp.share': { en: 'Share', hi: 'शेयर करें' },

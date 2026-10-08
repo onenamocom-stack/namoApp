@@ -322,10 +322,12 @@ prepaid only). Two ways to pay at checkout:
   collects the cash and remits it to the business. The order is pending until
   delivered; a COD parcel that comes back is cancelled and nothing is owed.
 
-The delivery charge is
-Shiprocket's own rate for the seeker's pincode and the parcel's weight, rounded
-up to the whole rupee, shown before Pay. There is no free-delivery threshold.
-A coupon comes off the goods, never off delivery, and an astrologer's 10%
+**Delivery is free — decided 8 Oct 2026** (Rahul: "we will not charge
+delivery cost"). Namo pays the courier; the cart reads "Delivery Free" and
+the total is the goods (plus the COD fee where chosen). The pincode is still
+checked with Shiprocket before Pay, so an address no courier serves is still
+refused. This replaced charging Shiprocket's rate for the pincode and weight;
+`DELIVERY_FREE` off brings that back. A coupon comes off the goods, and an astrologer's 10%
 cashback is paid on the goods alone (not on the COD fee). Returns of an
 online order are refunded by hand for now.
 

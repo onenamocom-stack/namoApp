@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 7 Oct 2026.
+Updated 8 Oct 2026.
 
 | Phase | State |
 |---|---|
@@ -6062,3 +6062,19 @@ person ends it. Product rule: `docs/01-PRD.md` §4.1; screens:
   answer from our account; if it refuses, the error is logged
   (`[video] could not pause room`) and the overlay is all that stops talk
   during the pause. Walk one real paid call to zero before relying on it.
+
+## 73. Free delivery; Mantras icon; Bhakti chips — 8 Oct 2026
+
+Rahul's three, live. Rule: `docs/01-PRD.md` §4.6; screens: `03-APP-FLOW`;
+look: `04-UI-UX`.
+
+- **Delivery is free.** `DELIVERY_FREE` (base settings, default on):
+  `delivery.charged_paise` returns 0, so the quote answers `amount_paise: 0`
+  (plus `courier_paise`, the courier's rate kept on the quote row) and the
+  order, its Delivery line and the shipment carry 0. The pincode check and
+  the COD check are unchanged. The test settings turn it off so the charged
+  arithmetic stays tested; `test_delivery.py` has the free path. The cart
+  and address step read "Free"; the product page "Free delivery."
+- **Mantras' icon is the mala**; it was Darshan's diya.
+- **Bhakti's deity chips are Consult's chips** — measured equal in the
+  browser: 11 px, bold, uppercase, same padding.

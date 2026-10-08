@@ -314,6 +314,9 @@ REFERRAL_AI_DAYS = int(os.environ.get("REFERRAL_AI_DAYS", "3"))
 # into WhatsApp and lives for months, so the shape of it is a contract and
 # belongs somewhere one change fixes every link made after it.
 APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL", "https://1namo.com")
+# Delivery is free to the seeker (8 Oct 2026, Rahul); Namo pays the
+# courier. Off ("0") charges the courier's quoted rate, as before.
+DELIVERY_FREE = os.environ.get("DELIVERY_FREE", "1") == "1"
 # Cash on delivery (6 Oct 2026; amounts in docs/01-PRD.md §4.6). The fee is
 # basis points of the order total, delivery included, rounded up to the
 # rupee. A cap on one COD order's total, and on how many may be undelivered

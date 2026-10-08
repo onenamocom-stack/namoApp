@@ -184,7 +184,7 @@ export default function DeliveryStep({ lines, nonce = 0, onQuote }) {
           {asking || !quote
             ? 'Checking delivery to this pincode…'
             : quote.ok
-              ? `Delivery ₹${rupees(quote.amount_paise)}${
+              ? `${quote.amount_paise === 0 ? 'Free delivery' : `Delivery ₹${rupees(quote.amount_paise)}`}${
                   quote.etd_days ? ` · arrives in about ${quote.etd_days} days` : ''
                 }`
               : quote.reason}

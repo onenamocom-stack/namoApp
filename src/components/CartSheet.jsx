@@ -164,7 +164,8 @@ export default function CartSheet() {
             <div className="flex items-baseline justify-between">
               <span className="caps-sm t-faint">Delivery</span>
               <span className="text-meta tnum t-sub">
-                {delivery ? `₹${rupees(delivery.amountPaise)}` : '—'}
+                {/* Free while Namo pays the courier (8 Oct 2026). */}
+                {!delivery ? '—' : delivery.amountPaise === 0 ? 'Free' : `₹${rupees(delivery.amountPaise)}`}
               </span>
             </div>
             {cod && (

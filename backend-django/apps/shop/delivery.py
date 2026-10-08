@@ -181,7 +181,9 @@ def make_quote(profile_id, address_id, lines):
         expires_at=timezone.now() + QUOTE_TTL,
     )
     return {
-        "ok": True, "quote_id": str(quote.id), "amount_paise": quote.amount_paise,
+        "ok": True, "quote_id": str(quote.id), "amount_paise": charged_paise(quote),
+        # What the courier charges Namo, whether or not the seeker pays it.
+        "courier_paise": quote.amount_paise,
         "courier": found["courier"], "etd_days": found["etd_days"],
         "cod_available": cod, "cod_fee_bps": settings.COD_FEE_BPS,
         "cod_max_paise": settings.COD_MAX_PAISE,
@@ -204,7 +206,15 @@ def use_quote(profile_id, address_id, quote_id, weight_grams):
     burned = ShippingQuote.objects.filter(pk=quote.pk, used_at=None).update(used_at=timezone.now())
     if not burned:
         raise DeliveryRefused(stale)
-    return address, quote.amount_paise, quote.cod_available
+    return address, charged_paise(quote), quote.cod_available
+
+
+def charged_paise(quote):
+    """What the seeker pays for delivery: nothing while `DELIVERY_FREE` is on
+    (8 Oct 2026, Rahul: "we will not charge delivery cost") — Namo pays the
+    courier. The quote still keeps the courier's rate; the pincode is still
+    checked, and cash on delivery still asked, exactly as before."""
+    return 0 if settings.DELIVERY_FREE else quote.amount_paise
 
 
 def order_follows_shipment(order_id, status):

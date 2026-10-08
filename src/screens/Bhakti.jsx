@@ -61,7 +61,7 @@ const KINDS = [
   { key: 'status', label: 'Status', icon: 'share', hue: '#f5782c', help: 'Pick a picture, then share it to WhatsApp → Status.' },
   { key: 'wallpaper', label: 'Wallpapers', icon: 'image', hue: '#8e44ad', help: 'Save it, then set it from your photo gallery.' },
   { key: 'bhajan', label: 'Bhajans', icon: 'sound', hue: '#c2185b', help: 'Saves as an audio file you can play anywhere.' },
-  { key: 'mantra', label: 'Mantras', icon: 'pooja', hue: '#1e9e5a', help: 'Tap play, say how many times, and it repeats that many.' },
+  { key: 'mantra', label: 'Mantras', icon: 'mala', hue: '#1e9e5a', help: 'Tap play, say how many times, and it repeats that many.' },
   /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
      screen. It sits in this row anyway (25 Sep 2026): the row answers "pick
      a devotional thing to do", and the shrine is the one people came for.
@@ -294,14 +294,16 @@ export default function Bhakti() {
       </div>
 
       {deities.length > 1 && (
-        <div className="rail mt-3 gap-1.5 px-4">
+        /* The same chip as Consult's categories — face, size and gap
+           (8 Oct 2026, Rahul). */
+        <div className="rail mt-3 gap-2 px-4">
           {deities.map((d) => (
             <button
               key={d}
               type="button"
               aria-pressed={activeDeity === d}
               onClick={() => setDeity(d)}
-              className="pill flex-none"
+              className="pill caps-sm flex-none"
             >
               {d}
             </button>
