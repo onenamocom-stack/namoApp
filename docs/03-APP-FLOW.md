@@ -424,12 +424,18 @@ top to bottom —
 - A **gold band** across the shrine (`public/puja/gold-band.webp`, Canva design
   DAHXQAKkIg0, keyed). Its two pendants carry the **ghantis**, which ring when
   touched.
-- The **mandir's plaque** hung from the band: "Shri Ganesh Mandir", and under it
-  the murti's name and its place in the stack (1/4). Tapping it opens the
-  **murti sheet**, which is **the only place the image attribution appears**,
-  so it cannot be removed without removing the images. The plaque names the
-  deity's mandir, not a real temple, because the murtis are paintings, not
-  photographs of a temple's murti.
+- The **mandir's plaque** on the band: the temple's name and, under it with a
+  pin, its location — **set per murti in the console** (8 Oct 2026, Rahul:
+  each murti will be a photo from a different temple). A murti with no temple
+  set reads "Shri Ganesh Mandir" and its title. Its place in the stack (1/4)
+  follows. Tapping it opens the **murti sheet**, which is **the only place
+  the image attribution appears**, so it cannot be removed without removing
+  the images.
+- The deities, their murtis and every plaque come from the console
+  (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
+  page shows the eight deities it shipped with. New temple photos: portrait,
+  about 1080 × 1440 (3:4), the murti in the middle — the plaque covers the top
+  tenth and the thali the bottom sixth.
 - The **murti** fills the page over a blurred, darkened copy of itself, so a
   painting that does not match the phone's shape still reaches every edge.
   `setting:croppedDeityImage` fills and crops instead.

@@ -1253,6 +1253,32 @@ A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
 (`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;
 `GET /v1/bhakti/assets/<id>/file/` signs a ten-minute link for an owner.
 
+### 5.2c-bis `darshan_deities`, `darshan_images` — the darshan page (8 Oct 2026)
+
+```sql
+create table darshan_deities (            -- one pill on the darshan page
+  id uuid primary key, name text not null, name_hi text not null default '',
+  sort integer not null default 0, active boolean not null default true,
+  created_at timestamptz not null
+);
+create table darshan_images (              -- one murti, from one temple
+  id uuid primary key,
+  deity_id uuid not null references darshan_deities(id),   -- PROTECT
+  image_url text not null,      -- '/deities/x.webp' (shipped) or an R2 URL
+  temple text not null default '', temple_hi text not null default '',
+  location text not null default '', location_hi text not null default '',
+  title text not null default '', credit text not null default '',
+  sort integer not null default 0, active boolean not null default true,
+  created_at timestamptz not null
+);
+```
+
+Edited in the console (**Darshan deities**, **Darshan images**: upload, temple,
+location, Hindi, order, active; Fulfilment tier; nothing deleted). Read by
+`GET /v1/bhakti/darshan/` (anonymous): active deities with at least one
+active murti, in order. Seeded by `bhakti/0004` with the eight deities and 28
+murtis the app shipped with. RLS on, no policies.
+
 ### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
 
 ```sql
