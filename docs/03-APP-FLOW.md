@@ -488,7 +488,13 @@ be edited.
 **Sharing a blog or a product** shows its own card — title, a line of the
 text, and the cover (or product photo) as the thumbnail — in WhatsApp and
 anywhere else that previews links (6 Oct 2026; every link previewed as
-Namo's front page).
+Namo's front page). **So does a Bhakti item** (8 Oct 2026): its share
+message links to `/bhakti/s/<id>?ref=<code>`, which previews with its title
+and, for a status or wallpaper, its picture (a priced one shows only its
+public preview); opened, it is the Bhakti screen, or sign-up with the code
+for somebody signed out. A status or wallpaper's card Share sends the
+picture itself with the message as its caption, where the phone can share
+files.
 
 **Blogs on the feed and at `/read/:id`** (6 Oct 2026): the uploaded cover,
 16:9 on both, whole — on the feed card the title sits under it, as YouTube

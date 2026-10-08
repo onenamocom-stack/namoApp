@@ -117,3 +117,36 @@ class TestProduct:
         assert 'og:title" content="Blue Sapphire · ₹18,500"' in page
         assert f'og:image" content="https://1namo.com/og/product/{p.id}.jpg"' in page
         assert client.get(f"/og/product/{p.id}.jpg").status_code == 200
+
+
+@pytest.mark.django_db
+class TestBhakti:
+    """A shared Bhakti item carries its picture (8 Oct 2026)."""
+
+    def _asset(self, **kw):
+        from apps.bhakti.models import BhaktiAsset
+
+        row = dict(kind="status", title="Ganesh Chaturthi", media_url="https://cdn.example/g.png",
+                   artist="x", licence="x", source="x")
+        row.update(kw)
+        return BhaktiAsset.objects.create(**row)
+
+    def test_a_status_previews_with_its_picture(self, client, network):
+        a = self._asset()
+        page = client.get(f"/bhakti/s/{a.id}").content.decode()
+        assert 'og:title" content="Ganesh Chaturthi"' in page and '<div id="root"></div>' in page
+        assert f'og:image" content="https://1namo.com/og/bhakti/{a.id}.jpg"' in page
+        response = client.get(f"/og/bhakti/{a.id}.jpg")
+        assert response.status_code == 200 and response["Content-Type"] == "image/jpeg"
+
+    def test_a_priced_picture_shows_only_its_preview(self, client, network):
+        a = self._asset(price_paise=4_900, media_url="private/key.png", preview_url=None)
+        page = client.get(f"/bhakti/s/{a.id}").content.decode()
+        assert 'og:image" content="https://1namo.com/og.png"' in page
+        assert client.get(f"/og/bhakti/{a.id}.jpg").status_code == 302
+
+    def test_a_bhajan_uses_the_site_image(self, client, network):
+        a = self._asset(kind="bhajan", media_url="https://cdn.example/song.mp3")
+        page = client.get(f"/bhakti/s/{a.id}").content.decode()
+        assert 'og:title" content="Ganesh Chaturthi"' in page
+        assert 'og:image" content="https://1namo.com/og.png"' in page

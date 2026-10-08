@@ -263,6 +263,11 @@ function SessionGate() {
     // Support stays open signed out: the person who cannot sign in is the
     // one who most needs the phone number.
     if (pathname.startsWith('/onboarding') || fromPro || pathname === '/support') return
+    // A shared Bhakti link carries the sharer's code: sign-up keeps it.
+    if (pathname.startsWith('/bhakti/s/')) {
+      navigate(`/onboarding${window.location.search}`, { replace: true })
+      return
+    }
     navigate('/onboarding', { replace: true })
   }, [
     session,
@@ -359,6 +364,9 @@ function Frame() {
                 <Route path="/read/:id" element={<Article />} />
                 {/* A product's own page (6 Oct 2026), by slug or id. */}
                 <Route path="/shop/p/:key" element={<ProductPage />} />
+                {/* A shared Bhakti item's address: the link previews with
+                    its picture; opened, it is the Bhakti screen. */}
+                <Route path="/bhakti/s/:id" element={<Navigate to="/bhakti" replace />} />
                 <Route path="/search" element={<SearchScreen />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make

@@ -150,6 +150,37 @@ def product_page(request, key):
                        image=image, url=url, kind="product"), url)
 
 
+_PICTURES = ("status", "wallpaper")
+
+
+def _bhakti_picture(asset):
+    """The picture a Bhakti item's preview may show: the image itself when it
+    is free, its public preview when it is priced (the full file is in the
+    private bucket and is not given away by a link), nothing for audio."""
+    if asset.kind not in _PICTURES:
+        return None
+    source = asset.preview_url if asset.price_paise else asset.media_url
+    if source and source.startswith("/") and not asset.price_paise:
+        return f"{_site()}{source}"   # art shipped with the site itself
+    return source if source and source.startswith("http") else None
+
+
+def bhakti_page(request, asset_id):
+    """A shared Bhakti item (8 Oct 2026): its own address, so WhatsApp's
+    preview shows the picture with the title, not the site's card."""
+    from apps.bhakti.models import BhaktiAsset
+
+    url = f"{_site()}/bhakti/s/{asset_id}"
+    asset = BhaktiAsset.objects.filter(pk=asset_id, active=True).first()
+    if asset is None:
+        return _page(_tags(title="Namo", description="Bhajans, mantras and daily darshan in one app.",
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    image = (f"{_site()}/og/bhakti/{asset.id}.jpg" if _bhakti_picture(asset)
+             else f"{_site()}{FALLBACK_IMAGE}")
+    return _page(_tags(title=asset.title, description="Bhajans, mantras and daily darshan in one app.",
+                       image=image, url=url, kind="website"), url)
+
+
 def og_image(request, kind, item_id):
     """A 1200 × 630 JPEG cut from a blog cover or a product photo — light
     enough for every link preview. Any failure redirects to the site's own
@@ -157,6 +188,11 @@ def og_image(request, kind, item_id):
     if kind == "blog":
         row = Content.objects.filter(pk=item_id, status=Content.Status.LIVE).first()
         source = row.media_url if row else None
+    elif kind == "bhakti":
+        from apps.bhakti.models import BhaktiAsset
+
+        row = BhaktiAsset.objects.filter(pk=item_id, active=True).first()
+        source = _bhakti_picture(row) if row else None
     else:
         row = Product.objects.filter(pk=item_id, active=True).first()
         source = row.image_url if row else None

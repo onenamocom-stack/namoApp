@@ -43,7 +43,8 @@ if settings.PUBLIC_API_ENABLED:
         # own addresses, and a redirect would break the shared link.
         re_path(r"^read/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.blog_page, name="share-blog"),
         re_path(r"^shop/p/(?P<key>[^/]+)/?$", share.product_page, name="share-product"),
-        re_path(r"^og/(?P<kind>blog|product)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
+        re_path(r"^bhakti/s/(?P<asset_id>[0-9a-fA-F-]{36})/?$", share.bhakti_page, name="share-bhakti"),
+        re_path(r"^og/(?P<kind>blog|product|bhakti)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
     ]
 
 if settings.ADMIN_ENABLED:

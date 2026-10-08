@@ -6078,3 +6078,19 @@ look: `04-UI-UX`.
 - **Mantras' icon is the mala**; it was Darshan's diya.
 - **Bhakti's deity chips are Consult's chips** — measured equal in the
   browser: 11 px, bold, uppercase, same padding.
+
+## 74. Bhakti shares carry their picture; Darshan pills — 8 Oct 2026
+
+Live. Screens: `docs/03-APP-FLOW.md`; look: `04-UI-UX`.
+
+- **A shared Bhakti item has its own preview page**, `/bhakti/s/<id>`
+  (`share.bhakti_page`, Firebase rewrite to namo-api), with
+  `/og/bhakti/<id>.jpg` cut from a free status or wallpaper, the public
+  preview of a priced one, or the site's card for audio. The share message
+  links there with the sharer's code; the app route goes on to `/bhakti`,
+  and the gate takes a signed-out visitor to `/onboarding?ref=…`.
+- **A status or wallpaper card's Share sends the image file** with the
+  message as caption (`shareAsset`); the status composer already did.
+- **Darshan's deity pills** use the chip type (`caps-sm`), white on gold kept.
+- Tests: `test_share_previews.py` gains three. Not checked in WhatsApp
+  itself; WhatsApp caches a link's preview, so test with a new item.

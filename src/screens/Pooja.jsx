@@ -362,10 +362,12 @@ export default function Pooja() {
                     setDeity(d)
                     setPic(0)
                   }}
-                  className={`block rounded-full bg-white px-4 py-2 text-[15px] leading-none transition duration-150 active:scale-95 ${
+                  // The type is every other chip's — Consult's, Bhakti's
+                  // (8 Oct 2026, Rahul); the white-on-gold face stays.
+                  className={`caps-sm block rounded-full bg-white px-4 py-2.5 transition duration-150 active:scale-95 ${
                     on
-                      ? 'font-semibold text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
-                      : 'font-medium text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
+                      ? 'text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
+                      : 'text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
                   }`}
                 >
                   {lang === 'hi' ? d.nameHi : d.name}

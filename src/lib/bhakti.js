@@ -395,10 +395,14 @@ function myInviteCode() {
 }
 
 const LISTENED = new Set(['bhajan', 'mantra', 'tune'])
+const PICTURES = new Set(['status', 'wallpaper'])
 
 export async function inviteMessage(asset) {
   const code = await myInviteCode()
-  const link = code ? `${SEEKER_APP_URL}onboarding?ref=${code}` : SEEKER_APP_URL
+  /* The item's own address (8 Oct 2026): WhatsApp previews it with the
+     picture and title, where the sign-up link showed the site's card. The
+     code rides along; a signed-out visitor lands on sign-up with it. */
+  const link = `${SEEKER_APP_URL}bhakti/s/${asset.id}${code ? `?ref=${code}` : ''}`
   const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on Namo` : `“${asset.title}”, from Namo`
   return [
     `${what}: bhajans, mantras and daily darshan in one app.`,
@@ -410,6 +414,22 @@ export async function inviteMessage(asset) {
  *  Returns the sentence to toast, or null when there is nothing to say. */
 export async function shareAsset(asset) {
   const text = await inviteMessage(asset)
+  /* A status or wallpaper goes out as the picture itself, the message as its
+     caption (8 Oct 2026: a link alone arrived with no image). Audio, and a
+     phone that cannot share files, send the message — whose link previews
+     with the picture anyway. */
+  if (PICTURES.has(asset.kind) && asset.url) {
+    try {
+      const res = await fetch(asset.url)
+      if (res.ok) {
+        const blob = await res.blob()
+        const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg')
+        if (await shareFile(blob, `namo-${asset.kind}.${ext}`, text)) return null
+      }
+    } catch {
+      /* fall through to the message */
+    }
+  }
   if (navigator.share) {
     try {
       await navigator.share({ text })
