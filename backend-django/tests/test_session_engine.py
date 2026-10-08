@@ -64,14 +64,11 @@ class TestConnectPhase:
         monkeypatch.setattr(video_services, "both_present", lambda s: False)
         assert services.heartbeat(SEEKER, session.id)["connecting"] is True
         monkeypatch.setattr(video_services, "both_present", lambda s: True)
-        moved = []
-        monkeypatch.setattr(video_services, "clock_started", lambda s: moved.append(s.id))
         result = services.heartbeat(SEEKER, session.id)
         assert result["connecting"] is False and result["seconds_left"] > 0
         session.refresh_from_db()
         minutes = session.hold_paise // session.rate_paise
         assert session.expires_at - session.started_at == timezone.timedelta(minutes=minutes)
-        assert moved == [session.id]  # the room's end moved to the paid end
 
     def test_starting_twice_starts_once(self, pro_user):
         session = _call_session(pro_user)

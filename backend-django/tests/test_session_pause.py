@@ -133,7 +133,8 @@ class TestPausedCallIsSilent:
         sent = []
         monkeypatch.setattr(providers, "is_configured", lambda: True)
         monkeypatch.setattr(providers, "set_can_send", lambda name, can: sent.append(can))
-        monkeypatch.setattr(providers, "set_room_expiry", lambda name, exp: None)
+        monkeypatch.setattr(providers, "eject", lambda name, ids: None)
+        monkeypatch.setattr(providers, "delete_room", lambda name: None)
         _, service = pro_user
         _fund(SEEKER, RATE * 2)
         t0 = timezone.now()

@@ -113,7 +113,7 @@ def join(actor_id, session_id, now=None):
             return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
                            status=session.status)
         minutes = (session.hold_paise or 0) // session.rate_paise + (session.free_seconds or 0) / 60
-        room_until = accepted + timezone.timedelta(seconds=CONNECT_SECONDS, minutes=minutes)
+        provisional = accepted + timezone.timedelta(seconds=CONNECT_SECONDS, minutes=minutes)
     elif session.expires_at is None or session.expires_at + timezone.timedelta(
             seconds=_pause_seconds()) <= stamp:
         # The sweeper will settle it within the minute. Refusing here
@@ -122,7 +122,10 @@ def join(actor_id, session_id, now=None):
         return _refuse(REFUSAL_EXPIRED, session=session, actor_id=actor_id,
                        status=session.status)
     else:
-        room_until = session.expires_at + timezone.timedelta(seconds=_pause_seconds())
+        provisional = None
+    # The room and the tokens last ROOM_BACKSTOP; the settle is what closes
+    # the room (close_room). See providers.create_room.
+    room_until = stamp + ROOM_BACKSTOP
 
     name = room_name(session.id)
     try:
@@ -160,7 +163,7 @@ def join(actor_id, session_id, now=None):
         # a phone that has not reloaded must not be able to do that. The
         # money is unaffected: billing waits for `started_at`, and current
         # apps read `connecting`, not this, to know the clock has not begun.
-        "expires_at": (session.expires_at or room_until).isoformat(),
+        "expires_at": (session.expires_at or provisional).isoformat(),
         "connecting": session.started_at is None,
         "is_owner": is_consultant,
         # The call screen asks the browser for the microphone only.
@@ -206,6 +209,11 @@ def both_present(session):
     return want <= ids
 
 
+# How long a room may live at most. Far past any call's money; the settle
+# closes the room long before (close_room).
+ROOM_BACKSTOP = timezone.timedelta(hours=6)
+
+
 def _pause_seconds():
     from apps.chat.services import PAUSE_SECONDS
 
@@ -227,21 +235,22 @@ def hold_room(session, paused):
                      "pause" if paused else "resume", session.id, exc)
 
 
-def clock_started(session):
-    """The paid minutes began: the room now ends exactly when they do.
-    Until this the room was cut to the connect window plus every minute
-    held, which would otherwise outlast the money by up to that window."""
-    if not providers.is_configured() or session.expires_at is None:
+def close_room(session_id, seeker_id, consultant_id):
+    """The session settled: put both people out of the call and delete the
+    room (9 Oct 2026). THIS is what ends a call when the money does — the
+    server's clock, the one both screens show — not Daily's room expiry,
+    which Daily freezes when the meeting starts. Run after the settle
+    commits. A failure is logged; the money is already settled, and the
+    room's backstop expiry still ends it."""
+    if not providers.is_configured():
         return
+    name = room_name(session_id)
+    ids = [str(x).replace("-", "")[:36] for x in (seeker_id, consultant_id)]
     try:
-        from apps.chat.services import PAUSE_SECONDS
-
-        # Plus the pause that waits for a recharge (7 Oct 2026): the room
-        # outlives the money by that long, and is moved on again by a
-        # recharge. The settle, not the room, is what stops the meter.
-        providers.set_room_expiry(room_name(session.id), session.expires_at + timezone.timedelta(
-            seconds=PAUSE_SECONDS))
+        providers.eject(name, ids)
     except providers.UpstreamError as exc:
-        # The settle is still on time — the money never depended on the
-        # room. Logged, because a room outliving its money is worth knowing.
-        logger.error("[video] could not move room expiry for %s: %s", session.id, exc)
+        logger.error("[video] could not eject from %s: %s", name, exc)
+    try:
+        providers.delete_room(name)
+    except providers.UpstreamError as exc:
+        logger.error("[video] could not delete room %s: %s", name, exc)

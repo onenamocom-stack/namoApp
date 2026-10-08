@@ -3,7 +3,7 @@
 **What is actually true right now.** Front end and backend in one file, because
 two files claiming to describe reality means neither gets trusted.
 
-Updated 8 Oct 2026.
+Updated 9 Oct 2026.
 
 | Phase | State |
 |---|---|
@@ -6105,3 +6105,32 @@ is hidden on the card and the profile; the rating shows. The roster rows carry `
 (the profile photo, one subquery in `public_consultants`). One consultant's
 `languages` was saved as the string `"['Hindi', 'English']"`; the client
 reads either shape now, and the row itself is still wrong in the database.
+
+## 76. A recharged call no longer hangs up; one timer, one End — 9 Oct 2026
+
+**The bug, from the logs (session 021af8e1, 8 Oct).** The recharge worked —
+5 minutes added at 18:34:37, the 52 s pause skipped — and Daily hung up at
+~18:35:00 anyway: the room's `exp` when the meeting STARTED (18:34:57).
+**Daily fixes a meeting's end when it starts and ignores a later change to
+the room's `exp`** (`eject_at_room_exp`), so every "move the room's end"
+since 5 Oct did nothing for a meeting already running. Its "The meeting
+will end in 1:59" banner was counting to that frozen end.
+
+- **The room is a backstop now**: `exp` six hours out (`ROOM_BACKSTOP`),
+  tokens the same. `providers.set_room_expiry` and `clock_started` are gone.
+- **The settle closes the call**: `end_session` of a call queues
+  `video.close_room` on commit — Daily's `POST /rooms/<name>/eject` by both
+  user ids, then `DELETE /rooms/<name>`. Failures are logged; the money is
+  settled either way. The sweeper and the heartbeat both settle, so a call
+  ends within seconds of its pause running out.
+- **The call screen** drives our own iframe with `@daily-co/daily-js`
+  (`Daily.wrap`, 73 KB gzip, its own chunk): Daily's Leave is hidden;
+  `left-meeting` asks the heartbeat — ended leaves, still live offers
+  Rejoin. If the library fails, the plain embed loads as before.
+- **One bar for both people**: time left, Recharge (seeker, last minute
+  only), End call. The recharge panel opens under it; the pause overlay
+  has no End of its own. The chat's meter row got the same Recharge
+  button; the separate "0:45 left. Recharge" bar is gone from both.
+- **Not walked on a phone yet**, and the eject and delete endpoints are
+  unseen from our account. Walk one paid video call: recharge in the last
+  minute, recharge in the pause, and let one run out.

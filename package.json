@@ -14,6 +14,7 @@
     "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.93.0",
     "@supabase/supabase-js": "^2.112.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

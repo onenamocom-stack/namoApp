@@ -28,14 +28,14 @@ def daily(settings, monkeypatch):
     """Daily, answering. `present` is who the room says is in it."""
     settings.DAILY_API_KEY = "test-key"
     settings.DAILY_DOMAIN = "1namo.daily.co"
-    state = {"present": set(), "expiry_moves": []}
+    state = {"present": set(), "closed": []}
     monkeypatch.setattr(providers, "get_room", lambda name: None)
     monkeypatch.setattr(providers, "create_room",
                         lambda name, exp: {"url": f"https://1namo.daily.co/{name}"})
     monkeypatch.setattr(providers, "meeting_token", lambda *a, **k: f"tok-{k.get('user_id')}")
     monkeypatch.setattr(providers, "present_user_ids", lambda name: set(state["present"]))
-    monkeypatch.setattr(providers, "set_room_expiry",
-                        lambda name, exp: state["expiry_moves"].append((name, exp)))
+    monkeypatch.setattr(providers, "eject", lambda name, ids: state["closed"].append(("eject", name, set(ids))))
+    monkeypatch.setattr(providers, "delete_room", lambda name: state["closed"].append(("delete", name)))
     from django.core.cache import cache
 
     cache.clear()
@@ -80,7 +80,7 @@ def _roster_row(people):
 
 @pytest.mark.django_db
 class TestAVideoCallStory:
-    def test_ring_answer_connect_talk_end(self, people, daily):
+    def test_ring_answer_connect_talk_end(self, django_capture_on_commit_callbacks, people, daily):
         _fund(SEEKER, RATE * 10)
         asked = people["ask"]()
         assert asked["ok"] and asked["mode"] == "call"
@@ -114,16 +114,20 @@ class TestAVideoCallStory:
         daily["present"] = {_id(PRO), _id(SEEKER)}
         hb = people["post"]("pro", f"/v1/chat/sessions/{sid}/heartbeat/")
         assert hb["connecting"] is False and hb["seconds_left"] > 9 * 60
-        assert len(daily["expiry_moves"]) == 1
+        assert daily["closed"] == []  # nothing closes a room but the settle
 
         # Talk two minutes (moved on the clock, not waited), then end.
         Session.objects.filter(pk=sid).update(
             # 1:50 ago: ending now lands inside the fourth 30-second block.
             started_at=timezone.now() - 110 * SEC,
             expires_at=timezone.now() + 8 * 60 * SEC)
-        ended = people["post"]("seeker", f"/v1/chat/sessions/{sid}/end/")
+        with django_capture_on_commit_callbacks(execute=True):
+            ended = people["post"]("seeker", f"/v1/chat/sessions/{sid}/end/")
         assert ended["charged_paise"] == 2 * RATE
         assert _balance(SEEKER) == 8 * RATE
+        # The settle put both of them out and deleted the room (9 Oct 2026).
+        assert [c[0] for c in daily["closed"]] == ["eject", "delete"]
+        assert daily["closed"][0][2] == {_id(PRO), _id(SEEKER)}
 
         # The consultant earned it, labelled as a video call.
         row = EarningsLedger.objects.get(consultant_id=PRO)

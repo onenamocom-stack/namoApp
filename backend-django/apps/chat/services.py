@@ -646,6 +646,13 @@ def end_session(actor_id, session_id, reason=None, now=None):
             return {"ok": True, "already_ended": True,
                     "charged_paise": settled.charged_paise}
 
+        if session.mode != Session.Mode.CHAT:
+            # A call ends when its session does, for both people at once.
+            from apps.video import services as video_services
+
+            ids = (session.id, session.seeker_id, session.consultant_id)
+            transaction.on_commit(lambda: video_services.close_room(*ids))
+
         # The unused minutes come back. ref_type='refund' and 013's unique
         # index mean one per order — exactly right: one settle per session.
         if refund > 0:
@@ -704,9 +711,8 @@ def heartbeat(actor_id, session_id, now=None):
         Session.objects.filter(pk=session.id).update(heartbeat_at=now)
         from apps.video import services as video_services
 
-        if video_services.both_present(session) and start_clock(session.id, now=now):
-            session.refresh_from_db()
-            video_services.clock_started(session)
+        if video_services.both_present(session):
+            start_clock(session.id, now=now)
         session.refresh_from_db()
         if session.started_at is None:
             return {"ok": True, "live": True, "connecting": True, "seconds_left": None,
@@ -796,7 +802,6 @@ def extend_session(seeker_id, session_id, now=None):
     if session.mode != Session.Mode.CHAT:
         from apps.video import services as video_services
 
-        video_services.clock_started(session)
         if was_paused:
             video_services.hold_room(session, paused=False)
     out = _clock(session, now)

@@ -522,16 +522,18 @@ min free" in place of their rate, and their page says "your first 3 minutes
 free"; a request goes through with an empty wallet. After the seeker's first
 session they show their rates like everyone else.
 
-**Recharge without leaving the conversation** (7 Oct 2026). In a chat or
-call's last minute the seeker gets a bar — "0:45 left. Recharge to keep
-talking." — whose Recharge opens three amounts (about 5, 10 and 20 minutes
+**Recharge without leaving the conversation** (7 Oct 2026). A chat or call
+has ONE timer and ONE end button, the same row for both people (9 Oct 2026,
+Rahul: the call showed three timers and Daily's own Leave behind ours —
+Daily's Leave is hidden now). In the last minute a **Recharge** button
+appears in that row for the seeker, and nowhere else; it opens three amounts (about 5, 10 and 20 minutes
 at this rate, at least ₹100) and Razorpay over the conversation; the minutes
 are added and the clock runs on. At 0:00 the session **pauses**: the call is
 muted for both people and covered, the chat's composer is replaced by
 "Paused until the balance is recharged", and the seeker sees "Your balance
 has run out. If you want to continue talking, please recharge your wallet"
-with a two-minute countdown, the amounts, *Continue with wallet* when the
-wallet already covers a minute, and *End session*. The consultant sees
+with a two-minute countdown, the amounts, and *Continue with wallet* when
+the wallet already covers a minute; the row's End ends it. The consultant sees
 "Paused. Waiting for them to recharge" with the same countdown and *End
 session*. A recharge resumes both screens on their next beat (five seconds
 on a call). The countdown reaching zero ends the session for both.

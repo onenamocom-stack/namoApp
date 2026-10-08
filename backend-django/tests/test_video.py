@@ -207,23 +207,24 @@ class TestWhenThereIsNoDoor:
 
 @pytest.mark.django_db
 class TestTheRoomDiesWithTheMoney:
-    def test_the_room_expires_when_the_hold_does(self, people, configured, fake_daily):
-        """The one that makes per-minute billing mean anything. Without
-        it the sweeper settles on time and the two of them keep talking
-        for free."""
+    def test_the_room_lives_only_as_a_backstop(self, people, configured, fake_daily):
+        """The room's own end is a far backstop. The call ends when the
+        session settles, which ejects both and deletes the room
+        (test_session_scenarios); a room cut to the money hung up a call
+        the seeker had just recharged."""
         s = _session(minutes=7)
         services.join(SEEKER, s.id)
         _name, exp = fake_daily["rooms"][0]
-        # Plus the pause that waits for a recharge (7 Oct 2026); the pause
-        # is silenced and never billed, and the settle stops the meter.
-        assert exp == s.expires_at + timezone.timedelta(seconds=PAUSE_SECONDS)
+        # A backstop, not the money (9 Oct 2026): Daily freezes a meeting's
+        # end when it starts, so the settle closes the room instead.
+        assert exp - timezone.now() > timezone.timedelta(hours=5)
 
-    def test_the_token_expires_with_it(self, people, configured, fake_daily):
-        """A token outliving the hold is a way back into a call that has
-        been paid for and closed."""
+    def test_the_token_lives_with_the_room(self, people, configured, fake_daily):
+        """A token cannot reopen a closed call: the settle deletes the room,
+        and join refuses a session that is not live."""
         s = _session(minutes=7)
         services.join(SEEKER, s.id)
-        assert fake_daily["tokens"][0][3] == s.expires_at + timezone.timedelta(seconds=PAUSE_SECONDS)
+        assert fake_daily["tokens"][0][3] - timezone.now() > timezone.timedelta(hours=5)
 
     def test_the_room_name_is_derived_and_stable(self, people, configured, fake_daily):
         s = _session()

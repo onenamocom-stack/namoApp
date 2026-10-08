@@ -5,11 +5,15 @@ import { rupees, useStore } from '../store.jsx'
 /**
  * Recharge without leaving the conversation (7 Oct 2026, owner).
  *
- * The seeker sees it in two moments. In the last minute a bar says how long
- * is left and offers a recharge; the new minutes run straight on. When the
- * money runs out the session PAUSES instead of ending — silent, not billed —
- * for two minutes, and this asks them to recharge. Nothing, and it ends at
- * the moment the money ran out. Either person may end it sooner.
+ * The seeker sees it in two moments. In the last minute the screen's own
+ * bar (the one with the timer) shows a Recharge button, and `open` brings
+ * this panel up; the new minutes run straight on. When the money runs out
+ * the session PAUSES instead of ending — silent, not billed — for two
+ * minutes, and this asks them to recharge. Nothing, and it ends at the
+ * moment the money ran out. Either person may end it sooner.
+ *
+ * It never shows a timer of its own while the session runs: one clock on
+ * a screen (9 Oct 2026, Rahul — the call showed three).
  *
  * The consultant sees only the pause, and that they are waiting.
  *
@@ -18,10 +22,10 @@ import { rupees, useStore } from '../store.jsx'
  */
 export default function SessionRecharge({
   sessionId, seeker, secondsLeft, resumeBy, rate, other, onExtended, onEnd, dark = false,
+  open = false, onClose,
 }) {
   const { topup, balance, showToast, refreshWallet, session } = useStore()
   const [busy, setBusy] = useState(false)
-  const [open, setOpen] = useState(false)
   const [pick, setPick] = useState(0)
   const [now, setNow] = useState(() => Date.now())
 
@@ -32,8 +36,7 @@ export default function SessionRecharge({
     return () => clearInterval(t)
   }, [paused])
 
-  const low = !paused && secondsLeft != null && secondsLeft > 0 && secondsLeft <= 60
-  if (!paused && !(seeker && (low || open))) return null
+  if (!paused && !(seeker && open)) return null
 
   const pauseLeft = paused ? Math.max(0, Math.round((new Date(resumeBy).getTime() - now) / 1000)) : 0
   const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -51,7 +54,7 @@ export default function SessionRecharge({
       for (let i = 0; i < 6; i++) {
         const res = await extendSession(sessionId)
         if (res?.ok) {
-          setOpen(false)
+          onClose?.()
           refreshWallet(session?.user?.id)
           showToast(`${res.minutes_added} min added. Carry on.`)
           onExtended(res)
@@ -88,24 +91,6 @@ export default function SessionRecharge({
             End session
           </button>
         )}
-      </div>
-    )
-  }
-
-  /* The seeker's last minute: one line, and the recharge behind a tap. */
-  if (low && !open) {
-    return (
-      <div className={`flex items-center justify-between gap-3 px-4 py-2 ${tone}`}>
-        <span className="text-micro font-semibold tnum">
-          {mmss(secondsLeft)} left. Recharge to keep talking.
-        </span>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex-none rounded-full bg-ok px-3 py-1 text-[11px] font-bold uppercase tracking-[0.06em] text-white"
-        >
-          Recharge
-        </button>
       </div>
     )
   }
@@ -163,7 +148,7 @@ export default function SessionRecharge({
             End session
           </button>
         ) : !paused ? (
-          <button type="button" onClick={() => setOpen(false)} className={`caps-sm ${faint}`}>
+          <button type="button" onClick={() => onClose?.()} className={`caps-sm ${faint}`}>
             Not now
           </button>
         ) : null}

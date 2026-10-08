@@ -8,19 +8,20 @@ import SessionRecharge from '../components/SessionRecharge.jsx'
 /**
  * The call. Both sides land here; the URL carries the session.
  *
- * FULL-BLEED, NO CHROME. A top bar here would eat the video and carry
- * one control that already exists inside the frame. What sits over it is
- * the one thing the frame cannot know: **how much time the money bought.**
+ * FULL-BLEED, ONE BAR. Over the video sits one row, the same for both
+ * people: the time left, Recharge (the seeker's last minute only) and End
+ * call. Daily's own Leave button is hidden (9 Oct 2026, Rahul: the call
+ * showed three timers and two end buttons).
  *
- * THE CLOCK READS THE SESSION, NOT THE ROOM. Daily is told to expire the
- * room at the same instant, but that is a copy — and a countdown
- * disagreeing with what was charged is the complaint per-minute billing
- * always gets. One number, from the row the money is settled against.
+ * ONE CLOCK: THE SESSION'S. The room's own expiry is a far backstop —
+ * Daily fixes a meeting's end when it starts and ignores later changes,
+ * which hung up a call the seeker had just recharged (8 Oct). The server
+ * closes the room when the session settles, and this screen hears it from
+ * the frame ('left-meeting') and from the heartbeat.
  *
- * ENDING IS THE SESSION'S JOB, NOT THE FRAME'S. Leaving the Daily call
- * closes a window; it does not settle anything. `endChat` is what stops
- * the meter, so Leave calls it and only then goes back. A tab closed
- * without leaving is handled by the sweeper, which is why the meter has
+ * ENDING IS THE SESSION'S JOB, NOT THE FRAME'S. `endChat` is what stops
+ * the meter, so End calls it and only then goes back. A tab closed
+ * without ending is handled by the sweeper, which is why the meter has
  * never depended on this screen.
  */
 export default function Call() {
@@ -34,7 +35,13 @@ export default function Call() {
   // When the pause for a recharge ends (7 Oct 2026): set by the heartbeat.
   const [resumeBy, setResumeBy] = useState(null)
   const [leaving, setLeaving] = useState(false)
+  // The recharge panel, opened from the bar in the last minute.
+  const [topup, setTopup] = useState(false)
+  // Out of the meeting while the session is still live: a rejoin offer.
+  const [dropped, setDropped] = useState(false)
   const ended = useRef(false)
+  const frameEl = useRef(null)
+  const daily = useRef(null)
 
   /* ASK UNTIL THERE IS A DOOR, not once.
   
@@ -170,8 +177,64 @@ export default function Call() {
     }
   }, [call, id, navigate, refreshWallet, session, showToast])
 
+  /* THE FRAME, driven by Daily's library over our own iframe (9 Oct 2026),
+     so our `allow` stays (a voice call asks for the microphone only),
+     Daily's Leave button is hidden, and we hear when the meeting ends.
+     If the library cannot load, the plain embed takes over, as before. */
+  const callUrl = call?.ok ? call.url : null
+  const callToken = call?.ok ? call.token : null
+  const audioOnly = !!call?.audioOnly
+  useEffect(() => {
+    const el = frameEl.current
+    if (!callUrl || !el) return undefined
+    let gone = false
+    let frame = null
+    const plain = (err) => {
+      console.error('[call] daily-js:', err?.message)
+      if (!gone && !el.getAttribute('src')) el.setAttribute('src', embedUrl({ url: callUrl, token: callToken }))
+    }
+    import('@daily-co/daily-js')
+      .then(({ default: Daily }) => {
+        if (gone) return undefined
+        frame = Daily.wrap(el, { showLeaveButton: false, showFullscreenButton: !audioOnly })
+        daily.current = frame
+        // Put out of the meeting: by the server closing the room when the
+        // session settled, or by something else. The heartbeat decides.
+        frame.on('left-meeting', () => !gone && !ended.current && setDropped(true))
+        return frame.join({ url: callUrl, token: callToken, ...(audioOnly ? { videoSource: false } : {}) })
+      })
+      .catch(plain)
+    return () => {
+      gone = true
+      daily.current = null
+      frame?.destroy().catch(() => {})
+    }
+  }, [callUrl, callToken, audioOnly])
+
+  /* Out of the meeting: over, or a drop. Over leaves; a drop offers Rejoin
+     beside End. */
+  useEffect(() => {
+    if (!dropped) return
+    heartbeat(id).then(async (h) => {
+      if (h?.live === false && !ended.current) {
+        ended.current = true
+        showToast('The call has ended.')
+        await refreshWallet(session?.user?.id)
+        navigate('/consult', { replace: true })
+      }
+    })
+  }, [dropped, id, navigate, refreshWallet, session, showToast])
+
+  const rejoin = () => {
+    setDropped(false)
+    daily.current
+      ?.join({ url: callUrl, token: callToken, ...(audioOnly ? { videoSource: false } : {}) })
+      .catch(() => setDropped(true))
+  }
+
   const finish = useCallback(async () => {
     if (leaving) return
+    ended.current = true
     setLeaving(true)
     try {
       await endChat(id)
@@ -254,21 +317,74 @@ export default function Call() {
     )
   }
 
+  const extended = (r) => {
+    setResumeBy(r.resume_by ?? null)
+    setCall((c) => ({ ...c, expiresAt: r.expires_at }))
+  }
+  const paused = secs === 0 && !!resumeBy
+  const lastMinute = !call.isOwner && !call.connecting && secs != null && secs > 0 && secs <= 60
+
   return (
     <div className="full-bleed relative h-full bg-ink">
+      {/* No src: Daily's library loads it (the effect above); the plain
+          embed is set only if the library fails. */}
       <iframe
+        ref={frameEl}
         title="Call"
-        src={embedUrl(call)}
         // A voice call asks for the microphone only — the browser never
         // offers the camera (7 Oct 2026; the token also refuses video).
         allow={call.audioOnly ? 'microphone; speaker; autoplay' : 'camera; microphone; fullscreen; speaker; display-capture; autoplay'}
         className="h-full w-full border-0"
       />
 
-      {/* Out of money (7 Oct 2026): the call is paused and silent, and
-          this covers Daily's controls so it stays that way, with the
-          recharge in the middle. The last minute gets a slim bar instead. */}
-      {secs === 0 && resumeBy ? (
+      {/* THE BAR: one timer, one End, for both people. */}
+      <div className="absolute inset-x-3 top-3 z-30 flex items-center gap-2">
+        <div className="pointer-events-none flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 backdrop-blur-sm">
+          <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
+            {call.connecting ? 'Connecting' : paused ? 'Paused' : `${left ?? '—'} left`}
+          </span>
+        </div>
+        <span className="flex-1" />
+        {lastMinute && (
+          <button
+            type="button"
+            onClick={() => setTopup(true)}
+            className="rounded-full bg-ok px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg active:scale-95"
+          >
+            Recharge
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={finish}
+          disabled={leaving}
+          className="rounded-full bg-live px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg transition-transform active:scale-95 disabled:opacity-60"
+        >
+          {leaving ? 'Ending…' : 'End call'}
+        </button>
+      </div>
+
+      {/* The amounts, under the bar, when Recharge is pressed. */}
+      {topup && !paused && (
+        <div className="absolute inset-x-3 top-14 z-20 overflow-hidden rounded-2xl">
+          <SessionRecharge
+            dark
+            open
+            onClose={() => setTopup(false)}
+            sessionId={id}
+            seeker
+            secondsLeft={secs}
+            resumeBy={resumeBy}
+            rate={call.ratePaise}
+            onExtended={extended}
+          />
+        </div>
+      )}
+
+      {/* Out of money (7 Oct 2026): paused and silent, Daily's controls
+          covered, the recharge (or the waiting) in the middle. */}
+      {paused && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl">
             <SessionRecharge
@@ -278,59 +394,34 @@ export default function Call() {
               secondsLeft={0}
               resumeBy={resumeBy}
               rate={call.ratePaise}
-              onExtended={(r) => {
-                setResumeBy(r.resume_by ?? null)
-                setCall((c) => ({ ...c, expiresAt: r.expires_at }))
-              }}
-              onEnd={finish}
+              onExtended={extended}
+              // No End here: the bar's End call is the one.
             />
           </div>
         </div>
-      ) : !call.connecting && !call.isOwner && secs != null && secs <= 60 ? (
-        <div className="absolute inset-x-3 top-14 z-10 overflow-hidden rounded-2xl">
-          <SessionRecharge
-            dark
-            sessionId={id}
-            seeker
-            secondsLeft={secs}
-            resumeBy={resumeBy}
-            rate={call.ratePaise}
-            onExtended={(r) => {
-              setResumeBy(r.resume_by ?? null)
-              setCall((c) => ({ ...c, expiresAt: r.expires_at }))
-            }}
-          />
+      )}
+
+      {/* Out of the meeting while the session is live: a dropped line. */}
+      {dropped && !paused && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/80 px-6 text-center">
+          <p className="text-meta font-semibold text-white">You are out of the call.</p>
+          <button
+            type="button"
+            onClick={rejoin}
+            className="rounded-full bg-ok px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-white"
+          >
+            Rejoin
+          </button>
         </div>
-      ) : null}
+      )}
 
-      {/* Over the video, top-left, out of the way of Daily's own
-          controls on the right. The number is the whole reason this
-          overlay exists. */}
-      <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/45 px-3 py-1.5 backdrop-blur-sm">
-        <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
-          {call.connecting ? 'Connecting' : secs === 0 ? 'Paused' : `${left ?? '—'} left`}
-        </span>
-      </div>
-
-      {/* Said once, at the foot, while the call connects: the clock waits
-          for both of you, so nobody pays for a ringing screen. */}
+      {/* Said once, while the call connects: the clock waits for both of
+          you, so nobody pays for a ringing screen. */}
       {call.connecting && (
-        <p className="pointer-events-none absolute inset-x-4 bottom-6 z-10 mx-auto max-w-xs rounded-full bg-black/55 px-4 py-2 text-center text-[12px] text-white backdrop-blur-sm">
+        <p className="pointer-events-none absolute inset-x-4 bottom-24 z-10 mx-auto max-w-xs rounded-full bg-black/55 px-4 py-2 text-center text-[12px] text-white backdrop-blur-sm">
           Billing starts when you are both in the call.
         </p>
       )}
-
-      {/* Leave is ours, not the frame's. Daily's own leave button closes
-          a window; it does not stop a meter. */}
-      <button
-        type="button"
-        onClick={finish}
-        disabled={leaving}
-        className="absolute right-3 top-3 z-10 rounded-full bg-live px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg transition-transform active:scale-95 disabled:opacity-60"
-      >
-        {leaving ? 'Ending…' : 'End call'}
-      </button>
     </div>
   )
 }

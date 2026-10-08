@@ -58,13 +58,14 @@ def get_room(name):
 
 
 def create_room(name, expires_at):
-    """A private two-person room that dies with the money.
+    """A private two-person room.
 
-    `exp` IS THE SESSION'S OWN `expires_at`, and `eject_at_room_exp`
-    enforces it. Without that pair the call continues after the hold runs
-    out — the sweeper settles the money on time and the two of them keep
-    talking for free, which is the one failure that makes per-minute
-    billing meaningless.
+    `exp` is a BACKSTOP, not the money (9 Oct 2026). Daily fixes a meeting's
+    end when the meeting starts and ignores a later change to `exp`, so a
+    room cut to the paid minutes hung up a call the seeker had just
+    recharged (seen live, 8 Oct). The session's settle closes the room
+    (`services.close_room`); `exp` only guarantees a room nobody closed
+    does not live for ever.
 
     `max_participants: 2` because this is a consultation, not a room
     whose link can be forwarded.
@@ -119,14 +120,6 @@ def meeting_token(room_name, user_name, is_owner, expires_at, audio_only=False, 
     return (data or {}).get("token")
 
 
-def set_room_expiry(name, expires_at):
-    """Move the room's end to the paid end, once the clock has started.
-    Raises UpstreamError; the caller decides whether that matters."""
-    return _call("POST", f"/rooms/{name}", {"properties": {
-        "exp": int(expires_at.timestamp()), "eject_at_room_exp": True,
-    }})
-
-
 def set_can_send(name, can_send):
     """Change what everybody in the room may send, live (7 Oct 2026): False
     while a session is paused for a recharge, so the pause is silent and not
@@ -135,6 +128,16 @@ def set_can_send(name, can_send):
     return _call("POST", f"/rooms/{name}/update-permissions", {
         "data": {"*": {"canSend": can_send}},
     })
+
+
+def eject(name, user_ids):
+    """Put these people out of the room's meeting now. Raises UpstreamError."""
+    return _call("POST", f"/rooms/{name}/eject", {"user_ids": list(user_ids)})
+
+
+def delete_room(name):
+    """Delete the room, so nobody can join it again. Raises UpstreamError."""
+    return _call("DELETE", f"/rooms/{name}")
 
 
 def present_user_ids(room_name):

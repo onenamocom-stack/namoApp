@@ -337,6 +337,7 @@ function Thread({ thread, myId, onBack }) {
   const [rate, setRate] = useState(null)
   // When the pause for a recharge ends, if the money runs out (7 Oct 2026).
   const [resumeBy, setResumeBy] = useState(null)
+  const [topup, setTopup] = useState(false)
   const endRef = useRef(null)
 
   useEffect(() => {
@@ -497,9 +498,22 @@ function Thread({ thread, myId, onBack }) {
             {left === null ? 'Starting' : paused ? 'Paused' : `${clock(left)} left`}
             {rate ? ` · ₹${rupees(rate)}/min` : ''}
           </span>
-          <button type="button" onClick={hangUp} className="caps-sm text-bad">
-            End session
-          </button>
+          <span className="flex items-center gap-3">
+            {/* The last minute only, the seeker only, and beside the one
+                timer — never a second bar repeating it (9 Oct 2026). */}
+            {thread.seeker_id === myId && !paused && left != null && left > 0 && left <= 60 && (
+              <button
+                type="button"
+                onClick={() => setTopup(true)}
+                className="rounded-full bg-ok px-3 py-1 text-[11px] font-bold uppercase tracking-[0.06em] text-white"
+              >
+                Recharge
+              </button>
+            )}
+            <button type="button" onClick={hangUp} className="caps-sm text-bad">
+              End session
+            </button>
+          </span>
         </div>
       )}
 
@@ -511,6 +525,8 @@ function Thread({ thread, myId, onBack }) {
           resumeBy={resumeBy}
           rate={rate}
           other={other}
+          open={topup}
+          onClose={() => setTopup(false)}
           onExtended={(r) => {
             setLeft(r.seconds_left)
             setResumeBy(r.resume_by ?? null)
