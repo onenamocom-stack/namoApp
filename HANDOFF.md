@@ -6098,8 +6098,10 @@ Live. Screens: `docs/03-APP-FLOW.md`; look: `04-UI-UX`.
 ## 75. The compact Consult card — 8 Oct 2026
 
 Live. Rahul's reference layout, our colours (`docs/03-APP-FLOW.md`,
-`04-UI-UX`). The card is now ~196 px tall with two actions, Call and Chat;
-video and booking are on the profile. The roster rows carry `avatar_url`
+`04-UI-UX`). The card is ~193 px tall and keeps all four actions (Video,
+Audio, Chat, Book — a first cut with only Call and Chat was reversed the
+same day: Rahul asked for the format, not fewer options). The review count
+is hidden on the card and the profile; the rating shows. The roster rows carry `avatar_url`
 (the profile photo, one subquery in `public_consultants`). One consultant's
 `languages` was saved as the string `"['Hindi', 'English']"`; the client
 reads either shape now, and the row itself is still wrong in the database.

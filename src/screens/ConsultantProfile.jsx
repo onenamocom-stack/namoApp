@@ -224,10 +224,9 @@ export default function ConsultantProfile() {
                   were a four-column bordered grid taking 90px of height to
                   say four short numbers. */}
               <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] t-faint tnum">
+                {/* The review count is hidden for now; the rating stays
+                    (8 Oct 2026, Rahul). */}
                 <span className="font-bold t-sub">{c.rating ?? 'New'}</span> rating
-                <span aria-hidden="true">·</span>
-                <span className="font-bold t-sub">{(c.reviewCount ?? 0).toLocaleString('en-IN')}</span>{' '}
-                reviews
                 <span aria-hidden="true">·</span>
                 <span className="font-bold t-sub">
                   {c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}

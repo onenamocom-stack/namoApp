@@ -282,11 +282,13 @@ Per consultant, one compact card (8 Oct 2026, Rahul's reference; it replaced
 a card with Video, Audio, Chat and Book buttons, milestone badges and two
 sentences): the photo (initials without one) with the online dot, the name
 with a tick when verified and "Busy" when they are on a session, the
-specialty, the stars and review count ("New" with none), and experience and
-languages on one line. Under a dashed rule, **Call** (an audio call) and
-**Chat**, each with the per-minute rate, or "First 3 min free" for a new
-seeker's free-first consultant. Offline, both read "Offline" and do nothing.
-The card opens the profile, which keeps video and booking.
+specialty, the stars and the rating ("New" with none; the review count is
+hidden for now, here and on the profile), and experience and languages on
+one line. Under a dashed rule, the same four actions as before: **Video,
+Audio, Chat** with the per-minute rate ("3 min free" for a new seeker's
+free-first consultant) and **Book** with the session price. Offline, the
+three live ones read "Offline" and do nothing; Book still opens the booking
+sheet. The card opens the profile.
 
 **Its own booking sheet is gone** — deleted as redundant with the one on
 `/consult/:id`, which is the only booking flow.

@@ -337,8 +337,8 @@ export default function Consult() {
             /* The compact card (8 Oct 2026, Rahul's reference): photo left,
                name and tick, the specialty, stars and reviews, experience and
                languages on one line; under a dashed rule, Call and Chat with
-               their rate. The old card spent four buttons, badges and two
-               sentences on every row. Video and Book stay on the profile. */
+               the four actions with their rate. Badges and the two sentences
+               the old card spent on every row are gone. */
             <li key={c.id} className="pop-card p-3">
               <Link to={`/consult/${c.id}`} className="flex items-start gap-3 transition-opacity hover:opacity-70">
                 <span className="relative flex-none">
@@ -376,9 +376,10 @@ export default function Consult() {
                   <span className="mt-1 flex items-center gap-1.5 text-[12px] text-t2 tnum">
                     {c.rating != null ? (
                       <>
+                        {/* The rating only; the review count is hidden for
+                            now (8 Oct 2026, Rahul). */}
                         <Stars value={c.rating} />
-                        <span className="text-t3">|</span>
-                        <span>({c.reviewCount ?? 0}) Reviews</span>
+                        <span>{Number(c.rating).toFixed(1)}</span>
                       </>
                     ) : (
                       <span className="text-gold">{t('con.new')}</span>
@@ -393,8 +394,13 @@ export default function Consult() {
                 </span>
               </Link>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-dashed border-stroke pt-3">
-                {['audio', 'chat'].map((kind) => (
+              {/* The same four actions as before the redesign — Video, Audio,
+                  Chat and Book (8 Oct 2026: Rahul asked for the format, not
+                  fewer options). The three live ones are dead while the
+                  consultant is offline; Book works offline, a slot is for
+                  later, and opens the booking sheet on the profile. */}
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-dashed border-stroke pt-3">
+                {['video', 'audio', 'chat'].map((kind) => (
                   <button
                     key={kind}
                     type="button"
@@ -408,18 +414,27 @@ export default function Consult() {
                           : 'border border-gold text-gold'
                     }`}
                   >
-                    <span className="text-[14px] font-semibold">
-                      {c.online ? (kind === 'chat' ? t('con.chat') : 'Call') : 'Offline'}
-                    </span>
+                    <span className="text-[13px] font-semibold">{t(`con.${kind}`)}</span>
                     {/* A new seeker's first session with this consultant is
                         free for three minutes (7 Oct 2026). */}
-                    <span className="text-[11px] tnum opacity-90">
-                      {c.freeFirst
-                        ? 'First 3 min free'
-                        : `₹${c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}${t('con.perMin')}`}
+                    <span className="text-[10px] tnum opacity-90">
+                      {!c.online
+                        ? 'Offline'
+                        : c.freeFirst
+                          ? '3 min free'
+                          : `₹${c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}${t('con.perMin')}`}
                     </span>
                   </button>
                 ))}
+                <Link
+                  to={`/consult/${c.id}?book=1`}
+                  className="flex flex-col items-center justify-center rounded-xl border border-gold py-1.5 leading-tight text-gold transition active:scale-[0.98]"
+                >
+                  <span className="text-[13px] font-semibold">{t('con.book')}</span>
+                  <span className="text-[10px] tnum opacity-90">
+                    {c.pricePaise != null ? `₹${rupees(c.pricePaise)}` : 'A slot'}
+                  </span>
+                </Link>
               </div>
             </li>
           ))}
