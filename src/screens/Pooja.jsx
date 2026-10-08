@@ -109,8 +109,9 @@ const BAND = { w: 1080, h: 345, body: 200, hooks: [0.144, 0.863], tip: 300 }
 const bandCqw = (px) => `${((px / BAND.w) * 100).toFixed(3)}cqw`
 /* The altar slab, `public/puja/marble-slab.webp`: its height as a share of
    its width, and where its top surface meets its front edge. `slabCqw(f)` is
-   f of the slab's height, in the page's width units. */
-const SLAB = { ratio: 225 / 865, edge: 100 / 225 }
+   f of the slab's height, in the page's width units. Drawn at 3/4 of the
+   photo's height (8 Oct 2026, owner: a smaller table). */
+const SLAB = { ratio: (225 / 865) * 0.75, edge: 100 / 225 }
 const slabCqw = (f) => `${(SLAB.ratio * f * 100).toFixed(3)}cqw`
 /* Where the samagri stand: a few pixels behind the slab's front edge, on its
    top surface (7 Oct 2026 — the thali stood 10px below the edge and hung
@@ -436,26 +437,28 @@ export default function Pooja() {
           style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,.45))' }}
         />
 
-        {/* Sangeet, on the band's right corner — a step below the pill row,
-            where it used to sit (7 Oct 2026, Rahul). White, like the pills;
-            gold while something plays. */}
+        {/* Sangeet, low on the right, just above the pushpanjali bowl (8 Oct
+            2026, owner; it was on the band's right corner). White, like the
+            pills; gold while something plays. */}
         <button
           type="button"
           onClick={openMusic}
           aria-haspopup="dialog"
           aria-label={track ? `${t('puja.nowPlaying')}: ${track.title}` : t('puja.sangeet')}
           aria-pressed={Boolean(track)}
-          className={`absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full shadow-md transition active:scale-90 ${
+          style={{ bottom: `calc(${onCounter()} + 70px)` }}
+          className={`absolute right-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full shadow-md transition active:scale-90 ${
             track ? 'bg-gold-fill text-white' : 'bg-white text-[#b4400a]'
           }`}
         >
           {track ? <PlayingBars /> : <SangeetGlyph />}
         </button>
 
-        {/* The mandir's plaque, hung from the band. Tap: choose the murti. */}
+        {/* The mandir's plaque, on the band (8 Oct 2026, owner: up from where
+            it hung under it). Tap: choose the murti. */}
         <span
           className="pointer-events-none absolute inset-x-0 flex -translate-y-1/2 justify-center px-3"
-          style={{ top: bandCqw(BAND.body - 8) }}
+          style={{ top: bandCqw(BAND.body / 2) }}
         >
           <button
             type="button"
@@ -485,14 +488,17 @@ export default function Pooja() {
         <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
         <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
 
-        {/* The altar: a white marble slab across the whole width. */}
+        {/* The altar: a green marble slab across the whole width — the white
+            slab's photo multiplied by green, so its veining stays (8 Oct 2026,
+            owner). */}
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 bottom-0 block"
           style={{
             height: slabCqw(1),
-            backgroundImage: `url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
+            backgroundImage: `linear-gradient(180deg, #4fa57c 0%, #2f7d58 100%), url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
             backgroundSize: '100% 100%',
+            backgroundBlendMode: 'multiply',
             filter: 'drop-shadow(0 -6px 10px rgba(0,0,0,.35))',
           }}
         />
