@@ -70,6 +70,34 @@ function toAsset(row) {
  * the list, and four round trips to render one screen is the thing the
  * panchang cache exists to avoid elsewhere.
  */
+/**
+ * The darshan page's deities and murtis, as the console has them (8 Oct
+ * 2026): [{id, name, nameHi, images:[{id, src, temple, templeHi, location,
+ * locationHi, title, credit}]}]. Throws on failure; the screen keeps the
+ * deities it shipped with.
+ */
+export async function fetchDarshan() {
+  const response = await fetch(`${API_BASE}/bhakti/darshan/`)
+  if (!response.ok) throw new Error(`darshan ${response.status}`)
+  return (await response.json()).map((d) => ({
+    id: d.id,
+    name: d.name,
+    nameHi: d.name_hi || d.name,
+    images: d.images.map((i) => ({
+      id: i.id,
+      // The seeded murtis are files in `public/`, site-relative; uploads are
+      // absolute bucket URLs. Same rule as toAsset.
+      src: i.image_url?.startsWith('/') ? `${import.meta.env.BASE_URL}${i.image_url.slice(1)}` : i.image_url,
+      temple: i.temple,
+      templeHi: i.temple_hi,
+      location: i.location,
+      locationHi: i.location_hi,
+      title: i.title,
+      credit: i.credit,
+    })),
+  }))
+}
+
 export async function fetchAssets() {
   let response
   try {

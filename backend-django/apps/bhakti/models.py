@@ -97,3 +97,54 @@ class BhaktiAsset(models.Model):
                 condition=models.Q(active=True),
             ),
         ]
+
+
+class DarshanDeity(models.Model):
+    """A deity on the darshan page — one pill (8 Oct 2026). Rahul: the
+    murtis will be photographs from different temples, so what the page
+    shows comes from the console now, not from the app's code. Nothing is
+    deleted; untick Active to take one off the page."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.TextField()
+    name_hi = models.TextField(blank=True, default="")
+    sort = models.IntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "darshan_deities"
+        ordering = ("sort", "name")
+        verbose_name = "darshan deity"
+        verbose_name_plural = "darshan deities"
+
+    def __str__(self):
+        return self.name
+
+
+class DarshanImage(models.Model):
+    """One murti on the darshan page, and the temple it is from. The plaque
+    over the murti reads `temple` (or "Shri <deity> Mandir" when empty) and,
+    under it, `location`. `title` and `credit` are the murti sheet's line —
+    the attribution some of the seeded paintings' licences require."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    deity = models.ForeignKey(DarshanDeity, on_delete=models.PROTECT, related_name="images")
+    image_url = models.TextField()
+    temple = models.TextField(blank=True, default="")
+    temple_hi = models.TextField(blank=True, default="")
+    location = models.TextField(blank=True, default="")
+    location_hi = models.TextField(blank=True, default="")
+    title = models.TextField(blank=True, default="")
+    credit = models.TextField(blank=True, default="")
+    sort = models.IntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "darshan_images"
+        ordering = ("deity__sort", "sort")
+        verbose_name = "darshan image"
+
+    def __str__(self):
+        return self.temple or self.title or str(self.id)

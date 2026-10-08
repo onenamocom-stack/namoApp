@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { creditLine, deities, offerings } from '../data/mock.js'
+import { creditLine, deities as SHIPPED, offerings } from '../data/mock.js'
 import { BackButton, useGoBack } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import {
@@ -11,7 +11,7 @@ import {
   Thali,
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
-import { fetchAssets } from '../lib/bhakti.js'
+import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -101,6 +101,26 @@ const BLOOMS = [
   { f: 'petal-genda-1', size: 14, petal: true },
   { f: 'petal-genda-5', size: 14, petal: true },
 ]
+/* The deities and their murtis come from the console (8 Oct 2026, Rahul:
+   each murti will be a photo from a different temple, its name and place on
+   the plaque). Until they arrive — or if they cannot — the ones the app
+   shipped with, in the same shape. */
+const shipped = SHIPPED.map((d) => ({
+  id: d.id,
+  name: d.name,
+  nameHi: d.nameHi,
+  images: d.images.map((im) => ({
+    id: im.f,
+    src: `${import.meta.env.BASE_URL}deities/${im.f}`,
+    temple: '',
+    templeHi: '',
+    location: '',
+    locationHi: '',
+    title: im.label,
+    credit: creditLine(im),
+  })),
+}))
+
 const SHOWER = 36 // per tap — three times the 12 it was
 const HINT_KEY = 'namo.puja.touched'
 /* Where the gold band's two pendants hang, as a share of its width — the
@@ -122,7 +142,9 @@ const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 export default function Pooja() {
   const { showToast, lang, t, hasFlag } = useStore()
   const fullImage = !hasFlag('setting:croppedDeityImage')
-  const [deity, setDeity] = useState(deities[0])
+  const [deities, setDeities] = useState(shipped)
+  const [deityName, setDeityName] = useState(shipped[0].name)
+  const deity = deities.find((d) => d.name === deityName) ?? deities[0]
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
   // Sangeet (4 Oct 2026): the bhajans and mantras from Bhakti, played over
@@ -165,6 +187,12 @@ export default function Pooja() {
       ?.querySelector('[aria-pressed="true"]')
       ?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [deity])
+
+  useEffect(() => {
+    fetchDarshan()
+      .then((rows) => rows.length && setDeities(rows))
+      .catch((err) => console.error('[darshan] load failed:', err.message))
+  }, [])
 
   // Said once, the first time: nothing on the altar looks like a button.
   useEffect(() => {
@@ -219,7 +247,7 @@ export default function Pooja() {
     if (ax > ay * DOMINANCE) {
       const i = deities.findIndex((d) => d.id === deity.id)
       const next = deities[wrap(i + (dx > 0 ? 1 : -1), deities.length)]
-      setDeity(next)
+      setDeityName(next.name)
       setPic(0)
     } else if (ay > ax * DOMINANCE) {
       setPic((p) => wrap(p + (dy > 0 ? 1 : -1), deity.images.length))
@@ -329,7 +357,13 @@ export default function Pooja() {
     showToast(t(aarti ? 'puja.aartiEnded' : 'puja.aartiBegun'))
   }
 
-  const image = deity.images[pic]
+  // The console can take a murti away while it is showing.
+  const at = Math.min(pic, deity.images.length - 1)
+  const image = deity.images[at]
+  const hi = lang === 'hi'
+  const templeName =
+    (hi && image.templeHi) || image.temple || t('puja.mandirOf', { name: hi ? deity.nameHi : deity.name })
+  const place = (hi && image.locationHi) || image.location
 
   return (
     /* relative, because the murti sheet is absolute against this screen
@@ -359,7 +393,7 @@ export default function Pooja() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setDeity(d)
+                    setDeityName(d.name)
                     setPic(0)
                   }}
                   // The type is every other chip's — Consult's, Bhakti's
@@ -390,8 +424,8 @@ export default function Pooja() {
         onPointerCancel={() => (swipe.current = null)}
       >
         <img
-          key={`wash-${image.f}`}
-          src={`${import.meta.env.BASE_URL}deities/${image.f}`}
+          key={`wash-${image.id}`}
+          src={image.src}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full scale-110 object-cover"
@@ -402,9 +436,9 @@ export default function Pooja() {
           style={{ top: bandCqw(BAND.body - 30), bottom: slabCqw(0.62) }}
         >
           <img
-            key={image.f}
-            src={`${import.meta.env.BASE_URL}deities/${image.f}`}
-            alt={`${deity.name} — ${image.label}`}
+            key={image.id}
+            src={image.src}
+            alt={`${deity.name} — ${templeName}`}
             className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-contain' : 'object-cover'}`}
             style={{ objectPosition: fullImage ? '50% 45%' : '50% 32%' }}
           />
@@ -466,7 +500,7 @@ export default function Pooja() {
             type="button"
             onClick={() => setSheet(true)}
             aria-haspopup="dialog"
-            aria-label={`${t('puja.mandirOf', { name: lang === 'hi' ? deity.nameHi : deity.name })} · ${t('puja.chooseMurti')}`}
+            aria-label={`${templeName}${place ? `, ${place}` : ''} · ${t('puja.chooseMurti')}`}
             className="pointer-events-auto max-w-full rounded-md px-4 py-1.5 text-center shadow-lg transition active:scale-95"
             style={{
               background: 'linear-gradient(180deg, rgba(40,26,14,.94) 0%, rgba(22,14,8,.94) 100%)',
@@ -475,12 +509,15 @@ export default function Pooja() {
             }}
           >
             <span className="block truncate font-serif text-[17px] font-semibold leading-tight text-[#fff6e3]">
-              {t('puja.mandirOf', { name: lang === 'hi' ? deity.nameHi : deity.name })}
+              {templeName}
             </span>
+            {/* The temple's place when the console has one (with a pin, as
+                on the owner's reference); otherwise what the photo shows. */}
             <span className="mt-0.5 flex items-center justify-center gap-1 text-[11px] leading-tight text-[#e9d6a8]">
-              <span className="truncate">{image.label}</span>
+              {place && <PinGlyph />}
+              <span className="truncate">{place || image.title}</span>
               {deity.images.length > 1 && (
-                <span className="flex-none opacity-80">· {pic + 1}/{deity.images.length}</span>
+                <span className="flex-none opacity-80">· {at + 1}/{deity.images.length}</span>
               )}
               <Icon name="back" size={10} weight={2.4} className="flex-none -rotate-90 opacity-80" />
             </span>
@@ -667,7 +704,7 @@ export default function Pooja() {
       {sheet && (
         <MurtiSheet
           deity={deity}
-          pic={pic}
+          pic={at}
           onPick={(i) => {
             setPic(i)
             setSheet(false)
@@ -708,18 +745,18 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
         </p>
         <ul className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
           {deity.images.map((im, i) => (
-            <li key={im.f}>
+            <li key={im.id}>
               <button
                 type="button"
                 aria-pressed={pic === i}
-                aria-label={im.label}
+                aria-label={im.temple || im.title}
                 onClick={() => onPick(i)}
                 className={`block h-24 w-[68px] overflow-hidden rounded-lg border transition ${
                   pic === i ? 'border-ink shadow-md' : 'border-stroke opacity-60'
                 }`}
               >
                 <img
-                  src={`${import.meta.env.BASE_URL}deities/${im.f}`}
+                  src={im.src}
                   alt=""
                   loading="lazy"
                   className={`h-full w-full ${fullImage ? 'object-contain' : 'object-cover'}`}
@@ -729,7 +766,9 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
           ))}
         </ul>
         <p className="mt-3 text-[11px] leading-snug t-faint">
-          {deity.images[pic].label} · {creditLine(deity.images[pic])}
+          {[deity.images[pic].temple, deity.images[pic].location, deity.images[pic].title, deity.images[pic].credit]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </div>
     </div>
@@ -879,16 +918,17 @@ function HangingBell({ side, ringing, hint, onRing, label }) {
       aria-label={label}
       className={`absolute isolate origin-top rounded-full p-1 ${ringing ? 'animate-swing' : ''}`}
       style={{
-        // From the pendant's tip; the button is the bell's 52px plus 4px
-        // padding a side, so 30px puts its middle under the pendant.
+        // From the pendant's tip; the button is the bell's 40px plus 4px
+        // padding a side, so 24px puts its middle under the pendant. 40, not
+        // 52: smaller on 8 Oct 2026 (Rahul).
         top: `calc(${bandCqw(BAND.tip)} - 6px)`,
-        [side]: `calc(${((side === 'left' ? BAND.hooks[0] : 1 - BAND.hooks[1]) * 100).toFixed(1)}% - 30px)`,
+        [side]: `calc(${((side === 'left' ? BAND.hooks[0] : 1 - BAND.hooks[1]) * 100).toFixed(1)}% - 24px)`,
         filter: 'drop-shadow(0 3px 5px rgba(0,0,0,.45))',
       }}
     >
       {/* On the bell's mouth, not its chain. */}
       {hint && <Glow top="78%" />}
-      <PujaPhoto name="ghanti" width={52} fallback={<Ghanti size={100} hanging />} />
+      <PujaPhoto name="ghanti" width={40} fallback={<Ghanti size={78} hanging />} />
     </button>
   )
 }
@@ -938,6 +978,14 @@ function Glow({ top = '50%' }) {
         style={{ background: 'radial-gradient(circle, rgba(255,150,30,.75) 0%, rgba(255,180,60,.35) 40%, rgba(255,180,60,0) 70%)' }}
       />
     </span>
+  )
+}
+
+function PinGlyph() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="11" height="11" className="flex-none" fill="currentColor">
+      <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+    </svg>
   )
 }
 

@@ -19,7 +19,7 @@ from rest_framework.response import Response
 
 from apps.core.views import refusal_body
 
-from .models import BhaktiAsset
+from .models import BhaktiAsset, DarshanDeity
 from .services import list_assets
 
 
@@ -70,3 +70,30 @@ def asset_file(request, asset_id):
         )
     url = get_provider().presign_get(asset.media_url, settings.R2_PRIVATE_BUCKET, seconds=600)
     return Response({"ok": True, "url": url})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])  # the darshan page shows to anybody
+def darshan(request):
+    """The darshan page's deities and their murtis, as the console has them
+    (8 Oct 2026). Active deities with at least one active murti, in order."""
+    out = []
+    deities = DarshanDeity.objects.filter(active=True).prefetch_related("images").order_by("sort", "name")
+    for d in deities:
+        images = [
+            {
+                "id": str(i.id),
+                "image_url": i.image_url,
+                "temple": i.temple,
+                "temple_hi": i.temple_hi,
+                "location": i.location,
+                "location_hi": i.location_hi,
+                "title": i.title,
+                "credit": i.credit,
+            }
+            for i in sorted(d.images.all(), key=lambda i: i.sort)
+            if i.active
+        ]
+        if images:
+            out.append({"id": str(d.id), "name": d.name, "name_hi": d.name_hi, "images": images})
+    return Response(out)
