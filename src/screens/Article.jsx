@@ -1,7 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { fetchByAuthor, fetchFeed, fetchOne, isMine } from '../lib/content.js'
+import { fetchByAuthor, fetchFeed, fetchOne, isMine, recordView } from '../lib/content.js'
 import EditSheet from '../components/EditSheet.jsx'
 import { isPro } from '../side.js'
 import { ActionRow, Cover, ProductStrip, authorHref, readMins } from './Home.jsx'
@@ -37,6 +37,7 @@ export default function Article() {
   const [commenting, setCommenting] = useState(false)
   const [editing, setEditing] = useState(false)
   const [commentCount, setCommentCount] = useState(null)
+  const [views, setViews] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -62,6 +63,21 @@ export default function Article() {
       active = false
     }
   }, [id, me])
+
+  /* A read is five seconds on the page, as a reel's view is two on screen
+     (10 Oct 2026). The server counts a person once per post per IST day and
+     never the author, so a re-open is harmless; the ref saves the request. */
+  const counted = useRef(null)
+  const loaded = articles?.some((a) => a.id === id) ?? false
+  useEffect(() => {
+    setViews(null)
+    if (!loaded || counted.current === id) return undefined
+    const timer = setTimeout(() => {
+      counted.current = id
+      recordView(id).then((n) => n != null && setViews(n))
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [id, loaded])
 
   /* Nothing is rendered against a half-loaded list: `null` means still asking,
      `[]` means asked and got nothing. Without the distinction a slow network
@@ -134,9 +150,12 @@ export default function Article() {
       <section className="section pt-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <Tag>Article</Tag>
-          {/* No view count. Nothing server-side increments one yet, and a
-              number the client made up is worse than no number. */}
-          <span className="text-micro uppercase tracking-caps text-t3 tnum">{mins}</span>
+          {/* The server's count, shown once there is one (10 Oct 2026). */}
+          <span className="text-micro uppercase tracking-caps text-t3 tnum">
+            {(views ?? b.views) > 0 &&
+              `${(views ?? b.views).toLocaleString('en-IN')} ${(views ?? b.views) === 1 ? 'view' : 'views'} · `}
+            {mins}
+          </span>
         </div>
 
         <h1 className="text-title font-semibold">{b.title}</h1>

@@ -514,7 +514,11 @@ lays out a video (7 Oct 2026; it was set over the picture) (it was saved and nev
 tagged products under it, and **Like, Reply, Share and Save** as a post has
 (Save was the only action). Share sends the blog's own page; a blog has no
 Reshare. The feed's shop cards are the live catalogue, square, opening the
-product's page — they were `mock.js` products.
+product's page — they were `mock.js` products. **A read counts as a view**
+(10 Oct 2026): five seconds on `/read/:id`, once per person per post per IST
+day, never the author — the reel rule with a longer wait. The reader shows the
+count beside the read time once it is above zero; it showed none before, and
+Studio's blog rows read 0 because nothing sent one.
 
 **A new seeker's free first session** (7 Oct 2026): consultants ticked
 "free first" in the console come first on Consult with a green "First 3
