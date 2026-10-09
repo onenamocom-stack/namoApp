@@ -132,7 +132,7 @@ export default function SessionRecharge({
         type="button"
         disabled={busy}
         onClick={() => recharge(amount)}
-        className="mt-3 w-full rounded-full bg-ok py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-white disabled:opacity-60"
+        className="mt-3 flex w-full items-center justify-center rounded-full bg-ok py-2.5 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-white disabled:opacity-60"
       >
         {busy ? 'Adding…' : `Recharge ₹${amount / 100}`}
       </button>
@@ -157,13 +157,15 @@ export default function SessionRecharge({
   )
 }
 
-/** Three amounts in paise: about 5, 10 and 20 minutes at this rate, rounded
- *  up to ₹50, never under the ₹100 a top-up must be. */
+/** The amounts in paise, smallest first: ₹100 — the least a top-up can be
+ *  (owner, 10 Oct 2026), when it buys at least a minute — then about 5, 10
+ *  and 20 minutes at this rate, rounded up to ₹50. Four at most. */
 function choices(rate) {
-  const out = []
+  if (!rate) return [10_000, 20_000, 50_000]
+  const out = rate <= 10_000 ? [10_000] : []
   for (const m of [5, 10, 20]) {
-    const paise = rate ? Math.max(10_000, Math.ceil((rate * m) / 5_000) * 5_000) : [10_000, 20_000, 50_000][out.length]
-    if (!out.includes(paise)) out.push(Math.min(paise, 10_000_000))
+    const paise = Math.min(Math.max(10_000, Math.ceil((rate * m) / 5_000) * 5_000), 10_000_000)
+    if (!out.includes(paise)) out.push(paise)
   }
-  return out
+  return out.sort((x, y) => x - y).slice(0, 4)
 }

@@ -526,8 +526,8 @@ session they show their rates like everyone else.
 has ONE timer and ONE end button, the same row for both people (9 Oct 2026,
 Rahul: the call showed three timers and Daily's own Leave behind ours —
 Daily's Leave is hidden now). In the last minute a **Recharge** button
-appears in that row for the seeker, and nowhere else; it opens three amounts (about 5, 10 and 20 minutes
-at this rate, at least ₹100) and Razorpay over the conversation; the minutes
+appears in that row for the seeker, and nowhere else; it opens up to four amounts — ₹100 when that buys a
+minute (10 Oct 2026), then about 5, 10 and 20 minutes at this rate — and Razorpay over the conversation; the minutes
 are added and the clock runs on. At 0:00 the session **pauses**: the call is
 muted for both people and covered, the chat's composer is replaced by
 "Paused until the balance is recharged", and the seeker sees "Your balance
