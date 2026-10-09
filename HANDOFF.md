@@ -6176,3 +6176,16 @@ Live (front end only). `docs/03-APP-FLOW.md` has the screen.
   ResizeObserver) with Share only; `StatusDetails` is the pencils' page.
   The status name is a new `localStorage` key beside the photo's.
 - Checked in a browser at 390 px; not yet shared from a phone.
+
+## 79. Telegram feedback bot — 10 Oct 2026
+
+Set up on the owner's laptop, not yet paired. Bun 1.4.2 and the Claude Code
+CLI 2.1.295 installed; the official `telegram@claude-plugins-official`
+channel plugin installed at user scope (marketplace
+`anthropics/claude-plugins-official` added). `scripts/namo-bot.cmd` starts
+a session in this repo with the channel on (`--permission-mode acceptEdits`).
+The rules the bot works by are in `CLAUDE.md` ("Feedback from Telegram"):
+replies first, fixes and commits, deploys only on the owner's "ship", never
+money/auth/secrets without the owner. **Waiting on the owner:** the bot
+token from BotFather, and pairing the owner's and Rahul's accounts. It runs
+only while that window is open and the laptop is awake.
