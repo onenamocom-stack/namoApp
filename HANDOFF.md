@@ -6160,3 +6160,19 @@ The owner's rule (`docs/01-PRD.md` § referrals; columns `docs/05`).
 - Migration `shop/0008_referral_cashback`. Tests:
   `test_referral_offers.py` (17), cashback cases in `test_shop_console.py`
   and `test_shop_sheet.py`.
+
+## 78. The status card, Rahul's design — 9 Oct 2026
+
+Live (front end only). `docs/03-APP-FLOW.md` has the screen.
+
+- `composeStatus` (`src/lib/bhakti.js`) draws the new card and returns
+  `{ blob, marks }` — `marks` place the preview's two pencils. Frosted
+  glass is the artwork redrawn blurred under the card (`ctx.filter`; a
+  browser without it gets the dark wash alone).
+- `hinduDateLine(payload)`: tithi, paksha and month in Hindi from the
+  panchang the API already serves; the API's amanta month is shown
+  purnimanta (dark fortnight → next month's name). `statusDateLine(iso)`.
+- `ShareSheet` shows the composed JPEG at an exact 9:16 (sized by a
+  ResizeObserver) with Share only; `StatusDetails` is the pencils' page.
+  The status name is a new `localStorage` key beside the photo's.
+- Checked in a browser at 390 px; not yet shared from a phone.

@@ -11,15 +11,19 @@ import {
   composeStatus,
   download,
   fetchAssets,
+  hinduDateLine,
+  recallStatusName,
   recallStatusPhoto,
+  rememberStatusName,
   rememberStatusPhoto,
   saveBlob,
   inviteMessage,
   shareAsset,
   shareFile,
   shrinkForStatus,
+  statusDateLine,
 } from '../lib/bhakti.js'
-import { istDate, longDate } from '../lib/astro.js'
+import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 import { tileStyle } from '../lib/tiles.js'
 
@@ -689,59 +693,79 @@ function TrackCard({ asset, counted = false }) {
  * now a real thing behind it.
  */
 function ShareSheet({ asset, onClose }) {
-  const { showToast, me, session } = useStore()
+  const { showToast, me, session, sessionReady } = useStore()
   const who = session?.user?.id ?? null
-  const gallery = useRef(null)
-  const camera = useRef(null)
   const [working, setWorking] = useState(false)
-  /* A data URL, or null. Not an object URL any more: the picture is kept
-     between visits (26 Sep 2026), and an object URL dies with the page. */
+  const [editing, setEditing] = useState(false)
+  /* The photo (a small data URL) and the name on the card, kept on this
+     phone and used for every status until changed (26 Sep; the name 9 Oct
+     2026). No saved name means the account's. */
   const [photo, setPhoto] = useState(null)
-
-  /* Last time's picture, back on the sheet. It stays until it is changed or
-     removed — somebody posting every morning should not go hunting for the
-     same face every morning. */
+  const [name, setName] = useState('')
+  const [preview, setPreview] = useState(null) // { url, blob, marks }
+  /* The frame is exactly 9:16 and as large as the space allows: a box that
+     only had a height let the width clip the picture's sides, and the
+     pencils, placed by fraction, missed what they mark. */
+  const stage = useRef(null)
+  const [frame, setFrame] = useState(null)
   useEffect(() => {
-    if (asset) setPhoto(recallStatusPhoto(who))
-  }, [asset, who])
-
-  const attach = async (src) => {
-    if (!src) {
-      setPhoto(null)
-      rememberStatusPhoto(who, null)
-      return
+    const el = stage.current
+    if (!el || !asset) return undefined
+    const fit = () => {
+      const cs = getComputedStyle(el)
+      const roomW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      const roomH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+      const w = Math.min(roomW, (roomH * 9) / 16)
+      setFrame({ width: Math.floor(w), height: Math.floor((w * 16) / 9) })
     }
-    setWorking(true)
-    const small = await shrinkForStatus(src)
-    setWorking(false)
-    if (!small) return showToast('Could not read that picture.')
-    setPhoto(small)
-    rememberStatusPhoto(who, small)
-  }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [asset])
 
-  const pick = (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''   // so choosing the same file twice still fires
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    attach(url).finally(() => URL.revokeObjectURL(url))
-  }
+  useEffect(() => {
+    if (!asset) return
+    setPhoto(recallStatusPhoto(who))
+    setName(recallStatusName(who) ?? me.name ?? '')
+  }, [asset, who, me.name])
+
+  // Today's Hindu date for the card, from the same panchang Home shows.
+  const almanac = useAstro('panchang', { ready: sessionReady && !!asset, who })
+  const hinduLine = hinduDateLine(almanac.payload)
+
+  /* THE PREVIEW IS THE IMAGE. Composed whenever what is on it changes, and
+     shared as it stands — what you see is exactly what goes out. */
+  useEffect(() => {
+    if (!asset) return undefined
+    let live = true
+    let url = null
+    composeStatus(asset.url, {
+      photoSrc: photo,
+      name,
+      dateLine: statusDateLine(istDate()),
+      hinduLine,
+      logoSrc: `${import.meta.env.BASE_URL}namo-logo-light.png`,
+      iconSrc: `${import.meta.env.BASE_URL}namo-icon.png`,
+    }).then((made) => {
+      if (!live || !made?.blob) return
+      url = URL.createObjectURL(made.blob)
+      setPreview({ url, blob: made.blob, marks: made.marks })
+    })
+    return () => {
+      live = false
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [asset, photo, name, hinduLine])
 
   const share = async () => {
-    if (!asset) return
+    if (!preview?.blob) return
     setWorking(true)
     try {
-      const blob = await composeStatus(asset.url, {
-        photoSrc: photo,
-        name: photo ? me.name : '',
-        dateLabel: longDate(istDate()),
-        logoSrc: `${import.meta.env.BASE_URL}namo-logo-light.png`,
-      })
-      if (!blob) throw new Error('compose failed')
       const filename = `namo-status-${Date.now()}.jpg`
-      const shared = await shareFile(blob, filename, await inviteMessage(asset))
+      const shared = await shareFile(preview.blob, filename, await inviteMessage(asset))
       if (!shared) {
-        saveBlob(blob, filename)
+        saveBlob(preview.blob, filename)
         showToast('Saved — sharing needs a phone')
       }
       onClose()
@@ -752,18 +776,7 @@ function ShareSheet({ asset, onClose }) {
     }
   }
 
-  /* Full screen since 4 Oct 2026 (owner's call): as a bottom sheet the
-     picture pushed the Share button below the fold. The preview is sized to
-     the screen, the three picture options are one row of icon buttons, and
-     Share is pinned to the bottom. The explainer line above the picture is
-     gone too. */
   if (!asset) return null
-  const options = [
-    { key: 'gallery', icon: 'image', label: 'Gallery', onClick: () => gallery.current?.click() },
-    { key: 'camera', icon: 'camera', label: 'Camera', onClick: () => camera.current?.click() },
-    ...(me.avatarUrl ? [{ key: 'profile', icon: 'user', label: 'Profile photo', onClick: () => attach(me.avatarUrl) }] : []),
-    ...(photo ? [{ key: 'remove', icon: 'close', label: 'Remove', onClick: () => attach(null) }] : []),
-  ]
 
   return createPortal(
     <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] animate-fade flex-col bg-[#140c08] text-white">
@@ -773,38 +786,139 @@ function ShareSheet({ asset, onClose }) {
         <span className="w-9" aria-hidden="true" />
       </div>
 
-      {/* What the export will look like, in the order it is drawn: the
-          artwork, your face bottom left, the mark bottom right. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center px-6">
-        <div className="relative aspect-[9/16] h-full max-h-full overflow-hidden rounded-2xl shadow-2xl">
-          <img src={asset.url} alt={asset.title} className="h-full w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent p-3">
-            {photo ? (
-              <img src={photo} alt="Your picture" className="h-11 w-11 flex-none rounded-full border-2 border-[#ffa05e] object-cover" />
-            ) : (
-              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full border-2 border-dashed border-white/50 text-white/70">
-                <Icon name="plus" size={16} />
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              {photo && me.name && <span className="block truncate text-meta font-semibold">{me.name}</span>}
-              <span className="block truncate caps-sm text-white/75">{longDate(istDate())}</span>
-            </span>
-            <img src={`${import.meta.env.BASE_URL}namo-logo-light.png`} alt="" className="h-5 flex-none opacity-90" />
-          </div>
+      {/* The status itself (9 Oct 2026, Rahul's design). The two pencils are
+          the screen's — on the photo and the name — and are not in the
+          image. Either opens the page that changes both. */}
+      <div ref={stage} className="flex min-h-0 flex-1 items-center justify-center px-6">
+        <div className="relative overflow-hidden rounded-2xl bg-black/30 shadow-2xl" style={frame ?? { width: 0, height: 0 }}>
+          {preview ? (
+            <img src={preview.url} alt={asset.title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Loader />
+            </div>
+          )}
+          {preview?.marks &&
+            ['photo', 'name'].map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setEditing(true)}
+                aria-label={k === 'photo' ? 'Change your photo' : 'Change your name'}
+                className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-white active:scale-90"
+                style={{
+                  left: `${preview.marks[k].x * 100}%`,
+                  top: `${preview.marks[k].y * 100}%`,
+                  background: 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))',
+                }}
+              >
+                <PencilGlyph />
+              </button>
+            ))}
         </div>
       </div>
 
+      {/* Only Share under it. */}
       <div className="flex-none px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4">
-        <p className="text-center text-[12px] text-white/60">
-          {photo ? 'Your picture is on it, and stays until you change it.' : 'Add your picture, if you like.'}
-        </p>
-        <div className="mt-3 flex justify-center gap-3">
+        <PopButton variant="gold" disabled={working || !preview} onClick={share}>
+          {working ? 'Preparing…' : 'Share'}
+        </PopButton>
+      </div>
+
+      {editing && (
+        <StatusDetails
+          photo={photo}
+          name={name}
+          avatarUrl={me.avatarUrl}
+          onClose={() => setEditing(false)}
+          onSave={(next) => {
+            rememberStatusPhoto(who, next.photo)
+            rememberStatusName(who, next.name)
+            setPhoto(next.photo)
+            setName(next.name)
+            setEditing(false)
+            showToast('Saved. Every status uses it now.')
+          }}
+        />
+      )}
+    </div>,
+    document.body,
+  )
+}
+
+/** A small pencil, for the edit marks over the status preview. */
+function PencilGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+      <path d="m13.5 6.5 4 4" />
+    </svg>
+  )
+}
+
+/**
+ * The page behind the pencils (9 Oct 2026, Rahul): the photo and the name on
+ * your status, changed once and saved for every status after it. Kept on
+ * this phone. The name here is the status's, not the account's — changing
+ * it does not rename the account.
+ */
+function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
+  const { showToast } = useStore()
+  const gallery = useRef(null)
+  const camera = useRef(null)
+  const [nextPhoto, setNextPhoto] = useState(photo)
+  const [nextName, setNextName] = useState(name)
+  const [busy, setBusy] = useState(false)
+
+  const attach = async (src) => {
+    if (!src) return setNextPhoto(null)
+    setBusy(true)
+    const small = await shrinkForStatus(src)
+    setBusy(false)
+    if (!small) return showToast('Could not read that picture.')
+    setNextPhoto(small)
+  }
+
+  const pick = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''   // so choosing the same file twice still fires
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    attach(url).finally(() => URL.revokeObjectURL(url))
+  }
+
+  const options = [
+    { key: 'gallery', icon: 'image', label: 'Gallery', onClick: () => gallery.current?.click() },
+    { key: 'camera', icon: 'camera', label: 'Camera', onClick: () => camera.current?.click() },
+    ...(avatarUrl ? [{ key: 'profile', icon: 'user', label: 'Profile photo', onClick: () => attach(avatarUrl) }] : []),
+    ...(nextPhoto ? [{ key: 'remove', icon: 'close', label: 'Remove', onClick: () => attach(null) }] : []),
+  ]
+
+  return (
+    <div className="absolute inset-0 z-10 flex animate-fade flex-col bg-[#140c08] text-white">
+      <div className="flex flex-none items-center gap-3 px-4 pb-3 pt-4">
+        <BackButton dark onClick={onClose} label="Back" />
+        <p className="flex-1 text-center text-meta font-semibold">Your status details</p>
+        <span className="w-9" aria-hidden="true" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 pt-6">
+        <div className="mx-auto h-32 w-32 overflow-hidden rounded-full ring-4 ring-white">
+          {nextPhoto ? (
+            <img src={nextPhoto} alt="Your photo" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center bg-white/10 text-white/60">
+              <Icon name="user" size={40} />
+            </span>
+          )}
+        </div>
+        <div className="mt-5 flex justify-center gap-3">
           {options.map((o) => (
             <button
               key={o.key}
               type="button"
-              disabled={working}
+              disabled={busy}
               onClick={o.onClick}
               className="flex w-[76px] flex-col items-center gap-1.5 rounded-2xl bg-white/10 px-2 py-3 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/15 active:scale-95 disabled:opacity-40"
             >
@@ -818,31 +932,31 @@ function ShareSheet({ asset, onClose }) {
             </button>
           ))}
         </div>
-        <PopButton variant="gold" className="mt-4" disabled={working} onClick={share}>
-          {working ? 'Preparing…' : 'Share this'}
+
+        <label className="mt-8 block">
+          <span className="caps-sm text-white/60">Name on your status</span>
+          <input
+            value={nextName}
+            onChange={(e) => setNextName(e.target.value)}
+            maxLength={40}
+            placeholder="Your name"
+            className="mt-2 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-body text-white outline-none placeholder:text-white/40 focus:border-white/60"
+          />
+        </label>
+      </div>
+
+      <div className="flex-none px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4">
+        <PopButton
+          variant="gold"
+          disabled={busy}
+          onClick={() => onSave({ photo: nextPhoto, name: nextName.trim() })}
+        >
+          Save
         </PopButton>
       </div>
 
-      <input
-        ref={gallery}
-        type="file"
-        accept="image/*"
-        onChange={pick}
-        className="hidden"
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-      <input
-        ref={camera}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={pick}
-        className="hidden"
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-    </div>,
-    document.body,
+      <input ref={gallery} type="file" accept="image/*" onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
+      <input ref={camera} type="file" accept="image/*" capture="user" onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
+    </div>
   )
 }

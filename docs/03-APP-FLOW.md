@@ -336,21 +336,21 @@ two products and gave the wallpaper thumbnails no room to be looked at. One
 card now, and only the ACTION differs: a status is shared, a wallpaper is
 downloaded.
 
-**Sharing a status composes a picture.** The artwork is the background; the
-person's photo goes bottom LEFT in a circle with a gold ring, their name and
-today's date beside it, and the Namo mark bottom right. The photo comes from
-the gallery, the camera or their profile picture, and it is **optional** —
-somebody who only wants to forward the artwork is not made to put their face
-on it, and **it is remembered until it is changed** (26 Sep 2026) — a 320px
-data URL in `localStorage`, keyed by user id, because posting every morning
-should not mean hunting the gallery every morning and a shared phone must not
-put the last person's face on this one's status. Storage full or denied leaves
-the sheet with no picture, which is the same state as a first visit.
+**Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it
+replaced a gradient strip with a photo, name and date). The artwork fills the
+frame; the NAMO mark sits top right; low on the frame one frosted card carries
+the person's photo in a white ring (their initial when there is none), their
+name, today's date ("09 OCT 2026 | FRIDAY"), the Hindu date in Hindi from the
+day's panchang ("आश्विन कृष्ण पक्ष • चतुर्दशी" — the month named purnimanta,
+as North India reads it), a gold rule, and a NAMO badge.
 
-The sheet shows a preview of exactly that arrangement before anything
-is handed over, because a share sheet is the last place to discover what you
-are sending. Everything except the artwork is drawn only if it loaded: a
-photo that fails costs a corner, not the picture.
+The sheet shows **the image itself** — what is shared is exactly what is
+seen — with **only Share** under it. A pencil on the photo and one on the
+name open **Your status details**, a page of its own: the photo (gallery,
+camera, profile picture, remove) and the name for the status. **Save keeps
+both for every status after it** — on this phone, keyed by user id, the photo
+a 320px data URL (26 Sep 2026); the name is the status's own and does not
+rename the account. With nothing saved, the account's name is used.
 
 **What the web cannot do, the screen does not claim.** There is no native
 shell, so no API sets a wallpaper or a ringtone: every button reads *Download*

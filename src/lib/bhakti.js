@@ -211,96 +211,275 @@ function drawCover(ctx, img, width, height) {
 }
 
 /**
- * A status image: the artwork, and the person on it.
+ * A status image (9 Oct 2026, Rahul's design): the artwork full-bleed, the
+ * NAMO mark top right, and near the foot one frosted card —
  *
- * One 1080×1920 canvas, in the order it is read:
+ *   the person's photo in a white ring, left
+ *   their name, large
+ *   the date ("09 OCT 2026 | FRIDAY") and the Hindu date
+ *     ("आश्विन कृष्ण पक्ष • तृतीया"), each behind a small gold icon
+ *   a gold rule with a diamond under them
+ *   the NAMO badge, right
  *
- *   the artwork, covering the frame
- *   a scrim along the bottom, because the artwork under it is sometimes a
- *     pale sky and sometimes a dark temple interior and only one of those
- *     survives a text shadow
- *   the person's photo, bottom LEFT, in a circle with a gold ring
- *   their name and the date beside it
- *   the Namo logo, bottom RIGHT, as a watermark
+ * One 1080×1920 canvas. Everything but the artwork is optional and drawn
+ * only if it loaded, so a missing photo costs a circle, not the picture.
  *
- * Everything except the artwork is optional and drawn only if it loaded, so
- * a missing photo costs a corner rather than the picture.
+ * Returns `{ blob, marks }`: `marks` are where the photo and the name ended
+ * up, as fractions of the frame, so the preview can put its edit pencils on
+ * them. The pencils are the screen's, never drawn into the image.
  */
-export async function composeStatus(artworkSrc, { photoSrc, name, dateLabel, logoSrc } = {}) {
+export const STATUS_W = 1080
+export const STATUS_H = 1920
+
+export async function composeStatus(
+  artworkSrc,
+  { photoSrc, name, dateLine, hinduLine, logoSrc, iconSrc } = {},
+) {
   const art = await loadImage(artworkSrc)
   if (!art) return null
-
+  const W = STATUS_W
+  const H = STATUS_H
   const c = document.createElement('canvas')
-  c.width = 1080
-  c.height = 1920
+  c.width = W
+  c.height = H
   const ctx = c.getContext('2d')
-
   ctx.fillStyle = '#0e0e10'
-  ctx.fillRect(0, 0, c.width, c.height)
-  drawCover(ctx, art, c.width, c.height)
+  ctx.fillRect(0, 0, W, H)
+  drawCover(ctx, art, W, H)
 
-  const [photo, logo] = await Promise.all([loadImage(photoSrc), loadImage(logoSrc)])
-  const pad = 56
-  const strip = 260                       // the band the stamp lives in
-  const stripTop = c.height - strip
-
-  if (photo || name || dateLabel || logo) {
-    const fade = ctx.createLinearGradient(0, stripTop - 120, 0, c.height)
-    fade.addColorStop(0, 'rgba(14, 14, 16, 0)')
-    fade.addColorStop(1, 'rgba(14, 14, 16, 0.82)')
-    ctx.fillStyle = fade
-    ctx.fillRect(0, stripTop - 120, c.width, strip + 120)
+  const [photo, logo, icon] = await Promise.all([loadImage(photoSrc), loadImage(logoSrc), loadImage(iconSrc)])
+  // The fonts the page already loads; a canvas draws only what has arrived.
+  try {
+    await document.fonts?.ready
+  } catch {
+    /* draws in the fallback face */
   }
 
-  let textLeft = pad
-  if (photo) {
-    const size = 168
-    const cx = pad + size / 2
-    const cy = stripTop + strip / 2
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2)
-    ctx.closePath()
-    ctx.clip()
-    // Cover the circle, not the frame: a portrait squeezed into a circle is
-    // the thing that makes these images look homemade.
-    const scale = Math.max(size / photo.width, size / photo.height)
-    const w = photo.width * scale
-    const h = photo.height * scale
-    ctx.drawImage(photo, cx - w / 2, cy - h / 2, w, h)
-    ctx.restore()
-
-    ctx.beginPath()
-    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2)
-    ctx.lineWidth = 6
-    ctx.strokeStyle = '#d4a24c'
-    ctx.stroke()
-    textLeft = pad + size + 28
-  }
-
-  ctx.textBaseline = 'alphabetic'
-  ctx.fillStyle = '#ffffff'
-  const middle = stripTop + strip / 2
-  if (name && dateLabel) {
-    ctx.font = '700 46px Poppins, system-ui, sans-serif'
-    ctx.fillText(name, textLeft, middle - 6)
-    ctx.font = '500 34px Poppins, system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'
-    ctx.fillText(dateLabel, textLeft, middle + 44)
-  } else if (name || dateLabel) {
-    ctx.font = '600 42px Poppins, system-ui, sans-serif'
-    ctx.fillText(name || dateLabel, textLeft, middle + 14)
-  }
-
+  // ── the mark, top right ────────────────────────────────────────────────
   if (logo) {
-    const w = 230                         // the NAMO logo with its tile, 5 Oct 2026
+    const w = 250
     const h = (logo.height / logo.width) * w
-    ctx.globalAlpha = 0.9
-    ctx.drawImage(logo, c.width - pad - w, middle - h / 2, w, h)
-    ctx.globalAlpha = 1
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.35)'
+    ctx.shadowBlur = 18
+    ctx.drawImage(logo, W - 52 - w, 56, w, h)
+    ctx.restore()
   }
 
-  return new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
+  // ── the card ───────────────────────────────────────────────────────────
+  // Low on the frame (Rahul: "card thoda neeche"), clear of the deity.
+  const card = { x: 52, y: H - 52 - 350, w: W - 104, h: 350, r: 54 }
+  const pad = 40
+  // Frosted: the artwork under the card, blurred, then a warm dark wash.
+  ctx.save()
+  roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
+  ctx.clip()
+  if ('filter' in ctx) {
+    ctx.filter = 'blur(26px)'
+    drawCover(ctx, art, W, H)
+    ctx.filter = 'none'
+  }
+  ctx.fillStyle = 'rgba(28, 16, 10, 0.52)'
+  ctx.fillRect(card.x, card.y, card.w, card.h)
+  ctx.restore()
+  roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
+  ctx.lineWidth = 2.5
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)'
+  ctx.stroke()
+
+  // Photo, left, in a white ring. No photo: their initial on saffron.
+  const d = 250
+  const pcx = card.x + pad + d / 2
+  const pcy = card.y + card.h / 2
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(pcx, pcy, d / 2, 0, Math.PI * 2)
+  ctx.clip()
+  if (photo) {
+    const scale = Math.max(d / photo.width, d / photo.height)
+    ctx.drawImage(photo, pcx - (photo.width * scale) / 2, pcy - (photo.height * scale) / 2,
+      photo.width * scale, photo.height * scale)
+  } else {
+    const g = ctx.createLinearGradient(pcx, pcy - d / 2, pcx, pcy + d / 2)
+    g.addColorStop(0, '#ff9a3c')
+    g.addColorStop(1, '#e8590c')
+    ctx.fillStyle = g
+    ctx.fillRect(pcx - d / 2, pcy - d / 2, d, d)
+    ctx.fillStyle = '#fff'
+    ctx.font = '700 110px Poppins, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(((name || '').trim()[0] || 'ॐ').toUpperCase(), pcx, pcy + 6)
+    ctx.textAlign = 'left'
+  }
+  ctx.restore()
+  ctx.beginPath()
+  ctx.arc(pcx, pcy, d / 2, 0, Math.PI * 2)
+  ctx.lineWidth = 9
+  ctx.strokeStyle = '#ffffff'
+  ctx.stroke()
+
+  // The badge, right.
+  const badge = { w: 132, h: 160 }
+  badge.x = card.x + card.w - pad - badge.w
+  badge.y = card.y + (card.h - badge.h) / 2
+  roundRect(ctx, badge.x, badge.y, badge.w, badge.h, 26)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'
+  ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)'
+  ctx.stroke()
+  if (icon) ctx.drawImage(icon, badge.x + (badge.w - 76) / 2, badge.y + 22, 76, 76)
+  ctx.fillStyle = '#fff'
+  ctx.font = '700 28px Poppins, system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText('NAMO', badge.x + badge.w / 2, badge.y + badge.h - 24)
+  ctx.textAlign = 'left'
+
+  // Text, between them.
+  const left = pcx + d / 2 + 44
+  const right = badge.x - 28
+  const room = right - left
+  let nameEnd = left
+  if (name) {
+    let size = 60
+    const face = (s) => `700 ${s}px Poppins, "Noto Sans Devanagari", system-ui, sans-serif`
+    ctx.font = face(size)
+    while (size > 40 && ctx.measureText(name).width > room - 110) {
+      size -= 2
+      ctx.font = face(size)
+    }
+    const shown = fitText(ctx, name, room - 110)
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(shown, left, card.y + 112)
+    nameEnd = left + ctx.measureText(shown).width
+  }
+  const rows = [
+    dateLine && { y: card.y + 190, text: dateLine, draw: drawCalendar },
+    hinduLine && { y: card.y + 254, text: hinduLine, draw: drawTemple },
+  ].filter(Boolean)
+  for (const row of rows) {
+    row.draw(ctx, left, row.y - 30, 34)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
+    ctx.font = '500 34px Poppins, "Noto Sans Devanagari", system-ui, sans-serif'
+    ctx.fillText(fitText(ctx, row.text, room - 52), left + 52, row.y)
+  }
+  // The gold rule and its diamond.
+  const ry = card.y + card.h - 44
+  const mid = left + room / 2
+  ctx.strokeStyle = 'rgba(232, 184, 92, 0.85)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(left + 30, ry)
+  ctx.lineTo(mid - 16, ry)
+  ctx.moveTo(mid + 16, ry)
+  ctx.lineTo(right - 30, ry)
+  ctx.stroke()
+  ctx.fillStyle = '#e8b85c'
+  ctx.beginPath()
+  ctx.moveTo(mid, ry - 9)
+  ctx.lineTo(mid + 9, ry)
+  ctx.lineTo(mid, ry + 9)
+  ctx.lineTo(mid - 9, ry)
+  ctx.closePath()
+  ctx.fill()
+
+  const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
+  return {
+    blob,
+    marks: {
+      photo: { x: (pcx + d * 0.36) / W, y: (pcy - d * 0.36) / H },
+      // Clear of the name at preview size (about a third of the image).
+      name: { x: Math.min(nameEnd + 76, right - 10) / W, y: (card.y + 92) / H },
+    },
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+/** The text, cut with an ellipsis to fit `width` in the current font. */
+function fitText(ctx, text, width) {
+  if (ctx.measureText(text).width <= width) return text
+  let t = text
+  while (t.length > 1 && ctx.measureText(`${t}…`).width > width) t = t.slice(0, -1)
+  return `${t.trimEnd()}…`
+}
+
+function drawCalendar(ctx, x, y, s) {
+  ctx.save()
+  ctx.strokeStyle = '#e8b85c'
+  ctx.fillStyle = '#e8b85c'
+  ctx.lineWidth = 3.5
+  roundRect(ctx, x, y + s * 0.16, s, s * 0.84, 6)
+  ctx.stroke()
+  ctx.fillRect(x, y + s * 0.16, s, s * 0.22)
+  ctx.fillRect(x + s * 0.22, y, 4, s * 0.3)
+  ctx.fillRect(x + s * 0.7, y, 4, s * 0.3)
+  for (let i = 0; i < 3; i++) ctx.fillRect(x + s * (0.18 + i * 0.26), y + s * 0.58, s * 0.14, s * 0.12)
+  ctx.restore()
+}
+
+function drawTemple(ctx, x, y, s) {
+  ctx.save()
+  ctx.fillStyle = '#e8b85c'
+  // A shikhara over a hall: a spire, a body, a step.
+  ctx.beginPath()
+  ctx.moveTo(x + s * 0.5, y)
+  ctx.lineTo(x + s * 0.78, y + s * 0.5)
+  ctx.lineTo(x + s * 0.22, y + s * 0.5)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillRect(x + s * 0.1, y + s * 0.5, s * 0.8, s * 0.36)
+  ctx.fillRect(x, y + s * 0.86, s, s * 0.14)
+  ctx.fillStyle = 'rgba(28, 16, 10, 0.9)'
+  ctx.fillRect(x + s * 0.4, y + s * 0.62, s * 0.2, s * 0.24)
+  ctx.restore()
+}
+
+/* The two date lines on the card. */
+const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+const DAYS_EN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
+
+/** "2026-10-09" → "09 OCT 2026 | FRIDAY" (the calendar date, read as written). */
+export function statusDateLine(iso) {
+  const [y, m, dd] = String(iso).split('-').map(Number)
+  if (!y || !m || !dd) return ''
+  const day = new Date(Date.UTC(y, m - 1, dd)).getUTCDay()
+  return `${String(dd).padStart(2, '0')} ${MONTHS_EN[m - 1]} ${y} | ${DAYS_EN[day]}`
+}
+
+const MASA_HI = ['चैत्र', 'वैशाख', 'ज्येष्ठ', 'आषाढ़', 'श्रावण', 'भाद्रपद', 'आश्विन', 'कार्तिक',
+  'मार्गशीर्ष', 'पौष', 'माघ', 'फाल्गुन']
+const TITHI_HI = ['प्रतिपदा', 'द्वितीया', 'तृतीया', 'चतुर्थी', 'पंचमी', 'षष्ठी', 'सप्तमी', 'अष्टमी',
+  'नवमी', 'दशमी', 'एकादशी', 'द्वादशी', 'त्रयोदशी', 'चतुर्दशी']
+
+/**
+ * The Hindu date in Hindi from the panchang payload: "आश्विन कृष्ण पक्ष • तृतीया".
+ *
+ * The API names the month AMANTA (a month ends at the new moon). The card
+ * reads it PURNIMANTA, as North India and Rahul's design do: in the dark
+ * fortnight that is the NEXT month's name — amanta Bhadrapada Krishna is
+ * purnimanta Ashwin Krishna; the bright fortnight is the same in both.
+ * Empty when the payload is missing anything, rather than a wrong date.
+ */
+export function hinduDateLine(p) {
+  const n = p?.tithi?.number
+  const m = p?.lunar_month?.number
+  if (!n || !m || n < 1 || n > 30 || m < 1 || m > 12) return ''
+  const krishna = n > 15
+  const masa = MASA_HI[(m - 1 + (krishna && p.lunar_month.amanta !== false ? 1 : 0)) % 12]
+  const tithi = n === 15 ? 'पूर्णिमा' : n === 30 ? 'अमावस्या' : TITHI_HI[(n - 1) % 15]
+  const adhik = String(p.lunar_month.month_type || '').startsWith('adhik') ? 'अधिक ' : ''
+  return `${adhik}${masa} ${krishna ? 'कृष्ण' : 'शुक्ल'} पक्ष • ${tithi}`
 }
 
 /** Save a blob the browser already holds. Shared by the share fallback. */
@@ -370,6 +549,26 @@ export function recallStatusPhoto(who) {
     return localStorage.getItem(PHOTO_KEY(who)) || null
   } catch {
     return null
+  }
+}
+
+const NAME_KEY = (who) => `bhakti:status-name:${who ?? 'anon'}`
+
+/** The name for the status card, if they set one; null means the account's. */
+export function recallStatusName(who) {
+  try {
+    return localStorage.getItem(NAME_KEY(who))
+  } catch {
+    return null
+  }
+}
+
+export function rememberStatusName(who, name) {
+  try {
+    if (name) localStorage.setItem(NAME_KEY(who), name)
+    else localStorage.removeItem(NAME_KEY(who))
+  } catch {
+    /* as with the photo: this status still has it; the next may not */
   }
 }
 
