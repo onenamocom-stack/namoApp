@@ -372,9 +372,15 @@ def check_coupon(buyer_id, code, exclude_order_id=None):
 
     if _has_bought_before(buyer_id, exclude_order_id):
         return {"ok": False, "reason": REFUSAL_NOT_FIRST_ORDER}
+    from apps.shop.models import Order
+
     if Referral.objects.filter(
         referee_id=buyer_id, kind=Referral.Kind.PURCHASE
-    ).exclude(order_id=exclude_order_id).exists():
+    ).exclude(order_id=exclude_order_id).exclude(
+        # An order that never happened (lapsed unpaid, cancelled) does not
+        # use the offer up, the same rule as _has_bought_before.
+        order__status=Order.Status.CANCELLED,
+    ).exists():
         return {"ok": False, "reason": REFUSAL_NOT_FIRST_ORDER}
 
     return {"ok": True, "referrer_id": str(row.profile_id), "code": row.code}
@@ -398,6 +404,47 @@ def cashback_base(order):
     return order.total_paise - delivery - (getattr(order, "cod_fee_paise", 0) or 0)
 
 
+def cashback_split(lines, prepaid):
+    """(buyer_paise, referrer_paise) for a first order through an
+    astrologer's code (9 Oct 2026; the rules are apps/shop/offers.py).
+
+    `lines` is [(product, unit_price_paise, qty)]. Per line:
+      - a product with its own rule: the buyer gets the rule's amount, on a
+        PREPAID order only; the astrologer gets the platform rate on what is
+        left of the line after it (₹700 − ₹500 → 10% of ₹200 = ₹20).
+      - a product on DEFAULT: as before — the platform rate on those lines
+        together, capped by REFERRAL_CASHBACK_CAP_PAISE, to the astrologer,
+        and the same to the buyer on a prepaid order.
+    Cash on delivery pays the buyer nothing (owner, 9 Oct 2026): the
+    cashback is what makes paying first worth it."""
+    from django.conf import settings
+    from apps.shop import offers
+
+    bps = settings.REFERRAL_CASHBACK_BPS
+    buyer = referrer = default_base = 0
+    for product, unit, qty in lines:
+        own = offers.buyer_cashback(product, unit, qty) if product is not None else None
+        if own is None:
+            default_base += unit * qty
+            continue
+        back = own if prepaid else 0
+        buyer += back
+        referrer += (unit * qty - back) * bps // 10_000
+    default = _cashback_paise(default_base)
+    referrer += default
+    if prepaid:
+        buyer += default
+    return buyer, referrer
+
+
+def _order_lines(order):
+    from apps.shop.models import Product
+
+    items = list(order.items.filter(item_type="product"))
+    products = Product.objects.in_bulk([i.item_id for i in items])
+    return [(products.get(i.item_id), i.unit_price_paise, i.qty) for i in items]
+
+
 def claim_purchase(buyer_id, order, code):
     """Record the attribution and owe both sides 10%.
 
@@ -417,13 +464,15 @@ def claim_purchase(buyer_id, order, code):
     if not verdict["ok"]:
         return verdict
 
-    # On the goods, not the courier: delivery is a pass-through cost
-    # (5 Oct 2026), and 10% of it would be paying cashback on Shiprocket.
-    amount = _cashback_paise(cashback_base(order))
-    if amount <= 0:
-        # A ₹1 order at 10% is zero paise. The order stands; there is just
-        # nothing to owe, and a zero-amount cashback row would fail its
-        # own CHECK.
+    # On the goods, line by line, never the courier or the COD fee: each
+    # product's own rule (9 Oct 2026), the buyer's share on prepaid only.
+    from apps.shop.models import Order
+
+    prepaid = order.payment_method != Order.PaymentMethod.COD
+    buyer_amount, referrer_amount = cashback_split(_order_lines(order), prepaid)
+    if buyer_amount <= 0 and referrer_amount <= 0:
+        # Nothing to owe — a zero-amount row would fail its own CHECK. The
+        # attribution is still recorded below only when something is owed.
         return {"ok": True, "cashback_paise": 0}
 
     referral = Referral.objects.create(
@@ -433,15 +482,17 @@ def claim_purchase(buyer_id, order, code):
         code=verdict["code"],
         order=order,
     )
-    for side, who in (
-        (Cashback.Side.BUYER, buyer_id),
-        (Cashback.Side.REFERRER, verdict["referrer_id"]),
+    short = str(order.id)[:8]
+    for side, who, amount, note in (
+        (Cashback.Side.BUYER, buyer_id, buyer_amount, f"Cashback on your first order {short}"),
+        (Cashback.Side.REFERRER, verdict["referrer_id"], referrer_amount, f"Referral on order {short}"),
     ):
-        Cashback.objects.create(
-            referral=referral, profile_id=who, side=side, amount_paise=amount,
-            note=f"10% on order {str(order.id)[:8]}",
-        )
-    return {"ok": True, "cashback_paise": amount, "referral_id": str(referral.id)}
+        if amount > 0:
+            Cashback.objects.create(
+                referral=referral, profile_id=who, side=side, amount_paise=amount, note=note,
+            )
+    # What the BUYER is told: their own share, never the astrologer's.
+    return {"ok": True, "cashback_paise": buyer_amount, "referral_id": str(referral.id)}
 
 
 # ── maturation: delivery, then the wait, then the money ─────────────────────
@@ -614,7 +665,18 @@ def _notify_cancelled(row, status):
     )
 
 
-def describe_code(code, viewer_id=None, subtotal_paise=0):
+def preview_lines(lines):
+    """[{product_id, qty}] from the cart -> [(product, price, qty)], at the
+    price the server charges, for the preview below."""
+    from apps.shop.models import Product
+
+    ids = [str(row["product_id"]) for row in lines or []]
+    products = {str(p.id): p for p in Product.objects.filter(id__in=ids, active=True)}
+    return [(products[str(row["product_id"])], products[str(row["product_id"])].price_paise, row["qty"])
+            for row in lines or [] if str(row["product_id"]) in products]
+
+
+def describe_code(code, viewer_id=None, subtotal_paise=0, lines=None, payment=None):
     """What would this code do, without using it?
 
     Answers the question the cart asks while somebody is still typing, so
@@ -640,13 +702,20 @@ def describe_code(code, viewer_id=None, subtotal_paise=0):
         verdict = check_coupon(viewer_id, row.code)
         if not verdict["ok"]:
             return {"ok": False, "kind": row.kind, "reason": verdict["reason"]}
-        back = _cashback_paise(subtotal_paise)
+        if lines:
+            # The basket itself, product by product (9 Oct 2026).
+            back, _ = cashback_split(preview_lines(lines), prepaid=True)
+        else:
+            back = _cashback_paise(subtotal_paise)
+        if not back:
+            return {"ok": True, "kind": row.kind, "cashback_paise": 0,
+                    "note": "An astrologer's code. No cashback on these items."}
+        if payment == "cod":
+            return {"ok": True, "kind": row.kind, "cashback_paise": 0, "prepaid_cashback_paise": back,
+                    "note": f"Cashback is for prepaid orders. Pay online to get ₹{back / 100:,.0f} back."}
         return {
-            "ok": True, "kind": row.kind, "cashback_paise": back,
-            "note": (
-                f"₹{back / 100:g} back in your wallet seven days after delivery"
-                if back else "10% back in your wallet after delivery"
-            ),
+            "ok": True, "kind": row.kind, "cashback_paise": back, "prepaid_cashback_paise": back,
+            "note": f"₹{back / 100:,.0f} back in your wallet seven days after delivery",
         }
 
     # A seeker's sign-up code.

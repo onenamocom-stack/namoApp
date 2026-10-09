@@ -199,3 +199,24 @@ def test_a_product_on_more_than_one_shelf(shelf):
                                also_categories="Crystals", price_rupees=1000, stock=4, weight_grams=10)])
     assert any("Crystals" in m for _, m in sheet.read_workbook(bad)[1])
     assert rudra
+
+
+@pytest.mark.django_db
+def test_the_cashback_column(shelf):
+    """9 Oct 2026: one readable column for a product's own cashback."""
+    header = sheet.HEADERS
+    data = _sheet(header, [
+        _row(header, sku="NAMO-0001", name="Ruby", category="Gemstones", price_rupees=1000,
+             stock=4, weight_grams=10, cashback="10% upto 50"),
+    ])
+    plans, errors = sheet.read_workbook(data)
+    assert errors == []
+    sheet.apply(plans)
+    ruby = Product.objects.get(sku="NAMO-0001")
+    assert (ruby.referral_cashback_kind, ruby.referral_cashback_value, ruby.referral_cashback_cap_paise) == (
+        "percent", 1_000, 5_000)
+    header_row, rows = _rows(sheet.export_workbook(Product.objects.all()))
+    assert rows[0][list(header_row).index("cashback")] == "10% upto 50"
+    bad = _sheet(header, [_row(header, sku="NAMO-0001", name="Ruby", category="Gemstones",
+                               price_rupees=1000, stock=4, weight_grams=10, cashback="lots")])
+    assert sheet.read_workbook(bad)[1]

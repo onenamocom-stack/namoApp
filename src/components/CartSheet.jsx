@@ -235,8 +235,10 @@ export default function CartSheet() {
               value={coupon}
               onChange={setCoupon}
               subtotalPaise={cartTotal * 100}
+              lines={cart.map((l) => ({ product_id: l.id, qty: l.qty }))}
+              payment={cod ? 'cod' : 'online'}
               label="Coupon or astrologer's code"
-              hint="An astrologer's code pays you 10% back after delivery, on your first order."
+              hint="An astrologer's code gives you cashback in your wallet on your first prepaid order."
             />
           </div>
 

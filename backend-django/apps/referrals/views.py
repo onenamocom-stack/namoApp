@@ -121,9 +121,18 @@ def my_cashback(request):
     })
 
 
+class CheckLine(serializers.Serializer):
+    product_id = serializers.UUIDField()
+    qty = serializers.IntegerField(min_value=1, max_value=99)
+
+
 class CheckInput(serializers.Serializer):
     code = serializers.CharField(max_length=32)
     subtotal_paise = serializers.IntegerField(required=False, default=0, min_value=0)
+    # The basket and how it will be paid, so the answer names the real
+    # cashback (9 Oct 2026). Optional: an older app sends the subtotal only.
+    lines = CheckLine(many=True, required=False)
+    payment = serializers.ChoiceField(choices=("online", "cod", "wallet"), required=False)
 
 
 @api_view(["POST"])
@@ -146,7 +155,10 @@ def check(request):
     code = serializer.validated_data["code"]
     subtotal = serializer.validated_data["subtotal_paise"]
 
-    verdict = services.describe_code(code, viewer_id=viewer, subtotal_paise=subtotal)
+    lines = [{"product_id": row["product_id"], "qty": row["qty"]}
+             for row in serializer.validated_data.get("lines") or []]
+    verdict = services.describe_code(code, viewer_id=viewer, subtotal_paise=subtotal,
+                                     lines=lines, payment=serializer.validated_data.get("payment"))
     if verdict["kind"] is not None:
         return Response(verdict)
 

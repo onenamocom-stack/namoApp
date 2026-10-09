@@ -327,8 +327,9 @@ delivery cost"). Namo pays the courier; the cart reads "Delivery Free" and
 the total is the goods (plus the COD fee where chosen). The pincode is still
 checked with Shiprocket before Pay, so an address no courier serves is still
 refused. This replaced charging Shiprocket's rate for the pincode and weight;
-`DELIVERY_FREE` off brings that back. A coupon comes off the goods, and an astrologer's 10%
-cashback is paid on the goods alone (not on the COD fee). Returns of an
+`DELIVERY_FREE` off brings that back. A coupon comes off the goods, and an
+astrologer's code's cashback is worked out on the goods alone (not on the
+COD fee); a cash-on-delivery order gives the buyer none (§ referrals). Returns of an
 online order are refunded by hand for now.
 
 **Every product has a page — decided 6 Oct 2026** (owner and Rahul's list).
@@ -904,7 +905,7 @@ sign-up.
 |---|---|---|---|---|
 | Code | `A…` | `N…` | `A…` | `N…` |
 | Used | at shop checkout | at sign-up | at shop checkout | at sign-up |
-| Reward | **10% back, both sides** | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
+| Reward | **the product's cashback to the buyer (prepaid only), 10% of the rest to the consultant** — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
 | Limit | the buyer's **first ever order** | once per account, ever | — | — |
 
 **Both directions into a consultant pay nothing**, and for one reason:
@@ -921,17 +922,40 @@ The seeker→consultant check runs at **claim time only**: somebody who
 used a code legitimately as a seeker and is approved months later keeps
 what they were given. Nothing reaches backwards.
 
-### The 10% is cashback, not a discount
+### Each product sets its own cashback — decided 9 Oct 2026
+
+The owner's rule, replacing a flat 10% to both sides. The console sets, per
+product, what a first order through an astrologer's code gives the BUYER:
+**a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
+**a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
+**platform default** (10%, which is every product until somebody changes
+it, and behaves exactly as before). The same rule is a column of the
+products spreadsheet ("flat 500", "10%", "10% upto 100", "none", blank).
+
+- **The buyer's cashback is for prepaid orders only.** Cash on delivery
+  gets none — the cashback is the reason to pay first.
+- **The astrologer gets 10% of what is left after the buyer's cashback**,
+  per item: ₹700 − ₹500 → ₹20. On a default product, 10% of the goods, as
+  before; on cash on delivery, 10% of the goods.
+- **Per item:** two ₹700 items at flat ₹500 are ₹1,000 back. Never more
+  than the item cost.
+- **Why it pays:** the shop takes Razorpay, not the wallet, so the
+  cashback can only be spent on consultations, Namo AI and the app's other
+  paid extras — the consultant keeps 60% of a consultation and Namo 40%.
+  It is the retention lever: the buyer's first session is pre-paid.
+- **When:** unchanged — seven days after delivery (below).
+
+### Cashback, not a discount
 
 **This is the commercial decision the whole programme rests on.** The
-order is paid at the listed price; the 10% arrives afterwards as wallet
-credit. Revenue is recognised in full, and the money stays inside the
+order is paid at the listed price; the cashback arrives afterwards as
+wallet credit. Revenue is recognised in full, and the money stays inside the
 product — cashback is spent on a reading or another order, never
 withdrawn, because the wallet has no seeker withdraw path.
 
 A 10% discount would have cost the same on paper and bought none of that.
 
-The consultant's 10% goes to `earnings_ledger` at zero platform fee and
+The consultant's share goes to `earnings_ledger` at zero platform fee and
 leaves with their month-end payout. A consultant buying through another
 consultant's link earns nobody anything, and is **refused rather than
 silently credited zero** — being told "you got 10%" and receiving nothing

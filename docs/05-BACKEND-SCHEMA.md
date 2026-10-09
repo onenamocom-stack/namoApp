@@ -1944,6 +1944,17 @@ perk from six friends' codes. A CHECK refuses self-referral.
 it: a code can be deactivated, and the history of who was credited must
 not move when it is.
 
+### `products.referral_cashback_*` (9 Oct 2026, `shop/0008`)
+
+Each product's cashback on a first order through an astrologer's code
+(`apps/shop/offers.py`): `referral_cashback_kind` text, default `default`
+(`default` | `none` | `flat` | `percent`); `referral_cashback_value`
+integer, null — paise for `flat`, basis points for `percent`;
+`referral_cashback_cap_paise` integer, null — per item, `percent` only. The
+split into the two `referral_cashback` rows is
+`referrals.services.cashback_split`; the rows no longer carry equal
+amounts, and a side owed ₹0 gets no row.
+
 ### `referral_cashback`
 
 `referral_id`, `profile_id`, `side` (buyer | referrer), `amount_paise`,

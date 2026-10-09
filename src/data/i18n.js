@@ -562,10 +562,12 @@ export const strings = {
     en: 'is saved and goes in at checkout. You pay the full price and get',
     hi: 'सेव है और चेकआउट पर अपने-आप लगेगा। आप पूरी कीमत देंगे और डिलीवरी के सात दिन बाद आपके वॉलेट में',
   },
-  'shop.ref.c': { en: '10% back', hi: '10% वापस' },
+  // Each product can carry its own cashback now (9 Oct 2026); the cart
+  // names the amount. Prepaid orders only.
+  'shop.ref.c': { en: 'cashback', hi: 'कैशबैक' },
   'shop.ref.d': {
-    en: 'in your wallet seven days after delivery — on your first order only.',
-    hi: 'आएगा — सिर्फ़ पहले ऑर्डर पर।',
+    en: 'in your wallet seven days after delivery — on your first prepaid order only.',
+    hi: 'आएगा — सिर्फ़ पहले प्रीपेड ऑर्डर पर।',
   },
   'shop.searchPh': { en: 'Search stones, maalas and kits', hi: 'रत्न, माला और किट खोजें' },
   'shop.matched': { en: 'Matched to your chart', hi: 'आपकी कुंडली के हिसाब से' },

@@ -27,6 +27,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from . import offers
 from .models import Product, ShopCategory, ShopSubcategory
 
 # (header, help) in sheet order. The header is what the upload looks for;
@@ -54,6 +55,7 @@ COLUMNS = (
     ("slug", "The page address. Blank makes one from the name."),
     ("seo_title", "Search and share title. Blank uses the name."),
     ("seo_description", "Search and share line. Blank uses the description's first line."),
+    ("cashback", 'First order through an astrologer\'s code, prepaid only: "flat 500", "10%", "10% upto 100", "none", or blank for the default 10%.'),
     ("id", "Filled by the download. Leave it as it is; never type one."),
 )
 HEADERS = [c for c, _ in COLUMNS]
@@ -87,7 +89,7 @@ def export_workbook(products):
             "yes" if p.featured else "no", "yes" if p.active else "no",
             p.image_url or "", "\n".join(p.gallery or []), p.description or "",
             "\n".join(f"{i.get('q', '')} | {i.get('a', '')}" for i in (p.faq or []) if isinstance(i, dict)),
-            p.slug or "", p.seo_title or "", p.seo_description or "", str(p.id),
+            p.slug or "", p.seo_title or "", p.seo_description or "", offers.describe(p), str(p.id),
         ])
     bold = Font(bold=True)
     fill = PatternFill("solid", fgColor="FDE7D3")
@@ -298,6 +300,20 @@ def read_workbook(data):
                 problems.append(f"slug “{slug}” is also on row {seen_slugs[slug]}")
             seen_slugs[slug] = n
 
+        # The cashback column (9 Oct 2026). A sheet without it — one
+        # downloaded before it existed — leaves every product's rule alone.
+        cashback = None
+        if "cashback" in col:
+            try:
+                kind, value, cap = offers.parse(_text(get("cashback")))
+            except ValueError as exc:
+                problems.append(str(exc))
+            else:
+                if kind == offers.CashbackKind.FLAT and price is not None and value > price:
+                    problems.append("the cashback is more than the price")
+                cashback = {"referral_cashback_kind": kind, "referral_cashback_value": value,
+                            "referral_cashback_cap_paise": cap}
+
         if problems:
             errors += [(n, f"{sku or 'no SKU'}: {p}") for p in problems]
             continue
@@ -315,6 +331,7 @@ def read_workbook(data):
                 "description": _text(get("description")) or None, "faq": faq,
                 "slug": slug, "seo_title": _text(get("seo_title")) or None,
                 "seo_description": _text(get("seo_description")) or None,
+                **(cashback or {}),
             },
         })
     return plans, errors

@@ -126,7 +126,7 @@ export async function myCashback() {
  * Never throws. A check that fails on a flaky network must leave the
  * field usable — the real answer comes at Pay either way.
  */
-export async function checkCode(code, subtotalPaise = 0) {
+export async function checkCode(code, subtotalPaise = 0, { lines, payment } = {}) {
   const trimmed = (code || '').trim()
   if (!trimmed) return null
   const token = await accessToken()
@@ -134,7 +134,15 @@ export async function checkCode(code, subtotalPaise = 0) {
     return await api('/referrals/check/', {
       method: 'POST',
       token,
-      body: { code: trimmed, subtotal_paise: Math.round(subtotalPaise) },
+      /* The basket and how it will be paid (9 Oct 2026): each product can
+         carry its own cashback, and cash on delivery gets none, so only the
+         server can name the amount. */
+      body: {
+        code: trimmed,
+        subtotal_paise: Math.round(subtotalPaise),
+        ...(lines?.length ? { lines } : {}),
+        ...(payment ? { payment } : {}),
+      },
     })
   } catch {
     return null

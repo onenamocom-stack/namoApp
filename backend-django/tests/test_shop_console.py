@@ -54,6 +54,35 @@ class TestRupeesAndPaise:
         assert product.price_paise == 185_000
         assert product.mrp_paise == 240_000
 
+    def test_a_flat_cashback_is_typed_in_rupees(self, category):
+        """9 Oct 2026: a product's own first-order cashback (offers.py)."""
+        form = ProductForm(data={
+            "name": "Ganesh idol", "category": category.pk, "price": "700", "stock": "1",
+            "weight_grams": "50", "tax_rate_bps": "0",
+            "referral_cashback_kind": "flat", "cashback_flat": "500",
+        })
+        assert form.is_valid(), form.errors
+        p = form.save()
+        assert (p.referral_cashback_kind, p.referral_cashback_value) == ("flat", 50_000)
+
+    def test_a_percent_with_a_cap(self, category):
+        form = ProductForm(data={
+            "name": "Mala", "category": category.pk, "price": "2000", "stock": "1",
+            "weight_grams": "50", "tax_rate_bps": "0",
+            "referral_cashback_kind": "percent", "cashback_percent": "10", "cashback_cap": "100",
+        })
+        assert form.is_valid(), form.errors
+        p = form.save()
+        assert (p.referral_cashback_value, p.referral_cashback_cap_paise) == (1_000, 10_000)
+
+    def test_a_flat_cashback_above_the_price_is_refused(self, category):
+        form = ProductForm(data={
+            "name": "X", "category": category.pk, "price": "700", "stock": "1",
+            "weight_grams": "50", "tax_rate_bps": "0",
+            "referral_cashback_kind": "flat", "cashback_flat": "900",
+        })
+        assert not form.is_valid() and "cashback_flat" in form.errors
+
     def test_paise_are_rendered_back_as_rupees(self):
         assert rupees(185_000) == "₹1,850"
         assert rupees(185_050) == "₹1,850.50"

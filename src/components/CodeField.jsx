@@ -29,12 +29,16 @@ export default function CodeField({
   value,
   onChange,
   subtotalPaise = 0,
+  lines = null,
+  payment = null,
   label = 'Coupon or code',
   placeholder = 'Optional',
   hint = null,
 }) {
   const [state, setState] = useState(null)   // null | 'checking' | result
   const seq = useRef(0)
+  // One string, so a re-render with the same basket asks nothing new.
+  const basket = JSON.stringify(lines ?? [])
 
   useEffect(() => {
     const code = (value || '').trim()
@@ -52,13 +56,13 @@ export default function CodeField({
     const mine = ++seq.current
     setState('checking')
     const timer = setTimeout(async () => {
-      const answer = await checkCode(code, subtotalPaise)
+      const answer = await checkCode(code, subtotalPaise, { lines: JSON.parse(basket), payment })
       // Out-of-order guard: only the newest request may paint.
       if (mine === seq.current) setState(answer)
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [value, subtotalPaise])
+  }, [value, subtotalPaise, basket, payment])
 
   const ok = state && state !== 'checking' && state.ok
   const bad = state && state !== 'checking' && !state.ok

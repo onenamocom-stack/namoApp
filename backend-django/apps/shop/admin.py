@@ -145,6 +145,21 @@ class FormattedTextarea(forms.Textarea):
 class ProductForm(forms.ModelForm):
     price = RupeeField(label="Price")
     mrp = RupeeField(label="MRP (struck through)", required=False)
+    # First-order cashback through an astrologer's code (9 Oct 2026;
+    # apps/shop/offers.py). The kind is the model's select; these hold its
+    # amount in the units somebody types.
+    cashback_flat = RupeeField(
+        label="Flat cashback per item", required=False,
+        help_text="For “Flat amount per item”. ₹500 here on a ₹700 item: the buyer gets ₹500 in the wallet, the astrologer 10% of the ₹200 left.",
+    )
+    cashback_percent = forms.DecimalField(
+        label="Cashback %", required=False, min_value=0.01, max_value=100, decimal_places=2,
+        help_text="For “Percent of the price”.",
+    )
+    cashback_cap = RupeeField(
+        label="Up to, per item", required=False,
+        help_text="Optional, for a percent: “10% up to ₹100”.",
+    )
     # FileField, not ImageField: ImageField decodes the file to prove it is
     # an image, which needs Pillow — a real dependency in the deployed image
     # for a check that buys little here. The mime and the size are validated
@@ -181,6 +196,7 @@ class ProductForm(forms.ModelForm):
             "also_categories", "also_subcategories", "image_url",
             "description", "slug", "seo_title", "seo_description",
             "stock", "weight_grams", "tax_rate_bps", "featured", "active",
+            "referral_cashback_kind",
         )
         widgets = {
             "also_categories": forms.CheckboxSelectMultiple,
@@ -203,16 +219,28 @@ class ProductForm(forms.ModelForm):
             "slug": "The page address: 1namo.com/shop/p/<this>. Left blank, it is made from the name.",
             "seo_title": "What a search result and a shared link show as the title. Blank uses the name. Under 60 characters reads best.",
             "seo_description": "The line under it. Blank uses the description's first line. Under 160 characters.",
+            "referral_cashback_kind": "What a buyer gets back in the wallet on their FIRST order through an astrologer's code. "
+                                      "Prepaid orders only; cash on delivery gets none. Paid seven days after delivery. "
+                                      "The default is 10% of the order, as before.",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["sku"].required = False
+        # Untouched means the platform default (a form posted without it —
+        # an older page, a test — keeps the product as it was).
+        self.fields["referral_cashback_kind"].required = False
         if self.instance and self.instance.pk:
             self.fields["price"].initial = self.instance.price_paise
             self.fields["mrp"].initial = self.instance.mrp_paise
             self.fields["gallery_text"].initial = "\n".join(self.instance.gallery or [])
             self.fields["faq_text"].initial = faq_to_text(self.instance.faq)
+            kind, value = self.instance.referral_cashback_kind, self.instance.referral_cashback_value
+            if kind == "flat":
+                self.fields["cashback_flat"].initial = value
+            elif kind == "percent":
+                self.fields["cashback_percent"].initial = (value or 0) / 100
+                self.fields["cashback_cap"].initial = self.instance.referral_cashback_cap_paise
 
     def clean_sku(self):
         from .services import next_sku
@@ -282,6 +310,15 @@ class ProductForm(forms.ModelForm):
             )
         if data.get("stock") is not None and data["stock"] < 0:
             raise forms.ValidationError({"stock": "Stock cannot be negative."})
+        kind = data.get("referral_cashback_kind")
+        if kind == "flat":
+            flat = data.get("cashback_flat")
+            if not flat:
+                raise forms.ValidationError({"cashback_flat": "Type the flat cashback, or pick another kind."})
+            if price is not None and flat > price:
+                raise forms.ValidationError({"cashback_flat": "The cashback is more than the price."})
+        elif kind == "percent" and not data.get("cashback_percent"):
+            raise forms.ValidationError({"cashback_percent": "Type the percent, or pick another kind."})
         return data
 
     def save(self, commit=True):
@@ -290,6 +327,14 @@ class ProductForm(forms.ModelForm):
         product.mrp_paise = self.cleaned_data.get("mrp")
         product.gallery = self.cleaned_data.get("gallery_text") or []
         product.faq = self.cleaned_data.get("faq_text") or []
+        kind = self.cleaned_data.get("referral_cashback_kind") or "default"
+        product.referral_cashback_kind = kind
+        product.referral_cashback_value = (
+            self.cleaned_data.get("cashback_flat") if kind == "flat"
+            else round(self.cleaned_data["cashback_percent"] * 100) if kind == "percent"
+            else None
+        )
+        product.referral_cashback_cap_paise = self.cleaned_data.get("cashback_cap") if kind == "percent" else None
         if commit:
             product.save()
         return product
@@ -299,7 +344,7 @@ class ProductForm(forms.ModelForm):
 class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
     audit_target = "product"
     form = ProductForm
-    list_display = ("thumb", "sku", "name", "brand", "category", "price", "mrp", "stock_state", "featured", "active")
+    list_display = ("thumb", "sku", "name", "brand", "category", "price", "mrp", "cashback", "stock_state", "featured", "active")
     list_filter = ("active", "featured", "category", "subcategory")
     search_fields = ("sku", "name", "subtitle", "brand")
     list_editable = ("featured", "active")
@@ -312,9 +357,17 @@ class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
         ("Photos", {"fields": ("upload", "image_url", "gallery_upload", "gallery_text")}),
         ("Product page", {"fields": ("description", "faq_text")}),
         ("Search and sharing", {"fields": ("slug", "seo_title", "seo_description")}),
+        ("Cashback on a first order through an astrologer's code", {"fields": (
+            "referral_cashback_kind", "cashback_flat", "cashback_percent", "cashback_cap")}),
     )
 
     change_list_template = "admin/shop/product/change_list.html"
+
+    @dj.display(description="Cashback")
+    def cashback(self, obj):
+        from .offers import describe
+
+        return describe(obj) or "default"
 
     def get_urls(self):
         """The spreadsheet's two pages hang off the product list, so they

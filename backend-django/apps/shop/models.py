@@ -115,6 +115,17 @@ class Product(models.Model):
     slug = models.SlugField(max_length=120, null=True, blank=True, unique=True)
     seo_title = models.TextField(null=True, blank=True)
     seo_description = models.TextField(null=True, blank=True)
+    # What a first order through an astrologer's code gives back on this
+    # product (9 Oct 2026; apps/shop/offers.py). `value` is paise for FLAT
+    # and basis points for PERCENT; `cap` is paise per item, PERCENT only.
+    referral_cashback_kind = models.CharField(
+        max_length=16, default="default", db_default="default",
+        choices=[("default", "Platform default (10% of the order)"), ("none", "No cashback"),
+                 ("flat", "Flat amount per item"),
+                 ("percent", "Percent of the price, optionally capped per item")],
+    )
+    referral_cashback_value = models.IntegerField(null=True, blank=True)
+    referral_cashback_cap_paise = models.IntegerField(null=True, blank=True)
     # Soft delete. PRD §6 capability 6 again: a product in a dispute is
     # evidence, and an order item points at this row by id.
     active = models.BooleanField(default=True)

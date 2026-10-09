@@ -6134,3 +6134,29 @@ will end in 1:59" banner was counting to that frozen end.
 - **Not walked on a phone yet**, and the eject and delete endpoints are
   unseen from our account. Walk one paid video call: recharge in the last
   minute, recharge in the pause, and let one run out.
+
+## 77. Each product's own first-order cashback — 9 Oct 2026
+
+The owner's rule (`docs/01-PRD.md` § referrals; columns `docs/05`).
+
+- **`apps/shop/offers.py`**: the rule kinds (default, none, flat per item,
+  percent with an optional per-item cap), `buyer_cashback`, and the
+  sheet's phrase both ways (`describe`/`parse`). The next kind of offer
+  goes here.
+- **`referrals.services.cashback_split(lines, prepaid)`**: buyer gets the
+  rule's amount on prepaid only; the astrologer 10% of each line after the
+  buyer's share; default products as before (10% each, capped by
+  `REFERRAL_CASHBACK_CAP_PAISE`). `claim_purchase` writes a row per side
+  owed more than ₹0; the buy answer's `cashback_paise` is the buyer's.
+  **Changed for default products too:** cash on delivery now gives the
+  buyer nothing (the owner: "only on prepaid orders").
+- **Fixed on the way:** a cancelled order (lapsed unpaid online, or
+  cancelled) no longer uses up the buyer's first-order offer.
+- **Console:** a "Cashback on a first order…" section on each product
+  (kind, flat ₹, %, up to ₹), and a Cashback column in the list. The
+  spreadsheet has a `cashback` column; a sheet without it changes nothing.
+- **Cart:** `/referrals/check/` takes the basket (`lines`) and `payment`,
+  and names the real amount, or "Pay online to get ₹X back" on COD.
+- Migration `shop/0008_referral_cashback`. Tests:
+  `test_referral_offers.py` (17), cashback cases in `test_shop_console.py`
+  and `test_shop_sheet.py`.

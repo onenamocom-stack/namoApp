@@ -1025,6 +1025,10 @@ Keep items or Clear cart — since one tap emptied a built cart. Choosing an add
 courier serves it (and for the charge, which is "Free" since 8 Oct 2026); the
 sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
+An astrologer's code in the code box answers with the real cashback for
+this basket and this way of paying: "₹500 back in your wallet seven days
+after delivery", or on cash on delivery "Cashback is for prepaid orders.
+Pay online to get ₹500 back." (9 Oct 2026).
 Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online
 — the default — reads "Pay ₹X" and opens Razorpay's checkout for the order
 (the name, email and phone filled in). Paid: "Paid · ordered", the cart
