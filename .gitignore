@@ -72,3 +72,6 @@ firebase-debug.log
 firebase-debug.*.log
 # A credential handed to a deploy step; never committed.
 shiprocket-password.txt
+
+# A headless browser profile a test script once created here (9 Oct 2026)
+profile-*/
