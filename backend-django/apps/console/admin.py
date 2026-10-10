@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from apps.consultants import payout_details as payout_crypto
+from apps.consultants import services as consultant_services
 from apps.consultants.models import Consultant, PayoutDetails, PayoutDetailsStatus
 from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
@@ -27,7 +28,7 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
-    list_display = ("who", "category", "specialization", "status", "verified", "free_first", "created_at")
+    list_display = ("who", "category", "specialization", "rates", "status", "verified", "free_first", "created_at")
     list_filter = ("status", "verified", "free_first", "category")
     # Ticked here, straight from the list: the in-house consultants a new
     # seeker sees free for their first session (7 Oct 2026).
@@ -38,7 +39,7 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     ordering = ("status", "-created_at")
     readonly_fields = (
         "profile_id", "created_at", "rating_avg_cache", "rating_count_cache",
-        "rank_score_cache", "legacy_id", "who", "certificate",
+        "rank_score_cache", "legacy_id", "who", "certificate", "rates",
     )
     actions = ("approve", "block", "unblock")
     list_per_page = 50
@@ -49,6 +50,22 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         if p is None:
             return str(obj.profile_id)
         return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
+
+    @dj.display(description="Rates (₹/min)")
+    def rates(self, obj):
+        """The four rates the consultant typed (10 Oct 2026). Read only: the
+        consultant sets them, and a price change from here would be a money
+        edit with no trail on their side."""
+        r = consultant_services.rates_of(obj.profile_id)
+        if not any(r.values()):
+            return "—"
+        show = lambda v: "—" if v is None else f"₹{v}"  # noqa: E731
+        booking = r["booking"]
+        slot = "" if booking is None else f" (₹{booking * consultant_services.SLOT_MINUTES} a slot)"
+        return format_html(
+            "Chat {} · Video {} · Audio {}<br><small>Booking {}{}</small>",
+            show(r["chat"]), show(r["video"]), show(r["audio"]), show(booking), slot,
+        )
 
     @dj.display(description="Degree certificate")
     def certificate(self, obj):

@@ -165,6 +165,25 @@ class TestApproval:
         assert entry.detail["was"] == "pending"
         assert entry.detail["now"] == "approved"
 
+    def test_the_queue_shows_the_rates_the_consultant_typed(self):
+        """10 Oct 2026: a consultant sets four rates; the console shows them
+        and cannot change them."""
+        from apps.consultants import services as consultant_services
+
+        client, _ = _admin(Tier.SUPPORT)
+        consultant = _pending_consultant()
+        consultant_services.set_rates(
+            consultant.profile_id, {"chat": 10, "video": 30, "audio": 20, "booking": 25}
+        )
+        listing = client.get(reverse("namo:consultants_consultant_changelist")).content.decode()
+        assert "Chat ₹10 · Video ₹30 · Audio ₹20" in listing
+        assert "Booking ₹25 (₹500 a slot)" in listing
+        page = client.get(
+            reverse("namo:consultants_consultant_change", args=[consultant.pk])
+        ).content.decode()
+        assert "Chat ₹10 · Video ₹30 · Audio ₹20" in page
+        assert 'name="rates"' not in page
+
     def test_support_cannot_block(self):
         """Tiers are not a ladder. Support reads and approves; blocking
         somebody's livelihood is Fulfilment's."""

@@ -135,7 +135,8 @@ business is not a single take-rate with decoration around it.
 numbers, each in whole rupees a minute: **chat, video call, audio call and
 booking**. Each is **₹5 to ₹110 a minute**; the server refuses anything else.
 A consultant changes them from Profile → Settings → Your rates; the applicant
-types them on the application.
+types them on the application. The admin console shows all four on the
+consultant queue and cannot change them.
 
 **A booking is one 20-minute slot** at the booking rate times 20 (₹30/min →
 ₹600). The 15- and 30-minute slots and the 20% booking discount are gone.
