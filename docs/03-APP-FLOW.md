@@ -595,9 +595,12 @@ or a post's author.
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the
 thinner page land on the one with bookings. `/consult/:id` shows followers
-and following, and its **Posts** tab (was "Work", a list of titles) lists
-each post with its picture and opens it. A reel's caption in the reels
-viewer folds to two lines; a tap opens it.
+and following, and its **Posts** tab (was "Work", a list of titles) shows each
+post in full, as the feed does (11 Oct 2026). **About** is the facts without a
+heading (speaks, category, experience, verified), then **Rates**. There is no
+Book section under the tabs since 11 Oct (Rahul); the footer's four buttons are
+the way in. A reel's caption in the reels viewer folds to two lines; a tap
+opens it.
 
 ### `/shop/p/:key` — a product's page (6 Oct 2026)
 
@@ -815,8 +818,9 @@ matching, muhurat and reports — from a pro's ☰ below.
 specialization, rating line, bio, intro, Posts · Reviews · About (rates; Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
-profile**, **Share profile** (`/consult/<you>`) and **+** (the composer, which
-switches to Posts) where a client sees Follow, schedule, chat, video and call.
+profile** and **Share profile** (`/consult/<you>`) where a client sees Follow,
+schedule, chat, video and call. The **+** went on 11 Oct 2026 (Rahul): a post is
+made from Home's +.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
 settings, which gain a first section, Profile: **Kundli**, **Saved** (and
 **Influencer**), each at its old `/profile/<tab>` address under a plain top bar

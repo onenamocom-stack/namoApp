@@ -15,14 +15,12 @@ import {
   firstName,
   Section,
   Segmented,
-  Stub,
   Tag,
   Ticks,
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
-import Composer from '../components/Composer.jsx'
 import { FeedCard } from './Home.jsx'
 import { shareLink } from '../lib/share.js'
 
@@ -80,9 +78,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
-  const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
-  const [composing, setComposing] = useState(false)
-  const [published, setPublished] = useState(0)
+  const { showToast, hasFlag, toggleFlag, bookSession, spending, me } = useStore()
   const [tab, setTab] = useState('work')
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
@@ -308,21 +304,8 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
               <button type="button" onClick={share} className={ownButton}>
                 Share profile
               </button>
-              {!profile?.blocked && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setComposing((v) => !v)
-                    setTab('work')
-                  }}
-                  aria-label="New post"
-                  aria-pressed={composing}
-                  className="flex w-11 flex-none items-center justify-center rounded-xl text-white shadow-sm"
-                  style={{ background: 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))' }}
-                >
-                  <Icon name="plus" size={20} weight={2.2} />
-                </button>
-              )}
+              {/* No + here since 11 Oct 2026 (Rahul): a post is made from
+                  Home's +. */}
             </div>
           ) : (
           <div className="mt-5 flex items-center gap-2">
@@ -424,40 +407,16 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
           </button>
         </section>
 
-        {own && composing && (
-          <div className="border-b border-rule">
-            {/* A Reel tab only when the server's video flag is on; drawing
-                the tab grants nothing — a clip without it is refused. */}
-            <Composer
-              kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
-              onPublished={() => {
-                setComposing(false)
-                setPublished((n) => n + 1)
-              }}
-            />
-          </div>
-        )}
-
         <Segmented items={TABS} value={tab} onChange={setTab} />
 
         <div key={tab} className="animate-fade">
           {tab === 'about' && <About c={c} />}
-          {tab === 'work' && <Work key={published} c={c} />}
+          {tab === 'work' && <Work c={c} />}
           {tab === 'reviews' && <Reviews c={c} />}
         </div>
 
-        {!own && (
-          <Section label="Book" last>
-            <Stub className="mb-8" />
-            <p className="prose-c mb-8">
-              Bring the question you have been rewriting in your head. Not the polite version of it.
-            </p>
-            <Button onClick={openSheet} variant="solid">
-              Book a session · ₹{rupees(c.pricePaise ?? 0)}
-            </Button>
-          </Section>
-        )}
-
+        {/* The Book section that sat here went on 11 Oct 2026 (Rahul): the
+            footer's Book does the same. */}
         <div className="h-8" />
       </div>
 
@@ -585,7 +544,8 @@ function About({ c }) {
     <>
       {/* The bio and credentials moved up into the identity block — repeating
           them here would be the same paragraph twice on one screen. */}
-      <Section label="Practical">
+      {/* No heading (11 Oct 2026, Rahul: "Practical" said nothing). */}
+      <Section>
         <Field k="Speaks" v={c.languages.join(' · ') || '—'} />
         <Field k="Category" v={c.category} />
         <Field k="Experience" v={c.experienceYrs ? `${c.experienceYrs} yrs` : '—'} />
@@ -611,11 +571,8 @@ function About({ c }) {
             <Field key={key} k={label} v={`₹${rupees(c.channels[key].price_paise)} a minute`} />
           ) : null,
         )}
-        <Field k="Questions" v={SESSION.promise} />
-        <p className="mt-6 text-center text-meta text-t3">
-          Chat and calls are charged by the minute while they run. A booking is paid when you
-          book.
-        </p>
+        {/* "Unlimited questions" and the how-you-pay note went on 11 Oct
+            2026 (Rahul). */}
       </Section>
     </>
   )
