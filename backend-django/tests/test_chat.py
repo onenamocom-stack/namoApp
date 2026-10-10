@@ -326,6 +326,23 @@ class TestRequest:
         assert session.status == Session.Status.REQUESTED
         assert session.rate_paise == RATE  # the rate is FROZEN at request
 
+    def test_each_channel_charges_its_own_rate(self, pro_user):
+        """10 Oct 2026: chat, video and audio are separate rows with their
+        own rates, and the channel pressed picks the row — whatever
+        per-minute id the client sent."""
+        chat = pro_user[1]
+        video = _service(mode="call", price=RATE * 3)
+        audio = _service(mode="audio", price=RATE * 2)
+        ConsultantService.objects.filter(pk__in=[video.pk, audio.pk]).update(duration_mins=1)
+        _fund(SEEKER, RATE * 100)
+        for channel, row, rate in (("video", video, RATE * 3), ("audio", audio, RATE * 2),
+                                   ("chat", chat, RATE)):
+            result = services.request_chat(SEEKER, PRO, chat.id, channel=channel)
+            assert result["ok"] is True, result
+            session = Session.objects.get(pk=result["session_id"])
+            assert (session.service_id, session.rate_paise) == (row.id, rate)
+            Session.objects.filter(pk=session.pk).update(status=Session.Status.DECLINED)
+
     def test_self_chat_refused(self, pro_user):
         service = pro_user[1]
         result = services.request_chat(PRO, PRO, service.id)

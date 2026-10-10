@@ -51,8 +51,8 @@ Runs their practice on the platform. Cares about three things in order:
 consultant side is a feed, a session queue, a studio and an earnings screen
 rather than a settings panel.
 
-Sets nothing about their own price except which band they sit in (§4.1). Is
-invisible until approved.
+Sets their own four rates — chat, video, audio and booking — within the
+platform's range (§4.1). Is invisible until approved.
 
 ### The admin
 
@@ -131,20 +131,20 @@ business is not a single take-rate with decoration around it.
 
 ### 4.1 Sessions — the primary line
 
-**The platform sets price bands; consultants choose one.** They do not type a
-number. This keeps quality legible to seekers, keeps margin predictable, and
-means a price change is a catalogue edit rather than a migration.
+**Consultants type their own rates — decided 10 Oct 2026 (Rahul).** Four
+numbers, each in whole rupees a minute: **chat, video call, audio call and
+booking**. Each is **₹5 to ₹110 a minute**; the server refuses anything else.
+A consultant changes them from Profile → Settings → Your rates; the applicant
+types them on the application.
 
-Current consultant prices, which become the seed bands:
+**A booking is one 20-minute slot** at the booking rate times 20 (₹30/min →
+₹600). The 15- and 30-minute slots and the 20% booking discount are gone.
 
-| ₹749 | ₹899 | ₹999 | ₹1,299 | ₹1,499 | ₹2,200 |
-|---|---|---|---|---|---|
-
-**A booked slot costs 20% less than the same minutes on the meter** (5 Oct 2026).
-The per-minute rate is the band over 20, rounded to ₹1 (₹749 → ₹37/min); a 15,
-20 or 30-minute slot is that rate times its minutes, less 20%, rounded to ₹1 —
-₹444 / ₹592 / ₹888 at ₹37/min. It replaced slot prices that equalled the meter,
-so nothing rewarded booking ahead. Video, audio and chat all run on the meter.
+This replaced the platform's six price bands (₹749 to ₹2,200 for 20 minutes,
+one tier per consultant, one per-minute rate for every channel, decided 1 Sep;
+the booking discount was 5 Oct). On the switch each consultant's per-minute
+rate became their chat, video and audio rate, and their booking rate became
+their old 20-minute price over 20, to the nearest rupee (₹592 → ₹30 → ₹600).
 
 **Platform commission: 40%** (owner, 7 Oct 2026; it was 18%), expressed in
 basis points everywhere it is stored. A ₹1,499 session pays the consultant
@@ -172,9 +172,7 @@ those two minutes carries on the same session. Otherwise it ends at the
 moment the money ran out; either person may end it sooner. The consultant
 is not paid for the pause. (`PAUSE_SECONDS`, 120.)
 
-Each band carries the three bookable lengths and a per-minute rate for instant
-calls — **§5.1, decided.** The bands are rows in `price_bands`, and a
-consultant's price is refused by the database if it does not match one.
+How the rates are stored is `05-BACKEND-SCHEMA.md` §4.3.
 
 ### 4.2 Tarot
 
@@ -423,21 +421,15 @@ against their wallet. They are two products, not two opinions about one.
 
 | | |
 |---|---|
-| Scheduled | 15 / 20 / 30 minutes, one price each, paid up front, claims a slot |
-| Instant | Per minute, no slot, the wallet drains live. **Call and chat both** |
+| Scheduled | 20 minutes only (since 10 Oct 2026), paid up front, claims a slot |
+| Instant | Per minute, no slot, the wallet drains live. **Chat, video and audio** |
 
-Both come from the same band. Choosing a tier gives a consultant all four
-prices — three lengths and a rate — so there is still exactly one pricing
-decision to make and it is still the platform's ladder they pick off.
-
-The 20-minute price is the one everything is quoted against; the other two are
-rounded to the nearest ₹10 rather than derived exactly, because ₹2,248.50 is
-not a price. See `05-BACKEND-SCHEMA.md` §4.3.
+Each has the consultant's own rate (§4.1, 10 Oct 2026). Until then both came
+from one platform band, with one per-minute rate for every channel.
 
 **Chat is per-minute too — decided 1 Sep 2026.** It is an instant session that
-happens to be typed, not a second product: the same band, the same rate, the
-same meter. A consultant picks a tier and that tier's per-minute rate applies to
-both an instant call and a chat.
+happens to be typed, not a second product: the same meter. Since 10 Oct it has
+its own rate, as video and audio do.
 
 **And it is a LIVE room, not async messaging.** That follows from the price
 rather than being a separate choice: there is no honest way to bill wall-clock
@@ -446,13 +438,10 @@ parties are present, the timer runs, and it ends when someone leaves or the
 wallet empties. A thread that outlives the session is a transcript, not a
 billable surface.
 
-**The consultant picks a tier; they do not type a rate.** Considered and
-rejected on 1 Sep: free-form pricing means dropping the band check from the
-write policy on `consultant_services`, which is the thing that makes "the
-platform sets the price" true rather than merely rendered as six buttons. The
-ladder already spans ₹37 to ₹110 a minute, which is a 3x spread — wide enough to
-express that one reader is worth more than another, narrow enough to keep
-margin predictable and a price change a catalogue edit.
+**The consultant types the rate — 10 Oct 2026, reversing 1 Sep.** On 1 Sep
+typed prices were rejected so the platform kept the ladder (₹37 to ₹110 a
+minute). Rahul's call on 10 Oct: each consultant sets each channel's rate, and
+the platform keeps only the range, ₹5 to ₹110.
 
 **Per-minute is modelled but not metered.** Phase 4 gave it a row and a rate.
 The meter — a balance hold, a per-minute debit, a mid-session cutoff — **moves

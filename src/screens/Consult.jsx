@@ -422,7 +422,8 @@ export default function Consult() {
                         ? 'Offline'
                         : c.freeFirst
                           ? '3 min free'
-                          : `₹${c.perMinutePaise != null ? rupees(c.perMinutePaise) : '—'}${t('con.perMin')}`}
+                          : // Each button its own rate (10 Oct 2026).
+                            `₹${c.channels?.[kind] ? rupees(c.channels[kind].price_paise) : '—'}${t('con.perMin')}`}
                     </span>
                   </button>
                 ))}

@@ -128,7 +128,8 @@ export default function SearchScreen() {
                       {[c.specialization, (c.languages || []).join(', ')].filter(Boolean).join(' · ')}
                     </span>
                   </span>
-                  {c.perMinute && <span className="flex-none caps-sm gold tnum">₹{c.perMinute.price_paise / 100}/min</span>}
+                  {/* The cheapest of chat, video and audio (10 Oct 2026). */}
+                  {c.perMinute && <span className="flex-none caps-sm gold tnum">from ₹{c.perMinute.price_paise / 100}/min</span>}
                 </Link>
               ))}
             </Group>

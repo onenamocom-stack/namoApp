@@ -585,7 +585,7 @@ class TestTagsAndDegree:
 
 @pytest.mark.django_db
 class TestApply:
-    def test_application_lands_pending_with_band_priced_services(
+    def test_old_tier_application_lands_pending_with_four_rates(
         self, api_client, sign_hs256, hs256_mode, money_tables, catalogue
     ):
         from django.db import connection
@@ -620,16 +620,17 @@ class TestApply:
         assert row.experience_yrs == 12
         assert row.languages == ["Hindi", "English"]
         services_rows = list(ConsultantService.objects.filter(consultant_id=SEEKER))
-        assert len(services_rows) == 4  # 15/20/30 fixed + per-minute, mode call
-        assert {s.mode for s in services_rows} == {"call"}
-        prices = {(s.billing, s.duration_mins): s.price_paise for s in services_rows}
-        # Assertion 9: priced off the band, never the typed 100.
+        prices = {(s.mode, s.billing, s.duration_mins): s.price_paise for s in services_rows}
+        # An old client's tier becomes four rates (10 Oct 2026): the band's
+        # ₹75/min on every channel, the 20-minute slot's ₹1,200 over 20 as the
+        # booking rate. Never the typed 100.
         assert prices == {
-            ("fixed", 15): 90000,
-            ("fixed", 20): 120000,
-            ("fixed", 30): 180000,
-            ("per_minute", 1): 7500,
+            ("chat", "per_minute", 1): 7500,
+            ("call", "per_minute", 1): 7500,
+            ("audio", "per_minute", 1): 7500,
+            ("call", "fixed", 20): 120000,
         }
+        assert all(s.band_id is None for s in services_rows)
 
     def test_second_application_is_a_409(self, api_client, sign_hs256, hs256_mode,
                                          money_tables, catalogue):
@@ -662,6 +663,46 @@ class TestApply:
         assert response.json()["message"] == "That price band is not available."
         assert Consultant.objects.count() == 0
         assert ConsultantService.objects.count() == 0
+
+    def test_application_with_typed_rates(self, api_client, sign_hs256, hs256_mode,
+                                          money_tables):
+        token = sign_hs256(claims=make_claims(sub=SEEKER))
+        response = api_client.post(
+            "/v1/consultants/apply/",
+            data={"category": "Astrologer",
+                  "rates": {"chat": 10, "video": 30, "audio": 20, "booking": 25}},
+            format="json",
+            **auth(token),
+        )
+        assert response.status_code == 201
+        assert services.rates_of(SEEKER) == {"chat": 10, "video": 30, "audio": 20, "booking": 25}
+        slot = ConsultantService.objects.get(consultant_id=SEEKER, billing="fixed")
+        assert (slot.duration_mins, slot.price_paise) == (20, 50000)  # ₹25 x 20
+
+    @pytest.mark.parametrize("bad", [4, 111, 0, -5, 12.5, "abc", None])
+    def test_application_rate_out_of_range_refused(self, bad, api_client, sign_hs256,
+                                                   hs256_mode, money_tables):
+        token = sign_hs256(claims=make_claims(sub=SEEKER))
+        response = api_client.post(
+            "/v1/consultants/apply/",
+            data={"category": "Astrologer",
+                  "rates": {"chat": bad, "video": 30, "audio": 20, "booking": 25}},
+            format="json",
+            **auth(token),
+        )
+        assert response.status_code == 400
+        assert Consultant.objects.count() == 0
+        assert ConsultantService.objects.count() == 0
+
+    def test_application_needs_rates_or_tier(self, api_client, sign_hs256, hs256_mode,
+                                             money_tables):
+        token = sign_hs256(claims=make_claims(sub=SEEKER))
+        response = api_client.post(
+            "/v1/consultants/apply/", data={"category": "Astrologer"}, format="json",
+            **auth(token),
+        )
+        assert response.status_code == 400
+        assert Consultant.objects.count() == 0
 
     def test_me_is_404_for_a_non_consultant(self, api_client, seeker_token, money_tables):
         response = api_client.get("/v1/consultants/me/", **auth(seeker_token))
@@ -1326,3 +1367,97 @@ class TestSlotDiscount:
         services.reprice_services()
         per_minute.refresh_from_db()
         assert per_minute.price_paise == 1000  # a hand-set rate is not a slot
+
+
+# ── own rates (10 Oct 2026, Rahul) ───────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestOwnRates:
+    """A consultant types four rates — chat, video, audio, booking — each
+    ₹5 to ₹110 a minute; a slot is 20 minutes at the booking rate."""
+
+    def _pro(self):
+        Consultant.objects.create(profile_id=PRO, category="Astrologer", status="approved")
+        services.set_rates(PRO, {"chat": 37, "video": 37, "audio": 37, "booking": 30})
+
+    def test_put_replaces_all_four(self, api_client, sign_hs256, hs256_mode, money_tables):
+        self._pro()
+        token = sign_hs256(claims=make_claims(sub=PRO))
+        response = api_client.put(
+            "/v1/consultants/me/rates/",
+            data={"chat": 5, "video": 110, "audio": 50, "booking": 40},
+            format="json",
+            **auth(token),
+        )
+        assert response.status_code == 200
+        assert response.json() == {"chat": 5, "video": 110, "audio": 50, "booking": 40}
+        rows = {(s.mode, s.billing, s.duration_mins): (s.price_paise, s.active)
+                for s in ConsultantService.objects.filter(consultant_id=PRO)}
+        assert rows == {
+            ("chat", "per_minute", 1): (500, True),
+            ("call", "per_minute", 1): (11000, True),
+            ("audio", "per_minute", 1): (5000, True),
+            ("call", "fixed", 20): (80000, True),
+        }
+        me = api_client.get("/v1/consultants/me/", **auth(token)).json()
+        assert me["rates"] == {"chat": 5, "video": 110, "audio": 50, "booking": 40}
+
+    @pytest.mark.parametrize("bad", [4, 111, 12.5, "abc", None])
+    def test_put_out_of_range_changes_nothing(self, bad, api_client, sign_hs256, hs256_mode,
+                                              money_tables):
+        self._pro()
+        token = sign_hs256(claims=make_claims(sub=PRO))
+        response = api_client.put(
+            "/v1/consultants/me/rates/",
+            data={"chat": 20, "video": bad, "audio": 20, "booking": 20},
+            format="json",
+            **auth(token),
+        )
+        assert response.status_code == 400
+        assert services.rates_of(PRO) == {"chat": 37, "video": 37, "audio": 37, "booking": 30}
+
+    def test_put_by_a_non_consultant_is_404(self, api_client, seeker_token, money_tables):
+        response = api_client.put(
+            "/v1/consultants/me/rates/",
+            data={"chat": 20, "video": 20, "audio": 20, "booking": 20},
+            format="json",
+            **auth(seeker_token),
+        )
+        assert response.status_code == 404
+
+    def test_old_slot_lengths_switch_off_and_bookings_keep_their_price(self, money_tables):
+        Consultant.objects.create(profile_id=PRO, category="Astrologer", status="approved")
+        old = ConsultantService.objects.create(
+            consultant_id=PRO, mode="call", billing="fixed", duration_mins=30, price_paise=88800,
+        )
+        services.set_rates(PRO, {"chat": 20, "video": 20, "audio": 20, "booking": 20})
+        old.refresh_from_db()
+        assert old.active is False and old.price_paise == 88800
+        active = ConsultantService.objects.filter(consultant_id=PRO, active=True, billing="fixed")
+        assert [(s.duration_mins, s.price_paise) for s in active] == [(20, 40000)]
+
+
+@pytest.mark.django_db
+def test_migration_turns_band_rows_into_four_rates(money_tables):
+    """0006's data step on a tier-1 consultant as production has them: the
+    per-minute rate carries over to all three channels; booking is the
+    20-minute slot over 20 to the nearest rupee (₹592 -> ₹30); 15 and 30
+    switch off; every band goes."""
+    import importlib
+
+    from django.apps import apps as django_apps
+
+    own_rates = importlib.import_module(
+        "apps.consultants.migrations.0006_own_rates"
+    ).own_rates
+    band = "11111111-2222-3333-4444-555555555555"
+    Consultant.objects.create(profile_id=PRO, category="Astrologer", status="approved")
+    for billing, mins, price in (("fixed", 15, 44400), ("fixed", 20, 59200),
+                                 ("fixed", 30, 88800), ("per_minute", 1, 3700)):
+        ConsultantService.objects.create(consultant_id=PRO, band_id=band, mode="call",
+                                         billing=billing, duration_mins=mins, price_paise=price)
+    own_rates(django_apps, None)
+    assert services.rates_of(PRO) == {"chat": 37, "video": 37, "audio": 37, "booking": 30}
+    assert ConsultantService.objects.filter(consultant_id=PRO, active=False).count() == 2
+    assert not ConsultantService.objects.filter(band_id__isnull=False).exists()

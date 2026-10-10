@@ -24,7 +24,7 @@ class ServiceRow(serializers.Serializer):
 
     id = serializers.UUIDField()
     consultant_id = serializers.UUIDField()
-    band_id = serializers.UUIDField()
+    band_id = serializers.UUIDField(allow_null=True)
     mode = serializers.CharField()
     billing = serializers.CharField()
     duration_mins = serializers.IntegerField()
@@ -248,8 +248,42 @@ def me(request):
             "rating_count_cache": consultant.rating_count_cache,
             "sessions_done": services.sessions_done(consultant.profile_id),
             "created_at": consultant.created_at,
+            # Whole rupees a minute: chat, video, audio, booking (10 Oct 2026).
+            "rates": services.rates_of(consultant.profile_id),
         }
     )
+
+
+class RatesInput(serializers.Serializer):
+    """The four rates, whole rupees a minute. Integers only — the range is
+    the service layer's check, so the refusal names it in one sentence."""
+
+    chat = serializers.IntegerField()
+    video = serializers.IntegerField()
+    audio = serializers.IntegerField()
+    booking = serializers.IntegerField()
+
+
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def my_rates(request):
+    """The caller's own rates (10 Oct 2026, Rahul): GET reads them, PUT
+    replaces all four. The body is rupees a minute; the paise on the rows
+    are worked out here, never sent (rule 3)."""
+    consultant = services.my_consultant(request.user.pk)
+    if consultant is None:
+        return Response(
+            refusal_body("not_consultant", "No practice on this account."), status=404
+        )
+    if request.method == "GET":
+        return Response(services.rates_of(consultant.profile_id))
+    serializer = RatesInput(data=request.data)
+    if not serializer.is_valid():
+        return Response(refusal_body("invalid", services.REFUSAL_BAD_RATE), status=400)
+    try:
+        return Response(services.set_rates(consultant.profile_id, serializer.validated_data))
+    except services.BadRate as exc:
+        return Response(refusal_body("invalid", str(exc)), status=400)
 
 
 @api_view(["GET"])
@@ -311,7 +345,15 @@ class ApplyInput(serializers.Serializer):
     # not be used: the file is in the private bucket and the console signs
     # its own link to read it.
     degree_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)
-    tier = serializers.IntegerField(min_value=1, max_value=6)
+    # The applicant's four rates (10 Oct 2026). `tier` is the old form's
+    # field, still read when `rates` is absent; one of the two is required.
+    rates = RatesInput(required=False, default=None, allow_null=True)
+    tier = serializers.IntegerField(min_value=1, max_value=6, required=False, default=None)
+
+    def validate(self, data):
+        if data.get("rates") is None and data.get("tier") is None:
+            raise serializers.ValidationError(services.REFUSAL_BAD_RATE)
+        return data
 
 
 @api_view(["POST"])
@@ -336,9 +378,12 @@ def apply(request):
             degree=data["degree"] or None,
             degree_asset_id=data["degree_asset_id"],
             tier=data["tier"],
+            rates=dict(data["rates"]) if data["rates"] is not None else None,
         )
     except AlreadyApplied as exc:
         return Response(refusal_body("already_applied", str(exc)), status=HTTP_409_CONFLICT)
+    except services.BadRate as exc:
+        return Response(refusal_body("invalid", str(exc)), status=400)
     return Response({"profile_id": str(consultant.profile_id), "status": consultant.status}, status=HTTP_201_CREATED)
 
 

@@ -1,12 +1,14 @@
 import { MilestoneBadge, MilestoneLadder, TierRing } from '../components/Milestones.jsx'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { TabHeader } from '../components/Chrome.jsx'
+import { Sheet, TabHeader } from '../components/Chrome.jsx'
+import RateFields, { RATE_FIELDS, rateErrors, rateNumbers } from '../components/RateFields.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
-import { rupees, useConsultantFields, useStore } from '../store.jsx'
-import { listServices } from '../lib/consultants.js'
+import { useConsultantFields, useStore } from '../store.jsx'
+import { listServices, saveMyRates } from '../lib/consultants.js'
 import { signOut } from '../lib/signout.js'
 import { fetchByAuthor, fetchReviews, followerCount } from '../lib/content.js'
 
@@ -40,10 +42,11 @@ export default function ProProfile() {
   const { consultant } = useStore()
   const [services, setServices] = useState([])
   const [followers, setFollowers] = useState(null)
+  const [pricesAt, setPricesAt] = useState(0)
 
   useEffect(() => {
     if (consultant?.profile_id) listServices(consultant.profile_id).then(setServices)
-  }, [consultant])
+  }, [consultant, pricesAt])
 
   useEffect(() => {
     const id = consultant?.profile_id
@@ -145,7 +148,7 @@ export default function ProProfile() {
       <div key={tab} className="animate-fade">
         {tab === 'content' && <Content />}
         {tab === 'reviews' && <Reviews />}
-        {tab === 'settings' && <Settings me={me} />}
+        {tab === 'settings' && <Settings me={me} onRatesSaved={() => setPricesAt(Date.now())} />}
       </div>
 
       <div className="h-24" />
@@ -263,9 +266,10 @@ function Reviews() {
   )
 }
 
-function Settings({ me }) {
+function Settings({ me, onRatesSaved }) {
   const { showToast } = useStore()
   const [leaving, setLeaving] = useState(false)
+  const [editingRates, setEditingRates] = useState(false)
 
   const leave = async () => {
     if (leaving) return
@@ -283,18 +287,15 @@ function Settings({ me }) {
       <section className="border-b border-rule px-5 py-6">
         <Kicker>Practice</Kicker>
         <div className="mt-2">
-          {/* Real, and read-only on purpose: the price is a platform band, not
-              a number to type. Changing band is an edit to your application
-              until there is a screen for it. */}
+          {/* Your own four rates since 10 Oct 2026 (Rahul) — it was a
+              read-only platform band. Tap to change them. */}
           <Row
-            onClick={() => showToast('Your band is set on your application. Ask us to move it.')}
-            title="Session pricing"
+            onClick={() => setEditingRates(true)}
+            title="Your rates"
             note={
-              me.pricePaise == null
-                ? 'No sessions priced yet'
-                : `${me.fixed.map((s) => `${s.duration_mins} min ₹${rupees(s.price_paise)}`).join(' · ')}${
-                    me.perMinute ? ` · ₹${rupees(me.perMinute.price_paise)}/min` : ''
-                  }`
+              me.rates
+                ? RATE_FIELDS.map(([k, label]) => `${label} ₹${me.rates[k] ?? '—'}`).join(' · ') + ' /min'
+                : 'Not set yet'
             }
           />
           <Row to="/pro/consult" title="Availability" note="Which slots you are open for" />
@@ -308,6 +309,16 @@ function Settings({ me }) {
           <Row to="/pro/payout-details" title="Payout details" note="PAN and bank account" />
         </div>
       </section>
+      {editingRates && (
+        <RatesSheet
+          current={me.rates}
+          onClose={() => setEditingRates(false)}
+          onSaved={() => {
+            setEditingRates(false)
+            onRatesSaved()
+          }}
+        />
+      )}
 
       <section className="px-5 py-6">
         <Kicker>Account</Kicker>
@@ -340,5 +351,55 @@ function Settings({ me }) {
         </p>
       </section>
     </>
+  )
+}
+
+/**
+ * Your four rates, typed (10 Oct 2026). All four go up together; the new
+ * prices apply to what is asked or booked after the save. A booking or a
+ * session already made keeps the price it was made at.
+ */
+function RatesSheet({ current, onClose, onSaved }) {
+  const { showToast, refreshConsultant, session } = useStore()
+  const [rates, setRates] = useState(() =>
+    Object.fromEntries(RATE_FIELDS.map(([k]) => [k, current?.[k] != null ? String(current[k]) : ''])),
+  )
+  const [saving, setSaving] = useState(false)
+  const ok = !Object.keys(rateErrors(rates)).length
+
+  const save = async () => {
+    if (!ok || saving) return
+    setSaving(true)
+    try {
+      await saveMyRates(rateNumbers(rates))
+      await refreshConsultant(session?.user?.id)
+      showToast('Rates saved.')
+      onSaved()
+    } catch (err) {
+      showToast(err.message || 'Could not save your rates.')
+      setSaving(false)
+    }
+  }
+
+  // On the page, in the phone-width frame — Profile's FollowSheet does the
+  // same; inside the settings tab a sheet opened mid-page.
+  return createPortal(
+    <div className="fixed inset-y-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+    <Sheet open onClose={onClose} title="Your rates">
+      <p className="text-meta t-sub">
+        Rupees a minute, ₹5 to ₹110. New prices apply to what is asked or booked from now on.
+      </p>
+      <RateFields value={rates} onChange={setRates} />
+      <button
+        type="button"
+        onClick={save}
+        disabled={!ok || saving}
+        className="mt-6 block w-full rounded-xl bg-gold-fill py-3 text-center text-meta font-semibold text-white disabled:opacity-40"
+      >
+        {saving ? 'Saving' : 'Save rates'}
+      </button>
+    </Sheet>
+    </div>,
+    document.body,
   )
 }

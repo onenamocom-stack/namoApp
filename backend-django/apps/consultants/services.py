@@ -66,6 +66,7 @@ from .models import (
     EarningsLedger,
     PriceBand,
     ServiceBilling,
+    ServiceMode,
 )
 from apps.wallet import services as wallet_services
 
@@ -105,6 +106,7 @@ REFUSAL_NOT_OPEN_REQUEST = "That request is no longer open."
 REFUSAL_NOT_CONSULTANT = "That is not your practice."
 REFUSAL_ALREADY_APPLIED = "You have already applied."
 REFUSAL_BAD_BAND = "That price band is not available."
+REFUSAL_BAD_RATE = "Each rate is a whole number of rupees from ₹5 to ₹110 a minute."
 
 
 class AlreadyApplied(Exception):
@@ -244,13 +246,123 @@ def reprice_services():
 
     Per-minute rates are deliberately left alone: the 5 Oct 2026 change was
     to slots only, and the first run on production reset a hand-set test
-    rate (Raghu's ₹10/min) to its tier's ₹37 — put back by hand."""
+    rate (Raghu's ₹10/min) to its tier's ₹37 — put back by hand.
+
+    Since 10 Oct 2026 every service row has a null band (consultants type
+    their own rates), so this finds nothing to change. Kept so the command
+    that calls it does not break; it must not be taught to reprice again."""
     changed = 0
     for band in PriceBand.objects.filter(billing=ServiceBilling.FIXED):
         changed += ConsultantService.objects.filter(band_id=band.id).exclude(
             price_paise=band.price_paise
         ).update(price_paise=band.price_paise)
     return changed
+
+
+# ── the consultant's own rates (10 Oct 2026, Rahul; replaced the bands) ──────
+#
+# Four numbers, each typed by the consultant: rupees a minute for chat,
+# video, audio and a booked slot. A slot is 20 minutes, its price the
+# booking rate times 20. The range is the whole check — the platform no
+# longer sets the ladder, it sets the floor and the ceiling.
+
+RATE_MIN_RUPEES = 5
+RATE_MAX_RUPEES = 110
+SLOT_MINUTES = 20
+# channel -> the per-minute row's mode. Video keeps `call`, the mode every
+# per-minute row had before, so a session already open finds its row.
+RATE_MODES = {"chat": ServiceMode.CHAT, "video": ServiceMode.CALL, "audio": ServiceMode.AUDIO}
+RATE_KEYS = ("chat", "video", "audio", "booking")
+
+
+class BadRate(Exception):
+    """A rate outside the range, or not a whole number of rupees."""
+
+
+def _clean_rates(rates):
+    """{key: whole rupees} for all four keys, or BadRate. Booleans and
+    fractions are refused rather than rounded: a typed ₹12.5 is a mistake
+    to show, not a price to guess at."""
+    clean = {}
+    for key in RATE_KEYS:
+        value = (rates or {}).get(key)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise BadRate(REFUSAL_BAD_RATE)
+        if not RATE_MIN_RUPEES <= value <= RATE_MAX_RUPEES:
+            raise BadRate(REFUSAL_BAD_RATE)
+        clean[key] = value
+    return clean
+
+
+def _write_rates(consultant_id, rates):
+    """The four rows, written in the caller's transaction. A row's price
+    changes in place: bookings and sessions hold frozen copies, so nothing
+    already paid for moves. Every other fixed length is switched off, not
+    deleted — old bookings point at those rows."""
+    for n, (key, mode) in enumerate(RATE_MODES.items()):
+        ConsultantService.objects.update_or_create(
+            consultant_id=consultant_id,
+            mode=mode,
+            billing=ServiceBilling.PER_MINUTE,
+            duration_mins=1,
+            defaults={"price_paise": rates[key] * 100, "active": True,
+                      "band_id": None, "sort": 100 + n * 10},
+        )
+    ConsultantService.objects.update_or_create(
+        consultant_id=consultant_id,
+        mode=ServiceMode.CALL,
+        billing=ServiceBilling.FIXED,
+        duration_mins=SLOT_MINUTES,
+        defaults={"price_paise": rates["booking"] * 100 * SLOT_MINUTES, "active": True,
+                  "band_id": None, "sort": 0},
+    )
+    ConsultantService.objects.filter(
+        consultant_id=consultant_id, billing=ServiceBilling.FIXED
+    ).exclude(duration_mins=SLOT_MINUTES).update(active=False)
+
+
+def set_rates(consultant_id, rates):
+    """The consultant's four rates, all at once (one action, one write —
+    rule 5). Returns the rates as stored, or raises BadRate."""
+    clean = _clean_rates(rates)
+    with transaction.atomic():
+        _write_rates(consultant_id, clean)
+    return rates_of(consultant_id)
+
+
+def rates_of(consultant_id):
+    """{chat, video, audio, booking} in whole rupees a minute, None for a
+    channel with no active row."""
+    rows = ConsultantService.objects.filter(consultant_id=consultant_id, active=True)
+    out = dict.fromkeys(RATE_KEYS)
+    for row in rows:
+        if row.billing == ServiceBilling.FIXED and row.duration_mins == SLOT_MINUTES:
+            out["booking"] = row.price_paise // (100 * SLOT_MINUTES)
+        elif row.billing == ServiceBilling.PER_MINUTE:
+            for key, mode in RATE_MODES.items():
+                if row.mode == mode:
+                    out[key] = row.price_paise // 100
+    return out
+
+
+def rates_from_tier(tier):
+    """An old client's tier pick as four rates: the band's per-minute rate
+    for chat, video and audio; the booking rate the 20-minute slot over 20,
+    to the nearest rupee. None if the tier has no active band."""
+    bands = {(b.billing, b.duration_mins): b
+             for b in PriceBand.objects.filter(active=True, tier=tier)}
+    per_minute = bands.get((ServiceBilling.PER_MINUTE, 1))
+    slot = bands.get((ServiceBilling.FIXED, SLOT_MINUTES))
+    if per_minute is None or slot is None:
+        return None
+
+    def clamp(r):
+        return max(RATE_MIN_RUPEES, min(RATE_MAX_RUPEES, r))
+
+    rupees = per_minute.price_paise // 100
+    booking = _round_to_grid(slot.price_paise // SLOT_MINUTES, 100) // 100
+    return {"chat": clamp(rupees), "video": clamp(rupees), "audio": clamp(rupees),
+            "booking": clamp(booking)}
 
 
 def list_price_bands():
@@ -406,21 +518,22 @@ def add_time_off(consultant_id, starts_at, ends_at, reason=None):
 
 
 def apply(profile_id, *, category, specialization, languages, experience_yrs, bio,
-          credentials, tier, tags=None, degree=None, degree_asset_id=None):
+          credentials, tier=None, rates=None, tags=None, degree=None, degree_asset_id=None):
     """One application, one transaction (rule 5): the consultants row — the
     insert grant's columns ONLY; status lands 'pending' and verified False
     because the request shape has no fields for them (009 check assertion 8:
-    a consultant cannot approve themselves) — plus a service row per active
-    band of the chosen tier, priced BY COPYING THE BAND ROW, never from the
-    body (assertion 9: a service priced off no band is refused; here the
-    refusal is structural)."""
-    bands = list(
-        PriceBand.objects.filter(active=True, tier=tier).order_by(
-            "sort", "duration_mins", "billing"
-        )
-    )
-    if not bands:
-        raise PermissionDenied(REFUSAL_BAD_BAND)
+    a consultant cannot approve themselves) — plus the four rate rows.
+
+    `rates` are the applicant's own four numbers (10 Oct 2026), checked by
+    the same range as `set_rates`. `tier` is what the application sent
+    before that, turned into four rates off the band, so an app still open
+    from before the change can apply."""
+    if rates is not None:
+        clean = _clean_rates(rates)
+    else:
+        clean = rates_from_tier(tier) if tier is not None else None
+        if clean is None:
+            raise PermissionDenied(REFUSAL_BAD_BAND)
     try:
         with transaction.atomic():
             consultant = Consultant.objects.create(
@@ -435,16 +548,7 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
                 degree=degree,
                 degree_asset_id=degree_asset_id,
             )
-            for n, band in enumerate(bands):
-                ConsultantService.objects.create(
-                    consultant_id=consultant.profile_id,
-                    band_id=band.id,
-                    mode="call",
-                    billing=band.billing,
-                    duration_mins=band.duration_mins,
-                    price_paise=band.price_paise,  # the band's price, never the request's
-                    sort=n * 10,
-                )
+            _write_rates(consultant.profile_id, clean)
     except IntegrityError:
         raise AlreadyApplied(REFUSAL_ALREADY_APPLIED) from None
     return consultant

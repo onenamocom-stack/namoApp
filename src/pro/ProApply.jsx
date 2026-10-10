@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Button, Label, Section } from '../components/Primitives.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
 import Plate from '../components/Plate.jsx'
 import { categories } from '../data/mock.js'
-import { rupees, useStore } from '../store.jsx'
-import { applyAsConsultant, listPriceBands } from '../lib/consultants.js'
+import { useStore } from '../store.jsx'
+import { applyAsConsultant } from '../lib/consultants.js'
+import RateFields, { rateErrors, rateNumbers } from '../components/RateFields.jsx'
 import { uploadAsset } from '../lib/media.js'
 import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
 
@@ -25,9 +26,9 @@ import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
  *   status 'pending'    → under review, which is a real state and not a stall
  *   status 'approved'   → straight through to the studio
  *
- * A price is chosen from a band, never typed. The RLS policy on
- * `consultant_services` refuses anything else, so the six buttons below are
- * the interface to a rule rather than the rule itself.
+ * The applicant types four rates — chat, video, audio, booking — each ₹5 to
+ * ₹110 a minute (10 Oct 2026, Rahul; it was a pick of six platform bands).
+ * The server checks the range and writes the paise.
  */
 export default function ProApply() {
   const { session, consultant, consultantLoading, consultantError, refreshConsultant, showToast } =
@@ -93,7 +94,7 @@ function SignUp() {
           <Kicker>What happens next</Kicker>
           <ol className="mt-3 space-y-2 text-meta t-sub">
             <li>1. Verify your number.</li>
-            <li>2. Tell us what you practise and pick a price band.</li>
+            <li>2. Tell us what you practise and set your rates.</li>
             <li>3. We approve you. Until then you are invisible to seekers.</li>
           </ol>
         </div>
@@ -155,7 +156,6 @@ function UnderReview({ status }) {
    primary key, and the JWT is the identity now. The caller stopped passing
    it in the same commit. */
 function Application({ onDone, toast }) {
-  const [bands, setBands] = useState([])
   const [form, setForm] = useState({
     // More than one practice (5 Oct 2026, owner's request): saved as one
     // comma-separated `category`, "Astrologer, Tarot", read back as a list.
@@ -167,7 +167,7 @@ function Application({ onDone, toast }) {
     credentials: '',
     tags: '',
     degree: '',
-    tier: null,
+    rates: { chat: '', video: '', audio: '', booking: '' },
   })
   /* The certificate, once it is uploaded: { id, name }. The file goes to
      the private bucket the moment it is picked rather than on submit, so a
@@ -179,19 +179,9 @@ function Application({ onDone, toast }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    /* The active-only filter and the tier sort moved to the server with the
-       endpoint; this reads whatever `listPriceBands()` returns. */
-    listPriceBands()
-      .then((data) => setBands(data ?? []))
-      .catch((err) => setError(err.message))
-  }, [])
-
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  // The 20-minute row is the one quoted, the same session the whole app is
-  // priced against. The other three come with the tier.
-  const tiers = bands.filter((b) => b.billing === 'fixed' && b.duration_mins === 20)
-  const valid = form.specialization.trim() && form.bio.trim() && form.tier
+  const valid =
+    form.specialization.trim() && form.bio.trim() && !Object.keys(rateErrors(form.rates)).length
 
   const submit = async () => {
     if (!valid || saving) return
@@ -212,8 +202,8 @@ function Application({ onDone, toast }) {
 
        `status` is still absent and still cannot be here — the row lands
        'pending' server-side. Approval is not something the applicant
-       participates in. The tier goes up as a name and the server copies
-       that band's prices itself, so the browser never sends a price. */
+       participates in. The rates go up as whole rupees a minute; the
+       server checks the range and works out every paise itself. */
     try {
       await applyAsConsultant({
         category: form.categories.join(', '),
@@ -225,7 +215,7 @@ function Application({ onDone, toast }) {
         tags: list(form.tags),
         degree: form.degree.trim(),
         degreeAssetId: cert?.id ?? null,
-        tier: form.tier,
+        rates: rateNumbers(form.rates),
       })
     } catch (err) {
       setError(err.message)
@@ -320,25 +310,12 @@ function Application({ onDone, toast }) {
         </label>
       </Section>
 
-      <Section label="Price">
+      <Section label="Your rates">
         <p className="text-meta t-sub">
-          Six bands, set by the platform. You choose one — you do not type a number. It carries
-          your 15, 20 and 30 minute sessions and your per-minute rate for instant calls.
+          Rupees a minute for each way a client reaches you. A booking is 20 minutes at its rate.
+          You can change them later from your profile.
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {tiers.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              aria-pressed={form.tier === b.tier}
-              onClick={() => setForm((f) => ({ ...f, tier: b.tier }))}
-              className="pill caps-sm justify-center tnum"
-            >
-              ₹{rupees(b.price_paise)}
-            </button>
-          ))}
-        </div>
-        {form.tier && <TierDetail bands={bands} tier={form.tier} />}
+        <RateFields value={form.rates} onChange={(rates) => setForm((f) => ({ ...f, rates }))} />
       </Section>
 
       {error && <p className="mt-6 text-center text-meta text-live">{error}</p>}
@@ -350,19 +327,6 @@ function Application({ onDone, toast }) {
         Nothing to pay up front.
       </p>
     </>
-  )
-}
-
-function TierDetail({ bands, tier }) {
-  const mine = bands.filter((b) => b.tier === tier)
-  const perMinute = mine.find((b) => b.billing === 'per_minute')
-  const fixed = mine.filter((b) => b.billing === 'fixed').sort((a, b) => a.duration_mins - b.duration_mins)
-
-  return (
-    <p className="mt-4 text-meta t-sub tnum">
-      {fixed.map((b) => `${b.duration_mins} min · ₹${rupees(b.price_paise)}`).join('   ')}
-      {perMinute && `   ·   ₹${rupees(perMinute.price_paise)} a minute`}
-    </p>
   )
 }
 

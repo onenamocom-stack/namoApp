@@ -63,10 +63,14 @@ export default function Connect() {
     setMessage(text)
   }, [])
 
+  // The row for the button pressed: chat, video and audio each have their
+  // own rate since 10 Oct 2026. The server picks the same row by channel.
+  const rateRow = who?.channels?.[via] ?? who?.perMinute ?? null
+
   const ask = useCallback(async () => {
-    if (!who?.perMinute) return
+    if (!rateRow) return
     setPhase('asking')
-    const result = await requestChat(who.id, who.perMinute.id, {
+    const result = await requestChat(who.id, rateRow.id, {
       audioOnly: via === 'audio',
       channel: via,
     })
@@ -91,7 +95,7 @@ export default function Connect() {
         ? `${who.name} is still with somebody. Try again in a few minutes — nothing was charged.`
         : result?.reason ?? 'Could not reach them. Try again.',
     )
-  }, [finish, navigate, via, who])
+  }, [finish, navigate, rateRow, via, who])
 
   // First ask, once the consultant is known.
   useEffect(() => {
@@ -155,7 +159,7 @@ export default function Connect() {
     return (
       <ChatWaiting
         name={name}
-        rate={who?.perMinute ? `₹${rupees(who.perMinute.price_paise)}/min` : ''}
+        rate={rateRow ? `₹${rupees(rateRow.price_paise)}/min` : ''}
         phase={phase}
         retryIn={retryIn}
         ringStart={ringStart.current}
@@ -164,7 +168,7 @@ export default function Connect() {
     )
   }
   const what = via === 'chat' ? 'chat' : via === 'audio' ? 'audio call' : 'video call'
-  const rate = who?.perMinute ? `₹${rupees(who.perMinute.price_paise)}/min` : ''
+  const rate = rateRow ? `₹${rupees(rateRow.price_paise)}/min` : ''
 
   return (
     <div className="full-bleed flex min-h-full flex-col bg-ink text-white">

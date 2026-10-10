@@ -11,7 +11,7 @@ import { useLocation } from 'react-router-dom'
 import { pro, user } from './data/mock.js'
 import { translate } from './data/i18n.js'
 import { supabase } from './lib/supabase.js'
-import { bookSession as book, myConsultant } from './lib/consultants.js'
+import { bookSession as book, channelsOf, myConsultant } from './lib/consultants.js'
 import { clearAstroCache } from './lib/astro.js'
 import { fetchMine as fetchMyReactions, parseKey, setReaction } from './lib/reactions.js'
 import { createWalletApi } from './lib/wallet.js'
@@ -942,8 +942,8 @@ function initialsOf(name) {
  * practice nobody signed out reaches a screen that calls this.
  *
  * `price` and `perMinute` are PAISE and come from `consultant_services`, which
- * is priced off a platform band — there is no rupee number in this file and no
- * price the browser computed.
+ * the server prices from the consultant's own rates — there is no rupee number
+ * in this file and no price the browser computed.
  */
 export function useConsultantFields(services = []) {
   const { consultant, profile, session } = useStore()
@@ -952,6 +952,7 @@ export function useConsultantFields(services = []) {
   const fixed = services.filter((s) => s.billing === 'fixed').sort((a, b) => a.duration_mins - b.duration_mins)
   const perMinute = services.find((s) => s.billing === 'per_minute') ?? null
   const base = fixed.find((s) => s.duration_mins === 20) ?? fixed[0] ?? null
+  const channels = channelsOf(services)
 
   return {
     id: consultant?.profile_id ?? seed(pro.id),
@@ -967,7 +968,10 @@ export function useConsultantFields(services = []) {
     verified: consultant?.verified ?? false,
     fixed,
     perMinute,
+    channels,
     pricePaise: base?.price_paise ?? null,
+    // Your own four rates, whole rupees a minute, as /consultants/me/ says.
+    rates: consultant?.rates ?? null,
     /* Phase 9 made these rows. `rating_avg_cache` and `rating_count_cache` are
        maintained by a trigger over `reviews`, so they are the consultant's own
        numbers rather than the seed person's 4.9 and 2,148. A consultant with no

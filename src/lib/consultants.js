@@ -105,12 +105,28 @@ async function api(path, { method = 'GET', body, token, idempotencyKey } = {}) {
  * split are rendering, done here, and `pricePaise` is the 20-minute session
  * straight off the service rows — the one the whole app quotes against. */
 
+/**
+ * A consultant's per-minute rows by channel (10 Oct 2026, Rahul: each pro
+ * types a chat, video and audio rate). Video is the `call` row. A response
+ * from before the change has one per-minute row, and every channel reads it.
+ */
+export function channelsOf(services = []) {
+  const any = services.find((s) => s.billing === 'per_minute') ?? null
+  const of = (mode) => services.find((s) => s.billing === 'per_minute' && s.mode === mode) ?? any
+  return { chat: of('chat'), video: of('call'), audio: of('audio') }
+}
+
 function shape(row, services = []) {
   const fixed = services
     .filter((s) => s.billing === 'fixed')
     .sort((a, b) => a.duration_mins - b.duration_mins)
   const base = fixed.find((s) => s.duration_mins === 20) ?? fixed[0] ?? null
-  const perMinute = services.find((s) => s.billing === 'per_minute') ?? null
+  const channels = channelsOf(services)
+  // The cheapest of the three, which a list quotes as "from ₹X/min".
+  const perMinute =
+    Object.values(channels)
+      .filter(Boolean)
+      .sort((a, b) => a.price_paise - b.price_paise)[0] ?? null
 
   return {
     id: row.profile_id,
@@ -154,6 +170,9 @@ function shape(row, services = []) {
     perMinute,
     pricePaise: base?.price_paise ?? null,
     perMinutePaise: perMinute?.price_paise ?? null,
+    // One row per channel; `start` and /connect pick the row for the button
+    // pressed, and the server charges that row's rate whatever is sent.
+    channels,
     // The profile photo; null shows initials (8 Oct 2026).
     avatarUrl: row.avatar_url ?? null,
   }
@@ -410,12 +429,13 @@ export async function myConsultant() {
 }
 
 /** The application, one transaction: the consultants row (status lands
- *  'pending' — the request cannot carry it) plus the chosen tier's service
- *  rows, priced BY COPYING the band rows server-side. Returns the row;
- *  a refusal throws with the server's message, which ProApply renders. */
+ *  'pending' — the request cannot carry it) plus the four rates the
+ *  applicant typed, whole rupees a minute (10 Oct 2026); the server checks
+ *  the range and writes the paise. Returns the row; a refusal throws with
+ *  the server's message, which ProApply renders. */
 export async function applyAsConsultant({ category, specialization, languages,
                                           experienceYrs, bio, credentials, tags,
-                                          degree, degreeAssetId, tier }) {
+                                          degree, degreeAssetId, rates }) {
   const token = await accessToken()
   return api('/consultants/apply/', {
     method: 'POST',
@@ -431,10 +451,24 @@ export async function applyAsConsultant({ category, specialization, languages,
       // The certificate is sent as an ASSET ID, never a URL: the file is in
       // the private bucket and there is no URL to send.
       degree_asset_id: degreeAssetId,
-      tier,
+      rates,
     },
     token,
   })
+}
+
+/** The rate limits, rupees a minute — the server's RATE_MIN/MAX_RUPEES,
+ *  said here only so a field can refuse before the request does. */
+export const RATE_MIN = 5
+export const RATE_MAX = 110
+/** A booked slot's length; its price is the booking rate times this. */
+export const SLOT_MINS = 20
+
+/** Your own four rates, whole rupees a minute: { chat, video, audio,
+ *  booking }. All four go up together; the reply is what was stored. */
+export async function saveMyRates(rates) {
+  const token = await accessToken()
+  return api('/consultants/me/rates/', { method: 'PUT', body: rates, token })
 }
 
 /** The active price catalogue, tier order — ProApply's six buttons. */

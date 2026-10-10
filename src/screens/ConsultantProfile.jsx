@@ -20,7 +20,7 @@ import {
   Ticks,
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
-import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
+import { getConsultant, istToday, openSlots, SLOT_MINS } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { PieceRow } from '../components/Pieces.jsx'
 import Composer from '../components/Composer.jsx'
@@ -468,8 +468,8 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
         <div className="min-w-0">
           <p className="text-lead font-semibold tnum">₹{rupees(c.pricePaise ?? 0)}</p>
           <p className="mt-0.5 text-micro uppercase tracking-caps text-t3">
-            {SESSION.label}
-            {c.perMinutePaise != null && ` · ₹${rupees(c.perMinutePaise)}/min live`}
+            {SLOT_MINS} min booking
+            {c.channels?.chat && ` · chat ₹${rupees(c.channels.chat.price_paise)}/min`}
             {c.freeFirst && ' · your first 3 minutes free'}
           </p>
         </div>
@@ -490,17 +490,21 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
       </div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title={`Book ${firstName(c.name)}`}>
-        <p className="label text-left mb-4">Length</p>
-        {/* The lengths are this consultant's own service rows, each priced off
-            a platform band. They are not `SESSION_LENGTHS` scaled by a rate the
-            browser worked out. */}
-        <Segmented
-          items={c.fixed.map((s) => ({ key: s.id, label: `${s.duration_mins} min` }))}
-          value={service?.id}
-          onChange={(picked) => setService(c.fixed.find((s) => s.id === picked) ?? null)}
-        />
+        {/* One length since 10 Oct 2026 (Rahul): 20 minutes at the
+            consultant's booking rate. The picker shows only if the server
+            sends more than one active slot row. */}
+        {c.fixed.length > 1 && (
+          <>
+            <p className="label text-left mb-4">Length</p>
+            <Segmented
+              items={c.fixed.map((s) => ({ key: s.id, label: `${s.duration_mins} min` }))}
+              value={service?.id}
+              onChange={(picked) => setService(c.fixed.find((s) => s.id === picked) ?? null)}
+            />
+          </>
+        )}
 
-        <p className="label mt-8 text-left mb-4">Day</p>
+        <p className={`label text-left mb-4 ${c.fixed.length > 1 ? 'mt-8' : ''}`}>Day</p>
         <Segmented items={days} value={day} onChange={setDay} />
 
         <p className="label mt-8 text-left mb-4">Open times</p>
@@ -535,14 +539,6 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
         <Field k="Length" v={`${duration} min`} />
         <Field k="Questions" v={SESSION.promise} />
         <Field k="Total" v={`₹${rupees(total)}`} />
-        {/* Both numbers are the server's: the slot's price and the meter's
-            rate. The difference is only said, never sent (rule 3). */}
-        {c.perMinute && service && c.perMinute.price_paise * duration > total && (
-          <p className="mt-2 text-meta gold">
-            Saves ₹{rupees(c.perMinute.price_paise * duration - total)} against calling now at ₹
-            {rupees(c.perMinute.price_paise)}/min.
-          </p>
-        )}
 
         <Button
           className="mt-10"
@@ -576,17 +572,29 @@ function About({ c }) {
         <Field k="Verified" v={c.verified ? 'Yes' : 'Not yet'} />
       </Section>
 
-      <Section label="What a session is">
+      {/* The consultant's own rates (10 Oct 2026): one for each way to
+          reach them, and a booking that is its rate times 20 minutes. */}
+      <Section label="Rates">
         {c.fixed.map((s) => (
-          <Field key={s.id} k={`${s.duration_mins} min`} v={`₹${rupees(s.price_paise)}`} />
+          <Field
+            key={s.id}
+            k={`Booking · ${s.duration_mins} min`}
+            v={`₹${rupees(s.price_paise)} · ₹${rupees(Math.round(s.price_paise / s.duration_mins))}/min`}
+          />
         ))}
-        {c.perMinute && (
-          <Field k="Instant call" v={`₹${rupees(c.perMinute.price_paise)} a minute`} />
+        {[
+          ['chat', 'Chat'],
+          ['video', 'Video call'],
+          ['audio', 'Audio call'],
+        ].map(([key, label]) =>
+          c.channels?.[key] ? (
+            <Field key={key} k={label} v={`₹${rupees(c.channels[key].price_paise)} a minute`} />
+          ) : null,
         )}
         <Field k="Questions" v={SESSION.promise} />
         <p className="mt-6 text-center text-meta text-t3">
-          Pick the length that fits when you book. Ask as much as you like inside it — if the
-          call runs over, it runs over.
+          Chat and calls are charged by the minute while they run. A booking is paid when you
+          book.
         </p>
       </Section>
     </>

@@ -338,26 +338,29 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
 
     Busy is an ANSWER, not an error: {ok: false, busy: true}. The client
     waits and asks again; nothing was written, so asking again is free."""
+    from apps.consultants import services as consultant_services
     from apps.consultants.models import ConsultantService, ConsultantStatus
 
     now = now or timezone.now()
     if str(consultant_id) == str(seeker_id):
         return {"ok": False, "reason": REFUSAL_SELF_CHAT}
-    service = (
-        ConsultantService.objects.filter(
-            pk=service_id,
-            consultant_id=consultant_id,
-            active=True,
-            billing="per_minute",
-            consultant__status=ConsultantStatus.APPROVED,
-        )
-        .select_related("consultant")
-        .first()
-    )
+    live_rows = ConsultantService.objects.filter(
+        consultant_id=consultant_id,
+        active=True,
+        billing="per_minute",
+        consultant__status=ConsultantStatus.APPROVED,
+    ).select_related("consultant")
+    # Each channel has its own rate since 10 Oct 2026: the row is the one
+    # for what the seeker pressed, whichever per-minute id the client sent.
+    # The sent id is the fallback, for a consultant with no row for that
+    # channel and for a client that names no channel.
+    service = None
+    if channel in consultant_services.RATE_MODES:
+        service = live_rows.filter(mode=consultant_services.RATE_MODES[channel]).first()
+    if service is None:
+        service = live_rows.filter(pk=service_id).first()
     if service is None:
         return {"ok": False, "reason": REFUSAL_NOT_TAKING}
-    from apps.consultants import services as consultant_services
-
     if not consultant_services.is_online(consultant_id, now=now):
         return {"ok": False, "reason": REFUSAL_OFFLINE}
     if service.price_paise <= 0:

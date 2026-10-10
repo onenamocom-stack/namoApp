@@ -253,9 +253,11 @@ content.
 **Four options on every card** (5 Oct 2026): **Video**, **Audio**, **Chat** and
 **Book**. The first three are the per-minute session — an audio call is the
 same call joined with cameras off (`sessions.audio_only`). Book opens the
-consultant's booking sheet (`/consult/:id?book=1`) and works offline; a slot is
-20% under the meter (`01-PRD.md` §4.1), said once above the list and, with the
-saving in rupees, in the sheet. The profile page carries the same four.
+consultant's booking sheet (`/consult/:id?book=1`) and works offline. Each
+button shows that consultant's own rate for it — video, audio and chat per
+minute, Book the 20-minute price (`01-PRD.md` §4.1, 10 Oct 2026). The booking
+sheet has no length picker: a slot is 20 minutes. The profile page carries the
+same four, and its About tab lists all four rates.
 
 **Free-tools row of six circles, above the search field** — all six navigate.
 **Horoscope opens `/chart`** and **Ask AI opens `/ask`**, both since 30 Sep 2026
@@ -942,8 +944,10 @@ phone steps, carrying `?next=pro`), session but no `consultants` row (the
 application), `pending` or `blocked` (under review), `approved` (straight
 through to the studio).
 
-A price is **picked from a band**, never typed, and the row it writes cannot
-carry a status — the column grant does not include one.
+The applicant **types four rates** — chat, video call, audio call, booking —
+each ₹5 to ₹110 a minute, whole rupees; the booking line shows the 20-minute
+price. Send stays disabled until all four are in range. The row it writes
+cannot carry a status — the column grant does not include one.
 
 ### `/pro/consult`
 Requests with accept and decline, now real status writes rather than flag
@@ -1000,6 +1004,9 @@ Content grid, insights, reviews, settings. No switch to the client app since
 4 Oct 2026.
 Under the bio, the milestone ladder: paid sessions given and how many more to
 the next tier and to 1000. Settings → **Payout details** → `/pro/payout-details`.
+Settings → **Your rates** opens a sheet with the same four fields as the
+application and **Save rates**; all four save together, and new prices apply to
+what is asked or booked afterwards.
 
 ### `/pro/payout-details`
 PAN and bank account. With nothing saved, the form: PAN, name on PAN, PAN card

@@ -129,8 +129,12 @@ class Consultant(models.Model):
 
 
 class ServiceMode(models.TextChoices):
+    # Since 10 Oct 2026 the per-minute rows are one per channel: `call` is
+    # video, `chat` is chat, `audio` is a call with cameras off. A booked
+    # slot is a fixed `call` row of 20 minutes.
     CALL = "call", "Call"
     CHAT = "chat", "Chat"
+    AUDIO = "audio", "Audio"
     LIVE = "live", "Live"
     BOOKING = "booking", "Booking"
 
@@ -184,11 +188,12 @@ class PriceBand(models.Model):
 
 class ConsultantService(models.Model):
     """One row of `consultant_services` (007): the noun rule 3 is unobeyable
-    without. `price_paise` is a COPY of the band row — the RLS policy in prod
-    pins the two together (009 check assertion 9: a service priced off no
-    band is refused by the policy, not the UI). In Django the band check is
-    structural: the only write path (`services.apply`) copies the price from
-    the band row, never from a request body."""
+    without. Since 10 Oct 2026 (Rahul; replaced the bands of 1 Sep) the
+    consultant types each rate — chat, video, audio and booking, ₹5 to ₹110
+    a minute in whole rupees — and `services.set_rates` is the only write
+    path: it checks the range and writes the price itself, so a request body
+    still never carries a paise amount. `band_id` is null on every row from
+    then on; the column stays for the rows' history."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     consultant = models.ForeignKey(
@@ -198,7 +203,7 @@ class ConsultantService(models.Model):
         on_delete=models.CASCADE,
         related_name="services",
     )
-    band_id = models.UUIDField()  # price_bands.id; FK within the module's schema
+    band_id = models.UUIDField(null=True, blank=True)  # price_bands.id until 10 Oct 2026
     mode = models.CharField(max_length=16, choices=ServiceMode.choices)
     billing = models.CharField(
         max_length=16, choices=ServiceBilling.choices, default=ServiceBilling.FIXED

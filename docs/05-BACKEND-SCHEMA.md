@@ -340,8 +340,8 @@ create table price_bands (
 create table consultant_services (
   id            uuid primary key default gen_random_uuid(),
   consultant_id uuid not null references consultants(profile_id) on delete cascade,
-  band_id       uuid not null references price_bands(id),
-  mode          text not null check (mode in ('call','chat','live','booking')),
+  band_id       uuid references price_bands(id),     -- null since 10 Oct 2026
+  mode          text not null check (mode in ('call','chat','audio','live','booking')),
   billing       text not null default 'fixed'
                 check (billing in ('fixed','per_minute')),
   duration_mins smallint not null,
@@ -353,19 +353,20 @@ create table consultant_services (
 );
 ```
 
-**`price_bands` is where "the platform sets the price" stops being a sentence
-in the PRD.** Six tiers, each carrying the three bookable lengths and a
-per-minute rate. `consultant_services.price_paise` is a copy of the band's, and
-the write policy refuses a row whose price, length and billing do not match an
-*active* band — so a consultant choosing a band is a rule the database holds,
-not six buttons a browser draws. A price change is an INSERT and a flip of
-`active`; live bookings do not move, because they froze their own amount.
+**The consultant sets the price since 10 Oct 2026** (Rahul; `01-PRD.md`
+§4.1). Until then `price_bands` held six platform tiers and
+`consultant_services.price_paise` had to copy one. Migration
+`consultants/0006_own_rates` made `band_id` nullable, nulled it on every row,
+added `audio` to `mode`, and turned each consultant's band rows into the shape
+below. `price_bands` stays, unread except by an old client's `tier` on the
+application. The range (₹5–₹110 a minute, whole rupees) is checked in
+`services._clean_rates`, the only write path; there is no database check on
+the amount. Live bookings and sessions do not move when a rate changes,
+because they froze their own amount.
 
-Every column of the new row in that policy's `EXISTS` **must be qualified**
-(`consultant_services.price_paise`, not `price_paise`) — unqualified, it
-resolves to the band's own column, the comparison becomes `b.x = b.x`, and the
-check silently passes anything. It shipped that way once and
-`009_slots_check.sql` assertion 9 is what caught it.
+The Supabase RLS policy from `007` still compares the price with a band; the
+API writes as the table owner and does not pass through it. Nothing on the
+client writes this table.
 
 **This table is the fix for the three-ladder problem.** The mock holds three
 incompatible pricing models at once: `SESSION` says a flat 20 minutes,
@@ -392,8 +393,10 @@ Phase 4 *models* per-minute and nothing meters it. The meter — a balance hold,
 a per-minute debit, a mid-session cutoff — is phase 5/11, and it needs no
 column this table does not already have.
 
-In v1 a consultant has **four rows**: 15, 20 and 30 minutes from their band,
-plus that band's per-minute rate.
+A consultant has **four active rows**: `per_minute` rows for `chat`, `call`
+(video) and `audio`, each `duration_mins = 1` at that channel's rate, and one
+`fixed` `call` row of 20 minutes at the booking rate times 20. Their old 15-
+and 30-minute rows are `active = false` — bookings still reference them.
 
 ### 4.4 Availability — a rule, an exception, and a fact
 
@@ -1532,8 +1535,8 @@ Enabled on every table. Policies for the v1 thirteen.
 |---|---|---|
 | `profiles` | own row | UPDATE own only |
 | `consultants` | anyone, `status = 'approved'` | own row only |
-| `price_bands` | anyone, where `active` | **none, ever** — the catalogue is not client-writable |
-| `consultant_services` | anyone, where parent approved | own only, **and the price must match an active band** |
+| `price_bands` | anyone, where `active` | **none, ever** — unused for pricing since 10 Oct 2026 |
+| `consultant_services` | anyone, where parent approved | own only, through `PUT /consultants/me/rates/` — four rates, each ₹5–₹110 a minute |
 | `consultant_availability` | anyone, where parent approved | own only |
 | `consultant_time_off` | own only | own only |
 | `bookings` | `seeker_id = auth.uid() OR consultant_id = auth.uid()` | **no client INSERT.** UPDATE limited to the consultant setting `confirmed` / `declined` |
