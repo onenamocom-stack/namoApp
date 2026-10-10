@@ -46,6 +46,24 @@ const SOURCES = {
 /** `content.kind` in the database → which card renders it. */
 const CARD_FOR_KIND = { post: 'post', clip: 'reel', article: 'article' }
 
+/**
+ * One piece of content as the feed draws it — full width, with likes,
+ * comments and share. A profile's Posts tab is a column of these, newest
+ * first (11 Oct 2026, Rahul: "like the profile page of Facebook").
+ */
+export function FeedCard({ piece }) {
+  switch (CARD_FOR_KIND[piece.kind]) {
+    case 'post':
+      return <PostCard post={piece} />
+    case 'reel':
+      return <ReelCard reel={piece} />
+    case 'article':
+      return <ArticleCard read={piece} />
+    default:
+      return null
+  }
+}
+
 /* Hindi names since 30 Sep, on the owner's call — the first audience reads
    Hindi. The keys, and so the URLs, are unchanged. "Reels" stays English
    because that is the word Hindi speakers use for them. */

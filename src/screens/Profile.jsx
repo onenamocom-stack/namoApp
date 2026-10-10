@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
 import ResharedList from '../components/ResharedList.jsx'
+import { FeedCard } from './Home.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
 import { Loader, Orbit } from '../components/Cosmos.jsx'
 import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
@@ -479,9 +480,11 @@ function PostsTab({ posts }) {
         <p className="mx-5 mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">{t('prof.blocked')}</p>
       )}
       {posts?.length ? (
-        <div className="grid grid-cols-3 gap-0.5">
+        // Each post in full, newest first, as the feed draws it (11 Oct
+        // 2026, Rahul) — it was a 3-column grid of thumbnails.
+        <div className="bg-white">
           {posts.map((p) => (
-            <Tile key={p.id} post={p} />
+            <FeedCard key={p.id} piece={p} />
           ))}
         </div>
       ) : (

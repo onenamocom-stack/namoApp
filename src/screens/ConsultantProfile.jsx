@@ -22,8 +22,8 @@ import {
 import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
-import { PieceRow } from '../components/Pieces.jsx'
 import Composer from '../components/Composer.jsx'
+import { FeedCard } from './Home.jsx'
 import { shareLink } from '../lib/share.js'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
@@ -664,20 +664,15 @@ function Work({ c }) {
     )
   }
 
-  /* Each piece with its picture, and a tap that opens it (6 Oct 2026 — this
-     was a list of titles that went nowhere, and the same posts lived on a
-     second page, /u/:id, which now forwards here). */
+  /* Each post in full, newest first, as the feed draws it (11 Oct 2026,
+     Rahul: the same as a user's profile, like Facebook's). It was a row per
+     piece with a thumbnail. */
   return (
-    <Section label={`${items.length} ${items.length === 1 ? 'post' : 'posts'}`}>
-      <div>
-        {items.map((p) => (
-          <PieceRow key={p.id} piece={p} />
-        ))}
-      </div>
-      <Link to="/home" className="act-link mt-6 inline-block text-meta">
-        See everything in the feed
-      </Link>
-    </Section>
+    <div className="mt-2 bg-white">
+      {items.map((p) => (
+        <FeedCard key={p.id} piece={p} />
+      ))}
+    </div>
   )
 }
 

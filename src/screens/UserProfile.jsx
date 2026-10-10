@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
-import { firstName, Row } from '../components/Primitives.jsx'
+import { firstName } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import ResharedList from '../components/ResharedList.jsx'
+import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
 
@@ -138,22 +139,20 @@ export default function UserProfile() {
         </div>
       )}
 
-      <section className="px-5 py-6">
-        <Kicker>Posts</Kicker>
-        <div className="mt-3">
+      <section className="py-6">
+        <Kicker className="px-5">Posts</Kicker>
+        {/* Each post in full, newest first, as the feed draws it (11 Oct
+            2026, Rahul) — it was a list of titles. */}
+        <div className="mt-3 bg-white">
           {posts.map((c) => (
-            <Row
-              key={c.id}
-              to={c.kind === 'article' ? `/read/${c.id}` : undefined}
-              title={c.title || c.caption}
-              meta={c.time}
-              note={c.kind === 'article' ? 'Blog' : 'Photo'}
-            />
+            <FeedCard key={c.id} piece={c} />
           ))}
-          {!posts.length && <p className="prose-c">Nothing published yet.</p>}
         </div>
+        {!posts.length && <p className="prose-c px-5">Nothing published yet.</p>}
+      </section>
 
-        <ResharedList by={id} className="mt-8" />
+      <section className="px-5 pb-6">
+        <ResharedList by={id} />
 
         <Link to="/home" className="act-link mt-6 inline-block text-meta">
           Back to the feed

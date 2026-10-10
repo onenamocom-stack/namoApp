@@ -794,10 +794,16 @@ saffron ring (tap to change), posts · followers · following, your name, then
 under the name until 11 Oct, Rahul). Under the name, your bio — *Write about
 yourself* until you write one; tap to edit, 150 characters. Choosing a new picture opens an adjuster first: drag to
 place, slide to zoom, and only the circle is uploaded. Icon tabs, each its own
-URL: **posts** (a 3-column grid — photos open full screen, blog posts and reels
-open on their pages — then what you reshared; empty, it says to tap + on Home),
+URL: **posts** (each post in full, newest first, exactly as the feed draws it —
+like, comment, reshare, share — then what you reshared; empty, it says to tap +
+on Home),
 **saved** (your bookmarked posts), and **influencer** for influencers. Bare
 `/profile` opens posts, always (5 Oct 2026).
+
+**Posts in full on every profile — 11 Oct 2026 (Rahul: "like the profile page
+of Facebook").** Your Profile, `/u/:id` and a consultant page's Posts tab all
+show that person's posts as feed cards, newest first. They were a grid of
+thumbnails, a list of titles, and a row per piece.
 
 **Removed 11 Oct 2026 (Rahul):** the Sun / Moon / Lagna chips (they said nothing
 clear), the **+** (a post is made from Home's +), and the **Kundli** tab (the
