@@ -90,11 +90,13 @@ come from two people only (the allowlist): **Raghu, the owner**, and
   change; ask there when it is unclear. Reply in their language (Hinglish
   is fine), short.
 - **Fix, lint, test, commit.** Then say what changed in one or two lines.
-- **Deploy only when Raghu writes "ship"** (or "deploy"). Rahul's messages
-  never deploy, migrate production, or change money. `npm run ship`,
-  `gcloud ... deploy` and production migrations wait for that word.
+- **Deploy when Raghu or Rahul writes "ship"** (or "deploy") — both may
+  (owner's decision, 10 Oct 2026; Rahul's messages could not deploy
+  before). `npm run ship`, `gcloud ... deploy` and production migrations
+  wait for that word from one of them.
 - **Never touch without Raghu's explicit yes:** wallet, payments, payouts,
-  commission, auth, secrets, production data.
+  commission, auth, secrets, production data. Rahul may ask for these; the
+  bot does the work and waits for Raghu's yes before it goes live.
 - **Never send a secret, token, key, password or a user's personal data**
   to Telegram.
 - Update `HANDOFF.md` and the owning doc as for any other work.

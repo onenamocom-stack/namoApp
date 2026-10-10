@@ -6189,7 +6189,6 @@ channel plugin installed at user scope (marketplace
 `anthropics/claude-plugins-official` added). `scripts/namo-bot.cmd` starts
 a session in this repo with the channel on (`--permission-mode acceptEdits`).
 The rules the bot works by are in `CLAUDE.md` ("Feedback from Telegram"):
-replies first, fixes and commits, deploys only on the owner's "ship", never
-money/auth/secrets without the owner. **Waiting on the owner:** the bot
-token from BotFather, and pairing the owner's and Rahul's accounts. It runs
+replies first, fixes and commits, deploys on "ship" from the owner or
+Rahul (Rahul's added 10 Oct), never money/auth/secrets without the owner. Bot `@namo_dev_bot`; both accounts paired, policy `allowlist`. It runs
 only while that window is open and the laptop is awake.
