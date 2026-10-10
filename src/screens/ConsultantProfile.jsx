@@ -26,10 +26,11 @@ import { PieceRow } from '../components/Pieces.jsx'
 import Composer from '../components/Composer.jsx'
 import { shareLink } from '../lib/share.js'
 
+// Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
 const TABS = [
-  { key: 'about', label: 'About' },
   { key: 'work', label: 'Posts' },
   { key: 'reviews', label: 'Reviews' },
+  { key: 'about', label: 'About' },
 ]
 
 /**
@@ -82,7 +83,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
   const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
   const [composing, setComposing] = useState(false)
   const [published, setPublished] = useState(0)
-  const [tab, setTab] = useState('about')
+  const [tab, setTab] = useState('work')
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
   const [service, setService] = useState(null)
