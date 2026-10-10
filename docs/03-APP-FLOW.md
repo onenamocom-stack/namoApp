@@ -790,8 +790,9 @@ length, because their two clock times are identical.
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
 saffron ring (tap to change), posts · followers · following, your name, then
 **Edit profile** (`/onboarding/details?edit=1`) and **Share profile**
-(`/u/<you>`). Under the name, your bio — "● Available" until you write one; tap
-to edit, 150 characters. Choosing a new picture opens an adjuster first: drag to
+(`/u/<you>`). A green dot on the photo's top right (it was a "● Available" line
+under the name until 11 Oct, Rahul). Under the name, your bio — *Write about
+yourself* until you write one; tap to edit, 150 characters. Choosing a new picture opens an adjuster first: drag to
 place, slide to zoom, and only the circle is uploaded. Icon tabs, each its own
 URL: **posts** (a 3-column grid — photos open full screen, blog posts and reels
 open on their pages — then what you reshared; empty, it says to tap + on Home),

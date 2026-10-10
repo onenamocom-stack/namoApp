@@ -277,6 +277,12 @@ function AvatarPicker() {
             <PopAvatar initials={me.initials} src={me.avatarUrl} size={78} />
           </span>
         </span>
+        {/* Online, as a dot on the photo (11 Oct 2026, Rahul) — it was a
+            "● Available" line under the name. */}
+        <span
+          aria-label="Online"
+          className="absolute right-1.5 top-1.5 h-4 w-4 rounded-full bg-ok ring-2 ring-bg"
+        />
         <span className="absolute bottom-0.5 right-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gold-fill text-white ring-2 ring-bg">
           <Icon name={busy ? 'check' : 'plus'} size={13} weight={2.4} />
         </span>
@@ -395,15 +401,12 @@ function Bio() {
       </div>
     )
   }
-  // No bio yet: the "Available" line, and a plain invitation to write one
-  // (5 Oct 2026) — a small pencil beside "Available" read as decoration.
+  // No bio yet: a plain invitation to write one (5 Oct 2026). The
+  // "● Available" line above it went on 11 Oct (Rahul); the green dot is on
+  // the photo now.
   if (!profile?.bio?.trim()) {
     return (
-      <div className="mt-1">
-        <span className="inline-flex items-center gap-1.5 text-meta t-body">
-          <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />
-          {text}
-        </span>
+      <div className="mt-0.5">
         <button
           type="button"
           onClick={() => {
