@@ -257,7 +257,9 @@ consultant's booking sheet (`/consult/:id?book=1`) and works offline. Each
 button shows that consultant's own rate for it — video, audio and chat per
 minute, Book the 20-minute price (`01-PRD.md` §4.1, 10 Oct 2026). The booking
 sheet has no length picker: a slot is 20 minutes. The profile page carries the
-same four, and its About tab lists all four rates.
+same four as its sticky footer (Video · Audio · Chat · Book, each with its
+rate; on a pro's own page they show the rates and press nothing), and its
+About tab lists all four rates.
 
 **Free-tools row of six circles, above the search field** — all six navigate.
 **Horoscope opens `/chart`** and **Ask AI opens `/ask`**, both since 30 Sep 2026

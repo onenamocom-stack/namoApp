@@ -20,7 +20,7 @@ import {
   Ticks,
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
-import { getConsultant, istToday, openSlots, SLOT_MINS } from '../lib/consultants.js'
+import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { PieceRow } from '../components/Pieces.jsx'
 import Composer from '../components/Composer.jsx'
@@ -461,32 +461,52 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
         <div className="h-8" />
       </div>
 
-      {/* Sticky footer. The price and the one action follow you down the page,
-          which is the difference between a profile and a brochure. On your
-          own page: your rates, as a client reads them, without the buttons. */}
-      <div className="flex flex-none items-center gap-4 border-t border-rule bg-bg px-6 py-4">
-        <div className="min-w-0">
-          <p className="text-lead font-semibold tnum">₹{rupees(c.pricePaise ?? 0)}</p>
-          <p className="mt-0.5 text-micro uppercase tracking-caps text-t3">
-            {SLOT_MINS} min booking
-            {c.channels?.chat && ` · chat ₹${rupees(c.channels.chat.price_paise)}/min`}
-            {c.freeFirst && ' · your first 3 minutes free'}
-          </p>
-        </div>
-        {own ? null : c.perMinute ? (
-          <>
-            <Button onClick={openSheet} variant="quiet" className="flex-1">
-              Book
-            </Button>
-            <Button onClick={askForChat} variant="solid" disabled={asking} className="flex-1">
-              {asking ? 'Asking' : 'Chat now'}
-            </Button>
-          </>
-        ) : (
-          <Button onClick={openSheet} variant="solid" className="flex-1">
-            Book a call
-          </Button>
-        )}
+      {/* Sticky footer: all four ways in, each with its own rate (10 Oct
+          2026, Rahul) — the Consult card's row. It was the booking price
+          with Book and Chat now. Video, audio and chat are dead while the
+          consultant is offline; Book works offline. On your own page the
+          same four tiles show your rates and press nothing. */}
+      <div className="grid flex-none grid-cols-4 gap-1.5 border-t border-rule bg-bg px-4 py-3">
+        {[
+          ['video', 'Video', askForCall],
+          ['audio', 'Audio', askForAudio],
+          ['chat', 'Chat', askForChat],
+          ['book', 'Book', openSheet],
+        ].map(([key, label, onClick]) => {
+          const book = key === 'book'
+          const row = book ? null : c.channels?.[key]
+          const price = book
+            ? c.pricePaise != null
+              ? `₹${rupees(c.pricePaise)}`
+              : '—'
+            : !c.online && !own
+              ? 'Offline'
+              : c.freeFirst && !own
+                ? '3 min free'
+                : row
+                  ? `₹${rupees(row.price_paise)}/min`
+                  : '—'
+          const dead = !own && (book ? !c.fixed.length : !row || !c.online || asking)
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={own ? undefined : onClick}
+              disabled={dead}
+              aria-label={own ? `${label}: ${price}` : `${label} ${firstName(c.name)}, ${price}`}
+              className={`flex flex-col items-center justify-center rounded-xl py-2 leading-tight transition active:scale-[0.98] disabled:pointer-events-none ${
+                dead
+                  ? 'bg-stroke/70 text-t2'
+                  : key === 'chat'
+                    ? 'bg-gold-fill text-white'
+                    : 'border border-gold text-gold'
+              } ${own ? 'pointer-events-none' : ''}`}
+            >
+              <span className="text-[13px] font-semibold">{label}</span>
+              <span className="text-[10px] tnum opacity-90">{price}</span>
+            </button>
+          )
+        })}
       </div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title={`Book ${firstName(c.name)}`}>
