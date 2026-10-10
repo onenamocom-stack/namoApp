@@ -20,6 +20,7 @@ import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { Row } from '../components/Primitives.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, useMyChart } from '../lib/astro.js'
+import { ConsultantPage } from './ConsultantProfile.jsx'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -35,6 +36,13 @@ import { housesFrom, useMyChart } from '../lib/astro.js'
  * posts opens on the Kundli tab instead of an empty grid, and the kundli is
  * one tap away for everyone.
  *
+ * A pro has one profile (10 Oct 2026, Rahul): the Profile tab is their
+ * consultant page — rates, about, posts, reviews — with Edit, Share and a
+ * new post where a client sees Follow and Book. Saved and Kundli move to
+ * the ☰ for them, and open at /profile/saved and /profile/kundli under a
+ * plain top bar. Until the approved consultant row loads, or if there is
+ * none (applied, not approved; blocked), the seeker profile shows.
+ *
  * Replaced: an Overview / Settings pair, where Overview listed the
  * prototype's "Past sessions" (mock data shown to real accounts) and two
  * buttons that toasted "PDF downloaded" and "link copied" without doing
@@ -49,7 +57,7 @@ const TABS = [
 export default function Profile() {
   const { tab } = useParams()
   const navigate = useNavigate()
-  const { session, sessionReady, t, profile } = useStore()
+  const { session, sessionReady, t, profile, consultant, consultantLoading } = useStore()
   const me = session?.user?.id
   const [posts, setPosts] = useState(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
@@ -69,7 +77,7 @@ export default function Profile() {
   }, [me])
   useEffect(load, [load])
 
-  if (tab === 'settings') return <SettingsPage />
+  if (tab === 'settings') return <SettingsPage pro={Boolean(consultant)} />
 
   const tabs = profile?.influencer
     ? [...TABS, { key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }]
@@ -81,7 +89,23 @@ export default function Profile() {
     return <Navigate to="/profile" replace />
   }
 
-  return (
+  if (consultantLoading && !consultant) return <Loader />
+  if (consultant && active !== 'posts') {
+    const x = tabs.find((y) => y.key === active)
+    return (
+      <>
+        <TopBar title={t(x.label)} back backTo="/profile/settings" hardBack />
+        <div className="animate-fade">
+          {active === 'saved' && <SavedTab />}
+          {active === 'kundli' && <KundliTab />}
+          {active === 'influencer' && profile?.influencer && <InfluencerTab />}
+        </div>
+        <div className="h-24" />
+      </>
+    )
+  }
+
+  const seeker = (
     <>
       <TopBar
         title={t('nav.profile')}
@@ -142,6 +166,10 @@ export default function Profile() {
       <div className="h-24" />
     </>
   )
+  if (consultant && me) {
+    return <ConsultantPage id={me} own backTo="/home" fallback={seeker} />
+  }
+  return seeker
 }
 
 /* ── The top: you ────────────────────────────────────────────────────────── */
@@ -624,7 +652,7 @@ function KundliTab() {
  * Settings tab's address, so links to it still land). The two rows that
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
-function SettingsPage() {
+function SettingsPage({ pro }) {
   const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, cartCount } = useStore()
   const [leaving, setLeaving] = useState(false)
 
@@ -645,6 +673,19 @@ function SettingsPage() {
       <TopBar title={t('prof.settingsTitle')} back backTo="/profile" hardBack />
 
       <ReferralCard />
+
+      {/* A pro's profile is their consultant page; what was in its tabs is
+          here (10 Oct 2026). */}
+      {pro && (
+        <section className="border-b border-rule px-5 py-6">
+          <Kicker>{t('nav.profile')}</Kicker>
+          <div className="mt-2">
+            <Row to="/profile/kundli" title={t('prof.tab.kundli')} />
+            <Row to="/profile/saved" title={t('prof.tab.saved')} />
+            {profile?.influencer && <Row to="/profile/influencer" title={t('prof.tab.influencer')} />}
+          </div>
+        </section>
+      )}
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>

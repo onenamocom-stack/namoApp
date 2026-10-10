@@ -23,6 +23,8 @@ import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { PieceRow } from '../components/Pieces.jsx'
+import Composer from '../components/Composer.jsx'
+import { shareLink } from '../lib/share.js'
 
 const TABS = [
   { key: 'about', label: 'About' },
@@ -61,10 +63,25 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
+  return <ConsultantPage id={id} />
+}
+
+/**
+ * The page that sells a consultant, and since 10 Oct 2026 also a pro's own
+ * Profile tab (Rahul: "if a person becomes pro he should have only one
+ * profile page"). `own` is passed only by Profile, in the seeker build:
+ * Edit, Share and a new post take the place of Follow, Book, Chat and Call,
+ * and ☰ opens the same settings as the seeker profile. ProProfile's preview
+ * of /consult/:id is the client's view, on purpose. `fallback` renders when
+ * there is no approved consultant row to show.
+ */
+export function ConsultantPage({ id, own = false, backTo = '/consult', fallback = null }) {
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
-  const { showToast, hasFlag, toggleFlag, bookSession, spending } = useStore()
+  const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
+  const [composing, setComposing] = useState(false)
+  const [published, setPublished] = useState(0)
   const [tab, setTab] = useState('about')
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
@@ -130,12 +147,12 @@ export default function ConsultantProfile() {
   if (c === undefined) {
     return (
       <div className="flex h-full flex-col">
-        <TopBar title="Consultant" back backTo="/consult" />
+        <TopBar title="Consultant" back backTo={backTo} />
         <Loader />
       </div>
     )
   }
-  if (!c) return <Navigate to="/consult" replace />
+  if (!c) return fallback ?? <Navigate to="/consult" replace />
 
   const following = hasFlag(`follow:${c.id}`)
   const duration = service?.duration_mins ?? SESSION.mins
@@ -186,21 +203,36 @@ export default function ConsultantProfile() {
     showToast(`Requested · ${slot.slot} · ${duration} min`)
   }
 
+  // It said "Profile link copied" and copied nothing.
+  const share = async () => {
+    const said = await shareLink(`/consult/${c.id}`, { title: c.name })
+    if (said) showToast(said)
+  }
+  const ownButton =
+    'flex-1 rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill'
+
   return (
     <div className="flex h-full flex-col">
       <TopBar
         title={c.name}
         back
-        backTo="/consult"
+        backTo={backTo}
+        hardBack={own}
         sub={c.verified ? 'Verified' : c.category}
         right={
-          <button
-            type="button"
-            onClick={() => showToast('Profile link copied')}
-            className="text-label uppercase tracking-label text-t2"
-          >
-            Share
-          </button>
+          own ? (
+            <Link
+              to="/profile/settings"
+              aria-label="Settings"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-t1 transition-colors hover:bg-surface"
+            >
+              <span aria-hidden="true" className="text-lead leading-none">☰</span>
+            </Link>
+          ) : (
+            <button type="button" onClick={share} className="text-label uppercase tracking-label text-t2">
+              Share
+            </button>
+          )
         }
       />
 
@@ -212,7 +244,9 @@ export default function ConsultantProfile() {
         <section className="px-5 pb-6 pt-6">
           <div className="flex items-start gap-4">
             <TierRing count={c.sessionsDone} size={76}>
-              <Avatar initials={c.initials} size={76} />
+              {/* The photo, not the initials (10 Oct 2026). Your own is the
+                  store's copy, so a new picture shows without a reload. */}
+              <Avatar initials={c.initials} src={(own && me.avatarUrl) || c.avatarUrl} size={76} />
             </TierRing>
             <div className="min-w-0 flex-1 pt-1">
               <h1 className="truncate text-lead font-semibold t-heading">{c.name}</h1>
@@ -261,7 +295,35 @@ export default function ConsultantProfile() {
               than three icons everyone already reads.
 
               Schedule opens the same sheet as the sticky footer rather than a
-              second booking path — one flow, two ways in. */}
+              second booking path — one flow, two ways in.
+
+              Your own page has the seeker profile's three instead: you do not
+              follow or book yourself. */}
+          {own ? (
+            <div className="mt-5 flex gap-2">
+              <Link to="/onboarding/details?edit=1" className={ownButton}>
+                Edit profile
+              </Link>
+              <button type="button" onClick={share} className={ownButton}>
+                Share profile
+              </button>
+              {!profile?.blocked && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComposing((v) => !v)
+                    setTab('work')
+                  }}
+                  aria-label="New post"
+                  aria-pressed={composing}
+                  className="flex w-11 flex-none items-center justify-center rounded-xl text-white shadow-sm"
+                  style={{ background: 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))' }}
+                >
+                  <Icon name="plus" size={20} weight={2.2} />
+                </button>
+              )}
+            </div>
+          ) : (
           <div className="mt-5 flex items-center gap-2">
             <PopButton
               className="w-1/2 flex-none"
@@ -326,18 +388,19 @@ export default function ConsultantProfile() {
               <Icon name="phone" size={18} />
             </button>
           </div>
+          )}
 
           {/* Said, not merely implied by two faded glyphs. "Nothing
               happens when I tap" is the complaint a disabled control
               produces on its own. Schedule still works, which is the
               whole point of saying it here. */}
-          {!c.online && (
+          {!own && !c.online && (
             <p className="mt-3 text-micro t-faint">
               {firstName(c.name)} is offline right now. You can still schedule a
               session.
             </p>
           )}
-          {c.online && c.busy && (
+          {!own && c.online && c.busy && (
             <p className="mt-3 text-micro font-semibold text-gold">
               Busy — {firstName(c.name)} is with someone right now. Press call or chat and we
               will keep trying until they are free. Nothing is charged while you wait.
@@ -360,29 +423,46 @@ export default function ConsultantProfile() {
           </button>
         </section>
 
+        {own && composing && (
+          <div className="border-b border-rule">
+            {/* A Reel tab only when the server's video flag is on; drawing
+                the tab grants nothing — a clip without it is refused. */}
+            <Composer
+              kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
+              onPublished={() => {
+                setComposing(false)
+                setPublished((n) => n + 1)
+              }}
+            />
+          </div>
+        )}
+
         <Segmented items={TABS} value={tab} onChange={setTab} />
 
         <div key={tab} className="animate-fade">
           {tab === 'about' && <About c={c} />}
-          {tab === 'work' && <Work c={c} />}
+          {tab === 'work' && <Work key={published} c={c} />}
           {tab === 'reviews' && <Reviews c={c} />}
         </div>
 
-        <Section label="Book" last>
-          <Stub className="mb-8" />
-          <p className="prose-c mb-8">
-            Bring the question you have been rewriting in your head. Not the polite version of it.
-          </p>
-          <Button onClick={openSheet} variant="solid">
-            Book a session · ₹{rupees(c.pricePaise ?? 0)}
-          </Button>
-        </Section>
+        {!own && (
+          <Section label="Book" last>
+            <Stub className="mb-8" />
+            <p className="prose-c mb-8">
+              Bring the question you have been rewriting in your head. Not the polite version of it.
+            </p>
+            <Button onClick={openSheet} variant="solid">
+              Book a session · ₹{rupees(c.pricePaise ?? 0)}
+            </Button>
+          </Section>
+        )}
 
         <div className="h-8" />
       </div>
 
       {/* Sticky footer. The price and the one action follow you down the page,
-          which is the difference between a profile and a brochure. */}
+          which is the difference between a profile and a brochure. On your
+          own page: your rates, as a client reads them, without the buttons. */}
       <div className="flex flex-none items-center gap-4 border-t border-rule bg-bg px-6 py-4">
         <div className="min-w-0">
           <p className="text-lead font-semibold tnum">₹{rupees(c.pricePaise ?? 0)}</p>
@@ -392,7 +472,7 @@ export default function ConsultantProfile() {
             {c.freeFirst && ' · your first 3 minutes free'}
           </p>
         </div>
-        {c.perMinute ? (
+        {own ? null : c.perMinute ? (
           <>
             <Button onClick={openSheet} variant="quiet" className="flex-1">
               Book

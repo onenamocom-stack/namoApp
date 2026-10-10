@@ -783,7 +783,20 @@ grid — photos open full screen, blog posts and reels open on their pages — t
 what you reshared), **saved** (your bookmarked posts), **kundli** (the chart,
 *Open full chart*, birth data, *Edit birth details*, then chart, matching,
 muhurat and reports), and **influencer** for influencers. Bare `/profile` opens
-posts if you have any, kundli if not.
+posts, always (5 Oct 2026).
+
+**A pro has one profile** (10 Oct 2026, Rahul). For an approved consultant,
+`/profile` and `/profile/posts` render the `/consult/:id` page itself — photo,
+specialization, rating line, bio, intro, About (rates) · Posts · Reviews, and
+the footer with the 20-minute price and the per-minute rate — with **Edit
+profile**, **Share profile** (`/consult/<you>`) and **+** (the composer, which
+switches to Posts) where a client sees Follow, schedule, chat, video and call.
+No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
+settings, which gain a first section, Profile: **Kundli**, **Saved** (and
+**Influencer**), each at its old `/profile/<tab>` address under a plain top bar
+whose back is settings. An applicant who is not approved, or a blocked
+consultant, keeps the seeker profile. The consultant app's preview of
+`/consult/:id` stays the client's view.
 
 **☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
 then Account (wallet, orders, notification history, phone), More from Namo
