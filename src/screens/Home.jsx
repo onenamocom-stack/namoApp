@@ -11,6 +11,8 @@ import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
 import EditSheet from '../components/EditSheet.jsx'
+import Composer from '../components/Composer.jsx'
+import { BackButton } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { useStore } from '../store.jsx'
@@ -79,6 +81,9 @@ export default function Home() {
   const { tab = 'feed' } = useParams()
   const navigate = useNavigate()
   const { t } = useStore()
+  const [posting, setPosting] = useState(false)
+  // Bumped after a publish, so the feed reloads with the new post in it.
+  const [fresh, setFresh] = useState(0)
 
   /* Guard against a hand-typed segment, same as Profile. `darshan` is not in
      here: it is a destination, and the effect below leaves before this runs. */
@@ -107,7 +112,7 @@ export default function Home() {
     return () => {
       active = false
     }
-  }, [])
+  }, [fresh])
 
   /* Reshares: somebody else's post, again, under "X reshared". Woven in one
      after every three posts rather than appended, so they read as part of
@@ -243,9 +248,70 @@ export default function Home() {
         )}
       </div>
 
-      {/* Clears the floating AI button and the tab bar. */}
+      {/* Clears the tab bar and the + button. */}
       <div className="h-24" />
+
+      <NewPostButton onOpen={() => setPosting(true)} />
+      {posting && (
+        <NewPostSheet
+          onClose={() => setPosting(false)}
+          onPublished={() => {
+            setPosting(false)
+            setFresh((n) => n + 1)
+          }}
+        />
+      )}
     </>
+  )
+}
+
+/**
+ * New post, from Home only (10 Oct 2026, Rahul). A round + at the bottom
+ * right, over the feed. Sticky inside the scroll rather than fixed, so it
+ * sits above the tab bar without knowing how tall the bar is; it is the last
+ * thing on the page, so it sticks for the whole scroll.
+ */
+function NewPostButton({ onOpen }) {
+  const { session, showToast } = useStore()
+  return (
+    <div className="pointer-events-none sticky bottom-4 z-20 -mt-14 flex justify-end px-4">
+      <button
+        type="button"
+        aria-label="New post"
+        onClick={() => (session ? onOpen() : showToast('Sign in to post.'))}
+        className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full bg-gold-fill text-ink shadow-[0_6px_16px_rgba(0,0,0,0.22)] active:scale-95"
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+/** The profile's composer, full screen over Home. Photo and Blog for
+ *  everyone; Reel only where the server's video flag is on — the tab grants
+ *  nothing, the server decides what may be published. */
+function NewPostSheet({ onClose, onPublished }) {
+  const { profile, t } = useStore()
+  return (
+    <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">
+      <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-bg">
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-rule bg-bg px-4 py-3">
+          <BackButton onClick={onClose} />
+          <span className="text-meta t-heading">New post</span>
+        </div>
+        {profile?.blocked ? (
+          <p className="mx-5 mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">{t('prof.blocked')}</p>
+        ) : (
+          <Composer
+            kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
+            onPublished={onPublished}
+          />
+        )}
+        <div className="h-16" />
+      </div>
+    </div>
   )
 }
 

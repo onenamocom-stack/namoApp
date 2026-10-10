@@ -221,6 +221,12 @@ and memoise through `cachedAstro`, so the move costs nothing.
 `replace`, so Back from the shrine returns to the feed rather than bouncing
 through a tab that forwards again.
 
+**New post (+), Home only — 10 Oct 2026 (Rahul).** A round + at the bottom
+right of every Home tab, above the tab bar. Signed out → toast *Sign in to
+post.* Signed in → the composer full screen (Photo · Blog, plus Reel where the
+account's video flag is on); a blocked account sees the blocked note instead.
+Publishing closes it and reloads the feed.
+
 **Feed** is the stream, where `kind` picks the card. The free-tools row used to
 sit above it and is on `/consult` now, as of 7 Sep 2026:
 
