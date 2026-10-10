@@ -32,9 +32,18 @@ import { useStore } from '../store.jsx'
  * grant anything, and the server says so.
  */
 const SPEC = {
+  /* A post with no picture (10 Oct 2026, Rahul: "only text post, as in
+     Facebook"). It is a `post` row with no media — the feed already sets a
+     short one large on colour — so the server needs nothing new. */
+  text: {
+    label: 'Text',
+    heading: 'New text post',
+    kind: 'post',
+    noMedia: true,
+  },
   clip: {
-    label: 'Reel',
-    heading: 'New reel',
+    label: 'Video',
+    heading: 'New video',
     accept: 'video/*',
     required: true,
     add: 'Choose a video',
@@ -97,9 +106,20 @@ function fromPiece(piece) {
   }
 }
 
-export default function Composer({ kinds = ['post', 'article'], onPublished, tagProducts = false, editing = null }) {
+/* The tabs in Rahul's order (10 Oct 2026): Text, Photo, Video, Blog. Text
+   comes with Photo — both are `post` rows. */
+const ORDER = ['text', 'post', 'clip', 'article']
+
+function tabsFor(kinds, editing) {
+  if (editing) return [editing.kind === 'post' && !editing.mediaUrl ? 'text' : editing.kind]
+  const open = new Set(kinds)
+  if (open.has('post')) open.add('text')
+  return ORDER.filter((k) => open.has(k))
+}
+
+export default function Composer({ kinds: allowed = ['post', 'article'], onPublished, tagProducts = false, editing = null }) {
   const { showToast } = useStore()
-  if (editing) kinds = [editing.kind]
+  const kinds = tabsFor(allowed, editing)
   const [tab, setTab] = useState(kinds[0])
   const first = editing ? fromPiece(editing) : loadDraft(kinds[0])
   const [caption, setCaption] = useState(first.caption)
@@ -175,7 +195,8 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
       const fields =
         tab === 'article'
           ? { title: title.trim(), body: body.trim() }
-          : { caption: caption.trim() }
+          : // A photo or video may go without words (10 Oct 2026); a text post may not.
+            { caption: caption.trim() || null }
       if (editing) {
         const changes = {
           ...fields,
@@ -188,7 +209,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
         return
       }
       await publish({
-        kind: tab,
+        kind: spec.kind ?? tab,
         mediaUrl: media?.url,
         productIds: canTag ? tagged.map((p) => p.id) : [],
         ...fields,
@@ -215,7 +236,9 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
   const ready =
     tab === 'article'
       ? title.trim() && body.trim()
-      : caption.trim() && (!spec.required || media)
+      : spec.noMedia
+        ? caption.trim()
+        : !spec.required || media
 
   /** Why the button is not offering to publish yet, in one short sentence. */
   function blockedBecause() {
@@ -226,7 +249,7 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
       if (!body.trim()) return 'Needs a body'
     } else {
       if (spec.required && !media) return spec.missing
-      if (!caption.trim()) return 'Write a caption first'
+      if (spec.noMedia && !caption.trim()) return 'Write something first'
     }
     return null
   }
@@ -260,18 +283,22 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
 
           {/* A Plate stands in until a file is chosen, which is also the whole
               preview for a blog post with no cover. */}
-          <MediaPreview media={media} tab={tab} seed={`draft-${caption.length + title.length}`} />
+          {!spec.noMedia && (
+            <>
+              <MediaPreview media={media} tab={tab} seed={`draft-${caption.length + title.length}`} />
 
-          <label className="act-link mt-3 inline-block cursor-pointer text-meta">
-            {uploading ? 'Uploading…' : media ? spec.swap : spec.add}
-            <input
-              type="file"
-              accept={spec.accept}
-              className="sr-only"
-              disabled={uploading || busy}
-              onChange={onFile}
-            />
-          </label>
+              <label className="act-link mt-3 inline-block cursor-pointer text-meta">
+                {uploading ? 'Uploading…' : media ? spec.swap : spec.add}
+                <input
+                  type="file"
+                  accept={spec.accept}
+                  className="sr-only"
+                  disabled={uploading || busy}
+                  onChange={onFile}
+                />
+              </label>
+            </>
+          )}
 
           {tab === 'article' ? (
             <>
@@ -301,9 +328,13 @@ export default function Composer({ kinds = ['post', 'article'], onPublished, tag
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                rows={3}
-                placeholder="Say the thing you would say on a call"
-                aria-label="Caption"
+                rows={spec.noMedia ? 6 : 3}
+                placeholder={
+                  spec.noMedia
+                    ? 'Write what you want to say. Add #hashtags.'
+                    : 'Add a caption and #hashtags (optional)'
+                }
+                aria-label={spec.noMedia ? 'Post' : 'Caption'}
                 className="mt-4 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-heading"
               />
               <div className="mt-4">

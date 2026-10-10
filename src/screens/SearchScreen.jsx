@@ -58,7 +58,8 @@ function matches(q, ...fields) {
 
 export default function SearchScreen() {
   const [params] = useSearchParams()
-  const [query, setQuery] = useState('')
+  // `q` arrives from a tapped #hashtag (10 Oct 2026).
+  const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [tab, setTab] = useState(() => (['people', 'products', 'posts', 'bhakti'].includes(params.get('in')) ? params.get('in') : 'all'))
   const [data, setData] = useState(null)
   const box = useRef(null)

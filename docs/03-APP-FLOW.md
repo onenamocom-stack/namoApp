@@ -227,6 +227,12 @@ post.* Signed in → the composer full screen (Photo · Blog, plus Reel where th
 account's video flag is on); a blocked account sees the blocked note instead.
 Publishing closes it and reloads the feed.
 
+**The composer's tabs — 10 Oct 2026 (Rahul):** Text · Photo · Video · Blog
+(Video only where the account may post it). Text is a `post` with no media
+and needs words; a photo or video caption is optional. A **#hashtag** in a
+caption or text post is a link → `/search?in=posts&q=%23tag`, which matches
+it among the newest 200 posts.
+
 **Feed** is the stream, where `kind` picks the card. The free-tools row used to
 sit above it and is on `/consult` now, as of 7 Sep 2026:
 

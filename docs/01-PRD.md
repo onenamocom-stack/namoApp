@@ -598,7 +598,13 @@ separate application.
 
 ### 6.1 Who may post what, and what a report does — 23 Sep 2026
 
-**Everybody posts text and images.** Video is a separate permission.
+**Everybody posts text and images.** Video is a separate permission (kept
+on 10 Oct 2026, Rahul).
+
+**Four kinds of post — 10 Oct 2026 (Rahul):** Text, Photo, Video, Blog. A
+photo or video may carry words or none; a text post is words alone. Any
+#hashtag in the words is a link to every post carrying it. Hashtags are the
+text the author wrote; nothing stores them separately.
 
 | | Text | Image | Video |
 |---|---|---|---|

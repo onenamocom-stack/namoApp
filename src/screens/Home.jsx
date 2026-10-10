@@ -12,6 +12,7 @@ import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
 import EditSheet from '../components/EditSheet.jsx'
 import Composer from '../components/Composer.jsx'
+import Hashtags from '../components/Hashtags.jsx'
 import { BackButton } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
@@ -533,7 +534,9 @@ function Caption({ views, name, to, text, comments = 0, onComments }) {
           <Link to={to} className="mr-1.5 font-semibold">
             {name}
           </Link>
-          <span className="text-t2">{text}</span>
+          <span className="whitespace-pre-line text-t2">
+            <Hashtags text={text} />
+          </span>
         </p>
       )}
       {long && !open && (
@@ -704,7 +707,9 @@ function PostCard({ post, resharedBy }) {
             background: 'linear-gradient(145deg, #fff4ea 0%, #ffe4cc 55%, #e3f5ec 100%)',
           }}
         >
-          <p className="text-lead font-semibold leading-snug text-t1">{text}</p>
+          <p className="whitespace-pre-line text-lead font-semibold leading-snug text-t1">
+            <Hashtags text={text} />
+          </p>
         </div>
       )}
       <ProductStrip tagged={p.products} shopRef={p.shopRef} />

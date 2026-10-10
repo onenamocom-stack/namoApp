@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import Hashtags from './Hashtags.jsx'
 import { fetchByAuthor, fetchFeed, productHref, recordView } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
@@ -422,7 +423,7 @@ function ReelCaption({ text }) {
       onClick={() => long && setOpen((o) => !o)}
       className={`mt-3 whitespace-pre-line text-meta leading-snug text-white ${long && !open ? 'line-clamp-2' : ''} ${long ? 'cursor-pointer' : ''}`}
     >
-      {text}
+      <Hashtags text={text} className="text-white underline" />
       {long && open && <span className="ml-1 text-white/70">less</span>}
     </p>
   )
