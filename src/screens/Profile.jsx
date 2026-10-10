@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
 import ResharedList from '../components/ResharedList.jsx'
-import Composer from '../components/Composer.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
 import { Loader, Orbit } from '../components/Cosmos.jsx'
 import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
@@ -26,15 +25,16 @@ import { ConsultantPage } from './ConsultantProfile.jsx'
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
  *
  * The top is yours: your picture in a saffron ring, the three numbers
- * (posts, followers, following), your name and your Sun, Moon and Lagna,
- * and two buttons — edit, share. Under it, icon tabs: your posts as a grid,
- * what you saved, and your kundli. Everything that is not you — wallet,
+ * (posts, followers, following), your name and bio, and two buttons —
+ * edit, share. Under it, icon tabs: your posts as a grid and what you
+ * saved. Everything that is not you — wallet,
  * orders, invite, language, help, sign out — is behind the ☰ at the top
  * right, at `/profile/settings`, as on Instagram.
  *
- * Not a copy, on purpose: most people here never post, so a profile with no
- * posts opens on the Kundli tab instead of an empty grid, and the kundli is
- * one tap away for everyone.
+ * 11 Oct 2026, Rahul: the Sun / Moon / Lagna line said nothing clear, the
+ * + moved to Home (a post is made there), and the Kundli tab went — the
+ * horoscope section already has it. /profile/kundli still opens, from a
+ * pro's ☰.
  *
  * A pro has one profile (10 Oct 2026, Rahul): the Profile tab is their
  * consultant page — rates, about, posts, reviews — with Edit, Share and a
@@ -51,17 +51,17 @@ import { ConsultantPage } from './ConsultantProfile.jsx'
 const TABS = [
   { key: 'posts', icon: 'grid', label: 'prof.tab.posts' },
   { key: 'saved', icon: 'bookmark', label: 'prof.tab.saved' },
-  { key: 'kundli', icon: 'kundli', label: 'prof.tab.kundli' },
 ]
+// Not in the tab row; reached from a pro's ☰.
+const KUNDLI = { key: 'kundli', icon: 'kundli', label: 'prof.tab.kundli' }
 
 export default function Profile() {
   const { tab } = useParams()
   const navigate = useNavigate()
-  const { session, sessionReady, t, profile, consultant, consultantLoading } = useStore()
+  const { session, t, profile, consultant, consultantLoading } = useStore()
   const me = session?.user?.id
   const [posts, setPosts] = useState(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
-  const [composing, setComposing] = useState(false)
 
   const load = useCallback(() => {
     if (!me) return
@@ -85,13 +85,13 @@ export default function Profile() {
   // Bare /profile opens on Posts, always (5 Oct 2026, owner's request) —
   // it used to open on the kundli when you had not posted yet.
   const active = tab ?? 'posts'
-  if (tab && !tabs.some((x) => x.key === tab) && !(tab === 'influencer' && profile === null)) {
+  if (tab && tab !== 'kundli' && !tabs.some((x) => x.key === tab) && !(tab === 'influencer' && profile === null)) {
     return <Navigate to="/profile" replace />
   }
 
   if (consultantLoading && !consultant) return <Loader />
   if (consultant && active !== 'posts') {
-    const x = tabs.find((y) => y.key === active)
+    const x = [...tabs, KUNDLI].find((y) => y.key === active)
     return (
       <>
         <TopBar title={t(x.label)} back backTo="/profile/settings" hardBack />
@@ -123,15 +123,7 @@ export default function Profile() {
         }
       />
 
-      <Hero
-        posts={posts}
-        counts={counts}
-        sessionReady={sessionReady}
-        onNewPost={profile?.blocked ? null : () => {
-          setComposing((v) => !v)
-          if (active !== 'posts') navigate('/profile/posts')
-        }}
-      />
+      <Hero posts={posts} counts={counts} />
 
       {/* Icon tabs with the accent underline, Instagram's row. */}
       <div className="sticky top-[52px] z-10 flex border-b border-rule bg-bg" role="tablist">
@@ -156,7 +148,7 @@ export default function Profile() {
       <div key={active ?? 'loading'} className="animate-fade">
         {active === null && <Loader />}
         {active === 'posts' && (
-          <PostsTab posts={posts} composing={composing} onDone={() => { setComposing(false); load() }} />
+          <PostsTab posts={posts} />
         )}
         {active === 'saved' && <SavedTab />}
         {active === 'kundli' && <KundliTab />}
@@ -174,16 +166,10 @@ export default function Profile() {
 
 /* ── The top: you ────────────────────────────────────────────────────────── */
 
-function Hero({ posts, counts, sessionReady, onNewPost }) {
+function Hero({ posts, counts }) {
   const { t, session, showToast } = useStore()
   const [listing, setListing] = useState(null)
   const me = useProfileFields()
-  const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
-  const signs = [
-    ['r.sun', mine.sun, 'var(--gold-fill)'],
-    ['r.moon', mine.moon, 'var(--tier-10)'],
-    ['r.rising', mine.rising, 'var(--tier-500)'],
-  ].filter(([, v]) => v)
 
   async function share() {
     const said = await shareLink(`/u/${session?.user?.id}`, { title: me.name })
@@ -223,23 +209,6 @@ function Hero({ posts, counts, sessionReady, onNewPost }) {
 
       <h1 className="mt-4 font-display text-lead leading-tight t-heading">{me.name}</h1>
       <Bio />
-      {/* Each sign in its own colour: the sun saffron, the moon blue, the
-          rising sign purple. Empty while the chart is in flight, and two of
-          the three when the birth time is unknown. */}
-      {signs.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {signs.map(([label, sign, colour]) => (
-            <span
-              key={label}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold"
-              style={{ color: colour, background: `color-mix(in srgb, ${colour} 12%, white)` }}
-            >
-              <span className="font-normal opacity-80">{t(label)}</span> {t(`sign.${sign}`)}
-            </span>
-          ))}
-        </div>
-      )}
-
       <div className="mt-4 flex gap-2">
         <Link
           to="/onboarding/details?edit=1"
@@ -254,17 +223,6 @@ function Hero({ posts, counts, sessionReady, onNewPost }) {
         >
           {t('prof.shareProfile')}
         </button>
-        {onNewPost && (
-          <button
-            type="button"
-            onClick={onNewPost}
-            aria-label={t('prof.newPost')}
-            className="flex w-11 flex-none items-center justify-center rounded-xl text-white shadow-sm"
-            style={{ background: 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))' }}
-          >
-            <Icon name="plus" size={20} weight={2.2} />
-          </button>
-        )}
       </div>
       <FollowSheet which={listing} onClose={() => setListing(null)} />
     </section>
@@ -510,24 +468,13 @@ function Tile({ post }) {
   )
 }
 
-function PostsTab({ posts, composing, onDone }) {
+function PostsTab({ posts }) {
   const { profile, session, t } = useStore()
   return (
     <>
       {profile?.blocked && (
         <p className="mx-5 mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">{t('prof.blocked')}</p>
       )}
-      {composing && !profile?.blocked && (
-        <div className="border-b border-rule">
-          {/* A Reel tab only when the server's video flag is on; drawing
-              the tab grants nothing — a clip without it is refused. */}
-          <Composer
-            kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
-            onPublished={onDone}
-          />
-        </div>
-      )}
-
       {posts?.length ? (
         <div className="grid grid-cols-3 gap-0.5">
           {posts.map((p) => (
@@ -535,13 +482,11 @@ function PostsTab({ posts, composing, onDone }) {
           ))}
         </div>
       ) : (
-        !composing && (
-          <div className="flex flex-col items-center px-8 py-12 text-center">
-            <Orbit size={56} />
-            <p className="mt-4 text-body font-semibold t-heading">{t('prof.firstPostTitle')}</p>
-            <p className="mt-1 text-meta t-faint">{t('prof.firstPostNote')}</p>
-          </div>
-        )
+        <div className="flex flex-col items-center px-8 py-12 text-center">
+          <Orbit size={56} />
+          <p className="mt-4 text-body font-semibold t-heading">{t('prof.firstPostTitle')}</p>
+          <p className="mt-1 text-meta t-faint">{t('prof.firstPostNote')}</p>
+        </div>
       )}
 
       <ResharedList by={session?.user?.id} className="mt-8 px-5" />

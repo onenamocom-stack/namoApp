@@ -332,8 +332,8 @@ export const strings = {
   'prof.shareProfile': { en: 'Share profile', hi: 'प्रोफ़ाइल शेयर करें' },
   'prof.firstPostTitle': { en: 'Share your first post', hi: 'अपनी पहली पोस्ट शेयर करें' },
   'prof.firstPostNote': {
-    en: 'A photo or a few lines. Tap + above; it shows here and in the feed.',
-    hi: 'एक फ़ोटो या कुछ पंक्तियां। ऊपर + दबाएं; यह यहां और फ़ीड में दिखेगी।',
+    en: 'A photo, a video or a few lines. Tap + on Home; it shows here and in the feed.',
+    hi: 'एक फ़ोटो, वीडियो या कुछ पंक्तियां। होम पर + दबाएं; यह यहां और फ़ीड में दिखेगी।',
   },
   'prof.savedEmptyTitle': { en: 'Nothing saved yet', hi: 'अभी कुछ सेव नहीं किया' },
   'prof.savedEmpty': {

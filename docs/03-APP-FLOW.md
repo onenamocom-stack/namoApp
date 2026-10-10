@@ -788,18 +788,20 @@ length, because their two clock times are identical.
 
 ### `/profile/:tab`
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
-saffron ring (tap to change), posts · followers · following, your name, your
-Sun, Moon and Lagna as coloured chips, then **Edit profile**
-(`/onboarding/details?edit=1`), **Share profile** (`/u/<you>`). Under the name,
-your bio — "● Available" until you write one; tap to edit, 150 characters.
-Choosing a new picture opens an adjuster first: drag to place, slide to zoom,
-and only the circle is uploaded. and **+** (the
-composer, on the Posts tab). Icon tabs, each its own URL: **posts** (a 3-column
-grid — photos open full screen, blog posts and reels open on their pages — then
-what you reshared), **saved** (your bookmarked posts), **kundli** (the chart,
-*Open full chart*, birth data, *Edit birth details*, then chart, matching,
-muhurat and reports), and **influencer** for influencers. Bare `/profile` opens
-posts, always (5 Oct 2026).
+saffron ring (tap to change), posts · followers · following, your name, then
+**Edit profile** (`/onboarding/details?edit=1`) and **Share profile**
+(`/u/<you>`). Under the name, your bio — "● Available" until you write one; tap
+to edit, 150 characters. Choosing a new picture opens an adjuster first: drag to
+place, slide to zoom, and only the circle is uploaded. Icon tabs, each its own
+URL: **posts** (a 3-column grid — photos open full screen, blog posts and reels
+open on their pages — then what you reshared; empty, it says to tap + on Home),
+**saved** (your bookmarked posts), and **influencer** for influencers. Bare
+`/profile` opens posts, always (5 Oct 2026).
+
+**Removed 11 Oct 2026 (Rahul):** the Sun / Moon / Lagna chips (they said nothing
+clear), the **+** (a post is made from Home's +), and the **Kundli** tab (the
+horoscope section has it). `/profile/kundli` still opens — the chart, birth data,
+matching, muhurat and reports — from a pro's ☰ below.
 
 **A pro has one profile** (10 Oct 2026, Rahul). For an approved consultant,
 `/profile` and `/profile/posts` render the `/consult/:id` page itself — photo,
