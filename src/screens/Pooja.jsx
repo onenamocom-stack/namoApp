@@ -128,16 +128,23 @@ const HINT_KEY = 'namo.puja.touched'
 const BAND = { w: 1080, h: 345, body: 200, hooks: [0.144, 0.863], tip: 300 }
 const bandCqw = (px) => `${((px / BAND.w) * 100).toFixed(3)}cqw`
 /* The altar slab, `public/puja/marble-slab.webp`: its height as a share of
-   its width, and where its top surface meets its front edge. `slabCqw(f)` is
-   f of the slab's height, in the page's width units. Drawn at half the
-   photo's height (10 Oct 2026, Rahul: the front face was an empty green
-   band; it was 3/4 from 8 Oct, the owner's smaller table). */
-const SLAB = { ratio: (225 / 865) * 0.5, edge: 100 / 225 }
-const slabCqw = (f) => `${(SLAB.ratio * f * 100).toFixed(3)}cqw`
-/* Where the samagri stand: a few pixels behind the slab's front edge, on its
-   top surface (7 Oct 2026 — the thali stood 10px below the edge and hung
-   over the front of the counter). `lift` is the button's own padding. */
-const onCounter = (lift = 0) => `calc(${slabCqw(1 - SLAB.edge)} + ${6 - lift}px)`
+   its width, and where its top surface meets its front edge. The photo is
+   drawn in two parts: the front face at half the photo's height (10 Oct
+   2026, Rahul: it was an empty green band; 3/4 from 8 Oct, the owner's
+   smaller table), and the top surface `depth` times deeper than that, so the
+   samagri stand on the table rather than at its lip (10 Oct 2026, Rahul: the
+   thali looked as if it were falling). `slabCqw(f)` is f of the whole
+   slab's height, in the page's width units. */
+const SLAB = { ratio: (225 / 865) * 0.5, edge: 100 / 225, depth: 1.8 }
+const SLAB_FRONT = SLAB.ratio * (1 - SLAB.edge)
+const SLAB_TOP = SLAB.ratio * SLAB.edge * SLAB.depth
+const cqw = (x) => `${(x * 100).toFixed(3)}cqw`
+const slabCqw = (f) => cqw((SLAB_FRONT + SLAB_TOP) * f)
+/* Where the samagri stand: a third of the way back across the top surface
+   (10 Oct 2026; it was a few pixels behind the front edge, and before 7 Oct
+   the thali stood below the edge and hung over the front). `lift` is the
+   button's own padding. */
+const onCounter = (lift = 0) => `calc(${cqw(SLAB_FRONT + SLAB_TOP / 3)} - ${lift}px)`
 const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
@@ -532,18 +539,31 @@ export default function Pooja() {
 
         {/* The altar: a green marble slab across the whole width — the white
             slab's photo multiplied by green, so its veining stays (8 Oct 2026,
-            owner). */}
+            owner). Top surface and front face are the photo's two parts,
+            each stretched to its own height (see SLAB). */}
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 bottom-0 block"
-          style={{
-            height: slabCqw(1),
-            backgroundImage: `linear-gradient(180deg, #4fa57c 0%, #2f7d58 100%), url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
-            backgroundSize: '100% 100%',
-            backgroundBlendMode: 'multiply',
-            filter: 'drop-shadow(0 -6px 10px rgba(0,0,0,.35))',
-          }}
-        />
+          style={{ height: slabCqw(1), filter: 'drop-shadow(0 -6px 10px rgba(0,0,0,.35))' }}
+        >
+          {[
+            { h: SLAB_TOP, at: 'top', from: '#4fa57c', to: '#41946c', part: SLAB.edge },
+            { h: SLAB_FRONT, at: 'bottom', from: '#41946c', to: '#2f7d58', part: 1 - SLAB.edge },
+          ].map((p) => (
+            <span
+              key={p.at}
+              className="block"
+              style={{
+                height: cqw(p.h),
+                backgroundImage: `linear-gradient(180deg, ${p.from} 0%, ${p.to} 100%), url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
+                backgroundSize: `100% 100%, 100% ${cqw(p.h / p.part)}`,
+                backgroundPosition: `0 0, 0 ${p.at}`,
+                backgroundRepeat: 'no-repeat',
+                backgroundBlendMode: 'multiply',
+              }}
+            />
+          ))}
+        </span>
 
         {/* Pushpanjali falls the whole height of the page — photographed
             marigolds and loose genda and rose petals (5 Oct 2026). A

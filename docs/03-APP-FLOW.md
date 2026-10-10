@@ -441,11 +441,12 @@ top to bottom —
   `setting:croppedDeityImage` fills and crops instead.
 - A **marble altar slab** across the bottom, the full width
   (`public/puja/marble-slab.webp`, from the same design), drawn at half the
-  photo's height (10 Oct 2026, Rahul: its front face was an empty band; it was
-  three quarters from 8 Oct). The agarbatti, both diyas, the thali and a brass
-  bowl of marigolds stand on its top surface, a few pixels behind the front
-  edge, each with a soft contact shadow (`onCounter`, `SLAB.edge` measured off
-  the photo).
+  photo's height for its front face and 1.8 times the photo's depth for its
+  top surface (10 Oct 2026, Rahul: the front face was an empty band, and the
+  thali at the lip looked as if it were falling; three quarters, undivided,
+  from 8 Oct). The agarbatti, both diyas, the thali and a brass bowl of
+  marigolds stand a third of the way back across the top surface, each with a
+  soft contact shadow (`onCounter`, `SLAB` measured off the photo).
 - The page's way out, at the start of the deity row, **closes rather than
   goes back** (10 Oct 2026, Rahul): an arrow there read as a control that
   scrolls the chips.
