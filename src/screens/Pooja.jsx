@@ -129,9 +129,10 @@ const BAND = { w: 1080, h: 345, body: 200, hooks: [0.144, 0.863], tip: 300 }
 const bandCqw = (px) => `${((px / BAND.w) * 100).toFixed(3)}cqw`
 /* The altar slab, `public/puja/marble-slab.webp`: its height as a share of
    its width, and where its top surface meets its front edge. `slabCqw(f)` is
-   f of the slab's height, in the page's width units. Drawn at 3/4 of the
-   photo's height (8 Oct 2026, owner: a smaller table). */
-const SLAB = { ratio: (225 / 865) * 0.75, edge: 100 / 225 }
+   f of the slab's height, in the page's width units. Drawn at half the
+   photo's height (10 Oct 2026, Rahul: the front face was an empty green
+   band; it was 3/4 from 8 Oct, the owner's smaller table). */
+const SLAB = { ratio: (225 / 865) * 0.5, edge: 100 / 225 }
 const slabCqw = (f) => `${(SLAB.ratio * f * 100).toFixed(3)}cqw`
 /* Where the samagri stand: a few pixels behind the slab's front edge, on its
    top surface (7 Oct 2026 — the thali stood 10px below the edge and hung
@@ -383,7 +384,9 @@ export default function Pooja() {
           boxShadow: 'inset 0 -1px 0 rgba(110,64,8,.55)',
         }}
       >
-        <BackButton onClick={goBack} />
+        {/* A cross, not an arrow (10 Oct 2026, Rahul): an arrow at the start
+            of the chip row read as a button that scrolls the chips. */}
+        <BackButton onClick={goBack} icon="close" label="Close" />
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
           {deities.map((d) => {
             const on = d.id === deity.id

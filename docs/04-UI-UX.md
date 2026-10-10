@@ -113,7 +113,9 @@ because frosted white over a 40% ink scrim reads as grey and disabled.
 **Back is `BackButton`** (`Chrome.jsx`, 4 Oct 2026) everywhere — the top bar,
 the reel viewer, edit details, the consultant sign-up steps, a chat thread: a
 36px white circle with a chevron, saffron when pressed, and a translucent dark
-version over video. It replaced a bare "←".
+version over video. It replaced a bare "←". **One exception: Darshan** shows
+a cross in the same circle (`icon="close"`, 10 Oct 2026, Rahul) — a chevron
+at the start of the deity chips read as a button that scrolls them.
 
 **Bhakti's shelf tiles each have a colour** — status saffron, wallpapers
 purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash

@@ -439,11 +439,16 @@ top to bottom —
 - The **murti** fills the page over a blurred, darkened copy of itself, so a
   painting that does not match the phone's shape still reaches every edge.
   `setting:croppedDeityImage` fills and crops instead.
-- A **white marble altar slab** across the bottom
-  (`public/puja/marble-slab.webp`, from the same design). The agarbatti, both
-  diyas, the thali and a brass bowl of marigolds stand on its top surface, a
-  few pixels behind the front edge, each with a soft contact shadow
-  (`onCounter`, `SLAB.edge` measured off the photo).
+- A **marble altar slab** across the bottom, the full width
+  (`public/puja/marble-slab.webp`, from the same design), drawn at half the
+  photo's height (10 Oct 2026, Rahul: its front face was an empty band; it was
+  three quarters from 8 Oct). The agarbatti, both diyas, the thali and a brass
+  bowl of marigolds stand on its top surface, a few pixels behind the front
+  edge, each with a soft contact shadow (`onCounter`, `SLAB.edge` measured off
+  the photo).
+- The page's way out, at the start of the deity row, **closes rather than
+  goes back** (10 Oct 2026, Rahul): an arrow there read as a control that
+  scrolls the chips.
 
 This replaced, the same day, a full-page mandir entrance (white marble, then a
 choice of marble, sandstone, gold or granite) whose doorway the murti stood in.

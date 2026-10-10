@@ -341,7 +341,7 @@ export function TopBar({
  * and fills saffron when pressed. `dark` is the version that sits over
  * video. Every back control in the app is this one.
  */
-export function BackButton({ onClick, dark = false, className = '', label = 'Back' }) {
+export function BackButton({ onClick, dark = false, className = '', label = 'Back', icon = 'back' }) {
   return (
     <button
       type="button"
@@ -353,7 +353,12 @@ export function BackButton({ onClick, dark = false, className = '', label = 'Bac
           : 'border border-rule bg-white text-t1 shadow-sm hover:border-gold-fill hover:text-gold active:bg-gold-fill active:text-white'
       } ${className}`}
     >
-      <Icon name="back" size={18} weight={2.2} className="transition-transform duration-150 group-hover:-translate-x-0.5" />
+      <Icon
+        name={icon}
+        size={18}
+        weight={2.2}
+        className={icon === 'back' ? 'transition-transform duration-150 group-hover:-translate-x-0.5' : ''}
+      />
     </button>
   )
 }
