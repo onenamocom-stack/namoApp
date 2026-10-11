@@ -18,6 +18,13 @@ import Plate from './Plate.jsx'
 const KIND = { clip: 'Reel', post: 'Photo', article: 'Blog', live_session: 'Live' }
 const VIDEO = /\.(mp4|webm|mov|m4v)(\?|$)/i
 
+/** What a piece is, in a word. A `post` with no picture is a text post
+ *  (10 Oct 2026) and says so — it read "Photo" over a blank tile. */
+export function kindLabel(piece) {
+  if (piece.kind === 'post' && !piece.mediaUrl) return 'Text'
+  return KIND[piece.kind] ?? ''
+}
+
 export function Thumb({ piece, size = 56 }) {
   const style = { width: size, height: size }
   if (piece.mediaUrl && VIDEO.test(piece.mediaUrl)) {
@@ -40,6 +47,17 @@ export function Thumb({ piece, size = 56 }) {
     return (
       <span className="flex-none overflow-hidden rounded-xl bg-surface" style={style}>
         <img src={piece.mediaUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+      </span>
+    )
+  }
+  // A text post: "Aa" on the colours the feed sets its words on.
+  if (piece.kind === 'post') {
+    return (
+      <span
+        className="flex flex-none items-center justify-center overflow-hidden rounded-xl text-meta font-semibold text-t1"
+        style={{ ...style, background: 'linear-gradient(145deg, #fff4ea 0%, #ffe4cc 55%, #e3f5ec 100%)' }}
+      >
+        Aa
       </span>
     )
   }
@@ -68,7 +86,7 @@ export function PieceRow({ piece, onEdit }) {
 
 function PieceRowInner({ piece }) {
   const [photo, setPhoto] = useState(false)
-  const title = piece.title || piece.caption || KIND[piece.kind] || 'Post'
+  const title = piece.title || piece.caption || kindLabel(piece) || 'Post'
 
   const body = (
     <>
@@ -88,7 +106,7 @@ function PieceRowInner({ piece }) {
             <Icon name="chat" size={13} />
             {piece.comments ?? 0}
           </span>
-          <span>{KIND[piece.kind] ?? ''}</span>
+          <span>{kindLabel(piece)}</span>
         </span>
         {piece.views7d > 0 && (
           <span className="mt-0.5 block text-[12px] text-ok tnum">+{piece.views7d} views this week</span>

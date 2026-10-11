@@ -73,7 +73,8 @@ export default function ProStudio() {
         </Kicker>
         <p className="mt-2 caps-sm t-faint tnum">
           {published.filter((c) => c.kind === 'clip').length} reels ·{' '}
-          {published.filter((c) => c.kind === 'post').length} photos ·{' '}
+          {published.filter((c) => c.kind === 'post' && c.mediaUrl).length} photos ·{' '}
+          {published.filter((c) => c.kind === 'post' && !c.mediaUrl).length} text ·{' '}
           {published.filter((c) => c.kind === 'article').length} blog posts
         </p>
         <div className="mt-3">
