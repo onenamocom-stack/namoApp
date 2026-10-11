@@ -161,7 +161,7 @@ export default function Profile() {
     </>
   )
   if (consultant && me) {
-    return <ConsultantPage id={me} own backTo="/home" fallback={seeker} />
+    return <ConsultantPage id={me} own backTo="/home" fallback={seeker} saved={<SavedTab />} />
   }
   return seeker
 }

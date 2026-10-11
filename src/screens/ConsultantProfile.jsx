@@ -73,7 +73,7 @@ export default function ConsultantProfile() {
  * of /consult/:id is the client's view, on purpose. `fallback` renders when
  * there is no approved consultant row to show.
  */
-export function ConsultantPage({ id, own = false, backTo = '/consult', fallback = null }) {
+export function ConsultantPage({ id, own = false, backTo = '/consult', fallback = null, saved = null }) {
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
@@ -408,12 +408,19 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             ))}
         </section>
 
-        <Segmented items={TABS} value={tab} onChange={setTab} />
+        {/* Your own page has a fourth tab, Saved (11 Oct 2026, Rahul) — what
+            you bookmarked, which a client never sees. */}
+        <Segmented
+          items={own && saved ? [...TABS, { key: 'saved', label: 'Saved' }] : TABS}
+          value={tab}
+          onChange={setTab}
+        />
 
         <div key={tab} className="animate-fade">
           {tab === 'about' && <About c={c} />}
           {tab === 'work' && <Work c={c} />}
           {tab === 'reviews' && <Reviews c={c} />}
+          {tab === 'saved' && own && saved}
         </div>
 
         {/* The Book section that sat here went on 11 Oct 2026 (Rahul): the

@@ -823,7 +823,8 @@ opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** and **Share profile** (`/consult/<you>`) where a client sees Follow,
 schedule, chat, video and call. The **+** went on 11 Oct 2026 (Rahul): a post is
-made from Home's +.
+made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
+your own page only (11 Oct 2026, Rahul); a client sees three.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
 settings, which gain a first section, Profile: **Kundli**, **Saved** (and
 **Influencer**), each at its old `/profile/<tab>` address under a plain top bar
