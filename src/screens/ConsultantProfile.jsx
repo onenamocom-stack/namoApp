@@ -5,7 +5,6 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
-import Plate from '../components/Plate.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
 import {
@@ -391,20 +390,22 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             </p>
           )}
 
-          {/* Intro recording. */}
-          <button
-            type="button"
-            onClick={() => showToast('Intro recording — prototype only')}
-            className="mt-5 block w-full text-left transition-opacity hover:opacity-70"
-          >
-            <Plate seed={`${c.id}-intro`} variant="orbit" className="aspect-video w-full">
-              <span className="absolute inset-0 flex items-center justify-center">
-                <span className="flex items-center gap-2 rounded-full bg-surface/90 px-3.5 py-2 shadow-sm caps-sm t-sub">
-                  ▶ Meet {firstName(c.name)} · 1:24
-                </span>
-              </span>
-            </Plate>
-          </button>
+          {/* The intro the consultant uploaded (11 Oct 2026, Rahul) — a video
+              or a photo, from Settings → Intro video or photo. Nothing when
+              there is none; it was a "Meet X · 1:24" placeholder that played
+              nothing. */}
+          {c.introUrl &&
+            (c.introKind === 'video' ? (
+              <video
+                src={c.introUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="mt-5 aspect-video w-full rounded-xl bg-ink object-cover"
+              />
+            ) : (
+              <img src={c.introUrl} alt={c.name} className="mt-5 aspect-video w-full rounded-xl object-cover" />
+            ))}
         </section>
 
         <Segmented items={TABS} value={tab} onChange={setTab} />

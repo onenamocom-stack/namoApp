@@ -115,6 +115,12 @@ class Consultant(models.Model):
     # of that first session are on Namo; the consultant is paid for them.
     free_first = models.BooleanField(default=False, db_default=False)
 
+    # The intro on the consultant's page (11 Oct 2026, Rahul): one video or
+    # one photo the consultant uploads. A public URL from their own READY
+    # media asset, set only through `services.set_intro`; null shows nothing.
+    intro_url = models.TextField(null=True, blank=True)
+    intro_kind = models.CharField(max_length=8, null=True, blank=True)  # 'video' | 'image'
+
     class Meta:
         db_table = "consultants"
         constraints = [

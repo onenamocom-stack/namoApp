@@ -1461,3 +1461,74 @@ def test_migration_turns_band_rows_into_four_rates(money_tables):
     assert services.rates_of(PRO) == {"chat": 37, "video": 37, "audio": 37, "booking": 30}
     assert ConsultantService.objects.filter(consultant_id=PRO, active=False).count() == 2
     assert not ConsultantService.objects.filter(band_id__isnull=False).exists()
+
+
+# ── intro video or photo (11 Oct 2026, Rahul) ────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestIntro:
+    """A consultant points their page's intro at one of their own ready
+    uploads, a video or a photo, or clears it."""
+
+    def _asset(self, owner, kind="reel", status="ready"):
+        from apps.media.models import MediaAsset
+
+        return MediaAsset.objects.create(
+            owner=str(owner), kind=kind, bucket_key=f"u/{owner}/intro.mp4",
+            mime="video/mp4", size_bytes=1000, status=status,
+        )
+
+    def _pro(self):
+        Consultant.objects.create(profile_id=PRO, category="Astrologer", status="approved")
+
+    def test_set_then_public_then_clear(self, api_client, sign_hs256, hs256_mode, money_tables):
+        self._pro()
+        token = sign_hs256(claims=make_claims(sub=PRO))
+        asset = self._asset(PRO)
+        response = api_client.put(
+            "/v1/consultants/me/intro/", data={"asset_id": str(asset.id)}, format="json",
+            **auth(token),
+        )
+        assert response.status_code == 200
+        assert response.json()["kind"] == "video"
+        assert response.json()["url"].endswith(f"u/{PRO}/intro.mp4")
+        public = api_client.get(f"/v1/consultants/{PRO}/").json()
+        assert public["intro_kind"] == "video" and public["intro_url"] == response.json()["url"]
+        assert api_client.get("/v1/consultants/me/", **auth(token)).json()["intro_kind"] == "video"
+
+        cleared = api_client.put(
+            "/v1/consultants/me/intro/", data={"asset_id": None}, format="json", **auth(token),
+        )
+        assert cleared.json() == {"url": None, "kind": None}
+        assert api_client.get(f"/v1/consultants/{PRO}/").json()["intro_url"] is None
+
+    def test_someone_elses_upload_is_404(self, api_client, sign_hs256, hs256_mode, money_tables):
+        self._pro()
+        token = sign_hs256(claims=make_claims(sub=PRO))
+        asset = self._asset(SEEKER)
+        response = api_client.put(
+            "/v1/consultants/me/intro/", data={"asset_id": str(asset.id)}, format="json",
+            **auth(token),
+        )
+        assert response.status_code == 404
+        assert Consultant.objects.get(profile_id=PRO).intro_url is None
+
+    @pytest.mark.parametrize("kind,status,code", [("document", "ready", 400), ("reel", "processing", 409)])
+    def test_wrong_kind_or_not_ready_refused(self, kind, status, code, api_client, sign_hs256,
+                                             hs256_mode, money_tables):
+        self._pro()
+        token = sign_hs256(claims=make_claims(sub=PRO))
+        asset = self._asset(PRO, kind=kind, status=status)
+        response = api_client.put(
+            "/v1/consultants/me/intro/", data={"asset_id": str(asset.id)}, format="json",
+            **auth(token),
+        )
+        assert response.status_code == code
+
+    def test_non_consultant_is_404(self, api_client, seeker_token, money_tables):
+        response = api_client.put(
+            "/v1/consultants/me/intro/", data={"asset_id": None}, format="json",
+            **auth(seeker_token),
+        )
+        assert response.status_code == 404

@@ -166,6 +166,9 @@ function shape(row, services = []) {
     reviewCount: row.rating_count_cache,
     // Paid sessions given — the milestone tier (lib/milestones.js).
     sessionsDone: row.sessions_done ?? 0,
+    // The intro video or photo on their page (11 Oct 2026); null when none.
+    introUrl: row.intro_url ?? null,
+    introKind: row.intro_kind ?? null,
     fixed,
     perMinute,
     pricePaise: base?.price_paise ?? null,
@@ -463,6 +466,13 @@ export const RATE_MIN = 5
 export const RATE_MAX = 110
 /** A booked slot's length; its price is the booking rate times this. */
 export const SLOT_MINS = 20
+
+/** Your intro: an uploaded asset's id, or null to take it down. The reply
+ *  is { url, kind } as stored. */
+export async function saveMyIntro(assetId) {
+  const token = await accessToken()
+  return api('/consultants/me/intro/', { method: 'PUT', body: { asset_id: assetId }, token })
+}
 
 /** Your own four rates, whole rupees a minute: { chat, video, audio,
  *  booking }. All four go up together; the reply is what was stored. */

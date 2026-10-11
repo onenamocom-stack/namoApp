@@ -755,6 +755,12 @@ partial unique index, wakes to a `23505` and never reaches the debit, so "no
 orphaned debit" is an ordering rather than a compensating write. Everything
 inside the block unwinds together, so a refusal leaves no order behind either.
 
+**The intro** (11 Oct 2026): `consultants.intro_url` (text, null) and
+`consultants.intro_kind` (`'video'` | `'image'`, null), migration
+`consultants/0007`. Written only by `PUT /consultants/me/intro/` from one of
+the consultant's own READY media assets (kind reel or image); public on the
+consultant's row.
+
 **A free first session** (7 Oct 2026): `consultants.free_first` (boolean,
 default false, migration `consultants/0005`) and `sessions.free_seconds`
 (integer, default 0, `chat/0004`). A session's free seconds extend its

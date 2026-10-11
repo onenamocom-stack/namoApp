@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import RateFields, { RATE_FIELDS, rateErrors, rateNumbers } from '../components/RateFields.jsx'
+import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
@@ -267,9 +268,10 @@ function Reviews() {
 }
 
 function Settings({ me, onRatesSaved }) {
-  const { showToast } = useStore()
+  const { showToast, consultant } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [editingRates, setEditingRates] = useState(false)
+  const [intro, setIntro] = useState(false)
 
   const leave = async () => {
     if (leaving) return
@@ -298,6 +300,7 @@ function Settings({ me, onRatesSaved }) {
                 : 'Not set yet'
             }
           />
+          <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
           <Row to="/pro/consult" title="Availability" note="Which slots you are open for" />
           <Row
             onClick={() => showToast('Languages — prototype only')}
@@ -309,6 +312,7 @@ function Settings({ me, onRatesSaved }) {
           <Row to="/pro/payout-details" title="Payout details" note="PAN and bank account" />
         </div>
       </section>
+      {intro && <IntroSheet onClose={() => setIntro(false)} />}
       {editingRates && (
         <RatesSheet
           current={me.rates}

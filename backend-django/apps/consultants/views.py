@@ -66,6 +66,9 @@ def _consultant_row(consultant, service_rows):
         "rating_count_cache": consultant.rating_count_cache,
         # Paid sessions given — the milestone badges read it (3 Oct 2026).
         "sessions_done": getattr(consultant, "sessions_done", 0),
+        # The intro video or photo (11 Oct 2026); null when none.
+        "intro_url": consultant.intro_url,
+        "intro_kind": consultant.intro_kind,
         "services": service_rows,
     }
 
@@ -250,8 +253,33 @@ def me(request):
             "created_at": consultant.created_at,
             # Whole rupees a minute: chat, video, audio, booking (10 Oct 2026).
             "rates": services.rates_of(consultant.profile_id),
+            "intro_url": consultant.intro_url,
+            "intro_kind": consultant.intro_kind,
         }
     )
+
+
+class IntroInput(serializers.Serializer):
+    asset_id = serializers.UUIDField(allow_null=True)
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def my_intro(request):
+    """Set the caller's intro to one of their uploads, or clear it with
+    `asset_id: null` (11 Oct 2026, Rahul)."""
+    consultant = services.my_consultant(request.user.pk)
+    if consultant is None:
+        return Response(
+            refusal_body("not_consultant", "No practice on this account."), status=404
+        )
+    serializer = IntroInput(data=request.data)
+    if not serializer.is_valid():
+        return Response(refusal_body("invalid", "Send the upload's asset_id, or null."), status=400)
+    try:
+        return Response(services.set_intro(consultant.profile_id, serializer.validated_data["asset_id"]))
+    except services.BadIntro as exc:
+        return Response(refusal_body("invalid", str(exc)), status=exc.status)
 
 
 class RatesInput(serializers.Serializer):

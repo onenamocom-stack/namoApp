@@ -397,6 +397,12 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
  * under its URL and caches for a year.
  */
 export async function uploadMedia(file) {
+  return (await uploadMediaAsset(file)).url
+}
+
+/** The same upload, keeping the asset's id — for a write that takes the id
+ *  rather than a URL (a consultant's intro, 11 Oct 2026). */
+export async function uploadMediaAsset(file) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to upload')
 
@@ -419,7 +425,7 @@ export async function uploadMedia(file) {
   if (!put.ok) throw new Error('Upload failed — try again')
 
   await api(`/media/${presigned.asset_id}/confirm/`, { method: 'POST', token })
-  return presigned.public_url
+  return { id: presigned.asset_id, url: presigned.public_url }
 }
 
 /** Soft delete. Never a DELETE — a removed post in a dispute is evidence. */

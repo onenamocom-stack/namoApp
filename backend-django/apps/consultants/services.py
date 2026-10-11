@@ -473,6 +473,38 @@ def active_services_for(consultant_ids):
     return grouped
 
 
+class BadIntro(Exception):
+    """An intro upload that cannot be used. `status` is the HTTP answer."""
+
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
+def set_intro(profile_id, asset_id):
+    """Point the consultant's intro at a READY video or image of THEIR OWN
+    (11 Oct 2026), or clear it when `asset_id` is None. Someone else's asset
+    is a 404, as for avatars, so ids do not leak. Returns {url, kind}."""
+    from django.conf import settings
+
+    from apps.media.models import MediaAsset
+
+    if asset_id is None:
+        Consultant.objects.filter(profile_id=profile_id).update(intro_url=None, intro_kind=None)
+        return {"url": None, "kind": None}
+    asset = MediaAsset.objects.filter(pk=asset_id).first()
+    if asset is None or str(asset.owner).replace("-", "") != str(profile_id).replace("-", ""):
+        raise BadIntro(404, "That upload does not exist.")
+    kinds = {MediaAsset.Kind.REEL: "video", MediaAsset.Kind.IMAGE: "image"}
+    if asset.kind not in kinds:
+        raise BadIntro(400, "The intro must be a video or a photo.")
+    if asset.status != MediaAsset.Status.READY:
+        raise BadIntro(409, "That upload is not ready yet.")
+    url = f"{settings.MEDIA_PUBLIC_BASE_URL.rstrip('/')}/{asset.bucket_key}"
+    Consultant.objects.filter(profile_id=profile_id).update(intro_url=url, intro_kind=kinds[asset.kind])
+    return {"url": url, "kind": kinds[asset.kind]}
+
+
 def my_consultant(profile_id):
     """The caller's own consultants row, or None — store.jsx's
     refreshConsultant read, including the pending row (007's

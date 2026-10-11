@@ -595,7 +595,10 @@ or a post's author.
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the
 thinner page land on the one with bookings. `/consult/:id` shows followers
-and following, and its **Posts** tab (was "Work", a list of titles) shows each
+and following. Above the tabs, the consultant's **intro** — the video (plays
+in place) or photo they uploaded from Settings → *Intro video or photo*; nothing
+when there is none (11 Oct 2026; it was a "Meet X · 1:24" placeholder). Its
+**Posts** tab (was "Work", a list of titles) shows each
 post in full, as the feed does (11 Oct 2026). **About** is the facts without a
 heading (speaks, category, experience, verified), then **Rates**. There is no
 Book section under the tabs since 11 Oct (Rahul); the footer's four buttons are

@@ -21,6 +21,7 @@ import { Row } from '../components/Primitives.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, useMyChart } from '../lib/astro.js'
 import { ConsultantPage } from './ConsultantProfile.jsx'
+import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -604,8 +605,9 @@ function KundliTab() {
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
 function SettingsPage({ pro }) {
-  const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, cartCount } = useStore()
+  const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, cartCount, consultant } = useStore()
   const [leaving, setLeaving] = useState(false)
+  const [intro, setIntro] = useState(false)
 
   const leave = async () => {
     if (leaving) return
@@ -631,12 +633,14 @@ function SettingsPage({ pro }) {
         <section className="border-b border-rule px-5 py-6">
           <Kicker>{t('nav.profile')}</Kicker>
           <div className="mt-2">
+            <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
             <Row to="/profile/kundli" title={t('prof.tab.kundli')} />
             <Row to="/profile/saved" title={t('prof.tab.saved')} />
             {profile?.influencer && <Row to="/profile/influencer" title={t('prof.tab.influencer')} />}
           </div>
         </section>
       )}
+      {intro && <IntroSheet onClose={() => setIntro(false)} />}
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>
