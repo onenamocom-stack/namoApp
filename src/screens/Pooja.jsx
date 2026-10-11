@@ -148,8 +148,7 @@ const onCounter = (lift = 0) => `calc(${cqw(SLAB_FRONT + SLAB_TOP / 3)} - ${lift
 const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
-  const { showToast, lang, t, hasFlag } = useStore()
-  const fullImage = !hasFlag('setting:croppedDeityImage')
+  const { showToast, lang, t } = useStore()
   const [deities, setDeities] = useState(shipped)
   const [deityName, setDeityName] = useState(shipped[0].name)
   const deity = deities.find((d) => d.name === deityName) ?? deities[0]
@@ -423,10 +422,9 @@ export default function Pooja() {
       </div>
 
       {/* ── The shrine ────────────────────────────────────────────────── */}
-      {/* Image scaling: `object-contain` by default keeps the whole murti,
-          over a blurred, darkened copy of itself so the page is filled edge
-          to edge either way. `setting:croppedDeityImage` (Profile →
-          Settings) opts into `cover`, which fills the page and crops. */}
+      {/* Image scaling: `object-contain` keeps the whole murti, over a
+          blurred, darkened copy of itself so the page is filled edge to
+          edge. The cropped option went on 11 Oct 2026 (Rahul). */}
       <section
         className="relative min-h-0 flex-1 touch-none overflow-hidden bg-[#2a1a0e] [container-type:inline-size]"
         onPointerDown={startSwipe}
@@ -449,8 +447,8 @@ export default function Pooja() {
             key={image.id}
             src={image.src}
             alt={`${deity.name} — ${templeName}`}
-            className={`animate-fade absolute inset-0 h-full w-full ${fullImage ? 'object-contain' : 'object-cover'}`}
-            style={{ objectPosition: fullImage ? '50% 45%' : '50% 32%' }}
+            className="animate-fade absolute inset-0 h-full w-full object-contain"
+            style={{ objectPosition: '50% 45%' }}
           />
         </span>
 
@@ -751,8 +749,7 @@ export default function Pooja() {
  * goes, the images have to go with it.
  */
 function MurtiSheet({ deity, pic, onPick, onClose }) {
-  const { lang, t, hasFlag } = useStore()
-  const fullImage = !hasFlag('setting:croppedDeityImage')
+  const { lang, t } = useStore()
   return (
     <div role="dialog" aria-modal="true" aria-label={t('puja.chooseMurti')} className="absolute inset-0 z-30 flex flex-col justify-end">
       <button
@@ -782,7 +779,7 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
                   src={im.src}
                   alt=""
                   loading="lazy"
-                  className={`h-full w-full ${fullImage ? 'object-contain' : 'object-cover'}`}
+                  className="h-full w-full object-contain"
                 />
               </button>
             </li>

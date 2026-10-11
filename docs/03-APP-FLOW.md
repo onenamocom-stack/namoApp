@@ -840,8 +840,8 @@ consultant, keeps the seeker profile. The consultant app's preview of
 **☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
 then Account (orders, notification history, phone — no Wallet row since 11 Oct
 2026, Rahul: the wallet is the icon at the top of every tab), Preferences
-(language, full deity images,
-help and support), and sign out. Back means Home from the profile and the
+(language, help and support; the full deity image toggle went on 11 Oct
+2026, Rahul: the murti is always whole), and sign out. Back means Home from the profile and the
 profile from settings. "More from Namo" (Namo AI, premium, academy, shop) went on
 11 Oct 2026 (Rahul): each was a second link to a tab or a tool.
 

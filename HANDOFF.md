@@ -265,8 +265,9 @@ Everything else evaporates on reload, deliberately.
 
 - **Pooja swipe axes:** right/left = deity, down/up = murti. Guarded by
   `node tools/verify-pooja-swipe.mjs`.
-- **Deity images are uncropped by default.** `setting:croppedDeityImage` is an
-  **opt-in back to the crop**, so its absence is the common case.
+- **Deity images are always uncropped.** The Settings toggle back to the crop
+  (`setting:croppedDeityImage`) went on 11 Oct 2026 (Rahul); a flag left set
+  in a browser is ignored.
 - **The free-tools row lives on `/consult`, above the search field** — moved
   off `/home` on 7 Sep 2026, reversing the earlier move in the other direction.
   It renders in Consult's empty-roster branch too, deliberately: production's

@@ -288,18 +288,6 @@ export const strings = {
     hi: 'अभी कुछ नहीं। कोई फ़ोटो या आपका लिखा कुछ — वह आपके नाम से फ़ीड में जाएगा।',
   },
   'prof.preferences': { en: 'Preferences', hi: 'पसंद' },
-  'prof.croppedOn': {
-    en: 'Back to the cropped, screen-filling murti',
-    hi: 'फिर से पूरी स्क्रीन भरने वाली, कटी हुई मूर्ति',
-  },
-  'prof.croppedOff': {
-    en: 'Full deity image on — the murti will no longer be cropped',
-    hi: 'पूरी मूर्ति चालू — अब मूर्ति कटेगी नहीं',
-  },
-  'prof.fullImage': { en: 'Full deity image', hi: 'पूरी मूर्ति' },
-  'prof.fullImageNote': { en: 'Show the complete murti, uncropped', hi: 'पूरी मूर्ति दिखाएं, बिना काटे' },
-  'prof.on': { en: 'On', hi: 'चालू' },
-  'prof.off': { en: 'Off', hi: 'बंद' },
   'prof.set.language': { en: 'Language', hi: 'भाषा' },
   /* A prototype row: it names the language you are reading in. */
   'prof.set.languageVal': { en: 'English', hi: 'हिन्दी' },

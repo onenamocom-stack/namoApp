@@ -605,7 +605,7 @@ function KundliTab() {
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
 function SettingsPage({ pro }) {
-  const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, consultant } = useStore()
+  const { showToast, profile, t, lang, setLang, consultant } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [intro, setIntro] = useState(false)
 
@@ -619,7 +619,6 @@ function SettingsPage({ pro }) {
       setLeaving(false)
     }
   }
-  const fullImage = !hasFlag('setting:croppedDeityImage')
 
   return (
     <>
@@ -682,15 +681,9 @@ function SettingsPage({ pro }) {
             </button>
           ))}
         </div>
+        {/* No "Full deity image" toggle since 11 Oct 2026 (Rahul): the
+            murti is always shown whole. */}
         <div className="mt-3">
-          <Row
-            onClick={() =>
-              toggleFlag('setting:croppedDeityImage', { on: t('prof.croppedOn'), off: t('prof.croppedOff') })
-            }
-            title={t('prof.fullImage')}
-            note={t('prof.fullImageNote')}
-            meta={fullImage ? t('prof.on') : t('prof.off')}
-          />
           <Row to="/support" title={t('prof.set.help')} note="+91 99580 40508 · support@1namo.com" />
         </div>
       </section>
