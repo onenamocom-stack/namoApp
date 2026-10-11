@@ -828,7 +828,9 @@ specialization, rating line, bio, intro, Posts · Reviews · About (rates; Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is
-Settings → *Edit name and birth details* for a pro now — and **Share profile**
+Settings → *Edit name and birth details* for a pro now — then **Dashboard**
+(11 Oct 2026, Rahul: opens pro.1namo.com from 1namo.com, the pro app's start
+inside it; a first visit there asks for the phone code once) and **Share profile**
 (`/consult/<you>`) where a client sees Follow and **Share profile**, half
 the row each, both the white button (no saffron, Follow or Following) (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
 call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is

@@ -23,6 +23,8 @@ import { FeedCard } from './Home.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
 import { shareLink } from '../lib/share.js'
+import { PRO_APP_URL } from '../lib/urls.js'
+import { isPro } from '../side.js'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
 const TABS = [
@@ -315,7 +317,19 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
           {own ? (
             <div className="mt-5 flex gap-2">
               {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
-                  edits your name and birth details, not this page. */}
+                  edits your name and birth details, not this page.
+                  Dashboard (11 Oct 2026, Rahul) opens the consultant app:
+                  pro.1namo.com from here, its own start inside it. A route
+                  Link cannot cross apps, so the seeker side is an <a>. */}
+              {isPro ? (
+                <Link to="/" className={ownButton}>
+                  Dashboard
+                </Link>
+              ) : (
+                <a href={PRO_APP_URL} className={ownButton}>
+                  Dashboard
+                </a>
+              )}
               <button type="button" onClick={share} className={ownButton}>
                 Share profile
               </button>
