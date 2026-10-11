@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { fetchFeed, fetchReposts, isMine, productHref } from '../lib/content.js'
+import { fetchFeed, fetchReposts, isMine, productHref, recordView } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -700,9 +700,11 @@ function PostCard({ post, resharedBy }) {
      set large on colour, square — which keeps the rhythm of the grid of
      pictures. Only for a short note: a long one reads better as a caption. */
   const tile = !p.mediaUrl && text && text.length <= 240
+  const frame = useRef(null)
+  const counted = useCountView(frame, p.id)
 
   return (
-    <article className="border-b border-rule bg-white">
+    <article ref={frame} className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
       {/* Report stays under the ⋯, not in the action row: it is the one action
           nobody looks for until they need it, and beside Like it gets pressed
@@ -747,6 +749,7 @@ function PostCard({ post, resharedBy }) {
         }}
       />
       <Caption
+        views={counted ?? p.views}
         name={p.consultant}
         to={authorHref(p)}
         text={tile ? null : text}
@@ -773,6 +776,47 @@ function PostCard({ post, resharedBy }) {
  * its video's first frame on page load, so twenty slow requests raced the
  * one on screen.
  */
+/* Posts already counted on this page load. The server counts a person once
+   per post per IST day anyway; this saves the repeat requests. */
+const countedViews = new Set()
+
+/**
+ * A photo or text post counts a view after two seconds with most of it on
+ * screen (11 Oct 2026, Rahul) — the reel rule. Scrolling past does not
+ * count. Returns the count the server sends back, or null until then.
+ */
+function useCountView(ref, id) {
+  const [views, setViews] = useState(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !id || countedViews.has(id) || !('IntersectionObserver' in window)) return undefined
+    let timer = null
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.intersectionRatio >= 0.6) {
+          if (timer) return
+          timer = setTimeout(() => {
+            if (countedViews.has(id)) return
+            countedViews.add(id)
+            io.disconnect()
+            recordView(id).then((n) => n != null && setViews(n))
+          }, 2000)
+        } else {
+          clearTimeout(timer)
+          timer = null
+        }
+      },
+      { threshold: [0, 0.6] },
+    )
+    io.observe(el)
+    return () => {
+      clearTimeout(timer)
+      io.disconnect()
+    }
+  }, [ref, id])
+  return views
+}
+
 function useNearScreen(ref, margin = '800px') {
   const [near, setNear] = useState(false)
   useEffect(() => {
