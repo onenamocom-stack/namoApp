@@ -11,6 +11,7 @@ import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
 import { PRO_APP_URL } from '../lib/urls.js'
 import { toolStyle } from '../lib/tiles.js'
+import VerifiedMark from '../components/VerifiedMark.jsx'
 
 /**
  * The free tools, as circles above the search field.
@@ -357,11 +358,7 @@ export default function Consult() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-body font-semibold text-t1">{c.name}</span>
-                    {c.verified && (
-                      <span className="flex h-4 w-4 flex-none items-center justify-center rounded-full bg-ok text-white" aria-label="Verified">
-                        <Icon name="check" size={10} weight={3} />
-                      </span>
-                    )}
+                    {c.verified && <VerifiedMark size={16} />}
                     {c.online && c.busy && (
                       <span className="flex-none rounded-full bg-gold-fill/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-gold">
                         Busy

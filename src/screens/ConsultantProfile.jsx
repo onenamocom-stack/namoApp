@@ -21,6 +21,7 @@ import { rupees, useStore } from '../store.jsx'
 import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { FeedCard } from './Home.jsx'
+import VerifiedMark from '../components/VerifiedMark.jsx'
 import { shareLink } from '../lib/share.js'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
@@ -214,7 +215,9 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
         back
         backTo={backTo}
         hardBack={own}
-        sub={c.verified ? 'Verified' : c.category}
+        // The category always (11 Oct 2026, Rahul): "Verified" is the mark
+        // beside the name now, not a word up here.
+        sub={c.category}
         right={
           own ? (
             <Link
@@ -245,7 +248,10 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
               <Avatar initials={c.initials} src={(own && me.avatarUrl) || c.avatarUrl} size={76} />
             </TierRing>
             <div className="min-w-0 flex-1 pt-1">
-              <h1 className="truncate text-lead font-semibold t-heading">{c.name}</h1>
+              <h1 className="flex min-w-0 items-center gap-1.5 text-lead font-semibold t-heading">
+                <span className="truncate">{c.name}</span>
+                {c.verified && <VerifiedMark size={20} />}
+              </h1>
               <p className="mt-0.5 truncate text-meta t-body">{c.specialization}</p>
               <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
 
@@ -297,9 +303,8 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
               follow or book yourself. */}
           {own ? (
             <div className="mt-5 flex gap-2">
-              <Link to="/onboarding/details?edit=1" className={ownButton}>
-                Edit profile
-              </Link>
+              {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
+                  edits your name and birth details, not this page. */}
               <button type="button" onClick={share} className={ownButton}>
                 Share profile
               </button>

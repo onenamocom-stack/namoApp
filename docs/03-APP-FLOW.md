@@ -595,7 +595,9 @@ or a post's author.
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the
 thinner page land on the one with bookings. `/consult/:id` shows followers
-and following. Above the tabs, the consultant's **intro** — the video (plays
+and following. A verified consultant has a **blue verified mark** beside the
+name, here and on `/consult` cards; the top bar's second line is the category,
+never the word "Verified" (11 Oct 2026, Rahul). Above the tabs, the consultant's **intro** — the video (plays
 in place) or photo they uploaded from Settings → *Intro video or photo*; nothing
 when there is none (11 Oct 2026; it was a "Meet X · 1:24" placeholder). Its
 **Posts** tab (was "Work", a list of titles) shows each
@@ -821,7 +823,9 @@ data, matching, muhurat and reports — but nothing in Profile links to it.
 specialization, rating line, bio, intro, Posts · Reviews · About (rates; Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
-profile** and **Share profile** (`/consult/<you>`) where a client sees Follow,
+profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is
+Settings → *Edit name and birth details* for a pro now — and **Share profile**
+(`/consult/<you>`) where a client sees Follow,
 schedule, chat, video and call. The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
 your own page only (11 Oct 2026, Rahul); a client sees three.

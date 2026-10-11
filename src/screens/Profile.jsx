@@ -646,7 +646,11 @@ function SettingsPage({ pro }) {
         <Kicker>{t('prof.account')}</Kicker>
         <div className="mt-2">
           {/* No Wallet row since 11 Oct 2026 (Rahul): the wallet is the
-              icon at the top of every tab. */}
+              icon at the top of every tab. Name and birth details are here
+              for a pro, whose page has no Edit profile button (11 Oct). */}
+          {pro && (
+            <Row to="/onboarding/details?edit=1" title="Edit name and birth details" />
+          )}
           <Row to="/orders" title={t('prof.orders')} note={t('prof.ordersNote')} />
           <Row to="/notifications" title={t('prof.notifHistory')} />
           <Row
