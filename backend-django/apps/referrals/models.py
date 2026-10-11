@@ -151,7 +151,12 @@ class CashbackStatus(models.TextChoices):
 
 
 class Cashback(models.Model):
-    """10% owed, and not yet given.
+    """Cashback owed, and not yet given.
+
+    Since 11 Oct 2026 a buyer's FIRST-ORDER cashback is owed on every first
+    prepaid order, astrologer's link or not, so a row hangs off its ORDER
+    and has a referral only when an astrologer is owed too. Before that,
+    every row came from a referral code.
 
     PENDING UNTIL SEVEN DAYS AFTER DELIVERY. Credited on purchase, a
     buyer could take the cashback, spend it on a consultation, and return
@@ -173,7 +178,12 @@ class Cashback(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     referral = models.ForeignKey(
-        Referral, on_delete=models.CASCADE, related_name="cashbacks"
+        Referral, on_delete=models.CASCADE, related_name="cashbacks", null=True, blank=True,
+    )
+    # The order the cashback is for. Delivery and returns find the rows by it.
+    order = models.ForeignKey(
+        "shop.Order", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="cashbacks",
     )
     profile_id = models.UUIDField()          # who is owed
     side = models.CharField(max_length=16, choices=Side.choices)
@@ -196,6 +206,10 @@ class Cashback(models.Model):
             models.UniqueConstraint(
                 fields=["referral", "side"], name="cashback_one_per_side"
             ),
+            models.UniqueConstraint(
+                fields=["order", "side"], name="cashback_one_per_order_side",
+                condition=models.Q(order__isnull=False),
+            ),
             models.CheckConstraint(
                 condition=models.Q(amount_paise__gt=0), name="cashback_amount_positive"
             ),
@@ -208,4 +222,52 @@ class Cashback(models.Model):
                 condition=models.Q(status="pending"),
             ),
             models.Index(fields=["profile_id", "-created_at"], name="cashback_owner_idx"),
+        ]
+
+
+class AffiliateSettings(models.Model):
+    """One row (pk 1): how long an astrologer's link holds a customer
+    (11 Oct 2026, owner: "15 days should be configurable"). Read through
+    services.attribution_days(), which falls back to the setting."""
+
+    attribution_days = models.PositiveSmallIntegerField(default=15)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "affiliate_settings"
+        verbose_name = "Affiliate link window"
+        verbose_name_plural = "Affiliate link window"
+
+    def __str__(self):
+        return f"{self.attribution_days} days"
+
+
+class AffiliateVisit(models.Model):
+    """A customer who arrived through an astrologer's link (11 Oct 2026).
+
+    One row per arrival; a second arrival through the SAME link refreshes
+    its row, through ANOTHER astrologer's link adds a row. The live one is
+    the newest unexpired row — last click wins — until the customer's first
+    order, which takes it; after that, links change nothing. Recorded when
+    the person is signed in (a visitor's click waits in the browser and is
+    sent at sign-in, with the time it happened)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField()           # the customer
+    consultant_id = models.UUIDField()        # whose link
+    code = models.CharField(max_length=16)
+    product_id = models.UUIDField(null=True, blank=True)  # the product linked, if any
+    clicked_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    # The first order this link earned on, once it has.
+    order = models.ForeignKey(
+        "shop.Order", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "affiliate_visits"
+        indexes = [
+            models.Index(fields=["profile_id", "-clicked_at"], name="affiliate_visits_who_idx"),
+            models.Index(fields=["consultant_id", "-clicked_at"], name="affiliate_visits_pro_idx"),
         ]

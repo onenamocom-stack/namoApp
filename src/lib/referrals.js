@@ -160,3 +160,67 @@ export async function checkCode(code, subtotalPaise = 0, { lines, payment } = {}
 export function looksLikeReferral(code) {
   return /^[NA][23456789ABCDEFGHJKMNPQRSTUVWXYZ]{7}$/i.test((code || '').trim())
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AFFILIATE LINKS (11 Oct 2026). An astrologer's link (`?ref=A…`, on any
+   page) holds the customer for that astrologer's first-order window. The
+   click is kept on this device until the person is signed in, then sent
+   with the time it happened; the server decides everything else.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const VISIT_KEY = 'namo.aff'
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Note an astrologer's link from the address, if there is one. */
+export function catchAffiliateLink(search) {
+  const params = new URLSearchParams(search)
+  const code = (params.get('ref') || '').trim().toUpperCase()
+  if (!looksLikeReferral(code) || !code.startsWith('A')) return false
+  const product = params.get('p')
+  try {
+    localStorage.setItem(VISIT_KEY, JSON.stringify({
+      code,
+      product: product && UUID.test(product) ? product : null,
+      at: new Date().toISOString(),
+    }))
+  } catch {
+    return false
+  }
+  return true
+}
+
+/** Send a noted link once signed in. The note is cleared once the server
+ *  has answered, whatever it said — a link that does not apply is a no,
+ *  not something to retry. */
+export async function sendAffiliateVisit() {
+  let note = null
+  try {
+    note = JSON.parse(localStorage.getItem(VISIT_KEY) || 'null')
+  } catch {
+    return
+  }
+  if (!note?.code) return
+  const token = await accessToken()
+  if (!token) return
+  try {
+    await api('/referrals/visit/', {
+      method: 'POST',
+      token,
+      body: { code: note.code, product_id: note.product, clicked_at: note.at },
+    })
+    localStorage.removeItem(VISIT_KEY)
+  } catch {
+    /* Offline: kept, and sent next time. */
+  }
+}
+
+/** The first order's cashback for this basket and way of paying, or null. */
+export async function firstOrderPreview(lines, payment) {
+  const token = await accessToken()
+  if (!token || !lines?.length) return null
+  try {
+    return await api('/referrals/first-order/', { method: 'POST', token, body: { lines, payment } })
+  } catch {
+    return null
+  }
+}

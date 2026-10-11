@@ -6214,3 +6214,35 @@ The rules the bot works by are in `CLAUDE.md` ("Feedback from Telegram"):
 replies first, fixes and commits, deploys on "ship" from the owner or
 Rahul (Rahul's added 10 Oct), never money/auth/secrets without the owner. Bot `@namo_dev_bot`; both accounts paired, policy `allowlist`. It runs
 only while that window is open and the laptop is awake.
+
+## 80. Affiliate links with a 15-day window; first-order cashback for all — 11 Oct 2026
+
+The owner's rule (`docs/01-PRD.md` §12). Live after the deploy below.
+
+- **Server** (`apps/referrals/services.py`): `record_visit` (a signed-in
+  customer arrived through a link; refreshes the same link, adds another's;
+  refuses after the first order, own link, consultant buyers),
+  `live_visit` (newest, unexpired, unused), `is_first_order` (no other
+  non-cancelled order with goods), `claim_first_order` (replaces
+  `claim_purchase`: the buyer's prepaid cashback always, the astrologer's
+  10%-of-the-rest only through a live link), `first_order_preview`,
+  `attribution_days` (console row, else `AFFILIATE_DAYS`). Delivery and
+  returns find cashback by `order_id`.
+- **Checkout:** an `A…` code typed or carried from an old link counts as a
+  visit, never a discount; an `N…` code is still refused at the till.
+- **Endpoints:** `POST /v1/referrals/visit/`, `POST /v1/referrals/first-order/`;
+  `/referrals/me/` carries `affiliate_days`. `affiliate_link` now gives
+  `/shop/p/<slug>?ref=A…` (the product page previews with its photo).
+- **App:** `AffiliateCatcher` (App.jsx) notes `?ref=A…` on any page in
+  `localStorage` and sends it once signed in; the cart says the first
+  order's cashback above Pay; the code box is "Coupon"; the old banner and
+  `lib/shopRef.js` are gone. The pro "Your links" page states the rules.
+- **Console:** *Affiliate visits* (who, whose link, expires, Holding /
+  Replaced / Expired / First order made) and *Affiliate link window*
+  (Finance).
+- **Changed for everyone:** every first prepaid order now gets the
+  products' cashback (default 10%) — before, only with a code.
+- Migration `referrals/0002_affiliate_links`. Tests:
+  `test_affiliate_window.py` (14); five old referral tests rewritten for
+  links (no refusals now).
+- **Not done:** Play Store install attribution (no app yet).

@@ -896,15 +896,39 @@ milestone.
 ## 12. Referrals — two programmes (25 Sep 2026)
 
 They share a shape and nothing else. Keeping that straight is the whole
-design: one is a coupon used at a till, the other a code typed at
-sign-up.
+design: one is a LINK an astrologer shares (11 Oct 2026; it was a code
+typed at the till), the other a code typed at sign-up.
 
 | | Consultant → seeker | Seeker → seeker | Consultant → consultant | Seeker → consultant |
 |---|---|---|---|---|
-| Code | `A…` | `N…` | `A…` | `N…` |
-| Used | at shop checkout | at sign-up | at shop checkout | at sign-up |
-| Reward | **the product's cashback to the buyer (prepaid only), 10% of the rest to the consultant** — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
-| Limit | the buyer's **first ever order** | once per account, ever | — | — |
+| Carried by | an affiliate **link** (`?ref=A…`) | the `N…` code | a link | the `N…` code |
+| Used | opening the link, any page | at sign-up | — | at sign-up |
+| Reward | **10% of the first order (after the buyer's cashback) to the consultant** — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
+| Limit | the buyer's **first order, within the window** | once per account, ever | — | — |
+
+### Affiliate links with a window — decided 11 Oct 2026
+
+The owner's rule, replacing the astrologer's code at checkout.
+
+- **A link, not a code.** An astrologer shares a link: a product's page
+  (which previews with the product's photo and price), the shop, or a post
+  or reel with products tagged on it.
+- **The window.** A customer who opens the link is that astrologer's for
+  **15 days** (set in the console: *Affiliate link window*), for the whole
+  shop, not just the product linked. A visitor who signs up first keeps
+  it: the click waits in the browser and is sent, with its time, at
+  sign-in.
+- **Last link wins.** Another astrologer's link before the customer's
+  first order replaces it, and the window starts again.
+- **First order only.** The first order inside the window pays the
+  astrologer 10% (of what is left after the buyer's cashback, per item —
+  below). After the window, or after the first order, links change
+  nothing. A cancelled or lapsed order does not use the first order up.
+- **The buyer's first-order cashback needs no link.** Every customer's
+  first prepaid order gets each product's cashback.
+- **Installs.** On the website this is complete. An Android app will
+  carry the link through the Play Store with Google's Install Referrer
+  when there is one; an iPhone app cannot without a paid service.
 
 **Both directions into a consultant pay nothing**, and for one reason:
 this programme exists to bring SEEKERS into the product. A practitioner
@@ -923,7 +947,8 @@ what they were given. Nothing reaches backwards.
 ### Each product sets its own cashback — decided 9 Oct 2026
 
 The owner's rule, replacing a flat 10% to both sides. The console sets, per
-product, what a first order through an astrologer's code gives the BUYER:
+product, what a customer's FIRST order gives the BUYER (since 11 Oct 2026
+every first order, astrologer's link or not; before, only through a code):
 **a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
 **a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
 **platform default** (10%, which is every product until somebody changes

@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
-import { useReferralFromLink } from '../lib/shopRef.js'
 import { useMyChart } from '../lib/astro.js'
 import { tileStyle } from '../lib/tiles.js'
 
@@ -105,14 +104,6 @@ export default function Shop() {
   const [sub, setSub] = useState(null)
   const rail = useRef(null)
 
-  /* A consultant's link lands here as ?ref=ACODE (and ?p=<id> for one
-     product). Held in sessionStorage as well as state, because the
-     journey from the link is rarely one page: a seeker arrives, browses,
-     signs in — and a code that only lived in the URL would be gone by the
-     time they reached Buy, with nobody able to say why they were not
-     credited. Sign-up codes (N…) are deliberately ignored: those are
-     claimed once at onboarding, not at a till. */
-  const referral = useReferralFromLink()
 
   /* `?p=<id>` — a product tapped on a post or reel, or an affiliate link
      for one product. The shop opens on All with that product scrolled into
@@ -224,18 +215,6 @@ export default function Shop() {
         }
       />
 
-      {/* Said BEFORE anything is tapped, and said as cashback.
-          A seeker who discovers after paying that the 10% was not taken
-          off the total has been surprised by their own money, which is
-          the one surprise this product cannot afford. Three facts, in the
-          order they matter: it is back not off, it is after delivery, and
-          it is first order only. */}
-      {referral && (
-        <p className="border-b border-rule bg-surface-2 px-5 py-3 text-micro t-sub">
-          {t('shop.ref.a')} <b className="tnum">{referral}</b> {t('shop.ref.b')}{' '}
-          <b>{t('shop.ref.c')}</b> {t('shop.ref.d')}
-        </p>
-      )}
 
       {/* Search and the cart, pinned under the header (3 Oct). The cart was
           a floating button over the grid from 10 Sep, and wherever it

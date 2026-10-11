@@ -1953,6 +1953,24 @@ perk from six friends' codes. A CHECK refuses self-referral.
 it: a code can be deactivated, and the history of who was credited must
 not move when it is.
 
+### `affiliate_visits`, `affiliate_settings` (11 Oct 2026, `referrals/0002`)
+
+`affiliate_visits`: one row per arrival through an astrologer's link —
+`profile_id` (the customer), `consultant_id`, `code`, `product_id` (null),
+`clicked_at`, `expires_at` (`clicked_at` + the window), `order_id` (null
+until the first order it earned on), `created_at`; indexes on
+(`profile_id`, `-clicked_at`) and (`consultant_id`, `-clicked_at`). The
+same link again refreshes its row; another astrologer's adds one; the
+newest unexpired unused row is the live one.
+
+`affiliate_settings`: one row, pk 1, `attribution_days` (default 15).
+
+`referral_cashback` gains `order_id` (null; backfilled from the referral)
+and its `referral_id` becomes nullable: a buyer's first-order cashback hangs
+off the order and has a referral only when an astrologer is owed too.
+Unique (`order_id`, `side`) where `order_id` is set. Delivery and returns
+find the rows by `order_id`.
+
 ### `products.referral_cashback_*` (9 Oct 2026, `shop/0008`)
 
 Each product's cashback on a first order through an astrologer's code

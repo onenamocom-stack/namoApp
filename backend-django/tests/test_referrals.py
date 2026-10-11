@@ -201,13 +201,16 @@ class TestPurchaseReferral:
         assert all(r.status == Cashback.Status.PENDING for r in rows)
         assert all(r.matures_at is None for r in rows), "the clock starts at delivery"
 
-    def test_a_second_order_with_a_code_is_refused(self, people, product):
+    def test_a_second_order_earns_nobody_and_is_not_refused(self, people, product):
+        """11 Oct 2026: an astrologer's code is a link. Only the FIRST order
+        pays; a second goes through and earns nothing."""
         _fund(BUYER, PRICE * 3)
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)
         shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}], coupon_code=code)
 
         second = shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}], coupon_code=code)
-        assert second["reason"] == services.REFUSAL_NOT_FIRST_ORDER
+        assert second["ok"] and second["cashback_paise"] == 0
+        assert Cashback.objects.count() == 2  # the first order's two rows only
 
     def test_somebody_who_has_already_shopped_cannot_start_using_one(
         self, people, product
@@ -218,12 +221,13 @@ class TestPurchaseReferral:
             BUYER, [{"product_id": str(product.id), "qty": 1}],
             coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
         )
-        assert result["reason"] == services.REFUSAL_NOT_FIRST_ORDER
+        assert result["ok"] and result["cashback_paise"] == 0
+        assert not Cashback.objects.filter(side="referrer").exists()
 
     def test_consultant_to_consultant_pays_nobody(self, people, product):
-        """The owner's point 3, and refused rather than silently worth
-        zero — a consultant told "you got 10%" who receives nothing has
-        been lied to."""
+        """The owner's point 3: a consultant buying through another's link
+        earns that consultant nothing. Since 11 Oct 2026 the link is not a
+        coupon, so nothing is refused — the order stands, unattributed."""
         other = Profile.objects.create(
             id="dddddddd-1111-2222-3333-444444444444", phone="d", name="Another pro"
         )
@@ -235,20 +239,22 @@ class TestPurchaseReferral:
             other.id, [{"product_id": str(product.id), "qty": 1}],
             coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
         )
-        assert result["reason"] == services.REFUSAL_CONSULTANT_TO_CONSULTANT
-        assert Cashback.objects.count() == 0
+        assert result["ok"]
+        assert not Cashback.objects.filter(side="referrer").exists()
+        assert Referral.objects.count() == 0
 
     def test_a_refused_code_leaves_the_shelf_alone(self, people, product):
         """atomic() commits on a plain return and rolls back on an
-        exception — the bug this codebase has already been bitten by."""
+        exception — the bug this codebase has already been bitten by. A
+        seeker's sign-up code is still refused at the till."""
         _fund(BUYER, PRICE * 3)
-        shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}])
         before = Product.objects.get(pk=product.id).stock
 
-        shop_services.buy(
+        refused = shop_services.buy(
             BUYER, [{"product_id": str(product.id), "qty": 1}],
-            coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
+            coupon_code=_code(FRIEND, ReferralCode.Kind.SEEKER),
         )
+        assert refused["ok"] is False
         assert Product.objects.get(pk=product.id).stock == before
 
 
@@ -357,12 +363,12 @@ class TestAffiliateLinks:
         link = services.affiliate_link(PRO, product.id)
         assert link["code"].startswith("A")
         assert f"ref={link['code']}" in link["url"]
-        assert f"p={product.id}" in link["url"]
+        # The product's own page (11 Oct 2026), which previews with its photo.
+        assert f"/shop/p/{product.slug}?ref=" in link["url"]
 
     def test_a_link_without_a_product_opens_the_shop(self, people):
         link = services.affiliate_link(PRO)
-        assert "p=" not in link["url"]
-        assert link["url"].endswith(f"ref={link['code']}")
+        assert link["url"].endswith(f"/shop?ref={link['code']}")
 
     def test_the_code_is_stable_across_links(self, people, product):
         """It gets pasted into WhatsApp and lives for months. A link made
@@ -420,8 +426,8 @@ class TestEveryDirection:
             other, [{"product_id": str(product.id), "qty": 1}],
             coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
         )
-        assert result["reason"] == services.REFUSAL_CONSULTANT_TO_CONSULTANT
-        assert Cashback.objects.count() == 0
+        assert result["ok"]
+        assert not Cashback.objects.filter(side="referrer").exists()
         assert Referral.objects.count() == 0
 
     def test_seeker_to_consultant_pays_nobody(self, people):

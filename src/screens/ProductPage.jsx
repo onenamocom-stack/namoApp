@@ -8,7 +8,6 @@ import { PopButton } from '../components/Pop.jsx'
 import { fetchProduct, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import RichText from '../components/RichText.jsx'
-import { useReferralFromLink } from '../lib/shopRef.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -29,9 +28,6 @@ export default function ProductPage() {
   const { addToCart, buyNow, cartCount, setCartOpen, showToast, t } = useStore()
   const [product, setProduct] = useState(undefined) // undefined loading, null not found
   const [failed, setFailed] = useState(false)
-  // A tagged product or a consultant's link arrives with ?ref=A…; keep it
-  // for the till, as the shop does.
-  useReferralFromLink()
 
   useEffect(() => {
     let alive = true

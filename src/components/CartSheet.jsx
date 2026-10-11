@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sheet } from './Chrome.jsx'
 import CodeField from './CodeField.jsx'
+import { firstOrderPreview } from '../lib/referrals.js'
 import DeliveryStep from './DeliveryStep.jsx'
 import ProductArt from './ProductArt.jsx'
 import { codFeePaise } from '../lib/shop.js'
@@ -70,13 +71,22 @@ export default function CartSheet() {
   const overCap = cod && delivery?.codMaxPaise != null && totalPaise > delivery.codMaxPaise
 
 
-  const [coupon, setCoupon] = useState(() => {
-    try {
-      return sessionStorage.getItem('namo.ref') || ''
-    } catch {
-      return ''
+  // Empty to start. An astrologer's code arrives as a link now (11 Oct
+  // 2026) and is held on the server, not carried into this box.
+  const [coupon, setCoupon] = useState('')
+
+  /* The first order's cashback for this basket and this way of paying,
+     said above Pay — every first order, link or no link (11 Oct 2026). */
+  const [firstOrder, setFirstOrder] = useState(null)
+  const basketKey = JSON.stringify(cart.map((l) => [l.id, l.qty]))
+  useEffect(() => {
+    let live = true
+    const lines = JSON.parse(basketKey).map(([id, qty]) => ({ product_id: id, qty }))
+    firstOrderPreview(lines, cod ? 'cod' : 'online').then((r) => live && setFirstOrder(r))
+    return () => {
+      live = false
     }
-  })
+  }, [basketKey, cod])
 
   /* Through the server's checkout, which claims the stock and writes the
      order. It used to be a bare `spend()` — a wallet debit and nothing
@@ -235,12 +245,14 @@ export default function CartSheet() {
               value={coupon}
               onChange={setCoupon}
               subtotalPaise={cartTotal * 100}
-              lines={cart.map((l) => ({ product_id: l.id, qty: l.qty }))}
-              payment={cod ? 'cod' : 'online'}
-              label="Coupon or astrologer's code"
-              hint="An astrologer's code gives you cashback in your wallet on your first prepaid order."
+              label="Coupon"
             />
           </div>
+          {firstOrder?.note && (
+            <p className={`mt-3 rounded-xl px-3 py-2 text-meta ${firstOrder.cashback_paise ? 'bg-ok/10 text-ok' : 'bg-gold-fill/10 t-sub'}`}>
+              {firstOrder.note}
+            </p>
+          )}
 
           {confirmClear && (
             <div role="alertdialog" aria-label="Clear the cart?" className="mt-5 rounded-2xl border border-live/40 bg-live/5 p-4">

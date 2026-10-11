@@ -47,6 +47,8 @@ def my_codes(request):
     return Response({
         "codes": codes,
         "referred": services.my_referrals(request.user.pk),
+        # How long an affiliate link holds a customer (11 Oct 2026; console).
+        "affiliate_days": services.attribution_days(),
     })
 
 
@@ -176,3 +178,47 @@ def check(request):
         "ok": True, "kind": "coupon", "discount_paise": discount,
         "note": f"₹{discount / 100:g} off" if discount else "Valid",
     })
+
+
+class VisitInput(serializers.Serializer):
+    code = serializers.CharField(max_length=32)
+    product_id = serializers.UUIDField(required=False, allow_null=True)
+    # When the link was opened, if before signing in. ISO 8601.
+    clicked_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def visit(request):
+    """The signed-in customer arrived through an astrologer's link (11 Oct
+    2026): recorded for the first-order window, last link winning. Never an
+    error the screen must show — a link that does not apply is a no."""
+    serializer = VisitInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    return Response(services.record_visit(
+        request.user.pk, data["code"], product_id=data.get("product_id"),
+        clicked_at=data.get("clicked_at"),
+    ))
+
+
+class FirstOrderLine(serializers.Serializer):
+    product_id = serializers.UUIDField()
+    qty = serializers.IntegerField(min_value=1, max_value=99)
+
+
+class FirstOrderInput(serializers.Serializer):
+    lines = FirstOrderLine(many=True)
+    payment = serializers.ChoiceField(choices=("online", "cod", "wallet"), required=False)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def first_order(request):
+    """What the cart says above Pay: the first order's cashback for this
+    basket and this way of paying (11 Oct 2026)."""
+    serializer = FirstOrderInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    lines = [{"product_id": r["product_id"], "qty": r["qty"]} for r in data["lines"]]
+    return Response(services.first_order_preview(request.user.pk, lines, data.get("payment")))

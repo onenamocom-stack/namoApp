@@ -302,6 +302,10 @@ REFERRAL_CASHBACK_CAP_PAISE = int(os.environ.get("REFERRAL_CASHBACK_CAP_PAISE", 
 # plus nothing — this is the whole defence against buy, take the cashback,
 # spend it on a consultation, return the item.
 REFERRAL_HOLD_DAYS = int(os.environ.get("REFERRAL_HOLD_DAYS", "7"))
+# How long an astrologer's link holds a customer for their first order (11 Oct
+# 2026). The console's "Affiliate link window" overrides it; this is the
+# answer before anybody has set one.
+AFFILIATE_DAYS = int(os.environ.get("AFFILIATE_DAYS", "15"))
 
 # What a sign-up referral buys, for BOTH sides: this many free AI questions
 # a day, for this many days. The welcome five on day one are untouched —

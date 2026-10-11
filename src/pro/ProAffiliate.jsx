@@ -1,4 +1,3 @@
-import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { affiliateLink, myCodes } from '../lib/referrals.js'
 import { fetchProducts } from '../lib/shop.js'
@@ -29,13 +28,14 @@ import { rupees, useStore } from '../store.jsx'
  */
 export default function ProAffiliate() {
   const { showToast } = useStore()
-  const [code, setCode] = useState(null)
+  // The days a link holds a customer, as set in the console.
+  const [days, setDays] = useState(null)
   const [products, setProducts] = useState(null)
   const [links, setLinks] = useState({})
 
   useEffect(() => {
     let alive = true
-    myCodes().then((row) => alive && setCode(row?.codes?.consultant ?? null))
+    myCodes().then((row) => alive && setDays(row?.affiliate_days ?? null))
     fetchProducts()
       .then((rows) => alive && setProducts(rows))
       .catch(() => alive && setProducts([]))
@@ -66,44 +66,24 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your links" sub="Share a product, earn 10%" back backTo="/pro/studio" />
+      <TopBar title="Your links" sub="Share a link, earn 10% of a first order" back backTo="/pro/studio" />
 
       {/* Said before the buttons, because both of these are what a
           consultant would otherwise learn from an angry message. */}
+      {/* The rules as they are since 11 Oct 2026: a link, not a code; a
+          window; the first order only; the last link wins. */}
       <Section label="How it pays" tight>
         <p className="horoscope">
-          Someone who buys through your link pays the full price and gets 10%
-          back in their wallet. You get 10% too, into your earnings, and it goes
-          out with your next payout.
+          Someone who opens your link is yours for {days ?? 15} days, for the whole
+          shop — not just the product you linked. If their first order comes in
+          that time, you get 10% of it, into your earnings, with your next payout.
         </p>
         <ul className="mt-4 space-y-2 text-meta t-sub">
-          <li>• It only pays on their <b>first ever order</b>. After that the code stops working for them.</li>
+          <li>• Only their <b>first order</b> pays. After that, links change nothing.</li>
+          <li>• If they open <b>another astrologer's link</b> before buying, it is theirs from then.</li>
           <li>• The money lands <b>seven days after delivery</b>, not at checkout — a returned parcel cancels it.</li>
-          <li>• Another consultant buying through your link earns nobody anything.</li>
+          <li>• Put a product on your post or reel and it carries your link too.</li>
         </ul>
-      </Section>
-
-      <Section label="Your code" tight>
-        {code === null ? (
-          <Loader />
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => copy(code, 'Code')}
-              className="w-full rounded-lg border border-rule px-4 py-5 text-center transition-colors hover:border-t1"
-            >
-              <span className="block font-display text-display tracking-[0.2em] t-heading">
-                {code}
-              </span>
-              <span className="mt-2 block caps-sm t-faint">Tap to copy</span>
-            </button>
-            <p className="mt-3 text-micro t-faint">
-              This never changes. A link you share today and one you share next
-              year credit the same account.
-            </p>
-          </>
-        )}
       </Section>
 
       <Section label="Link to a product" last>

@@ -1,4 +1,5 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
+import { catchAffiliateLink, sendAffiliateVisit } from './lib/referrals.js'
 import { MilestoneCelebration } from './components/Milestones.jsx'
 import { useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -134,6 +135,24 @@ function NotificationRouter() {
  *  either side. The chat panel is an overlay, not a route, so nothing else
  *  brings it back, and the meter runs whether or not anybody can see it
  *  (6 Oct 2026). A call needs nothing: its screen is in the URL. */
+/**
+ * An astrologer's affiliate link (`?ref=A…`) may land on any page — a
+ * product, the shop, a reel (11 Oct 2026). Noted on arrival; sent to the
+ * server as soon as there is a session, so a visitor who signs up first
+ * keeps the astrologer who brought them.
+ */
+function AffiliateCatcher() {
+  const { search } = useLocation()
+  const { session } = useStore()
+  useEffect(() => {
+    catchAffiliateLink(search)
+  }, [search])
+  useEffect(() => {
+    if (session) sendAffiliateVisit()
+  }, [session, search])
+  return null
+}
+
 function LiveChatResume() {
   const { session, openChat } = useStore()
   const uid = session?.user?.id
@@ -302,6 +321,7 @@ function Frame() {
         <BuildWatcher />
         <NotificationRouter />
         <LiveChatResume />
+        {!isPro && <AffiliateCatcher />}
         {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
         {isPro && <MilestoneCelebration />}
         {/* The consultant's "app is open" beat, on every route — the call

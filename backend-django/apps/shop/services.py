@@ -478,16 +478,19 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
     # (one letter of prefix, then seven), so a referral code reaching
     # check_coupon would be refused as an unknown coupon — the wrong
     # sentence for a code that is perfectly valid.
-    referral_code = None
     discount, coupon = 0, None
     if coupon_code:
         from apps.referrals import services as referral_services
 
-        if referral_services.resolve(coupon_code) is not None:
-            verdict = referral_services.check_coupon(profile_id, coupon_code)
-            if not verdict["ok"]:
-                raise Refused(verdict["reason"])
-            referral_code = coupon_code
+        code_row = referral_services.resolve(coupon_code)
+        if code_row is not None:
+            # An astrologer's code is a LINK now (11 Oct 2026): typed here,
+            # or carried in from an old link, it counts as arriving through
+            # that link — never a discount. A seeker's sign-up code does not
+            # belong at a till.
+            if code_row.kind != referral_services.ReferralCode.Kind.CONSULTANT:
+                raise Refused(referral_services.REFUSAL_WRONG_KIND_AT_CHECKOUT)
+            referral_services.record_visit(profile_id, code_row.code)
         else:
             discount, coupon, refusal = check_coupon(coupon_code, subtotal)
             if refusal:
@@ -577,18 +580,13 @@ def _purchase(profile_id, wanted, coupon_code, delivery=None, payment="wallet"):
         # coupon, so `used_count` cannot be a query over orders.
         Coupon.objects.filter(pk=coupon.pk).update(used_count=coupon.used_count + 1)
 
-    cashback = 0
-    if referral_code:
-        # Inside this transaction on purpose: an order that refuses for any
-        # later reason must take its attribution with it. Nothing is PAID
-        # here — two pending rows are written and they mature seven days
-        # after the parcel is delivered.
-        from apps.referrals import services as referral_services
+    # The first order's rewards, for everybody (11 Oct 2026): the buyer's
+    # cashback on prepaid, and the astrologer whose link holds them. Inside
+    # this transaction, so a refused purchase takes them with it; nothing is
+    # paid until seven days after delivery.
+    from apps.referrals import services as referral_services
 
-        claimed = referral_services.claim_purchase(profile_id, order, referral_code)
-        if not claimed["ok"]:
-            raise Refused(claimed["reason"])
-        cashback = claimed.get("cashback_paise", 0)
+    cashback = referral_services.claim_first_order(profile_id, order)["cashback_paise"]
 
     return {
         "ok": True, "order_id": str(order.id),

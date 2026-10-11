@@ -22,7 +22,9 @@ from django.utils.html import format_html
 from apps.console.models import Tier
 from apps.console.site import at_least, site
 
-from .models import Cashback, Referral, ReferralCode
+from apps.console.audit import AuditedAdmin
+
+from .models import AffiliateSettings, AffiliateVisit, Cashback, Referral, ReferralCode
 
 
 def _person(profile_id):
@@ -156,3 +158,63 @@ class CashbackAdmin(ReadOnly, dj.ModelAdmin):
             )
         ]
         return super().changelist_view(request, extra_context)
+
+
+@dj.register(AffiliateVisit, site=site)
+class AffiliateVisitAdmin(ReadOnly, dj.ModelAdmin):
+    """Who came through whose link, and whether it is still holding them
+    (11 Oct 2026). The newest unexpired, unused row per customer is the one
+    a first order pays; an older row was replaced by a later link."""
+
+    list_display = ("clicked_at", "customer", "astrologer", "code", "expires_at", "state", "order")
+    list_filter = ("clicked_at",)
+    search_fields = ("code",)
+    date_hierarchy = "clicked_at"
+    list_per_page = 50
+
+    @dj.display(description="Customer")
+    def customer(self, obj):
+        return _person(obj.profile_id)
+
+    @dj.display(description="Astrologer")
+    def astrologer(self, obj):
+        return _person(obj.consultant_id)
+
+    @dj.display(description="State")
+    def state(self, obj):
+        from django.utils import timezone
+
+        if obj.order_id:
+            return "First order made"
+        newest = AffiliateVisit.objects.filter(profile_id=obj.profile_id).order_by("-clicked_at").first()
+        if newest and newest.pk != obj.pk:
+            return "Replaced by a later link"
+        return "Holding" if obj.expires_at > timezone.now() else "Expired"
+
+
+@dj.register(AffiliateSettings, site=site)
+class AffiliateSettingsAdmin(AuditedAdmin, dj.ModelAdmin):
+    """How many days an astrologer's link holds a customer. One row."""
+
+    audit_target = "affiliate window"
+    list_display = ("attribution_days", "updated_at")
+    fields = ("attribution_days",)
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_add_permission(self, request):
+        return at_least(request, Tier.FINANCE) and not AffiliateSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.pk = 1   # the one row
+        super().save_model(request, obj, form, change)
