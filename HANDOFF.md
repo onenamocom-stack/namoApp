@@ -6267,8 +6267,19 @@ a laptop.
 - Settings `DRIVE_REELS_*` (folder, from-folder, author, per day, window,
   size). Table `drive_reels` (`content/0007`), RLS on.
 - `--list` shows today's times and the queue; `--now` posts the next one.
-- **Needs the Drive folder shared (Viewer) with
-  `499026166575-compute@developer.gserviceaccount.com`.** Until then the
-  job logs a Drive error and posts nothing.
+- **Live 12 Oct.** The folder is shared (Viewer) with
+  `499026166575-compute@developer.gserviceaccount.com`; Drive API enabled;
+  Cloud Scheduler `namo-post-reel-sched` (`*/10 * * * *`, Asia/Kolkata)
+  runs the job. Queue at start: 2,388 videos ("3. Religious Reels" 843,
+  "04. Krishna Reels" 1,545) — about eight months at ten a day. The first
+  two went up 11 Oct, 23:40 IST; the video URL serves `video/mp4`.
+- **No reposts:** a Drive file is posted once (`drive_reels`, unique id),
+  and a file whose Instagram id is already in any clip's file name on the
+  app (the 49 seeded) is never queued.
+- **No bursts:** a time missed by more than an hour is dropped, not made up.
+- The job has only the database and media settings (copied from namo-api
+  by the Cloud Run API, never printed). **All Cloud Run Jobs were moved to
+  the current API image** — they had been pinned to the image of the day
+  each was created; a new deploy still does not move them.
 - Videos are posted as uploaded — no compression (HANDOFF's earlier note on
   reels applies).
