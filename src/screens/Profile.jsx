@@ -605,7 +605,7 @@ function KundliTab() {
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
 function SettingsPage({ pro }) {
-  const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, cartCount, consultant } = useStore()
+  const { showToast, hasFlag, toggleFlag, profile, t, lang, setLang, consultant } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [intro, setIntro] = useState(false)
 
@@ -662,15 +662,9 @@ function SettingsPage({ pro }) {
         </div>
       </section>
 
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>{t('prof.explore')}</Kicker>
-        <div className="mt-2">
-          <Row to="/ask" title={t('prof.askStars')} />
-          <Row to="/premium" title={t('prof.premium')} note={t('prof.premiumNote')} />
-          <Row to="/academy" title={t('nav.academy')} note={t('prof.academyNote')} />
-          <Row to="/shop" title={t('nav.shop')} meta={t('prof.inCart', { n: cartCount })} />
-        </div>
-      </section>
+      {/* "More from Namo" (Ask the Stars, Premium, Academy, Shop) went on
+          11 Oct 2026 (Rahul): each was a second link to a tab or a tool,
+          and Premium is not offered yet. /premium still exists. */}
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.preferences')}</Kicker>

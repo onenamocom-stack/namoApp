@@ -88,7 +88,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Pooja — animated mandir, 7 deities, 26 murtis | UI | E-puja only. Nothing books a pandit, nothing is charged |
 | Shop — categories, cart, checkout | UI | **Charges the wallet for real** |
 | Reports | UI | **Charges the wallet for real** |
-| Premium tiers | UI | Shows a price, grants nothing |
+| Premium tiers | **Removed 11 Oct 2026** | Not offered (Rahul). `/premium` forwards to Home; the screen is deleted, so an unlinked page is not indexed |
 | Academy — courses, events, e-books | UI | Enrol toasts. Course links go to YouTube *search* URLs |
 | Wallet — balance and ledger | **Real** | Server-owned. Debits only — top-up waits for payments |
 | Payments | **None** | Payment-method tags are decorative |
@@ -295,7 +295,9 @@ sentence.
 
 ### 4.5 Premium tiers
 
-₹349 · ₹899 · ₹1,299. **Overlaps §4.3 and §4.4 — see §5.**
+**Not offered — 11 Oct 2026 (Rahul).** The screen is gone and `/premium`
+forwards to Home. If it returns, it needs a link from a main page, not
+Settings. It was ₹349 · ₹899 · ₹1,299 and overlapped §4.3 and §4.4 (§5).
 
 ### 4.6 Shop
 

@@ -67,7 +67,7 @@ In file order, which is also resolution order.
 | `/live/:id` | LiveRoom | Plain |
 | `/consult/:id` | ConsultantProfile | Plain |
 | `/notifications` | Notifications | Plain |
-| `/premium` | Premium | Plain |
+| `/premium` | → `/home` (Premium not offered, 11 Oct 2026) | — |
 | `/reports` | Reports | Plain |
 | `/tarot` | Tarot | Plain |
 | `/home` | Home | **Tab** |
@@ -839,10 +839,11 @@ consultant, keeps the seeker profile. The consultant app's preview of
 
 **☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
 then Account (orders, notification history, phone — no Wallet row since 11 Oct
-2026, Rahul: the wallet is the icon at the top of every tab), More from Namo
-(Namo AI, premium, academy, shop), Preferences (language, full deity images,
+2026, Rahul: the wallet is the icon at the top of every tab), Preferences
+(language, full deity images,
 help and support), and sign out. Back means Home from the profile and the
-profile from settings.
+profile from settings. "More from Namo" (Namo AI, premium, academy, shop) went on
+11 Oct 2026 (Rahul): each was a second link to a tab or a tool.
 
 Gone with the old Overview: the prototype's *Past sessions* (mock data shown to
 real accounts), the Download and Share buttons that toasted without doing
@@ -901,7 +902,7 @@ the two is off by a hundred on half its lines.
 
 ### Others
 `/reports` charges for real but **has no way to open the cart** — the only route
-to checkout is walking to Shop. `/premium` shows prices and grants nothing.
+to checkout is walking to Shop.
 `/ask` spends questions and its pack sheet grants them free, with a hardcoded
 wallet figure. `/chart`, `/chart/:id`, `/read/:id`, `/reels/:id`, `/live/:id`,
 `/notifications` are read-only or toggle flags.

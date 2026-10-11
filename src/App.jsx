@@ -59,7 +59,6 @@ import UserProfile from './screens/UserProfile.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
 import Notifications from './screens/Notifications.jsx'
-import Premium from './screens/Premium.jsx'
 
 /**
  * Tab shell. The nav takes real layout space; the floating Ask AI button sits
@@ -375,7 +374,8 @@ function Frame() {
                 <Route path="/reels/:id" element={<ReelViewer />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
                 <Route path="/notifications" element={<Notifications />} />
-                <Route path="/premium" element={<Premium />} />
+                {/* Premium is not offered (11 Oct 2026, Rahul); an old link lands on Home. */}
+                <Route path="/premium" element={<Navigate to="/home" replace />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/tarot" element={<Tarot />} />
 

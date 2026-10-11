@@ -265,8 +265,6 @@ export const strings = {
   'prof.matchNote': { en: 'Two charts read against each other', hi: 'दो कुंडलियों का आपस में मिलान' },
   'prof.reports': { en: 'Reports', hi: 'रिपोर्ट' },
   'prof.reportsNote': { en: 'Long-form readings, written once', hi: 'विस्तृत रिपोर्ट, एक बार में लिखी' },
-  'prof.premium': { en: 'Premium', hi: 'प्रीमियम' },
-  'prof.premiumNote': { en: 'Eros, packs and more questions', hi: 'Eros, पैक और ज़्यादा सवाल' },
   'prof.academyNote': { en: 'Courses, events and e-books', hi: 'कोर्स, इवेंट और ई-बुक' },
   'prof.askStars': { en: 'Ask the Stars', hi: 'तारों से पूछें' },
   'prof.inCart': { en: '{n} in cart', hi: 'कार्ट में {n}' },
