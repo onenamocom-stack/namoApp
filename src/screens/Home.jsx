@@ -781,9 +781,9 @@ function PostCard({ post, resharedBy }) {
 const countedViews = new Set()
 
 /**
- * A photo or text post counts a view after two seconds with most of it on
- * screen (11 Oct 2026, Rahul) — the reel rule. Scrolling past does not
- * count. Returns the count the server sends back, or null until then.
+ * A feed card counts a view after two seconds with most of it on screen
+ * (11 Oct 2026, Rahul): photo and text posts, and a reel playing in the feed
+ * — the reel viewer's rule. Scrolling past does not count. Returns the count the server sends back, or null until then.
  */
 function useCountView(ref, id) {
   const [views, setViews] = useState(null)
@@ -910,6 +910,9 @@ function ReelCard({ reel, resharedBy }) {
   const near = useNearScreen(frame)
   const video = useRef(null)
   const { playing, muted, toggleMute } = useFeedTurn(frame)
+  // Two seconds playing in the feed is a view too (11 Oct 2026, Rahul), as
+  // two seconds in the reel viewer is.
+  const counted = useCountView(frame, r.id)
 
   useEffect(() => {
     const v = video.current
@@ -994,7 +997,7 @@ function ReelCard({ reel, resharedBy }) {
         }}
       />
       <Caption
-        views={r.views}
+        views={counted ?? r.views}
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
