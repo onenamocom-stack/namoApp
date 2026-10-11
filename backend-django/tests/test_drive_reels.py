@@ -104,3 +104,17 @@ class TestTheTick:
         out = drive_reels.tick(late)
         assert out["due"] == 3 and out["action"]["posted"]
         assert DriveReel.objects.exclude(posted_at=None).count() == 1
+
+
+@pytest.mark.django_db
+def test_a_video_already_on_the_app_is_never_posted_again(drive):
+    """The 48 seeded clips are named seed-<instagram id>….mp4; the Drive
+    files are <instagram id>.mp4. The same id is the same video."""
+    TREE["f3"].append({"id": "dup", "name": "2948672073683508325.mp4", "mimeType": "video/mp4", "size": "10"})
+    try:
+        Content.objects.create(author_id=AUTHOR, kind="clip", status="live",
+                               media_url="https://cdn.example/clips/x/seed-2948672073683508325_66520811081.mp4")
+        names = [f["name"] for _, f in drive_reels.queue()]
+        assert "2948672073683508325.mp4" not in names and "clip 2.mp4" in names
+    finally:
+        TREE["f3"].pop()

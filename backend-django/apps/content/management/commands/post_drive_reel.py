@@ -21,7 +21,11 @@ class Command(BaseCommand):
             today = timezone.now().astimezone(drive_reels.IST).date()
             self.stdout.write("today: " + ", ".join(t.strftime("%H:%M") for t in drive_reels.plan_for(today)))
             pending = drive_reels.queue()
-            self.stdout.write(f"{len(pending)} videos to post")
+            self.stdout.write(f"{len(pending)} videos to post; {len(drive_reels.already_up())} ids already on the app")
+            from collections import Counter
+
+            for folder, n in Counter(folder for folder, _ in pending).items():
+                self.stdout.write(f"  {folder}: {n}")
             for folder, f in pending[:15]:
                 self.stdout.write(f"  {folder} / {f['name']} ({int(f.get('size') or 0) // 1024 // 1024} MB)")
             return

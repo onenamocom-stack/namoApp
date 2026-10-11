@@ -129,6 +129,26 @@ def _number(name):
     return int(m.group()) if m else None
 
 
+_LONG_ID = re.compile(r"\d{12,}")
+
+
+def already_up():
+    """The long numeric ids (Instagram's) in the names of every video
+    already on the app — the 48 seeded from folders 1 and 2 are named
+    `seed-<id>….mp4` — so a Drive file with the same id is never posted
+    again, whoever put the first copy up."""
+    from .models import Content
+
+    ids = set()
+    for url in Content.objects.filter(kind="clip").exclude(media_url=None).values_list("media_url", flat=True):
+        ids.update(_LONG_ID.findall(url.rsplit("/", 1)[-1]))
+    return ids
+
+
+def _ids_in(name):
+    return set(_LONG_ID.findall(name))
+
+
 def queue(token=None, root=None, from_folder=None):
     """Every video still to post, in order: [(folder name, file dict)].
 
@@ -140,13 +160,15 @@ def queue(token=None, root=None, from_folder=None):
     root = root or settings.DRIVE_REELS_FOLDER_ID
     from_folder = from_folder if from_folder is not None else settings.DRIVE_REELS_FROM_FOLDER
     done = set(DriveReel.objects.values_list("drive_file_id", flat=True))
+    up = already_up()
     folders = [f for f in _list(root, token) if f["mimeType"] == FOLDER]
     folders = [f for f in folders if (_number(f["name"]) or 10**9) >= from_folder]
     folders.sort(key=lambda f: (_number(f["name"]) or 10**9, _natural(f["name"])))
     out = []
     for folder in folders:
         files = [f for f in _list(folder["id"], token)
-                 if f.get("mimeType", "").startswith("video/") and f["id"] not in done]
+                 if f.get("mimeType", "").startswith("video/") and f["id"] not in done
+                 and not (_ids_in(f["name"]) & up)]
         files.sort(key=lambda f: _natural(f["name"]))
         out += [(folder["name"], f) for f in files]
     return out
