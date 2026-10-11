@@ -423,3 +423,26 @@ class Report(models.Model):
             models.Index(fields=["subject_id", "-created_at"],
                          name="content_reports_subject_idx"),
         ]
+
+
+class DriveReel(models.Model):
+    """A Google Drive video the reel poster has dealt with (12 Oct 2026;
+    apps/content/drive_reels.py). One row per Drive file, ever — the unique
+    id is what stops a video going up twice. `content` is the reel it
+    became; `skipped_reason` is set instead when it could not be posted."""
+
+    drive_file_id = models.CharField(max_length=128, unique=True)
+    folder = models.TextField()
+    file_name = models.TextField()
+    content = models.ForeignKey(Content, null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="+")
+    posted_at = models.DateTimeField(null=True, blank=True)
+    skipped_reason = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "drive_reels"
+        indexes = [models.Index(fields=["posted_at"], name="drive_reels_posted_idx")]
+
+    def __str__(self):
+        return f"{self.folder}/{self.file_name}"

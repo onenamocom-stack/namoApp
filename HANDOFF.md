@@ -6246,3 +6246,29 @@ The owner's rule (`docs/01-PRD.md` §12). Live after the deploy below.
   `test_affiliate_window.py` (14); five old referral tests rewritten for
   links (no refusals now).
 - **Not done:** Play Store install attribution (no app yet).
+
+## 81. Ten reels a day from Google Drive, for Rahul Jain — 12 Oct 2026
+
+The owner's ask: reels posted for Rahul Jain's account through the day,
+from the Drive folder (`1d5odpIpxrzcVSSyVUONQSPnSdHJqhlQ5`), folder 3 on
+(1 and 2 are the 48 clips seeded on Raghu's account on 15 Sep), never from
+a laptop.
+
+- `apps/content/drive_reels.py` and `manage.py post_drive_reel`: a Cloud
+  Run Job `namo-post-reel`, started by Cloud Scheduler every 10 minutes.
+  `plan_for(date)` gives the day's ten times (one per tenth of 06:00–23:30
+  IST, a minute seeded by the date); a run posts at most one reel when one
+  is due. Next file: folders by number from 3, files by name, videos only,
+  not yet in `drive_reels`. Downloaded with the job's service account
+  (metadata-server token, Drive read-only), uploaded to R2, published as a
+  `clip` for `DRIVE_REELS_AUTHOR_ID` (Rahul Jain, the approved consultant
+  `483214f1…`; a second "Rahul Jain" profile has no consultant row) with
+  the file's Drive description as caption. Over 300 MB: skipped, recorded.
+- Settings `DRIVE_REELS_*` (folder, from-folder, author, per day, window,
+  size). Table `drive_reels` (`content/0007`), RLS on.
+- `--list` shows today's times and the queue; `--now` posts the next one.
+- **Needs the Drive folder shared (Viewer) with
+  `499026166575-compute@developer.gserviceaccount.com`.** Until then the
+  job logs a Drive error and posts nothing.
+- Videos are posted as uploaded — no compression (HANDOFF's earlier note on
+  reels applies).

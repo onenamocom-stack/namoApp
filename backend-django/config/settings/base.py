@@ -415,3 +415,13 @@ LOGGING = {
         "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+# The reel poster (12 Oct 2026; apps/content/drive_reels.py): ten reels a
+# day from a Google Drive folder, for one account, through the day (IST).
+DRIVE_REELS_FOLDER_ID = os.environ.get("DRIVE_REELS_FOLDER_ID", "1d5odpIpxrzcVSSyVUONQSPnSdHJqhlQ5")
+DRIVE_REELS_FROM_FOLDER = int(os.environ.get("DRIVE_REELS_FROM_FOLDER", "3"))  # 1 and 2 are up
+DRIVE_REELS_AUTHOR_ID = os.environ.get("DRIVE_REELS_AUTHOR_ID", "483214f1-f7fc-407a-9d9d-e4c437d64d18")  # Rahul Jain
+DRIVE_REELS_PER_DAY = int(os.environ.get("DRIVE_REELS_PER_DAY", "10"))
+DRIVE_REELS_DAY_START = os.environ.get("DRIVE_REELS_DAY_START", "06:00")
+DRIVE_REELS_DAY_END = os.environ.get("DRIVE_REELS_DAY_END", "23:30")
+DRIVE_REELS_MAX_BYTES = int(os.environ.get("DRIVE_REELS_MAX_BYTES", str(300 * 1024 * 1024)))
