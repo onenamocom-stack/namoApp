@@ -634,8 +634,8 @@ function SettingsPage({ pro }) {
           <Kicker>{t('nav.profile')}</Kicker>
           <div className="mt-2">
             <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
-            <Row to="/profile/kundli" title={t('prof.tab.kundli')} />
-            <Row to="/profile/saved" title={t('prof.tab.saved')} />
+            {/* Kundli and Saved went on 11 Oct 2026 (Rahul): the horoscope
+                section has the kundli, and Saved is a tab on your page. */}
             {profile?.influencer && <Row to="/profile/influencer" title={t('prof.tab.influencer')} />}
           </div>
         </section>
@@ -645,7 +645,8 @@ function SettingsPage({ pro }) {
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>
         <div className="mt-2">
-          <Row to="/wallet" title={t('a.wallet')} note={t('prof.walletNote')} />
+          {/* No Wallet row since 11 Oct 2026 (Rahul): the wallet is the
+              icon at the top of every tab. */}
           <Row to="/orders" title={t('prof.orders')} note={t('prof.ordersNote')} />
           <Row to="/notifications" title={t('prof.notifHistory')} />
           <Row

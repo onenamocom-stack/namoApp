@@ -813,8 +813,8 @@ thumbnails, a list of titles, and a row per piece.
 
 **Removed 11 Oct 2026 (Rahul):** the Sun / Moon / Lagna chips (they said nothing
 clear), the **+** (a post is made from Home's +), and the **Kundli** tab (the
-horoscope section has it). `/profile/kundli` still opens — the chart, birth data,
-matching, muhurat and reports — from a pro's ☰ below.
+horoscope section has it). `/profile/kundli` still exists — the chart, birth
+data, matching, muhurat and reports — but nothing in Profile links to it.
 
 **A pro has one profile** (10 Oct 2026, Rahul). For an approved consultant,
 `/profile` and `/profile/posts` render the `/consult/:id` page itself — photo,
@@ -826,14 +826,16 @@ schedule, chat, video and call. The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
 your own page only (11 Oct 2026, Rahul); a client sees three.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
-settings, which gain a first section, Profile: **Kundli**, **Saved** (and
-**Influencer**), each at its old `/profile/<tab>` address under a plain top bar
-whose back is settings. An applicant who is not approved, or a blocked
+settings, which gain a first section, Profile: **Intro video or photo** (and
+**Influencer**, at `/profile/influencer` under a plain top bar whose back is
+settings). Kundli and Saved left that section on 11 Oct 2026 (Rahul): the
+horoscope section has the kundli, and Saved is a tab on the page. An applicant who is not approved, or a blocked
 consultant, keeps the seeker profile. The consultant app's preview of
 `/consult/:id` stays the client's view.
 
 **☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
-then Account (wallet, orders, notification history, phone), More from Namo
+then Account (orders, notification history, phone — no Wallet row since 11 Oct
+2026, Rahul: the wallet is the icon at the top of every tab), More from Namo
 (Namo AI, premium, academy, shop), Preferences (language, full deity images,
 help and support), and sign out. Back means Home from the profile and the
 profile from settings.
