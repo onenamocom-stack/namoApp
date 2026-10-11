@@ -118,3 +118,10 @@ def test_a_video_already_on_the_app_is_never_posted_again(drive):
         assert "2948672073683508325.mp4" not in names and "clip 2.mp4" in names
     finally:
         TREE["f3"].pop()
+
+
+@pytest.mark.django_db
+def test_times_missed_by_more_than_an_hour_are_not_made_up(drive):
+    times = drive_reels.plan_for(date(2026, 10, 12))
+    assert drive_reels.tick(times[-1] + timedelta(hours=2))["action"] is None
+    assert drive_reels.tick(times[-1] + timedelta(minutes=5))["action"]["posted"]

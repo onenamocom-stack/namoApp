@@ -231,9 +231,18 @@ def post_one(token=None, now=None):
     return {"posted": f["name"], "folder": folder, "content_id": str(row.id)}
 
 
+CATCH_UP = timedelta(hours=1)
+
+
 def tick(now=None):
-    """One scheduler run: post one reel if today's plan says one is due."""
+    """One scheduler run: post one reel if today's plan says one is due.
+
+    A time missed by more than an hour (the job was down, or it was first
+    switched on late in the day) is dropped rather than made up, so the
+    feed never gets a burst of reels at midnight."""
+    now = now or timezone.now()
     due, done = due_now(now), posted_today(now)
-    if done >= due:
+    recent = any(now - CATCH_UP < t <= now for t in plan_for(now.astimezone(IST).date()))
+    if done >= due or not recent:
         return {"due": due, "posted_today": done, "action": None}
     return {"due": due, "posted_today": done, "action": post_one(now=now)}
