@@ -294,7 +294,9 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
           {/* Follow and Share profile, half the row each. The schedule,
               chat, video and call glyphs that sat beside Follow went on 11 Oct
               2026 (Rahul): the footer's Video, Audio, Chat and Book tiles do
-              the same and show the rate.
+              the same and show the rate. Both are the white button, never
+              saffron, whether or not you follow (Rahul, 11 Oct); the label
+              says which.
 
               Your own page has Share profile instead: you do not follow or
               book yourself. */}
@@ -313,7 +315,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             <PopButton
               className="flex-1"
               full={false}
-              variant={following ? 'ghost' : 'default'}
+              variant="ghost"
               onClick={() =>
                 toggleFlag(`follow:${c.id}`, {
                   on: `Following ${firstName(c.name)}`,
@@ -323,12 +325,10 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             >
               {following ? 'Following' : 'Follow'}
             </PopButton>
-            {/* Always the same colour as Follow beside it (11 Oct 2026,
-                Rahul): saffron next to Follow, white next to Following. */}
             <PopButton
               className="flex-1"
               full={false}
-              variant={following ? 'ghost' : 'default'}
+              variant="ghost"
               onClick={share}
             >
               Share profile

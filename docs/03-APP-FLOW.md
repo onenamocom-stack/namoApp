@@ -826,7 +826,7 @@ the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is
 Settings → *Edit name and birth details* for a pro now — and **Share profile**
 (`/consult/<you>`) where a client sees Follow and **Share profile**, half
-the row each and always the same colour (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
+the row each, both the white button (no saffron, Follow or Following) (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
 call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
 your own page only (11 Oct 2026, Rahul); a client sees three.
