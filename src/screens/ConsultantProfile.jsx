@@ -323,7 +323,14 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             >
               {following ? 'Following' : 'Follow'}
             </PopButton>
-            <PopButton className="flex-1" full={false} onClick={share}>
+            {/* Always the same colour as Follow beside it (11 Oct 2026,
+                Rahul): saffron next to Follow, white next to Following. */}
+            <PopButton
+              className="flex-1"
+              full={false}
+              variant={following ? 'ghost' : 'default'}
+              onClick={share}
+            >
               Share profile
             </PopButton>
           </div>
