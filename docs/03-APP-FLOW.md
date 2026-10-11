@@ -594,8 +594,11 @@ or a post's author.
 **One public page per consultant** (6 Oct 2026): `/u/:id` forwards to
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the
-thinner page land on the one with bookings. `/consult/:id` shows followers
-and following. A verified consultant has a **blue verified mark** beside the
+thinner page land on the one with bookings. Every profile — yours, `/u/:id` and `/consult/:id` — has the same header
+beside the photo (11 Oct 2026, Rahul, Instagram's layout): the name, then
+**posts · followers · following** as three columns, number over label. On a
+consultant page the specialization, milestone, rating and experience sit
+under the photo. A verified consultant has a **blue verified mark** beside the
 name, here and on `/consult` cards; the top bar's second line is the category,
 never the word "Verified" (11 Oct 2026, Rahul). Above the tabs, the consultant's **intro** — the video (plays
 in place) or photo they uploaded from Settings → *Intro video or photo*; nothing
@@ -796,7 +799,8 @@ length, because their two clock times are identical.
 
 ### `/profile/:tab`
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
-saffron ring (tap to change), posts · followers · following, your name, then
+saffron ring (tap to change), beside it your name over posts · followers ·
+following (the shared profile header), then
 **Edit profile** (`/onboarding/details?edit=1`) and **Share profile**
 (`/u/<you>`). A green dot on the photo's top right (it was a "● Available" line
 under the name until 11 Oct, Rahul). Under the name, your bio — *Write about

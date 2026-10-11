@@ -22,6 +22,7 @@ import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, useMyChart } from '../lib/astro.js'
 import { ConsultantPage } from './ConsultantProfile.jsx'
 import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
+import ProfileHead from '../components/ProfileHead.jsx'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -180,36 +181,21 @@ function Hero({ posts, counts }) {
 
   return (
     <section className="cosmic-dawn px-5 pb-5 pt-5">
+      {/* Name over the three numbers, beside the photo (11 Oct 2026,
+          Rahul: Instagram's layout). Followers and Following open the list
+          (5 Oct 2026). */}
       <div className="flex items-center gap-5">
         <AvatarPicker />
-        <dl className="grid flex-1 grid-cols-3 text-center">
-          {[
-            [posts === null ? '—' : posts.length, 'prof.posts', null],
-            [counts.followers, 'prof.followers', 'followers'],
-            [counts.following, 'prof.following', 'following'],
-          ].map(([n, k, list]) => {
-            const body = (
-              <>
-                <dt className="sr-only">{t(k)}</dt>
-                <dd className="font-display text-lead leading-none tnum t-heading">
-                  {typeof n === 'number' ? n.toLocaleString('en-IN') : n}
-                </dd>
-                <span className="mt-1 block text-[12px] t-faint">{t(k)}</span>
-              </>
-            )
-            // Followers and Following open the list (5 Oct 2026).
-            return list ? (
-              <button key={k} type="button" onClick={() => setListing(list)} className="block">
-                {body}
-              </button>
-            ) : (
-              <div key={k}>{body}</div>
-            )
-          })}
-        </dl>
+        <ProfileHead
+          name={me.name}
+          stats={[
+            { n: posts?.length ?? null, label: t('prof.posts') },
+            { n: counts.followers, label: t('prof.followers'), onClick: () => setListing('followers') },
+            { n: counts.following, label: t('prof.following'), onClick: () => setListing('following') },
+          ]}
+        />
       </div>
 
-      <h1 className="mt-4 font-display text-lead leading-tight t-heading">{me.name}</h1>
       <Bio />
       <div className="mt-4 flex gap-2">
         <Link

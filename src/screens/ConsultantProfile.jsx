@@ -21,6 +21,7 @@ import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { FeedCard } from './Home.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
+import ProfileHead from '../components/ProfileHead.jsx'
 import { shareLink } from '../lib/share.js'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
@@ -87,6 +88,23 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
   const [day, setDay] = useState(days[0].key)
   const [slots, setSlots] = useState(null)
   const [followers, setFollowers] = useState(null)
+  // Their posts, loaded here rather than in the Posts tab, because the
+  // header counts them (11 Oct 2026).
+  const [items, setItems] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    setItems(null)
+    fetchByAuthor(id)
+      .then((rows) => active && setItems(rows))
+      .catch((err) => {
+        console.error('[work] load failed:', err.message)
+        if (active) setItems([])
+      })
+    return () => {
+      active = false
+    }
+  }, [id])
 
   useEffect(() => {
     let live = true
@@ -240,50 +258,44 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             information — it was a generated plate of the same art as the
             intro clip. The identity block leads instead. */}
         <section className="px-5 pb-6 pt-6">
-          <div className="flex items-start gap-4">
+          <div className="flex items-center gap-4">
             <TierRing count={c.sessionsDone} size={76}>
               {/* The photo, not the initials (10 Oct 2026). Your own is the
                   store's copy, so a new picture shows without a reload. */}
               <Avatar initials={c.initials} src={(own && me.avatarUrl) || c.avatarUrl} size={76} />
             </TierRing>
-            <div className="min-w-0 flex-1 pt-1">
-              <h1 className="flex min-w-0 items-center gap-1.5 text-lead font-semibold t-heading">
-                <span className="truncate">{c.name}</span>
-                {c.verified && <VerifiedMark size={20} />}
-              </h1>
-              <p className="mt-0.5 truncate text-meta t-body">{c.specialization}</p>
-              <MilestoneBadge count={c.sessionsDone} className="mt-1.5" />
+            {/* Name over posts, followers and following (11 Oct 2026,
+                Rahul: Instagram's layout, the same block as every profile). */}
+            <ProfileHead
+              name={c.name}
+              mark={c.verified && <VerifiedMark size={20} />}
+              stats={[
+                { n: items?.length ?? null, label: 'posts' },
+                { n: followers?.followers ?? null, label: 'followers' },
+                { n: followers?.following ?? null, label: 'following' },
+              ]}
+            />
+          </div>
 
-              {/* Rating, reviews, experience and followers as one small line
-                  under the name, the way a social profile reads them. They
-                  were a four-column bordered grid taking 90px of height to
-                  say four short numbers. */}
-              <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] t-faint tnum">
-                {/* The review count is hidden for now; the rating stays
-                    (8 Oct 2026, Rahul). */}
-                <span className="font-bold t-sub">{c.rating ?? 'New'}</span> rating
-                <span aria-hidden="true">·</span>
-                <span className="font-bold t-sub">
-                  {c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}
-                </span>
-                {followers !== null && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-bold t-sub">
-                      {followers.followers.toLocaleString('en-IN')}
-                    </span>{' '}
-                    {followers.followers === 1 ? 'follower' : 'followers'}
-                    <span aria-hidden="true"> · </span>
-                    <span className="font-bold t-sub">{followers.following.toLocaleString('en-IN')}</span> following
-                  </>
-                )}
-              </p>
-            </div>
+          {/* What they practise, the milestone and the rating and experience,
+              under the photo now that the numbers sit beside it. */}
+          <p className="mt-4 text-meta font-semibold t-heading">{c.specialization}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <MilestoneBadge count={c.sessionsDone} />
+            <p className="text-[11px] t-faint tnum">
+              {/* The review count is hidden for now; the rating stays
+                  (8 Oct 2026, Rahul). */}
+              <span className="font-bold t-sub">{c.rating ?? 'New'}</span> rating
+              <span aria-hidden="true"> · </span>
+              <span className="font-bold t-sub">
+                {c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}
+              </span>
+            </p>
           </div>
 
           {/* The description. It was buried in the About tab; on a profile it
               is the thing you read right after the name. */}
-          <p className="mt-4 text-meta leading-relaxed t-sub">{c.bio}</p>
+          <p className="mt-2 text-meta leading-relaxed t-sub">{c.bio}</p>
 
           <div className="mt-2 flex flex-wrap gap-1.5">
             {c.credentials.map((cr) => (
@@ -381,7 +393,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
 
         <div key={tab} className="animate-fade">
           {tab === 'about' && <About c={c} />}
-          {tab === 'work' && <Work c={c} />}
+          {tab === 'work' && <Work c={c} items={items} />}
           {tab === 'reviews' && <Reviews c={c} />}
           {tab === 'saved' && own && saved}
         </div>
@@ -558,22 +570,7 @@ function About({ c }) {
  * touched no money; it is gone now, and with it the last place in this screen
  * where a number came from somewhere other than a row.
  */
-function Work({ c }) {
-  const [items, setItems] = useState(null)
-
-  useEffect(() => {
-    let active = true
-    fetchByAuthor(c.id)
-      .then((rows) => active && setItems(rows))
-      .catch((err) => {
-        console.error('[work] load failed:', err.message)
-        if (active) setItems([])
-      })
-    return () => {
-      active = false
-    }
-  }, [c.id])
-
+function Work({ c, items }) {
   if (items === null) {
     return (
       <Section label="Work">

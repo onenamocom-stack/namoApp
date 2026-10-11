@@ -5,6 +5,7 @@ import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
+import ProfileHead from '../components/ProfileHead.jsx'
 import ResharedList from '../components/ResharedList.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
@@ -112,13 +113,16 @@ export default function UserProfile() {
       />
 
       <section className="flex items-center gap-4 border-b border-stroke px-5 py-6">
-        <PopAvatar initials={initials} size={56} />
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display text-title leading-none t-heading">{author.name}</h1>
-          <p className="mt-2 caps-sm t-faint tnum">
-            {posts.length} posts · {counts.followers} followers · {counts.following} following
-          </p>
-        </div>
+        <PopAvatar initials={initials} size={72} />
+        {/* Name over the three numbers (11 Oct 2026, Rahul). */}
+        <ProfileHead
+          name={author.name}
+          stats={[
+            { n: posts.length, label: 'posts' },
+            { n: counts.followers, label: 'followers' },
+            { n: counts.following, label: 'following' },
+          ]}
+        />
       </section>
 
       {/* Your own page has no Follow button. Following yourself is a row the
