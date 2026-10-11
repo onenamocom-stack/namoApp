@@ -825,8 +825,9 @@ opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is
 Settings → *Edit name and birth details* for a pro now — and **Share profile**
-(`/consult/<you>`) where a client sees Follow,
-schedule, chat, video and call. The **+** went on 11 Oct 2026 (Rahul): a post is
+(`/consult/<you>`) where a client sees Follow and **Share profile**, half
+the row each (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
+call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
 your own page only (11 Oct 2026, Rahul); a client sees three.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
@@ -1473,11 +1474,11 @@ seconds later rather than leaving somebody visible and absent.
 |---|---|
 | Green dot on the avatar | `online` from the roster — the server's boolean, not the client's arithmetic |
 | Chat and Call live | online |
-| Chat and Call faded, and a line saying so | offline, with Schedule still working |
+| Chat and Call faded, and a line saying so | offline, with Book still working |
 
-**The line is said, not implied.** Two faded glyphs and nothing else
+**The line is said, not implied.** Grey tiles and nothing else
 produces "nothing happens when I tap". *"<name> is offline right now. You
-can still schedule a session."* — and the second sentence is the point,
+can still book a session."* — and the second sentence is the point,
 because the offline state still has something to offer.
 
 **The dot used to be `verified`.** It stood in while there was no

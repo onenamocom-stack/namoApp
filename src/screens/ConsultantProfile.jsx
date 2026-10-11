@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
-import Icon from '../components/Icon.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
 import {
@@ -292,15 +291,13 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             ))}
           </div>
 
-          {/* Follow takes half the row; schedule, message and call are glyphs
-              beside it. Three labelled buttons would take two rows and say less
-              than three icons everyone already reads.
+          {/* Follow and Share profile, half the row each. The schedule,
+              chat, video and call glyphs that sat beside Follow went on 11 Oct
+              2026 (Rahul): the footer's Video, Audio, Chat and Book tiles do
+              the same and show the rate.
 
-              Schedule opens the same sheet as the sticky footer rather than a
-              second booking path — one flow, two ways in.
-
-              Your own page has the seeker profile's three instead: you do not
-              follow or book yourself. */}
+              Your own page has Share profile instead: you do not follow or
+              book yourself. */}
           {own ? (
             <div className="mt-5 flex gap-2">
               {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
@@ -312,9 +309,9 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
                   Home's +. */}
             </div>
           ) : (
-          <div className="mt-5 flex items-center gap-2">
+          <div className="mt-5 flex gap-2">
             <PopButton
-              className="w-1/2 flex-none"
+              className="flex-1"
               full={false}
               variant={following ? 'ghost' : 'default'}
               onClick={() =>
@@ -326,65 +323,19 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             >
               {following ? 'Following' : 'Follow'}
             </PopButton>
-            <button
-              type="button"
-              aria-label={`Schedule a session with ${firstName(c.name)}`}
-              onClick={openSheet}
-              className="pill knob !h-10 flex-1 justify-center"
-            >
-              <Icon name="calendar" size={18} />
-            </button>
-            {/* Chat and call are dead while the astrologer is offline. The
-                server refuses the request anyway (presence is re-checked
-                there, because the dot was a second old when it was drawn) —
-                this is so nobody presses a button that was never going to
-                work, and so the reason is on screen instead of in a toast
-                they have to summon. */}
-            <button
-              type="button"
-              aria-label={
-                c.online
-                  ? `Chat with ${firstName(c.name)}`
-                  : `${firstName(c.name)} is offline`
-              }
-              onClick={askForChat}
-              disabled={asking || !c.online}
-              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
-            >
-              <Icon name="chat" size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label={
-                c.online ? `Call ${firstName(c.name)}` : `${firstName(c.name)} is offline`
-              }
-              onClick={askForCall}
-              disabled={asking || !c.online}
-              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
-            >
-              <Icon name="video" size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label={
-                c.online ? `Audio call ${firstName(c.name)}` : `${firstName(c.name)} is offline`
-              }
-              onClick={askForAudio}
-              disabled={asking || !c.online}
-              className="pill knob !h-10 flex-1 justify-center disabled:opacity-40"
-            >
-              <Icon name="phone" size={18} />
-            </button>
+            <PopButton className="flex-1" full={false} onClick={share}>
+              Share profile
+            </PopButton>
           </div>
           )}
 
-          {/* Said, not merely implied by two faded glyphs. "Nothing
+          {/* Said, not merely implied by the footer's grey tiles. "Nothing
               happens when I tap" is the complaint a disabled control
-              produces on its own. Schedule still works, which is the
-              whole point of saying it here. */}
+              produces on its own. Book still works, which is the whole
+              point of saying it here. */}
           {!own && !c.online && (
             <p className="mt-3 text-micro t-faint">
-              {firstName(c.name)} is offline right now. You can still schedule a
+              {firstName(c.name)} is offline right now. You can still book a
               session.
             </p>
           )}
