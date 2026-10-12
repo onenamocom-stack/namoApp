@@ -223,16 +223,25 @@ through a tab that forwards again.
 
 **New post (+), Home only — 10 Oct 2026 (Rahul).** A round + at the bottom
 right of every Home tab, above the tab bar. Signed out → toast *Sign in to
-post.* Signed in → the composer full screen (Photo · Blog, plus Reel where the
-account's video flag is on); a blocked account sees the blocked note instead.
+post.* Signed in → **Create post** full screen; a blocked account sees the
+blocked note instead.
 Publishing closes it and reloads the feed. The feed and Reels are dealt at
 random; a Home or Reels loaded within five seconds of your publishing leads
 with your new post, and after that it is dealt like any other (12 Oct 2026,
 Rahul).
 
-**The composer's tabs — 10 Oct 2026 (Rahul):** Text · Photo · Video · Blog
-(Video only where the account may post it). Text is a `post` with no media
-and needs words; a photo or video caption is optional. A **#hashtag** in a
+**Create post — 12 Oct 2026 (Rahul: "like Facebook"; it replaced the tabs
+Text · Photo · Video · Blog).** One screen: Back, *Create post* and **Post**
+(top right, live once there are words or a picture); your photo and name; one
+box for the words; a picked photo or video under it with ✕. The toolbar
+pinned under it: **Photo/Video** (gallery; *Photo* where the account may not
+post video, and a video picked there is refused with a sentence), **Camera**,
+**Tag product** (consultants only) and **Blog**. Words alone publish a `post`
+with no media, a photo a `post`, a video a `clip`. **Blog** opens *Write a
+blog*: a cover box, the title large, the body, and under them Tag product
+(consultants) and the word count with read time; **Publish** needs a title
+and a body, Back returns to Create post. Each keeps its own draft. Edit uses
+the same screen, its kind fixed, with **Save**. A **#hashtag** in a
 caption or text post is a link → `/search?in=posts&q=%23tag`, which matches
 it among the newest 200 posts.
 
@@ -1054,10 +1063,11 @@ screen applies it only on Thursday, so the two views already disagree. One
 endpoint fixes it.
 
 ### `/pro/studio`
-Compose a reel, a photo or a blog post. **Each tab keeps its own draft**, in
-the phone's storage as it is typed: switching tabs, a reload or a closed tab
-loses nothing, and publishing clears that tab's draft (6 Oct 2026 — switching
-tabs used to wipe the composer, and a long blog went with it). **Products
+Compose a reel, a photo or a blog post — the same Create post screen as Home's
+(12 Oct 2026), without Back. **A post and a blog each keep their own draft**,
+in the phone's storage as it is typed: a reload, a closed tab or going to the
+blog and back loses nothing, and publishing clears that draft (6 Oct 2026 —
+switching tabs used to wipe the composer, and a long blog went with it). **Products
 can be tagged on all three**, a blog included; a tagged product opens its
 own page with the author's code. A blog's cover is 16:9. **Already published** lists the
 consultant's own posts only — a thumbnail (a reel's frame at half a second, a

@@ -1,90 +1,48 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiSupportsTags, editContent, publish, uploadMedia } from '../lib/content.js'
 import { fetchProducts } from '../lib/shop.js'
+import { BackButton } from './Chrome.jsx'
+import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
-import { Kicker, PopButton } from './Pop.jsx'
-import { Field } from './Primitives.jsx'
+import { PopAvatar, PopButton } from './Pop.jsx'
 import { useStore } from '../store.jsx'
 
 /**
- * One composer, two callers.
+ * One composer, Facebook's shape (12 Oct 2026, Rahul — it was four tabs:
+ * Text, Photo, Video, Blog).
  *
- * `/pro/studio` passes all three kinds; a seeker's profile passes two. The
- * difference between a consultant and a seeker is the `kinds` prop and nothing
- * else, which is the point of extracting this — the alternative was the same
- * upload path, the same validation and the same publish call written twice, and
- * drifting the first time one of them got a fix.
+ * **Create post** is one box for words, with a toolbar under it: Photo/Video
+ * from the gallery, Camera, Tag product (consultants only) and Blog. What is
+ * published follows from what is in it — the `content.kind` column is still
+ * the switch, chosen here rather than by a tab:
  *
- * Each tab IS the `content.kind` column. Adding a fourth means a value in the
- * migration's check constraint rather than a new table.
+ *   words only        → 'post' with no media (the feed sets a short one large)
+ *   a photo           → 'post', the words its caption
+ *   a video           → 'clip' — only where `kinds` includes it; the server's
+ *                       025 policy is the permission, this only offers it
+ *   Blog              → its own screen, 'article': title, body, optional cover
  *
- *   Reel   → 'clip'     video, required. The format is the video.
- *   Photo  → 'post'     image, required, plus what you want to say.
- *   Blog   → 'article'  title and body; a cover image is optional.
+ * The file goes to storage FIRST and the row carries its URL, so a publish
+ * that fails never leaves a row pointing at nothing.
  *
- * The file goes to storage FIRST and the row carries its URL, so a publish that
- * fails never leaves a row pointing at nothing. The reverse — a file with no
- * row — is a few kilobytes nobody sees, which is the cheaper way to fail.
+ * The header — Back, the screen's name and Post — is the composer's own, so
+ * the button sits top right as on Facebook. `onClose` puts Back in it; the
+ * consultant studio, where the composer is part of the page, has none.
  *
- * **This is not the permission.** `025`'s insert policy decides what may be
- * published: a seeker gets `post` and `article`, only an approved consultant
- * gets `clip`. Passing the wrong `kinds` here shows the wrong tab; it does not
- * grant anything, and the server says so.
+ * Every draft is kept on this phone as it is typed (6 Oct 2026): one for a
+ * post and one for a blog, so a blog of eleven thousand characters survives a
+ * reload and a video chosen for a post never becomes a blog's cover.
  */
-const SPEC = {
-  /* A post with no picture (10 Oct 2026, Rahul: "only text post, as in
-     Facebook"). It is a `post` row with no media — the feed already sets a
-     short one large on colour — so the server needs nothing new. */
-  text: {
-    label: 'Text',
-    heading: 'New text post',
-    kind: 'post',
-    noMedia: true,
-  },
-  clip: {
-    label: 'Video',
-    heading: 'New video',
-    accept: 'video/*',
-    required: true,
-    add: 'Choose a video',
-    swap: 'Choose a different video',
-    missing: 'Choose a video',
-  },
-  post: {
-    label: 'Photo',
-    heading: 'New photo post',
-    accept: 'image/*',
-    required: true,
-    add: 'Choose a photo',
-    swap: 'Choose a different photo',
-    missing: 'Choose a photo',
-  },
-  article: {
-    label: 'Blog',
-    heading: 'New blog post',
-    accept: 'image/*',
-    required: false,
-    add: 'Add a cover image (16:9, e.g. 1600 × 900)',
-    swap: 'Change the cover',
-  },
-}
 
 /** Must match MAX_TAGGED_PRODUCTS in backend-django/apps/content/models.py. */
 const MAX_TAGS = 3
 
-/**
- * `tagProducts` — the consultant studio's composer can tag shop products on
- * any kind — reel, photo or blog (6 Oct 2026: a blog could not, and a
- * consultant who left the Blog tab to look for the picker lost the blog) —
- * and the server refuses anyone else, so the prop only decides whether the
- * picker is shown.
- */
 const EMPTY = { caption: '', title: '', body: '', media: null, tagged: [] }
-const DRAFT_KEY = (kind) => `namo.draft.${kind}`
+const DRAFT_KEY = (mode) => `namo.draft.${mode}`
 
-function loadDraft(kind) {
+function loadDraft(mode) {
   try {
-    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY(kind)) || 'null')
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY(mode)) || 'null')
     return saved ? { ...EMPTY, ...saved } : EMPTY
   } catch {
     return EMPTY
@@ -92,8 +50,9 @@ function loadDraft(kind) {
 }
 
 /* `editing` — an existing piece (the shape lib/content.js gives) to change
-   in place: its own kind only, its fields filled in, no draft kept, and the
-   button saves instead of publishing (6 Oct 2026). */
+   in place: its fields filled in, no draft kept, and Save instead of Post
+   (6 Oct 2026). Its kind cannot change, so a photo stays a photo and a reel
+   a reel. */
 function fromPiece(piece) {
   return {
     caption: piece.caption ?? '',
@@ -106,39 +65,34 @@ function fromPiece(piece) {
   }
 }
 
-/* The tabs in Rahul's order (10 Oct 2026): Text, Photo, Video, Blog. Text
-   comes with Photo — both are `post` rows. */
-const ORDER = ['text', 'post', 'clip', 'article']
+const isVideo = (media) => Boolean(media?.type?.startsWith('video/'))
 
-function tabsFor(kinds, editing) {
-  if (editing) return [editing.kind === 'post' && !editing.mediaUrl ? 'text' : editing.kind]
-  const open = new Set(kinds)
-  if (open.has('post')) open.add('text')
-  return ORDER.filter((k) => open.has(k))
-}
-
-export default function Composer({ kinds: allowed = ['post', 'article'], onPublished, tagProducts = false, editing = null }) {
-  const { showToast } = useStore()
-  const kinds = tabsFor(allowed, editing)
-  const [tab, setTab] = useState(kinds[0])
-  const first = editing ? fromPiece(editing) : loadDraft(kinds[0])
+export default function Composer({
+  kinds: allowed = ['post', 'article'],
+  onPublished,
+  onClose = null,
+  tagProducts = false,
+  editing = null,
+}) {
+  const { showToast, me } = useStore()
+  const canVideo = editing ? editing.kind === 'clip' : allowed.includes('clip')
+  const canBlog = !editing && allowed.includes('article')
+  const [mode, setMode] = useState(editing?.kind === 'article' ? 'article' : 'post')
+  const first = editing ? fromPiece(editing) : loadDraft(mode)
   const [caption, setCaption] = useState(first.caption)
   const [title, setTitle] = useState(first.title)
   const [body, setBody] = useState(first.body)
-  const [busy, setBusy] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [media, setMedia] = useState(first.media)
   const [tagged, setTagged] = useState(first.tagged)
-
-  const spec = SPEC[tab]
+  const [tagging, setTagging] = useState(first.tagged.length > 0)
+  const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const gallery = useRef(null)
+  const camera = useRef(null)
+  const blog = mode === 'article'
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
-  const canTag = tagProducts
 
-  /* Every tab keeps its own draft, in this phone's storage, as it is typed
-     (6 Oct 2026). Switching tabs used to clear the composer, and a blog of
-     eleven thousand characters went with it; a reload or a closed tab did
-     the same. Each kind is its own draft, so a video chosen for a reel is
-     still never carried to a blog's cover. */
+  /* The draft of the screen you are on, saved a moment after typing stops. */
   const draft = { caption, title, body, media, tagged }
   const saving = useRef(null)
   useEffect(() => {
@@ -147,38 +101,43 @@ export default function Composer({ kinds: allowed = ['post', 'article'], onPubli
     saving.current = setTimeout(() => {
       try {
         const empty = !caption && !title && !body && !media && !tagged.length
-        if (empty) localStorage.removeItem(DRAFT_KEY(tab))
-        else localStorage.setItem(DRAFT_KEY(tab), JSON.stringify(draft))
+        if (empty) localStorage.removeItem(DRAFT_KEY(mode))
+        else localStorage.setItem(DRAFT_KEY(mode), JSON.stringify(draft))
       } catch {
         /* private window or full storage: the draft is still on screen */
       }
     }, 400)
     return () => clearTimeout(saving.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, caption, title, body, media, tagged])
+  }, [mode, caption, title, body, media, tagged])
 
-  function pick(next) {
-    if (next === tab) return
+  /** Between Create post and Write a blog, each keeping its own draft. */
+  function switchTo(next) {
     try {
-      localStorage.setItem(DRAFT_KEY(tab), JSON.stringify(draft))
+      localStorage.setItem(DRAFT_KEY(mode), JSON.stringify(draft))
     } catch {
       /* the draft stays only for this visit */
     }
     const d = loadDraft(next)
-    setTab(next)
-    setMedia(d.media)
+    setMode(next)
     setCaption(d.caption)
     setTitle(d.title)
     setBody(d.body)
+    setMedia(d.media)
     setTagged(d.tagged)
+    setTagging(d.tagged.length > 0)
   }
 
   async function onFile(e) {
     const file = e.target.files?.[0]
-    // Cleared either way, so choosing the same file again after a failure still
-    // fires a change event.
+    // Cleared either way, so the same file chosen again still fires.
     e.target.value = ''
     if (!file) return
+    const video = file.type.startsWith('video/')
+    if (video && (!canVideo || blog)) {
+      return showToast(blog ? 'A blog cover is a photo.' : 'Video posts are for verified pros. Choose a photo.')
+    }
+    if (editing && editing.kind === 'clip' && !video) return showToast('A reel stays a video. Choose a video.')
     setUploading(true)
     try {
       setMedia({ url: await uploadMedia(file), type: file.type })
@@ -189,19 +148,18 @@ export default function Composer({ kinds: allowed = ['post', 'article'], onPubli
     }
   }
 
+  const ready = blog ? title.trim() && body.trim() : caption.trim() || media
+
   async function send() {
+    if (!ready || busy || uploading) return
     setBusy(true)
     try {
-      const fields =
-        tab === 'article'
-          ? { title: title.trim(), body: body.trim() }
-          : // A photo or video may go without words (10 Oct 2026); a text post may not.
-            { caption: caption.trim() || null }
+      const fields = blog ? { title: title.trim(), body: body.trim() } : { caption: caption.trim() || null }
       if (editing) {
         const changes = {
           ...fields,
           mediaUrl: media?.url ?? null,
-          ...(canTag ? { productIds: tagged.map((p) => p.id) } : {}),
+          ...(tagProducts ? { productIds: tagged.map((p) => p.id) } : {}),
         }
         await editContent(editing.id, changes)
         showToast('Saved')
@@ -209,9 +167,9 @@ export default function Composer({ kinds: allowed = ['post', 'article'], onPubli
         return
       }
       await publish({
-        kind: spec.kind ?? tab,
+        kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
         mediaUrl: media?.url,
-        productIds: canTag ? tagged.map((p) => p.id) : [],
+        productIds: tagProducts ? tagged.map((p) => p.id) : [],
         ...fields,
       })
       setCaption('')
@@ -220,7 +178,7 @@ export default function Composer({ kinds: allowed = ['post', 'article'], onPubli
       setMedia(null)
       setTagged([])
       try {
-        localStorage.removeItem(DRAFT_KEY(tab))
+        localStorage.removeItem(DRAFT_KEY(mode))
       } catch {
         /* nothing to clear */
       }
@@ -233,128 +191,197 @@ export default function Composer({ kinds: allowed = ['post', 'article'], onPubli
     }
   }
 
-  const ready =
-    tab === 'article'
-      ? title.trim() && body.trim()
-      : spec.noMedia
-        ? caption.trim()
-        : !spec.required || media
-
-  /** Why the button is not offering to publish yet, in one short sentence. */
-  function blockedBecause() {
-    if (busy) return editing ? 'Saving' : 'Publishing'
-    if (uploading) return 'Uploading'
-    if (tab === 'article') {
-      if (!title.trim()) return 'Needs a title'
-      if (!body.trim()) return 'Needs a body'
-    } else {
-      if (spec.required && !media) return spec.missing
-      if (spec.noMedia && !caption.trim()) return 'Write something first'
-    }
-    return null
-  }
+  // Back from a new blog is back to Create post; anywhere else it closes.
+  const back = blog && !editing ? () => switchTo('post') : onClose
+  const heading = editing ? 'Edit' : blog ? 'Write a blog' : 'Create post'
+  const action = busy ? (editing ? 'Saving' : 'Posting') : uploading ? 'Uploading' : editing ? 'Save' : blog ? 'Publish' : 'Post'
+  const accept = blog || !canVideo ? 'image/*' : editing?.kind === 'clip' ? 'video/*' : 'image/*,video/*'
+  const sheet = Boolean(onClose)
 
   return (
-    <>
-      {/* One kind means no switcher. A row of tabs with a single tab in it is
-          furniture that says nothing. */}
-      {kinds.length > 1 && (
-        <div className="px-4 pt-5">
-          <div role="tablist" className="seg">
-            {kinds.map((k) => (
-              <button
-                key={k}
-                role="tab"
-                type="button"
-                aria-selected={tab === k}
-                onClick={() => pick(k)}
-                className="seg-item"
-              >
-                {SPEC[k].label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div key={tab} className="animate-fade">
-        <section className="border-b border-rule px-5 py-6">
-          <Kicker>{editing ? `Edit ${spec.label.toLowerCase()}` : spec.heading}</Kicker>
-
-          {/* A Plate stands in until a file is chosen, which is also the whole
-              preview for a blog post with no cover. */}
-          {!spec.noMedia && (
-            <>
-              <MediaPreview media={media} tab={tab} seed={`draft-${caption.length + title.length}`} />
-
-              <label className="act-link mt-3 inline-block cursor-pointer text-meta">
-                {uploading ? 'Uploading…' : media ? spec.swap : spec.add}
-                <input
-                  type="file"
-                  accept={spec.accept}
-                  className="sr-only"
-                  disabled={uploading || busy}
-                  onChange={onFile}
-                />
-              </label>
-            </>
-          )}
-
-          {tab === 'article' ? (
-            <>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-                aria-label="Title"
-                className="mt-4 w-full border-b border-rule bg-transparent pb-2 text-lead outline-none transition-colors placeholder:text-t4 focus:border-gold t-heading"
-              />
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={8}
-                placeholder="Pattern first, prescription second. Leave a blank line between paragraphs."
-                aria-label="Body"
-                className="mt-5 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-sub"
-              />
-              <div className="mt-4">
-                <Field k="Words" v={words.toLocaleString('en-IN')} />
-                <Field k="Read time" v={`${Math.max(1, Math.ceil(words / 200))} min`} />
-              </div>
-              {canTag && <ProductPicker tagged={tagged} onChange={setTagged} />}
-            </>
-          ) : (
-            <>
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                rows={spec.noMedia ? 6 : 3}
-                placeholder={
-                  spec.noMedia
-                    ? 'Write what you want to say. Add #hashtags.'
-                    : 'Add a caption and #hashtags (optional)'
-                }
-                aria-label={spec.noMedia ? 'Post' : 'Caption'}
-                className="mt-4 w-full resize-none border-b border-rule bg-transparent pb-2 text-body outline-none transition-colors placeholder:text-t4 focus:border-gold t-heading"
-              />
-              <div className="mt-4">
-                <Field k="Characters" v={caption.trim().length.toLocaleString('en-IN')} />
-              </div>
-              {canTag && <ProductPicker tagged={tagged} onChange={setTagged} />}
-            </>
-          )}
-
-          <PopButton
-            variant="gold"
-            className="mt-6"
-            disabled={!ready || busy || uploading}
-            onClick={send}
-          >
-            {blockedBecause() ?? (editing ? 'Save changes' : `Publish ${spec.label.toLowerCase()}`)}
-          </PopButton>
-        </section>
+    <div className={`flex flex-col bg-white ${sheet ? 'min-h-full' : 'border-b border-rule'}`}>
+      <div className={`${sheet ? 'sticky top-0 z-10' : ''} flex items-center gap-3 border-b border-rule bg-white px-4 py-3`}>
+        {back && <BackButton onClick={back} />}
+        <span className="flex-1 text-meta font-semibold t-heading">{heading}</span>
+        <PopButton size="sm" variant="gold" full={false} onClick={send} disabled={!ready || busy || uploading}>
+          {action}
+        </PopButton>
       </div>
-    </>
+
+      <div className="flex-1 px-4 pb-6 pt-4">
+        {blog ? (
+          <>
+            {media ? (
+              <div className="relative overflow-hidden rounded-2xl">
+                <img src={media.url} alt="Your cover" className="aspect-video w-full object-cover" />
+                <RemoveMark onClick={() => setMedia(null)} label="Remove the cover" />
+                <button
+                  type="button"
+                  onClick={() => gallery.current?.click()}
+                  className="absolute bottom-2.5 right-2.5 rounded-full bg-black/55 px-3 py-1.5 text-[12px] font-semibold text-white"
+                >
+                  Change cover
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => gallery.current?.click()}
+                disabled={uploading}
+                className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gold-fill/40 bg-gold-fill/5 text-meta font-semibold text-gold"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-gold-fill/15">
+                  <Icon name="image" size={20} />
+                </span>
+                {uploading ? 'Uploading…' : 'Add a cover photo'}
+              </button>
+            )}
+            <textarea
+              value={title}
+              onChange={(e) => setTitle(e.target.value.replace(/\n/g, ' '))}
+              rows={2}
+              placeholder="Title"
+              aria-label="Title"
+              className="mt-5 w-full resize-none bg-transparent font-display text-title font-bold leading-tight outline-none placeholder:text-t4 t-heading"
+            />
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={12}
+              placeholder="Write what you want to say. Leave a blank line between paragraphs."
+              aria-label="Body"
+              className="mt-2 w-full resize-none bg-transparent text-body leading-relaxed outline-none placeholder:text-t4 t-sub"
+            />
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <PopAvatar initials={me.initials} src={me.avatarUrl} size={44} />
+              <div className="min-w-0">
+                <p className="truncate text-meta font-semibold t-heading">{me.name}</p>
+                <p className="text-[12px] t-faint">Public · Home feed</p>
+              </div>
+            </div>
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={media ? 3 : 7}
+              placeholder={media ? 'Say something about this… #hashtags' : 'What would you like to share today?'}
+              aria-label="Post"
+              className="mt-4 w-full resize-none bg-transparent text-lead leading-snug outline-none placeholder:text-t4 t-heading"
+            />
+            {uploading && !media && <p className="mt-2 text-meta t-faint">Uploading…</p>}
+            {media && (
+              <div className="relative mt-2 overflow-hidden rounded-2xl bg-ink">
+                {isVideo(media) ? (
+                  <video src={media.url} controls playsInline className="max-h-[60vh] w-full object-contain" />
+                ) : (
+                  <img src={media.url} alt="What you are about to post" className="max-h-[60vh] w-full object-contain" />
+                )}
+                <RemoveMark onClick={() => setMedia(null)} label="Remove" />
+              </div>
+            )}
+          </>
+        )}
+
+        {tagProducts && tagging && <ProductPicker tagged={tagged} onChange={setTagged} />}
+      </div>
+
+      {/* The toolbar: pinned to the bottom of the sheet, as Facebook's is. */}
+      <div className={`${sheet ? 'sticky bottom-0' : ''} border-t border-rule bg-white px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2.5`}>
+        {blog ? (
+          <div className="flex items-center gap-2 px-1">
+            {tagProducts && <ToolChip on={tagging} onClick={() => setTagging((v) => !v)} />}
+            <span className="flex-1" />
+            <span className="text-[12px] t-faint tnum">
+              {words.toLocaleString('en-IN')} words{words > 0 && ` · ${Math.max(1, Math.ceil(words / 200))} min read`}
+            </span>
+          </div>
+        ) : (
+          <>
+            <p className="px-1 pb-2 text-[12px] t-faint">Add to your post</p>
+            <div className="flex gap-2">
+              <Tool icon="image" tone="bg-[#e7f6ee] text-[#2f8f5b]" label={canVideo ? 'Photo/Video' : 'Photo'} onClick={() => gallery.current?.click()} disabled={uploading || busy} />
+              <Tool icon="camera" tone="bg-[#fdeee4] text-[#d9641f]" label="Camera" onClick={() => camera.current?.click()} disabled={uploading || busy} />
+              {tagProducts && (
+                <Tool glyph={<TagGlyph />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag product" on={tagging} onClick={() => setTagging((v) => !v)} />
+              )}
+              {canBlog && (
+                <Tool glyph={<PenGlyph />} tone="bg-[#eef0fb] text-[#4b57b8]" label="Blog" onClick={() => switchTo('article')} disabled={busy} />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <input ref={gallery} type="file" accept={accept} className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
+      <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
+    </div>
+  )
+}
+
+/** One tile in the toolbar: a tinted round icon over its name. */
+function Tool({ icon, glyph, tone, label, onClick, disabled = false, on = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={on || undefined}
+      className={`flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-1 py-2.5 text-[12px] font-semibold text-t1 transition-transform active:scale-95 disabled:opacity-40 ${
+        on ? 'bg-gold-fill/10 ring-1 ring-gold-fill/40' : 'bg-[#f4f4f6]'
+      }`}
+    >
+      <span className={`grid h-9 w-9 place-items-center rounded-full ${tone}`}>
+        {glyph ?? <Icon name={icon} size={19} weight={2} />}
+      </span>
+      {label}
+    </button>
+  )
+}
+
+/** Tag product on a blog's bottom bar, smaller than a tile. */
+function ToolChip({ on, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-t1 ${on ? 'bg-gold-fill/10 ring-1 ring-gold-fill/40' : 'bg-[#f4f4f6]'}`}
+    >
+      <TagGlyph size={15} /> Tag product
+    </button>
+  )
+}
+
+function RemoveMark({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="absolute right-2.5 top-2.5 grid h-8 w-8 place-items-center rounded-full bg-black/55 text-white"
+    >
+      <Icon name="close" size={16} weight={2.2} />
+    </button>
+  )
+}
+
+function TagGlyph({ size = 19 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 12V4h8l10 10-8 8z" />
+      <circle cx="7.5" cy="8.5" r="1.5" />
+    </svg>
+  )
+}
+
+function PenGlyph() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+      <path d="m13.5 6.5 4 4" />
+    </svg>
   )
 }
 
@@ -464,29 +491,5 @@ function ProductPicker({ tagged, onChange }) {
         </>
       )}
     </div>
-  )
-}
-
-/** The chosen file, or the procedural stand-in until there is one. */
-function MediaPreview({ media, tab, seed }) {
-  // The shapes the feed and the reader show them in (6 Oct 2026): a blog
-  // cover 16:9 on every screen, a photo 4:5.
-  const shape = tab === 'article' ? 'aspect-video' : 'aspect-[4/5]'
-
-  if (!media) return <Plate seed={seed} className={`mt-4 w-full ${shape}`} />
-
-  return media.type.startsWith('video/') ? (
-    <video
-      src={media.url}
-      controls
-      playsInline
-      className={`mt-4 w-full rounded-lg bg-ink object-cover ${shape}`}
-    />
-  ) : (
-    <img
-      src={media.url}
-      alt="What you are about to publish"
-      className={`mt-4 w-full rounded-lg object-cover ${shape}`}
-    />
   )
 }

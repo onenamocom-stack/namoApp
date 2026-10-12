@@ -339,20 +339,24 @@ function NewPostSheet({ onClose, onPublished }) {
   const { profile, t } = useStore()
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">
-      <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-bg">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-rule bg-bg px-4 py-3">
-          <BackButton onClick={onClose} />
-          <span className="text-meta t-heading">New post</span>
-        </div>
+      <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-white">
         {profile?.blocked ? (
-          <p className="mx-5 mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">{t('prof.blocked')}</p>
+          <>
+            <div className="flex items-center gap-3 border-b border-rule px-4 py-3">
+              <BackButton onClick={onClose} />
+              <span className="text-meta t-heading">Create post</span>
+            </div>
+            <p className="mx-5 mt-4 rounded-lg bg-surface-2 px-3 py-2.5 text-micro t-sub">{t('prof.blocked')}</p>
+          </>
         ) : (
+          /* The composer draws its own header — Back, Create post, Post —
+             and its toolbar (12 Oct 2026, Rahul: Facebook's shape). */
           <Composer
             kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
             onPublished={onPublished}
+            onClose={onClose}
           />
         )}
-        <div className="h-16" />
       </div>
     </div>
   )

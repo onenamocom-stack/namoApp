@@ -1,5 +1,4 @@
 import Composer from './Composer.jsx'
-import { BackButton } from './Chrome.jsx'
 import { isPro } from '../side.js'
 
 /**
@@ -12,20 +11,17 @@ export default function EditSheet({ piece, onClose, onSaved }) {
   if (!piece) return null
   return (
     <div role="dialog" aria-modal="true" aria-label="Edit" className="fixed inset-0 z-50 flex justify-center bg-black/40">
-      <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-bg">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-rule bg-bg px-4 py-3">
-          <BackButton onClick={onClose} />
-          <span className="text-meta t-heading">Edit</span>
-        </div>
+      <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-white">
+        {/* The composer's own header: Back, Edit, Save. */}
         <Composer
           editing={piece}
           tagProducts={isPro}
+          onClose={onClose}
           onPublished={(fields) => {
             onSaved?.(fields)
             onClose()
           }}
         />
-        <div className="h-16" />
       </div>
     </div>
   )
