@@ -36,6 +36,25 @@
           }
         },
         {
+          "source": "/onboarding",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/horoscope",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/notifications",
+          "destination": "/index.html"
+        },
+        {
+          "regex": "^/[A-Za-z0-9.-]{8,30}/?$",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }

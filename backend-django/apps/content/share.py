@@ -24,6 +24,7 @@ import io
 import logging
 import re
 import uuid
+import zlib
 
 import requests
 from django.conf import settings
@@ -38,6 +39,9 @@ logger = logging.getLogger("apps.content.share")
 
 INDEX_CACHE_SECONDS = 60
 OG_SIZE = (1200, 630)
+# A profile's card is the person's photo, square: WhatsApp then draws the
+# small thumbnail beside the name rather than a cropped banner of a face.
+PROFILE_SIZE = (600, 600)
 FALLBACK_IMAGE = "/og.png"
 
 
@@ -63,7 +67,7 @@ def _index_html():
     return page
 
 
-def _tags(*, title, description, image, url, kind="article"):
+def _tags(*, title, description, image, url, kind="article", size=OG_SIZE):
     e = lambda s: html.escape(s or "", quote=True)  # noqa: E731
     return "\n".join([
         f"<title>{e(title)} · Namo</title>",
@@ -77,9 +81,10 @@ def _tags(*, title, description, image, url, kind="article"):
         f'<meta property="og:image" content="{e(image)}" />',
         f'<meta property="og:image:secure_url" content="{e(image)}" />',
         '<meta property="og:image:type" content="image/jpeg" />',
-        f'<meta property="og:image:width" content="{OG_SIZE[0]}" />',
-        f'<meta property="og:image:height" content="{OG_SIZE[1]}" />',
-        '<meta name="twitter:card" content="summary_large_image" />',
+        f'<meta property="og:image:width" content="{size[0]}" />',
+        f'<meta property="og:image:height" content="{size[1]}" />',
+        '<meta name="twitter:card" content="{}" />'.format(
+            "summary" if size == PROFILE_SIZE else "summary_large_image"),
         f'<meta name="twitter:title" content="{e(title)}" />',
         f'<meta name="twitter:description" content="{e(description)}" />',
         f'<meta name="twitter:image" content="{e(image)}" />',
@@ -181,6 +186,54 @@ def bhakti_page(request, asset_id):
                        image=image, url=url, kind="website"), url)
 
 
+def _public_profile(username=None, profile_id=None):
+    """(profile, consultant row or None) for somebody a username link may
+    show — the resolve_username rule, so a card never names a person the
+    app itself would not open."""
+    from apps.consultants.models import Consultant, ConsultantStatus
+    from apps.profiles import services as profiles
+    from apps.profiles.models import Profile
+
+    if username is not None:
+        found = profiles.resolve_username(username)
+        if found is None:
+            return None, None
+        profile_id = found["id"]
+    elif profiles.public_profile(profile_id) is None:
+        return None, None
+    profile = Profile.objects.filter(pk=profile_id, blocked_at__isnull=True).first()
+    if profile is None:
+        return None, None
+    pro = Consultant.objects.filter(profile_id=profile.pk, status=ConsultantStatus.APPROVED).first()
+    return profile, pro
+
+
+def profile_page(request, username):
+    """1namo.com/<username> (12 Oct 2026, Rahul): the person's own card —
+    photo, name, and what they do or their bio. A name nobody has, or that
+    the app would not open, previews as Namo."""
+    url = f"{_site()}/{username}"
+    profile, pro = _public_profile(username=username)
+    if profile is None:
+        return _page(_tags(title="Namo", description="Astrology, darshan and puja in one app.",
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    if pro is not None:
+        title = f"{profile.name} · {pro.category or 'Astrologer'} on Namo"
+        description = _summary(pro.specialization or pro.bio or profile.bio) or "Talk to them on Namo."
+    else:
+        title = f"{profile.name} on Namo"
+        description = _summary(profile.bio) or "Their posts on Namo."
+    if profile.avatar_url:
+        # The photo's own version rides along, so a new picture is a new
+        # address and no cache shows the old face.
+        version = zlib.crc32(profile.avatar_url.encode()) % 10**8
+        image, size = f"{_site()}/og/profile/{profile.id}.jpg?v={version}", PROFILE_SIZE
+    else:
+        image, size = f"{_site()}{FALLBACK_IMAGE}", OG_SIZE
+    return _page(_tags(title=title, description=description, image=image, url=url,
+                       kind="profile", size=size), url)
+
+
 def og_image(request, kind, item_id):
     """A 1200 × 630 JPEG cut from a blog cover or a product photo — light
     enough for every link preview. Any failure redirects to the site's own
@@ -193,6 +246,9 @@ def og_image(request, kind, item_id):
 
         row = BhaktiAsset.objects.filter(pk=item_id, active=True).first()
         source = _bhakti_picture(row) if row else None
+    elif kind == "profile":
+        row, _ = _public_profile(profile_id=item_id)
+        source = row.avatar_url if row else None
     else:
         row = Product.objects.filter(pk=item_id, active=True).first()
         source = row.image_url if row else None
@@ -202,7 +258,7 @@ def og_image(request, kind, item_id):
     data = cache.get(key)
     if data is None:
         try:
-            data = _thumbnail(source)
+            data = _thumbnail(source, PROFILE_SIZE if kind == "profile" else OG_SIZE)
         except Exception as exc:  # noqa: BLE001 — any image failure is the fallback
             logger.warning("share: thumbnail failed for %s %s: %s", kind, item_id, exc)
             return HttpResponseRedirect(f"{_site()}{FALLBACK_IMAGE}")
@@ -214,7 +270,7 @@ def og_image(request, kind, item_id):
     return response
 
 
-def _thumbnail(source):
+def _thumbnail(source, size=OG_SIZE):
     from PIL import Image, ImageOps
 
     response = requests.get(source, timeout=8)
@@ -223,7 +279,7 @@ def _thumbnail(source):
         raise ValueError("source image too large")
     image = Image.open(io.BytesIO(response.content))
     image = ImageOps.exif_transpose(image).convert("RGB")
-    image = ImageOps.fit(image, OG_SIZE, method=Image.Resampling.LANCZOS, centering=(0.5, 0.45))
+    image = ImageOps.fit(image, size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.45))
     out = io.BytesIO()
     image.save(out, format="JPEG", quality=80, optimize=True, progressive=True)
     return out.getvalue()

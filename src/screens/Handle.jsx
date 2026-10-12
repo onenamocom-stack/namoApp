@@ -16,7 +16,9 @@ import { resolveUsername } from '../lib/profile.js'
 // Any one-segment path the router has no page for comes here. These are
 // the seeker app's one-segment pages long enough to look like a username;
 // SessionGate must not treat them as one. A new page of 8+ letters goes
-// here AND in the server's RESERVED list (apps/profiles/username_rules.py).
+// here, in the server's RESERVED list (apps/profiles/username_rules.py),
+// and as its own rewrite in firebase.json above the username regex, which
+// otherwise sends it to the API for a link preview (12 Oct 2026).
 const PAGES = new Set(['onboarding', 'horoscope', 'notifications'])
 const SHAPE = /^\/[a-z0-9.-]{8,30}$/i
 

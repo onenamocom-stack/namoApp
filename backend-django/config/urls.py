@@ -44,7 +44,9 @@ if settings.PUBLIC_API_ENABLED:
         re_path(r"^read/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.blog_page, name="share-blog"),
         re_path(r"^shop/p/(?P<key>[^/]+)/?$", share.product_page, name="share-product"),
         re_path(r"^bhakti/s/(?P<asset_id>[0-9a-fA-F-]{36})/?$", share.bhakti_page, name="share-bhakti"),
-        re_path(r"^og/(?P<kind>blog|product|bhakti)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
+        re_path(r"^og/(?P<kind>blog|product|bhakti|profile)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
+        # 1namo.com/<username> (12 Oct 2026). Last, so it can shadow nothing.
+        re_path(r"^(?P<username>[A-Za-z0-9.-]{8,30})/?$", share.profile_page, name="share-profile"),
     ]
 
 if settings.ADMIN_ENABLED:

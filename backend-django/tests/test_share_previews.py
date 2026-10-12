@@ -150,3 +150,57 @@ class TestBhakti:
         page = client.get(f"/bhakti/s/{a.id}").content.decode()
         assert 'og:title" content="Ganesh Chaturthi"' in page
         assert 'og:image" content="https://1namo.com/og.png"' in page
+
+
+@pytest.mark.django_db
+class TestProfile:
+    """1namo.com/<username> (12 Oct 2026, Rahul): the person's own card."""
+
+    PID = "22222222-3333-4444-5555-666666666666"
+
+    def _person(self, **fields):
+        from apps.profiles.models import Profile
+
+        return Profile.objects.create(id=self.PID, phone="+910000000009", name="Rahul Jain",
+                                      username="rahulvjain", **fields)
+
+    def _pro(self):
+        from apps.consultants.models import Consultant
+
+        Consultant.objects.create(profile_id=self.PID, category="Astrologer", status="approved",
+                                  specialization="Vedic Astrology, Numerology")
+
+    def test_a_consultant_previews_with_photo_name_and_practice(self, client, network):
+        self._person(avatar_url="https://cdn.example/face.png?v=1")
+        self._pro()
+        page = client.get("/rahulvjain").content.decode()
+        assert '<div id="root"></div>' in page
+        assert 'og:title" content="Rahul Jain · Astrologer on Namo"' in page
+        assert 'og:description" content="Vedic Astrology, Numerology"' in page
+        assert f'og:image" content="https://1namo.com/og/profile/{self.PID}.jpg?v=' in page
+        assert 'og:image:width" content="600"' in page
+        assert page.count('property="og:title"') == 1
+
+    def test_the_photo_is_a_square_jpeg(self, client, network):
+        self._person(avatar_url="https://cdn.example/face.png")
+        self._pro()
+        response = client.get(f"/og/profile/{self.PID}.jpg")
+        assert response["Content-Type"] == "image/jpeg"
+        assert Image.open(io.BytesIO(response.content)).size == (600, 600)
+
+    def test_a_seeker_with_no_posts_previews_as_namo(self, client, network):
+        self._person(avatar_url="https://cdn.example/face.png")
+        page = client.get("/rahulvjain").content.decode()
+        assert 'og:title" content="Namo"' in page and "Rahul Jain" not in page
+        assert client.get(f"/og/profile/{self.PID}.jpg").status_code == 302
+
+    def test_a_seeker_who_posted_previews_with_their_bio(self, client, network):
+        self._person(bio="Seeker of the stars.")
+        Content.objects.create(author_id=self.PID, kind="post", status="live", caption="hi")
+        page = client.get("/RahulVJain").content.decode()
+        assert 'og:title" content="Rahul Jain on Namo"' in page
+        assert 'og:description" content="Seeker of the stars."' in page
+        assert 'og:image" content="https://1namo.com/og.png"' in page  # no photo
+
+    def test_a_name_nobody_has_previews_as_namo(self, client, network):
+        assert 'og:title" content="Namo"' in client.get("/nobody-here-1").content.decode()
