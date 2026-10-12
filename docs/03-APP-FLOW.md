@@ -524,7 +524,8 @@ one-time toast says what to touch (`namo.puja.touched` remembers it per device).
 Ganesh"), matched loosely on Bhakti's deity field and title, then the
 Bhajans/Mantras tabs. A pushpanjali showers 36 photographed marigolds and loose
 genda and rose petals (`public/puja/{flower,petal}-*.webp`); petals flutter
-edge-on as they fall, and each one's size and speed differ.
+edge-on as they fall, and each one's size and speed differ. They fall behind
+the green altar and what stands on it (12 Oct 2026, Rahul).
 
 No money anywhere. Nothing books a pandit.
 

@@ -551,39 +551,13 @@ export default function Pooja() {
         <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
         <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
 
-        {/* The altar: a green marble slab across the whole width — the white
-            slab's photo multiplied by green, so its veining stays (8 Oct 2026,
-            owner). Top surface and front face are the photo's two parts,
-            each stretched to its own height (see SLAB). */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 block"
-          style={{ height: slabCqw(1), filter: 'drop-shadow(0 -6px 10px rgba(0,0,0,.35))' }}
-        >
-          {[
-            { h: SLAB_TOP, at: 'top', from: '#4fa57c', to: '#41946c', part: SLAB.edge },
-            { h: SLAB_FRONT, at: 'bottom', from: '#41946c', to: '#2f7d58', part: 1 - SLAB.edge },
-          ].map((p) => (
-            <span
-              key={p.at}
-              className="block"
-              style={{
-                height: cqw(p.h),
-                backgroundImage: `linear-gradient(180deg, ${p.from} 0%, ${p.to} 100%), url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
-                backgroundSize: `100% 100%, 100% ${cqw(p.h / p.part)}`,
-                backgroundPosition: `0 0, 0 ${p.at}`,
-                backgroundRepeat: 'no-repeat',
-                backgroundBlendMode: 'multiply',
-              }}
-            />
-          ))}
-        </span>
-
         {/* Pushpanjali falls the whole height of the page — photographed
             marigolds and loose genda and rose petals (5 Oct 2026). A
-            full-height lane falls, in front of the marble, not behind it; the flower at its top turns, and a loose
-            petal also flutters over and back. Each one's speed and size
-            differ, so a shower never falls in step. */}
+            full-height lane falls; the flower at its top turns, and a loose
+            petal also flutters over and back. Behind the green altar since
+            12 Oct 2026 (Rahul): drawn before the slab, so the slab and the
+            samagri on it cover the shower as it reaches them. Each one's
+            speed and size differ, so a shower never falls in step. */}
         <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           {petals.map((p) => (
             <span
@@ -611,6 +585,33 @@ export default function Pooja() {
           ))}
         </span>
 
+        {/* The altar: a green marble slab across the whole width — the white
+            slab's photo multiplied by green, so its veining stays (8 Oct 2026,
+            owner). Top surface and front face are the photo's two parts,
+            each stretched to its own height (see SLAB). */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 block"
+          style={{ height: slabCqw(1), filter: 'drop-shadow(0 -6px 10px rgba(0,0,0,.35))' }}
+        >
+          {[
+            { h: SLAB_TOP, at: 'top', from: '#4fa57c', to: '#41946c', part: SLAB.edge },
+            { h: SLAB_FRONT, at: 'bottom', from: '#41946c', to: '#2f7d58', part: 1 - SLAB.edge },
+          ].map((p) => (
+            <span
+              key={p.at}
+              className="block"
+              style={{
+                height: cqw(p.h),
+                backgroundImage: `linear-gradient(180deg, ${p.from} 0%, ${p.to} 100%), url(${import.meta.env.BASE_URL}puja/marble-slab.webp)`,
+                backgroundSize: `100% 100%, 100% ${cqw(p.h / p.part)}`,
+                backgroundPosition: `0 0, 0 ${p.at}`,
+                backgroundRepeat: 'no-repeat',
+                backgroundBlendMode: 'multiply',
+              }}
+            />
+          ))}
+        </span>
 
         {/* ── The altar, on the steps. Every piece of samagri is its own
             control (5 Oct 2026; there was a rail of round buttons down the
