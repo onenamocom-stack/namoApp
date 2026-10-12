@@ -368,8 +368,9 @@ as North India reads it), a gold rule, and a NAMO badge.
 The Status shelf shows every card as **the image itself** — what is shared
 is exactly what is seen — and the card's **Share** hands it straight to the
 phone's share sheet. It replaced a full-screen "Share to status" sheet that
-opened between the card and the share. A pencil on the photo and one on the
-name open **Your status details**, a page of its own: the photo (gallery,
+opened between the card and the share. One pencil, on the photo (the one on
+the name went the same day, since both did the same thing), opens **Your
+status details**, a page of its own: the photo (gallery,
 camera, profile picture, remove) and the name for the status. **Save keeps
 both for every status after it** — on this phone, keyed by user id, the photo
 a 320px data URL (26 Sep 2026); the name is the status's own and does not

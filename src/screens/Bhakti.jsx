@@ -808,15 +808,16 @@ function StatusCard({ asset, details, onEdit }) {
             loading="lazy"
             className="h-full w-full object-cover"
           />
-          {/* The pencils are the screen's, on the photo and the name, and
-              are not in the image (9 Oct 2026, Rahul's design). */}
+          {/* The pencil is the screen's, not in the image (9 Oct 2026,
+              Rahul's design). One, on the photo: it changes the photo and
+              the name both, so the one on the name went (12 Oct 2026). */}
           {preview?.marks &&
-            ['photo', 'name'].map((k) => (
+            ['photo'].map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={onEdit}
-                aria-label={k === 'photo' ? 'Change your photo' : 'Change your name'}
+                aria-label="Change your photo and name"
                 className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-white active:scale-90"
                 style={{
                   left: `${preview.marks[k].x * 100}%`,
