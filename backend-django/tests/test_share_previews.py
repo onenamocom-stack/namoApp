@@ -42,7 +42,7 @@ def network(monkeypatch):
 
     def fake_get(url, timeout=None):
         calls.append(url)
-        if url.endswith("index.html"):
+        if url.endswith("app.html"):
             return _Resp(text=INDEX)
         if url.endswith(".png"):
             return _Resp(content=_png())

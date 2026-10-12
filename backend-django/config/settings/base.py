@@ -334,7 +334,10 @@ COD_MAX_OPEN = int(os.environ.get("COD_MAX_OPEN", "2"))
 # The seeker app's index.html at its hosting site's own address, read by the
 # link-preview pages (apps/content/share.py) — not through 1namo.com, whose
 # /read/** is rewritten back to this API.
-APP_INDEX_URL = os.environ.get("APP_INDEX_URL", "https://namo-web.web.app/index.html")
+# app.html, not index.html (12 Oct 2026): the web build ships as app.html,
+# and /index.html is ten username characters, so Hosting would send it back
+# here and the preview would wrap itself.
+APP_INDEX_URL = os.environ.get("APP_INDEX_URL", "https://namo-web.web.app/app.html")
 
 
 # The retired per-minute meter still reads this. Nothing new should.

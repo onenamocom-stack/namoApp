@@ -43,6 +43,10 @@
           }
         },
         {
+          "source": "/index.html",
+          "destination": "/app.html"
+        },
+        {
           "source": "/onboarding",
           "destination": "/app.html"
         },
