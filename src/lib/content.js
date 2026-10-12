@@ -191,6 +191,19 @@ function cachedFeed(kinds, limit) {
   return null
 }
 
+/* Your post, first, for five seconds after you publish it (12 Oct 2026,
+   Rahul: "like FB, Insta"). The feed is dealt at random, so a new post
+   could land anywhere in two hundred; the Home or Reels that opens right
+   after publishing leads with it. After that it is dealt like any other. */
+const JUST_POSTED_MS = 5000
+let justPosted = null
+
+function leadWithJustPosted(rows) {
+  if (!justPosted || Date.now() - justPosted.at > JUST_POSTED_MS) return rows
+  const i = rows.findIndex((r) => r.id === justPosted.id)
+  return i > 0 ? [rows[i], ...rows.slice(0, i), ...rows.slice(i + 1)] : rows
+}
+
 export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
   let rows = await cachedFeed(kinds, limit)
   if (!rows) {
@@ -214,7 +227,7 @@ export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
       ;[rows[i], rows[j]] = [rows[j], rows[i]]
     }
   }
-  return rows
+  return leadWithJustPosted(rows)
 }
 
 /**
@@ -376,6 +389,7 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
     token,
   })
   feedCache.clear() // the new post must show at once
+  justPosted = { id: data.id, at: Date.now() }
   return data.id
 }
 

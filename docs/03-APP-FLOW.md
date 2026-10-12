@@ -225,7 +225,10 @@ through a tab that forwards again.
 right of every Home tab, above the tab bar. Signed out → toast *Sign in to
 post.* Signed in → the composer full screen (Photo · Blog, plus Reel where the
 account's video flag is on); a blocked account sees the blocked note instead.
-Publishing closes it and reloads the feed.
+Publishing closes it and reloads the feed. The feed and Reels are dealt at
+random; a Home or Reels loaded within five seconds of your publishing leads
+with your new post, and after that it is dealt like any other (12 Oct 2026,
+Rahul).
 
 **The composer's tabs — 10 Oct 2026 (Rahul):** Text · Photo · Video · Blog
 (Video only where the account may post it). Text is a `post` with no media
