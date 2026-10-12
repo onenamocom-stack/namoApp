@@ -297,7 +297,6 @@ export default function Pooja() {
   }
 
   const offer = (key) => {
-    const { says } = offerings.find((o) => o.key === key)
     if (hint) {
       setHint(false)
       try {
@@ -333,7 +332,8 @@ export default function Pooja() {
     }
     if (key === 'diya') setLit((l) => ({ ...l, diya: !l.diya }))
     if (key === 'incense') setLit((l) => ({ ...l, incense: !l.incense }))
-    showToast(t(says))
+    // No sentence on screen for an offering (12 Oct 2026, Rahul): the bell,
+    // the flame and the flowers say it.
   }
 
   /* Started INSIDE the tap, not from an effect after a re-render: phones
@@ -377,7 +377,6 @@ export default function Pooja() {
     if (!aarti) setLit({ diya: true, incense: true })
     setAarti((a) => !a)
     ripple()
-    showToast(t(aarti ? 'puja.aartiEnded' : 'puja.aartiBegun'))
   }
 
   // The console can take a murti away while it is showing.
@@ -644,7 +643,10 @@ export default function Pooja() {
             pressed={lit.diya}
             hint={hint}
             onClick={() => offer('diya')}
-            className={side === 'left' ? 'left-[16%]' : 'right-[17%]'}
+            // Further out than they stood (16% and 17%), and over the thali,
+            // so a lit flame is never behind its rim on a narrow phone (12 Oct
+            // 2026, Rahul: move the diyas, keep the thali's size).
+            className={`z-10 ${side === 'left' ? 'left-[12.5%]' : 'right-[13%]'}`}
             style={{ bottom: onCounter(4) }}
           >
             {/* The left one mirrored, so the pair face the thali and its flame

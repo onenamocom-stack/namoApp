@@ -522,7 +522,9 @@ one-time toast says what to touch (`namo.puja.touched` remembers it per device).
 
 **Sangeet** opens with the current deity's own bhajans and mantras first ("For
 Ganesh"), matched loosely on Bhakti's deity field and title, then the
-Bhajans/Mantras tabs. A pushpanjali showers 36 photographed marigolds and loose
+Bhajans/Mantras tabs. **No sentence on screen for an offering** (12 Oct 2026,
+Rahul): ringing, lighting, the flowers and the aarti show themselves; only the
+first-visit hint about what to touch is said. A pushpanjali showers 36 photographed marigolds and loose
 genda and rose petals (`public/puja/{flower,petal}-*.webp`); petals flutter
 edge-on as they fall, and each one's size and speed differ. They fall behind
 the green altar and what stands on it (12 Oct 2026, Rahul).
