@@ -388,8 +388,10 @@ function Frame() {
                 {/* A product's own page (6 Oct 2026), by slug or id. */}
                 <Route path="/shop/p/:key" element={<ProductPage />} />
                 {/* A shared Bhakti item's address: the link previews with
-                    its picture; opened, it is the Bhakti screen. */}
-                <Route path="/bhakti/s/:id" element={<Navigate to="/bhakti" replace />} />
+                    its picture; opened, it is that item on its shelf, with
+                    "See all" under it (12 Oct 2026, Rahul — it opened the
+                    shelf, and the item was somewhere in it). */}
+                <Route path="/bhakti/s/:id" element={<Bhakti />} />
                 <Route path="/search" element={<SearchScreen />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make

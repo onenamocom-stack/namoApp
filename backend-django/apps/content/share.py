@@ -156,12 +156,19 @@ def product_page(request, key):
 
 
 _PICTURES = ("status", "wallpaper")
+# A bhajan or mantra is a sound; its cover picture is its card (12 Oct 2026,
+# Rahul: a shared bhajan previewed as the site's own card).
+_SOUNDS = ("bhajan", "mantra")
 
 
 def _bhakti_picture(asset):
     """The picture a Bhakti item's preview may show: the image itself when it
     is free, its public preview when it is priced (the full file is in the
-    private bucket and is not given away by a link), nothing for audio."""
+    private bucket and is not given away by a link), the cover for a bhajan
+    or mantra, nothing for any other sound."""
+    if asset.kind in _SOUNDS:
+        source = asset.preview_url
+        return source if source and source.startswith("http") else None
     if asset.kind not in _PICTURES:
         return None
     source = asset.preview_url if asset.price_paise else asset.media_url
@@ -182,7 +189,13 @@ def bhakti_page(request, asset_id):
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     image = (f"{_site()}/og/bhakti/{asset.id}.jpg" if _bhakti_picture(asset)
              else f"{_site()}{FALLBACK_IMAGE}")
-    return _page(_tags(title=asset.title, description="Bhajans, mantras and daily darshan in one app.",
+    description = {
+        "bhajan": "Listen to this bhajan on NAMO.",
+        "mantra": "Listen to this mantra on NAMO.",
+        "wallpaper": "A wallpaper from NAMO.",
+        "status": "A WhatsApp status from NAMO.",
+    }.get(asset.kind, "Bhajans, mantras and daily darshan in one app.")
+    return _page(_tags(title=asset.title, description=description,
                        image=image, url=url, kind="website"), url)
 
 

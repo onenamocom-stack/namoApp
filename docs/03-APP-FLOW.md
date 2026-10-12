@@ -358,7 +358,13 @@ Comment, Reshare and Share (the link) as on a Home post, and a green
 **Download** with a download mark; no title or credit. **Bhajans and mantras**
 the same day: the same four icons, then a green **Play**; a mantra's "Repeat 3
 of 108 · Stop" shows under them while it runs. A priced row has no Reshare. A
-reshared bhajan or mantra reaches the feed as its card picture. Since 12 Oct 2026 a status card is not the plain artwork: it is
+reshared bhajan or mantra reaches the feed as its card picture.
+
+**A shared Bhakti link opens that item** (12 Oct 2026, Rahul): `/bhakti/s/:id`
+is the Bhakti screen with that item alone on its shelf and "See all …" under
+it; it was the shelf, with the item somewhere in it. A reshared picture in the
+feed and a Reshared row open the same address. The link's card is the item's:
+its picture, or a bhajan's or mantra's cover, and its title. Since 12 Oct 2026 a status card is not the plain artwork: it is
 the finished status (below), 9:16, composed as it nears the screen.
 
 **Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it

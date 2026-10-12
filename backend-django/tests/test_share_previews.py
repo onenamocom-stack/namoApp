@@ -145,11 +145,20 @@ class TestBhakti:
         assert 'og:image" content="https://1namo.com/og.png"' in page
         assert client.get(f"/og/bhakti/{a.id}.jpg").status_code == 302
 
-    def test_a_bhajan_uses_the_site_image(self, client, network):
+    def test_a_bhajan_with_no_cover_uses_the_site_image(self, client, network):
         a = self._asset(kind="bhajan", media_url="https://cdn.example/song.mp3")
         page = client.get(f"/bhakti/s/{a.id}").content.decode()
         assert 'og:title" content="Ganesh Chaturthi"' in page
         assert 'og:image" content="https://1namo.com/og.png"' in page
+
+    def test_a_bhajan_previews_with_its_cover(self, client, network):
+        # 12 Oct 2026, Rahul: the card is the bhajan's, not the site's.
+        a = self._asset(kind="bhajan", media_url="https://cdn.example/song.mp3",
+                        preview_url="https://cdn.example/cover.png")
+        page = client.get(f"/bhakti/s/{a.id}").content.decode()
+        assert f'og:image" content="https://1namo.com/og/bhakti/{a.id}.jpg"' in page
+        assert 'og:description" content="Listen to this bhajan on NAMO."' in page
+        assert client.get(f"/og/bhakti/{a.id}.jpg")["Content-Type"] == "image/jpeg"
 
 
 @pytest.mark.django_db

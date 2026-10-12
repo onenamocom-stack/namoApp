@@ -699,7 +699,7 @@ function PictureCard({ asset, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
-      <Link to={`/bhakti?kind=${asset.kind}`} className="mt-2.5 block">
+      <Link to={`/bhakti/s/${asset.id}`} className="mt-2.5 block">
         {/* A bhajan or mantra is a sound; its card picture stands in. */}
         <img
           src={asset.kind === 'bhajan' || asset.kind === 'mantra' ? asset.previewUrl : asset.url}
@@ -712,7 +712,7 @@ function PictureCard({ asset, resharedBy }) {
         <BhaktiActions asset={asset} share />
       </div>
       <p className="px-3 pb-4 pt-2 text-meta text-t2">
-        <Link to={`/bhakti?kind=${asset.kind}`} className="mr-1.5 font-semibold text-t1">
+        <Link to={`/bhakti/s/${asset.id}`} className="mr-1.5 font-semibold text-t1">
           Bhakti
         </Link>
         {asset.title}

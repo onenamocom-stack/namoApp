@@ -1,6 +1,6 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { BackButton, TabHeader } from '../components/Chrome.jsx'
 import { createPortal } from 'react-dom'
@@ -130,6 +130,8 @@ export default function Bhakti() {
   // A search result lands here as ?kind=…&q=… (7 Oct 2026).
   const [params] = useSearchParams()
   const [kind, setKind] = useState(() => params.get('kind') || 'status')
+  // /bhakti/s/:id — a shared item (12 Oct 2026): shown alone on its shelf.
+  const { id: sharedId } = useParams()
   const [deity, setDeity] = useState('All')
   const [query, setQuery] = useState(() => params.get('q') || '')
   const [busy, setBusy] = useState(null)
@@ -143,6 +145,11 @@ export default function Bhakti() {
       active = false
     }
   }, [])
+
+  const shared = sharedId ? (assets ?? []).find((a) => a.id === sharedId) ?? null : null
+  useEffect(() => {
+    if (shared) setKind(shared.kind)
+  }, [shared])
 
   const ofKind = useMemo(() => (assets ?? []).filter((a) => a.kind === kind), [assets, kind])
 
@@ -169,7 +176,10 @@ export default function Bhakti() {
   /* A chip selected under one kind may not exist under the next. Fall back
      rather than showing an empty grid under a chip that is still lit. */
   const activeDeity = deities.includes(deity) ? deity : 'All'
-  const list = activeDeity === 'All' ? matching : matching.filter((a) => a.deity === activeDeity)
+  // The shared item alone while its shelf is the one open; another tile
+  // shows that whole shelf.
+  const alone = shared && shared.kind === kind
+  const list = alone ? [shared] : activeDeity === 'All' ? matching : matching.filter((a) => a.deity === activeDeity)
 
   const meta = KINDS.find((k) => k.key === kind)
 
@@ -364,7 +374,14 @@ export default function Bhakti() {
           </ul>
         )}
 
-        {list.length > 0 && <p className="mt-5 text-center text-meta t-faint">{meta.help}</p>}
+        {alone && (
+          <div className="mt-5 text-center">
+            <Link to={`/bhakti?kind=${kind}`} className="act-link text-meta">
+              See all {meta.label.toLowerCase()}
+            </Link>
+          </div>
+        )}
+        {list.length > 0 && !alone && <p className="mt-5 text-center text-meta t-faint">{meta.help}</p>}
       </section>
 
       <div className="h-24" />
