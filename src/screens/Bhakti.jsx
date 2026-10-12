@@ -25,8 +25,7 @@ import {
 } from '../lib/bhakti.js'
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
-import CommentSheet from '../components/CommentSheet.jsx'
-import { ActIcon, Count } from '../components/ActIcon.jsx'
+import BhaktiActions from '../components/BhaktiActions.jsx'
 import { tileStyle } from '../lib/tiles.js'
 
 /**
@@ -359,14 +358,7 @@ export default function Bhakti() {
               ) : isAudio(kind) ? (
                 <AudioRow key={a.id} asset={a} busy={busy === a.id} onSave={() => save(a)} />
               ) : (
-                <PictureCard
-                  key={a.id}
-                  asset={a}
-                  ratio="aspect-[3/4]"
-                  action="Download"
-                  busy={busy === a.id}
-                  onAction={() => save(a)}
-                />
+                <PictureCard key={a.id} asset={a} busy={busy === a.id} onDownload={() => save(a)} />
               ),
             )}
           </ul>
@@ -420,21 +412,12 @@ function Credit({ asset }) {
   )
 }
 
-/** Status artwork, full width — the thing being shared is a whole picture. */
 /**
- * One card for both picture shelves — 25 Sep 2026.
- *
- * Status and wallpapers were a full-width list and a two-column grid, which
- * made the same artwork look like two products and gave the wallpaper
- * thumbnails no room to be looked at. One layout now: the picture at full
- * width, title and credit under it, one action on the right.
- *
- * The ACTION differs and the layout does not. A status is shared — composed
- * with the person on it and handed to the share sheet. A wallpaper is
- * downloaded: stamping a face and a watermark into the corner of somebody's
- * lock screen is not what that shelf is for.
+ * A wallpaper (25 Sep 2026; this shape 12 Oct 2026, Rahul): the picture, then
+ * Home's like, comment and reshare, and a green Download. No title, credit or
+ * link share — the pictures are NAMO's own, as on the Status shelf.
  */
-function PictureCard({ asset, ratio, action, busy, onAction }) {
+function PictureCard({ asset, busy, onDownload }) {
   return (
     <li>
       <PopCard className="overflow-hidden">
@@ -442,27 +425,31 @@ function PictureCard({ asset, ratio, action, busy, onAction }) {
           src={asset.url}
           alt={asset.title}
           loading="lazy"
-          className={`${ratio} w-full bg-surface2 object-cover`}
+          className="aspect-[3/4] w-full bg-surface2 object-cover"
         />
-        <div className="flex items-center gap-3 p-3.5">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-body t-heading">{asset.title}</p>
-            <Credit asset={asset} />
-          </div>
+        <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
+          <BhaktiActions asset={asset} />
+          <span className="flex-1" />
           {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
-          {action !== 'Share' && <ShareButton asset={asset} />}
-          <PopButton
-            size="sm"
-            variant={action === 'Share' ? 'gold' : 'default'}
-            full={false}
-            disabled={busy}
-            onClick={onAction}
-          >
-            {busy ? 'Saving…' : action}
+          <PopButton size="sm" variant="gold" full={false} disabled={busy} onClick={onDownload}>
+            <span className="flex items-center gap-1.5">
+              <DownloadGlyph />
+              {busy ? 'Saving…' : 'Download'}
+            </span>
           </PopButton>
         </div>
       </PopCard>
     </li>
+  )
+}
+
+/** An arrow into a tray, before Download. */
+function DownloadGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" />
+    </svg>
   )
 }
 
@@ -751,17 +738,7 @@ function StatusShelf({ list }) {
  * place. THE PREVIEW IS THE IMAGE: what you see is exactly what is shared.
  */
 function StatusCard({ asset, details, onEdit }) {
-  const { showToast, hasFlag, toggleFlag, t } = useStore()
-  const [thread, setThread] = useState(false)
-  const [comments, setComments] = useState(asset.comments ?? 0)
-  // The server's count, moved by your own tap the instant you press. It
-  // already holds your like from before, so the change is counted, not the
-  // state. `blike:`/`brepost:` are a Bhakti picture's, not a post's.
-  const liked = hasFlag(`blike:${asset.id}`)
-  const reshared = hasFlag(`brepost:${asset.id}`)
-  const [was] = useState(() => ({ liked, reshared }))
-  const likes = (asset.likes ?? 0) + (liked - was.liked)
-  const reposts = (asset.reposts ?? 0) + (reshared - was.reshared)
+  const { showToast } = useStore()
   const box = useRef(null)
   const [near, setNear] = useState(false)
   const [preview, setPreview] = useState(null) // { url, blob, marks }
@@ -846,30 +823,7 @@ function StatusCard({ asset, details, onEdit }) {
             own. No link-share icon: the green button is the one share, and
             it only shares the status. */}
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
-          <ActIcon
-            icon="heart"
-            label="Like"
-            onLabel="Liked"
-            on={liked}
-            tone="text-gold-fill"
-            onClick={() => toggleFlag(`blike:${asset.id}`)}
-          />
-          <Count n={likes} />
-          <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
-          <Count n={comments} />
-          {/* To your profile and the feed, the plain picture under "you
-              reshared" (12 Oct 2026, Rahul: option B). */}
-          <ActIcon
-            icon="repost"
-            label="Reshare"
-            onLabel="Reshared"
-            on={reshared}
-            tone="text-[#1f7a4d]"
-            onClick={() =>
-              toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })
-            }
-          />
-          <Count n={reposts} />
+          <BhaktiActions asset={asset} />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working || !preview} onClick={share}>
             <span className="flex items-center gap-1.5">
@@ -879,12 +833,6 @@ function StatusCard({ asset, details, onEdit }) {
           </PopButton>
         </div>
       </PopCard>
-      <CommentSheet
-        open={thread}
-        onClose={() => setThread(false)}
-        bhaktiId={asset.id}
-        onCount={setComments}
-      />
     </li>
   )
 }

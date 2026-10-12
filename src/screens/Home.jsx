@@ -9,6 +9,7 @@ import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { ActIcon, Count } from '../components/ActIcon.jsx'
+import BhaktiActions from '../components/BhaktiActions.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
@@ -695,12 +696,6 @@ function ResharedLine({ by }) {
  * the same rows as on the Status shelf. A tap on the picture opens its shelf.
  */
 function PictureCard({ asset, resharedBy }) {
-  const { hasFlag, toggleFlag, t } = useStore()
-  const [thread, setThread] = useState(false)
-  const [comments, setComments] = useState(asset.comments ?? 0)
-  const liked = hasFlag(`blike:${asset.id}`)
-  const reshared = hasFlag(`brepost:${asset.id}`)
-  const [was] = useState(() => ({ liked, reshared }))
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
@@ -708,26 +703,7 @@ function PictureCard({ asset, resharedBy }) {
         <img src={asset.url} alt={asset.title} loading="lazy" className="aspect-[4/5] w-full bg-surface2 object-cover" />
       </Link>
       <div className="flex items-center gap-4 px-3 pt-2.5">
-        <ActIcon
-          icon="heart"
-          label="Like"
-          onLabel="Liked"
-          on={liked}
-          tone="text-gold-fill"
-          onClick={() => toggleFlag(`blike:${asset.id}`)}
-        />
-        <Count n={(asset.likes ?? 0) + (liked - was.liked)} />
-        <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
-        <Count n={comments} />
-        <ActIcon
-          icon="repost"
-          label="Reshare"
-          onLabel="Reshared"
-          on={reshared}
-          tone="text-[#1f7a4d]"
-          onClick={() => toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })}
-        />
-        <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+        <BhaktiActions asset={asset} />
       </div>
       <p className="px-3 pb-4 pt-2 text-meta text-t2">
         <Link to={`/bhakti?kind=${asset.kind}`} className="mr-1.5 font-semibold text-t1">
@@ -735,7 +711,6 @@ function PictureCard({ asset, resharedBy }) {
         </Link>
         {asset.title}
       </p>
-      <CommentSheet open={thread} onClose={() => setThread(false)} bhaktiId={asset.id} onCount={setComments} />
     </article>
   )
 }
