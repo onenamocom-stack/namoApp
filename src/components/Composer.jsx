@@ -288,7 +288,7 @@ export default function Composer({
       </div>
 
       {/* The toolbar: pinned to the bottom of the sheet, as Facebook's is. */}
-      <div className={`${sheet ? 'sticky bottom-0' : ''} border-t border-rule bg-white px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2.5`}>
+      <div className={`${sheet ? 'sticky bottom-0' : ''} border-t border-rule bg-white px-2 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5`}>
         {blog ? (
           <div className="flex items-center gap-2 px-1">
             {tagProducts && <ToolChip on={tagging} onClick={() => setTagging((v) => !v)} />}
@@ -299,12 +299,11 @@ export default function Composer({
           </div>
         ) : (
           <>
-            <p className="px-1 pb-2 text-[12px] t-faint">Add to your post</p>
-            <div className="flex gap-2">
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               <Tool icon="image" tone="bg-[#e7f6ee] text-[#2f8f5b]" label={canVideo ? 'Photo/Video' : 'Photo'} onClick={() => gallery.current?.click()} disabled={uploading || busy} />
               <Tool icon="camera" tone="bg-[#fdeee4] text-[#d9641f]" label="Camera" onClick={() => camera.current?.click()} disabled={uploading || busy} />
               {tagProducts && (
-                <Tool glyph={<TagGlyph />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag product" on={tagging} onClick={() => setTagging((v) => !v)} />
+                <Tool glyph={<TagGlyph size={16} />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag" on={tagging} onClick={() => setTagging((v) => !v)} />
               )}
               {canBlog && (
                 <Tool glyph={<PenGlyph />} tone="bg-[#eef0fb] text-[#4b57b8]" label="Blog" onClick={() => switchTo('article')} disabled={busy} />
@@ -320,7 +319,9 @@ export default function Composer({
   )
 }
 
-/** One tile in the toolbar: a tinted round icon over its name. */
+/** One pill in the toolbar: a tinted round icon beside its name, one line
+ *  (12 Oct 2026, Rahul: lower, "more modern"; they were tiles, icon over
+ *  name, 70px tall). */
 function Tool({ icon, glyph, tone, label, onClick, disabled = false, on = false }) {
   return (
     <button
@@ -328,12 +329,12 @@ function Tool({ icon, glyph, tone, label, onClick, disabled = false, on = false 
       onClick={onClick}
       disabled={disabled}
       aria-pressed={on || undefined}
-      className={`flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-1 py-2.5 text-[12px] font-semibold text-t1 transition-transform active:scale-95 disabled:opacity-40 ${
+      className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-2 text-[12px] font-semibold text-t1 transition-transform active:scale-95 disabled:opacity-40 ${
         on ? 'bg-gold-fill/10 ring-1 ring-gold-fill/40' : 'bg-[#f4f4f6]'
       }`}
     >
-      <span className={`grid h-9 w-9 place-items-center rounded-full ${tone}`}>
-        {glyph ?? <Icon name={icon} size={19} weight={2} />}
+      <span className={`grid h-7 w-7 place-items-center rounded-full ${tone}`}>
+        {glyph ?? <Icon name={icon} size={16} weight={2} />}
       </span>
       {label}
     </button>
@@ -378,7 +379,7 @@ function TagGlyph({ size = 19 }) {
 
 function PenGlyph() {
   return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
       <path d="m13.5 6.5 4 4" />
     </svg>

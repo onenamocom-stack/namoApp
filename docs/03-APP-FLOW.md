@@ -234,9 +234,10 @@ Rahul).
 Text · Photo · Video · Blog).** One screen: Back, *Create post* and **Post**
 (top right, live once there are words or a picture); your photo and name; one
 box for the words; a picked photo or video under it with ✕. The toolbar
-pinned under it: **Photo/Video** (gallery; *Photo* where the account may not
+pinned under it, one row of pills, icon beside name (lowered the same day,
+Rahul: "more modern"): **Photo/Video** (gallery; *Photo* where the account may not
 post video, and a video picked there is refused with a sentence), **Camera**,
-**Tag product** (consultants only) and **Blog**. Words alone publish a `post`
+**Tag** (Tag product; consultants only) and **Blog**. Words alone publish a `post`
 with no media, a photo a `post`, a video a `clip`. **Blog** opens *Write a
 blog*: a cover box, the title large, the body, and under them Tag product
 (consultants) and the word count with read time; **Publish** needs a title
