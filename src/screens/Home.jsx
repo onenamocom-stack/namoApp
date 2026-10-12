@@ -706,7 +706,13 @@ function PictureCard({ asset, resharedBy }) {
           src={['bhajan', 'mantra', 'ebook'].includes(asset.kind) ? asset.previewUrl : asset.url}
           alt={asset.title}
           loading="lazy"
-          className={`${asset.kind === 'bhajan' || asset.kind === 'mantra' ? 'aspect-video' : 'aspect-[4/5]'} w-full bg-surface2 object-cover`}
+          // A book's cover whole, at its own shape, as the Academy draws it
+          // (12 Oct 2026, Rahul: a 4:5 crop cut its title off).
+          className={
+            asset.kind === 'ebook'
+              ? 'block h-auto w-full bg-surface2'
+              : `${asset.kind === 'bhajan' || asset.kind === 'mantra' ? 'aspect-video' : 'aspect-[4/5]'} w-full bg-surface2 object-cover`
+          }
         />
       </Link>
       <div className="flex items-center gap-4 px-3 pt-2.5">
@@ -714,7 +720,7 @@ function PictureCard({ asset, resharedBy }) {
       </div>
       <p className="px-3 pb-4 pt-2 text-meta text-t2">
         <Link to={`/bhakti/s/${asset.id}`} className="mr-1.5 font-semibold text-t1">
-          Bhakti
+          {asset.kind === 'ebook' ? 'E-book' : 'Bhakti'}
         </Link>
         {asset.title}
       </p>
