@@ -85,6 +85,22 @@ class TestConsole:
 
 
 @pytest.mark.django_db
+class TestLinkCardConsole:
+    """12 Oct 2026: the card for a shared 1namo.com, one row."""
+
+    def test_fulfilment_sets_the_card_once_and_it_is_audited(self):
+        from apps.appearance.models import LinkCard
+
+        client, admin_id = _admin(Tier.FULFILMENT)
+        form = {"title": "NAMO", "description": "Your astrologer.", "image_url": ""}
+        response = client.post(reverse("namo:appearance_linkcard_add"), form)
+        assert response.status_code == 302, response.content.decode()[:2000]
+        assert LinkCard.objects.get().description == "Your astrologer."
+        assert AdminAction.objects.filter(action="link_card.create", admin_id=admin_id).exists()
+        assert client.get(reverse("namo:appearance_linkcard_add")).status_code == 403
+
+
+@pytest.mark.django_db
 class TestBhaktiConsole:
     """4 Oct 2026: Bhakti pictures, captions and credit lines from the console."""
 

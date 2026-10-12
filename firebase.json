@@ -8,6 +8,13 @@
       ],
       "rewrites": [
         {
+          "source": "/",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "/read/**",
           "run": {
             "serviceId": "namo-api",
@@ -37,15 +44,15 @@
         },
         {
           "source": "/onboarding",
-          "destination": "/index.html"
+          "destination": "/app.html"
         },
         {
           "source": "/horoscope",
-          "destination": "/index.html"
+          "destination": "/app.html"
         },
         {
           "source": "/notifications",
-          "destination": "/index.html"
+          "destination": "/app.html"
         },
         {
           "regex": "^/[A-Za-z0-9.-]{8,30}/?$",
@@ -56,7 +63,7 @@
         },
         {
           "source": "**",
-          "destination": "/index.html"
+          "destination": "/app.html"
         }
       ],
       "headers": [

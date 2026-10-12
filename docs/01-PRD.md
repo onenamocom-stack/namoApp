@@ -598,6 +598,7 @@ separate application.
 | 9 | **Detect consultants gaming calls and messages** | Flags for human review — never automatic penalties |
 | 11 | **Bhakti catalogue** — built 4 Oct 2026 | Every status, wallpaper, tune, bhajan and mantra: replace the picture or audio, edit the caption and the artist · licence line, reorder, hide. Fulfilment tier and superadmin |
 | 10 | **Banners and festive themes** — built 4 Oct 2026 | Owner's request: change the app's look without a release. **Banners** for the promo rails on Consult, Shop and Bhakti — text in English and Hindi, two gradient colours or a picture, a tap target (an app path or an https site), an order, a start and an end; the console's banners come first and can hide the built-in ones. **Themes** — an accent colour (replaces the saffron), a button colour (replaces the green) and an optional greeting strip, for a date window; the newest live one wins. Fulfilment tier and superadmin |
+| 10a | **Link card** — built 12 Oct 2026 | Rahul: change the card WhatsApp, Telegram and Facebook draw when somebody shares 1namo.com — the heading, the description and the picture (cut to 1200 × 630). One card; deleting it brings back the built-in one. Pages with their own card (a blog, a product, a profile) keep theirs. A link already sent keeps the card it was sent with. Fulfilment tier and superadmin |
 
 ### 6.1 Who may post what, and what a report does — 23 Sep 2026
 

@@ -1,4 +1,5 @@
-"""Banners and themes in the console (4 Oct 2026).
+"""Banners, themes and the link card in the console (4 Oct 2026; the link
+card 12 Oct).
 
 Fulfilment runs them (the tier that already runs the shop and its photos);
 superadmin can too. Every save is audited. Colours are picked with the
@@ -17,7 +18,7 @@ from apps.console.site import admin_row, at_least, site
 from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
 
-from .models import Banner, Theme
+from .models import Banner, LinkCard, Theme
 
 COLOUR = forms.TextInput(attrs={"type": "color", "style": "width:72px;height:36px;padding:2px"})
 
@@ -174,3 +175,71 @@ class ThemeAdmin(_Tiered, AuditedAdmin, dj.ModelAdmin):
     @dj.display(description="Status")
     def status(self, obj):
         return _live(obj)
+
+
+def _validate_picture(upload):
+    mime = getattr(upload, "content_type", "") or ""
+    if not mime.startswith("image/"):
+        raise forms.ValidationError({"upload": f"That is not an image ({mime})."})
+    try:
+        media.validate_upload("image", upload.name, upload.size, mime)
+    except media.ValidationError as exc:
+        raise forms.ValidationError({"upload": str(exc)}) from None
+
+
+class LinkCardForm(forms.ModelForm):
+    upload = forms.FileField(
+        required=False, label="Picture",
+        help_text="Goes to R2. Wide works best: it is cut to 1200 × 630, keeping the middle.",
+    )
+
+    class Meta:
+        model = LinkCard
+        fields = ("title", "description", "upload", "image_url")
+        widgets = {
+            "title": forms.TextInput(attrs={"size": 80}),
+            "description": forms.Textarea(attrs={"rows": 3, "cols": 80}),
+            "image_url": forms.TextInput(attrs={"size": 80}),
+        }
+
+    def clean(self):
+        data = super().clean()
+        if data.get("upload"):
+            _validate_picture(data["upload"])
+        return data
+
+
+@dj.register(LinkCard, site=site)
+class LinkCardAdmin(_Tiered, AuditedAdmin, dj.ModelAdmin):
+    """The card WhatsApp, Telegram and Facebook show when somebody shares
+    1namo.com: picture, heading and description. One card; delete it to go
+    back to the built-in one. A link already sent in a chat keeps the card
+    it was sent with; WhatsApp does not fetch it again."""
+
+    audit_target = "link_card"
+    form = LinkCardForm
+    list_display = ("title", "description", "picture", "updated_at")
+
+    @dj.display(description="Picture")
+    def picture(self, obj):
+        if not obj.image_url:
+            return "Built-in"
+        return format_html('<img src="{}" style="height:40px;border-radius:4px" alt="">', obj.image_url)
+
+    def has_add_permission(self, request):
+        return super().has_add_permission(request) and not LinkCard.objects.exists()
+
+    def save_model(self, request, obj, form, change):
+        upload = form.cleaned_data.get("upload")
+        if upload:
+            admin = admin_row(request)
+            owner = str(admin.profile_id) if admin else "console"
+            mime = upload.content_type or "image/jpeg"
+            key = media.make_bucket_key(owner, "image", upload.name)
+            obj.image_url = media.get_provider().put_bytes(key, upload.read(), mime)
+            MediaAsset.objects.create(
+                owner=owner, kind=MediaKind.IMAGE, bucket_key=key, mime=mime,
+                size_bytes=upload.size, status=MediaStatus.READY,
+            )
+            record(request, "link_card.picture", "link_card", target_id=obj.pk, bucket_key=key)
+        super().save_model(request, obj, form, change)

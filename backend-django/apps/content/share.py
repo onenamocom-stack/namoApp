@@ -234,6 +234,29 @@ def profile_page(request, username):
                        kind="profile", size=size), url)
 
 
+def home_page(request):
+    """1namo.com itself (12 Oct 2026). Hosting sends `/` here so the card is
+    the console's Link card; with no card set, the app's own tags stand."""
+    from apps.appearance.models import LinkCard
+
+    url = f"{_site()}/"
+    card = LinkCard.objects.first()
+    if not card:
+        index = _index_html()
+        if index:
+            response = HttpResponse(index, content_type="text/html; charset=utf-8")
+            response["Cache-Control"] = "no-cache"
+            return response
+        return HttpResponseRedirect(f"{_site()}/home")
+    if card.image_url:
+        version = zlib.crc32(card.image_url.encode())
+        image = f"{_site()}/og/site/{card.id}.jpg?v={version}"
+    else:
+        image = f"{_site()}{FALLBACK_IMAGE}"
+    return _page(_tags(title=card.title, description=card.description, image=image,
+                       url=url, kind="website"), url)
+
+
 def og_image(request, kind, item_id):
     """A 1200 × 630 JPEG cut from a blog cover or a product photo — light
     enough for every link preview. Any failure redirects to the site's own
@@ -249,12 +272,17 @@ def og_image(request, kind, item_id):
     elif kind == "profile":
         row, _ = _public_profile(profile_id=item_id)
         source = row.avatar_url if row else None
+    elif kind == "site":
+        from apps.appearance.models import LinkCard
+
+        row = LinkCard.objects.filter(pk=item_id).first()
+        source = row.image_url if row else None
     else:
         row = Product.objects.filter(pk=item_id, active=True).first()
         source = row.image_url if row else None
     if not source:
         return HttpResponseRedirect(f"{_site()}{FALLBACK_IMAGE}")
-    key = f"share:og:{kind}:{item_id}:{hash(source)}"
+    key = f"share:og:{kind}:{item_id}:{zlib.crc32(source.encode())}"
     data = cache.get(key)
     if data is None:
         try:

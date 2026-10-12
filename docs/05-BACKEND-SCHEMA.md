@@ -1438,6 +1438,11 @@ consultant rows is not a column: it is a count of `sessions` that ended with
 window (either end may be open). RLS on, no policies; read through
 `GET /v1/appearance/`, which is public.
 
+**`link_card`** (`appearance/0002`, 12 Oct 2026): `title`, `description`,
+`image_url`, `updated_at`. At most one row (the console allows no second add).
+The card a chat app draws for 1namo.com itself; read only by `share.home_page`.
+RLS on, no policies.
+
 ### 5.6 Remaining
 
 `tarot_pulls` (the real rolling-seven-day window, replacing two booleans in a

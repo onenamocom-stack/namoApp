@@ -211,3 +211,32 @@ class TestProfile:
         self._person()
         Consultant.objects.create(profile_id=self.PID, category="", status="approved")
         assert 'og:title" content="Rahul Jain · Pro on NAMO"' in client.get("/rahulvjain").content.decode()
+
+
+@pytest.mark.django_db
+class TestHome:
+    """1namo.com itself (12 Oct 2026, Rahul): the console's Link card."""
+
+    def test_with_no_card_the_app_index_is_unchanged(self, client, network):
+        page = client.get("/").content.decode()
+        assert page == INDEX
+
+    def test_the_card_sets_heading_description_and_picture(self, client, network):
+        from apps.appearance.models import LinkCard
+
+        card = LinkCard.objects.create(title="NAMO — your astrologer", description="Talk now.",
+                                       image_url="https://cdn.example/card.png")
+        page = client.get("/").content.decode()
+        assert '<div id="root"></div>' in page
+        assert 'og:title" content="NAMO — your astrologer"' in page
+        assert 'og:description" content="Talk now."' in page
+        assert f'og:image" content="https://1namo.com/og/site/{card.id}.jpg?v=' in page
+        assert page.count('property="og:title"') == 1
+        image = client.get(f"/og/site/{card.id}.jpg")
+        assert Image.open(io.BytesIO(image.content)).size == (1200, 630)
+
+    def test_a_card_with_no_picture_uses_the_built_in_one(self, client, network):
+        from apps.appearance.models import LinkCard
+
+        LinkCard.objects.create(title="NAMO", description="d")
+        assert 'og:image" content="https://1namo.com/og.png"' in client.get("/").content.decode()

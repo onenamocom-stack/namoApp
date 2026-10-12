@@ -110,3 +110,28 @@ class Theme(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class LinkCard(models.Model):
+    """The card a chat app draws when somebody shares 1namo.com itself
+    (12 Oct 2026, Rahul: "provision in admin to change this card"). One row;
+    with none, the card is the one written into the app's index.html.
+    Pages with a card of their own — a blog, a product, a profile — keep it.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField("Heading", max_length=90)
+    description = models.CharField(max_length=200)
+    image_url = models.TextField(
+        "Picture URL", blank=True, default="",
+        help_text="Cut to 1200 × 630 for the card. Empty: the built-in NAMO picture.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "link_card"
+        verbose_name = "Link card"
+        verbose_name_plural = "Link card"
+
+    def __str__(self):
+        return self.title

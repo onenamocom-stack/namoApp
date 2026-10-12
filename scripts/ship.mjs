@@ -15,7 +15,9 @@
  *      name), unless --dirty;
  *   2. checks the build env (.env.local): the three VITE_ values present,
  *      the API URL ending in /v1;
- *   3. lint, then build;
+ *   3. lint, then build; the web app's index.html becomes app.html, so
+ *      Hosting has no file for `/` and sends it to the API, which answers
+ *      with the app and the console's Link card (12 Oct 2026, firebase.json);
  *   4. deploys with the Firebase CLI, the commit in the release message.
  *
  * Credentials: the Firebase CLI's own login on this machine
@@ -23,7 +25,7 @@
  * the project). Nothing is stored in this repo.
  */
 import { execFileSync, execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -75,6 +77,7 @@ if (!/\/v1$/.test(vite.VITE_DJANGO_API_URL)) fail('VITE_DJANGO_API_URL must end 
 // 3. lint once, then each build
 run('npm run lint')
 for (const t of targets) run(APPS[t].build)
+if (targets.includes('web')) renameSync(join(ROOT, 'dist', 'index.html'), join(ROOT, 'dist', 'app.html'))
 
 // 4. deploy
 // Plain characters only, and no shell: on Windows `npx` is a batch file,
