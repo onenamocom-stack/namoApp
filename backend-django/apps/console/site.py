@@ -32,10 +32,10 @@ logger = logging.getLogger("apps.console")
 class NamoAdminSite(AdminSite):
     # The owner's NAMO logo (5 Oct 2026), served from the app's public folder.
     site_header = mark_safe(
-        '<img src="https://1namo.com/namo-logo-light.png" alt="Namo" '
+        '<img src="https://1namo.com/namo-logo-light.png" alt="NAMO" '
         'style="height:28px;vertical-align:middle;margin-right:10px">console'
     )
-    site_title = "Namo console"
+    site_title = "NAMO console"
     index_title = "What needs doing"
     # Never "/admin/": a default path is a default attack surface, and this
     # one is worth not advertising.

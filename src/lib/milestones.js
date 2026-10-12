@@ -53,7 +53,7 @@ export const TIERS = [
     colour: 'gold',
     seeker: '1000+ sessions',
     pro: '1000 sessions',
-    congrats: 'You have given 1000 paid sessions. Few readers on Namo get here.',
+    congrats: 'You have given 1000 paid sessions. Few readers on NAMO get here.',
     color: 'var(--tier-1000)',
     ink: 'var(--tier-1000-ink)',
     ring: 'conic-gradient(from 210deg, #f6dc7a, #d4a017, #a87a0c, #f6dc7a, #d4a017)',

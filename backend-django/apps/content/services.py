@@ -826,7 +826,7 @@ def follow_list(profile_id, which, limit=200):
     pros = set(str(i) for i in Consultant.objects.filter(
         profile_id__in=ids, status="approved").values_list("profile_id", flat=True))
     return [
-        {"id": i, "name": people[i].name or "Namo member",
+        {"id": i, "name": people[i].name or "NAMO member",
          "avatar_url": people[i].avatar_url, "is_consultant": i in pros}
         for i in ids if i in people
     ]

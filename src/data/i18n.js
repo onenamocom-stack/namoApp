@@ -113,12 +113,12 @@ export const strings = {
   'home.computedAt': { en: 'Computed at {city}', hi: '{city} के अनुसार गणना' },
   'home.publishedArticle': { en: 'published an article', hi: 'ने एक लेख प्रकाशित किया' },
   'home.readArticle': { en: 'Read article · {n} min', hi: 'लेख पढ़ें · {n} मिनट' },
-  'home.namoAcademy': { en: 'Namo Academy', hi: 'नमो अकादमी' },
+  'home.namoAcademy': { en: 'NAMO Academy', hi: 'नमो अकादमी' },
   'home.continueLearning': { en: 'Continue learning', hi: 'सीखना जारी रखें' },
   'home.resume': { en: 'Resume · {n}% done', hi: 'जारी रखें · {n}% पूरा' },
   'home.startCourse': { en: 'Start course', hi: 'कोर्स शुरू करें' },
   'home.lessons': { en: '{n} lessons', hi: '{n} पाठ' },
-  'home.namoShop': { en: 'Namo Shop', hi: 'नमो शॉप' },
+  'home.namoShop': { en: 'NAMO Shop', hi: 'नमो शॉप' },
   'home.forChart': { en: 'For your chart', hi: 'आपकी कुंडली के लिए' },
   'home.addToCart': { en: 'Add to cart · ₹{price}', hi: 'कार्ट में डालें · ₹{price}' },
 
@@ -170,7 +170,7 @@ export const strings = {
 
   // ── Free tools on Home ───────────────────────────────────────────────────
   'tool.horoscope': { en: 'Horoscope', hi: 'राशिफल' },
-  'tool.ai': { en: 'Namo AI', hi: 'नमो AI' },
+  'tool.ai': { en: 'NAMO AI', hi: 'नमो AI' },
   'tool.tarot': { en: 'Tarot', hi: 'टैरो' },
   'tool.match': { en: 'Matching', hi: 'मिलान' },
   'tool.muhurat': { en: 'Muhurat', hi: 'मुहूर्त' },
@@ -330,7 +330,7 @@ export const strings = {
   'prof.tools': { en: 'Your astrology', hi: 'आपकी ज्योतिष' },
   'prof.settingsTitle': { en: 'Settings', hi: 'सेटिंग्स' },
   'prof.walletNote': { en: 'Balance, add money, history', hi: 'बैलेंस, पैसे जोड़ें, इतिहास' },
-  'prof.explore': { en: 'More from Namo', hi: 'Namo पर और' },
+  'prof.explore': { en: 'More from NAMO', hi: 'NAMO पर और' },
   'inf.yourCode': { en: 'Your code', hi: 'आपका कोड' },
   'inf.share': { en: 'Share your link', hi: 'अपना लिंक शेयर करें' },
   'inf.how': {
@@ -350,8 +350,8 @@ export const strings = {
   'inf.paidOn': { en: 'Paid {d}', hi: '{d} को भुगतान' },
   'inf.notYet': { en: 'Not paid yet', hi: 'अभी भुगतान नहीं' },
   'inf.terms': {
-    en: 'Paid means they added money to their wallet. Names are not shown. Namo sets what each signup and each paying person is worth, and pays monthly into the bank account in your payout details.',
-    hi: 'भुगतान का मतलब है कि उन्होंने वॉलेट में पैसे जोड़े। नाम नहीं दिखाए जाते। हर साइन-अप और भुगतान करने वाले व्यक्ति की रकम Namo तय करता है, और भुगतान हर महीने आपके बैंक खाते में होता है।',
+    en: 'Paid means they added money to their wallet. Names are not shown. NAMO sets what each signup and each paying person is worth, and pays monthly into the bank account in your payout details.',
+    hi: 'भुगतान का मतलब है कि उन्होंने वॉलेट में पैसे जोड़े। नाम नहीं दिखाए जाते। हर साइन-अप और भुगतान करने वाले व्यक्ति की रकम NAMO तय करता है, और भुगतान हर महीने आपके बैंक खाते में होता है।',
   },
   'inf.failed': { en: 'Could not load your numbers. Open this tab again.', hi: 'आपके आंकड़े नहीं खुल सके। यह टैब फिर से खोलें।' },
 
@@ -665,7 +665,7 @@ export const strings = {
   'match.toPerson': { en: 'Take this to a person', hi: 'किसी ज्योतिषी को दिखाएं' },
   'match.toPersonNote': { en: 'A human reads the same two charts', hi: 'एक इंसान वही दो कुंडलियाँ पढ़ेगा' },
   'match.askAbout': { en: 'Ask about it', hi: 'इसके बारे में पूछें' },
-  'match.askAboutNote': { en: 'Namo AI, on your own chart', hi: 'नमो AI, आपकी अपनी कुंडली पर' },
+  'match.askAboutNote': { en: 'NAMO AI, on your own chart', hi: 'नमो AI, आपकी अपनी कुंडली पर' },
   'match.another': { en: 'Match someone else', hi: 'किसी और का मिलान करें' },
 
   // ── Muhurat ──────────────────────────────────────────────────────────────
@@ -734,7 +734,7 @@ export const strings = {
     en: 'Your referral is in. 3 free questions a day start tomorrow.',
     hi: 'आपका रेफ़रल लग गया। कल से रोज़ 3 मुफ़्त सवाल।',
   },
-  'ask.ph': { en: 'Message Namo AI', hi: 'नमो AI से पूछें' },
+  'ask.ph': { en: 'Message NAMO AI', hi: 'नमो AI से पूछें' },
   /* One sentence around a link: "{canBeWrong} [pros]{end}". */
 
   // ── Premium ──────────────────────────────────────────────────────────────

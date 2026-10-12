@@ -20,7 +20,7 @@ self.addEventListener('push', (event) => {
   try {
     d = event.data ? event.data.json() : {}
   } catch {
-    d = { title: 'Namo', body: event.data ? event.data.text() : '' }
+    d = { title: 'NAMO', body: event.data ? event.data.text() : '' }
   }
   if (d.type === 'incoming') {
     event.waitUntil(
@@ -42,7 +42,7 @@ self.addEventListener('push', (event) => {
     return
   }
   event.waitUntil(
-    self.registration.showNotification(d.title || 'Namo', {
+    self.registration.showNotification(d.title || 'NAMO', {
       body: d.body || '',
       icon: '/namo-icon.png',
       badge: '/favicon.png',

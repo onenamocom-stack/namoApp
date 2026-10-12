@@ -282,7 +282,7 @@ function useSeo(p) {
   useEffect(() => {
     if (!p) return undefined
     const before = document.title
-    document.title = `${p.seoTitle} · Namo`
+    document.title = `${p.seoTitle} · NAMO`
     let meta = document.querySelector('meta[name="description"]')
     const hadMeta = !!meta
     const metaBefore = meta?.getAttribute('content') ?? null

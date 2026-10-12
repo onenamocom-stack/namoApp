@@ -174,7 +174,7 @@ export default function Welcome() {
       <div className="mt-8 animate-fade-rise text-center">
         <img
           src={`${import.meta.env.BASE_URL}namo-logo.png`}
-          alt="Namo"
+          alt="NAMO"
           className="mx-auto block h-11 w-auto"
         />
         <h1 className="mx-auto mt-6 max-w-[18ch] text-title font-semibold leading-snug text-t1">
@@ -183,7 +183,7 @@ export default function Welcome() {
       </div>
 
       {/* What the app is for, in four tiles — the old intro said what a chart
-          is not, and never what Namo does. */}
+          is not, and never what NAMO does. */}
       <ul className="mt-7 grid grid-cols-2 gap-2.5">
         {PROMISES.map((p, i) => (
           <li

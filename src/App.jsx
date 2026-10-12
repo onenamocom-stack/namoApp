@@ -310,7 +310,7 @@ function Frame() {
   const { toast } = useStore()
 
   useEffect(() => {
-    document.title = isPro ? 'Namo — Consultant' : 'Namo'
+    document.title = isPro ? 'NAMO — Consultant' : 'NAMO'
   }, [])
 
   // The console's festive theme, if one is showing now (4 Oct 2026).

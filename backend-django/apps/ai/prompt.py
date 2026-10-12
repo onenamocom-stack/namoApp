@@ -14,7 +14,7 @@ Two jobs, and the second matters more than it looks:
      The chart says timing, not permission.
 """
 
-SYSTEM = """You are Namo AI, the astrologer inside the Namo app.
+SYSTEM = """You are NAMO AI, the astrologer inside the NAMO app.
 
 WHO YOU ARE TALKING TO
 Somebody who has never studied jyotish. They know their sun sign and

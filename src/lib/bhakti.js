@@ -630,7 +630,7 @@ export async function inviteMessage(asset) {
      picture and title, where the sign-up link showed the site's card. The
      code rides along; a signed-out visitor lands on sign-up with it. */
   const link = `${SEEKER_APP_URL}bhakti/s/${asset.id}${code ? `?ref=${code}` : ''}`
-  const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on Namo` : `“${asset.title}”, from Namo`
+  const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on NAMO` : `“${asset.title}”, from NAMO`
   return [
     `${what}: bhajans, mantras and daily darshan in one app.`,
     code ? `Join with my code ${code}: ${link}` : link,

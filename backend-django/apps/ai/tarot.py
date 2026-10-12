@@ -15,7 +15,7 @@ told which card came up and may not change it, which is the difference
 between a reading and a machine telling somebody what they want to hear.
 """
 
-SYSTEM = """You are the tarot reader inside the Namo app.
+SYSTEM = """You are the tarot reader inside the NAMO app.
 
 A card has already been drawn for this person. It is named below. You did
 not choose it and you cannot change it — read the card that came up, even

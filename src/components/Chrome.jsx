@@ -164,7 +164,7 @@ export function TabHeader({ action = null, search = true }) {
           has five controls. The pills take `!px-3` because `.pill.knob`
           zeroes padding and outranks a plain `px-*`; until 3 Oct "Online"
           and the balance ran edge to edge in their pills. */}
-      <Link to={me.homeTo} aria-label="Namo" className="min-w-[60px] max-w-[112px] shrink transition-opacity hover:opacity-70">
+      <Link to={me.homeTo} aria-label="NAMO" className="min-w-[60px] max-w-[112px] shrink transition-opacity hover:opacity-70">
         <img
           src={`${import.meta.env.BASE_URL}namo-logo.png`}
           alt=""

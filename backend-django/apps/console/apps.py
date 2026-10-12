@@ -5,4 +5,4 @@ class ConsoleConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.console"
     label = "console"
-    verbose_name = "Namo console"
+    verbose_name = "NAMO console"

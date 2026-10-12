@@ -210,7 +210,7 @@ function Form({ prior, onSaved, onCancel }) {
     <div className="px-5 pt-5">
       <p className="text-meta t-body">
         Payouts are paid once a month into this account, with TDS deducted, which is why your PAN is
-        needed. Your PAN and account number are stored encrypted; only Namo&rsquo;s finance team can
+        needed. Your PAN and account number are stored encrypted; only NAMO&rsquo;s finance team can
         see them in full.
       </p>
 

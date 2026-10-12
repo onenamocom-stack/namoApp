@@ -220,10 +220,10 @@ def _notify_referrer(referral, grant):
 
     if grant.get("until"):
         until = _day(grant["until"])
-        perk = (f"You both get {grant['daily']} free questions a day with Namo AI, "
+        perk = (f"You both get {grant['daily']} free questions a day with NAMO AI, "
                 f"from tomorrow until {until}.")
     else:
-        perk = (f"You both get {grant['daily']} free questions a day with Namo AI "
+        perk = (f"You both get {grant['daily']} free questions a day with NAMO AI "
                 f"for {grant['days']} days, once your welcome questions are used.")
 
     notify.push(
@@ -274,7 +274,7 @@ def affiliate_link(consultant_id, product_id=None):
         "url": url,
         "product_id": str(product_id) if product_id else None,
         "share_text": (
-            "I use this one. Your first order on Namo comes with cashback in "
+            "I use this one. Your first order on NAMO comes with cashback in "
             f"your wallet: {url}"
         ),
     }

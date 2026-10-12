@@ -138,7 +138,7 @@ export default function Ask() {
             }}
             rows={1}
             placeholder={t('ask.ph')}
-            aria-label="Message Namo AI"
+            aria-label="Message NAMO AI"
             className="max-h-32 min-h-[2.25rem] flex-1 resize-none bg-transparent py-1.5 text-body text-t1 outline-none placeholder:text-t4"
           />
           <button
@@ -152,7 +152,7 @@ export default function Ask() {
         </form>
 
         {/* No line under the box (9 Oct 2026, owner): the free count and
-            price are in the header, and "Namo AI can be wrong — ask our
+            price are in the header, and "NAMO AI can be wrong — ask our
             pros" is gone. */}
       </div>
     </div>

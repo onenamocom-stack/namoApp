@@ -73,7 +73,7 @@ export default function ReferralCard() {
     <Section label="Invite a friend" tight>
       <p className="horoscope">
         Share your code. When someone joins with it you both get three free
-        questions a day with Namo AI for three days, starting the next day.
+        questions a day with NAMO AI for three days, starting the next day.
       </p>
 
       <button

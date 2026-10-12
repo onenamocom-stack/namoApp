@@ -50,7 +50,7 @@ export default function InfluencerTab() {
   const rate = p.signups ? Math.round((p.buyers / p.signups) * 100) : null
 
   async function share() {
-    const said = await shareLink(`/onboarding?ref=${data.code}`, { title: 'Namo' })
+    const said = await shareLink(`/onboarding?ref=${data.code}`, { title: 'NAMO' })
     if (said) showToast(said)
   }
 

@@ -31,7 +31,7 @@ export default function VerifyOtp() {
      code from a message that is not bound to this origin, so the text has to
      END with the origin and the code on its own last line:
 
-         Your Namo code is 123456
+         Your NAMO code is 123456
 
          @onenamocom-stack.github.io #123456
 
