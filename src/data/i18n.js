@@ -828,10 +828,8 @@ export const strings = {
   },
 
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
-  'w.title': {
-    en: 'Your kundli, astrologer and mandir darshan in one place',
-    hi: 'आपकी कुंडली, ज्योतिषी और मंदिर दर्शन, एक ही जगह',
-  },
+  // 12 Oct 2026, Rahul: NAMO is a spiritual social network first.
+  'w.title': { en: "India's Spiritual Network", hi: 'भारत का आध्यात्मिक नेटवर्क' },
   'w.p.consult': { en: 'Talk to an astrologer', hi: 'ज्योतिषी से बात करें' },
   'w.p.horoscope': { en: 'Daily horoscope', hi: 'आज का राशिफल' },
   'w.p.darshan': { en: 'Darshan & aarti', hi: 'दर्शन और आरती' },
