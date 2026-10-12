@@ -6249,6 +6249,18 @@ The owner's rule (`docs/01-PRD.md` §12). Live after the deploy below.
   `test_affiliate_window.py` (14); five old referral tests rewritten for
   links (no refusals now).
 - **Not done:** Play Store install attribution (no app yet).
+- **Walked end to end on production, 12 Oct** (Supabase test numbers
+  9000000101/102, OTP 123456; purchases from the wallet so no parcel went
+  to Shiprocket): a blog's tagged product carried the astrologer's `ref`
+  and the visit was recorded (expires +15 days); a link opened signed out
+  was kept and recorded at sign-up with the original click time; a second
+  astrologer's link became the live one; a first order inside the window
+  owed the astrologer ₹64 and the buyer ₹64; after moving the clicks 16
+  days back, a first order owed the buyer only; a link after the first
+  order was not recorded. Everything the test wrote was then deleted (the
+  ledger's immutable trigger disabled and re-enabled inside the one
+  transaction), stock restored. The two Supabase auth users and test
+  numbers are the owner's to remove.
 
 ## 81. Ten reels a day from Google Drive, for Rahul Jain — 12 Oct 2026
 
