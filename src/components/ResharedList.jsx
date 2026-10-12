@@ -42,7 +42,7 @@ export default function ResharedList({ by, className = '' }) {
         {rows.map(({ id, post, time, picture, asset }) => {
           if (picture) {
             return (
-              <Row key={id} to={`/bhakti?kind=${asset.kind}`} title={asset.title} note="Bhakti picture" />
+              <Row key={id} to={`/bhakti?kind=${asset.kind}`} title={asset.title} note={asset.kind === 'bhajan' ? 'Bhajan' : asset.kind === 'mantra' ? 'Mantra' : 'Bhakti picture'} />
             )
           }
           const kind = post.kind === 'clip' ? 'Reel' : post.kind === 'article' ? 'Blog' : 'Photo'

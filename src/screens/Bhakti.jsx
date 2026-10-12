@@ -26,7 +26,6 @@ import {
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
-import { ActIcon } from '../components/ActIcon.jsx'
 import { tileStyle } from '../lib/tiles.js'
 
 /**
@@ -419,7 +418,6 @@ function Credit({ asset }) {
  * credit — the pictures are NAMO's own, as on the Status shelf.
  */
 function PictureCard({ asset, busy, onDownload }) {
-  const { showToast } = useStore()
   return (
     <li>
       <PopCard className="overflow-hidden">
@@ -430,17 +428,9 @@ function PictureCard({ asset, busy, onDownload }) {
           className="aspect-[3/4] w-full bg-surface2 object-cover"
         />
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
-          <BhaktiActions asset={asset} />
           {/* The link share stays on a wallpaper (12 Oct 2026, Rahul); a
               status has the WhatsApp button for that. */}
-          <ActIcon
-            icon="share"
-            label="Share"
-            onClick={async () => {
-              const said = await shareAsset(asset)
-              if (said) showToast(said)
-            }}
-          />
+          <BhaktiActions asset={asset} share />
           <span className="flex-1" />
           {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
           <PopButton size="sm" variant="gold" full={false} disabled={busy} onClick={onDownload}>
@@ -531,7 +521,6 @@ function AudioRow({ asset, busy, onSave }) {
  * reaction, so it is per account and survives a reload.
  */
 function TrackCard({ asset, counted = false }) {
-  const { hasFlag, toggleFlag } = useStore()
   const el = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [started, setStarted] = useState(false)
@@ -539,12 +528,6 @@ function TrackCard({ asset, counted = false }) {
   const [times, setTimes] = useState('')
   const [total, setTotal] = useState(0)
   const [left, setLeft] = useState(0) // plays still owed, this one included; 0 = no count running
-  // ponytail: stored as target_type 'content' because lib/reactions.js maps
-  // `like` to content and the server does not check the target exists. Give
-  // bhakti its own target_type (reactions CHECK + API deploy) before anything
-  // counts likes per type.
-  const likeKey = `like:${asset.id}`
-  const liked = hasFlag(likeKey)
 
   const play = () => el.current?.play().catch(() => setPlaying(false))
 
@@ -610,41 +593,35 @@ function TrackCard({ asset, counted = false }) {
           onEnded={onEnded}
         />
 
-        <div className="flex items-center gap-3 p-3.5">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-body t-heading">{asset.title}</p>
-            {left > 0 ? (
-              <p className="mt-1 caps-sm t-faint tnum">
-                Repeat {total - left + 1} of {total} ·{' '}
-                <button type="button" onClick={stop} className="underline">
-                  Stop
-                </button>
-              </p>
-            ) : (
-              <Credit asset={asset} />
-            )}
-          </div>
-          <ShareButton asset={asset} />
-          <button
-            type="button"
-            onClick={() => toggleFlag(likeKey)}
-            aria-pressed={liked}
-            aria-label={liked ? `Unlike ${asset.title}` : `Like ${asset.title}`}
-            className={`flex-none p-1 transition-transform duration-150 active:scale-90 ${
-              liked ? 'text-live' : 'text-t2 hover:text-t1'
-            }`}
-          >
-            <Icon name="heart" size={24} weight={1.8} filled={liked} />
-          </button>
-          <button
-            type="button"
+        {/* Like, comment, reshare and share on the left, a green Play on
+            the right (12 Oct 2026, Rahul: as on Status and Wallpapers). No
+            title or credit. The like was a `like:` flag on a content id
+            until today; it is a Bhakti picture's `blike:` now, so earlier
+            likes on a bhajan are not carried over. */}
+        <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
+          <BhaktiActions asset={asset} share />
+          <span className="flex-1" />
+          <PopButton
+            size="sm"
+            variant="gold"
+            full={false}
             onClick={toggle}
             aria-label={playing ? `Pause ${asset.title}` : `Play ${asset.title}`}
-            className="pill knob !h-11 !w-11 flex-none justify-center"
           >
-            <Icon name={playing ? 'pause' : 'play'} size={18} />
-          </button>
+            <span className="flex items-center gap-1.5">
+              <Icon name={playing ? 'pause' : 'play'} size={16} weight={2.2} filled={!playing} />
+              {playing ? 'Pause' : 'Play'}
+            </span>
+          </PopButton>
         </div>
+        {left > 0 && (
+          <p className="px-4 pb-3 caps-sm t-faint tnum">
+            Repeat {total - left + 1} of {total} ·{' '}
+            <button type="button" onClick={stop} className="underline">
+              Stop
+            </button>
+          </p>
+        )}
 
         {asking && (
           <form onSubmit={start} className="flex items-center gap-2 px-3.5 pb-3.5">

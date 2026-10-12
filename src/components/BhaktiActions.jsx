@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActIcon, Count } from './ActIcon.jsx'
 import CommentSheet from './CommentSheet.jsx'
+import { shareAsset } from '../lib/bhakti.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -13,9 +14,14 @@ import { useStore } from '../store.jsx'
  * The server's number already holds your like from before, so the change
  * since the screen opened is what is added, not the state. `blike:` and
  * `brepost:` are a Bhakti picture's flags, not a post's.
+ *
+ * `share` adds Home's share icon, the link (wallpapers, bhajans and mantras;
+ * a status has its WhatsApp button instead). A priced row has no Reshare —
+ * the server refuses it, and a feed card for something you must buy is an
+ * advert under a person's name.
  */
-export default function BhaktiActions({ asset }) {
-  const { hasFlag, toggleFlag, t } = useStore()
+export default function BhaktiActions({ asset, share = false }) {
+  const { hasFlag, toggleFlag, showToast, t } = useStore()
   const [thread, setThread] = useState(false)
   const [comments, setComments] = useState(asset.comments ?? 0)
   const liked = hasFlag(`blike:${asset.id}`)
@@ -35,15 +41,31 @@ export default function BhaktiActions({ asset }) {
       <Count n={(asset.likes ?? 0) + (liked - was.liked)} />
       <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
       <Count n={comments} />
-      <ActIcon
-        icon="repost"
-        label="Reshare"
-        onLabel="Reshared"
-        on={reshared}
-        tone="text-[#1f7a4d]"
-        onClick={() => toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })}
-      />
-      <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+      {asset.pricePaise == null && (
+        <>
+          <ActIcon
+            icon="repost"
+            label="Reshare"
+            onLabel="Reshared"
+            on={reshared}
+            tone="text-[#1f7a4d]"
+            onClick={() =>
+              toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })
+            }
+          />
+          <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+        </>
+      )}
+      {share && (
+        <ActIcon
+          icon="share"
+          label="Share"
+          onClick={async () => {
+            const said = await shareAsset(asset)
+            if (said) showToast(said)
+          }}
+        />
+      )}
       <CommentSheet open={thread} onClose={() => setThread(false)} bhaktiId={asset.id} onCount={setComments} />
     </>
   )

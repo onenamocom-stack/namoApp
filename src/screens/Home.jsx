@@ -700,10 +700,16 @@ function PictureCard({ asset, resharedBy }) {
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
       <Link to={`/bhakti?kind=${asset.kind}`} className="mt-2.5 block">
-        <img src={asset.url} alt={asset.title} loading="lazy" className="aspect-[4/5] w-full bg-surface2 object-cover" />
+        {/* A bhajan or mantra is a sound; its card picture stands in. */}
+        <img
+          src={asset.kind === 'bhajan' || asset.kind === 'mantra' ? asset.previewUrl : asset.url}
+          alt={asset.title}
+          loading="lazy"
+          className={`${asset.kind === 'bhajan' || asset.kind === 'mantra' ? 'aspect-video' : 'aspect-[4/5]'} w-full bg-surface2 object-cover`}
+        />
       </Link>
       <div className="flex items-center gap-4 px-3 pt-2.5">
-        <BhaktiActions asset={asset} />
+        <BhaktiActions asset={asset} share />
       </div>
       <p className="px-3 pb-4 pt-2 text-meta text-t2">
         <Link to={`/bhakti?kind=${asset.kind}`} className="mr-1.5 font-semibold text-t1">

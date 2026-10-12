@@ -355,7 +355,10 @@ two products and gave the wallpaper thumbnails no room to be looked at. One
 card now, and only the ACTION differs: a status is shared, a wallpaper is
 downloaded. **Wallpapers** (12 Oct 2026, Rahul): the picture, then Like,
 Comment, Reshare and Share (the link) as on a Home post, and a green
-**Download** with a download mark; no title or credit. Since 12 Oct 2026 a status card is not the plain artwork: it is
+**Download** with a download mark; no title or credit. **Bhajans and mantras**
+the same day: the same four icons, then a green **Play**; a mantra's "Repeat 3
+of 108 · Stop" shows under them while it runs. A priced row has no Reshare. A
+reshared bhajan or mantra reaches the feed as its card picture. Since 12 Oct 2026 a status card is not the plain artwork: it is
 the finished status (below), 9:16, composed as it nears the screen.
 
 **Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it

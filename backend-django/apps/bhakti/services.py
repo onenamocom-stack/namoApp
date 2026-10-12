@@ -153,7 +153,8 @@ def remove_comment(comment_id, actor_id, role):
     return row
 
 
-REPOSTABLE_KINDS = ("status", "wallpaper")
+# Bhajans and mantras joined the same day (Rahul); a priced one never reshares.
+REPOSTABLE_KINDS = ("status", "wallpaper", "bhajan", "mantra")
 
 
 def assert_repostable(asset_id, actor_id):
