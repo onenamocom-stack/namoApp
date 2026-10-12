@@ -487,12 +487,16 @@ top to bottom —
   the images.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
-  page shows the eight deities it shipped with. New temple photos: portrait,
-  about 1080 × 1440 (3:4), the murti in the middle — the plaque covers the top
-  tenth and the thali the bottom sixth.
+  page shows the eight deities it shipped with. **New temple photos** (told
+  to Rahul 13 Oct 2026): 1080 × 1620 (2:3, the shrine's own shape on a phone;
+  3:4 works and shows blur above and below), JPG or WebP under 500 KB. The
+  plaque and band cover the top eighth, the bells hang at both edges below it,
+  and the altar and thali cover the bottom fifth: the murti's face at about
+  40% from the top, nothing that matters in those strips, and no lettering —
+  the plaque names the temple.
 - The **murti** fills the page over a blurred, darkened copy of itself, so a
   painting that does not match the phone's shape still reaches every edge.
-  `setting:croppedDeityImage` fills and crops instead.
+  (A cropped option, `setting:croppedDeityImage`, went on 11 Oct 2026.)
 - A **marble altar slab** across the bottom, the full width
   (`public/puja/marble-slab.webp`, from the same design), drawn at half the
   photo's height for its front face and 1.8 times the photo's depth for its
