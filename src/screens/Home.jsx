@@ -173,14 +173,24 @@ export default function Home() {
   }, [])
 
   const posts = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
-  const reshared = reshares
-    .filter((r) => r.picture || CARD_FOR_KIND[r.post.kind] !== 'article')
-    .map((r) => ({
-      id: `rp:${r.id}`,
-      kind: r.picture ? 'bhakti' : CARD_FOR_KIND[r.post.kind],
-      data: r.picture ? r.asset : r.post,
-      by: { id: r.byId, name: r.byName },
-    }))
+  /* One card per thing reshared, however many reshared it (12 Oct 2026,
+     Rahul): ten reshares of one picture were ten copies in the feed. The
+     newest resharer is named, the rest counted — "Tara and 9 others". */
+  const grouped = new Map()
+  for (const r of reshares) {
+    if (!r.picture && CARD_FOR_KIND[r.post.kind] === 'article') continue
+    const key = r.picture ? `b:${r.asset.id}` : `p:${r.post.id}`
+    const seen = grouped.get(key)
+    if (seen) seen.by.others += 1
+    else
+      grouped.set(key, {
+        id: `rp:${key}`,
+        kind: r.picture ? 'bhakti' : CARD_FOR_KIND[r.post.kind],
+        data: r.picture ? r.asset : r.post,
+        by: { id: r.byId, name: r.byName, others: 0 },
+      })
+  }
+  const reshared = [...grouped.values()]
   const real = []
   posts.forEach((p, i) => {
     real.push(p)
@@ -672,7 +682,9 @@ function ResharedLine({ by }) {
       className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3"
     >
       <Icon name="repost" size={14} weight={2} />
-      {t('home.resharedBy', { name: by.name })}
+      {by.others
+        ? t('home.resharedByMany', { name: by.name, n: by.others.toLocaleString('en-IN') })
+        : t('home.resharedBy', { name: by.name })}
     </Link>
   )
 }

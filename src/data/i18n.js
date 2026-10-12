@@ -101,6 +101,7 @@ export const strings = {
   'home.products': { en: '{n} products in this post', hi: 'इस पोस्ट में {n} प्रोडक्ट' },
   'home.off': { en: '{n}% off', hi: '{n}% छूट' },
   'home.resharedBy': { en: '{name} reshared', hi: '{name} ने रीशेयर किया' },
+  'home.resharedByMany': { en: '{name} and {n} others reshared', hi: '{name} और {n} अन्य ने रीशेयर किया' },
   'home.readingSky': { en: 'Reading the sky.', hi: 'आकाश पढ़ा जा रहा है।' },
   'home.windowsUjjain': { en: 'Windows · Ujjain', hi: 'शुभ-अशुभ समय · उज्जैन' },
   'home.ownPredictions': {

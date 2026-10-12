@@ -373,7 +373,10 @@ Like, Comment and **Reshare** as on a Home post, with their counts, and on the
 right the green WhatsApp **Share**, which only shares the status; no title, no
 credit, no link-share icon. A reshared picture goes to your profile's Reshared
 list and into the Home feed as the plain picture under "X reshared", with the
-same three icons; a tap on it opens its shelf. One pencil, on the photo (the one on
+same three icons; a tap on it opens its shelf. **One card per thing
+reshared** (12 Oct 2026, Rahul): however many people reshare a picture or a
+post, the feed shows it once, naming the newest resharer — "Tara and 9 others
+reshared". One pencil, on the photo (the one on
 the name went the same day, since both did the same thing), opens **Your
 status details**, a page of its own: the photo (gallery,
 camera, profile picture, remove) and the name for the status. **Save keeps
