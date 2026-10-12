@@ -11,11 +11,13 @@ import { warmCharts } from './Computing.jsx'
 
 const RESEND_AFTER = 30
 
+// A spiritual social network first, then what it has (12 Oct 2026, Rahul):
+// two social promises, two features.
 const PROMISES = [
-  { icon: 'consult', key: 'w.p.consult' },
-  { icon: 'horoscope', key: 'w.p.horoscope' },
+  { icon: 'consult', key: 'w.p.follow' },
+  { icon: 'repost', key: 'w.p.share' },
   { icon: 'pooja', key: 'w.p.darshan' },
-  { icon: 'shop', key: 'w.p.shop' },
+  { icon: 'horoscope', key: 'w.p.kundli' },
 ]
 
 /**

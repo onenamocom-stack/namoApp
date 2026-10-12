@@ -830,10 +830,10 @@ export const strings = {
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
   // 12 Oct 2026, Rahul: NAMO is a spiritual social network first.
   'w.title': { en: "India's Spiritual Network", hi: 'भारत का आध्यात्मिक नेटवर्क' },
-  'w.p.consult': { en: 'Talk to an astrologer', hi: 'ज्योतिषी से बात करें' },
-  'w.p.horoscope': { en: 'Daily horoscope', hi: 'आज का राशिफल' },
-  'w.p.darshan': { en: 'Darshan & aarti', hi: 'दर्शन और आरती' },
-  'w.p.shop': { en: 'Puja samagri', hi: 'पूजा सामग्री' },
+  'w.p.follow': { en: 'Follow gurus & astrologers', hi: 'गुरु और ज्योतिषी फ़ॉलो करें' },
+  'w.p.share': { en: 'Post & share bhakti', hi: 'भक्ति पोस्ट और शेयर करें' },
+  'w.p.darshan': { en: 'Daily darshan & bhajans', hi: 'रोज़ दर्शन और भजन' },
+  'w.p.kundli': { en: 'Kundli & horoscope', hi: 'कुंडली और राशिफल' },
   'w.phone': { en: 'Mobile number', hi: 'मोबाइल नंबर' },
   'w.phoneHint': {
     en: 'New here or coming back — same number, same door. We text you a 6-digit code.',
