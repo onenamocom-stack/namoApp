@@ -22,6 +22,8 @@ import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, useMyChart } from '../lib/astro.js'
 import { ConsultantPage } from './ConsultantProfile.jsx'
 import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
+import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
+import { profileLink } from '../lib/profile.js'
 import ProfileHead from '../components/ProfileHead.jsx'
 
 /**
@@ -170,12 +172,12 @@ export default function Profile() {
 /* ── The top: you ────────────────────────────────────────────────────────── */
 
 function Hero({ posts, counts }) {
-  const { t, session, showToast } = useStore()
+  const { t, session, showToast, profile } = useStore()
   const [listing, setListing] = useState(null)
   const me = useProfileFields()
 
   async function share() {
-    const said = await shareLink(`/u/${session?.user?.id}`, { title: me.name })
+    const said = await shareLink(profileLink(profile?.username, `/u/${session?.user?.id}`), { title: me.name })
     if (said) showToast(said)
   }
 
@@ -594,6 +596,7 @@ function SettingsPage({ pro }) {
   const { showToast, profile, t, lang, setLang, consultant } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [intro, setIntro] = useState(false)
+  const [naming, setNaming] = useState(false)
 
   const leave = async () => {
     if (leaving) return
@@ -626,6 +629,7 @@ function SettingsPage({ pro }) {
         </section>
       )}
       {intro && <IntroSheet onClose={() => setIntro(false)} />}
+      {naming && <UsernameSheet onClose={() => setNaming(false)} />}
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>
@@ -636,6 +640,9 @@ function SettingsPage({ pro }) {
           {pro && (
             <Row to="/onboarding/details?edit=1" title="Edit name and birth details" />
           )}
+          {/* Your profile link, 1namo.com/<username>, for everybody (11 Oct
+              2026, Rahul). */}
+          <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
           <Row to="/orders" title={t('prof.orders')} note={t('prof.ordersNote')} />
           <Row to="/notifications" title={t('prof.notifHistory')} />
           <Row

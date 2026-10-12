@@ -49,6 +49,13 @@ def profile_name(profile_id):
     return profile_services.profile_name(profile_id)
 
 
+def profile_username(profile_id):
+    """The username for a share link (11 Oct 2026); public like the name."""
+    from apps.profiles.models import Profile
+
+    return Profile.objects.filter(pk=profile_id).values_list("username", flat=True).first()
+
+
 def profile_names(profile_ids):
     """Bulk read for shaping lists without an N+1: {uuid_str: name}.
     Delegates to the profile module (9)."""

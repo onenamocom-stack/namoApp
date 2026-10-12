@@ -168,6 +168,8 @@ function shape(row, services = []) {
     sessionsDone: row.sessions_done ?? 0,
     // The intro video or photo on their page (11 Oct 2026); null when none.
     introUrl: row.intro_url ?? null,
+    // For the share link, 1namo.com/<username> (11 Oct 2026).
+    username: row.username ?? null,
     introKind: row.intro_kind ?? null,
     fixed,
     perMinute,

@@ -47,6 +47,8 @@ consultants replicate them), the bucket bytes (the media app owns R2).
 from django.db import models
 from django.utils import timezone
 
+from .username_rules import MAX_LEN, validate_username
+
 # 002's CHECK, verbatim (the SQL pattern, as a Django iregex — `~*` is
 # case-insensitive). Shape only: it rejects an obviously malformed address
 # at the trust boundary without pretending to prove the address exists.
@@ -115,6 +117,20 @@ class Profile(models.Model):
     # has to be able to put things back.
     blocked_at = models.DateTimeField(null=True, blank=True)
     blocked_reason = models.TextField(null=True, blank=True)
+
+    # The readable half of a shared link, 1namo.com/<username> (11 Oct
+    # 2026, Rahul). Given automatically the first time the person's own
+    # profile is read (services.ensure_username: name-surname-1234), and
+    # changeable from Settings once every 30 days. Lowercase only; the rules
+    # are username_rules.py. Null until then — and nullable for good, like
+    # bio, because handle_new_user inserts only (id, phone, name).
+    username = models.CharField(
+        max_length=MAX_LEN, null=True, blank=True, unique=True,
+        validators=[validate_username],
+    )
+    # When the PERSON last chose one. An automatic name leaves it null, so
+    # the first change is never held back by the 30 days.
+    username_changed_at = models.DateTimeField(null=True, blank=True)
 
     legacy_id = models.TextField(null=True, blank=True)
     avatar_url = models.TextField(null=True, blank=True)  # 027: public URL into media

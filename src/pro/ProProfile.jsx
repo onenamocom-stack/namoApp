@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Sheet, TabHeader } from '../components/Chrome.jsx'
 import RateFields, { RATE_FIELDS, rateErrors, rateNumbers } from '../components/RateFields.jsx'
 import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
+import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopTag } from '../components/Pop.jsx'
 import { Avatar, Row, Segmented, Tag, Ticks } from '../components/Primitives.jsx'
@@ -268,10 +269,11 @@ function Reviews() {
 }
 
 function Settings({ me, onRatesSaved }) {
-  const { showToast, consultant } = useStore()
+  const { showToast, consultant, profile } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [editingRates, setEditingRates] = useState(false)
   const [intro, setIntro] = useState(false)
+  const [naming, setNaming] = useState(false)
 
   const leave = async () => {
     if (leaving) return
@@ -301,6 +303,8 @@ function Settings({ me, onRatesSaved }) {
             }
           />
           <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
+          {/* Your profile link, 1namo.com/<username> (11 Oct 2026, Rahul). */}
+          <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
           <Row to="/pro/consult" title="Availability" note="Which slots you are open for" />
           <Row
             onClick={() => showToast('Languages — prototype only')}
@@ -313,6 +317,7 @@ function Settings({ me, onRatesSaved }) {
         </div>
       </section>
       {intro && <IntroSheet onClose={() => setIntro(false)} />}
+      {naming && <UsernameSheet onClose={() => setNaming(false)} />}
       {editingRates && (
         <RatesSheet
           current={me.rates}

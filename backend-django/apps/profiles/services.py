@@ -40,8 +40,12 @@ here, rule by rule:
     public URL with a `?v=` cache-bust, exactly what avatar.js stores today.
 """
 
+import random
+import re
 import time
+import unicodedata
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -50,6 +54,7 @@ from django.utils import timezone
 
 from apps.media.models import MediaAsset
 
+from . import username_rules
 from .models import EMAIL_SHAPE, Profile
 
 # The 001 grant + 002's email re-grant, as code. The body may only ever
@@ -132,6 +137,10 @@ def serialize_profile(profile):
         "video_enabled": profile.video_enabled,
         "influencer": profile.influencer,
         "bio": profile.bio,
+        "username": profile.username,
+        "username_changed_at": (
+            profile.username_changed_at.isoformat() if profile.username_changed_at else None
+        ),
         # Blocked people are told so rather than left to discover it by
         # having every post refused with no explanation.
         "blocked": profile.blocked_at is not None,
@@ -351,6 +360,145 @@ def public_profile(profile_id):
         "avatar_url": profile.avatar_url,
         "bio": profile.bio,
     }
+
+
+# ── usernames (11 Oct 2026, Rahul) ───────────────────────────────────────────
+#
+# 1namo.com/<username> instead of an id nobody can read. Everybody gets one
+# automatically; Settings changes it once every 30 days. A username finds
+# only what the public surfaces already show (resolve_username), so a
+# seeker who has never posted is no more findable by name than by id.
+
+USERNAME_COOLDOWN = timedelta(days=30)
+
+
+def _slug_words(name):
+    """The ASCII words of a display name: 'Rahul Jain' -> ['rahul', 'jain'].
+    A name in Devanagari has none, and the caller falls back to 'user'."""
+    ascii_name = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
+    return re.findall(r"[a-z0-9]+", ascii_name.lower())
+
+
+def suggest_username(name):
+    """name-surname-NNNN, e.g. rahul-jain-4821 (Rahul's default). The two
+    first words of the name, cut so the number always fits in 30; 'user'
+    when the name has no Latin letters or is the signup placeholder."""
+    words = [w for w in _slug_words(name) if w] if name != DEFAULT_NAME else []
+    base = "-".join(words[:2])[: username_rules.MAX_LEN - 5].strip("-") or "user"
+    if not username_rules.LETTER.search(base):
+        base = "user"
+    candidate = f"{base}-{random.randint(1000, 9999)}"
+    while len(candidate) < username_rules.MIN_LEN:
+        candidate += str(random.randint(0, 9))
+    if username_rules.problem(candidate):
+        candidate = f"user-{random.randint(1000, 9999)}"
+    return candidate
+
+
+def ensure_username(profile):
+    """Give `profile` its automatic username if it has none, and return it.
+    The write is conditional on the column still being null, so two reads
+    racing each other give one name, and a collision just tries a new
+    number."""
+    if profile.username:
+        return profile.username
+    for _ in range(20):
+        candidate = suggest_username(profile.name)
+        try:
+            with transaction.atomic():
+                updated = Profile.objects.filter(pk=profile.pk, username__isnull=True).update(
+                    username=candidate
+                )
+        except IntegrityError:
+            continue  # somebody has that one; draw another number
+        if not updated:  # another request named it first
+            profile.refresh_from_db(fields=["username"])
+            return profile.username
+        profile.username = candidate
+        return candidate
+    return None
+
+
+def username_status(raw, user_id=None):
+    """{username, ok, message} for the Settings field as the person types:
+    the rules first, then whether somebody else has it. Your own current
+    name counts as available."""
+    name = username_rules.normalize(raw)
+    message = username_rules.problem(name)
+    if message is None:
+        taken = Profile.objects.filter(username=name).exclude(pk=user_id).exists()
+        if taken:
+            message = "Somebody has that name. Try another."
+    return {"username": name, "ok": message is None, "message": message}
+
+
+def next_username_change(profile, now=None):
+    """When the person may next choose a username, or None if they may now."""
+    if profile.username_changed_at is None:
+        return None
+    at = profile.username_changed_at + USERNAME_COOLDOWN
+    return at if at > (now or timezone.now()) else None
+
+
+def set_username(user_id, raw):
+    """The person's own choice. Refuses a bad or taken name (400/409) and a
+    second change inside 30 days (429). Choosing the name you already have
+    is a no-op, not a change."""
+    profile = Profile.objects.filter(pk=user_id).first()
+    if profile is None:
+        raise Refusal(404, "not_found", "No profile on this account yet.")
+    name = username_rules.normalize(raw)
+    if name == profile.username:
+        return profile
+    message = username_rules.problem(name)
+    if message:
+        raise Refusal(400, "invalid", message)
+    wait = next_username_change(profile)
+    if wait is not None:
+        day = timezone.localtime(wait)
+        raise Refusal(
+            429, "too_soon",
+            f"You can change your username again on {day.day} {day.strftime('%b %Y')}.",
+        )
+    try:
+        with transaction.atomic():
+            Profile.objects.filter(pk=user_id).update(
+                username=name, username_changed_at=timezone.now()
+            )
+    except IntegrityError:
+        raise Refusal(409, "taken", "Somebody has that name. Try another.")
+    profile.refresh_from_db()
+    return profile
+
+
+def resolve_username(raw):
+    """{id, is_consultant} for the profile behind a username — only when the
+    public surfaces already show that person (an approved consultant, or
+    somebody with a live post; the public_profile rule) and they are not
+    blocked. Anything else is None, the view's 404."""
+    from apps.consultants.models import Consultant, ConsultantStatus
+    from apps.content.models import Content
+
+    name = username_rules.normalize(raw)
+    profile = Profile.objects.filter(username=name, blocked_at__isnull=True).first()
+    if profile is None:
+        return None
+    pro = Consultant.objects.filter(
+        profile_id=profile.pk, status=ConsultantStatus.APPROVED
+    ).exists()
+    if not pro and not Content.objects.filter(
+        author_id=profile.pk, status=Content.Status.LIVE
+    ).exists():
+        return None
+    return {"id": str(profile.pk), "username": profile.username, "is_consultant": pro}
+
+
+def username_subquery(outer_field):
+    """ORM annotation: the username for the row's <outer_field>."""
+    return Subquery(
+        Profile.objects.filter(id=OuterRef(outer_field)).values("username")[:1],
+        output_field=TextField(),
+    )
 
 
 # ── avatars (027 onto the media spine) ───────────────────────────────────────

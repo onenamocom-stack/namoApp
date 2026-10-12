@@ -426,6 +426,8 @@ def public_consultants():
                 Profile.objects.filter(id=OuterRef("profile_id")).values("avatar_url")[:1],
                 output_field=TextField(),
             ),
+            # For the share link, 1namo.com/<username> (11 Oct 2026).
+            username=profile_services.username_subquery("profile_id"),
             online=online_expr(),
             busy=busy_expr(),
             sessions_done=sessions_done_expr(),

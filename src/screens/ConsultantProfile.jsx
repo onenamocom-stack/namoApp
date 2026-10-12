@@ -24,6 +24,7 @@ import VerifiedMark from '../components/VerifiedMark.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
 import { shareLink } from '../lib/share.js'
 import { PRO_APP_URL } from '../lib/urls.js'
+import { profileLink } from '../lib/profile.js'
 import { isPro } from '../side.js'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
@@ -80,7 +81,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
-  const { showToast, hasFlag, toggleFlag, bookSession, spending, me } = useStore()
+  const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
   const [tab, setTab] = useState('work')
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
@@ -221,7 +222,10 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
 
   // It said "Profile link copied" and copied nothing.
   const share = async () => {
-    const said = await shareLink(`/consult/${c.id}`, { title: c.name })
+    // 1namo.com/<username> when they have one (11 Oct 2026). Your own
+    // comes from your profile, which always has the current name.
+    const username = own ? profile?.username : c.username
+    const said = await shareLink(profileLink(username, `/consult/${c.id}`), { title: c.name })
     if (said) showToast(said)
   }
   const ownButton =

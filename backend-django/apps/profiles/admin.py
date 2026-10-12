@@ -1,6 +1,9 @@
 """People, in the console — the video flag and the block switch.
 
-Only two things are editable here and both are moderation decisions. A
+Only three things are editable here and all are moderation decisions:
+the two switches and the username (11 Oct 2026 — to take back a name that
+impersonates somebody or is abusive; the form runs the same rules as the
+app). A
 profile's name, phone and birth details are the person's own and are
 read-only: the console is not a place to correct somebody's birth time for
 them, and an admin who can rewrite a birth chart can rewrite every reading
@@ -21,10 +24,10 @@ from .models import Profile
 @dj.register(Profile, site=site)
 class ProfileAdmin(dj.ModelAdmin):
     list_display = (
-        "name", "phone", "video", "is_influencer", "brought", "standing", "complaints", "created_at",
+        "name", "username", "phone", "video", "is_influencer", "brought", "standing", "complaints", "created_at",
     )
     list_filter = ("video_enabled", "influencer", "admin", "created_at")
-    search_fields = ("name", "phone", "email")
+    search_fields = ("name", "username", "phone", "email")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     list_per_page = 40
@@ -37,8 +40,16 @@ class ProfileAdmin(dj.ModelAdmin):
         "id", "phone", "name", "email", "birth_date", "birth_time",
         "birth_time_known", "birth_place", "birth_lat", "birth_lon",
         "birth_zone", "admin", "avatar_url", "legacy_id", "created_at",
-        "blocked_at", "blocked_reason",
+        "blocked_at", "blocked_reason", "username_changed_at",
     )
+
+    def save_model(self, request, obj, form, change):
+        """Logs a username an admin changed. It does not start the person's
+        30 days: that clock is for their own choices."""
+        super().save_model(request, obj, form, change)
+        if change and "username" in form.changed_data:
+            record(request, "username.change", "profile", obj.pk,
+                   was=form.initial.get("username"), now=obj.username)
 
     def has_add_permission(self, request):
         """A profile is created when somebody signs up with a phone they

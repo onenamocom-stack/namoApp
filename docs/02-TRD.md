@@ -201,6 +201,9 @@ moves money or claims a resource is an explicit endpoint.
 | `POST /bookings` | `{ consultantId, serviceId, startsAt }` | booking, or a named refusal | One transaction. See below |
 | `POST /bookings/:id/status` | `{ status }` | booking | Consultant only. Decline writes a reversing ledger entry |
 | `GET /consultants/:id/slots?date=` | — | open slots | The single source for every caller. Built as `consultant_open_slots(uuid, date)`, a `security definer` Postgres function over RPC rather than an Edge Function: the three-way subtraction is pure SQL over tables next to it, and nothing it decides needs a secret. Definer because it subtracts other people's bookings, which RLS hides from the caller — it returns times, never rows. **Horizon 14 days, times IST**, both named in that function and nowhere else |
+| `GET /profiles/username/check/?u=` | — | `{ username, ok, message }` | Signed in (11 Oct 2026). The rules (`profiles/username_rules.py`), then taken-or-free; your own name counts as free |
+| `PUT /profiles/me/username/` | `{ username }` | the profile row | Signed in. 400 bad, 409 taken, 429 inside 30 days of your last choice. The automatic name sets no clock |
+| `GET /profiles/by-username/:name/` | — | `{ id, username, is_consultant }` | Anonymous. Only for an approved consultant or somebody with a live post, never a blocked person; 404 otherwise, the same answer as a free name |
 | `PUT /consultants/me/intro/` | `{ asset_id }` or `{ asset_id: null }` | `{ url, kind }` as stored | Consultant only (11 Oct 2026). The asset must be the caller's own, a video or image, and ready; null takes the intro down |
 | `PUT /consultants/me/rates/` | `{ chat, video, audio, booking }`, whole rupees a minute | the four rates as stored | Consultant only (10 Oct 2026). Each ₹5–₹110, checked on the server, which writes the paise; the one write path to `consultant_services`. `GET` reads them |
 

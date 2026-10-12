@@ -847,6 +847,7 @@ def fetch_author(profile_id):
     # A consultant's one public page is /consult/:id (6 Oct 2026): the app
     # forwards /u/:id there when this is true.
     return {"id": str(profile_id), "name": name,
+            "username": gateway.profile_username(profile_id),
             "is_consultant": bool(gateway.is_approved_consultant(profile_id))}
 
 

@@ -9,8 +9,10 @@
  * This replaced toasts that said "link copied" and copied nothing.
  */
 export async function shareLink(path, { title } = {}) {
-  // A real address since the move off the hash router (6 Oct 2026).
-  const url = `${window.location.origin}${path}`
+  // A real address since the move off the hash router (6 Oct 2026). A full
+  // URL passes through: a username link is always 1namo.com, even when
+  // shared from the pro app (11 Oct 2026).
+  const url = /^https?:/.test(path) ? path : `${window.location.origin}${path}`
   if (navigator.share) {
     try {
       // `text` too: WhatsApp drops `title` and shows only text and link.

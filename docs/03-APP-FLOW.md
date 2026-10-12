@@ -591,6 +591,12 @@ phone over the roster, the catalogue and the newest 200 posts — older posts
 are not found. A row opens the consultant, the product, the blog, the reel,
 or a post's author.
 
+**`1namo.com/<username>`** (11 Oct 2026, Rahul) forwards to `/consult/:id`
+for a consultant and `/u/:id` for anybody else, signed out too (a seeker's
+page still asks a signed-out visitor to sign in). A name nobody has, or a
+seeker with no posts, shows *Nobody by that name*. Share profile shares this
+address whenever the person has a username, from either app.
+
 **One public page per consultant** (6 Oct 2026): `/u/:id` forwards to
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the
@@ -845,7 +851,9 @@ consultant, keeps the seeker profile. The consultant app's preview of
 `/consult/:id` stays the client's view.
 
 **☰ → `/profile/settings`** (the old Settings tab's address): invite a friend,
-then Account (orders, notification history, phone — no Wallet row since 11 Oct
+then Account (**Username** — a sheet with `1namo.com/` and the name, checked
+as you type, saved once every 30 days (11 Oct 2026, Rahul); the pro app's
+Settings has the same row under Practice — orders, notification history, phone — no Wallet row since 11 Oct
 2026, Rahul: the wallet is the icon at the top of every tab), Preferences
 (language, help and support; the full deity image toggle went on 11 Oct
 2026, Rahul: the murti is always whole), and sign out. Back means Home from the profile and the

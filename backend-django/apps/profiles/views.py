@@ -93,6 +93,8 @@ def me(request):
                 refusal_body("not_found", "No profile on this account yet."),
                 status=404,
             )
+        # Everybody has a username from their first read (11 Oct 2026).
+        services.ensure_username(profile)
         return Response(services.serialize_profile(profile))
 
     serializer = OnboardingInput(data=request.data)
@@ -135,3 +137,45 @@ def avatar(request):
             refusal_body(refusal.reason, refusal.message), status=refusal.status
         )
     return Response({"ok": True, "avatar_url": url})
+
+
+# ── usernames (11 Oct 2026, Rahul) ───────────────────────────────────────────
+
+
+class UsernameInput(serializers.Serializer):
+    username = serializers.CharField(max_length=64, trim_whitespace=True)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def username_check(request):
+    """?u=<name> -> {username, ok, message}: Settings checks as you type.
+    Signed-in only — it says whether a name is taken, which is no business
+    of an anonymous script."""
+    return Response(services.username_status(request.query_params.get("u", ""), request.user.pk))
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def my_username(request):
+    """Choose your username. 400 for a bad one, 409 if taken, 429 inside the
+    30 days since your last choice."""
+    serializer = UsernameInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        profile = services.set_username(request.user.pk, serializer.validated_data["username"])
+    except services.Refusal as refusal:
+        return Response(refusal_body(refusal.reason, refusal.message), status=refusal.status)
+    return Response(services.serialize_profile(profile))
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def by_username(request, username):
+    """1namo.com/<username> asks this which page to open: {id, username,
+    is_consultant}. Only for somebody the public surfaces already show; a
+    404 otherwise, the same answer as a name nobody has."""
+    body = services.resolve_username(username)
+    if body is None:
+        return Response(refusal_body("not_found", "Nobody by that name."), status=404)
+    return Response(body)

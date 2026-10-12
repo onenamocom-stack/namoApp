@@ -155,6 +155,8 @@ class TestMeRead:
             "influencer",
             # 4 Oct: the line under the picture.
             "bio",
+            # 11 Oct: 1namo.com/<username>, and when it was last chosen.
+            "username", "username_changed_at",
         }
         assert body["id"] == TEST_USER
         assert body["phone"] == "+919999900001"
@@ -687,3 +689,115 @@ class TestBio:
         full_profile()
         response = authed_client.patch(ME, {"bio": "x" * 151}, format="json")
         assert response.status_code == 400
+
+
+# ── usernames (11 Oct 2026, Rahul) ───────────────────────────────────────────
+
+USERNAME = "/v1/profiles/me/username/"
+CHECK = "/v1/profiles/username/check/"
+
+
+class TestUsername:
+    pytestmark = pytest.mark.django_db
+
+    def test_first_read_gives_name_surname_number(self, authed_client, clean_profiles):
+        full_profile(name="Rahul Jain")
+        body = authed_client.get(ME).json()
+        assert body["username"].startswith("rahul-jain-")
+        assert body["username_changed_at"] is None
+        # Stable: a second read does not draw a new number.
+        assert authed_client.get(ME).json()["username"] == body["username"]
+
+    def test_a_devanagari_name_falls_back_to_user(self, authed_client, clean_profiles):
+        full_profile(name="राहुल")
+        assert authed_client.get(ME).json()["username"].startswith("user-")
+
+    def test_suggestions_always_pass_the_rules(self):
+        from apps.profiles.username_rules import problem
+
+        for name in ("Rahul Jain", "A", "there", "Ram  Kumar   Singh", "R2D2", "x" * 60, "", "राहुल"):
+            assert problem(services.suggest_username(name)) is None, name
+
+    @pytest.mark.parametrize("bad", [
+        "short1", "a" * 31, "rahul_jain", "rahul jain", ".rahuljain", "rahuljain-",
+        "rahul..jain", "rahul.-jain", "9876543210", "notifications", "1namo-rahul",
+        "namo-official",
+    ])
+    def test_rules_refuse(self, bad):
+        from apps.profiles.username_rules import problem
+
+        assert problem(bad) is not None
+
+    @pytest.mark.parametrize("good", ["rahuljain", "rahul.jain", "rahul-jain-01", "astro.guru-9"])
+    def test_rules_allow(self, good):
+        from apps.profiles.username_rules import problem
+
+        assert problem(good) is None
+
+    def test_choose_lowercases_and_starts_the_30_days(self, authed_client, clean_profiles):
+        full_profile()
+        response = authed_client.put(USERNAME, {"username": " Tara.Verma "}, format="json")
+        assert response.status_code == 200
+        assert response.json()["username"] == "tara.verma"
+        assert response.json()["username_changed_at"] is not None
+        again = authed_client.put(USERNAME, {"username": "tara-verma-2"}, format="json")
+        assert again.status_code == 429
+        # The same name again is not a change.
+        assert authed_client.put(USERNAME, {"username": "tara.verma"}, format="json").status_code == 200
+
+    def test_after_30_days_you_may_change_again(self, authed_client, clean_profiles):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        full_profile(username="tara.verma", username_changed_at=timezone.now() - timedelta(days=31))
+        assert authed_client.put(USERNAME, {"username": "tara-verma-2"}, format="json").status_code == 200
+
+    def test_the_automatic_name_does_not_hold_the_first_change(self, authed_client, clean_profiles):
+        full_profile()
+        authed_client.get(ME)
+        assert authed_client.put(USERNAME, {"username": "tara.verma"}, format="json").status_code == 200
+
+    def test_taken_and_bad_are_refused(self, authed_client, clean_profiles):
+        full_profile()
+        make_profile(pid=OTHER_USER, name="Other", phone="+910000000002", username="taken.name")
+        assert authed_client.put(USERNAME, {"username": "Taken.Name"}, format="json").status_code == 409
+        assert authed_client.put(USERNAME, {"username": "bad name!"}, format="json").status_code == 400
+
+    def test_check_says_taken_free_or_why(self, authed_client, clean_profiles):
+        full_profile(username="tara.verma")
+        make_profile(pid=OTHER_USER, name="Other", phone="+910000000002", username="taken.name")
+        assert authed_client.get(CHECK, {"u": "taken.name"}).json()["ok"] is False
+        assert authed_client.get(CHECK, {"u": "free.name1"}).json()["ok"] is True
+        assert authed_client.get(CHECK, {"u": "tara.verma"}).json()["ok"] is True  # your own
+        assert "8" in authed_client.get(CHECK, {"u": "abc"}).json()["message"]
+
+    def test_check_is_signed_in_only(self, api_client):
+        assert api_client.get(CHECK, {"u": "anything1"}).status_code == 401
+
+    def test_resolve_a_consultant(self, api_client, clean_profiles):
+        full_profile(username="tara.verma")
+        Consultant.objects.create(profile_id=TEST_USER, category="Astrologer", status="approved")
+        body = api_client.get("/v1/profiles/by-username/Tara.Verma/").json()
+        assert body == {"id": TEST_USER, "username": "tara.verma", "is_consultant": True}
+
+    def test_resolve_a_seeker_only_once_they_have_posted(self, api_client, clean_profiles):
+        full_profile(username="tara.verma")
+        assert api_client.get("/v1/profiles/by-username/tara.verma/").status_code == 404
+        Content.objects.create(author_id=TEST_USER, kind="post", caption="hi")
+        assert api_client.get("/v1/profiles/by-username/tara.verma/").json()["is_consultant"] is False
+
+    def test_a_blocked_person_does_not_resolve(self, api_client, clean_profiles):
+        from django.utils import timezone
+
+        full_profile(username="tara.verma", blocked_at=timezone.now())
+        Content.objects.create(author_id=TEST_USER, kind="post", caption="hi")
+        assert api_client.get("/v1/profiles/by-username/tara.verma/").status_code == 404
+
+    def test_the_model_validator_guards_the_console(self, clean_profiles):
+        from django.core.exceptions import ValidationError
+
+        profile = full_profile()
+        profile.username = "Bad Name"
+        with pytest.raises(ValidationError):
+            profile.full_clean()

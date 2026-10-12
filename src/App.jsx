@@ -57,6 +57,7 @@ import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
 import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
+import Handle, { isHandlePath } from './screens/Handle.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
 import Notifications from './screens/Notifications.jsx'
@@ -277,6 +278,9 @@ function SessionGate() {
       }
       return
     }
+    // 1namo.com/<username> resolves signed out (11 Oct 2026): it forwards
+    // to /consult/:id, which is open, or /u/:id, which is not.
+    if (!isPro && isHandlePath(pathname)) return
     const fromPro = pathname === '/chart' || pathname.startsWith('/consult/')
     // Support stays open signed out: the person who cannot sign in is the
     // one who most needs the phone number.
@@ -471,6 +475,15 @@ function Frame() {
               error — the most confusing failure available here. Consultant
               build only; the seeker build's catch-all covers /pro itself. */}
           {isPro && <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />}
+
+          {/* 1namo.com/<username> (11 Oct 2026, Rahul). Seeker build only:
+              every username link is on 1namo.com. A static route always
+              outranks this, so no page is ever read as a name. */}
+          {!isPro && (
+            <Route element={<PlainLayout />}>
+              <Route path="/:handle" element={<Handle />} />
+            </Route>
+          )}
 
           <Route
             path="*"

@@ -15,6 +15,9 @@
  * seed identity for both. Unchanged, and still the weak spot.
  */
 import { supabase } from './supabase.js'
+import { SEEKER_APP_URL } from './urls.js'
+
+const SEEKER_ORIGIN = SEEKER_APP_URL.replace(/\/$/, '')
 
 /* VITE_DJANGO_API_URL already carries the /v1 prefix — the deployed libs
    (consultants, chat, content, …) all build `${API_BASE}${path}`. Prepending
@@ -107,4 +110,46 @@ export function createProfileApi({
   }
 
   return { refreshProfile, saveProfile }
+}
+
+/* ── usernames (11 Oct 2026, Rahul) ──────────────────────────────────────────
+   1namo.com/<username>. Everybody has one from their first profile read
+   (name-surname-1234); Settings changes it once every 30 days. The rules
+   live on the server (apps/profiles/username_rules.py) and the check says
+   which one a name breaks, so they are not repeated here. */
+
+/** {username, ok, message} for a name as it is typed. */
+export async function checkUsername(name) {
+  const result = await call(`/username/check/?u=${encodeURIComponent(name)}`, {
+    token: await getToken(),
+  })
+  if (result.status !== 200 || !result.body) {
+    return { username: name, ok: false, message: refusalMessage(result, 'Could not check that name.') }
+  }
+  return result.body
+}
+
+/** Choose your username. Returns the updated profile row, or throws the
+ *  server's sentence (taken, bad, or inside the 30 days). */
+export async function saveUsername(name) {
+  const token = await getToken()
+  if (!token) throw new Error('Sign in to continue.')
+  const result = await call('/me/username/', { method: 'PUT', token, body: { username: name } })
+  if (result.status !== 200 || !result.body) {
+    throw new Error(refusalMessage(result, 'Could not save that name. Try again.'))
+  }
+  return result.body
+}
+
+/** {id, username, is_consultant} behind a username, or null. Anonymous. */
+export async function resolveUsername(name) {
+  const result = await call(`/by-username/${encodeURIComponent(name)}/`)
+  return result.status === 200 ? result.body : null
+}
+
+/** The address to share for a profile: 1namo.com/<username> when there is
+ *  one, the id link otherwise. Always the seeker app's domain — the pro app
+ *  has no username route. */
+export function profileLink(username, fallbackPath) {
+  return username ? `${SEEKER_ORIGIN}/${username}` : fallbackPath
 }
