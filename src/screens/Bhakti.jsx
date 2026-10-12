@@ -26,6 +26,7 @@ import {
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
+import { ActIcon } from '../components/ActIcon.jsx'
 import { tileStyle } from '../lib/tiles.js'
 
 /**
@@ -414,10 +415,11 @@ function Credit({ asset }) {
 
 /**
  * A wallpaper (25 Sep 2026; this shape 12 Oct 2026, Rahul): the picture, then
- * Home's like, comment and reshare, and a green Download. No title, credit or
- * link share — the pictures are NAMO's own, as on the Status shelf.
+ * Home's like, comment, reshare and share, and a green Download. No title or
+ * credit — the pictures are NAMO's own, as on the Status shelf.
  */
 function PictureCard({ asset, busy, onDownload }) {
+  const { showToast } = useStore()
   return (
     <li>
       <PopCard className="overflow-hidden">
@@ -429,6 +431,16 @@ function PictureCard({ asset, busy, onDownload }) {
         />
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
           <BhaktiActions asset={asset} />
+          {/* The link share stays on a wallpaper (12 Oct 2026, Rahul); a
+              status has the WhatsApp button for that. */}
+          <ActIcon
+            icon="share"
+            label="Share"
+            onClick={async () => {
+              const said = await shareAsset(asset)
+              if (said) showToast(said)
+            }}
+          />
           <span className="flex-1" />
           {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
           <PopButton size="sm" variant="gold" full={false} disabled={busy} onClick={onDownload}>
