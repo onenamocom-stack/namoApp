@@ -604,6 +604,9 @@ function TrackCard({ asset, counted = false }) {
           src={asset.url}
           preload="none"
           controls={scrubber}
+          // No Download in the player's ⋮ menu (12 Oct 2026, Rahul). It hides
+          // the button only; a free track's file is still at a public URL.
+          controlsList="nodownload"
           className={scrubber ? 'block w-full px-3 pt-3' : 'hidden'}
           onPlay={onPlay}
           onPause={() => setPlaying(false)}
