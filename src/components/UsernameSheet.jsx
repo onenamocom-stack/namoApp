@@ -92,7 +92,7 @@ export default function UsernameSheet({ onClose }) {
           type="button"
           onClick={save}
           disabled={!ready}
-          className="mt-5 w-full rounded-xl bg-gold-fill py-3 text-meta font-semibold text-white disabled:opacity-40"
+          className="mt-5 flex w-full items-center justify-center rounded-xl bg-gold-fill py-3 text-center text-meta font-semibold text-white disabled:opacity-40"
         >
           {saving ? 'Saving' : 'Save'}
         </button>
