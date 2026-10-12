@@ -87,12 +87,12 @@ class TestBlog:
         cache.clear()
         monkeypatch.setattr(share.requests, "get", lambda *a, **k: (_ for _ in ()).throw(requests.ConnectionError()))
         page = client.get(f"/read/{blog.id}").content.decode()
-        assert 'og:title" content="Shani sade sati, plainly"' in page and "Open in Namo" in page
+        assert 'og:title" content="Shani sade sati, plainly"' in page and "Open in NAMO" in page
 
     def test_a_removed_blog_previews_as_namo(self, client, network, blog):
         Content.objects.filter(pk=blog.id).update(status="removed")
         page = client.get(f"/read/{blog.id}").content.decode()
-        assert "Shani" not in page and 'og:title" content="Namo"' in page
+        assert "Shani" not in page and 'og:title" content="NAMO"' in page
 
     def test_a_blog_with_no_cover_uses_the_site_image(self, client, network, blog):
         Content.objects.filter(pk=blog.id).update(media_url=None)
@@ -175,7 +175,7 @@ class TestProfile:
         self._pro()
         page = client.get("/rahulvjain").content.decode()
         assert '<div id="root"></div>' in page
-        assert 'og:title" content="Rahul Jain · Astrologer on Namo"' in page
+        assert 'og:title" content="Rahul Jain · Astrologer on NAMO"' in page
         assert 'og:description" content="Vedic Astrology, Numerology"' in page
         assert f'og:image" content="https://1namo.com/og/profile/{self.PID}.jpg?v=' in page
         assert 'og:image:width" content="600"' in page
@@ -191,16 +191,23 @@ class TestProfile:
     def test_a_seeker_with_no_posts_previews_as_namo(self, client, network):
         self._person(avatar_url="https://cdn.example/face.png")
         page = client.get("/rahulvjain").content.decode()
-        assert 'og:title" content="Namo"' in page and "Rahul Jain" not in page
+        assert 'og:title" content="NAMO"' in page and "Rahul Jain" not in page
         assert client.get(f"/og/profile/{self.PID}.jpg").status_code == 302
 
     def test_a_seeker_who_posted_previews_with_their_bio(self, client, network):
         self._person(bio="Seeker of the stars.")
         Content.objects.create(author_id=self.PID, kind="post", status="live", caption="hi")
         page = client.get("/RahulVJain").content.decode()
-        assert 'og:title" content="Rahul Jain on Namo"' in page
+        assert 'og:title" content="Rahul Jain on NAMO"' in page
         assert 'og:description" content="Seeker of the stars."' in page
         assert 'og:image" content="https://1namo.com/og.png"' in page  # no photo
 
     def test_a_name_nobody_has_previews_as_namo(self, client, network):
-        assert 'og:title" content="Namo"' in client.get("/nobody-here-1").content.decode()
+        assert 'og:title" content="NAMO"' in client.get("/nobody-here-1").content.decode()
+
+    def test_a_pro_with_no_category_is_pro_on_namo(self, client, network):
+        from apps.consultants.models import Consultant
+
+        self._person()
+        Consultant.objects.create(profile_id=self.PID, category="", status="approved")
+        assert 'og:title" content="Rahul Jain · Pro on NAMO"' in client.get("/rahulvjain").content.decode()

@@ -70,11 +70,11 @@ def _index_html():
 def _tags(*, title, description, image, url, kind="article", size=OG_SIZE):
     e = lambda s: html.escape(s or "", quote=True)  # noqa: E731
     return "\n".join([
-        f"<title>{e(title)} · Namo</title>",
+        f"<title>{e(title)} · NAMO</title>",
         f'<meta name="description" content="{e(description)}" />',
         f'<link rel="canonical" href="{e(url)}" />',
         f'<meta property="og:type" content="{e(kind)}" />',
-        '<meta property="og:site_name" content="Namo" />',
+        '<meta property="og:site_name" content="NAMO" />',
         f'<meta property="og:title" content="{e(title)}" />',
         f'<meta property="og:description" content="{e(description)}" />',
         f'<meta property="og:url" content="{e(url)}" />',
@@ -106,7 +106,7 @@ def _page(tags, url):
     else:
         body = (
             f"<!doctype html><html><head><meta charset=\"utf-8\" />{tags}</head>"
-            f'<body><a href="{html.escape(url)}">Open in Namo</a></body></html>'
+            f'<body><a href="{html.escape(url)}">Open in NAMO</a></body></html>'
         )
     response = HttpResponse(body, content_type="text/html; charset=utf-8")
     # Pages are never cached (the app's own rule): a new deploy and an edited
@@ -125,10 +125,10 @@ def blog_page(request, content_id):
     row = Content.objects.filter(pk=content_id, kind=Content.Kind.ARTICLE,
                                  status=Content.Status.LIVE).first()
     if row is None:
-        return _page(_tags(title="Namo", description="Astrology, darshan and the shop, in one app.",
+        return _page(_tags(title="NAMO", description="Astrology, darshan and the shop, in one app.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     image = f"{_site()}/og/blog/{row.id}.jpg" if row.media_url else f"{_site()}{FALLBACK_IMAGE}"
-    return _page(_tags(title=row.title or "A blog on Namo", description=_summary(row.body),
+    return _page(_tags(title=row.title or "A blog on NAMO", description=_summary(row.body),
                        image=image, url=url), url)
 
 
@@ -144,7 +144,7 @@ def product_page(request, key):
     url = f"{_site()}/shop/p/{key}"
     p = _product(key)
     if p is None:
-        return _page(_tags(title="Namo shop", description="Gemstones, rudraksha, maalas and remedies.",
+        return _page(_tags(title="NAMO shop", description="Gemstones, rudraksha, maalas and remedies.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     price = f"₹{p.price_paise / 100:,.0f}"
     from apps.shop.services import plain_text
@@ -178,7 +178,7 @@ def bhakti_page(request, asset_id):
     url = f"{_site()}/bhakti/s/{asset_id}"
     asset = BhaktiAsset.objects.filter(pk=asset_id, active=True).first()
     if asset is None:
-        return _page(_tags(title="Namo", description="Bhajans, mantras and daily darshan in one app.",
+        return _page(_tags(title="NAMO", description="Bhajans, mantras and daily darshan in one app.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     image = (f"{_site()}/og/bhakti/{asset.id}.jpg" if _bhakti_picture(asset)
              else f"{_site()}{FALLBACK_IMAGE}")
@@ -215,14 +215,14 @@ def profile_page(request, username):
     url = f"{_site()}/{username}"
     profile, pro = _public_profile(username=username)
     if profile is None:
-        return _page(_tags(title="Namo", description="Astrology, darshan and puja in one app.",
+        return _page(_tags(title="NAMO", description="Astrology, darshan and puja in one app.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     if pro is not None:
-        title = f"{profile.name} · {pro.category or 'Astrologer'} on Namo"
-        description = _summary(pro.specialization or pro.bio or profile.bio) or "Talk to them on Namo."
+        title = f"{profile.name} · {pro.category or 'Pro'} on NAMO"
+        description = _summary(pro.specialization or pro.bio or profile.bio) or "Talk to them on NAMO."
     else:
-        title = f"{profile.name} on Namo"
-        description = _summary(profile.bio) or "Their posts on Namo."
+        title = f"{profile.name} on NAMO"
+        description = _summary(profile.bio) or "Their posts on NAMO."
     if profile.avatar_url:
         # The photo's own version rides along, so a new picture is a new
         # address and no cache shows the old face.
