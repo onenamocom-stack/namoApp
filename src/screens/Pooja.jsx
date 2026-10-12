@@ -186,6 +186,22 @@ export default function Pooja() {
     for (const b of BLOOMS) new Image().src = `${import.meta.env.BASE_URL}puja/${b.f}.webp`
   }, [])
 
+  /* The bells ring once as you come in, swinging as they do when touched
+     (12 Oct 2026, Rahul). The swing always shows; the sound plays when the
+     browser allows it — after a tap in the app it does, and a darshan opened
+     straight from a link, before any touch, swings in silence. */
+  useEffect(() => {
+    const strike = setTimeout(() => {
+      ringGhanti()
+      setRinging(true)
+    }, 500)
+    const still = setTimeout(() => setRinging(false), 1900)
+    return () => {
+      clearTimeout(strike)
+      clearTimeout(still)
+    }
+  }, [])
+
   // A swipe can land on a deity whose pill is off the end of the row, so the
   // row follows. No `behavior: 'smooth'` — declined inside scroll containers
   // in this app; `block: 'nearest'` keeps it horizontal.

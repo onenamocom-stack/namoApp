@@ -476,7 +476,8 @@ top to bottom —
   plays.
 - A **gold band** across the shrine (`public/puja/gold-band.webp`, Canva design
   DAHXQAKkIg0, keyed). Its two pendants carry the **ghantis**, which ring when
-  touched.
+  touched, and once on their own as you come in (12 Oct 2026, Rahul; silent
+  where the browser has not yet had a touch).
 - The **mandir's plaque** on the band: the temple's name and, under it with a
   pin, its location — **set per murti in the console** (8 Oct 2026, Rahul:
   each murti will be a photo from a different temple). A murti with no temple
