@@ -241,8 +241,10 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
         // The category always (11 Oct 2026, Rahul): "Verified" is the mark
         // beside the name now, not a word up here.
         sub={c.category}
+        // No Share up here (12 Oct 2026, Rahul): Share profile sits under
+        // the bio on every view.
         right={
-          own ? (
+          own && (
             <Link
               to="/profile/settings"
               aria-label="Settings"
@@ -250,10 +252,6 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             >
               <span aria-hidden="true" className="text-lead leading-none">☰</span>
             </Link>
-          ) : (
-            <button type="button" onClick={share} className="text-label uppercase tracking-label text-t2">
-              Share
-            </button>
           )
         }
       />
