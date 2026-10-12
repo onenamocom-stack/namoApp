@@ -22,7 +22,8 @@ import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
  *
  * The name comes from `authors_public`, which lists only people who have
  * published. `profiles` stays own-row-only: no phone, no email, no birth
- * details, and no page at all for someone who has never posted.
+ * details, and no page for someone who has never posted — unless a follow
+ * joins them to you, either way, so your follow list opens (12 Oct 2026).
  */
 export default function UserProfile() {
   const { id } = useParams()
