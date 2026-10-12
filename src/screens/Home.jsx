@@ -317,15 +317,24 @@ export default function Home() {
 function NewPostButton({ onOpen }) {
   const { session, showToast } = useStore()
   return (
-    <div className="pointer-events-none sticky bottom-4 z-20 -mt-14 flex justify-end px-4">
+    <div className="pointer-events-none sticky bottom-4 z-20 -mt-12 flex justify-end px-4">
+      {/* 48px, 15% under the 56 it was, and the plus cut out of the disc so
+          the feed shows through it (12 Oct 2026, Rahul: "transparent", not
+          black). A mask, not a white stroke: it is a hole. */}
       <button
         type="button"
         aria-label="New post"
         onClick={() => (session ? onOpen() : showToast('Sign in to post.'))}
-        className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full bg-gold-fill text-ink shadow-[0_6px_16px_rgba(0,0,0,0.22)] active:scale-95"
+        className="pointer-events-auto h-12 w-12 rounded-full text-gold-fill drop-shadow-[0_5px_12px_rgba(0,0,0,0.25)] active:scale-95"
       >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
+        <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">
+          <defs>
+            <mask id="new-post-plus">
+              <rect width="48" height="48" fill="white" />
+              <path d="M24 13.5v21M13.5 24h21" stroke="black" strokeWidth="4" strokeLinecap="round" />
+            </mask>
+          </defs>
+          <circle cx="24" cy="24" r="24" fill="currentColor" mask="url(#new-post-plus)" />
         </svg>
       </button>
     </div>
