@@ -26,7 +26,7 @@ import {
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
-import { ActIcon, Count } from './Home.jsx'
+import { ActIcon, Count } from '../components/ActIcon.jsx'
 import { tileStyle } from '../lib/tiles.js'
 
 /**
@@ -751,13 +751,17 @@ function StatusShelf({ list }) {
  * place. THE PREVIEW IS THE IMAGE: what you see is exactly what is shared.
  */
 function StatusCard({ asset, details, onEdit }) {
-  const { showToast, hasFlag, toggleFlag } = useStore()
+  const { showToast, hasFlag, toggleFlag, t } = useStore()
   const [thread, setThread] = useState(false)
   const [comments, setComments] = useState(asset.comments ?? 0)
-  // The server's count plus your own tap, so it moves the instant you press
-  // (Home's rule). `blike:` is a Bhakti picture's like, not a post's.
+  // The server's count, moved by your own tap the instant you press. It
+  // already holds your like from before, so the change is counted, not the
+  // state. `blike:`/`brepost:` are a Bhakti picture's, not a post's.
   const liked = hasFlag(`blike:${asset.id}`)
-  const likes = (asset.likes ?? 0) + (liked ? 1 : 0)
+  const reshared = hasFlag(`brepost:${asset.id}`)
+  const [was] = useState(() => ({ liked, reshared }))
+  const likes = (asset.likes ?? 0) + (liked - was.liked)
+  const reposts = (asset.reposts ?? 0) + (reshared - was.reshared)
   const box = useRef(null)
   const [near, setNear] = useState(false)
   const [preview, setPreview] = useState(null) // { url, blob, marks }
@@ -837,7 +841,7 @@ function StatusCard({ asset, details, onEdit }) {
               </button>
             ))}
         </div>
-        {/* Home's like, comment and share, then WhatsApp (12 Oct 2026,
+        {/* Home's like, comment and reshare, then WhatsApp (12 Oct 2026,
             Rahul). The title and credit went: the pictures here are NAMO's
             own. No link-share icon: the green button is the one share, and
             it only shares the status. */}
@@ -853,6 +857,19 @@ function StatusCard({ asset, details, onEdit }) {
           <Count n={likes} />
           <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
           <Count n={comments} />
+          {/* To your profile and the feed, the plain picture under "you
+              reshared" (12 Oct 2026, Rahul: option B). */}
+          <ActIcon
+            icon="repost"
+            label="Reshare"
+            onLabel="Reshared"
+            on={reshared}
+            tone="text-[#1f7a4d]"
+            onClick={() =>
+              toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })
+            }
+          />
+          <Count n={reposts} />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working || !preview} onClick={share}>
             <span className="flex items-center gap-1.5">

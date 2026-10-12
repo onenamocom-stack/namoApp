@@ -4,9 +4,11 @@ import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, isMine, productHref, recordView } from '../lib/content.js'
+import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
+import { ActIcon, Count } from '../components/ActIcon.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
@@ -140,7 +142,16 @@ export default function Home() {
   const [reshares, setReshares] = useState([])
   useEffect(() => {
     let active = true
-    fetchReposts({ limit: 50 }).then((rows) => active && setReshares(rows))
+    // A post's reshares and a Bhakti picture's (12 Oct 2026), newest first.
+    Promise.all([fetchReposts({ limit: 50 }), fetchBhaktiReposts({ limit: 50 })]).then(
+      ([posts, pictures]) =>
+        active &&
+        setReshares(
+          [...posts, ...pictures.map((r) => ({ ...r, picture: true }))].sort((a, b) =>
+            String(b.at).localeCompare(String(a.at)),
+          ),
+        ),
+    )
     return () => {
       active = false
     }
@@ -163,11 +174,11 @@ export default function Home() {
 
   const posts = published.map((c) => ({ id: c.id, kind: CARD_FOR_KIND[c.kind], data: c }))
   const reshared = reshares
-    .filter((r) => CARD_FOR_KIND[r.post.kind] !== 'article')
+    .filter((r) => r.picture || CARD_FOR_KIND[r.post.kind] !== 'article')
     .map((r) => ({
       id: `rp:${r.id}`,
-      kind: CARD_FOR_KIND[r.post.kind],
-      data: r.post,
+      kind: r.picture ? 'bhakti' : CARD_FOR_KIND[r.post.kind],
+      data: r.picture ? r.asset : r.post,
       by: { id: r.byId, name: r.byName },
     }))
   const real = []
@@ -250,6 +261,8 @@ export default function Home() {
                     return <ReelCard key={item.id} reel={item.data} resharedBy={item.by} />
                   case 'article':
                     return <ArticleCard key={item.id} read={item.data} />
+                  case 'bhakti':
+                    return <PictureCard key={item.id} asset={item.data} resharedBy={item.by} />
                   case 'course':
                     return <CourseCard key={item.id} course={item.data} />
                   case 'product':
@@ -437,34 +450,12 @@ function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow, on
 /** One icon in the action row. `on` fills it; the heart goes saffron. At
  *  rest the icons are the light slate (`--text-3`), not black — asked for
  *  on 30 Sep; the row should sit back behind the picture. */
-export function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={on && onLabel ? onLabel : label}
-      aria-pressed={onLabel ? on : undefined}
-      className={`-m-1.5 p-1.5 transition-transform active:scale-90 ${
-        on && tone ? tone : 'text-t3 hover:text-t2'
-      }`}
-    >
-      <Icon name={icon} size={25} weight={1.7} filled={on} />
-    </button>
-  )
-}
-
 /**
  * Heart, comment, reshare, share — and save on the right. Like, Reshare and
  * Save are durable flags; Comment opens the thread and Share shares. `like`
  * is left out for items that never had one. Reshare needs `authorId` and is
  * hidden on your own post — the server refuses it there anyway.
  */
-/** A count beside its icon, Instagram's way (4 Oct 2026; the numbers were a
- *  line of text under the row). Nothing at zero. */
-export function Count({ n }) {
-  return n > 0 ? <span className="-ml-2 text-meta font-semibold tnum text-t1">{n.toLocaleString('en-IN')}</span> : null
-}
-
 export function ActionRow({ id, like = true, onComment, onShare, authorId, likes = null, comments = 0, reposts = 0 }) {
   const { hasFlag, toggleFlag, session, t } = useStore()
   const me = session?.user?.id
@@ -683,6 +674,57 @@ function ResharedLine({ by }) {
       <Icon name="repost" size={14} weight={2} />
       {t('home.resharedBy', { name: by.name })}
     </Link>
+  )
+}
+
+/**
+ * A Bhakti picture somebody reshared (12 Oct 2026, Rahul: option B): the
+ * plain picture under "X reshared", with its own like, comment and reshare —
+ * the same rows as on the Status shelf. A tap on the picture opens its shelf.
+ */
+function PictureCard({ asset, resharedBy }) {
+  const { hasFlag, toggleFlag, t } = useStore()
+  const [thread, setThread] = useState(false)
+  const [comments, setComments] = useState(asset.comments ?? 0)
+  const liked = hasFlag(`blike:${asset.id}`)
+  const reshared = hasFlag(`brepost:${asset.id}`)
+  const [was] = useState(() => ({ liked, reshared }))
+  return (
+    <article className="border-b border-rule bg-white">
+      <ResharedLine by={resharedBy} />
+      <Link to={`/bhakti?kind=${asset.kind}`} className="mt-2.5 block">
+        <img src={asset.url} alt={asset.title} loading="lazy" className="aspect-[4/5] w-full bg-surface2 object-cover" />
+      </Link>
+      <div className="flex items-center gap-4 px-3 pt-2.5">
+        <ActIcon
+          icon="heart"
+          label="Like"
+          onLabel="Liked"
+          on={liked}
+          tone="text-gold-fill"
+          onClick={() => toggleFlag(`blike:${asset.id}`)}
+        />
+        <Count n={(asset.likes ?? 0) + (liked - was.liked)} />
+        <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
+        <Count n={comments} />
+        <ActIcon
+          icon="repost"
+          label="Reshare"
+          onLabel="Reshared"
+          on={reshared}
+          tone="text-[#1f7a4d]"
+          onClick={() => toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })}
+        />
+        <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+      </div>
+      <p className="px-3 pb-4 pt-2 text-meta text-t2">
+        <Link to={`/bhakti?kind=${asset.kind}`} className="mr-1.5 font-semibold text-t1">
+          Bhakti
+        </Link>
+        {asset.title}
+      </p>
+      <CommentSheet open={thread} onClose={() => setThread(false)} bhaktiId={asset.id} onCount={setComments} />
+    </article>
   )
 }
 

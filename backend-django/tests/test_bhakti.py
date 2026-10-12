@@ -81,6 +81,7 @@ class TestFetchAssets:
                 "source": r["source"],
                 "likes": 0,
                 "comments": 0,
+                "reposts": 0,
             }
             for r in body
         ]

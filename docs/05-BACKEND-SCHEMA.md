@@ -1162,12 +1162,13 @@ separate values means a count can answer either question later without unpicking
 rows.
 
 `reactions.target_type` gained `'bhakti'` (`reactions/0003`, 12 Oct 2026): a like
-on a Bhakti picture, `target_id` a `bhakti_assets.id`. **`bhakti_comments`**
+or a reshare (`repost`) of a Bhakti picture, `target_id` a `bhakti_assets.id`. Only
+an active, free status or wallpaper can be reshared; nobody is notified. **`bhakti_comments`**
 (`bhakti/0005`): `asset_id` (FK, cascade), `author_id`, `body`, `status` (live ·
 removed), `created_at`; index (asset, status, created_at). The same rules as
 `content_comments`, except that the commenter or an admin removes one — a
-picture has no author. `GET /bhakti/assets/` carries each row's `likes` and live
-`comments` counts.
+picture has no author. `GET /bhakti/assets/` carries each row's `likes`, live
+`comments` and `reposts` counts; `GET /bhakti/reposts/?by=` lists reshares.
 
 ### 5.3 The feed is not a table
 

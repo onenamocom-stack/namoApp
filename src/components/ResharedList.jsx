@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { authorHref } from '../screens/Home.jsx'
 import { fetchReposts } from '../lib/content.js'
+import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { Kicker } from './Pop.jsx'
 import { Row } from './Primitives.jsx'
 
@@ -17,7 +18,16 @@ export default function ResharedList({ by, className = '' }) {
   useEffect(() => {
     let active = true
     if (!by) return undefined
-    fetchReposts({ by, limit: 50 }).then((r) => active && setRows(r))
+    // Posts and Bhakti pictures (12 Oct 2026), newest first.
+    Promise.all([fetchReposts({ by, limit: 50 }), fetchBhaktiReposts({ by, limit: 50 })]).then(
+      ([posts, pictures]) =>
+        active &&
+        setRows(
+          [...posts, ...pictures.map((r) => ({ ...r, picture: true }))].sort((a, b) =>
+            String(b.at).localeCompare(String(a.at)),
+          ),
+        ),
+    )
     return () => {
       active = false
     }
@@ -29,7 +39,12 @@ export default function ResharedList({ by, className = '' }) {
     <section className={className}>
       <Kicker>{`Reshared · ${rows.length}`}</Kicker>
       <div className="mt-3">
-        {rows.map(({ id, post, time }) => {
+        {rows.map(({ id, post, time, picture, asset }) => {
+          if (picture) {
+            return (
+              <Row key={id} to={`/bhakti?kind=${asset.kind}`} title={asset.title} note="Bhakti picture" />
+            )
+          }
           const kind = post.kind === 'clip' ? 'Reel' : post.kind === 'article' ? 'Blog' : 'Photo'
           const words = post.title || post.caption || post.body
           return (

@@ -82,17 +82,20 @@ def with_counts(qs):
 
     from apps.reactions.models import Reaction
 
-    likes = (
-        Reaction.objects.filter(kind=Reaction.Kind.LIKE, target_type=Reaction.TargetType.BHAKTI,
-                                target_id=OuterRef("id"))
-        .values("target_id").annotate(n=Count("id")).values("n")
-    )
+    def counted(kind):
+        return (
+            Reaction.objects.filter(kind=kind, target_type=Reaction.TargetType.BHAKTI,
+                                    target_id=OuterRef("id"))
+            .values("target_id").annotate(n=Count("id")).values("n")
+        )
+
     comments = (
         BhaktiComment.objects.filter(asset_id=OuterRef("id"), status=BhaktiComment.Status.LIVE)
         .values("asset_id").annotate(n=Count("id")).values("n")
     )
     return qs.annotate(
-        like_count=Coalesce(Subquery(likes, output_field=IntegerField()), 0),
+        like_count=Coalesce(Subquery(counted(Reaction.Kind.LIKE), output_field=IntegerField()), 0),
+        repost_count=Coalesce(Subquery(counted(Reaction.Kind.REPOST), output_field=IntegerField()), 0),
         comment_count=Coalesce(Subquery(comments, output_field=IntegerField()), 0),
     )
 
@@ -148,3 +151,52 @@ def remove_comment(comment_id, actor_id, role):
     row.status = BhaktiComment.Status.REMOVED
     row.save(update_fields=["status"])
     return row
+
+
+REPOSTABLE_KINDS = ("status", "wallpaper")
+
+
+def assert_repostable(asset_id, actor_id):
+    """A picture on the shelves, active and free; the resharer not blocked."""
+    from apps.content.services import BLOCKED_REFUSAL
+    from apps.profiles import services as profile_services
+
+    if profile_services.is_blocked(actor_id):
+        raise PermissionDenied(BLOCKED_REFUSAL)
+    ok = BhaktiAsset.objects.filter(
+        pk=asset_id, active=True, kind__in=REPOSTABLE_KINDS, price_paise__isnull=True
+    ).exists()
+    if not ok:
+        raise NotFound("That is not in the library.")
+
+
+def list_reposts(*, by=None, limit=50):
+    """Reshared pictures, newest first, with who reshared them — the feed's
+    "X reshared" items and a profile's Reshared list. A withdrawn picture
+    and a blocked resharer drop out."""
+    from apps.profiles import services as profile_services
+    from apps.profiles.models import Profile
+    from apps.reactions.models import Reaction
+
+    qs = Reaction.objects.filter(kind=Reaction.Kind.REPOST, target_type=Reaction.TargetType.BHAKTI)
+    if by is not None:
+        qs = qs.filter(actor_id=by)
+    blocked = list(Profile.objects.exclude(blocked_at=None).values_list("id", flat=True))
+    if blocked:
+        qs = qs.exclude(actor_id__in=blocked)
+    events = list(
+        qs.annotate(actor_name=profile_services.name_subquery("actor_id")).order_by("-created_at")[: limit * 2]
+    )
+    assets = {
+        str(a.id).replace("-", ""): a
+        for a in with_counts(BhaktiAsset.objects.filter(
+            pk__in=[e.target_id for e in events], active=True, kind__in=REPOSTABLE_KINDS))
+    }
+    out = []
+    for e in events:
+        asset = assets.get(str(e.target_id).replace("-", ""))
+        if asset is not None:
+            out.append((e, asset))
+        if len(out) == limit:
+            break
+    return out

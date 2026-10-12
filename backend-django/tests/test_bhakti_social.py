@@ -59,3 +59,28 @@ class TestBhaktiSocial:
         url = f"/v1/bhakti/assets/{asset.id}/comments/"
         assert api_client.get(url).status_code == 404
         assert api_client.post(url, {"body": "x"}, format="json", **auth(me)).status_code == 404
+
+
+@pytest.mark.django_db
+class TestBhaktiReshare:
+    def _repost(self, api_client, token, asset_id):
+        return api_client.post(
+            "/v1/reactions/", {"target_type": "bhakti", "target_id": str(asset_id), "kind": "repost"},
+            format="json", **auth(token),
+        )
+
+    def test_a_reshare_lists_with_its_resharer(self, api_client, me):
+        asset = make_asset(kind="status", title="Ganesh")
+        assert self._repost(api_client, me, asset.id).status_code in (200, 201)
+        rows = api_client.get("/v1/bhakti/reposts/").json()
+        assert len(rows) == 1 and rows[0]["asset"]["id"] == str(asset.id)
+        assert rows[0]["asset"]["reposts"] == 1
+        mine = api_client.get(f"/v1/bhakti/reposts/?by={rows[0]['reposted_by']}").json()
+        assert len(mine) == 1
+        assert api_client.get(f"/v1/bhakti/reposts/?by={OTHER_USER}").json() == []
+
+    def test_only_free_active_pictures_reshare(self, api_client, me):
+        tune = make_asset(kind="tune", title="T", deity=None)
+        gone = make_asset(kind="status", title="G", active=False)
+        assert self._repost(api_client, me, tune.id).status_code == 404
+        assert self._repost(api_client, me, gone.id).status_code == 404

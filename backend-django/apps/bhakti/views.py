@@ -42,6 +42,7 @@ def _row(asset):
         # 12 Oct 2026: the Status shelf's heart and comment counts.
         "likes": getattr(asset, "like_count", 0),
         "comments": getattr(asset, "comment_count", 0),
+        "reposts": getattr(asset, "repost_count", 0),
     }
 
 
@@ -134,3 +135,27 @@ def comments(request, asset_id):
 def remove_comment(request, comment_id):
     services.remove_comment(comment_id, request.user.pk, getattr(request.user, "role", ""))
     return Response({"removed": True})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def reposts(request):
+    """Reshared pictures, newest first; `by` narrows to one person. Public,
+    like a post's reshares (12 Oct 2026)."""
+    import uuid
+
+    by = request.query_params.get("by") or None
+    try:
+        by = uuid.UUID(by) if by else None
+        limit = max(1, min(int(request.query_params.get("limit", 50)), 100))
+    except ValueError:
+        return Response(refusal_body("invalid", "Bad query."), status=400)
+    return Response([
+        {
+            "reposted_by": str(event.actor_id),
+            "reposted_by_name": event.actor_name,
+            "reposted_at": event.created_at,
+            "asset": _row(asset),
+        }
+        for event, asset in services.list_reposts(by=by, limit=limit)
+    ])

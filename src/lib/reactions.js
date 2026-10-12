@@ -47,6 +47,7 @@ const KINDS = {
 // flags never mistake one for the other.
 const ALIASES = {
   blike: { kind: 'like', targetType: 'bhakti' },
+  brepost: { kind: 'repost', targetType: 'bhakti' },
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -101,7 +102,7 @@ export async function fetchMine() {
 
   const rows = await api('/reactions/', { token })
   return (rows ?? []).map((r) =>
-    r.target_type === 'bhakti' && r.kind === 'like' ? `blike:${r.target_id}` : `${r.kind}:${r.target_id}`,
+    r.target_type === 'bhakti' ? `b${r.kind}:${r.target_id}` : `${r.kind}:${r.target_id}`,
   )
 }
 

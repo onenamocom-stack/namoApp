@@ -34,13 +34,22 @@ def add_reaction(actor_id, target_type, target_id, kind):
     you must not be blocked, and it must not be your own. Its author hears
     about it once, when the row is first created.
     """
+    # A Bhakti picture can be reshared too (12 Oct 2026, Rahul): it goes to
+    # your profile and the feed as the picture, under "X reshared". The
+    # library has no author, so nobody is told.
+    bhakti = target_type == Reaction.TargetType.BHAKTI
     if kind == Reaction.Kind.REPOST:
-        from apps.content import services as content_services
+        if bhakti:
+            from apps.bhakti import services as bhakti_services
 
-        content_services.assert_repostable(target_type, target_id, actor_id)
+            bhakti_services.assert_repostable(target_id, actor_id)
+        else:
+            from apps.content import services as content_services
+
+            content_services.assert_repostable(target_type, target_id, actor_id)
 
     reaction, created = _insert(actor_id, target_type, target_id, kind)
-    if created and kind == Reaction.Kind.REPOST:
+    if created and kind == Reaction.Kind.REPOST and not bhakti:
         content_services.notify_repost(target_id, actor_id)
     return reaction, created
 

@@ -62,6 +62,7 @@ function toAsset(row) {
     // The Status shelf's heart and comment counts (12 Oct 2026).
     likes: row.likes ?? 0,
     comments: row.comments ?? 0,
+    reposts: row.reposts ?? 0,
   }
 }
 
@@ -99,6 +100,27 @@ export async function fetchDarshan() {
       credit: i.credit,
     })),
   }))
+}
+
+/**
+ * Reshared pictures, newest first: `{ id, byId, byName, at, asset }` (12 Oct
+ * 2026). `by` narrows to one person. An API from before reshares reads as
+ * none.
+ */
+export async function fetchBhaktiReposts({ by = null, limit = 50 } = {}) {
+  try {
+    const response = await fetch(`${API_BASE}/bhakti/reposts/?limit=${limit}${by ? `&by=${by}` : ''}`)
+    if (!response.ok) return []
+    return (await response.json()).map((r) => ({
+      id: `${r.reposted_by}:${r.asset.id}`,
+      byId: r.reposted_by,
+      byName: r.reposted_by_name || 'Someone',
+      at: r.reposted_at,
+      asset: toAsset(r.asset),
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function fetchAssets() {
