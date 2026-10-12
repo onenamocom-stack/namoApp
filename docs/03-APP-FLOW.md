@@ -841,7 +841,9 @@ inside it; a first visit there asks for the phone code once) and **Share profile
 the row each, both the white button (no saffron, Follow or Following) (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
 call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
-your own page only (11 Oct 2026, Rahul); a client sees three.
+your own page only (11 Oct 2026, Rahul); a client sees three. On your own page
+Followers and Following open the list of those people (12 Oct 2026, Rahul);
+on anybody else's they are numbers only — the server lists only your own.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
 settings, which gain a first section, Profile: **Intro video or photo** (and
 **Influencer**, at `/profile/influencer` under a plain top bar whose back is

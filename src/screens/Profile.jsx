@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
 import ResharedList from '../components/ResharedList.jsx'
@@ -9,10 +8,10 @@ import { Loader, Orbit } from '../components/Cosmos.jsx'
 import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { signOut } from '../lib/signout.js'
-import { fetchByAuthor, fetchOne, followCounts, followList } from '../lib/content.js'
+import { fetchByAuthor, fetchOne, followCounts } from '../lib/content.js'
 import { shareLink } from '../lib/share.js'
 import { LANGS } from '../data/i18n.js'
-import { Sheet, TopBar } from '../components/Chrome.jsx'
+import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { uploadAvatar } from '../lib/avatar.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
@@ -25,6 +24,7 @@ import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
 import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
 import { profileLink } from '../lib/profile.js'
 import ProfileHead from '../components/ProfileHead.jsx'
+import FollowSheet from '../components/FollowSheet.jsx'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -288,64 +288,6 @@ function AvatarPicker() {
  * you write one — WhatsApp's default, and it reads like a status rather
  * than an empty field. Tap to edit; 150 characters.
  */
-/** Your followers or whom you follow, by name. Tap one to open them. */
-function FollowSheet({ which, onClose }) {
-  const { t } = useStore()
-  const [items, setItems] = useState(null)
-  useEffect(() => {
-    if (!which) return undefined
-    let live = true
-    setItems(null)
-    followList(which)
-      .then((rows) => live && setItems(rows))
-      .catch(() => live && setItems([]))
-    return () => {
-      live = false
-    }
-  }, [which])
-  if (!which) return null
-  // Out of the hero and onto the page, in the phone-width frame, as
-  // CommentSheet does — inside the hero it opened mid-page.
-  return createPortal(
-    <div className="fixed inset-y-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
-    <Sheet open onClose={onClose} title={t(`prof.${which}`)}>
-      {items === null ? (
-        <Loader className="py-8" />
-      ) : items.length === 0 ? (
-        <p className="py-8 text-center text-meta t-faint">
-          {which === 'followers' ? t('prof.noFollowers') : t('prof.noFollowing')}
-        </p>
-      ) : (
-        <ul className="max-h-[60vh] overflow-y-auto">
-          {items.map((p) => (
-            <li key={p.id}>
-              <Link
-                to={p.is_consultant ? `/consult/${p.id}` : `/u/${p.id}`}
-                onClick={onClose}
-                className="flex items-center gap-3 border-b border-rule py-3"
-              >
-                {p.avatar_url ? (
-                  <img src={p.avatar_url} alt="" className="h-10 w-10 flex-none rounded-full object-cover" />
-                ) : (
-                  <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-surface text-meta font-semibold t-heading">
-                    {(p.name || '?').slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-meta font-semibold t-heading">{p.name}</span>
-                  {p.is_consultant && <span className="block text-[12px] t-faint">{t('prof.consultant')}</span>}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Sheet>
-    </div>,
-    document.body,
-  )
-}
-
 function Bio() {
   const { profile, saveProfile, refreshProfile, session, showToast, t } = useStore()
   const [editing, setEditing] = useState(false)

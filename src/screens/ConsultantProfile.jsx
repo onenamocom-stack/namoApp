@@ -22,6 +22,7 @@ import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { FeedCard } from './Home.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
+import FollowSheet from '../components/FollowSheet.jsx'
 import { shareLink } from '../lib/share.js'
 import { PRO_APP_URL } from '../lib/urls.js'
 import { profileLink } from '../lib/profile.js'
@@ -91,6 +92,10 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
   const [day, setDay] = useState(days[0].key)
   const [slots, setSlots] = useState(null)
   const [followers, setFollowers] = useState(null)
+  // Your own page opens your followers or following (12 Oct 2026, Rahul).
+  // The server lists only your own, so on anybody else's the numbers stay
+  // numbers.
+  const [listing, setListing] = useState(null)
   // Their posts, loaded here rather than in the Posts tab, because the
   // header counts them (11 Oct 2026).
   const [items, setItems] = useState(null)
@@ -255,6 +260,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
           )
         }
       />
+      {own && <FollowSheet which={listing} onClose={() => setListing(null)} />}
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         {/* No banner. A cover image on a profile this dense pushes the name,
@@ -275,8 +281,8 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
               mark={c.verified && <VerifiedMark size={20} />}
               stats={[
                 { n: items?.length ?? null, label: 'posts' },
-                { n: followers?.followers ?? null, label: 'followers' },
-                { n: followers?.following ?? null, label: 'following' },
+                { n: followers?.followers ?? null, label: 'followers', onClick: own ? () => setListing('followers') : undefined },
+                { n: followers?.following ?? null, label: 'following', onClick: own ? () => setListing('following') : undefined },
               ]}
             />
           </div>
