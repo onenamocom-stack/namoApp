@@ -542,10 +542,13 @@ export async function followerCount(profileId) {
   return (await followCounts(profileId)).followers
 }
 
-/** A published author's public name, for /u/:id. Null when they have not published. */
+/** A person's public name, for /u/:id. Null when they have not published
+ *  and no follow joins them to you — the token is sent so the server can
+ *  see that follow (12 Oct 2026). */
 export async function fetchAuthor(profileId) {
   try {
-    return await api(`/content/authors/${profileId}/`)
+    const token = await accessToken()
+    return await api(`/content/authors/${profileId}/`, token ? { token } : undefined)
   } catch (err) {
     if (err.message === 'That author is not available.') return null
     throw err

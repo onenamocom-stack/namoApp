@@ -359,7 +359,8 @@ def follow_list(request, which):
 def author(request, profile_id):
     """A published author's public name, for /u/:id. A profile with no live
     content is a 404 — publishing is what puts a name on a screen (025)."""
-    row = services.fetch_author(profile_id)
+    viewer = request.user.pk if request.user.is_authenticated else None
+    row = services.fetch_author(profile_id, viewer)
     if row is None:
         return Response(refusal_body("not_found", "That author is not available."), status=404)
     return Response(row)

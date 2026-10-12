@@ -841,6 +841,19 @@ class TestFollowCountsAndAuthors:
                                  caption="d", status=Content.Status.DRAFT)
         assert api_client.get(f"/v1/content/authors/{draft_author}/").status_code == 404
 
+    def test_a_follow_opens_the_page_of_somebody_who_never_posted(
+        self, api_client, seeker_token, sign_hs256, roster
+    ):
+        # 12 Oct 2026, Rahul: a name in your follow list opens their page.
+        URL = f"/v1/content/authors/{SECOND_SEEKER}/"
+        stranger = sign_hs256(claims=make_claims(sub=APPROVED))
+        assert api_client.get(URL, **auth(seeker_token)).status_code == 404
+        Reaction.objects.create(actor_id=SECOND_SEEKER, target_type="profile", target_id=SEEKER, kind="follow")
+        mine = api_client.get(URL, **auth(seeker_token))
+        assert mine.status_code == 200 and mine.json()["id"] == SECOND_SEEKER
+        assert api_client.get(URL).status_code == 404
+        assert api_client.get(URL, **auth(stranger)).status_code == 404
+
 
 # ── media wiring: presign -> PUT -> confirm -> publish ───────────────────────
 

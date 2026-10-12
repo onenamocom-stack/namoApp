@@ -597,6 +597,11 @@ page still asks a signed-out visitor to sign in). A name nobody has, or a
 seeker with no posts, shows *Nobody by that name*. Share profile shares this
 address whenever the person has a username, from either app.
 
+**A name in your follow list always opens** (12 Oct 2026, Rahul): `/u/:id`
+for somebody who has never posted exists for you when either of you follows
+the other; with no posts it says "Nothing published yet". To anybody else,
+somebody who has never posted still has no page, and the app goes to Home.
+
 **One public page per consultant** (6 Oct 2026): `/u/:id` forwards to
 `/consult/:id` when the person is an approved consultant (the author lookup
 says `is_consultant`), so reshare and comment links that pointed at the

@@ -832,15 +832,34 @@ def follow_list(profile_id, which, limit=200):
     ]
 
 
-def fetch_author(profile_id):
+def _follow_between(a, b):
+    """True when either of two profiles follows the other."""
+    if not a or not b:
+        return False
+    targets = [Reaction.TargetType.PROFILE, Reaction.TargetType.CONSULTANT]
+    return Reaction.objects.filter(kind=Reaction.Kind.FOLLOW, target_type__in=targets).filter(
+        models.Q(actor_id=a, target_id=b) | models.Q(actor_id=b, target_id=a)
+    ).exists()
+
+
+def fetch_author(profile_id, viewer_id=None):
     """authors_public (025): the public name of a seeker whose posts are in
     the feed — publishing a post is what puts a name on a screen; only people
-    who have published are listed, and nothing but the name is exposed."""
+    who have published are listed, and nothing but the name is exposed.
+
+    One more way onto a screen (12 Oct 2026, Rahul): a follow between the
+    viewer and this person, either way. Your follow list already shows their
+    name and picture, and a tap on it must open their page, posts or not."""
+    from apps.profiles.models import Profile
+
     has_live = Content.objects.filter(
         author_id=profile_id, status=Content.Status.LIVE
     ).exists()
     if not has_live:
-        return None
+        if not _follow_between(viewer_id, profile_id):
+            return None
+        if not Profile.objects.filter(id=profile_id, blocked_at=None).exists():
+            return None
     name = gateway.profile_name(profile_id)
     if name is None:
         return None

@@ -1152,7 +1152,9 @@ down without turning approval into a gate on ordinary people.
 Three views came with it: `content_public` (rewritten), `profile_follow_counts`
 (followers and following for any profile, both counted), and `authors_public`
 (the name of someone who has published, and nothing else -- `profiles` stays
-own-row-only).
+own-row-only). Since 12 Oct 2026 the Django `GET /content/authors/:id/` also
+answers a signed-in viewer joined to that person by a follow either way, so a
+name in your follow list opens a page; blocked profiles never answer.
 
 `reactions.target_type` gained `'profile'`. Following a practitioner and
 following a person who posts photos are different acts, and keeping them as
