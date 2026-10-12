@@ -59,6 +59,9 @@ function toAsset(row) {
     artist: row.artist,
     licence: row.licence,
     source: row.source,
+    // The Status shelf's heart and comment counts (12 Oct 2026).
+    likes: row.likes ?? 0,
+    comments: row.comments ?? 0,
   }
 }
 

@@ -11,6 +11,8 @@ class TargetType(models.TextChoices):
     COURSE = "course", "Course"
     LIVE_SESSION = "live_session", "Live session"
     PROFILE = "profile", "Profile"
+    # A like on a Bhakti picture (12 Oct 2026, Rahul).
+    BHAKTI = "bhakti", "Bhakti"
 
 
 class Kind(models.TextChoices):
@@ -47,6 +49,7 @@ class Reaction(models.Model):
         COURSE = "course", "Course"
         LIVE_SESSION = "live_session", "Live session"
         PROFILE = "profile", "Profile"
+        BHAKTI = "bhakti", "Bhakti"
 
     class Kind(models.TextChoices):
         FOLLOW = "follow", "Follow"

@@ -437,7 +437,7 @@ function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow, on
 /** One icon in the action row. `on` fills it; the heart goes saffron. At
  *  rest the icons are the light slate (`--text-3`), not black — asked for
  *  on 30 Sep; the row should sit back behind the picture. */
-function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
+export function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
   return (
     <button
       type="button"
@@ -461,7 +461,7 @@ function ActIcon({ icon, label, onLabel, on = false, onClick, tone }) {
  */
 /** A count beside its icon, Instagram's way (4 Oct 2026; the numbers were a
  *  line of text under the row). Nothing at zero. */
-function Count({ n }) {
+export function Count({ n }) {
   return n > 0 ? <span className="-ml-2 text-meta font-semibold tnum text-t1">{n.toLocaleString('en-IN')}</span> : null
 }
 

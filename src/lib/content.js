@@ -306,6 +306,25 @@ export async function postComment(contentId, body) {
   return shapeComment(row)
 }
 
+/** A Bhakti picture's comments (12 Oct 2026): the same rows, its own table. */
+export async function fetchBhaktiComments(assetId) {
+  const rows = await api(`/bhakti/assets/${assetId}/comments/`)
+  return (rows ?? []).map(shapeComment)
+}
+
+export async function postBhaktiComment(assetId, body) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in to comment')
+  const row = await api(`/bhakti/assets/${assetId}/comments/`, { method: 'POST', body: { body }, token })
+  return shapeComment(row)
+}
+
+export async function removeBhaktiComment(commentId) {
+  const token = await accessToken()
+  if (!token) throw new Error('Sign in first')
+  await api(`/bhakti/comments/${commentId}/remove/`, { method: 'POST', token })
+}
+
 /** Remove a comment: your own, or any on your own post. */
 export async function removeComment(commentId) {
   const token = await accessToken()

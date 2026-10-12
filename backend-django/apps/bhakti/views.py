@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from apps.core.views import refusal_body
 
 from .models import BhaktiAsset, DarshanDeity
+from . import services
 from .services import list_assets
 
 
@@ -38,6 +39,9 @@ def _row(asset):
         "artist": asset.artist,
         "licence": asset.licence,
         "source": asset.source,
+        # 12 Oct 2026: the Status shelf's heart and comment counts.
+        "likes": getattr(asset, "like_count", 0),
+        "comments": getattr(asset, "comment_count", 0),
     }
 
 
@@ -97,3 +101,36 @@ def darshan(request):
         if images:
             out.append({"id": str(d.id), "name": d.name, "name_hi": d.name_hi, "images": images})
     return Response(out)
+
+
+def _comment_row(c):
+    """The shape of a post's comment (apps/content/views.py), so one sheet
+    in the app draws both."""
+    return {
+        "id": str(c.id),
+        "author_id": str(c.author_id),
+        "author_name": c.author_name,
+        "body": c.body,
+        "created_at": c.created_at,
+    }
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def comments(request, asset_id):
+    """GET: a picture's live comments, oldest first, anonymous. POST: comment
+    as the caller; signed in, not blocked (12 Oct 2026)."""
+    if request.method == "GET":
+        return Response([_comment_row(c) for c in services.list_comments(asset_id)])
+    if not request.user or not request.user.is_authenticated:
+        return Response(refusal_body("unauthenticated", "Sign in to comment."), status=401)
+    body = request.data.get("body") if hasattr(request.data, "get") else None
+    row = services.add_comment(asset_id, request.user.pk, body if isinstance(body, str) else "")
+    return Response(_comment_row(row), status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def remove_comment(request, comment_id):
+    services.remove_comment(comment_id, request.user.pk, getattr(request.user, "role", ""))
+    return Response({"removed": True})

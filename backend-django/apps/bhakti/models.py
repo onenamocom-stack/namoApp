@@ -148,3 +148,32 @@ class DarshanImage(models.Model):
 
     def __str__(self):
         return self.temple or self.title or str(self.id)
+
+
+class CommentStatus(models.TextChoices):
+    LIVE = "live", "Live"
+    REMOVED = "removed", "Removed"
+
+
+class BhaktiComment(models.Model):
+    """A comment on a Bhakti picture (12 Oct 2026, Rahul: like and comment
+    on a status, as on a post). The same rules as a post's comment
+    (`content_comments`): anyone signed in and not blocked; removal is a
+    status, never a DELETE; nobody edits one. The library has no author, so
+    the commenter or an admin removes it."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    asset = models.ForeignKey(BhaktiAsset, on_delete=models.CASCADE, related_name="comments")
+    author_id = models.UUIDField()
+    body = models.TextField()
+    status = models.CharField(max_length=16, choices=CommentStatus.choices, default=CommentStatus.LIVE)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    Status = CommentStatus
+
+    class Meta:
+        db_table = "bhakti_comments"
+        indexes = [models.Index(fields=["asset", "status", "created_at"], name="bhakti_comments_asset_idx")]
+
+    def __str__(self):
+        return self.body[:60]

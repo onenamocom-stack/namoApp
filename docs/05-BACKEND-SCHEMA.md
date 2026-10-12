@@ -1161,6 +1161,14 @@ following a person who posts photos are different acts, and keeping them as
 separate values means a count can answer either question later without unpicking
 rows.
 
+`reactions.target_type` gained `'bhakti'` (`reactions/0003`, 12 Oct 2026): a like
+on a Bhakti picture, `target_id` a `bhakti_assets.id`. **`bhakti_comments`**
+(`bhakti/0005`): `asset_id` (FK, cascade), `author_id`, `body`, `status` (live ·
+removed), `created_at`; index (asset, status, created_at). The same rules as
+`content_comments`, except that the commenter or an admin removes one — a
+picture has no author. `GET /bhakti/assets/` carries each row's `likes` and live
+`comments` counts.
+
 ### 5.3 The feed is not a table
 
 The mock's `feed` is 14 hand-ordered `{ kind, refId }` rows. **A feed table is a

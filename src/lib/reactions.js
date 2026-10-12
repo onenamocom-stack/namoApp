@@ -42,6 +42,13 @@ const KINDS = {
   repost: 'content',
 }
 
+// Keys whose prefix is not the kind itself. `like:` is a post's like; a
+// Bhakti picture's is `blike:` (12 Oct 2026), so the store's two Sets of
+// flags never mistake one for the other.
+const ALIASES = {
+  blike: { kind: 'like', targetType: 'bhakti' },
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
@@ -53,8 +60,10 @@ export function parseKey(key) {
   const at = key.indexOf(':')
   if (at < 0) return null
 
-  const kind = key.slice(0, at)
+  const prefix = key.slice(0, at)
   const targetId = key.slice(at + 1)
+  if (ALIASES[prefix]) return UUID.test(targetId) ? { ...ALIASES[prefix], targetId } : null
+  const kind = prefix
   const targetType = KINDS[kind]
 
   if (!targetType || !UUID.test(targetId)) return null
@@ -91,7 +100,9 @@ export async function fetchMine() {
   if (!token) return []
 
   const rows = await api('/reactions/', { token })
-  return (rows ?? []).map((r) => `${r.kind}:${r.target_id}`)
+  return (rows ?? []).map((r) =>
+    r.target_type === 'bhakti' && r.kind === 'like' ? `blike:${r.target_id}` : `${r.kind}:${r.target_id}`,
+  )
 }
 
 /**

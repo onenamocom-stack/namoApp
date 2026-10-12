@@ -368,7 +368,10 @@ as North India reads it), a gold rule, and a NAMO badge.
 The Status shelf shows every card as **the image itself** — what is shared
 is exactly what is seen — and the card's **Share** hands it straight to the
 phone's share sheet. It replaced a full-screen "Share to status" sheet that
-opened between the card and the share. One pencil, on the photo (the one on
+opened between the card and the share. Under the image (12 Oct 2026, Rahul):
+Like and Comment as on a Home post, with their counts, and on the right the
+green WhatsApp **Share**, which only shares the status; no title, no credit,
+no link-share icon. One pencil, on the photo (the one on
 the name went the same day, since both did the same thing), opens **Your
 status details**, a page of its own: the photo (gallery,
 camera, profile picture, remove) and the name for the status. **Save keeps

@@ -2,7 +2,14 @@ import { Loader } from './Cosmos.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { fetchComments, postComment, removeComment } from '../lib/content.js'
+import {
+  fetchBhaktiComments,
+  fetchComments,
+  postBhaktiComment,
+  postComment,
+  removeBhaktiComment,
+  removeComment,
+} from '../lib/content.js'
 import { PopAvatar } from './Pop.jsx'
 import { useStore } from '../store.jsx'
 
@@ -23,8 +30,16 @@ import { useStore } from '../store.jsx'
  *
  * `onCount` tells the caller the thread's length after every change, so the
  * count under the icon moves with it.
+ *
+ * `bhaktiId` in place of `contentId` (12 Oct 2026): the thread under a Bhakti
+ * picture, which has no author, so only your own comments can be removed.
  */
-export default function CommentSheet({ open, onClose, contentId, postAuthorId, onCount }) {
+const POSTS = { list: fetchComments, post: postComment, remove: removeComment }
+const BHAKTI = { list: fetchBhaktiComments, post: postBhaktiComment, remove: removeBhaktiComment }
+
+export default function CommentSheet({ open, onClose, contentId, bhaktiId, postAuthorId, onCount }) {
+  const via = bhaktiId ? BHAKTI : POSTS
+  const target = bhaktiId ?? contentId
   const { session, showToast } = useStore()
   const me = session?.user?.id ?? null
   const [items, setItems] = useState(null)
@@ -38,7 +53,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
     if (!open) return undefined
     let alive = true
     setItems(null)
-    fetchComments(contentId)
+    via.list(target)
       .then((rows) => {
         if (!alive) return
         setItems(rows)
@@ -48,7 +63,8 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
     return () => {
       alive = false
     }
-  }, [open, contentId, showToast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `via` follows `bhaktiId`
+  }, [open, target, showToast])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
@@ -64,7 +80,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
     if (!text || sending) return
     setSending(true)
     try {
-      const row = await postComment(contentId, text)
+      const row = await via.post(target, text)
       const next = [...(items ?? []), row]
       setItems(next)
       report.current?.(next.length)
@@ -78,7 +94,7 @@ export default function CommentSheet({ open, onClose, contentId, postAuthorId, o
 
   async function remove(c) {
     try {
-      await removeComment(c.id)
+      await via.remove(c.id)
       const next = items.filter((x) => x.id !== c.id)
       setItems(next)
       report.current?.(next.length)

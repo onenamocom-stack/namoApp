@@ -21,14 +21,16 @@ constraint carries the vocabulary; nothing here invents one.
 
 from django.db import IntegrityError, transaction
 
-from .models import BhaktiAsset
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+
+from .models import BhaktiAsset, BhaktiComment
 
 
 def list_assets():
     """Everything active, ordered exactly the way fetchAssets orders the
     Supabase query: kind ascending, then the curated `sort` (024's partial
     index serves precisely this read)."""
-    return BhaktiAsset.objects.filter(active=True).order_by("kind", "sort")
+    return with_counts(BhaktiAsset.objects.filter(active=True)).order_by("kind", "sort")
 
 
 def seed_asset(*, legacy_id, kind, title, deity=None, media_url, preview_url=None,
@@ -68,3 +70,81 @@ def seed_asset(*, legacy_id, kind, title, deity=None, media_url, preview_url=Non
         setattr(asset, name, value)
     asset.save(update_fields=[*fields])
     return asset, False
+
+
+# ── likes and comments on a picture (12 Oct 2026) ───────────────────────────
+
+
+def with_counts(qs):
+    """Each row's likes and live comments, two subqueries for the page."""
+    from django.db.models import Count, IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    from apps.reactions.models import Reaction
+
+    likes = (
+        Reaction.objects.filter(kind=Reaction.Kind.LIKE, target_type=Reaction.TargetType.BHAKTI,
+                                target_id=OuterRef("id"))
+        .values("target_id").annotate(n=Count("id")).values("n")
+    )
+    comments = (
+        BhaktiComment.objects.filter(asset_id=OuterRef("id"), status=BhaktiComment.Status.LIVE)
+        .values("asset_id").annotate(n=Count("id")).values("n")
+    )
+    return qs.annotate(
+        like_count=Coalesce(Subquery(likes, output_field=IntegerField()), 0),
+        comment_count=Coalesce(Subquery(comments, output_field=IntegerField()), 0),
+    )
+
+
+def _named(qs):
+    from apps.profiles import services as profile_services
+
+    return qs.annotate(author_name=profile_services.name_subquery("author_id"))
+
+
+def list_comments(asset_id, *, limit=100):
+    """A picture's live comments, oldest first. A blocked person's comments
+    leave with them, as on a post."""
+    from apps.profiles.models import Profile
+
+    if not BhaktiAsset.objects.filter(pk=asset_id, active=True).exists():
+        raise NotFound("That is not in the library.")
+    blocked = list(Profile.objects.exclude(blocked_at=None).values_list("id", flat=True))
+    rows = BhaktiComment.objects.filter(asset_id=asset_id, status=BhaktiComment.Status.LIVE)
+    if blocked:
+        rows = rows.exclude(author_id__in=blocked)
+    return list(_named(rows).order_by("created_at", "id")[:limit])
+
+
+def add_comment(asset_id, author_id, body):
+    from apps.content.models import MAX_COMMENT_CHARS
+    from apps.content.services import (
+        BLOCKED_REFUSAL, COMMENT_EMPTY_REFUSAL, COMMENT_LONG_REFUSAL,
+    )
+    from apps.profiles import services as profile_services
+
+    if profile_services.is_blocked(author_id):
+        raise PermissionDenied(BLOCKED_REFUSAL)
+    text = (body or "").strip()
+    if not text:
+        raise ValidationError({"body": COMMENT_EMPTY_REFUSAL})
+    if len(text) > MAX_COMMENT_CHARS:
+        raise ValidationError({"body": COMMENT_LONG_REFUSAL})
+    if not BhaktiAsset.objects.filter(pk=asset_id, active=True).exists():
+        raise NotFound("That is not in the library.")
+    row = BhaktiComment.objects.create(asset_id=asset_id, author_id=author_id, body=text)
+    return _named(BhaktiComment.objects.filter(pk=row.pk)).get()
+
+
+def remove_comment(comment_id, actor_id, role):
+    """Soft delete: the commenter or an admin."""
+    row = BhaktiComment.objects.filter(pk=comment_id).first()
+    if row is None or row.status == BhaktiComment.Status.REMOVED:
+        raise NotFound("That comment is not available.")
+    mine = str(row.author_id).replace("-", "") == str(actor_id).replace("-", "")
+    if not (mine or role == "admin"):
+        raise PermissionDenied("You do not have access to this.")
+    row.status = BhaktiComment.Status.REMOVED
+    row.save(update_fields=["status"])
+    return row

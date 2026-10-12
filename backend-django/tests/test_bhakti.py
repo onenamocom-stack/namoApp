@@ -79,6 +79,8 @@ class TestFetchAssets:
                 "artist": r["artist"],
                 "licence": r["licence"],
                 "source": r["source"],
+                "likes": 0,
+                "comments": 0,
             }
             for r in body
         ]
