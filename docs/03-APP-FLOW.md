@@ -353,7 +353,8 @@ there is nothing to add here.
 full-width list and a two-column grid, which made the same artwork look like
 two products and gave the wallpaper thumbnails no room to be looked at. One
 card now, and only the ACTION differs: a status is shared, a wallpaper is
-downloaded.
+downloaded. Since 12 Oct 2026 a status card is not the plain artwork: it is
+the finished status (below), 9:16, composed as it nears the screen.
 
 **Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it
 replaced a gradient strip with a photo, name and date). The artwork fills the
@@ -363,8 +364,11 @@ name, today's date ("09 OCT 2026 | FRIDAY"), the Hindu date in Hindi from the
 day's panchang ("आश्विन कृष्ण पक्ष • चतुर्दशी" — the month named purnimanta,
 as North India reads it), a gold rule, and a NAMO badge.
 
-The sheet shows **the image itself** — what is shared is exactly what is
-seen — with **only Share** under it. A pencil on the photo and one on the
+**No second screen** (12 Oct 2026, Rahul: "there is no need for this step").
+The Status shelf shows every card as **the image itself** — what is shared
+is exactly what is seen — and the card's **Share** hands it straight to the
+phone's share sheet. It replaced a full-screen "Share to status" sheet that
+opened between the card and the share. A pencil on the photo and one on the
 name open **Your status details**, a page of its own: the photo (gallery,
 camera, profile picture, remove) and the name for the status. **Save keeps
 both for every status after it** — on this phone, keyed by user id, the photo

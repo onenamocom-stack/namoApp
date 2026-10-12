@@ -132,7 +132,6 @@ export default function Bhakti() {
   const [deity, setDeity] = useState('All')
   const [query, setQuery] = useState(() => params.get('q') || '')
   const [busy, setBusy] = useState(null)
-  const [sharing, setSharing] = useState(null) // the asset whose share sheet is open
 
   useEffect(() => {
     let active = true
@@ -348,6 +347,8 @@ export default function Bhakti() {
               </>
             )}
           </PopCard>
+        ) : kind === 'status' ? (
+          <StatusShelf list={list} />
         ) : (
           <ul className={isAudio(kind) ? 'space-y-3' : 'space-y-4'}>
             {list.map((a) =>
@@ -359,10 +360,10 @@ export default function Bhakti() {
                 <PictureCard
                   key={a.id}
                   asset={a}
-                  ratio={kind === 'status' ? 'aspect-[4/5]' : 'aspect-[3/4]'}
-                  action={kind === 'status' ? 'Share' : 'Download'}
+                  ratio="aspect-[3/4]"
+                  action="Download"
                   busy={busy === a.id}
-                  onAction={() => (kind === 'status' ? setSharing(a) : save(a))}
+                  onAction={() => save(a)}
                 />
               ),
             )}
@@ -371,8 +372,6 @@ export default function Bhakti() {
 
         {list.length > 0 && <p className="mt-5 text-center text-meta t-faint">{meta.help}</p>}
       </section>
-
-      <ShareSheet asset={sharing} onClose={() => setSharing(null)} />
 
       <div className="h-24" />
     </>
@@ -675,79 +674,103 @@ function TrackCard({ asset, counted = false }) {
 }
 
 /**
- * Three ways to pick the picture, one way out.
+ * The Status shelf (12 Oct 2026, Rahul: "there is no need for this step").
+ * Each status is shown already made — the picture with your photo, name,
+ * today's date and tithi on it, 9:16, exactly the image that goes out — and
+ * Share hands that image to the phone's share sheet at once. There was a
+ * second screen between the two; it is gone.
  *
- * Every source feeds the same path — composite at 1080×1920, burn today's
- * date on, hand the file to the OS share sheet. What differs is only where the
- * bitmap came from, so there is one compose and one share rather than three of
- * each.
- *
- * The camera option is the gallery input plus `capture`, which is the whole
- * difference on the web: it asks the OS for the camera rather than the picker.
- * On a desktop browser the attribute is ignored and it behaves as a file
- * picker, which is the right degradation.
- *
- * "Use profile picture" is live as of 10 Sep 2026 and hides itself when you
- * have not set one — an option that cannot do anything is worse than an option
- * that is not there, and unlike the disabled state it used to carry, there is
- * now a real thing behind it.
+ * Your photo and name are kept on this phone and used on every status until
+ * changed (26 Sep; the name 9 Oct 2026). The pencils on any card open the page
+ * that changes both, for all of them.
  */
-function ShareSheet({ asset, onClose }) {
+function StatusShelf({ list }) {
   const { showToast, me, session, sessionReady } = useStore()
   const who = session?.user?.id ?? null
-  const [working, setWorking] = useState(false)
-  const [editing, setEditing] = useState(false)
-  /* The photo (a small data URL) and the name on the card, kept on this
-     phone and used for every status until changed (26 Sep; the name 9 Oct
-     2026). No saved name means the account's. */
   const [photo, setPhoto] = useState(null)
   const [name, setName] = useState('')
-  const [preview, setPreview] = useState(null) // { url, blob, marks }
-  /* The frame is exactly 9:16 and as large as the space allows: a box that
-     only had a height let the width clip the picture's sides, and the
-     pencils, placed by fraction, missed what they mark. */
-  const stage = useRef(null)
-  const [frame, setFrame] = useState(null)
-  useEffect(() => {
-    const el = stage.current
-    if (!el || !asset) return undefined
-    const fit = () => {
-      const cs = getComputedStyle(el)
-      const roomW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-      const roomH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-      const w = Math.min(roomW, (roomH * 9) / 16)
-      setFrame({ width: Math.floor(w), height: Math.floor((w * 16) / 9) })
-    }
-    fit()
-    const ro = new ResizeObserver(fit)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [asset])
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
-    if (!asset) return
     setPhoto(recallStatusPhoto(who))
     setName(recallStatusName(who) ?? me.name ?? '')
-  }, [asset, who, me.name])
+  }, [who, me.name])
 
   // Today's Hindu date for the card, from the same panchang Home shows.
-  const almanac = useAstro('panchang', { ready: sessionReady && !!asset, who })
+  const almanac = useAstro('panchang', { ready: sessionReady, who })
   const hinduLine = hinduDateLine(almanac.payload)
 
-  /* THE PREVIEW IS THE IMAGE. Composed whenever what is on it changes, and
-     shared as it stands — what you see is exactly what goes out. */
-  useEffect(() => {
-    if (!asset) return undefined
-    let live = true
-    let url = null
-    composeStatus(asset.url, {
+  const details = useMemo(
+    () => ({
       photoSrc: photo,
       name,
       dateLine: statusDateLine(istDate()),
       hinduLine,
       logoSrc: `${import.meta.env.BASE_URL}namo-logo-light.png`,
       iconSrc: `${import.meta.env.BASE_URL}namo-icon.png`,
-    }).then((made) => {
+    }),
+    [photo, name, hinduLine],
+  )
+
+  return (
+    <>
+      <ul className="space-y-4">
+        {list.map((a) => (
+          <StatusCard key={a.id} asset={a} details={details} onEdit={() => setEditing(true)} />
+        ))}
+      </ul>
+      {editing &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] mx-auto w-full max-w-[420px]">
+            <StatusDetails
+              photo={photo}
+              name={name}
+              avatarUrl={me.avatarUrl}
+              onClose={() => setEditing(false)}
+              onSave={(next) => {
+                rememberStatusPhoto(who, next.photo)
+                rememberStatusName(who, next.name)
+                setPhoto(next.photo)
+                setName(next.name)
+                setEditing(false)
+                showToast('Saved. Every status uses it now.')
+              }}
+            />
+          </div>,
+          document.body,
+        )}
+    </>
+  )
+}
+
+/**
+ * One status, composed when it nears the screen rather than all at once —
+ * each is a 1080 × 1920 canvas. Until it is ready the plain picture holds its
+ * place. THE PREVIEW IS THE IMAGE: what you see is exactly what is shared.
+ */
+function StatusCard({ asset, details, onEdit }) {
+  const { showToast } = useStore()
+  const box = useRef(null)
+  const [near, setNear] = useState(false)
+  const [preview, setPreview] = useState(null) // { url, blob, marks }
+  const [working, setWorking] = useState(false)
+
+  useEffect(() => {
+    const el = box.current
+    if (!el || near) return undefined
+    const watch = new IntersectionObserver(
+      (entries) => entries.some((e) => e.isIntersecting) && setNear(true),
+      { rootMargin: '600px 0px' },
+    )
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [near])
+
+  useEffect(() => {
+    if (!near) return undefined
+    let live = true
+    let url = null
+    composeStatus(asset.url, details).then((made) => {
       if (!live || !made?.blob) return
       url = URL.createObjectURL(made.blob)
       setPreview({ url, blob: made.blob, marks: made.marks })
@@ -756,7 +779,7 @@ function ShareSheet({ asset, onClose }) {
       live = false
       if (url) URL.revokeObjectURL(url)
     }
-  }, [asset, photo, name, hinduLine])
+  }, [near, asset.url, details])
 
   const share = async () => {
     if (!preview?.blob) return
@@ -768,7 +791,6 @@ function ShareSheet({ asset, onClose }) {
         saveBlob(preview.blob, filename)
         showToast('Saved — sharing needs a phone')
       }
-      onClose()
     } catch {
       showToast('Could not prepare that image.')
     } finally {
@@ -776,34 +798,24 @@ function ShareSheet({ asset, onClose }) {
     }
   }
 
-  if (!asset) return null
-
-  return createPortal(
-    <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] animate-fade flex-col bg-[#140c08] text-white">
-      <div className="flex flex-none items-center gap-3 px-4 pb-3 pt-4">
-        <BackButton dark onClick={onClose} label="Close" />
-        <p className="flex-1 text-center text-meta font-semibold">Share to status</p>
-        <span className="w-9" aria-hidden="true" />
-      </div>
-
-      {/* The status itself (9 Oct 2026, Rahul's design). The two pencils are
-          the screen's — on the photo and the name — and are not in the
-          image. Either opens the page that changes both. */}
-      <div ref={stage} className="flex min-h-0 flex-1 items-center justify-center px-6">
-        <div className="relative overflow-hidden rounded-2xl bg-black/30 shadow-2xl" style={frame ?? { width: 0, height: 0 }}>
-          {preview ? (
-            <img src={preview.url} alt={asset.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Loader />
-            </div>
-          )}
+  return (
+    <li ref={box}>
+      <PopCard className="overflow-hidden">
+        <div className="relative aspect-[9/16] w-full bg-surface2">
+          <img
+            src={preview?.url ?? asset.url}
+            alt={asset.title}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+          {/* The pencils are the screen's, on the photo and the name, and
+              are not in the image (9 Oct 2026, Rahul's design). */}
           {preview?.marks &&
             ['photo', 'name'].map((k) => (
               <button
                 key={k}
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={onEdit}
                 aria-label={k === 'photo' ? 'Change your photo' : 'Change your name'}
                 className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-white active:scale-90"
                 style={{
@@ -816,33 +828,18 @@ function ShareSheet({ asset, onClose }) {
               </button>
             ))}
         </div>
-      </div>
-
-      {/* Only Share under it. */}
-      <div className="flex-none px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4">
-        <PopButton variant="gold" disabled={working || !preview} onClick={share}>
-          {working ? 'Preparing…' : 'Share'}
-        </PopButton>
-      </div>
-
-      {editing && (
-        <StatusDetails
-          photo={photo}
-          name={name}
-          avatarUrl={me.avatarUrl}
-          onClose={() => setEditing(false)}
-          onSave={(next) => {
-            rememberStatusPhoto(who, next.photo)
-            rememberStatusName(who, next.name)
-            setPhoto(next.photo)
-            setName(next.name)
-            setEditing(false)
-            showToast('Saved. Every status uses it now.')
-          }}
-        />
-      )}
-    </div>,
-    document.body,
+        <div className="flex items-center gap-3 p-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-body t-heading">{asset.title}</p>
+            <Credit asset={asset} />
+          </div>
+          {asset.pricePaise != null && <Price paise={asset.pricePaise} />}
+          <PopButton size="sm" variant="gold" full={false} disabled={working || !preview} onClick={share}>
+            {working ? 'Preparing…' : 'Share'}
+          </PopButton>
+        </div>
+      </PopCard>
+    </li>
   )
 }
 
