@@ -158,7 +158,7 @@ def product_page(request, key):
 _PICTURES = ("status", "wallpaper")
 # A bhajan or mantra is a sound; its cover picture is its card (12 Oct 2026,
 # Rahul: a shared bhajan previewed as the site's own card).
-_SOUNDS = ("bhajan", "mantra")
+_SOUNDS = ("bhajan", "mantra", "ebook")  # a book's cover is public, priced or not
 
 
 def _bhakti_picture(asset):
@@ -194,6 +194,7 @@ def bhakti_page(request, asset_id):
         "mantra": "Listen to this mantra on NAMO.",
         "wallpaper": "A wallpaper from NAMO.",
         "status": "A WhatsApp status from NAMO.",
+        "ebook": "Read this e-book on NAMO.",
     }.get(asset.kind, "Bhajans, mantras and daily darshan in one app.")
     return _page(_tags(title=asset.title, description=description,
                        image=image, url=url, kind="website"), url)

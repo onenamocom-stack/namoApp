@@ -1,6 +1,6 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { BackButton, TabHeader } from '../components/Chrome.jsx'
 import { createPortal } from 'react-dom'
@@ -194,6 +194,9 @@ export default function Bhakti() {
       setBusy(null)
     }
   }
+
+  // A book is not a Bhakti shelf: its shared address opens the Academy.
+  if (shared?.kind === 'ebook') return <Navigate to={`/academy?book=${shared.id}`} replace />
 
   return (
     <>

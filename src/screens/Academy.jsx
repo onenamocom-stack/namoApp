@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { academyEvents, courses } from '../data/mock.js'
 import { assetFile, fetchAssets } from '../lib/bhakti.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import Paywall from '../components/Paywall.jsx'
 import Plate from '../components/Plate.jsx'
+import BhaktiActions from '../components/BhaktiActions.jsx'
 import { Kicker, PopAvatar, PopBar, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -222,12 +224,18 @@ function Ebooks() {
   const { t } = useStore()
   const [books, setBooks] = useState(null)
   const [failed, setFailed] = useState(false)
+  // A shared book (/bhakti/s/:id forwards here as ?book=) leads the list.
+  const [params] = useSearchParams()
+  const first = params.get('book')
 
   useEffect(() => {
     fetchAssets()
-      .then((all) => setBooks(all.filter((a) => a.kind === 'ebook')))
+      .then((all) => {
+        const list = all.filter((a) => a.kind === 'ebook')
+        setBooks(first ? [...list.filter((a) => a.id === first), ...list.filter((a) => a.id !== first)] : list)
+      })
       .catch(() => setFailed(true))
-  }, [])
+  }, [first])
 
   if (failed) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.libErr')}</p>
   if (!books) return <p className="px-5 py-10 text-center text-meta t-faint">{t('a.loading')}</p>
@@ -287,14 +295,19 @@ function Ebook({ book: d }) {
         <Plate seed={`${d.id}-cover`} variant="contour" className="aspect-[21/9] w-full" />
       )}
 
-      <div className="flex items-center gap-3 p-4">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-meta t-heading">{d.title}</p>
-          <p className="mt-1 caps-sm t-faint">
-            PDF · {d.artist}
-            {priced && ` · ₹${rupees(d.pricePaise)}`}
-          </p>
-        </div>
+      <div className="px-4 pt-3.5">
+        <p className="truncate text-meta t-heading">{d.title}</p>
+        <p className="mt-1 caps-sm t-faint">
+          PDF · {d.artist}
+          {priced && ` · ₹${rupees(d.pricePaise)}`}
+        </p>
+      </div>
+      {/* Like, comment, reshare and share, as on the Bhakti shelves (12 Oct
+          2026, Rahul); Read stays on the right. A priced book has no
+          Reshare. */}
+      <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
+        <BhaktiActions asset={d} share />
+        <span className="flex-1" />
         {!priced ? (
           <PopButton href={d.url} full={false} className="flex-none px-4">
             {t('ac.read')}

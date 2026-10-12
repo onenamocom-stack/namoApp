@@ -674,6 +674,10 @@ schema.org Product block are set while the page is open.
 
 ### `/academy`
 E-book / Courses / Events. E-book leads and opens by default (28 Sep 2026) — it is the only tab reading real content.
+Each book has the Bhakti row under its title (12 Oct 2026, Rahul): Like,
+Comment, Reshare and Share, with Read on the right; a priced book has no
+Reshare. A shared book's address (`/bhakti/s/:id`) opens `/academy?book=:id`,
+that book first.
 
 Course *Resume* and *Watch* are external links to **YouTube search URLs** — the
 only outbound links in the app. *Enrol* toasts. Events show a seat-fill bar and

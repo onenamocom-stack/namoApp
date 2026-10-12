@@ -700,9 +700,10 @@ function PictureCard({ asset, resharedBy }) {
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
       <Link to={`/bhakti/s/${asset.id}`} className="mt-2.5 block">
-        {/* A bhajan or mantra is a sound; its card picture stands in. */}
+        {/* A bhajan or mantra is a sound and a book a PDF; their cover
+            picture stands in. */}
         <img
-          src={asset.kind === 'bhajan' || asset.kind === 'mantra' ? asset.previewUrl : asset.url}
+          src={['bhajan', 'mantra', 'ebook'].includes(asset.kind) ? asset.previewUrl : asset.url}
           alt={asset.title}
           loading="lazy"
           className={`${asset.kind === 'bhajan' || asset.kind === 'mantra' ? 'aspect-video' : 'aspect-[4/5]'} w-full bg-surface2 object-cover`}

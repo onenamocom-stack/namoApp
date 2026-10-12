@@ -82,6 +82,8 @@ class TestBhaktiReshare:
     def test_only_free_active_pictures_reshare(self, api_client, me):
         bhajan = make_asset(kind="bhajan", title="B", media_url="https://x/b.mp3")
         assert self._repost(api_client, me, bhajan.id).status_code in (200, 201)
+        book = make_asset(kind="ebook", title="E", media_url="https://x/e.pdf")
+        assert self._repost(api_client, me, book.id).status_code in (200, 201)
         paid = make_asset(kind="bhajan", title="P", media_url="k", price_paise=4900)
         assert self._repost(api_client, me, paid.id).status_code == 404
         tune = make_asset(kind="tune", title="T", deity=None)
