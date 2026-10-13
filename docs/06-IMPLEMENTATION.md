@@ -470,7 +470,7 @@ means competing head on with Instagram, ShareChat and Moj.
 words, follows, profiles, the personal feed (`apps/content/ranking.py`),
 #hashtags that open Search, and notifications for comments and reshares.
 
-### 15a — Positioning and signals (built 13 Oct 2026, not yet deployed)
+### 15a — Positioning and signals (live 13 Oct 2026)
 
 - Copy: the welcome heading, the Google title and description and the
   share preview read as a community, not as a kundli app.
