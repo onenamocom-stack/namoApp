@@ -258,8 +258,9 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 | Reel | Two seconds playing counts a view (11 Oct 2026) · **Plays by itself** when 60% of it is on screen — muted, looping, one at a time; scrolling on pauses it and starts the next (5 Oct 2026). The speaker button turns sound on or off for the whole feed. Tap → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save. A tagged product → `/shop?p=<id>&ref=…` |
 
 A reshared post appears in the feed after every third post under "↻ Name
-reshared", in the **Reshared** tab of the resharer's own Profile, and in a
-Reshared list on their `/u/:id`. **Your reshare leads Home for five seconds**
+reshared", and in the **Reshared** tab of the resharer's own Profile. Nobody
+else sees a list of your reshares: `/u/:id` has none (13 Oct 2026, Rahul;
+it had one). **Your reshare leads Home for five seconds**
 (13 Oct 2026, Rahul), as a new post does: made while Home is open, the list is
 read again a moment later with it first; opening Home within five seconds also
 puts it first.

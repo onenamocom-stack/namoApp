@@ -6,7 +6,6 @@ import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
-import ResharedList from '../components/ResharedList.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
@@ -157,8 +156,8 @@ export default function UserProfile() {
       </section>
 
       <section className="px-5 pb-6">
-        <ResharedList by={id} />
-
+        {/* No Reshared list here (13 Oct 2026, Rahul): what you reshared is
+            yours to see, on your own Profile's Reshared tab. */}
         <Link to="/home" className="act-link mt-6 inline-block text-meta">
           Back to the feed
         </Link>
