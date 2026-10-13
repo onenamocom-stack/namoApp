@@ -483,6 +483,32 @@ export async function saveMyRates(rates) {
   return api('/consultants/me/rates/', { method: 'PUT', body: rates, token })
 }
 
+/** Your own profile, the fields you change directly (13 Oct 2026):
+ *  specialization, bio, experience_yrs, languages, tags — any subset. The
+ *  reply is your whole row. */
+export async function saveMyProfile(fields) {
+  const token = await accessToken()
+  return api('/consultants/me/profile/', { method: 'PATCH', body: fields, token })
+}
+
+/** The latest change you sent for a check: { status: 'none' | 'pending' |
+ *  'approved' | 'rejected', category, credentials, degree, review_note }. */
+export async function myReview() {
+  const token = await accessToken()
+  return api('/consultants/me/review/', { token })
+}
+
+/** Send practice, credentials and degree (and a new scan, if any) for a
+ *  check. Nothing changes on your page until the console approves it. */
+export async function sendForReview({ category, credentials, degree, degreeAssetId = null }) {
+  const token = await accessToken()
+  return api('/consultants/me/review/', {
+    method: 'PUT',
+    body: { category, credentials, degree, degree_asset_id: degreeAssetId },
+    token,
+  })
+}
+
 /** The active price catalogue, tier order — ProApply's six buttons. */
 export async function listPriceBands() {
   try {

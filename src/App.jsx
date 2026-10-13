@@ -59,6 +59,7 @@ import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
+import EditPractice from './screens/EditPractice.jsx'
 import Notifications from './screens/Notifications.jsx'
 
 /**
@@ -396,6 +397,8 @@ function Frame() {
                 <Route path="/u/:id" element={<UserProfile />} />
                 <Route path="/reels/:id" element={<ReelViewer />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
+                {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
+                <Route path="/practice/edit" element={<EditPractice />} />
                 <Route path="/notifications" element={<Notifications />} />
                 {/* Premium is not offered (11 Oct 2026, Rahul); an old link lands on Home. */}
                 <Route path="/premium" element={<Navigate to="/home" replace />} />
@@ -419,6 +422,8 @@ function Frame() {
                 <Route path="/onboarding/verify" element={<VerifyOtp />} />
                 <Route path="/chart" element={<Chart />} />
                 <Route path="/consult/:id" element={<ConsultantProfile />} />
+                {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
+                <Route path="/practice/edit" element={<EditPractice />} />
                 <Route path="/support" element={<Support />} />
                 {/* A consultant's own reels and blog posts, opened from Studio
                     and Insights (4 Oct 2026) — both screens show only theirs. */}

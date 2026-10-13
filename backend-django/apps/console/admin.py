@@ -15,7 +15,7 @@ from apps.consultants import payout_details as payout_crypto
 from apps.consultants import services as consultant_services
 from django import forms
 
-from apps.consultants.models import FEE_BPS, Consultant, PayoutDetails, PayoutDetailsStatus
+from apps.consultants.models import FEE_BPS, Consultant, PayoutDetails, PayoutDetailsStatus, ProfileReview
 from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
@@ -334,6 +334,131 @@ class PayoutDetailsAdmin(AuditedAdmin, dj.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return at_least(request, Tier.FINANCE)
 
+
+
+@dj.register(ProfileReview, site=site)
+class ProfileReviewAdmin(AuditedAdmin, dj.ModelAdmin):
+    """Profile changes waiting for a check (13 Oct 2026, Rahul).
+
+    A consultant edits their specialization, bio, experience and languages
+    themselves; a change to the practice (category), the credentials or the
+    degree and its scan waits here, because those were checked when they
+    were approved. Compare "now" with "asked for", open the new certificate
+    if there is one, then Approve — it goes on the profile at once — or
+    write the reason in the review note, save, and Reject.
+    """
+
+    audit_target = "profile_review"
+    list_display = ("who", "status", "changes", "submitted_at")
+    list_filter = ("status",)
+    ordering = ("status", "-submitted_at")
+    fields = (
+        "who", "status", "now_category", "category", "now_credentials", "credentials",
+        "now_degree", "degree", "certificate", "review_note",
+        "submitted_at", "reviewed_at", "reviewed_by",
+    )
+    readonly_fields = (
+        "who", "status", "now_category", "category", "now_credentials", "credentials",
+        "now_degree", "degree", "certificate", "submitted_at", "reviewed_at", "reviewed_by",
+    )
+    actions = ("approve", "reject")
+    list_per_page = 50
+
+    def _current(self, obj):
+        return Consultant.objects.filter(profile_id=obj.consultant_id).first()
+
+    @dj.display(description="Consultant")
+    def who(self, obj):
+        p = Profile.objects.filter(pk=obj.consultant_id).only("name", "phone").first()
+        if p is None:
+            return str(obj.consultant_id)
+        return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
+
+    @dj.display(description="What changes")
+    def changes(self, obj):
+        c = self._current(obj)
+        if c is None:
+            return "—"
+        moved = []
+        if obj.category != (c.category or ""):
+            moved.append("practice")
+        if list(obj.credentials or []) != list(c.credentials or []):
+            moved.append("credentials")
+        if obj.degree != (c.degree or ""):
+            moved.append("degree")
+        if obj.degree_asset_id:
+            moved.append("certificate")
+        return ", ".join(moved) or "nothing"
+
+    @dj.display(description="Practice now")
+    def now_category(self, obj):
+        c = self._current(obj)
+        return c.category if c else "—"
+
+    @dj.display(description="Credentials now")
+    def now_credentials(self, obj):
+        c = self._current(obj)
+        return ", ".join(c.credentials or []) or "—" if c else "—"
+
+    @dj.display(description="Degree now")
+    def now_degree(self, obj):
+        c = self._current(obj)
+        return (c.degree or "—") if c else "—"
+
+    @dj.display(description="New certificate")
+    def certificate(self, obj):
+        if not obj.degree_asset_id:
+            return "No new file — the one on file stays"
+        return _signed_document(obj.degree_asset_id, "new certificate")
+
+    def _decide(self, request, queryset, approve):
+        from apps.consultants import profile_edit
+
+        if not at_least(request, Tier.SUPPORT, Tier.FULFILMENT):
+            return self.message_user(request, "Not your tier.", messages.ERROR)
+        who = getattr(admin_row(request), "profile_id", "") or request.user.get_username()
+        moved = 0
+        for review in queryset:
+            if not approve and not review.review_note.strip():
+                self.message_user(
+                    request,
+                    "Write the reason in the review note and save before rejecting.",
+                    messages.ERROR,
+                )
+                continue
+            if profile_edit.decide(review, approve, who, review.review_note):
+                verb = "approved" if approve else "rejected"
+                record(request, f"profile_review.{verb}", "profile_review",
+                       target_id=review.consultant_id, category=review.category,
+                       credentials=list(review.credentials or []), degree=review.degree)
+                moved += 1
+        self.message_user(
+            request, f"{moved} {'approved' if approve else 'rejected'}.",
+            messages.SUCCESS if moved else messages.WARNING,
+        )
+
+    @dj.action(description="Approve — put the change on the profile")
+    def approve(self, request, queryset):
+        self._decide(request, queryset, True)
+
+    @dj.action(description="Reject — send back with the review note")
+    def reject(self, request, queryset):
+        self._decide(request, queryset, False)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
 
 @dj.register(AdminUser, site=site)
 class AdminUserAdmin(AuditedAdmin, dj.ModelAdmin):

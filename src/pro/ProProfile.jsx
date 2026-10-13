@@ -120,6 +120,12 @@ export default function ProProfile() {
                 : 'Nobody can reach this until you are approved'
             }
           />
+          {/* 13 Oct 2026, Rahul: the same editor as the button on your page. */}
+          <Row
+            to="/practice/edit"
+            title="Edit profile"
+            note="Specialization, About, experience, languages. Practice and degree go to review"
+          />
         </div>
       </section>
 

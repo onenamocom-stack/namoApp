@@ -236,3 +236,53 @@ class TestAuditTrail:
             assert response.status_code == 403, tier
         client, _ = _admin(Tier.SUPERADMIN)
         assert client.get(reverse("namo:console_adminuser_changelist")).status_code == 200
+
+
+@pytest.mark.django_db
+class TestProfileReview:
+    """13 Oct 2026, Rahul: a consultant's change of practice, credentials or
+    degree waits here; Approve puts it on the profile."""
+
+    def _request(self, consultant, category="Tarot, Numerology"):
+        from apps.consultants.models import ProfileReview
+
+        return ProfileReview.objects.create(
+            consultant_id=consultant.profile_id, category=category,
+            credentials=["Jyotish Visharad"], degree="",
+        )
+
+    def test_support_opens_the_queue_and_approves(self):
+        client, _ = _admin(Tier.SUPPORT)
+        consultant = _pending_consultant()
+        review = self._request(consultant)
+        listing = client.get(reverse("namo:consultants_profilereview_changelist"))
+        assert listing.status_code == 200
+        assert "practice, credentials" in listing.content.decode()
+        assert client.get(
+            reverse("namo:consultants_profilereview_change", args=[review.pk])
+        ).status_code == 200
+
+        client.post(
+            reverse("namo:consultants_profilereview_changelist"),
+            {"action": "approve", "_selected_action": [str(review.pk)]},
+            follow=True,
+        )
+        consultant.refresh_from_db()
+        assert consultant.category == "Tarot, Numerology"
+        assert consultant.credentials == ["Jyotish Visharad"]
+        assert AdminAction.objects.filter(action="profile_review.approved").exists()
+
+    def test_reject_needs_a_reason(self):
+        client, _ = _admin(Tier.SUPPORT)
+        consultant = _pending_consultant()
+        before = consultant.category
+        review = self._request(consultant)
+        client.post(
+            reverse("namo:consultants_profilereview_changelist"),
+            {"action": "reject", "_selected_action": [str(review.pk)]},
+            follow=True,
+        )
+        review.refresh_from_db()
+        assert review.status == "pending"
+        consultant.refresh_from_db()
+        assert consultant.category == before

@@ -329,6 +329,12 @@ export function ConsultantPage({
               book yourself. */}
           {own ? (
             <div className="mt-5 flex gap-2">
+              {/* Edit profile is back on your own page (13 Oct 2026,
+                  Rahul): your practice, not your name and birth details,
+                  which stay in Settings. */}
+              <Link to="/practice/edit" className={ownButton}>
+                Edit profile
+              </Link>
               {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
                   edits your name and birth details, not this page.
                   Dashboard (11 Oct 2026, Rahul) opens the consultant app:

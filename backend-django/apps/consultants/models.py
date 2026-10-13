@@ -520,3 +520,53 @@ class PayoutDetails(models.Model):
                 name="payout_details_status_valid",
             ),
         ]
+
+
+class ProfileReviewStatus(models.TextChoices):
+    PENDING = "pending", "Pending — waiting for a check"
+    APPROVED = "approved", "Approved — on the profile"
+    REJECTED = "rejected", "Rejected — consultant must fix"
+
+
+class ProfileReview(models.Model):
+    """`profile_reviews` — a consultant's request to change what was checked
+    when they were approved: the category, the credentials and the degree
+    with its scan (13 Oct 2026, Rahul). One row per consultant, the latest
+    request; sending again replaces it and puts it back to pending. Nothing
+    reaches the consultants row until an operator approves it in the
+    console. The rest of the profile — specialization, bio, experience,
+    languages, tags — the consultant edits directly.
+
+    The four requested values are a full snapshot of those fields, not a
+    diff, except `degree_asset_id`: null keeps the scan already on file."""
+
+    consultant = models.OneToOneField(
+        Consultant,
+        to_field="profile_id",
+        db_column="consultant_id",
+        primary_key=True,
+        on_delete=models.CASCADE,
+        related_name="profile_review",
+    )
+    category = models.TextField()
+    credentials = TextArrayField()
+    degree = models.TextField(blank=True, default="")
+    degree_asset_id = models.UUIDField(null=True, blank=True)
+    status = models.CharField(
+        max_length=16, choices=ProfileReviewStatus.choices, default=ProfileReviewStatus.PENDING
+    )
+    review_note = models.TextField(blank=True, default="")
+    submitted_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "profile_reviews"
+        verbose_name = "profile change for review"
+        verbose_name_plural = "profile changes for review"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=ProfileReviewStatus.values),
+                name="profile_reviews_status_valid",
+            ),
+        ]

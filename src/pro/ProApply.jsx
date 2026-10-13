@@ -340,7 +340,7 @@ function Application({ onDone, toast }) {
  * whoever decides the application, through a link the console signs for ten
  * minutes.
  */
-function Certificate({ cert, uploading, onPick, onClear }) {
+export function Certificate({ cert, uploading, onPick, onClear }) {
   const input = useRef(null)
   return (
     <label className="mt-5 block">
@@ -383,7 +383,7 @@ function Certificate({ cert, uploading, onPick, onClear }) {
   )
 }
 
-function Input({ label, ...rest }) {
+export function Input({ label, ...rest }) {
   return (
     <label className="mt-6 block">
       <span className="text-micro uppercase tracking-caps text-t3">{label}</span>

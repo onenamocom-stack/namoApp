@@ -766,7 +766,7 @@ consultant's row.
 `pro`, migration `consultants/0008_consultant_badge`. Set only in the console
 (list-editable on the astrologer list); public on the consultant row and on
 `/consultants/me/`. Namo's-share migration, unapplied, renumbered from
-`0008` to `0009_consultant_fee_bps` to follow it.
+`0008` to `0010_consultant_fee_bps` to follow it and `0009_profile_review`.
 
 **A free first session** (7 Oct 2026): `consultants.free_first` (boolean,
 default false, migration `consultants/0005`) and `sessions.free_seconds`
@@ -1461,6 +1461,20 @@ whole by `PUT /v1/consultants/me/payout-details/`, which sends it back to
 number exist only as ciphertext plus their last four. `sessions_done` on the
 consultant rows is not a column: it is a count of `sessions` that ended with
 `charged_paise > 0`, computed per read.
+
+### 5.2f-bis `profile_reviews` — a consultant's change for a check (13 Oct 2026)
+
+One row per consultant (`consultant_id` PK → `consultants.profile_id`), the
+latest request: `category`, `credentials` (text[]), `degree`, the full
+requested values; `degree_asset_id` (null keeps the scan on file); `status`
+`pending` | `approved` | `rejected` (check `profile_reviews_status_valid`);
+`review_note`, `submitted_at`, `reviewed_at`, `reviewed_by`. Written by
+`PUT /consultants/me/review/` (back to pending, note cleared); approved or
+rejected only in the console, where approval copies the values onto the
+consultants row in the same transaction. Migration
+`consultants/0009_profile_review`. The direct fields go through `PATCH
+/consultants/me/profile/` (specialization, bio, experience_yrs, languages,
+tags) and have no table of their own.
 
 ### 5.2g `banners` and `themes` — set from the console (4 Oct 2026)
 

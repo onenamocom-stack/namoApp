@@ -908,8 +908,8 @@ data, matching, muhurat and reports — but nothing in Profile links to it.
 specialization, rating line, bio, intro, Posts · Reviews · About (Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
-profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is
-Settings → *Edit name and birth details* for a pro now — then **Dashboard**
+profile** (13 Oct 2026, Rahul; the old one, which edited name and birth
+details, went to Settings on 11 Oct), then **Dashboard**
 (11 Oct 2026, Rahul: opens pro.1namo.com from 1namo.com, the pro app's start
 inside it; a first visit there asks for the phone code once) and **Share profile**
 (`/consult/<you>`) where a client sees Follow and **Share profile**, half
@@ -1139,6 +1139,16 @@ ladder or congratulation since 13 Oct 2026. Settings → **Payout details** → 
 Settings → **Your rates** opens a sheet with the same four fields as the
 application and **Save rates**; all four save together, and new prices apply to
 what is asked or booked afterwards.
+
+### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
+In both apps, from **Edit profile** on your own page and from `/pro/profile`.
+**Your profile** — specialization (comma-separated, one chip each), About,
+years of practice, languages, tags — saves on **Save** and shows at once.
+**Checked by NAMO** — practice (category), credentials, degree, a new
+certificate — goes out on **Send for review** and reaches your page only
+when an operator approves it in the console (Consultants → *Profile changes
+for review*: Approve, or Reject with the review note, which the consultant
+reads here). A pending request prefills the form; sending again replaces it.
 
 ### `/pro/payout-details`
 PAN and bank account. With nothing saved, the form: PAN, name on PAN, PAN card

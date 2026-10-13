@@ -238,30 +238,33 @@ def me(request):
         return Response(
             refusal_body("not_consultant", "No practice on this account."), status=404
         )
-    return Response(
-        {
-            "profile_id": str(consultant.profile_id),
-            "category": consultant.category,
-            "specialization": consultant.specialization,
-            "languages": consultant.languages or [],
-            "experience_yrs": consultant.experience_yrs,
-            "bio": consultant.bio,
-            "credentials": consultant.credentials or [],
-            "tags": consultant.tags or [],
-            "degree": consultant.degree,
-            "status": consultant.status,
-            "verified": consultant.verified,
-            "rating_avg_cache": consultant.rating_avg_cache,
-            "rating_count_cache": consultant.rating_count_cache,
-            "sessions_done": services.sessions_done(consultant.profile_id),
-            "badge": consultant.badge,
-            "created_at": consultant.created_at,
-            # Whole rupees a minute: chat, video, audio, booking (10 Oct 2026).
-            "rates": services.rates_of(consultant.profile_id),
-            "intro_url": consultant.intro_url,
-            "intro_kind": consultant.intro_kind,
-        }
-    )
+    return Response(_own_row(consultant))
+
+
+def _own_row(consultant):
+    """The caller's own row — `me` and the profile edit answer with it."""
+    return {
+        "profile_id": str(consultant.profile_id),
+        "category": consultant.category,
+        "specialization": consultant.specialization,
+        "languages": consultant.languages or [],
+        "experience_yrs": consultant.experience_yrs,
+        "bio": consultant.bio,
+        "credentials": consultant.credentials or [],
+        "tags": consultant.tags or [],
+        "degree": consultant.degree,
+        "status": consultant.status,
+        "verified": consultant.verified,
+        "rating_avg_cache": consultant.rating_avg_cache,
+        "rating_count_cache": consultant.rating_count_cache,
+        "sessions_done": services.sessions_done(consultant.profile_id),
+        "badge": consultant.badge,
+        "created_at": consultant.created_at,
+        # Whole rupees a minute: chat, video, audio, booking (10 Oct 2026).
+        "rates": services.rates_of(consultant.profile_id),
+        "intro_url": consultant.intro_url,
+        "intro_kind": consultant.intro_kind,
+    }
 
 
 class IntroInput(serializers.Serializer):
@@ -596,3 +599,73 @@ def presence(request):
             status=403,
         )
     return Response(state)
+
+
+# ── editing your own profile (13 Oct 2026, Rahul) ────────────────────────────
+
+
+class ProfileEditInput(serializers.Serializer):
+    """The fields a consultant changes directly. Each is optional; only the
+    ones sent are saved."""
+
+    specialization = serializers.CharField(allow_blank=True, required=False)
+    bio = serializers.CharField(allow_blank=True, required=False)
+    experience_yrs = serializers.IntegerField(allow_null=True, required=False)
+    languages = serializers.ListField(child=serializers.CharField(), required=False)
+    tags = serializers.ListField(child=serializers.CharField(), required=False)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def my_profile(request):
+    """Save specialization, bio, experience, languages or tags. Category,
+    credentials and degree are not here: they go through `me/review/`."""
+    from . import profile_edit
+
+    serializer = ProfileEditInput(data=request.data)
+    if not serializer.is_valid():
+        return Response(refusal_body("invalid", "Check the fields and try again."), status=400)
+    try:
+        profile_edit.update_profile(request.user.pk, serializer.validated_data)
+    except profile_edit.BadEdit as exc:
+        return Response(refusal_body("invalid", str(exc)), status=exc.status)
+    return Response(_own_row(services.my_consultant(request.user.pk)))
+
+
+class ReviewInput(serializers.Serializer):
+    category = serializers.CharField()
+    credentials = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    degree = serializers.CharField(allow_blank=True, required=False, default="")
+    # A new certificate scan, uploaded as kind "document"; null keeps the
+    # one on file.
+    degree_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+
+
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def my_review(request):
+    """GET: the latest change sent for a check, or {"status": "none"}.
+    PUT: send category, credentials and degree for a check; replaces any
+    earlier request. Nothing changes on the profile until the console
+    approves it."""
+    from . import profile_edit
+
+    if services.my_consultant(request.user.pk) is None:
+        return Response(refusal_body("not_consultant", "No practice on this account."), status=404)
+    if request.method == "GET":
+        return Response(profile_edit.review_row(profile_edit.review_of(request.user.pk)))
+    serializer = ReviewInput(data=request.data)
+    if not serializer.is_valid():
+        return Response(refusal_body("invalid", "Pick at least one practice."), status=400)
+    data = serializer.validated_data
+    try:
+        review = profile_edit.request_review(
+            request.user.pk,
+            category=data["category"],
+            credentials=data["credentials"],
+            degree=data["degree"],
+            degree_asset_id=data["degree_asset_id"],
+        )
+    except profile_edit.BadEdit as exc:
+        return Response(refusal_body("invalid", str(exc)), status=exc.status)
+    return Response(profile_edit.review_row(review))
