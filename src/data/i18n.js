@@ -836,7 +836,8 @@ export const strings = {
 
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
   // 12 Oct 2026, Rahul: NAMO is a spiritual social network first.
-  'w.title': { en: "India's Spiritual Network", hi: 'भारत का आध्यात्मिक नेटवर्क' },
+  // Rahul's tagline, 13 Oct 2026 (was "India's Spiritual Network", 12 Oct).
+  'w.title': { en: 'Hindu Social Network', hi: 'हिंदू सोशल नेटवर्क' },
   'w.p.follow': { en: 'Follow gurus & astrologers', hi: 'गुरु और ज्योतिषी फ़ॉलो करें' },
   'w.p.share': { en: 'Post & share bhakti', hi: 'भक्ति पोस्ट और शेयर करें' },
   'w.p.darshan': { en: 'Daily darshan & bhajans', hi: 'रोज़ दर्शन और भजन' },
