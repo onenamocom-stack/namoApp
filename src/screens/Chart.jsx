@@ -1,4 +1,5 @@
 import { Loader } from '../components/Cosmos.jsx'
+import { birthHref } from '../lib/birth.js'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
@@ -112,8 +113,8 @@ function ChartTab({ chart, who, ready, display, me }) {
       <div className="mx-5 mt-6 border-t border-rule pt-6">
         <p className="text-body text-t1">{chart.refusal.reason}</p>
         {chart.refusal.code === 'no_birth' && (
-          <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
-            Add them in your profile
+          <Link to={birthHref()} className="mt-3 inline-block text-meta text-t2 underline">
+            Add your birth details
           </Link>
         )}
       </div>
@@ -211,8 +212,8 @@ function DashaTab({ who, ready }) {
       <div className="mx-5 mt-6 border-t border-rule pt-6">
         <p className="text-body text-t1">{got.refusal.reason}</p>
         {got.refusal.code === 'no_birth' && (
-          <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
-            Add them in your profile
+          <Link to={birthHref()} className="mt-3 inline-block text-meta text-t2 underline">
+            Add your birth details
           </Link>
         )}
       </div>
@@ -345,8 +346,8 @@ function PredictionTab({ who, ready, me }) {
         <div className="section">
           <p className="text-body text-t1">{reading.refusal.reason}</p>
           {reading.refusal.code === 'no_birth' && (
-            <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
-              Add them in your profile
+            <Link to={birthHref()} className="mt-3 inline-block text-meta text-t2 underline">
+              Add your birth details
             </Link>
           )}
         </div>

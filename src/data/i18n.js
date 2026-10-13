@@ -866,6 +866,32 @@ export const strings = {
 
   // ── About you: every birth detail on one page (3 Oct 2026) ───────────────
   'd.title': { en: 'A little about you', hi: 'अपने बारे में बताएं' },
+  // Sign-up without birth details (13 Oct 2026, docs/06 Phase 15a).
+  'd.signupHint': {
+    en: 'Your feed starts from what you pick. Your kundli needs your birth details: add them when you open it.',
+    hi: 'आपकी फ़ीड आपकी पसंद से शुरू होती है। कुंडली के लिए जन्म विवरण चाहिए: उसे खोलते समय जोड़ें।',
+  },
+  'd.interests': { en: 'Pick 3 to 5 you care about', hi: '3 से 5 चुनें जो आपको पसंद हैं' },
+  'd.interestsCount': { en: '{n} of 5', hi: '5 में से {n}' },
+  'd.join': { en: 'Join NAMO', hi: 'NAMO से जुड़ें' },
+  'd.birthTitle': { en: 'Your birth details', hi: 'आपका जन्म विवरण' },
+  'd.birthHint': {
+    en: 'Your kundli, rashifal and matching are made from these. Add them once.',
+    hi: 'आपकी कुंडली, राशिफल और मिलान इन्हीं से बनते हैं। एक बार जोड़ें।',
+  },
+  'd.birthGroup': { en: 'Birth details · for your kundli', hi: 'जन्म विवरण · कुंडली के लिए' },
+  'i.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
+  'i.astrology': { en: 'Astrology', hi: 'ज्योतिष' },
+  'i.yoga': { en: 'Yoga', hi: 'योग' },
+  'i.meditation': { en: 'Meditation', hi: 'ध्यान' },
+  'i.mantra': { en: 'Mantra & jaap', hi: 'मंत्र और जाप' },
+  'i.ayurveda': { en: 'Ayurveda', hi: 'आयुर्वेद' },
+  'i.festivals': { en: 'Festivals & vrat', hi: 'त्योहार और व्रत' },
+  'i.temples': { en: 'Temples & yatra', hi: 'मंदिर और यात्रा' },
+  'i.scripture': { en: 'Gita & katha', hi: 'गीता और कथा' },
+  'i.jain': { en: 'Jain dharma', hi: 'जैन धर्म' },
+  'i.vastu': { en: 'Vastu', hi: 'वास्तु' },
+  'i.numerology': { en: 'Numerology', hi: 'अंक ज्योतिष' },
   'd.hint': {
     en: 'Your kundli is made from these. You can change them later in Profile.',
     hi: 'आपकी कुंडली इन्हीं से बनती है। बाद में प्रोफ़ाइल से बदल सकते हैं।',

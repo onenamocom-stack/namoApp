@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { birthHref } from '../lib/birth.js'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import Paywall from '../components/Paywall.jsx'
@@ -210,7 +211,7 @@ export default function Muhurat() {
         <div className="section">
           <p className="text-body text-t1">{state.refusal.reason}</p>
           {state.refusal.code === 'no_birth' && (
-            <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
+            <Link to={birthHref()} className="mt-3 inline-block text-meta text-t2 underline">
               {t('a.addBirth')}
             </Link>
           )}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { birthHref } from '../lib/birth.js'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
@@ -87,7 +88,7 @@ export default function Match() {
             {!first && !mine.loading && mine.refusal?.code === 'no_birth' && (
               <p className="mt-4 text-meta text-t3">
                 {t('match.missing')}{' '}
-                <Link to="/profile" className="underline">{t('match.addThem')}</Link>
+                <Link to={birthHref()} className="underline">{t('match.addThem')}</Link>
                 {t('match.orTwo')}
               </p>
             )}
@@ -113,7 +114,7 @@ export default function Match() {
         <div className="section">
           <p className="text-body text-t1">{state.refusal.reason}</p>
           {state.refusal.code === 'no_birth' && (
-            <Link to="/profile" className="mt-3 inline-block text-meta text-t2 underline">
+            <Link to={birthHref()} className="mt-3 inline-block text-meta text-t2 underline">
               {t('a.addBirth')}
             </Link>
           )}

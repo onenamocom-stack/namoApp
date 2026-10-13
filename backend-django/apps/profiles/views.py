@@ -45,6 +45,7 @@ from apps.core.fields import CoordinateField
 from apps.core.views import refusal_body
 
 from . import services
+from .interests import INTERESTS, MAX_PICK, MIN_PICK
 from .models import EMAIL_SHAPE, GENDERS, Profile
 
 
@@ -72,6 +73,19 @@ class OnboardingInput(serializers.Serializer):
     gender = serializers.ChoiceField(choices=GENDERS, required=False, allow_null=True)
     # A line under the picture; "Available" when empty (4 Oct 2026).
     bio = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=150, trim_whitespace=True)
+    # Three to five keys of profiles.interests.INTERESTS (Phase 15a).
+    interests = serializers.ListField(
+        child=serializers.ChoiceField(choices=list(INTERESTS)),
+        required=False,
+        min_length=MIN_PICK,
+        max_length=MAX_PICK,
+    )
+
+    def validate_interests(self, value):
+        picked = list(dict.fromkeys(value))  # once each, in the order picked
+        if len(picked) < MIN_PICK:
+            raise serializers.ValidationError(f"Pick at least {MIN_PICK}.")
+        return picked
 
 
 class AvatarInput(serializers.Serializer):

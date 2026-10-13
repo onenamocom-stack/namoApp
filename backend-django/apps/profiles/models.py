@@ -107,6 +107,11 @@ class Profile(models.Model):
     # (backend/schema/032). Empty reads as "Available" in the app.
     bio = models.CharField(max_length=150, null=True, blank=True)
 
+    # What the person picked at sign-up, keys of `interests.INTERESTS` (13 Oct
+    # 2026, Phase 15a). Null until they pick: nullable for the same reason as
+    # `bio`. A list, three to five long, checked at the door (views).
+    interests = models.JSONField(null=True, blank=True)
+
     # Set when an admin blocks this person after reviewing reports. A
     # timestamp rather than a boolean because "when" is the first question
     # asked in an appeal, and a boolean cannot answer it. Null is the

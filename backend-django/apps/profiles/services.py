@@ -71,6 +71,7 @@ CLIENT_WRITABLE = (
     "birth_zone",
     "gender",
     "bio",
+    "interests",
 )
 
 EMAIL_PATTERN = EMAIL_SHAPE
@@ -137,6 +138,7 @@ def serialize_profile(profile):
         "video_enabled": profile.video_enabled,
         "influencer": profile.influencer,
         "bio": profile.bio,
+        "interests": profile.interests,
         "username": profile.username,
         "username_changed_at": (
             profile.username_changed_at.isoformat() if profile.username_changed_at else None

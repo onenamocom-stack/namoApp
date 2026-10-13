@@ -12,7 +12,7 @@ import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
 import Reports from './screens/Reports.jsx'
 
-import Welcome from './screens/onboarding/Welcome.jsx'
+import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
 import AboutYou from './screens/onboarding/AboutYou.jsx'
 import AskName from './screens/onboarding/AskName.jsx'
 import AskPhone from './screens/onboarding/AskPhone.jsx'
@@ -278,7 +278,7 @@ function SessionGate() {
          profile has arrived and carries a birth date: an account whose
          sign-up stopped before the birth details still needs them, and
          Welcome forwards it to /onboarding/details. */
-      if (pathname === '/onboarding' && !profileLoading && profile?.birth_date) {
+      if (pathname === '/onboarding' && !profileLoading && signedUp(profile)) {
         navigate('/home', { replace: true })
       }
       return

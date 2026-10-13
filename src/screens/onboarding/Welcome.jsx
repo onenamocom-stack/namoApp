@@ -37,6 +37,12 @@ const PROMISES = [
  *
  * The consultant app keeps its own chain (AskName → AskPhone → VerifyOtp).
  */
+/** Sign-up is done: interests picked (since 13 Oct 2026, Phase 15a), or
+ *  birth details given (every account before that). */
+export function signedUp(profile) {
+  return Boolean(profile?.birth_date || profile?.interests?.length)
+}
+
 export default function Welcome() {
   const navigate = useNavigate()
   const { t, lang, setLang, session, profile, profileLoading, setBirthField } = useStore()
@@ -76,12 +82,12 @@ export default function Welcome() {
     if (!verified && !phone) {
       // Already signed in and landed here (SessionGate sends anyone WITH a
       // birth date to Home): the details are what is missing.
-      if (!profile?.birth_date) navigate('/onboarding/details', { replace: true })
+      if (!signedUp(profile)) navigate('/onboarding/details', { replace: true })
       return
     }
     if (!verified) return
-    if (profile?.birth_date) {
-      warmCharts(session.user.id)
+    if (signedUp(profile)) {
+      if (profile?.birth_date) warmCharts(session.user.id)
       navigate('/home', { replace: true })
     } else {
       navigate('/onboarding/details', { replace: true })

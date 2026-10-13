@@ -17,13 +17,25 @@ import { clearBirthDraft, useStore } from '../../store.jsx'
 import { birthFields, warmCharts } from './Computing.jsx'
 
 const GENDERS = ['male', 'female', 'other']
+// Keys of backend-django/apps/profiles/interests.py, in the order shown.
+export const INTERESTS = [
+  'bhakti', 'astrology', 'yoga', 'meditation', 'mantra', 'ayurveda',
+  'festivals', 'temples', 'scripture', 'jain', 'vastu', 'numerology',
+]
+const MIN_PICK = 3
+const MAX_PICK = 5
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /** "1997-08-09" → "09/08/1997". */
 const toDdMmYyyy = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
 
 /**
- * Every birth detail on one page (3 Oct 2026).
+ * Sign-up without birth details (13 Oct 2026, docs/06 Phase 15a): a name and
+ * three to five interests, then Home. The kundli, rashifal and matching ask
+ * for birth details the first time they need them, by sending you to this
+ * page as `?edit=1&need=1&next=<where you were>`.
+ *
+ * Until then, every birth detail on one page (3 Oct 2026):
  *
  * Replaced six one-question screens (name, gender, date, time, place, phone +
  * email) that the owner found tiring to tap through. The account already
@@ -32,7 +44,8 @@ const toDdMmYyyy = (iso) => (iso ? iso.split('-').reverse().join('/') : '')
  * plays the one-time reveal.
  *
  * `?edit=1` is Profile's "Edit birth details": the same page, prefilled from
- * the profile, saving straight back with no reveal.
+ * the profile, saving straight back with no reveal. Birth details are
+ * required there only when asked for (`need=1`), already on file, or begun.
  *
  * The rules the old steps enforced are all still here: a real calendar date,
  * a 12-hour time or an explicit "don't know" (stored as NULL, never as a
@@ -44,7 +57,10 @@ export default function AboutYou() {
   const goBack = useGoBack('/profile')
   const [params] = useSearchParams()
   const edit = params.get('edit') === '1'
-  const { t, profile, session, sessionReady, setBirthField, saveProfile, refreshProfile, showToast } =
+  const need = params.get('need') === '1'
+  // Back to the screen that asked; a path on this site only.
+  const next = (params.get('next') || '').startsWith('/') ? params.get('next') : null
+  const { t, profile, session, sessionReady, saveProfile, refreshProfile, showToast } =
     useStore()
 
   const [name, setName] = useState('')
@@ -58,6 +74,7 @@ export default function AboutYou() {
   // Your About line, edited here and only here (13 Oct 2026, Rahul): one
   // place to change your profile. Profile shows it without a pencil.
   const [bio, setBio] = useState('')
+  const [interests, setInterests] = useState([])
   const filled = useRef(false)
 
   /* Edit mode fills from the profile once it arrives. A direct open or a
@@ -80,6 +97,7 @@ export default function AboutYou() {
     )
     setEmail(profile.email ?? '')
     setBio(profile.bio ?? '')
+    setInterests(profile.interests ?? [])
   }, [edit, profile])
   // A code carried in by a sign-up link (Welcome stores it) arrives filled in.
   const [referral, setReferral] = useState(() => {
@@ -98,12 +116,17 @@ export default function AboutYou() {
     if (sessionReady && !session) navigate('/onboarding', { replace: true })
   }, [sessionReady, session, navigate])
 
+  // Birth details: on the details page, when asked for, on file, or begun.
+  const birthWanted = edit && (need || Boolean(profile?.birth_date) || Boolean(date || time || place))
+  const picks = interests.length
   const missing = [
     !name.trim() && t('d.name'),
-    !gender && t('d.gender'),
-    !isValidDate(date) && t('d.date'),
-    !unknown && !isValidTime(time) && t('d.time'),
-    !place && t('d.place'),
+    // Sign-up must pick; the details page may leave none, never one or two.
+    (!edit ? picks < MIN_PICK : picks > 0 && picks < MIN_PICK) && t('d.interests'),
+    birthWanted && !gender && t('d.gender'),
+    birthWanted && !isValidDate(date) && t('d.date'),
+    birthWanted && !unknown && !isValidTime(time) && t('d.time'),
+    birthWanted && !place && t('d.place'),
   ].filter(Boolean)
   const emailOk = !email.trim() || EMAIL.test(email.trim())
   const ready = missing.length === 0 && emailOk && !saving
@@ -128,17 +151,19 @@ export default function AboutYou() {
       try {
         await saveProfile({
           name: name.trim(),
-          gender,
           email: email.trim() || null,
           bio: bio.trim(),
-          ...birthFields(draft()),
+          ...(picks ? { interests } : {}),
+          ...(birthWanted ? { gender, ...birthFields(draft()) } : {}),
         })
-        clearAstroCache()
-        clearBirthDraft()
+        if (birthWanted) {
+          clearAstroCache()
+          clearBirthDraft()
+        }
         await refreshProfile(session.user.id)
-        warmCharts(session.user.id)
+        if (birthWanted) warmCharts(session.user.id)
         showToast('Saved')
-        navigate('/profile', { replace: true })
+        navigate(next || '/profile', { replace: true })
       } catch (e) {
         setError(e.message)
       } finally {
@@ -147,12 +172,17 @@ export default function AboutYou() {
       return
     }
 
-    // Sign-up: the draft goes to Computing, which writes it and plays the reveal.
-    const d = draft()
-    setBirthField('name', name.trim())
-    setBirthField('gender', gender)
-    setBirthField('email', email.trim())
-    for (const [k, v] of Object.entries(d)) setBirthField(k, v)
+    // Sign-up: name and interests, saved here; no chart yet, so no reveal.
+    setSaving(true)
+    try {
+      await saveProfile({ name: name.trim(), email: email.trim() || null, interests })
+      await refreshProfile(session.user.id)
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+      return
+    }
+    setSaving(false)
 
     /* A referral is a perk, not a gate: claimed now that there is a session,
        and a refusal is a toast while sign-up carries on. */
@@ -169,18 +199,25 @@ export default function AboutYou() {
           }
         })
     }
-    navigate('/onboarding/computing', { replace: true })
+    navigate('/home', { replace: true })
   }
+
+  const toggleInterest = (key) =>
+    setInterests((now) =>
+      now.includes(key) ? now.filter((k) => k !== key) : now.length < MAX_PICK ? [...now, key] : now,
+    )
 
   return (
     <div className="flex min-h-full flex-col px-6 pb-8 pt-6">
       {edit && (
-        <BackButton onClick={goBack} className="self-start" />
+        <BackButton onClick={next ? () => navigate(-1) : goBack} className="self-start" />
       )}
 
       <div className={`${edit ? 'mt-2' : 'mt-6'} animate-fade-rise`}>
-        <h1 className="text-title font-semibold text-t1">{edit ? t('d.editDetails') : t('d.title')}</h1>
-        <p className="mt-2 text-meta text-t2">{t(edit ? 'd.editHint' : 'd.hint')}</p>
+        <h1 className="text-title font-semibold text-t1">
+          {need ? t('d.birthTitle') : edit ? t('d.editDetails') : t('d.title')}
+        </h1>
+        <p className="mt-2 text-meta text-t2">{t(need ? 'd.birthHint' : edit ? 'd.editHint' : 'd.signupHint')}</p>
       </div>
 
       <div className="mt-7 space-y-6">
@@ -195,7 +232,7 @@ export default function AboutYou() {
           />
         </Group>
 
-        {edit && (
+        {edit && !need && (
           <Group label={t('d.about')}>
             <textarea
               value={bio}
@@ -208,7 +245,30 @@ export default function AboutYou() {
           </Group>
         )}
 
-        <Group label={t('d.gender')} required>
+        {!need && (
+          <Group label={t('d.interests')} required={!edit}>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={interests.includes(key)}
+                  onClick={() => toggleInterest(key)}
+                  className="pill !py-2 text-meta"
+                >
+                  {t(`i.${key}`)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[12px] tnum text-t3">{t('d.interestsCount', { n: picks })}</p>
+          </Group>
+        )}
+
+        {edit && !need && <p className="pt-2 text-meta font-semibold text-t2">{t('d.birthGroup')}</p>}
+
+        {edit && (
+        <>
+        <Group label={t('d.gender')} required={birthWanted}>
           <div className="grid grid-cols-3 gap-2">
             {GENDERS.map((g) => (
               <button
@@ -224,11 +284,11 @@ export default function AboutYou() {
           </div>
         </Group>
 
-        <Group label={t('d.date')} required>
+        <Group label={t('d.date')} required={birthWanted}>
           <DateField value={date} onChange={setDate} className="field-line !text-lead" />
         </Group>
 
-        <Group label={t('d.time')} required>
+        <Group label={t('d.time')} required={birthWanted}>
           <TimeField
             value={time}
             onChange={setTime}
@@ -254,9 +314,11 @@ export default function AboutYou() {
           </label>
         </Group>
 
-        <Group label={t('d.place')} required>
+        <Group label={t('d.place')} required={birthWanted}>
           <PlaceField place={place} onPick={setPlace} placeholder={t('d.placePh')} />
         </Group>
+        </>
+        )}
 
         <Group label={t('d.email')}>
           <input
@@ -290,12 +352,12 @@ export default function AboutYou() {
       </div>
 
       <div className="mt-auto pt-8">
-        {missing.length > 0 && (name || date || place) && (
+        {missing.length > 0 && (name || date || place || picks > 0) && (
           <p className="mb-3 text-center text-[12px] text-t3">{t('d.missing', { list: missing.join(', ') })}</p>
         )}
         {error && <p className="mb-3 text-center text-meta text-live">{error}</p>}
         <Button variant="solid" onClick={submit} disabled={!ready}>
-          {saving ? t('d.saving') : edit ? t('d.saveEdit') : t('d.save')}
+          {saving ? t('d.saving') : edit ? t('d.saveEdit') : t('d.join')}
         </Button>
       </div>
     </div>

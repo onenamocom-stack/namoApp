@@ -114,9 +114,18 @@ on one page.
 
 | Step | Route | Asks | Validation | Next |
 |---|---|---|---|---|
-| 1 | `/onboarding` | Language (English / हिन्दी, remembered on the device), four lines on what the app does, then the mobile number. *Get code* sends the OTP and the same page turns into a six-digit field with resend after 30s and *Change number*. The code auto-fills where the browser offers it (WebOTP) and verifies itself at six digits | number matches `[6-9]` + 9 digits; code accepted by Supabase | account has a birth date → `/home`; otherwise `/onboarding/details` |
-| 2 | `/onboarding/details` | Name, gender, birth date, birth time (or *I don't know*), birth place, email (optional), referral code (behind a link) | name non-empty; gender picked; a real calendar date 1900–today; a 12-hour time *or* the box ticked; a place **picked** from the search, carrying lat, lon and IANA zone; email, if given, shape-checked. Missing fields are named above the button | `/onboarding/computing` |
-| 3 | `/onboarding/computing` | Writes the profile, computes the charts, and plays the **reveal** once: a turning zodiac ring, then *Welcome, {name}* with Sun, Moon and Lagna. 4.2s, a tap skips. Restored 3 Oct (it was removed 30 Sep) at the owner's request, as a one-time moment | — | `/home` |
+| 1 | `/onboarding` | Language (English / हिन्दी, remembered on the device), four lines on what the app does, then the mobile number. *Get code* sends the OTP and the same page turns into a six-digit field with resend after 30s and *Change number*. The code auto-fills where the browser offers it (WebOTP) and verifies itself at six digits | number matches `[6-9]` + 9 digits; code accepted by Supabase | account signed up (interests picked, or a birth date on file) → `/home`; otherwise `/onboarding/details` |
+| 2 | `/onboarding/details` | Name, three to five interests (bhakti, astrology, yoga, meditation, mantra, ayurveda, festivals, temples, scripture, Jain dharma, vastu, numerology), email (optional), referral code (behind a link). **No birth details** since 13 Oct 2026 (Phase 15a) | name non-empty; three to five interests | `/home` |
+
+**Birth details when first needed (13 Oct 2026, Phase 15a).** Sign-up used to
+ask every birth detail and end on `/onboarding/computing`'s reveal; that
+reveal now plays only for an old link. A chart, a match, the muhurat and the
+Today tab, with no birth date on file, show *Add your birth details*, which
+opens `/onboarding/details?edit=1&need=1&next=<where you were>`: "Your birth
+details", gender, date, time (or *I don't know*) and place required, then
+back to where you were. On `?edit=1` without `need`, birth details are
+required only once one is on file or one field is begun, and interests can
+be changed (none, or three to five). |
 
 The date and time fields format themselves: digits only, on the number
 keypad, with `/` and `:` inserted as you type (`BirthInputs.jsx`). The same

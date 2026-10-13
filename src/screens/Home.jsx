@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { birthHref } from '../lib/birth.js'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
@@ -1269,7 +1270,9 @@ function ReadingCard() {
     <article className="pop-card p-4">
       <Kicker>{t('home.yourRashifal')}</Kicker>
       <div className="pop-inset mt-3 p-4">
-        {!sign && !mine.loading && <p className="text-meta t-body">{t('a.addBirth')}</p>}
+        {!sign && !mine.loading && (
+          <Link to={birthHref()} className="text-meta t-body underline">{t('a.addBirth')}</Link>
+        )}
         {reading.loading && <p className="text-meta t-faint">{t('home.readingSky')}</p>}
         {reading.refusal && <p className="text-meta t-body">{reading.refusal.reason}</p>}
 

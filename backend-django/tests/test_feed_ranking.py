@@ -107,3 +107,29 @@ class TestArrange:
         a = ranking.arrange(self._rows(20), rng=random.Random(1))
         b = ranking.arrange(self._rows(20), rng=random.Random(1))
         assert [r.id for r in a] == [r.id for r in b]
+
+
+@pytest.mark.django_db
+class TestInterests:
+    """Phase 15a's done-condition: a new account that picked yoga sees yoga
+    posts first, with nothing liked or followed yet."""
+
+    def test_a_new_account_that_picked_yoga_sees_yoga_first(self, api_client, roster, seeker_token):
+        from apps.profiles.models import Profile
+
+        Profile.objects.filter(id=SEEKER).update(interests=["yoga", "mantra", "temples"])
+        yoga = _post(APPROVED, minutes_ago=300)
+        yoga.caption = "Morning #yoga, surya namaskar"
+        yoga.save(update_fields=["caption"])
+        _post(SECOND_SEEKER)
+        _post(ADMIN, minutes_ago=5)
+        assert _ids(api_client.get(URL, **auth(seeker_token)))[0] == str(yoga.id)
+
+    def test_interests_are_checked_at_the_door(self, api_client, roster, seeker_token):
+        bad = api_client.patch("/v1/profiles/me/", {"interests": ["yoga", "golf", "mantra"]}, format="json", **auth(seeker_token))
+        assert bad.status_code == 400
+        few = api_client.patch("/v1/profiles/me/", {"interests": ["yoga", "yoga", "mantra"]}, format="json", **auth(seeker_token))
+        assert few.status_code == 400
+        ok = api_client.patch("/v1/profiles/me/", {"interests": ["yoga", "mantra", "jain"]}, format="json", **auth(seeker_token))
+        assert ok.status_code == 200
+        assert ok.json()["interests"] == ["yoga", "mantra", "jain"]

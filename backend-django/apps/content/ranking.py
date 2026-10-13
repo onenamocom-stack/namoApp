@@ -11,6 +11,9 @@ The score:
   * kind        — the share of your likes, saves, reshares and comments
                   that went to this kind (reel, photo, blog).
   * fresh       — halves every two days since publishing.
+  * interest    — the post's words carry one of the reader's sign-up
+                  interests (`profiles/interests.py`); the term that works
+                  for an account with nothing liked or followed yet.
   * popular     — likes, saves, comments, reshares and views, on a log
                   scale, against the most popular post in the deck.
   * seen        — a post you watched in the last two weeks keeps a third
@@ -22,7 +25,7 @@ The order:
   * every fifth slot is a post drawn at random from the rest, so new and
     quiet authors are seen;
   * signed out, or with nothing liked or followed yet, the follow, author
-    and kind terms are zero and the feed is fresh and popular posts.
+    and kind terms are zero and the feed is interests, fresh and popular.
 
 Posts carry no rashi or language, so the feed cannot match either yet.
 """
@@ -44,6 +47,7 @@ W_FOLLOW = 4.0
 W_AUTHOR = 0.6  # per engagement with the author, capped at AUTHOR_CAP
 AUTHOR_CAP = 5
 W_KIND = 2.0
+W_INTEREST = 2.5
 W_FRESH = 3.0
 FRESH_HALF_LIFE_HOURS = 48
 W_POPULAR = 1.5
@@ -62,7 +66,7 @@ def viewer_signals(viewer_id):
     kinds they engaged with, and what they watched lately. Empty for a
     signed-out reader."""
     if viewer_id is None:
-        return {"follows": set(), "authors": Counter(), "kinds": Counter(), "seen": set()}
+        return {"follows": set(), "authors": Counter(), "kinds": Counter(), "seen": set(), "words": []}
 
     follows = set(
         str(t)
@@ -102,7 +106,12 @@ def viewer_signals(viewer_id):
             "content_id", flat=True
         )
     )
-    return {"follows": follows, "authors": authors, "kinds": kinds, "seen": seen}
+    from apps.profiles.interests import INTERESTS
+    from apps.profiles.models import Profile
+
+    picked = Profile.objects.filter(pk=viewer_id).values_list("interests", flat=True).first() or []
+    words = [w.lower() for key in picked for w in INTERESTS.get(key, [])]
+    return {"follows": follows, "authors": authors, "kinds": kinds, "seen": seen, "words": words}
 
 
 def _popularity(row):
@@ -121,6 +130,10 @@ def score(row, signals, *, now, top_popularity, rng):
     if author in signals["follows"]:
         s += W_FOLLOW
     s += W_AUTHOR * min(signals["authors"][author], AUTHOR_CAP)
+    if signals["words"]:
+        text = " ".join(t for t in (row.caption, row.body, row.title) if t).lower()
+        if any(w in text for w in signals["words"]):
+            s += W_INTEREST
     total_kinds = sum(signals["kinds"].values())
     if total_kinds:
         s += W_KIND * signals["kinds"][row.kind] / total_kinds
