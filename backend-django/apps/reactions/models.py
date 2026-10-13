@@ -70,7 +70,10 @@ class Reaction(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     # A repost's own words, "Reshare with your thoughts" (13 Oct 2026,
     # Rahul). Empty for every other kind and for a plain reshare.
-    note = models.TextField(blank=True, default="")
+    # db_default too (13 Oct 2026): without it the column went on production
+    # NOT NULL with no default, and the API then live, which never sends a
+    # note, failed every like, follow and save until it was set.
+    note = models.TextField(blank=True, default="", db_default="")
 
     # Convenience aliases so call sites read Reaction.Kind / Reaction.TargetType.
     Kind = Kind
