@@ -1362,6 +1362,10 @@ Both `/reposts/` lists return it as `note`.
 (or active Bhakti items) the caller has a live comment on, newest comment
 first, each once with `comment {id, body, created_at}` — the caller's latest.
 
+**Tag** (13 Oct 2026, no table): `GET /v1/content/tag/<tag>/?sort=new|top`,
+anonymous, returns feed rows whose caption, body or title carries `#tag`
+whole-word, case-blind, among the newest 1,000 live rows.
+
 **For you** (13 Oct 2026, no table): `GET /v1/content/feed/for-you/?kinds=&limit=`,
 anonymous or signed in, returns feed rows ordered for the caller. It reads
 `reactions` (the caller's follows; likes, saves and reposts on content),

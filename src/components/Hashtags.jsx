@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom'
 /**
  * Text with its #hashtags as links (10 Oct 2026, Rahul). A tag is a # and
  * the letters, marks and digits after it, in any script — #शिव as well as
- * #shiv. Tapping one opens Search on Posts with the tag typed in, which finds
- * every post among the newest that carries it. Nothing is stored: the tag is
- * the text the author wrote.
+ * #shiv. Tapping one opens the tag's own page, `/tag/:tag` (Search until
+ * 13 Oct 2026). Nothing is stored: the tag is the text the author wrote.
  */
 const TAG = /(#[\p{L}\p{M}\p{N}_]+)/gu
 
 export function tagHref(tag) {
-  return `/search?in=posts&q=${encodeURIComponent(tag)}`
+  // The tag's own page since 13 Oct 2026 (Phase 15a); it opened Search.
+  return `/tag/${encodeURIComponent(tag.replace(/^#/, ''))}`
 }
 
 export default function Hashtags({ text, className = '' }) {

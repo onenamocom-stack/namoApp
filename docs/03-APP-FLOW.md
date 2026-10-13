@@ -67,6 +67,7 @@ In file order, which is also resolution order.
 | `/live/:id` | LiveRoom | Plain |
 | `/consult/:id` | ConsultantProfile | Plain |
 | `/notifications` | Notifications | Plain |
+| `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
 | `/premium` | → `/home` (Premium not offered, 11 Oct 2026) | — |
 | `/reports` | Reports | Plain |
 | `/tarot` | Tarot | Plain |
@@ -254,8 +255,9 @@ blog*: a cover box, the title large, the body, and under them Tag product
 (consultants) and the word count with read time; **Publish** needs a title
 and a body, Back returns to Create post. Each keeps its own draft. Edit uses
 the same screen, its kind fixed, with **Save**. A **#hashtag** in a
-caption or text post is a link → `/search?in=posts&q=%23tag`, which matches
-it among the newest 200 posts.
+caption or text post is a link → `/tag/:tag`, the tag's own page (13 Oct
+2026, Phase 15a; it opened Search). Newest or Top, each post as the feed
+draws it, matched whole-word in any script among the newest 1,000 posts.
 
 **Feed** is the stream, where `kind` picks the card. The free-tools row used to
 sit above it and is on `/consult` now, as of 7 Sep 2026:

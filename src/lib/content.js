@@ -444,6 +444,12 @@ export function isMine(authorId, me) {
   return !!authorId && !!me && String(authorId).replace(/-/g, '') === String(me).replace(/-/g, '')
 }
 
+/** Posts carrying #tag, `sort` 'new' or 'top' (13 Oct 2026, Phase 15a). */
+export async function fetchByTag(tag, { sort = 'new', limit = 60 } = {}) {
+  const body = await api(`/content/tag/${encodeURIComponent(tag)}/?sort=${sort}&limit=${limit}`)
+  return (body?.results ?? []).map(shape)
+}
+
 export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
   const rows = await api(`/content/by-author/?author_id=${authorId}&limit=${limit}`)
   return (rows ?? []).map(shape)

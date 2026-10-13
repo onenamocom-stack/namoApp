@@ -54,6 +54,7 @@ import Muhurat from './screens/Muhurat.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
+import TagScreen from './screens/TagScreen.jsx'
 import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
@@ -391,6 +392,8 @@ function Frame() {
                     shelf, and the item was somewhere in it). */}
                 <Route path="/bhakti/s/:id" element={<Bhakti />} />
                 <Route path="/search" element={<SearchScreen />} />
+                {/* A hashtag's own page (13 Oct 2026, Phase 15a). */}
+                <Route path="/tag/:tag" element={<TagScreen />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
                     anybody bookable. */}
@@ -429,6 +432,8 @@ function Frame() {
                     and Insights (4 Oct 2026) — both screens show only theirs. */}
                 <Route path="/reels/:id" element={<ReelViewer />} />
                 <Route path="/read/:id" element={<Article />} />
+                {/* A hashtag in the pro app's feed opens its page too. */}
+                <Route path="/tag/:tag" element={<TagScreen />} />
               </>
             )}
           </Route>

@@ -142,6 +142,22 @@ def for_you(request):
     return Response({"results": [_public_row(r) for r in rows]})
 
 
+class TagQuery(serializers.Serializer):
+    sort = serializers.ChoiceField(choices=["new", "top"], required=False, default="new")
+    limit = serializers.IntegerField(required=False, default=60, min_value=1, max_value=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def by_tag(request, tag):
+    """A hashtag's page: newest or top posts carrying it (Phase 15a)."""
+    query = TagQuery(data=request.query_params)
+    query.is_valid(raise_exception=True)
+    rows = services.by_tag(tag, sort=query.validated_data["sort"], limit=query.validated_data["limit"])
+    rows = services.attach_products(rows)
+    return Response({"tag": tag.lstrip("#"), "results": [_public_row(r) for r in rows]})
+
+
 class ByAuthorQuery(serializers.Serializer):
     author_id = serializers.UUIDField()
     limit = serializers.IntegerField(required=False, default=40, min_value=1, max_value=200)

@@ -78,3 +78,32 @@ class TestLikeAndFollowNotifications:
     def test_following_a_consultant_tells_them(self, api_client, seeker_token, roster):
         _react(api_client, seeker_token, "consultant", APPROVED, "follow")
         assert len(_alerts(APPROVED, "profile.follow")) == 1
+
+
+@pytest.mark.django_db
+class TestTagPage:
+    """`GET /v1/content/tag/<tag>/` (Phase 15a): whole tag, any case, any
+    script; newest first, or `top` by engagement."""
+
+    def test_whole_tag_only_any_case(self, api_client, consultant_token, roster):
+        a = _publish(api_client, consultant_token, kind="post", caption="Om #Shiv").json()["id"]
+        _publish(api_client, consultant_token, kind="post", caption="#shivratri tonight")
+        b = _publish(api_client, consultant_token, kind="post", caption="#shiv, always").json()["id"]
+        ids = [r["id"] for r in api_client.get("/v1/content/tag/shiv/").json()["results"]]
+        assert ids == [b, a]
+
+    def test_devanagari_tag(self, api_client, consultant_token, roster):
+        a = _publish(api_client, consultant_token, kind="post", caption="जय #शिव").json()["id"]
+        _publish(api_client, consultant_token, kind="post", caption="#शिवरात्रि")
+        ids = [r["id"] for r in api_client.get("/v1/content/tag/शिव/").json()["results"]]
+        assert ids == [a]
+
+    def test_top_orders_by_engagement(
+        self, api_client, consultant_token, seeker_token, second_seeker_token, roster
+    ):
+        liked = _publish(api_client, consultant_token, kind="post", caption="#yoga one").json()["id"]
+        _publish(api_client, consultant_token, kind="post", caption="#yoga two")
+        for token in (seeker_token, second_seeker_token):
+            _react(api_client, token, "content", liked, "like")
+        ids = [r["id"] for r in api_client.get("/v1/content/tag/yoga/?sort=top").json()["results"]]
+        assert ids[0] == liked

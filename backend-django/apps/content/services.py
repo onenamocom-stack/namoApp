@@ -212,6 +212,39 @@ def feed_page(*, kinds=None, after_id=None, limit=40):
     return _public_page(qs, after_id=after_id, limit=limit)
 
 
+TAG_SCAN = 1000  # the newest posts a tag page looks through
+
+
+def by_tag(tag, *, sort="new", limit=60):
+    """Posts carrying #tag in their caption, body or title (13 Oct 2026,
+    docs/06 Phase 15a). The tag is the text the author wrote, so nothing is
+    stored: the newest TAG_SCAN live posts are matched whole-word and
+    case-blind, in any script. `top` orders the matches by likes, saves,
+    comments and reshares."""
+    import re
+
+    word = tag.lstrip("#").strip()
+    if not word:
+        return []
+    # Not followed by a letter or a Devanagari mark: #shiv is not #shivratri.
+    pattern = re.compile(rf"#{re.escape(word)}(?![\wऀ-ॿ])", re.IGNORECASE)
+    qs = public_content().filter(
+        models.Q(caption__icontains=f"#{word}")
+        | models.Q(body__icontains=f"#{word}")
+        | models.Q(title__icontains=f"#{word}")
+    )
+    rows = [
+        r for r in qs.order_by(F("published_at").desc(nulls_last=True), "-id")[:TAG_SCAN]
+        if any(pattern.search(t or "") for t in (r.caption, r.body, r.title))
+    ]
+    if sort == "top":
+        rows.sort(
+            key=lambda r: r.like_count + 2 * (r.save_count + r.comment_count + r.repost_count),
+            reverse=True,
+        )
+    return rows[:limit]
+
+
 def by_author_page(author_id, *, after_id=None, limit=40):
     qs = public_content().filter(author_id=author_id)
     return _public_page(qs, after_id=after_id, limit=limit)
