@@ -30,13 +30,14 @@ import { subscribeToAlerts } from '../lib/notifications.js'
  */
 /* Market is Shop and Academy in one tab (13 Oct 2026, Rahul): it opens on
    /shop and stays lit on /academy, and the two pages switch between each
-   other at the top. Its old slot went to Messages. */
+   other at the top. Messages took the freed slot, in the middle of the
+   bar (Rahul, the same day). */
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
   { to: '/bhakti', label: 'nav.bhakti', icon: 'pooja' },
+  { to: '/messages', label: 'nav.messages', icon: 'chat' },
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
   { to: '/shop', label: 'nav.market', icon: 'shop', also: ['/academy'] },
-  { to: '/messages', label: 'nav.messages', icon: 'chat' },
 ]
 
 /** Shop · Academy, under the header of both (13 Oct 2026): the two halves
