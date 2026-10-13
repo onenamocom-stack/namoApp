@@ -668,9 +668,10 @@ in place) or photo they uploaded from Settings → *Intro video or photo*; nothi
 when there is none (11 Oct 2026; it was a "Meet X · 1:24" placeholder). Its
 **Posts** tab (was "Work", a list of titles) shows each
 post in full, as the feed does (11 Oct 2026). **About** is the facts without a
-heading (speaks, category, experience, verified), then **Rates**. There is no
-Book section under the tabs since 11 Oct (Rahul); the footer's four buttons are
-the way in. A reel's caption in the reels viewer folds to two lines; a tap
+heading (speaks, category, experience, verified). No Rates section since 13
+Oct 2026 (Rahul: it repeated the footer); no Book section since 11 Oct. The
+footer's four buttons are the way in and carry every rate — a tile that says
+"Offline" or "3 min free" shows its per-minute rate on a second line. A reel's caption in the reels viewer folds to two lines; a tap
 opens it.
 
 ### `/shop/p/:key` — a product's page (6 Oct 2026)

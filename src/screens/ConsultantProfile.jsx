@@ -450,6 +450,9 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
                 : row
                   ? `₹${rupees(row.price_paise)}/min`
                   : '—'
+          // The rate under "Offline" or "3 min free", which replace it — the
+          // tile is the only place the rate shows (13 Oct 2026).
+          const rate = !book && row && /Offline|free/.test(price) ? `₹${rupees(row.price_paise)}/min` : null
           const dead = !own && (book ? !c.fixed.length : !row || !c.online || asking)
           return (
             <button
@@ -468,6 +471,7 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             >
               <span className="text-[13px] font-semibold">{label}</span>
               <span className="text-[10px] tnum opacity-90">{price}</span>
+              {rate && <span className="text-[10px] tnum opacity-90">{rate}</span>}
             </button>
           )
         })}
@@ -557,28 +561,9 @@ function About({ c }) {
         <Field k="Verified" v={c.verified ? 'Yes' : 'Not yet'} />
       </Section>
 
-      {/* The consultant's own rates (10 Oct 2026): one for each way to
-          reach them, and a booking that is its rate times 20 minutes. */}
-      <Section label="Rates">
-        {c.fixed.map((s) => (
-          <Field
-            key={s.id}
-            k={`Booking · ${s.duration_mins} min`}
-            v={`₹${rupees(s.price_paise)} · ₹${rupees(Math.round(s.price_paise / s.duration_mins))}/min`}
-          />
-        ))}
-        {[
-          ['chat', 'Chat'],
-          ['video', 'Video call'],
-          ['audio', 'Audio call'],
-        ].map(([key, label]) =>
-          c.channels?.[key] ? (
-            <Field key={key} k={label} v={`₹${rupees(c.channels[key].price_paise)} a minute`} />
-          ) : null,
-        )}
-        {/* "Unlimited questions" and the how-you-pay note went on 11 Oct
-            2026 (Rahul). */}
-      </Section>
+      {/* The Rates section went on 13 Oct 2026 (Rahul: "this is duplicate"):
+          the footer's four tiles carry every rate, and the booking sheet the
+          booking's length. */}
     </>
   )
 }
