@@ -404,8 +404,8 @@ export const strings = {
   },
   'sup.q4': { en: 'How do I change my birth details?', hi: 'जन्म विवरण कैसे बदलें?' },
   'sup.a4': {
-    en: 'Profile → Edit birth details. Every chart is drawn again from the new details.',
-    hi: 'प्रोफ़ाइल → जन्म विवरण बदलें। नए विवरण से हर चार्ट फिर से बनता है।',
+    en: 'Profile → Edit profile. Every chart is drawn again from the new details.',
+    hi: 'प्रोफ़ाइल → प्रोफ़ाइल बदलें। नए विवरण से हर चार्ट फिर से बनता है।',
   },
   'sup.q5': { en: 'How do I delete my account?', hi: 'अकाउंट कैसे डिलीट करें?' },
   'sup.a5': {
@@ -864,10 +864,13 @@ export const strings = {
     hi: 'आपकी कुंडली इन्हीं से बनती है। बाद में प्रोफ़ाइल से बदल सकते हैं।',
   },
   'd.editHint': {
-    en: 'Your kundli is made from these. Change one and every chart is redrawn.',
-    hi: 'आपकी कुंडली इन्हीं से बनती है। कुछ भी बदलें, हर चार्ट फिर से बनेगा।',
+    en: 'Your kundli is made from your birth details. Change one and every chart is redrawn.',
+    hi: 'आपकी कुंडली आपके जन्म विवरण से बनती है। कुछ भी बदलें, हर चार्ट फिर से बनेगा।',
   },
   'd.editTitle': { en: 'Edit birth details', hi: 'जन्म विवरण बदलें' },
+  // The page's own heading since it holds your About too (13 Oct 2026, Rahul).
+  'd.editDetails': { en: 'Edit details', hi: 'विवरण बदलें' },
+  'd.about': { en: 'About', hi: 'आपके बारे में' },
   'd.name': { en: 'Your name', hi: 'आपका नाम' },
   'd.namePh': { en: 'Full name', hi: 'पूरा नाम' },
   'd.gender': { en: 'Gender', hi: 'लिंग' },

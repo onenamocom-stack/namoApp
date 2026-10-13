@@ -55,6 +55,9 @@ export default function AboutYou() {
   const [unknown, setUnknown] = useState(false)
   const [place, setPlace] = useState(null)
   const [email, setEmail] = useState('')
+  // Your About line, edited here and only here (13 Oct 2026, Rahul): one
+  // place to change your profile. Profile shows it without a pencil.
+  const [bio, setBio] = useState('')
   const filled = useRef(false)
 
   /* Edit mode fills from the profile once it arrives. A direct open or a
@@ -76,6 +79,7 @@ export default function AboutYou() {
         : null,
     )
     setEmail(profile.email ?? '')
+    setBio(profile.bio ?? '')
   }, [edit, profile])
   // A code carried in by a sign-up link (Welcome stores it) arrives filled in.
   const [referral, setReferral] = useState(() => {
@@ -126,13 +130,14 @@ export default function AboutYou() {
           name: name.trim(),
           gender,
           email: email.trim() || null,
+          bio: bio.trim(),
           ...birthFields(draft()),
         })
         clearAstroCache()
         clearBirthDraft()
         await refreshProfile(session.user.id)
         warmCharts(session.user.id)
-        showToast('Birth details saved')
+        showToast('Saved')
         navigate('/profile', { replace: true })
       } catch (e) {
         setError(e.message)
@@ -174,7 +179,7 @@ export default function AboutYou() {
       )}
 
       <div className={`${edit ? 'mt-2' : 'mt-6'} animate-fade-rise`}>
-        <h1 className="text-title font-semibold text-t1">{edit ? t('d.editTitle') : t('d.title')}</h1>
+        <h1 className="text-title font-semibold text-t1">{edit ? t('d.editDetails') : t('d.title')}</h1>
         <p className="mt-2 text-meta text-t2">{t(edit ? 'd.editHint' : 'd.hint')}</p>
       </div>
 
@@ -189,6 +194,19 @@ export default function AboutYou() {
             className="field-line !text-lead"
           />
         </Group>
+
+        {edit && (
+          <Group label={t('d.about')}>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 150))}
+              rows={3}
+              placeholder={t('prof.bioPh')}
+              className="w-full resize-none rounded-xl border border-rule bg-white px-3 py-2 text-body text-t1 outline-none focus:border-gold-fill"
+            />
+            <p className="mt-1 text-right text-[11px] tnum t-faint">{bio.length}/150</p>
+          </Group>
+        )}
 
         <Group label={t('d.gender')} required>
           <div className="grid grid-cols-3 gap-2">

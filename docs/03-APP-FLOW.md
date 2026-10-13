@@ -201,8 +201,10 @@ reveal screen looks identical whether or not the write landed:
 - **The write itself fails** → a "not saved" screen carrying the error, with a
   retry. Never the reveal.
 
-Re-entry points: *Run onboarding again* restarts at step 1; *Edit birth details*
-opens step 2 in edit mode.
+Re-entry points: *Run onboarding again* restarts at step 1; *Edit profile*
+opens step 2 in edit mode, headed **Edit details**, with an **About** box (your
+bio, 150 characters) under the name — the one place a seeker edits their
+profile (13 Oct 2026, Rahul).
 
 ---
 
@@ -872,7 +874,8 @@ following (the shared profile header), then
 **Edit profile** (`/onboarding/details?edit=1`) and **Share profile**
 (`/u/<you>`). A green dot on the photo's top right (it was a "● Available" line
 under the name until 11 Oct, Rahul). Under the name, your bio — *Write about
-yourself* until you write one; tap to edit, 150 characters. Choosing a new picture opens an adjuster first: drag to
+yourself* until you write one, which opens Edit profile; the bio itself has no
+pencil and is edited only there (13 Oct 2026, Rahul). Choosing a new picture opens an adjuster first: drag to
 place, slide to zoom, and only the circle is uploaded. Icon tabs, each its own
 URL: **posts** (each post in full, newest first, exactly as the feed draws it —
 like, comment, reshare, share — then what you reshared; empty, it says to tap +
@@ -892,7 +895,7 @@ data, matching, muhurat and reports — but nothing in Profile links to it.
 
 **A pro has one profile** (10 Oct 2026, Rahul). For an approved consultant,
 `/profile` and `/profile/posts` render the `/consult/:id` page itself — photo,
-specialization, rating line, bio, intro, Posts · Reviews · About (rates; Posts
+specialization, rating line, bio, intro, Posts · Reviews · About (Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** — gone 11 Oct 2026 (Rahul): it edited name and birth details, and is

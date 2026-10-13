@@ -284,90 +284,25 @@ function AvatarPicker() {
 }
 
 /**
- * The line under your name (4 Oct 2026, owner's request). "Available" until
- * you write one — WhatsApp's default, and it reads like a status rather
- * than an empty field. Tap to edit; 150 characters.
+ * The line under your name (4 Oct 2026, owner's request). Written on Edit
+ * profile with the rest of your details since 13 Oct 2026 (Rahul: one place
+ * to edit your profile) — here it is only shown, with no pencil. Empty, it is
+ * an invitation that opens that page.
  */
 function Bio() {
-  const { profile, saveProfile, refreshProfile, session, showToast, t } = useStore()
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-  const [saving, setSaving] = useState(false)
-  const text = profile?.bio?.trim() || t('prof.bioDefault')
-
-  async function save() {
-    setSaving(true)
-    try {
-      await saveProfile({ bio: draft.trim() })
-      await refreshProfile(session?.user?.id)
-      setEditing(false)
-    } catch (err) {
-      showToast(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (editing) {
+  const { profile, t } = useStore()
+  const text = profile?.bio?.trim()
+  if (!text) {
     return (
-      <div className="mt-2">
-        <textarea
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value.slice(0, 150))}
-          rows={3}
-          placeholder={t('prof.bioPh')}
-          className="w-full resize-none rounded-xl border border-gold-fill bg-white px-3 py-2 text-meta text-t1 outline-none"
-        />
-        <div className="mt-1.5 flex items-center justify-between">
-          <span className="text-[11px] tnum t-faint">{draft.length}/150</span>
-          <span className="flex gap-3">
-            <button type="button" onClick={() => setEditing(false)} className="text-meta t-faint">
-              {t('a.cancel')}
-            </button>
-            <button type="button" onClick={save} disabled={saving} className="text-meta font-semibold text-gold">
-              {saving ? t('d.saving') : t('prof.bioSave')}
-            </button>
-          </span>
-        </div>
-      </div>
+      <Link
+        to="/onboarding/details?edit=1"
+        className="mt-1.5 flex items-center gap-1 text-meta font-semibold text-gold"
+      >
+        <Icon name="plus" size={14} /> {t('prof.bioAdd')}
+      </Link>
     )
   }
-  // No bio yet: a plain invitation to write one (5 Oct 2026). The
-  // "● Available" line above it went on 11 Oct (Rahul); the green dot is on
-  // the photo now.
-  if (!profile?.bio?.trim()) {
-    return (
-      <div className="mt-0.5">
-        <button
-          type="button"
-          onClick={() => {
-            setDraft('')
-            setEditing(true)
-          }}
-          className="mt-1.5 flex items-center gap-1 text-meta font-semibold text-gold"
-        >
-          <Icon name="plus" size={14} /> {t('prof.bioAdd')}
-        </button>
-      </div>
-    )
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        setDraft(profile?.bio ?? '')
-        setEditing(true)
-      }}
-      className="mt-1 flex items-center gap-1.5 whitespace-pre-line text-left text-meta t-body"
-    >
-      <span className={profile?.bio?.trim() ? '' : 'inline-flex items-center gap-1.5'}>
-        {!profile?.bio?.trim() && <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />}
-        {text}
-      </span>
-      <span aria-hidden="true" className="text-[12px] t-faint">✎</span>
-    </button>
-  )
+  return <p className="mt-1 whitespace-pre-line text-meta t-body">{text}</p>
 }
 
 /* ── Posts ───────────────────────────────────────────────────────────────── */
@@ -580,7 +515,7 @@ function SettingsPage({ pro }) {
               icon at the top of every tab. Name and birth details are here
               for a pro, whose page has no Edit profile button (11 Oct). */}
           {pro && (
-            <Row to="/onboarding/details?edit=1" title="Edit name and birth details" />
+            <Row to="/onboarding/details?edit=1" title="Edit details" />
           )}
           {/* Your profile link, 1namo.com/<username>, for everybody (11 Oct
               2026, Rahul). */}
