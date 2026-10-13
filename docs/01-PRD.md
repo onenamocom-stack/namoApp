@@ -10,10 +10,12 @@ names a price. It owns no schema, no endpoints and no column names — those are
 
 ## 1. What this is
 
-An astrology marketplace for India. A seeker asks a question; a consultant
-answers it, live, for money. Around that sit the things people who ask such
-questions also want: a daily reading, a birth chart, a shrine, a tarot deck,
-remedial products, and courses.
+India's spiritual network (since 13 Oct 2026, owner's yes to `06` Phase 15;
+it replaced "an astrology marketplace for India"). People follow gurus,
+astrologers and each other, post and share their bhakti, and sit for darshan
+every day. The money is the marketplace inside it: a seeker asks a question
+and a consultant answers it, live, for money. Around that sit a daily reading,
+a birth chart, a shrine, a tarot deck, remedial products, and courses.
 
 Two apps in one phone-shaped codebase, plus a desktop console:
 

@@ -1,6 +1,7 @@
 # Namo (aether-mono)
 
-Astrology marketplace for India. Vite · React 18 · Tailwind · BrowserRouter
+India's spiritual network, with an astrology marketplace inside it (since
+13 Oct 2026; `docs/01-PRD.md` §1). Vite · React 18 · Tailwind · BrowserRouter
 (real paths; old `#/` links are rewritten on load). Web apps on Firebase
 Hosting, deployed with `npm run ship`; the API on Cloud Run.
 Two apps, one codebase: the seeker app (default build) and the consultant

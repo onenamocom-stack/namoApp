@@ -120,12 +120,17 @@ def _summary(text, limit=180):
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
 
 
+# What a link that matches nothing previews as (13 Oct 2026, Phase 15a:
+# a spiritual network, not "astrology, darshan and the shop").
+SITE_LINE = "India's spiritual network. Bhakti, darshan, gurus and your kundli."
+
+
 def blog_page(request, content_id):
     url = f"{_site()}/read/{content_id}"
     row = Content.objects.filter(pk=content_id, kind=Content.Kind.ARTICLE,
                                  status=Content.Status.LIVE).first()
     if row is None:
-        return _page(_tags(title="NAMO", description="Astrology, darshan and the shop, in one app.",
+        return _page(_tags(title="NAMO", description=SITE_LINE,
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     image = f"{_site()}/og/blog/{row.id}.jpg" if row.media_url else f"{_site()}{FALLBACK_IMAGE}"
     return _page(_tags(title=row.title or "A blog on NAMO", description=_summary(row.body),
@@ -229,7 +234,7 @@ def profile_page(request, username):
     url = f"{_site()}/{username}"
     profile, pro = _public_profile(username=username)
     if profile is None:
-        return _page(_tags(title="NAMO", description="Astrology, darshan and puja in one app.",
+        return _page(_tags(title="NAMO", description=SITE_LINE,
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     if pro is not None:
         title = f"{profile.name} · {pro.category or 'Pro'} on NAMO"
