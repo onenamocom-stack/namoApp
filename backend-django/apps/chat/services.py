@@ -87,7 +87,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.consultants import gateway
-from apps.consultants.models import EarningsLedger, FEE_BPS
+from apps.consultants.models import EarningsLedger
 from apps.consultants.services import fee_paise
 from apps.profiles import services as profile_services
 from apps.wallet import services as wallet_services
@@ -671,12 +671,15 @@ def end_session(actor_id, session_id, reason=None, now=None):
         earned = charged if session.started_at is None else gross
         if earned > 0:
             seeker_name = gateway.profile_name(session.seeker_id)
-            fee = fee_paise(earned)
+            from apps.consultants.services import fee_bps_for
+
+            bps = fee_bps_for(session.consultant_id)
+            fee = fee_paise(earned, bps)
             EarningsLedger.objects.create(
                 consultant_id=session.consultant_id,
                 booking=None,
                 gross_paise=earned,
-                fee_bps=FEE_BPS,
+                fee_bps=bps,
                 fee_paise=fee,
                 net_paise=earned - fee,
                 kind=f"{seeker_name or 'Session'} · {minutes} min {_what(session)}",

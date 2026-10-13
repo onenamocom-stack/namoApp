@@ -153,6 +153,10 @@ basis points everywhere it is stored. A ₹1,499 session pays the consultant
 ₹899 and the platform ₹600. **It is not stated anywhere in either app** —
 the consultant's earnings show what they take home, not the share taken;
 the console shows it. Earnings written before 7 Oct keep their 18% row.
+**40% is the default, set per astrologer since 13 Oct 2026** (owner: as
+Namo grows a split may go to 50:50 or 60:40): the console's astrologer page
+has "Namo's share %", changed by Finance or Superadmin only; blank means
+the default. A change applies to sessions settled from then on.
 
 **A free first session — decided 7 Oct 2026.** The console ticks "free
 first" on chosen consultants (the in-house ones, four or five). A seeker

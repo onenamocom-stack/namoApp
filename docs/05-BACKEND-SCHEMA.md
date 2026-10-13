@@ -777,8 +777,10 @@ a live session with `expires_at <= now < expires_at + 120 s`. A recharge
 of `-extra` against the session's order and adds it to `hold_paise`; the
 single refund at the settle returns whatever of the whole hold was unused.
 
-**Commission is 40%, stored as `fee_bps = 4000`** (7 Oct 2026; 18% and `1800`
-before — each row keeps the rate it was written at), and
+**Commission is 40% by default, stored as `fee_bps = 4000`** (7 Oct 2026; 18%
+and `1800` before — each row keeps the rate it was written at). Since 13 Oct
+2026 `consultants.fee_bps` (integer, null, `consultants/0008`) overrides the
+default for one astrologer; null uses `FEE_BPS`. And
 `fee_paise = round(gross_paise * fee_bps / 10000)`. The `earnings_ledger` CHECK
 makes `gross − fee = net` an invariant rather than a convention, including on
 the negative rows a reversal writes.

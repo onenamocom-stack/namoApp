@@ -115,6 +115,13 @@ class Consultant(models.Model):
     # of that first session are on Namo; the consultant is paid for them.
     free_first = models.BooleanField(default=False, db_default=False)
 
+    # Namo's share of THIS consultant's sessions, in basis points (13 Oct
+    # 2026, owner): blank uses FEE_BPS, the default in code (40%). Set in the
+    # console by Finance — 5000 for a 50:50 split, 6000 for 60:40. Applies to
+    # sessions settled from the change on; every earnings row keeps the
+    # fee_bps it was written with.
+    fee_bps = models.IntegerField(null=True, blank=True)
+
     # The intro on the consultant's page (11 Oct 2026, Rahul): one video or
     # one photo the consultant uploads. A public URL from their own READY
     # media asset, set only through `services.set_intro`; null shows nothing.
@@ -389,6 +396,8 @@ class Booking(models.Model):
 # The platform's share of a session, in basis points, named once (01-PRD
 # §4.1; rule 1). 40% from 7 Oct 2026 (owner) — it was 18%. Applies to
 # earnings written from then on; rows already written keep their own fee_bps.
+# The DEFAULT since 13 Oct 2026: a consultant's own `fee_bps` overrides it
+# (services.fee_bps_for).
 FEE_BPS = 4000
 
 

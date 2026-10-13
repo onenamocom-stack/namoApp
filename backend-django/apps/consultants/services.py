@@ -591,9 +591,16 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
 # ── the booking transaction (012 as amended by 013) ──────────────────────────
 
 
-def fee_paise(amount_paise):
-    """FEE_BPS of the amount, rounded like Postgres numeric round (012)."""
-    return int((Decimal(amount_paise) * FEE_BPS / 10000).quantize(
+def fee_bps_for(consultant_id):
+    """Namo's share of this consultant's sessions: their own `fee_bps` if
+    the console set one, else FEE_BPS (13 Oct 2026)."""
+    own = Consultant.objects.filter(profile_id=consultant_id).values_list("fee_bps", flat=True).first()
+    return FEE_BPS if own is None else own
+
+
+def fee_paise(amount_paise, bps=FEE_BPS):
+    """`bps` of the amount, rounded like Postgres numeric round (012)."""
+    return int((Decimal(amount_paise) * bps / 10000).quantize(
         Decimal("1"), rounding=ROUND_HALF_UP
     ))
 
@@ -644,7 +651,8 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
     # Each party's book names the OTHER party (013 fix 4).
     label = f"{pro_name or 'Consultation'} · {service.duration_mins} min"
     earnings_label = f"{seeker_name or 'Session'} · {service.duration_mins} min"
-    fee = fee_paise(service.price_paise)
+    bps = fee_bps_for(consultant_id)
+    fee = fee_paise(service.price_paise, bps)
 
     try:
         with transaction.atomic():
@@ -701,7 +709,7 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
                 consultant_id=consultant_id,
                 booking_id=booking.id,
                 gross_paise=service.price_paise,
-                fee_bps=FEE_BPS,
+                fee_bps=bps,
                 fee_paise=fee,
                 net_paise=service.price_paise - fee,
                 kind=earnings_label,

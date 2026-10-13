@@ -6316,3 +6316,15 @@ a laptop.
   each was created; a new deploy still does not move them.
 - Videos are posted as uploaded — no compression (HANDOFF's earlier note on
   reels applies).
+
+## 82. Namo's share per astrologer — 13 Oct 2026
+
+The owner's rule (`docs/01-PRD.md` §4.1; column `docs/05`). `FEE_BPS`
+(4000, 40%) stays the default in code; `consultants.fee_bps` (null) sets one
+astrologer's own share. `consultant_services.fee_bps_for(id)` is read by the
+two places earnings are written — the chat/call settle and a booking — and
+each earnings row stores the bps it was written at, so a change never
+rewrites history. Console: a "Namo : astrologer" column on the astrologer
+list, and "Namo's share %" on the astrologer's page for Finance and
+Superadmin; Finance can change that and nothing else there (no approve or
+block). Migration `consultants/0008`. Tests `test_consultant_fee.py` (6).
