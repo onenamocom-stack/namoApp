@@ -241,6 +241,10 @@ function SessionGate() {
       // Help and support, shared with the seeker app (3 Oct 2026), and the
       // consultant's own reels and blog posts (4 Oct 2026).
       if (pathname === '/support' || pathname.startsWith('/reels/') || pathname.startsWith('/read/')) return
+      // A consultant editing their own page (13 Oct 2026) and a hashtag's
+      // page (Phase 15a). Both are routed in this build; until this line
+      // the gate bounced them to the studio.
+      if (pathname === '/practice/edit' || pathname.startsWith('/tag/')) return
 
       const authStep =
         pathname.startsWith('/onboarding/name') ||
