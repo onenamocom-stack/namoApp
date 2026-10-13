@@ -184,13 +184,12 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
      on `active` alone recorded both. The server counts a person once per
      reel per day, so a re-send the same day is harmless; the ref saves the request while
      the reel stays mounted. */
-  const [views, setViews] = useState(c.views ?? 0)
   const counted = useRef(false)
   useEffect(() => {
     if (!active || counted.current) return undefined
     const t = setTimeout(() => {
       counted.current = true
-      recordView(c.id).then((n) => n != null && setViews(n))
+      recordView(c.id)
     }, 2000)
     return () => clearTimeout(t)
   }, [active, c.id])
@@ -354,13 +353,8 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
         </div>
 
         <ReelCaption text={c.caption} />
-        {/* Views, not the date (30 Sep, owner's call). Shown once there are
-            any — before the API counted, every reel would have read 0. */}
-        {views > 0 && (
-          <p className="mt-1.5 text-[11px] font-semibold text-white/75 tnum">
-            {views.toLocaleString('en-IN')} {views === 1 ? 'view' : 'views'}
-          </p>
-        )}
+        {/* No view count here (12 Oct 2026, Rahul): views are counted for
+            the author's Insights, not shown on the reel. */}
 
         {/* The commercial hook is the products the author tagged on THIS
             reel, not "Book a session" (30 Sep, owner's call). Each chip opens

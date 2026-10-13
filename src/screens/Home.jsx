@@ -543,19 +543,14 @@ export function ActionRow({ id, like = true, onComment, onShare, authorId, likes
  * "more". The count is the view's aggregate plus your own un-saved tap, so it
  * moves the instant you press and still agrees with the database on reload.
  */
-function Caption({ views, name, to, text, comments = 0, onComments }) {
+function Caption({ name, to, text, comments = 0, onComments }) {
   const { t } = useStore()
   const [open, setOpen] = useState(false)
   const long = (text || '').length > 110
-  /* Views: shown once there are any. The API counts one per signed-in
-     viewer; before it was deployed every reel read 0, and "0 views" on
-     every reel would have been a statement about the counter, not the
-     reel. */
-  /* Likes, comments and reshares sit beside their icons now (ActionRow);
-     only views stay here, which have no icon. */
-  const counts = [
-    views > 0 && t(views === 1 ? 'home.view1' : 'home.views', { n: views.toLocaleString('en-IN') }),
-  ].filter(Boolean)
+  /* Views are counted and not shown (12 Oct 2026, Rahul): the API still
+     counts one per signed-in viewer, for the author's Insights. Likes,
+     comments and reshares sit beside their icons (ActionRow). */
+  const counts = []
 
   return (
     <div className="px-3 pb-4 pt-2">
@@ -756,7 +751,7 @@ function PostCard({ post, resharedBy }) {
      pictures. Only for a short note: a long one reads better as a caption. */
   const tile = !p.mediaUrl && text && text.length <= 240
   const frame = useRef(null)
-  const counted = useCountView(frame, p.id)
+  useCountView(frame, p.id) // counted, not shown (12 Oct 2026)
 
   return (
     <article ref={frame} className="border-b border-rule bg-white">
@@ -804,7 +799,6 @@ function PostCard({ post, resharedBy }) {
         }}
       />
       <Caption
-        views={counted ?? p.views}
         name={p.consultant}
         to={authorHref(p)}
         text={tile ? null : text}
@@ -967,7 +961,7 @@ function ReelCard({ reel, resharedBy }) {
   const { playing, muted, toggleMute } = useFeedTurn(frame)
   // Two seconds playing in the feed is a view too (11 Oct 2026, Rahul), as
   // two seconds in the reel viewer is.
-  const counted = useCountView(frame, r.id)
+  useCountView(frame, r.id) // counted, not shown (12 Oct 2026)
 
   useEffect(() => {
     const v = video.current
@@ -1052,7 +1046,6 @@ function ReelCard({ reel, resharedBy }) {
         }}
       />
       <Caption
-        views={counted ?? r.views}
         name={r.consultant}
         to={authorHref(r)}
         text={r.caption}
