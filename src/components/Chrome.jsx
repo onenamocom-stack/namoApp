@@ -5,6 +5,8 @@ import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
 import PresenceToggle from './PresenceToggle.jsx'
 import { rupees, useStore } from '../store.jsx'
+import { useEffect, useState } from 'react'
+import { subscribeToAlerts } from '../lib/notifications.js'
 
 /* App chrome: the top bar, the bottom nav, the sheet and the toast.
 
@@ -150,9 +152,28 @@ const SEARCH_SCOPE = { '/shop': 'products', '/consult': 'people', '/bhakti': 'bh
 /* `search`: true (a box that opens /search), false (none), or
    {value, onChange, placeholder} — a real field in the bar that filters the
    screen below as you type (Bhakti's library, 6 Oct 2026). */
+/** Unread alerts for the header's bell; 0 signed out. */
+function useUnreadAlerts() {
+  const { session } = useStore()
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!session) return undefined
+    return subscribeToAlerts((payload) =>
+      setN(payload?.unread ?? (payload?.items ?? []).filter((x) => !x.read).length),
+    )
+  }, [session])
+  return n
+}
+
 export function TabHeader({ action = null, search = true }) {
   const { openChat, me, t, balance, lang } = useStore()
   const { pathname } = useLocation()
+  /* The seeker app (13 Oct 2026, Rahul): Consult keeps the wallet and the
+     chat bubble — money and paid chat are Consult's — and every other tab
+     shows a bell instead, the social side. The consultant app keeps both. */
+  const onConsult = pathname === '/consult' || pathname.startsWith('/consult/')
+  const showWallet = isPro || onConsult
+  const unread = useUnreadAlerts()
   // A festive greeting from the console's live theme, under the bar (4 Oct 2026).
   const theme = useAppearance()?.theme
   const greeting = theme ? (lang === 'hi' && theme.greeting_hi) || theme.greeting : ''
@@ -217,25 +238,46 @@ export function TabHeader({ action = null, search = true }) {
       {/* A wallet icon, not the amount (5 Oct 2026, owner's request): the
           balance is one tap away on /wallet and no longer sits on every
           screen for anybody looking over a shoulder. */}
-      <Link
-        to="/wallet"
-        aria-label={balance === null ? t('a.wallet') : `${t('a.wallet')}, ₹${rupees(balance)}`}
-        className="pill knob !h-9 !w-9 justify-center"
-      >
-        <Icon name="wallet" size={18} />
-      </Link>
+      {showWallet && (
+        <Link
+          to="/wallet"
+          aria-label={balance === null ? t('a.wallet') : `${t('a.wallet')}, ₹${rupees(balance)}`}
+          className="pill knob !h-9 !w-9 justify-center"
+        >
+          <Icon name="wallet" size={18} />
+        </Link>
+      )}
 
-      <button
-        type="button"
-        /* Messages are people. Namo AI has its own page (/ask) since
-           30 Sep 2026, so both sides open on their threads. */
-        onClick={() => openChat('live')}
-        aria-label={t('a.messages')}
-        className="pill knob relative !h-9 !w-9 justify-center"
-      >
-        <Icon name="chat" size={18} />
-        <span className="absolute -right-0.5 -top-0.5 block h-2.5 w-2.5 rounded-full bg-live ring-2 ring-surface" />
-      </button>
+      {isPro || onConsult ? (
+        <button
+          type="button"
+          /* Messages are people. Namo AI has its own page (/ask) since
+             30 Sep 2026, so both sides open on their threads. */
+          onClick={() => openChat('live')}
+          aria-label={t('a.messages')}
+          className="pill knob relative !h-9 !w-9 justify-center"
+        >
+          <Icon name="chat" size={18} />
+          <span className="absolute -right-0.5 -top-0.5 block h-2.5 w-2.5 rounded-full bg-live ring-2 ring-surface" />
+        </button>
+      ) : (
+        /* Every other tab: a bell, opening the same panel on Alerts; its
+           other tabs (consultant chat, messages, sessions) are one tap
+           across. The dot shows only when something is unread. */
+        <button
+          type="button"
+          onClick={() => openChat('alerts')}
+          aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'}
+          className="pill knob relative !h-9 !w-9 justify-center"
+        >
+          <Icon name="bell" size={18} />
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white ring-2 ring-surface tnum">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Identity comes from the store, not a hardcoded import — the same
           header serves both sides, and threading avatar/link props through

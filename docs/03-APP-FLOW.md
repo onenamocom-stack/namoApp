@@ -964,7 +964,8 @@ consultant, keeps the seeker profile. The consultant app's preview of
 then Account (**Username** — a sheet with `1namo.com/` and the name, checked
 as you type, saved once every 30 days (11 Oct 2026, Rahul); the pro app's
 Settings has the same row under Practice — orders, notification history, phone — no Wallet row since 11 Oct
-2026, Rahul: the wallet is the icon at the top of every tab), Preferences
+2026, Rahul: the wallet is the header icon — on Consult only in the seeker
+app since 13 Oct 2026, every tab in the pro app), Preferences
 (language, help and support; the full deity image toggle went on 11 Oct
 2026, Rahul: the murti is always whole), and sign out. Back means Home from the profile and the
 profile from settings. "More from Namo" (Namo AI, premium, academy, shop) went on
@@ -1211,11 +1212,17 @@ is the point: they open from any tab without losing the screen underneath.
 | **CartSheet** | Shop's cart button (beside search), Shop's view-cart button, Reports' top-bar Cart |
 | **Toast** | Every `showToast` and every flag toggle carrying messages |
 
-ChatPanel's tabs differ by side: a seeker gets Consultant / Sessions / Alerts —
-Sessions is the booked sessions list, with Review on a completed one, moved
-from `/consult` on 5 Oct 2026 — a consultant Clients / Alerts, and both open
-on the first. The header's wallet knob is an icon, not the balance, since the
-same day. **Ask AI left the panel on 30 Sep
+ChatPanel's tabs differ by side: a seeker gets Consultant / Messages /
+Sessions / Alerts — Sessions is the booked sessions list, with Review on a
+completed one, moved from `/consult` on 5 Oct 2026 — a consultant Clients /
+Messages / Alerts. The header's wallet knob is an icon, not the balance, since
+the same day.
+
+**The header's knobs — 13 Oct 2026 (Rahul).** In the seeker app, Consult
+shows the wallet and the chat bubble (it opens the panel on Consultant);
+every other tab shows a **bell** instead, opening the panel on Alerts, with
+the unread count on it. The bubble's red dot, drawn always until now, is
+gone. The pro app keeps the wallet and the bubble on every tab. **Ask AI left the panel on 30 Sep
 2026** for its own page, `/ask` — messages are people.
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.
