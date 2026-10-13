@@ -38,7 +38,7 @@ import { SEEKER_APP_URL } from './urls.js'
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL
 
 /** A row as the screen wants it. Prices stay paise until `rupees()`. */
-function toAsset(row) {
+export function toAsset(row) {
   return {
     id: row.id,
     kind: row.kind,

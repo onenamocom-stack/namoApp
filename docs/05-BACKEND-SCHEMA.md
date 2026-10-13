@@ -1350,6 +1350,11 @@ characters, trimmed); the server keeps it on a `repost` only and blanks it on
 every other kind. Reposting again with words replaces them on the one row.
 Both `/reposts/` lists return it as `note`.
 
+**Commented** (13 Oct 2026, no table): `GET /v1/content/commented/` and
+`GET /v1/bhakti/commented/`, signed in, return somebody else's public posts
+(or active Bhakti items) the caller has a live comment on, newest comment
+first, each once with `comment {id, body, created_at}` — the caller's latest.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

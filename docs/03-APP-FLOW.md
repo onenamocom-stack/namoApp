@@ -258,7 +258,11 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 | Reel | Two seconds playing counts a view (11 Oct 2026) · **Plays by itself** when 60% of it is on screen — muted, looping, one at a time; scrolling on pauses it and starts the next (5 Oct 2026). The speaker button turns sound on or off for the whole feed. Tap → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save. A tagged product → `/shop?p=<id>&ref=…` |
 
 A reshared post appears in the feed after every third post under "↻ Name
-reshared", and in a **Reshared** list on the resharer's Profile and `/u/:id`.
+reshared", in the **Reshared** tab of the resharer's own Profile, and in a
+Reshared list on their `/u/:id`. **Your reshare leads Home for five seconds**
+(13 Oct 2026, Rahul), as a new post does: made while Home is open, the list is
+read again a moment later with it first; opening Home within five seconds also
+puts it first.
 
 **Reshare asks how** (13 Oct 2026, Rahul — LinkedIn's sheet), on a post, a
 reel and every Bhakti item: a sheet with **Reshare with your thoughts** (a
@@ -878,9 +882,11 @@ yourself* until you write one, which opens Edit profile; the bio itself has no
 pencil and is edited only there (13 Oct 2026, Rahul). Choosing a new picture opens an adjuster first: drag to
 place, slide to zoom, and only the circle is uploaded. Icon tabs, each its own
 URL: **posts** (each post in full, newest first, exactly as the feed draws it —
-like, comment, reshare, share — then what you reshared; empty, it says to tap +
-on Home),
-**saved** (your bookmarked posts), and **influencer** for influencers. Bare
+like, comment, reshare, share; empty, it says to tap + on Home),
+**reshared** (what you reshared, each card as the feed draws it under "↻ You
+reshared" with your words) and **commented** (somebody else's posts and the
+Bhakti items you commented on, each once, your latest comment above it) — both
+13 Oct 2026, Rahul — **saved** (your bookmarked posts), and **influencer** for influencers. Bare
 `/profile` opens posts, always (5 Oct 2026).
 
 **Posts in full on every profile — 11 Oct 2026 (Rahul: "like the profile page
@@ -905,8 +911,9 @@ inside it; a first visit there asks for the phone code once) and **Share profile
 (`/consult/<you>`) where a client sees Follow and **Share profile**, half
 the row each, both the white button (no saffron, Follow or Following) (11 Oct 2026, Rahul: they replaced the schedule, chat, video and
 call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is
-made from Home's +. A fourth tab, **Saved** (your bookmarked posts), is on
-your own page only (11 Oct 2026, Rahul); a client sees three. On your own page
+made from Home's +. Your own page has six tabs, scrolling: Posts ·
+**Reshared** · **Commented** (13 Oct 2026, Rahul) · **Saved** (11 Oct) ·
+Reviews · About; a client sees three. On your own page
 Followers and Following open the list of those people (12 Oct 2026, Rahul);
 on anybody else's they are numbers only — the server lists only your own.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens

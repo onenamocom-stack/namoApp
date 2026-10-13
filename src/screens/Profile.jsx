@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
-import ResharedList from '../components/ResharedList.jsx'
+import { CommentedTab, ResharedTab } from '../components/ProfileActivity.jsx'
 import { FeedCard } from './Home.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
 import { Loader, Orbit } from '../components/Cosmos.jsx'
@@ -55,6 +55,9 @@ import FollowSheet from '../components/FollowSheet.jsx'
  */
 const TABS = [
   { key: 'posts', icon: 'grid', label: 'prof.tab.posts' },
+  // Yours alone, as this whole page is (13 Oct 2026, Rahul).
+  { key: 'reshared', icon: 'repost', label: 'prof.tab.reshared' },
+  { key: 'commented', icon: 'chat', label: 'prof.tab.commented' },
   { key: 'saved', icon: 'bookmark', label: 'prof.tab.saved' },
 ]
 // Not in the tab row; reached from a pro's ☰.
@@ -155,6 +158,8 @@ export default function Profile() {
         {active === 'posts' && (
           <PostsTab posts={posts} />
         )}
+        {active === 'reshared' && <ResharedTab />}
+        {active === 'commented' && <CommentedTab />}
         {active === 'saved' && <SavedTab />}
         {active === 'kundli' && <KundliTab />}
         {active === 'influencer' && profile?.influencer && <InfluencerTab />}
@@ -164,7 +169,17 @@ export default function Profile() {
     </>
   )
   if (consultant && me) {
-    return <ConsultantPage id={me} own backTo="/home" fallback={seeker} saved={<SavedTab />} />
+    return (
+      <ConsultantPage
+        id={me}
+        own
+        backTo="/home"
+        fallback={seeker}
+        saved={<SavedTab />}
+        reshared={<ResharedTab />}
+        commented={<CommentedTab />}
+      />
+    )
   }
   return seeker
 }
@@ -339,7 +354,7 @@ function Tile({ post }) {
 }
 
 function PostsTab({ posts }) {
-  const { profile, session, t } = useStore()
+  const { profile, t } = useStore()
   return (
     <>
       {profile?.blocked && (
@@ -361,7 +376,7 @@ function PostsTab({ posts }) {
         </div>
       )}
 
-      <ResharedList by={session?.user?.id} className="mt-8 px-5" />
+      {/* What you reshared has its own tab since 13 Oct 2026. */}
     </>
   )
 }

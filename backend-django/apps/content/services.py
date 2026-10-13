@@ -980,3 +980,29 @@ def admin_remove_content(content_id):
     return Content.objects.filter(pk=content_id).exclude(
         status=Content.Status.REMOVED
     ).update(status=Content.Status.REMOVED) == 1
+
+
+def list_commented(actor_id, *, limit=50):
+    """Somebody else's posts you commented on, newest comment first, each
+    once with your latest comment on it — your Profile's Commented tab (13
+    Oct 2026, Rahul). Yours alone: the view is signed in and scoped to you.
+    A post that is no longer public drops out."""
+    mine = list(
+        Comment.objects.filter(author_id=actor_id, status=Comment.Status.LIVE)
+        .exclude(content__author_id=actor_id)
+        .order_by("-created_at")[: limit * 4]
+    )
+    latest = {}
+    for c in mine:
+        latest.setdefault(str(c.content_id).replace("-", ""), c)
+    posts = {
+        str(p.id).replace("-", ""): p
+        for p in attach_products(public_content().filter(pk__in=[c.content_id for c in latest.values()]))
+    }
+    out = []
+    for key, c in latest.items():
+        if key in posts:
+            out.append((c, posts[key]))
+        if len(out) == limit:
+            break
+    return out

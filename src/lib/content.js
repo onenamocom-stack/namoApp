@@ -61,6 +61,7 @@
  */
 
 import { supabase } from './supabase.js'
+import { toAsset } from './bhakti.js'
 
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example.com/v1
 
@@ -204,6 +205,20 @@ function leadWithJustPosted(rows) {
   return i > 0 ? [rows[i], ...rows.slice(0, i), ...rows.slice(i + 1)] : rows
 }
 
+/* Your reshare, first, for five seconds after you make it (13 Oct 2026,
+   Rahul: "as we did with new post"). The id is what was reshared — a post's
+   or a Bhakti item's. Home reads it when it deals its reshares. */
+let justReshared = null
+
+export function noteReshared(targetId) {
+  justReshared = { id: String(targetId), at: Date.now() }
+  window.dispatchEvent(new Event('namo:reshared'))
+}
+
+export function reshareToLead() {
+  return justReshared && Date.now() - justReshared.at <= JUST_POSTED_MS ? justReshared.id : null
+}
+
 export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
   let rows = await cachedFeed(kinds, limit)
   if (!rows) {
@@ -269,6 +284,27 @@ export async function fetchReposts({ by = null, limit = 50 } = {}) {
   } catch {
     return []
   }
+}
+
+/**
+ * Somebody else's posts and the Bhakti items you commented on, newest
+ * comment first, each once with your latest comment: `{ id, at, body, post }`
+ * or `{ id, at, body, picture: true, asset }` — your Profile's Commented tab
+ * (13 Oct 2026). Signed in only; an API from before it reads as none.
+ */
+export async function fetchCommented() {
+  const token = await accessToken()
+  if (!token) return []
+  const [posts, pictures] = await Promise.all([
+    api('/content/commented/', { token }).catch(() => []),
+    api('/bhakti/commented/', { token }).catch(() => []),
+  ])
+  return [
+    ...(posts ?? []).map((r) => ({ id: `c:${r.post.id}`, at: r.comment.created_at, body: r.comment.body, post: shape(r.post) })),
+    ...(pictures ?? []).map((r) => ({
+      id: `b:${r.asset.id}`, at: r.comment.created_at, body: r.comment.body, picture: true, asset: toAsset(r.asset),
+    })),
+  ].sort((a, b) => String(b.at).localeCompare(String(a.at)))
 }
 
 /** A comment row as the sheet renders it. */

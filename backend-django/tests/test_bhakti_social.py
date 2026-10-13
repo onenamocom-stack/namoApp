@@ -134,3 +134,25 @@ class TestReshareWithThoughts:
             format="json", **auth(me),
         )
         assert Reaction.objects.get(kind="like").note == ""
+
+
+@pytest.mark.django_db
+class TestCommentedTab:
+    """Your Profile's Commented tab (13 Oct 2026, Rahul): Bhakti items you
+    commented on, each once with your latest comment. Yours only."""
+
+    def _comment(self, api_client, token, asset_id, body):
+        return api_client.post(f"/v1/bhakti/assets/{asset_id}/comments/", {"body": body}, format="json", **auth(token))
+
+    def test_each_item_once_with_the_latest_comment(self, api_client, me, other):
+        a = make_asset(kind="status", title="A")
+        b = make_asset(kind="wallpaper", title="B")
+        self._comment(api_client, me, a.id, "first")
+        self._comment(api_client, me, b.id, "on b")
+        self._comment(api_client, me, a.id, "second")
+        self._comment(api_client, other, b.id, "not mine")
+        rows = api_client.get("/v1/bhakti/commented/", **auth(me)).json()
+        assert [(r["asset"]["id"], r["comment"]["body"]) for r in rows] == [(str(a.id), "second"), (str(b.id), "on b")]
+
+    def test_signed_in_only(self, api_client):
+        assert api_client.get("/v1/bhakti/commented/").status_code in (401, 403)

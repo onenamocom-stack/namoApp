@@ -211,6 +211,20 @@ def reposts(request):
     ])
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def commented(request):
+    """Somebody else's posts you commented on, with your latest comment —
+    your Profile's Commented tab (13 Oct 2026). Yours only."""
+    return Response([
+        {
+            "comment": {"id": str(c.id), "body": c.body, "created_at": c.created_at},
+            "post": _public_row(post),
+        }
+        for c, post in services.list_commented(request.user.pk)
+    ])
+
+
 def _comment_row(c):
     return {
         "id": str(c.id),

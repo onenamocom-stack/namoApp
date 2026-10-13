@@ -201,3 +201,27 @@ def list_reposts(*, by=None, limit=50):
         if len(out) == limit:
             break
     return out
+
+
+def list_commented(actor_id, *, limit=50):
+    """Bhakti items you commented on, newest comment first, each once with
+    your latest comment — the Commented tab's other half (13 Oct 2026)."""
+    mine = list(
+        BhaktiComment.objects.filter(author_id=actor_id, status=BhaktiComment.Status.LIVE)
+        .order_by("-created_at")[: limit * 4]
+    )
+    latest = {}
+    for c in mine:
+        latest.setdefault(str(c.asset_id).replace("-", ""), c)
+    assets = {
+        str(a.id).replace("-", ""): a
+        for a in with_counts(BhaktiAsset.objects.filter(
+            pk__in=[c.asset_id for c in latest.values()], active=True))
+    }
+    out = []
+    for key, c in latest.items():
+        if key in assets:
+            out.append((c, assets[key]))
+        if len(out) == limit:
+            break
+    return out

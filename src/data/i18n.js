@@ -306,6 +306,12 @@ export const strings = {
   'a.cancel': { en: 'Cancel', hi: 'रद्द करें' },
   'prof.bioSave': { en: 'Save', hi: 'सेव करें' },
   'prof.tab.saved': { en: 'Saved', hi: 'सेव किए' },
+  // Your own Reshared and Commented tabs (13 Oct 2026, Rahul).
+  'prof.tab.reshared': { en: 'Reshared', hi: 'रीशेयर' },
+  'prof.tab.commented': { en: 'Commented', hi: 'कमेंट' },
+  'prof.youCommented': { en: 'You commented', hi: 'आपका कमेंट' },
+  'prof.resharedEmpty': { en: 'Nothing reshared yet. Tap reshare under a post to put it here.', hi: 'अभी कुछ रीशेयर नहीं किया। किसी पोस्ट के नीचे रीशेयर दबाएं।' },
+  'prof.commentedEmpty': { en: 'No comments yet. What you say under other people’s posts shows here.', hi: 'अभी कोई कमेंट नहीं। दूसरों की पोस्ट पर आपके कमेंट यहां दिखेंगे।' },
   'prof.tab.kundli': { en: 'Kundli', hi: 'कुंडली' },
   'prof.posts': { en: 'Posts', hi: 'पोस्ट' },
   'prof.followers': { en: 'Followers', hi: 'फ़ॉलोअर' },

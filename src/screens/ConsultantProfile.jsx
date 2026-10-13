@@ -78,7 +78,15 @@ export default function ConsultantProfile() {
  * of /consult/:id is the client's view, on purpose. `fallback` renders when
  * there is no approved consultant row to show.
  */
-export function ConsultantPage({ id, own = false, backTo = '/consult', fallback = null, saved = null }) {
+export function ConsultantPage({
+  id,
+  own = false,
+  backTo = '/consult',
+  fallback = null,
+  saved = null,
+  reshared = null,
+  commented = null,
+}) {
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
@@ -405,12 +413,24 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
             ))}
         </section>
 
-        {/* Your own page has a fourth tab, Saved (11 Oct 2026, Rahul) — what
-            you bookmarked, which a client never sees. */}
+        {/* Your own page has Saved (11 Oct 2026, Rahul) — what you
+            bookmarked — and Reshared and Commented after Posts (13 Oct
+            2026), none of which a client ever sees. Six tabs scroll. */}
         <Segmented
-          items={own && saved ? [...TABS, { key: 'saved', label: 'Saved' }] : TABS}
+          items={
+            own && saved
+              ? [
+                  TABS[0],
+                  ...(reshared ? [{ key: 'reshared', label: 'Reshared' }] : []),
+                  ...(commented ? [{ key: 'commented', label: 'Commented' }] : []),
+                  { key: 'saved', label: 'Saved' },
+                  ...TABS.slice(1),
+                ]
+              : TABS
+          }
           value={tab}
           onChange={setTab}
+          className={own && reshared ? 'no-scrollbar overflow-x-auto [&>button]:flex-none [&>button]:px-3.5' : ''}
         />
 
         <div key={tab} className="animate-fade">
@@ -418,6 +438,8 @@ export function ConsultantPage({ id, own = false, backTo = '/consult', fallback 
           {tab === 'work' && <Work c={c} items={items} />}
           {tab === 'reviews' && <Reviews c={c} />}
           {tab === 'saved' && own && saved}
+          {tab === 'reshared' && own && reshared}
+          {tab === 'commented' && own && commented}
         </div>
 
         {/* The Book section that sat here went on 11 Oct 2026 (Rahul): the

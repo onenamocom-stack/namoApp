@@ -160,3 +160,17 @@ def reposts(request):
         }
         for event, asset in services.list_reposts(by=by, limit=limit)
     ])
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def commented(request):
+    """Bhakti items you commented on, with your latest comment (13 Oct 2026).
+    Yours only."""
+    return Response([
+        {
+            "comment": {"id": str(c.id), "body": c.body, "created_at": c.created_at},
+            "asset": _row(asset),
+        }
+        for c, asset in services.list_commented(request.user.pk)
+    ])

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from './Icon.jsx'
+import { noteReshared } from '../lib/content.js'
 import { useStore } from '../store.jsx'
 
 /** Must match MAX_NOTE_CHARS in backend-django/apps/reactions/models.py. */
@@ -37,6 +38,7 @@ export function useReshare(key) {
       onReshare={(note) => {
         setOpen(false)
         toggleFlag(key, messages, { note })
+        noteReshared(key.slice(key.indexOf(':') + 1))
       }}
     />
   )

@@ -137,3 +137,17 @@ def test_a_post_reshare_carries_its_words(api_client, seeker_token, post_id):
     )
     assert response.status_code == 201
     assert api_client.get("/v1/content/reposts/").json()[0]["note"] == "Padhiye"
+
+
+@pytest.mark.django_db
+def test_commented_lists_others_posts_you_commented_on(api_client, seeker_token, consultant_token, post_id):
+    """The Commented tab (13 Oct 2026): somebody else's post, once, with your
+    latest comment; your own post and other people's comments stay out."""
+    url = f"/v1/content/{post_id}/comments/"
+    api_client.post(url, {"body": "one"}, format="json", **auth(seeker_token))
+    api_client.post(url, {"body": "two"}, format="json", **auth(seeker_token))
+    api_client.post(url, {"body": "author reply"}, format="json", **auth(consultant_token))
+    rows = api_client.get("/v1/content/commented/", **auth(seeker_token)).json()
+    assert len(rows) == 1 and rows[0]["post"]["id"] == post_id and rows[0]["comment"]["body"] == "two"
+    assert api_client.get("/v1/content/commented/", **auth(consultant_token)).json() == []
+    assert api_client.get("/v1/content/commented/").status_code in (401, 403)

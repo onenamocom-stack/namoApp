@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { fetchFeed, fetchReposts, isMine, productHref, recordView } from '../lib/content.js'
+import { fetchFeed, fetchReposts, isMine, productHref, recordView, reshareToLead } from '../lib/content.js'
 import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
@@ -68,6 +68,53 @@ export function FeedCard({ piece }) {
   }
 }
 
+/**
+ * One of your reshares as the feed draws it — under "↻ You reshared" with
+ * your words — for your Profile's Reshared tab (13 Oct 2026, Rahul). `r` is
+ * a row from fetchReposts or fetchBhaktiReposts (`picture` for the latter).
+ */
+export function ReshareCard({ r }) {
+  const by = { id: r.byId, name: r.byName, others: 0, note: r.note }
+  if (r.picture) return <PictureCard asset={r.asset} resharedBy={by} />
+  switch (CARD_FOR_KIND[r.post.kind]) {
+    case 'post':
+      return <PostCard post={r.post} resharedBy={by} />
+    case 'reel':
+      return <ReelCard reel={r.post} resharedBy={by} />
+    case 'article':
+      return (
+        <>
+          <div className="bg-white"><ResharedLine by={by} /></div>
+          <ArticleCard read={r.post} />
+        </>
+      )
+    default:
+      return null
+  }
+}
+
+/**
+ * Somebody else's post or a Bhakti item, with your latest comment on it
+ * above — your Profile's Commented tab (13 Oct 2026, Rahul). `r` is a row
+ * from fetchCommented.
+ */
+export function CommentedCard({ r }) {
+  const { t } = useStore()
+  const card = r.picture ? <PictureCard asset={r.asset} /> : <FeedCard piece={r.post} />
+  return (
+    <>
+      <div className="bg-white px-3 pt-2.5">
+        <p className="flex items-center gap-1.5 text-[12px] font-semibold text-t3">
+          <Icon name="chat" size={14} weight={2} />
+          {t('prof.youCommented')}
+        </p>
+        <p className="mt-1 whitespace-pre-line text-body text-t1">{r.body}</p>
+      </div>
+      {card}
+    </>
+  )
+}
+
 /* Hindi names since 30 Sep, on the owner's call — the first audience reads
    Hindi. The keys, and so the URLs, are unchanged. "Reels" stays English
    because that is the word Hindi speakers use for them. */
@@ -103,7 +150,7 @@ const TABS = [
 export default function Home() {
   const { tab = 'feed' } = useParams()
   const navigate = useNavigate()
-  const { t } = useStore()
+  const { t, session } = useStore()
   const [posting, setPosting] = useState(false)
   // Bumped after a publish, so the feed reloads with the new post in it.
   const [fresh, setFresh] = useState(0)
@@ -142,22 +189,41 @@ export default function Home() {
      the stream; the stream is already dealt at random, so this is not a
      rank either. */
   const [reshares, setReshares] = useState([])
+  const [lead, setLead] = useState(null)
   useEffect(() => {
     let active = true
+    let wait
     // A post's reshares and a Bhakti picture's (12 Oct 2026), newest first.
-    Promise.all([fetchReposts({ limit: 50 }), fetchBhaktiReposts({ limit: 50 })]).then(
-      ([posts, pictures]) =>
-        active &&
+    const load = () =>
+      Promise.all([fetchReposts({ limit: 50 }), fetchBhaktiReposts({ limit: 50 })]).then(([posts, pictures]) => {
+        if (!active) return
         setReshares(
           [...posts, ...pictures.map((r) => ({ ...r, picture: true }))].sort((a, b) =>
             String(b.at).localeCompare(String(a.at)),
           ),
-        ),
-    )
+        )
+        setLead(reshareToLead())
+      })
+    load()
+    // A reshare made while Home is open: read the list again once the write
+    // has had a moment to land, so it can lead (13 Oct 2026).
+    const again = () => {
+      clearTimeout(wait)
+      wait = setTimeout(load, 1200)
+    }
+    window.addEventListener('namo:reshared', again)
     return () => {
       active = false
+      clearTimeout(wait)
+      window.removeEventListener('namo:reshared', again)
     }
   }, [])
+  // It leads for five seconds, as a new post does, then is dealt as usual.
+  useEffect(() => {
+    if (!lead) return undefined
+    const timer = setTimeout(() => setLead(null), 5000)
+    return () => clearTimeout(timer)
+  }, [lead])
 
   /* The feed's shop cards are the real catalogue (6 Oct 2026; they were
      mock.js's products — invented names, a drawn plate, and an Add that put
@@ -195,7 +261,16 @@ export default function Home() {
       })
   }
   const reshared = [...grouped.values()]
-  const real = []
+  /* Your own reshare of `lead`, first. Yours is the card with your words,
+     or the group your plain reshare is in. */
+  const me = session?.user?.id
+  const leading = lead
+    ? reshared.findIndex(
+        (g) => String(g.data.id) === lead && (!g.by.note || String(g.by.id) === String(me)),
+      )
+    : -1
+  const first = leading >= 0 ? reshared.splice(leading, 1) : []
+  const real = [...first]
   posts.forEach((p, i) => {
     real.push(p)
     if ((i + 1) % 3 === 0 && reshared.length) real.push(reshared.shift())

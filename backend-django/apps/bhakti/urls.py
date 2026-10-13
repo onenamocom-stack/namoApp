@@ -9,4 +9,5 @@ urlpatterns = [
     path("assets/<uuid:asset_id>/comments/", views.comments, name="bhakti-comments"),
     path("comments/<uuid:comment_id>/remove/", views.remove_comment, name="bhakti-comment-remove"),
     path("reposts/", views.reposts, name="bhakti-reposts"),
+    path("commented/", views.commented, name="bhakti-commented"),
 ]
