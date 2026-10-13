@@ -449,6 +449,85 @@ that way in writing or it grows.
 
 ---
 
+## Phase 15 — A bhakti social network (proposed 13 Oct 2026, not started)
+
+**Status: proposed by Rahul, waiting for the owner.** It reverses two
+non-goals in `01-PRD.md` §10: "A social network" and "A pandit-booking or
+physical-puja marketplace". Nothing here is built until the owner agrees
+to lift them; §10 then gets rewritten, saying what it replaced.
+
+**The position.** A social network for India's devotional and spiritual
+life: bhakti, astrology, yoga, ayurveda and festivals, in the reader's own
+language. The social side brings people back every day; consultations and
+the shop earn the money. Do not try to be a general social network. That
+means competing head on with Instagram, ShareChat and Moj.
+
+**Already built:** the feed, reels, posts, blogs, comments, reshares with
+words, follows, profiles, the personal feed (`apps/content/ranking.py`),
+#hashtags that open Search, and notifications for comments and reshares.
+
+### 15a — Positioning and signals (first week)
+
+- Copy: the welcome heading, the Google title and description and the
+  share preview read as a community, not as a kundli app.
+- Notifications for a like and a follow, as comments and reshares already
+  send. Likes are batched per post per hour, not one per tap.
+- Sign-up: name, phone and photo, then three to five interests. Birth
+  details move to the first time somebody opens a kundli, horoscope or
+  match. The personal feed adds an interest term.
+- `/tag/:tag`: a page per hashtag, newest and top.
+- "People to follow": authors that people you follow follow, and active
+  authors in your interests.
+
+**Done when:** a new account that picked "yoga" sees yoga posts first with
+no likes or follows yet; a like sends one notification an hour, not ten;
+a kundli opened with no birth date asks for it and then shows the chart.
+
+### 15b — Person-to-person messages
+
+- Free direct messages between two people, on the chat system the paid
+  consultations use, without the meter. A first message from somebody
+  you do not follow arrives as a request.
+- Block and report from the conversation.
+
+**Done when:** a blocked person's message is refused by the server, and a
+paid consultation still meters exactly as before (its tests unchanged).
+
+### 15c — Communities and habits
+
+- Groups: a mandir, a sampradaya or a city. Anyone creates one; the
+  creator moderates it; posts go to the group and its members' feeds.
+- Festival frames and stickers for a post on the festival's day.
+- A japa or sadhana streak on the profile.
+- Experts beyond astrologers: pandit, yoga teacher, vaidya, vastu, life
+  coach, each verified as astrologers are. Booking a pandit is the
+  §10 reversal and needs its own rules in `01-PRD.md` first.
+
+**Done when:** a removed member can no longer post to the group, and a
+streak breaks after a missed IST day and not before.
+
+### 15d — Safety and cost at scale (before any growth push)
+
+- Video is compressed on upload. Reels are stored as uploaded today, so
+  storage and bandwidth grow with every user.
+- A daily moderation queue a person clears in thirty minutes: reports,
+  new accounts posting links, repeated text.
+- Rate limits on posting, commenting and messaging.
+
+**Done when:** a 100 MB phone video is stored under 15 MB and still plays,
+and an account posting twenty comments in a minute is stopped.
+
+### Later
+
+Live aarti and satsang (live video was deleted once for cost, Phase 11).
+Finding friends from contacts (needs a privacy rule first).
+
+**Risks.** People, not code: a social network is worth what its first
+thousand regular users post. Moderation is a daily job for a person.
+Video cost grows with use until 15d lands.
+
+---
+
 ## Seed
 
 The largest single task, in phase 4.
