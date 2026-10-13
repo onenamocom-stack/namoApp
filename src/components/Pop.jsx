@@ -156,7 +156,9 @@ export function PopBar({ value, className = '' }) {
  */
 export function PopAvatar({ initials, src = null, size = 36, online = false, className = '' }) {
   return (
-    <span className={`relative inline-block flex-none ${className}`}>
+    // inline-flex, not inline-block (13 Oct 2026): an inline-block kept a
+    // line box under the face, so a ringed avatar with a photo drew oval.
+    <span className={`relative inline-flex flex-none ${className}`}>
       <span
         className="avatar-face inline-flex items-center justify-center overflow-hidden rounded-full border border-stroke bg-surface shadow-sm t-sub"
         style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}

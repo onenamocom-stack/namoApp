@@ -1,6 +1,7 @@
 /**
  * The verified mark beside a consultant's name (11 Oct 2026, Rahul): a
- * white tick on a blue rosette, as people know it from other apps. It is
+ * white tick in a blue circle. It was a scalloped rosette until 13 Oct
+ * 2026 (Rahul: "need to be round"). It is
  * the console's `verified`, nothing the consultant can set.
  */
 export default function VerifiedMark({ size = 18, className = '' }) {
@@ -14,10 +15,7 @@ export default function VerifiedMark({ size = 18, className = '' }) {
       className={`inline-block flex-none ${className}`}
     >
       <title>Verified</title>
-      <path
-        fill="#1d9bf0"
-        d="M12 1.5l2.6 1.9 3.2-.1 1 3 2.6 1.9-1 3 1 3-2.6 1.9-1 3-3.2-.1L12 22.5l-2.6-1.9-3.2.1-1-3-2.6-1.9 1-3-1-3 2.6-1.9 1-3 3.2.1z"
-      />
+      <circle cx="12" cy="12" r="10.5" fill="#1d9bf0" />
       <path d="m7.6 12.3 3 3 5.8-6.2" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
