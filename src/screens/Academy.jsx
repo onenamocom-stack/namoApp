@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { academyEvents, courses } from '../data/mock.js'
 import { assetFile, fetchAssets } from '../lib/bhakti.js'
-import { TabHeader } from '../components/Chrome.jsx'
+import { MarketSwitch, TabHeader } from '../components/Chrome.jsx'
 import Paywall from '../components/Paywall.jsx'
 import Plate from '../components/Plate.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
@@ -24,6 +24,7 @@ export default function Academy() {
   return (
     <>
       <TabHeader />
+      <MarketSwitch />
 
       <Segmented
         items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}

@@ -76,8 +76,9 @@ In file order, which is also resolution order.
 | `/home` | Home | **Tab** |
 | `/consult` | Consult | **Tab** |
 | `/pooja` | Pooja | **Tab** |
-| `/academy` | Academy | **Tab** |
-| `/shop` | Shop | **Tab** |
+| `/shop` | Shop — **Market** tab, with Academy (13 Oct 2026) | **Tab** |
+| `/academy` | Academy — **Market** tab, with Shop | **Tab** |
+| `/messages` | Messages (seeker app) | **Tab** |
 | `/pro/apply` | ProApply | Plain |
 | `/pro/consult` | ProConsult | **Pro** |
 | `/pro/studio` | ProStudio | Pro |
@@ -911,8 +912,10 @@ length, because their two clock times are identical.
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
 saffron ring (tap to change), beside it your name over posts · followers ·
 following (the shared profile header), then
-**Edit profile** (`/onboarding/details?edit=1`) and **Share profile**
-(`/u/<you>`). A green dot on the photo's top right (it was a "● Available" line
+a row of five icons without words (13 Oct 2026, Rahul; it was Edit profile
+and Share profile): **Consult** (the chat panel on Consultant), **Sessions**
+(the panel on Sessions), **Wallet** (`/wallet`), **Edit** (`/onboarding/details?edit=1`)
+and **Share** (`/u/<you>`), each named to a screen reader and on long press. A green dot on the photo's top right (it was a "● Available" line
 under the name until 11 Oct, Rahul). Under the name, your bio — *Write about
 yourself* until you write one, which opens Edit profile; the bio itself has no
 pencil and is edited only there (13 Oct 2026, Rahul). Choosing a new picture opens an adjuster first: drag to
@@ -1218,11 +1221,17 @@ completed one, moved from `/consult` on 5 Oct 2026 — a consultant Clients /
 Messages / Alerts. The header's wallet knob is an icon, not the balance, since
 the same day.
 
-**The header's knobs — 13 Oct 2026 (Rahul).** In the seeker app, Consult
-shows the wallet and the chat bubble (it opens the panel on Consultant);
-every other tab shows a **bell** instead, opening the panel on Alerts, with
-the unread count on it. The bubble's red dot, drawn always until now, is
-gone. The pro app keeps the wallet and the bubble on every tab. **Ask AI left the panel on 30 Sep
+**The header's knobs — 13 Oct 2026 (Rahul).** In the seeker app the header
+keeps only a **bell**, on every tab: it opens the panel on Alerts, with the
+unread count on it (the old chat bubble's red dot was drawn always). The
+wallet, the consultant chat and sessions are icons on Profile. The pro app
+keeps the wallet and the bubble on every tab.
+
+**The tab bar — 13 Oct 2026 (Rahul).** Home · Bhakti · Consult · **Market** ·
+**Messages**. Market is Shop and Academy in one tab: it opens on `/shop`,
+stays lit on `/academy`, and both pages carry a Shop · Academy switch under
+the header; every old link to either still works. Messages took Academy's
+slot. **Ask AI left the panel on 30 Sep
 2026** for its own page, `/ask` — messages are people.
 
 **CartSheet is the app's main checkout** and the only overlay that moves money.

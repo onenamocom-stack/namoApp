@@ -119,6 +119,13 @@ const PATHS = {
   /* Send — an arrow up, the chat composer's button (30 Sep 2026). */
   send: <path d="M12 19.2V5.2M6.4 10.8 12 5.2l5.6 5.6" />,
   plus: <path d="M12 5.2v13.6M5.2 12h13.6" />,
+  /* Edit — a pencil, for Profile's row of icons (13 Oct 2026). */
+  edit: (
+    <>
+      <path d="M15.6 4.6a2.2 2.2 0 0 1 3.1 3.1L8.4 18l-4.2 1.1 1.1-4.2L15.6 4.6Z" />
+      <path d="M13.8 6.4l3.1 3.1" />
+    </>
+  ),
   rupee: <path d="M7.6 4.4h8.8M7.6 8.6h8.8M15 4.4a4.2 4.2 0 0 1 0 8.4H7.6l7.4 6.8" />,
   check: <path d="m4.6 12.6 5 5 9.8-11" />,
   /* Play and pause. Bhakti's audio rows used the broadcast glyph as a

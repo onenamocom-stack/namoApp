@@ -187,7 +187,7 @@ export default function Profile() {
 /* ── The top: you ────────────────────────────────────────────────────────── */
 
 function Hero({ posts, counts }) {
-  const { t, session, showToast, profile } = useStore()
+  const { t, session, showToast, profile, openChat } = useStore()
   const [listing, setListing] = useState(null)
   const me = useProfileFields()
 
@@ -214,20 +214,30 @@ function Hero({ posts, counts }) {
       </div>
 
       <Bio />
-      <div className="mt-4 flex gap-2">
-        <Link
-          to="/onboarding/details?edit=1"
-          className="flex-1 rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
-        >
-          {t('prof.editProfile')}
-        </Link>
-        <button
-          type="button"
-          onClick={share}
-          className="flex-1 rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
-        >
-          {t('prof.shareProfile')}
-        </button>
+      {/* Five icons, no words (13 Oct 2026, Rahul): your consultant chat,
+          booked sessions, wallet, edit and share. The header keeps only the
+          bell, so this row is where money and paid chat are reached from.
+          Each says its name to a screen reader and on long press. */}
+      <div className="mt-4 grid grid-cols-5 gap-2">
+        {[
+          { icon: 'consult', label: 'Consult', onClick: () => openChat('live') },
+          { icon: 'calendar', label: 'Sessions', onClick: () => openChat('sessions') },
+          { icon: 'wallet', label: t('a.wallet'), to: '/wallet' },
+          { icon: 'edit', label: t('prof.editProfile'), to: '/onboarding/details?edit=1' },
+          { icon: 'share', label: t('prof.shareProfile'), onClick: share },
+        ].map((b) => {
+          const cls =
+            'flex h-11 items-center justify-center rounded-xl border border-rule bg-white t-heading shadow-sm transition-colors hover:border-gold-fill'
+          return b.to ? (
+            <Link key={b.icon} to={b.to} aria-label={b.label} title={b.label} className={cls}>
+              <Icon name={b.icon} size={20} />
+            </Link>
+          ) : (
+            <button key={b.icon} type="button" onClick={b.onClick} aria-label={b.label} title={b.label} className={cls}>
+              <Icon name={b.icon} size={20} />
+            </button>
+          )
+        })}
       </div>
       <FollowSheet which={listing} onClose={() => setListing(null)} />
     </section>

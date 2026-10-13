@@ -28,13 +28,46 @@ import { subscribeToAlerts } from '../lib/notifications.js'
  * bar entirely, and the slot now carries the whole devotional-media surface
  * rather than one screen.
  */
+/* Market is Shop and Academy in one tab (13 Oct 2026, Rahul): it opens on
+   /shop and stays lit on /academy, and the two pages switch between each
+   other at the top. Its old slot went to Messages. */
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
   { to: '/bhakti', label: 'nav.bhakti', icon: 'pooja' },
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
-  { to: '/shop', label: 'nav.shop', icon: 'shop' },
-  { to: '/academy', label: 'nav.academy', icon: 'academy' },
+  { to: '/shop', label: 'nav.market', icon: 'shop', also: ['/academy'] },
+  { to: '/messages', label: 'nav.messages', icon: 'chat' },
 ]
+
+/** Shop · Academy, under the header of both (13 Oct 2026): the two halves
+ *  of the Market tab. */
+export function MarketSwitch() {
+  const { t } = useStore()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const on = pathname.startsWith('/academy') ? 'academy' : 'shop'
+  return (
+    <div className="flex gap-2 px-4 pt-3" role="tablist">
+      {[
+        { key: 'shop', label: t('nav.shop') },
+        { key: 'academy', label: t('nav.academy') },
+      ].map((s) => (
+        <button
+          key={s.key}
+          type="button"
+          role="tab"
+          aria-selected={on === s.key}
+          onClick={() => navigate(`/${s.key}`, { replace: true })}
+          className={`flex-1 rounded-full py-2 text-center text-meta font-semibold transition-colors ${
+            on === s.key ? 'bg-ink text-white' : 'bg-ink/[0.07] text-t1'
+          }`}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 /**
  * The consultant's four. Kept next to the seeker's so the two lists stay
@@ -62,25 +95,31 @@ export const PRO_TABS = [
   { to: '/pro/profile', label: 'nav.profile', icon: 'consult' },
 ]
 
-function Tab({ to, label, icon }) {
+function Tab({ to, label, icon, also = [] }) {
   const { t } = useStore()
+  const { pathname } = useLocation()
+  // Market is lit on /academy as well as /shop.
+  const alsoHere = also.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   return (
     <li className="flex-1">
       <NavLink
         to={to}
-        className={({ isActive }) =>
+        className={({ isActive: exact }) => {
+          const isActive = exact || alsoHere
           // The bar is white (30 Sep), so the hierarchy is Sri Mandir's:
           // grey at rest, saffron when active — `text-gold`, the readable
           // orange, since these are 10px caps. The indicator bar and icon
           // weight still mark it too.
           // Padding is the whole height budget here — 3.5/2.5 makes ~57px
           // and the row is still a 44px-plus tap target.
-          `relative flex flex-col items-center gap-1 pb-3.5 pt-2.5 text-center caps-sm transition-colors duration-200 ${
+          return `relative flex flex-col items-center gap-1 pb-3.5 pt-2.5 text-center caps-sm transition-colors duration-200 ${
             isActive ? 'font-bold text-gold' : 'font-semibold text-t3 hover:text-t1'
           }`
-        }
+        }}
       >
-        {({ isActive }) => (
+        {({ isActive: exact }) => {
+          const isActive = exact || alsoHere
+          return (
           <>
             {/* The indicator grows out from the centre rather than switching
                 on, so moving between tabs reads as one continuous object. */}
@@ -95,7 +134,8 @@ function Tab({ to, label, icon }) {
             <Icon name={icon} size={19} weight={isActive ? 2.1 : 1.6} />
             <span className="leading-none">{t(label)}</span>
           </>
-        )}
+          )
+        }}
       </NavLink>
     </li>
   )
@@ -168,11 +208,10 @@ function useUnreadAlerts() {
 export function TabHeader({ action = null, search = true }) {
   const { openChat, me, t, balance, lang } = useStore()
   const { pathname } = useLocation()
-  /* The seeker app (13 Oct 2026, Rahul): Consult keeps the wallet and the
-     chat bubble — money and paid chat are Consult's — and every other tab
-     shows a bell instead, the social side. The consultant app keeps both. */
-  const onConsult = pathname === '/consult' || pathname.startsWith('/consult/')
-  const showWallet = isPro || onConsult
+  /* The seeker app's header keeps only the bell (13 Oct 2026, Rahul); the
+     wallet, the consultant chat and sessions are icons on Profile. The
+     consultant app keeps the wallet and the chat bubble. */
+  const showWallet = isPro
   const unread = useUnreadAlerts()
   // A festive greeting from the console's live theme, under the bar (4 Oct 2026).
   const theme = useAppearance()?.theme
@@ -248,7 +287,7 @@ export function TabHeader({ action = null, search = true }) {
         </Link>
       )}
 
-      {isPro || onConsult ? (
+      {isPro ? (
         <button
           type="button"
           /* Messages are people. Namo AI has its own page (/ask) since
@@ -261,9 +300,9 @@ export function TabHeader({ action = null, search = true }) {
           <span className="absolute -right-0.5 -top-0.5 block h-2.5 w-2.5 rounded-full bg-live ring-2 ring-surface" />
         </button>
       ) : (
-        /* Every other tab: a bell, opening the same panel on Alerts; its
-           other tabs (consultant chat, messages, sessions) are one tap
-           across. The dot shows only when something is unread. */
+        /* The seeker's bell opens the panel on Alerts; its other tabs
+           (consultant chat, messages, sessions) are one tap across. The
+           dot shows only when something is unread. */
         <button
           type="button"
           onClick={() => openChat('alerts')}

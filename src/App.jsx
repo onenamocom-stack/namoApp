@@ -402,8 +402,8 @@ function Frame() {
                 <Route path="/search" element={<SearchScreen />} />
                 {/* A hashtag's own page (13 Oct 2026, Phase 15a). */}
                 <Route path="/tag/:tag" element={<TagScreen />} />
-                {/* Free messages between people (13 Oct 2026, Phase 15b). */}
-                <Route path="/messages" element={<Messages />} />
+                {/* Free messages between people (13 Oct 2026, Phase 15b);
+                    the list is a tab, below. */}
                 <Route path="/messages/:id" element={<Conversation />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
@@ -469,6 +469,8 @@ function Frame() {
               <Route path="/bhakti" element={<Bhakti />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/shop" element={<Shop />} />
+              {/* Messages took Academy's slot in the bar (13 Oct 2026). */}
+              <Route path="/messages" element={<Messages />} />
             </Route>
           )}
 

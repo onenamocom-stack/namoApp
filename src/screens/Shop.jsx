@@ -2,7 +2,7 @@ import { Loader } from '../components/Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { TabHeader } from '../components/Chrome.jsx'
+import { MarketSwitch, TabHeader } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { useNavigate } from 'react-router-dom'
@@ -214,6 +214,7 @@ export default function Shop() {
               </button>
         }
       />
+      <MarketSwitch />
 
 
       {/* Search and the cart, pinned under the header (3 Oct). The cart was

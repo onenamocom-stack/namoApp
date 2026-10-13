@@ -34,6 +34,8 @@ export const strings = {
   'nav.pooja': { en: 'Pooja', hi: 'पूजा' },
   'nav.consult': { en: 'Consult', hi: 'परामर्श' },
   'nav.shop': { en: 'Shop', hi: 'दुकान' },
+  'nav.market': { en: 'Market', hi: 'बाज़ार' },
+  'nav.messages': { en: 'Messages', hi: 'संदेश' },
   'nav.academy': { en: 'Academy', hi: 'अकादमी' },
   'nav.studio': { en: 'Studio', hi: 'स्टूडियो' },
   'nav.goLive': { en: 'Go Live', hi: 'लाइव जाएं' },

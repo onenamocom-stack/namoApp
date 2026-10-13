@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TopBar } from '../components/Chrome.jsx'
+import { TabHeader, TopBar } from '../components/Chrome.jsx'
+import { isPro } from '../side.js'
 import { Loader } from '../components/Cosmos.jsx'
 import { PopAvatar } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
@@ -97,10 +98,12 @@ export function MessagesList({ onOpen }) {
   )
 }
 
+/* A tab in the seeker app (the bar's fourth slot, 13 Oct 2026), so the
+   shared header; a page with Back in the consultant app. */
 export default function Messages() {
   return (
     <>
-      <TopBar title="Messages" back backTo="/home" />
+      {isPro ? <TopBar title="Messages" back backTo="/pro/studio" /> : <TabHeader search={false} />}
       <MessagesList />
     </>
   )
