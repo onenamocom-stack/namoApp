@@ -80,6 +80,7 @@ LOCAL_APPS = [
     "apps.ai",
     "apps.shop",
     "apps.notifications",
+    "apps.dms",
     "apps.referrals",
     "apps.video",
     "apps.analytics",
