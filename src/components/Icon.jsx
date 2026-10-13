@@ -12,6 +12,18 @@
    without needing a second filled set.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* One hand of the namaste, from Rahul's reference (13 Oct 2026): fingers
+   up, the back fingers and the thumb drawn inside, a solid cuff. The other
+   hand is its mirror. */
+const NAMASTE_HAND = (
+  <>
+    <path d="M12 3.7c-.25-.35-.6-.55-.95-.55-.45 0-.85.3-1 .85L7.85 9.5c-.25.5-.4 1-.4 1.6l-.05 2.3c0 .8-.4 1.5-1.1 2l-.3.3 2.55 3 3.45-2.4" />
+    <path d="M11.6 7.1V5c0-.45-.25-.8-.55-.9" />
+    <path d="M12 7.6c-.25-.4-.65-.6-1.05-.55-.4.05-.65.35-.75.75L9.65 10.9" />
+    <path d="M4.6 17 6.15 15.85 9.45 19.55 7.9 21Z" fill="currentColor" />
+  </>
+)
+
 const PATHS = {
   home: (
     <>
@@ -119,6 +131,14 @@ const PATHS = {
   /* Send — an arrow up, the chat composer's button (30 Sep 2026). */
   send: <path d="M12 19.2V5.2M6.4 10.8 12 5.2l5.6 5.6" />,
   plus: <path d="M12 5.2v13.6M5.2 12h13.6" />,
+  /* Namaste — the Chat tab (13 Oct 2026, Rahul). */
+  namaste: (
+    <>
+      {NAMASTE_HAND}
+      <g transform="matrix(-1 0 0 1 24 0)">{NAMASTE_HAND}</g>
+      <path d="M12 3.7v12.6" />
+    </>
+  ),
   /* Edit — a pencil, for Profile's row of icons (13 Oct 2026). */
   edit: (
     <>

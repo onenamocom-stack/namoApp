@@ -35,7 +35,7 @@ import { subscribeToAlerts } from '../lib/notifications.js'
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
   { to: '/bhakti', label: 'nav.bhakti', icon: 'pooja' },
-  { to: '/messages', label: 'nav.messages', icon: 'chat' },
+  { to: '/messages', label: 'nav.messages', icon: 'namaste' },
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
   { to: '/shop', label: 'nav.market', icon: 'shop', also: ['/academy'] },
 ]

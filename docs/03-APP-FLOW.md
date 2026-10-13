@@ -1227,8 +1227,9 @@ unread count on it (the old chat bubble's red dot was drawn always). The
 wallet, the consultant chat and sessions are icons on Profile. The pro app
 keeps the wallet and the bubble on every tab.
 
-**The tab bar — 13 Oct 2026 (Rahul).** Home · Bhakti · **Messages** · Consult ·
-**Market**. Market is Shop and Academy in one tab: it opens on `/shop`,
+**The tab bar — 13 Oct 2026 (Rahul).** Home · Bhakti · **Chat** · Consult ·
+**Market**. Chat is `/messages`, under folded hands (the `namaste` icon,
+drawn from Rahul's reference). Market is Shop and Academy in one tab: it opens on `/shop`,
 stays lit on `/academy`, and both pages carry a Shop · Academy switch under
 the header; every old link to either still works. Messages took the freed
 slot, in the middle. **Ask AI left the panel on 30 Sep
