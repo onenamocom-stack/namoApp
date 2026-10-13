@@ -64,6 +64,7 @@ class TestReposts:
         assert len(rows) == 2
         assert rows[0]["post"]["id"] == post_id
         assert {r["reposted_by_name"] for r in rows} == {"Tara Verma", "Arjun Nair"}
+        assert {r["reposted_by_avatar"] for r in rows} == {None}  # no picture set
         feed = api_client.get("/v1/content/feed/").json()["results"][0]
         assert feed["repost_count"] == 2
 

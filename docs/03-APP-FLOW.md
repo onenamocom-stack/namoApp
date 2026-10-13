@@ -277,9 +277,13 @@ puts it first.
 **Reshare asks how** (13 Oct 2026, Rahul — LinkedIn's sheet), on a post, a
 reel and every Bhakti item: a sheet with **Reshare with your thoughts** (a
 box for up to 500 characters, then Reshare) and **Reshare now** (the old
-single tap). Your words show under "↻ Name reshared", above the card, and
-that card is yours alone — it is not folded into "Name and N others". Tapping
-a lit Reshare removes it at once, without the sheet.
+single tap). A reshare with words heads its card with the resharer's photo,
+name and "Reshared", then the words, then what was reshared in a box; like,
+comment and share sit under the box and act on the original (13 Oct 2026,
+Rahul: "we can do better", LinkedIn's layout; it replaced the words under the
+"↻ Name reshared" line). That card is yours alone — it is not folded into
+"Name and N others". A reshare without words keeps the one "↻ Name
+reshared" line. Tapping a lit Reshare removes it at once, without the sheet.
 
 Home's three tabs are labelled **Reels · आज का पंचांग · आज के दर्शन** (30 Sep;
 keys and URLs unchanged). No stories strip, no dates on posts. In

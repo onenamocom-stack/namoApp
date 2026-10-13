@@ -74,7 +74,7 @@ export function FeedCard({ piece }) {
  * a row from fetchReposts or fetchBhaktiReposts (`picture` for the latter).
  */
 export function ReshareCard({ r }) {
-  const by = { id: r.byId, name: r.byName, others: 0, note: r.note }
+  const by = { id: r.byId, name: r.byName, avatar: r.byAvatar, others: 0, note: r.note }
   if (r.picture) return <PictureCard asset={r.asset} resharedBy={by} />
   switch (CARD_FOR_KIND[r.post.kind]) {
     case 'post':
@@ -85,7 +85,7 @@ export function ReshareCard({ r }) {
       return (
         <>
           <div className="bg-white"><ResharedLine by={by} /></div>
-          <ArticleCard read={r.post} />
+          <Quoted on={!!by.note}><ArticleCard read={r.post} /></Quoted>
         </>
       )
     default:
@@ -257,7 +257,7 @@ export default function Home() {
         id: `rp:${key}`,
         kind: r.picture ? 'bhakti' : CARD_FOR_KIND[r.post.kind],
         data: r.picture ? r.asset : r.post,
-        by: { id: r.byId, name: r.byName, others: 0, note: r.note },
+        by: { id: r.byId, name: r.byName, avatar: r.byAvatar, others: 0, note: r.note },
       })
   }
   const reshared = [...grouped.values()]
@@ -761,6 +761,28 @@ export function ProductStrip({ tagged = [], shopRef }) {
 function ResharedLine({ by }) {
   const { t } = useStore()
   if (!by) return null
+  /* With words (13 Oct 2026, Rahul: "we can do better", LinkedIn's layout):
+     the resharer heads the card with their photo and name, their words
+     follow at full size, and what they reshared sits below in a box
+     (`Quoted`). Without words, the one grey line as before. */
+  if (by.note && !by.others) {
+    const initials = (by.name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    return (
+      <>
+        <Link to={`/u/${by.id}`} className="flex items-center gap-2.5 px-3 pt-3">
+          <PopAvatar initials={initials} src={by.avatar} size={36} />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-meta font-semibold text-t1">{by.name}</span>
+            <span className="flex items-center gap-1 text-[11px] text-t3">
+              <Icon name="repost" size={12} weight={2} />
+              {t('home.resharedTag')}
+            </span>
+          </span>
+        </Link>
+        <p className="whitespace-pre-line px-3 pt-2 text-body text-t1">{by.note}</p>
+      </>
+    )
+  }
   return (
     <>
       <Link
@@ -779,6 +801,14 @@ function ResharedLine({ by }) {
   )
 }
 
+/** What was reshared, in a rounded box under the resharer's words; only
+ *  when they wrote some. The like and comment row stays outside the box
+ *  and still acts on the original, as a reshare has no post of its own. */
+function Quoted({ on, children }) {
+  if (!on) return children
+  return <div className="mx-3 mt-3 overflow-hidden rounded-xl border border-stroke">{children}</div>
+}
+
 /**
  * A Bhakti picture somebody reshared (12 Oct 2026, Rahul: option B): the
  * plain picture under "X reshared", with its own like, comment and reshare —
@@ -788,7 +818,8 @@ function PictureCard({ asset, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
-      <Link to={`/bhakti/s/${asset.id}`} className="mt-2.5 block">
+      <Quoted on={!!resharedBy?.note}>
+      <Link to={`/bhakti/s/${asset.id}`} className={`${resharedBy?.note ? '' : 'mt-2.5 '}block`}>
         {/* A bhajan or mantra is a sound and a book a PDF; their cover
             picture stands in. */}
         <img
@@ -804,6 +835,7 @@ function PictureCard({ asset, resharedBy }) {
           }
         />
       </Link>
+      </Quoted>
       <div className="flex items-center gap-4 px-3 pt-2.5">
         <BhaktiActions asset={asset} share />
       </div>
@@ -837,6 +869,7 @@ function PostCard({ post, resharedBy }) {
   return (
     <article ref={frame} className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
+      <Quoted on={!!resharedBy?.note}>
       {/* Report stays under the ⋯, not in the action row: it is the one action
           nobody looks for until they need it, and beside Like it gets pressed
           by accident — a false report costs a real person an admin's time. */}
@@ -865,6 +898,7 @@ function PostCard({ post, resharedBy }) {
         </div>
       )}
       <ProductStrip tagged={p.products} shopRef={p.shopRef} />
+      </Quoted>
 
       <ActionRow
         id={p.id}
@@ -1061,6 +1095,7 @@ function ReelCard({ reel, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
+      <Quoted on={!!resharedBy?.note}>
       <PostHead
         initials={r.initials}
         avatar={r.avatarUrl}
@@ -1113,6 +1148,7 @@ function ReelCard({ reel, resharedBy }) {
         )}
       </Link>
       <ProductStrip tagged={r.products} shopRef={r.shopRef} />
+      </Quoted>
 
       {/* No duration and no audio credit: both were mock strings on a Plate
           that plays nothing. */}

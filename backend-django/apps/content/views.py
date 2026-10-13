@@ -228,6 +228,7 @@ def reposts(request):
         {
             "reposted_by": str(event.actor_id),
             "reposted_by_name": event.actor_name,
+            "reposted_by_avatar": getattr(event, "actor_avatar", None),
             "reposted_at": event.created_at,
             "note": event.note,
             "post": _public_row(post),

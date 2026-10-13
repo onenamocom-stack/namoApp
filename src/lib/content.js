@@ -304,6 +304,7 @@ export async function fetchReposts({ by = null, limit = 50 } = {}) {
       id: `${r.reposted_by}:${r.post.id}`,
       byId: r.reposted_by,
       byName: r.reposted_by_name || 'Someone',
+      byAvatar: r.reposted_by_avatar || null,
       at: r.reposted_at,
       time: ago(r.reposted_at),
       note: r.note || '',

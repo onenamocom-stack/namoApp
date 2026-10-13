@@ -115,6 +115,7 @@ export async function fetchBhaktiReposts({ by = null, limit = 50 } = {}) {
       id: `${r.reposted_by}:${r.asset.id}`,
       byId: r.reposted_by,
       byName: r.reposted_by_name || 'Someone',
+      byAvatar: r.reposted_by_avatar || null,
       at: r.reposted_at,
       note: r.note || '',
       asset: toAsset(r.asset),

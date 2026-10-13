@@ -411,6 +411,7 @@ def list_reposts(*, by=None, limit=50):
         qs.annotate(_blocked=blocked)
         .filter(_blocked=0)
         .annotate(actor_name=profile_services.name_subquery("actor_id"))
+        .annotate(actor_avatar=profile_services.avatar_subquery("actor_id"))
         .order_by("-created_at")[: limit * 2]  # headroom for posts that drop out
     )
     posts = {

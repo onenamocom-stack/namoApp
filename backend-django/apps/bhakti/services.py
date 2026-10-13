@@ -186,7 +186,10 @@ def list_reposts(*, by=None, limit=50):
     if blocked:
         qs = qs.exclude(actor_id__in=blocked)
     events = list(
-        qs.annotate(actor_name=profile_services.name_subquery("actor_id")).order_by("-created_at")[: limit * 2]
+        qs.annotate(
+            actor_name=profile_services.name_subquery("actor_id"),
+            actor_avatar=profile_services.avatar_subquery("actor_id"),
+        ).order_by("-created_at")[: limit * 2]
     )
     assets = {
         str(a.id).replace("-", ""): a

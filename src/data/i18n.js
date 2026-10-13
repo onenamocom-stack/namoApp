@@ -100,6 +100,7 @@ export const strings = {
   'home.product1': { en: 'Product in this post', hi: 'इस पोस्ट में प्रोडक्ट' },
   'home.products': { en: '{n} products in this post', hi: 'इस पोस्ट में {n} प्रोडक्ट' },
   'home.off': { en: '{n}% off', hi: '{n}% छूट' },
+  'home.resharedTag': { en: 'Reshared', hi: 'रीशेयर किया' },
   'home.resharedBy': { en: '{name} reshared', hi: '{name} ने रीशेयर किया' },
   'home.resharedByMany': { en: '{name} and {n} others reshared', hi: '{name} और {n} अन्य ने रीशेयर किया' },
   'home.readingSky': { en: 'Reading the sky.', hi: 'आकाश पढ़ा जा रहा है।' },
