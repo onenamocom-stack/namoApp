@@ -155,6 +155,8 @@ class TestMeRead:
             "influencer",
             # 4 Oct: the line under the picture.
             "bio",
+            # 13 Oct: what they picked at sign-up (Phase 15a).
+            "interests",
             # 11 Oct: 1namo.com/<username>, and when it was last chosen.
             "username", "username_changed_at",
         }
