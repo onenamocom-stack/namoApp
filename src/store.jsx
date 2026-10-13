@@ -385,7 +385,8 @@ export function AppProvider({ children }) {
 
   const hasFlag = useCallback((key) => flags.has(key), [flags])
 
-  const toggleFlag = useCallback((key, messages) => {
+  // `opts.note`: a reshare's own words, "Reshare with your thoughts".
+  const toggleFlag = useCallback((key, messages, opts) => {
     const next = !flagsRef.current.has(key)
     // Kept current for a second tap before the next render.
     const now = new Set(flagsRef.current)
@@ -408,7 +409,7 @@ export function AppProvider({ children }) {
     // this table cannot hold — a mock ID, a preference, a signed-out visitor —
     // and those stay exactly as they were: local, and working.
     if (parseKey(key)) {
-      setReaction(key, next).catch((err) => {
+      setReaction(key, next, opts?.note).catch((err) => {
         console.error('[reactions] write failed:', err.message)
         // Put the Set back. A heart that stays filled after the write failed is
         // the interface telling a lie it will be caught in on the next reload.

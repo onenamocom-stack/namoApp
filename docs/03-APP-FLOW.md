@@ -253,10 +253,17 @@ sit above it and is on `/consult` now, as of 7 Sep 2026:
 |---|---|
 | Post | Like · Comments (sheet) · Reshare (not on your own) · Share (share sheet / copy) · Save. **Two seconds mostly on screen counts a view** (11 Oct 2026); the count is not shown on Home or Reels (12 Oct 2026, Rahul), only to the author in the pro app. Byline → consultant. A tagged product → `/shop?p=<id>&ref=<author's A code>` |
 | Post head (post, reel, article) | Author → their profile · **Follow / Following** beside the name, as on Instagram (5 Oct 2026): the same saved follow the profile pages use, hidden on your own posts and when signed out |
-| Reel | Two seconds playing counts a view (11 Oct 2026) · **Plays by itself** when 60% of it is on screen — muted, looping, one at a time; scrolling on pauses it and starts the next (5 Oct 2026). The speaker button turns sound on or off for the whole feed. Tap → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save · views. A tagged product → `/shop?p=<id>&ref=…` |
+| Reel | Two seconds playing counts a view (11 Oct 2026) · **Plays by itself** when 60% of it is on screen — muted, looping, one at a time; scrolling on pauses it and starts the next (5 Oct 2026). The speaker button turns sound on or off for the whole feed. Tap → `/reels/:id` · Like · Comments (sheet) · Reshare · Share (share sheet / copy) · Save. A tagged product → `/shop?p=<id>&ref=…` |
 
 A reshared post appears in the feed after every third post under "↻ Name
 reshared", and in a **Reshared** list on the resharer's Profile and `/u/:id`.
+
+**Reshare asks how** (13 Oct 2026, Rahul — LinkedIn's sheet), on a post, a
+reel and every Bhakti item: a sheet with **Reshare with your thoughts** (a
+box for up to 500 characters, then Reshare) and **Reshare now** (the old
+single tap). Your words show under "↻ Name reshared", above the card, and
+that card is yours alone — it is not folded into "Name and N others". Tapping
+a lit Reshare removes it at once, without the sheet.
 
 Home's three tabs are labelled **Reels · आज का पंचांग · आज के दर्शन** (30 Sep;
 keys and URLs unchanged). No stories strip, no dates on posts. In

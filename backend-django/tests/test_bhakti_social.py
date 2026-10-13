@@ -90,3 +90,47 @@ class TestBhaktiReshare:
         gone = make_asset(kind="status", title="G", active=False)
         assert self._repost(api_client, me, tune.id).status_code == 404
         assert self._repost(api_client, me, gone.id).status_code == 404
+
+
+@pytest.mark.django_db
+class TestReshareWithThoughts:
+    """"Reshare with your thoughts" (13 Oct 2026, Rahul): a repost carries
+    its own words, shown above the reshared card."""
+
+    def _repost(self, api_client, token, asset_id, note=None):
+        body = {"target_type": "bhakti", "target_id": str(asset_id), "kind": "repost"}
+        if note is not None:
+            body["note"] = note
+        return api_client.post("/v1/reactions/", body, format="json", **auth(token))
+
+    def test_the_words_come_back_with_the_reshare(self, api_client, me):
+        asset = make_asset(kind="status", title="Ganesh")
+        assert self._repost(api_client, me, asset.id, "  Jai Ganesh  ").status_code == 201
+        assert api_client.get("/v1/bhakti/reposts/").json()[0]["note"] == "Jai Ganesh"
+
+    def test_a_plain_reshare_has_no_words(self, api_client, me):
+        asset = make_asset(kind="status", title="Ganesh")
+        self._repost(api_client, me, asset.id)
+        assert api_client.get("/v1/bhakti/reposts/").json()[0]["note"] == ""
+
+    def test_resharing_again_with_words_replaces_them(self, api_client, me):
+        asset = make_asset(kind="status", title="Ganesh")
+        self._repost(api_client, me, asset.id, "one")
+        assert self._repost(api_client, me, asset.id, "two").status_code == 200
+        rows = api_client.get("/v1/bhakti/reposts/").json()
+        assert len(rows) == 1 and rows[0]["note"] == "two"
+
+    def test_too_long_is_refused(self, api_client, me):
+        asset = make_asset(kind="status", title="Ganesh")
+        assert self._repost(api_client, me, asset.id, "x" * 501).status_code == 400
+
+    def test_a_like_drops_the_words(self, api_client, me):
+        from apps.reactions.models import Reaction
+
+        asset = make_asset(kind="status", title="Ganesh")
+        api_client.post(
+            "/v1/reactions/",
+            {"target_type": "bhakti", "target_id": str(asset.id), "kind": "like", "note": "hi"},
+            format="json", **auth(me),
+        )
+        assert Reaction.objects.get(kind="like").note == ""

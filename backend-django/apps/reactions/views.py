@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Reaction
+from .models import MAX_NOTE_CHARS, Reaction
 from .services import add_reaction, counts_for, remove_reaction
 
 
@@ -16,6 +16,11 @@ class ReactionInput(serializers.Serializer):
     target_type = serializers.ChoiceField(choices=Reaction.TargetType.choices)
     target_id = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=Reaction.Kind.choices)
+    # A repost's own words (13 Oct 2026). Ignored for every other kind.
+    note = serializers.CharField(
+        required=False, allow_blank=True, max_length=MAX_NOTE_CHARS,
+        error_messages={"max_length": f"Keep it under {MAX_NOTE_CHARS} characters"},
+    )
 
 
 class CountsQuery(serializers.Serializer):
@@ -56,7 +61,7 @@ def reactions(request):
 
     if request.method == "POST":
         reaction, created = add_reaction(
-            request.user.pk, data["target_type"], data["target_id"], data["kind"]
+            request.user.pk, data["target_type"], data["target_id"], data["kind"], data.get("note", "")
         )
         return Response({"created": created, **_row(reaction)}, status=201 if created else 200)
 

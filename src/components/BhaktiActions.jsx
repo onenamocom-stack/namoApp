@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActIcon, Count } from './ActIcon.jsx'
 import CommentSheet from './CommentSheet.jsx'
+import { useReshare } from './ReshareSheet.jsx'
 import { shareAsset } from '../lib/bhakti.js'
 import { useStore } from '../store.jsx'
 
@@ -21,12 +22,13 @@ import { useStore } from '../store.jsx'
  * advert under a person's name.
  */
 export default function BhaktiActions({ asset, share = false }) {
-  const { hasFlag, toggleFlag, showToast, t } = useStore()
+  const { hasFlag, toggleFlag, showToast } = useStore()
   const [thread, setThread] = useState(false)
   const [comments, setComments] = useState(asset.comments ?? 0)
   const liked = hasFlag(`blike:${asset.id}`)
   const reshared = hasFlag(`brepost:${asset.id}`)
   const [was] = useState(() => ({ liked, reshared }))
+  const reshare = useReshare(`brepost:${asset.id}`)
 
   return (
     <>
@@ -49,11 +51,10 @@ export default function BhaktiActions({ asset, share = false }) {
             onLabel="Reshared"
             on={reshared}
             tone="text-[#1f7a4d]"
-            onClick={() =>
-              toggleFlag(`brepost:${asset.id}`, { on: t('home.reshared'), off: t('home.reshareRemoved') })
-            }
+            onClick={reshare.tap}
           />
           <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+          {reshare.sheet}
         </>
       )}
       {share && (

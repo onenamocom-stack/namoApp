@@ -116,6 +116,7 @@ export async function fetchBhaktiReposts({ by = null, limit = 50 } = {}) {
       byId: r.reposted_by,
       byName: r.reposted_by_name || 'Someone',
       at: r.reposted_at,
+      note: r.note || '',
       asset: toAsset(r.asset),
     }))
   } catch {

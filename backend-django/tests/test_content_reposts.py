@@ -124,3 +124,16 @@ class TestReposts:
             **auth(seeker_token),
         )
         assert response.status_code in (200, 201)
+
+
+@pytest.mark.django_db
+def test_a_post_reshare_carries_its_words(api_client, seeker_token, post_id):
+    """"Reshare with your thoughts" (13 Oct 2026)."""
+    response = api_client.post(
+        "/v1/reactions/",
+        data={"target_type": "content", "target_id": post_id, "kind": "repost", "note": "Padhiye"},
+        format="json",
+        **auth(seeker_token),
+    )
+    assert response.status_code == 201
+    assert api_client.get("/v1/content/reposts/").json()[0]["note"] == "Padhiye"

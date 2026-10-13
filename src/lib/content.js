@@ -263,6 +263,7 @@ export async function fetchReposts({ by = null, limit = 50 } = {}) {
       byName: r.reposted_by_name || 'Someone',
       at: r.reposted_at,
       time: ago(r.reposted_at),
+      note: r.note || '',
       post: shape(r.post),
     }))
   } catch {

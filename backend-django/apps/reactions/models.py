@@ -24,6 +24,9 @@ class Kind(models.TextChoices):
     REPOST = "repost", "Repost"
 
 
+MAX_NOTE_CHARS = 500
+
+
 class Reaction(models.Model):
     """One row of the `reactions` table (docs/05-BACKEND-SCHEMA.md §5.1).
 
@@ -65,6 +68,9 @@ class Reaction(models.Model):
     target_id = models.UUIDField()
     kind = models.CharField(max_length=16, choices=Kind.choices)
     created_at = models.DateTimeField(default=timezone.now)
+    # A repost's own words, "Reshare with your thoughts" (13 Oct 2026,
+    # Rahul). Empty for every other kind and for a plain reshare.
+    note = models.TextField(blank=True, default="")
 
     # Convenience aliases so call sites read Reaction.Kind / Reaction.TargetType.
     Kind = Kind

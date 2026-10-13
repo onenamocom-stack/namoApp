@@ -1342,6 +1342,13 @@ the post embedded as a feed row; a post that stops being public, or a
 blocked resharer, drops out. Who reshared is public — resharing is saying so
 in public. `repost_count` is on every public content row.
 
+**`reactions.note`** (text, not null, default `''`; migration
+`reactions/0004`, 13 Oct 2026): a repost's own words, "Reshare with your
+thoughts". `POST /v1/reactions/` takes an optional `note` (at most 500
+characters, trimmed); the server keeps it on a `repost` only and blanks it on
+every other kind. Reposting again with words replaces them on the one row.
+Both `/reposts/` lists return it as `note`.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

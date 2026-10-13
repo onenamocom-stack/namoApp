@@ -112,7 +112,7 @@ export async function fetchMine() {
  * up, false when the key is not persistable or nobody is signed in. Throws on
  * real failures so the store rolls its optimistic Set back.
  */
-export async function setReaction(key, on) {
+export async function setReaction(key, on, note = '') {
   const parsed = parseKey(key)
   if (!parsed) return false
 
@@ -123,7 +123,9 @@ export async function setReaction(key, on) {
 
   await api('/reactions/', {
     method: on ? 'POST' : 'DELETE',
-    body: { target_type: targetType, target_id: targetId, kind },
+    // A reshare's own words ride along (13 Oct 2026); the server keeps them
+    // for a repost only.
+    body: { target_type: targetType, target_id: targetId, kind, ...(on && note ? { note } : {}) },
     token,
   })
   return true

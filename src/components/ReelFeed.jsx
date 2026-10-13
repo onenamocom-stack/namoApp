@@ -7,6 +7,7 @@ import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
 import ReportSheet from './ReportSheet.jsx'
 import CommentSheet from './CommentSheet.jsx'
+import { useReshare } from './ReshareSheet.jsx'
 import { firstName } from './Primitives.jsx'
 import { useStore } from '../store.jsx'
 
@@ -176,6 +177,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   const liked = hasFlag(`like:${c.id}`)
   const saved = hasFlag(`save:${c.id}`)
   const reshared = hasFlag(`repost:${c.id}`)
+  const reshare = useReshare(`repost:${c.id}`)
   const following = hasFlag(`follow:${c.consultantId}`)
 
   /* A view is two seconds on screen, not a frame. Opening a reel link makes
@@ -284,14 +286,10 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
             tone="repost"
             on={reshared}
             count={c.reposts ? c.reposts.toLocaleString('en-IN') : null}
-            onClick={() =>
-              toggleFlag(`repost:${c.id}`, {
-                on: 'Reshared to your profile and the feed',
-                off: 'Reshare removed',
-              })
-            }
+            onClick={reshare.tap}
           />
         )}
+        {reshare.sheet}
         <RailAct
           icon="share"
           label="Share"

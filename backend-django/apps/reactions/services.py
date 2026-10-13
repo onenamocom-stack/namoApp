@@ -20,7 +20,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import Reaction
 
 
-def add_reaction(actor_id, target_type, target_id, kind):
+def add_reaction(actor_id, target_type, target_id, kind, note=""):
     """Insert one reaction, or confirm the identical one already exists.
 
     The unique (actor_id, target_type, target_id, kind) constraint is the
@@ -34,6 +34,10 @@ def add_reaction(actor_id, target_type, target_id, kind):
     you must not be blocked, and it must not be your own. Its author hears
     about it once, when the row is first created.
     """
+    # A repost's own words, "Reshare with your thoughts" (13 Oct 2026,
+    # Rahul); any other kind drops them. Reposting again with words replaces
+    # the words on the one row.
+    note = (note or "").strip() if kind == Reaction.Kind.REPOST else ""
     # A Bhakti picture can be reshared too (12 Oct 2026, Rahul): it goes to
     # your profile and the feed as the picture, under "X reshared". The
     # library has no author, so nobody is told.
@@ -48,13 +52,16 @@ def add_reaction(actor_id, target_type, target_id, kind):
 
             content_services.assert_repostable(target_type, target_id, actor_id)
 
-    reaction, created = _insert(actor_id, target_type, target_id, kind)
+    reaction, created = _insert(actor_id, target_type, target_id, kind, note)
+    if not created and note and reaction.note != note:
+        reaction.note = note
+        reaction.save(update_fields=["note"])
     if created and kind == Reaction.Kind.REPOST and not bhakti:
         content_services.notify_repost(target_id, actor_id)
     return reaction, created
 
 
-def _insert(actor_id, target_type, target_id, kind):
+def _insert(actor_id, target_type, target_id, kind, note=""):
     with transaction.atomic():
         try:
             with transaction.atomic():  # savepoint: the losing race only rolls back the insert
@@ -63,6 +70,7 @@ def _insert(actor_id, target_type, target_id, kind):
                     target_type=target_type,
                     target_id=target_id,
                     kind=kind,
+                    note=note,
                 )
         except IntegrityError:
             reaction = Reaction.objects.get(

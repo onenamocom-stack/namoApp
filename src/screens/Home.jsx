@@ -10,6 +10,7 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { ActIcon, Count } from '../components/ActIcon.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
+import { useReshare } from '../components/ReshareSheet.jsx'
 import Plate from '../components/Plate.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
@@ -180,15 +181,17 @@ export default function Home() {
   const grouped = new Map()
   for (const r of reshares) {
     if (!r.picture && CARD_FOR_KIND[r.post.kind] === 'article') continue
-    const key = r.picture ? `b:${r.asset.id}` : `p:${r.post.id}`
-    const seen = grouped.get(key)
+    // A reshare with words is that person's own card (13 Oct 2026): the
+    // words are theirs, not the group's.
+    const key = `${r.note ? `${r.byId}:` : ''}${r.picture ? `b:${r.asset.id}` : `p:${r.post.id}`}`
+    const seen = r.note ? null : grouped.get(key)
     if (seen) seen.by.others += 1
     else
       grouped.set(key, {
         id: `rp:${key}`,
         kind: r.picture ? 'bhakti' : CARD_FOR_KIND[r.post.kind],
         data: r.picture ? r.asset : r.post,
-        by: { id: r.byId, name: r.byName, others: 0 },
+        by: { id: r.byId, name: r.byName, others: 0, note: r.note },
       })
   }
   const reshared = [...grouped.values()]
@@ -488,6 +491,7 @@ export function ActionRow({ id, like = true, onComment, onShare, authorId, likes
   // The view's aggregate plus your own un-saved tap, so it moves the instant
   // you press and still agrees with the database on reload.
   const likeCount = likes == null ? 0 : likes + (hasFlag(`like:${id}`) ? 1 : 0)
+  const reshare = useReshare(`repost:${id}`)
   return (
     <div className="flex items-center gap-4 px-3 pt-2.5">
       {like && (
@@ -510,15 +514,11 @@ export function ActionRow({ id, like = true, onComment, onShare, authorId, likes
           onLabel="Reshared"
           on={hasFlag(`repost:${id}`)}
           tone="text-[#1f7a4d]"
-          onClick={() =>
-            toggleFlag(`repost:${id}`, {
-              on: t('home.reshared'),
-              off: t('home.reshareRemoved'),
-            })
-          }
+          onClick={reshare.tap}
         />
       )}
       {canReshare && <Count n={reposts} />}
+      {canReshare && reshare.sheet}
       {onShare && <ActIcon icon="share" label="Share" onClick={onShare} />}
       <span className="flex-1" />
       <ActIcon
@@ -681,20 +681,26 @@ export function ProductStrip({ tagged = [], shopRef }) {
 }
 
 /** "↻ Tara reshared" above a post that is in the feed because somebody
- *  reshared it. Nothing for an ordinary post. */
+ *  reshared it, and their words when they wrote some. Nothing for an
+ *  ordinary post. */
 function ResharedLine({ by }) {
   const { t } = useStore()
   if (!by) return null
   return (
-    <Link
-      to={`/u/${by.id}`}
-      className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3"
-    >
-      <Icon name="repost" size={14} weight={2} />
-      {by.others
-        ? t('home.resharedByMany', { name: by.name, n: by.others.toLocaleString('en-IN') })
-        : t('home.resharedBy', { name: by.name })}
-    </Link>
+    <>
+      <Link
+        to={`/u/${by.id}`}
+        className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3"
+      >
+        <Icon name="repost" size={14} weight={2} />
+        {by.others
+          ? t('home.resharedByMany', { name: by.name, n: by.others.toLocaleString('en-IN') })
+          : t('home.resharedBy', { name: by.name })}
+      </Link>
+      {/* "Reshare with your thoughts" (13 Oct 2026): their words, above
+          what they reshared. */}
+      {by.note && <p className="whitespace-pre-line px-3 pt-1.5 text-body text-t1">{by.note}</p>}
+    </>
   )
 }
 
