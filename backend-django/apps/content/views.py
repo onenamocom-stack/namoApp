@@ -413,6 +413,14 @@ def follow_list(request, which):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+def suggestions(request):
+    """People to follow (Phase 15a); signed out, the active authors."""
+    viewer = request.user.pk if request.user and request.user.is_authenticated else None
+    return Response({"items": services.suggest_follows(viewer)})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def author(request, profile_id):
     """A published author's public name, for /u/:id. A profile with no live
     content is a 404 — publishing is what puts a name on a screen (025)."""

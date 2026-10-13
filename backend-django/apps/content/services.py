@@ -914,6 +914,76 @@ def follow_list(profile_id, which, limit=200):
     ]
 
 
+SUGGEST_ACTIVE_DAYS = 14
+
+
+def suggest_follows(viewer_id, *, limit=10):
+    """People to follow (13 Oct 2026, docs/06 Phase 15a). First, people
+    followed by the people you follow, most shared first ("Followed by
+    Tara"); then authors who posted most in the last two weeks ("Active
+    this week"). Never you, nobody you already follow, nobody blocked.
+    Signed out, only the active authors."""
+    from collections import Counter
+
+    from apps.consultants.models import Consultant
+    from apps.profiles.models import Profile
+
+    targets = [Reaction.TargetType.PROFILE, Reaction.TargetType.CONSULTANT]
+    follows = Reaction.objects.filter(kind=Reaction.Kind.FOLLOW, target_type__in=targets)
+    mine = set()
+    picks = []  # (profile id, reason) in order
+    if viewer_id is not None:
+        mine = {str(t).replace("-", "") for t in follows.filter(actor_id=viewer_id).values_list("target_id", flat=True)}
+        shared = Counter()
+        via = {}
+        for actor, target in follows.filter(actor_id__in=[m for m in mine]).values_list("actor_id", "target_id"):
+            key = str(target).replace("-", "")
+            shared[key] += 1
+            via.setdefault(key, str(actor).replace("-", ""))
+        picks += [(k, ("via", via[k])) for k, _ in shared.most_common(limit * 3)]
+
+    since = timezone.now() - timezone.timedelta(days=SUGGEST_ACTIVE_DAYS)
+    active = Counter(
+        str(a).replace("-", "")
+        for a in public_content().filter(published_at__gte=since).values_list("author_id", flat=True)
+    )
+    picks += [(k, ("active", None)) for k, _ in active.most_common(limit * 3)]
+
+    me = str(viewer_id).replace("-", "") if viewer_id is not None else None
+    seen, order = set(), []
+    for key, reason in picks:
+        if key == me or key in mine or key in seen:
+            continue
+        seen.add(key)
+        order.append((key, reason))
+
+    people = {
+        str(p.id).replace("-", ""): p
+        for p in Profile.objects.filter(id__in=[k for k, _ in order] + [r[1] for _, r in order if r[1]], blocked_at=None)
+    }
+    pros = {
+        str(i).replace("-", "")
+        for i in Consultant.objects.filter(profile_id__in=[k for k, _ in order], status="approved").values_list("profile_id", flat=True)
+    }
+    out = []
+    for key, (why, via_id) in order:
+        p = people.get(key)
+        if p is None:
+            continue
+        if why == "via":
+            friend = people.get(via_id)
+            reason = f"Followed by {(friend.name if friend else None) or 'people you follow'}"
+        else:
+            reason = "Active this week"
+        out.append({
+            "id": str(p.id), "name": p.name or "NAMO member", "avatar_url": p.avatar_url,
+            "is_consultant": key in pros, "reason": reason,
+        })
+        if len(out) == limit:
+            break
+    return out
+
+
 def _follow_between(a, b):
     """True when either of two profiles follows the other."""
     if not a or not b:

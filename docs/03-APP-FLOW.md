@@ -242,6 +242,12 @@ another, and every fifth post is a random pick. Signed out, or with nothing
 liked or followed yet, the feed is fresh and popular posts. If the ranked
 feed fails to load, the old random deal stands in.
 
+**People to follow — 13 Oct 2026 (Phase 15a).** Signed in, the feed carries
+one sideways strip after its fifth card: people followed by the people you
+follow ("Followed by Tara"), then authors who posted most in the last two
+weeks ("Active this week"); never you or anyone you follow. Each card opens
+`/consult/:id` or `/u/:id`; Follow is the same saved follow as on a profile.
+
 **Create post — 12 Oct 2026 (Rahul: "like Facebook"; it replaced the tabs
 Text · Photo · Video · Blog).** One screen: Back, *Create post* and **Post**
 (top right, live once there are words or a picture); your photo and name; one

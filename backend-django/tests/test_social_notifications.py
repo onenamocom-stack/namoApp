@@ -107,3 +107,32 @@ class TestTagPage:
             _react(api_client, token, "content", liked, "like")
         ids = [r["id"] for r in api_client.get("/v1/content/tag/yoga/?sort=top").json()["results"]]
         assert ids[0] == liked
+
+
+@pytest.mark.django_db
+class TestSuggestions:
+    """`GET /v1/content/suggestions/` (Phase 15a)."""
+
+    def test_friends_of_friends_first_then_active_never_self_or_followed(
+        self, api_client, seeker_token, second_seeker_token, consultant_token, roster
+    ):
+        from .test_content import ADMIN
+
+        # Tara follows Arjun; Arjun follows Admin. Pro posted this week.
+        _react(api_client, seeker_token, "profile", SECOND_SEEKER, "follow")
+        _react(api_client, second_seeker_token, "profile", ADMIN, "follow")
+        _publish(api_client, consultant_token, kind="post", caption="hello")
+
+        items = api_client.get("/v1/content/suggestions/", **auth(seeker_token)).json()["items"]
+        ids = [i["id"].replace("-", "") for i in items]
+        assert ids[0] == ADMIN.replace("-", "")
+        assert items[0]["reason"] == "Followed by Arjun Nair"
+        assert APPROVED.replace("-", "") in ids
+        assert next(i for i in items if i["id"].replace("-", "") == APPROVED.replace("-", ""))["is_consultant"]
+        assert SEEKER.replace("-", "") not in ids
+        assert SECOND_SEEKER.replace("-", "") not in ids
+
+    def test_signed_out_gets_active_authors(self, api_client, consultant_token, roster):
+        _publish(api_client, consultant_token, kind="post", caption="hello")
+        items = api_client.get("/v1/content/suggestions/").json()["items"]
+        assert [i["reason"] for i in items] == ["Active this week"]

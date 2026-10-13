@@ -1362,6 +1362,11 @@ Both `/reposts/` lists return it as `note`.
 (or active Bhakti items) the caller has a live comment on, newest comment
 first, each once with `comment {id, body, created_at}` — the caller's latest.
 
+**Suggestions** (13 Oct 2026, no table): `GET /v1/content/suggestions/`,
+anonymous or signed in: up to ten `{id, name, avatar_url, is_consultant,
+reason}` from `reactions` (follows of the people you follow) and the last 14
+days of live `content` authors; blocked profiles excluded.
+
 **Tag** (13 Oct 2026, no table): `GET /v1/content/tag/<tag>/?sort=new|top`,
 anonymous, returns feed rows whose caption, body or title carries `#tag`
 whole-word, case-blind, among the newest 1,000 live rows.

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { fetchFeed, fetchReposts, isMine, productHref, recordView, reshareToLead } from '../lib/content.js'
+import { fetchFeed, fetchReposts, fetchSuggestions, isMine, productHref, recordView, reshareToLead } from '../lib/content.js'
 import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
@@ -167,15 +167,14 @@ export default function Home() {
     if (tab === 'darshan') navigate('/darshan', { replace: true })
   }, [tab, navigate])
 
-  /* The feed is a QUERY, not a table (05-BACKEND-SCHEMA.md §5.3). Newest live
-     content from approved consultants, dealt in a random order on each load
-     (asked for 16 Sep). Random, not ranked — a rank is still the system that
-     section refuses. */
+  /* The feed is a QUERY, not a table (05-BACKEND-SCHEMA.md §5.3). Ordered
+     for the reader since 13 Oct 2026 (Rahul: "personalise the feeds"; it was
+     dealt at random from 16 Sep): `fetchFeed` with `shuffle` asks the
+     server's ranking, and deals at random only if that fails. */
   const [published, setPublished] = useState([])
 
   useEffect(() => {
     let active = true
-    // ponytail: shuffles the newest 200 client-side; a server-side random pick when content outgrows that.
     fetchFeed({ kinds: ['post', 'clip', 'article'], limit: 200, shuffle: true })
       .then((rows) => active && setPublished(rows))
       .catch((err) => console.error('[feed] load failed:', err.message))
@@ -342,8 +341,8 @@ export default function Home() {
                 edge to edge, as Instagram's is. The stories strip of authors
                 that sat on top was removed on 30 Sep (owner's call). */}
             <div className="mt-3 bg-white">
-              {items.map((item) => {
-                switch (item.kind) {
+              {items.map((item, i) => {
+                const card = (() => { switch (item.kind) {
                   case 'post':
                     return <PostCard key={item.id} post={item.data} resharedBy={item.by} />
                   case 'reel':
@@ -358,7 +357,16 @@ export default function Home() {
                     return <ProductCard key={item.id} product={item.data} />
                   default:
                     return null
-                }
+                } })()
+                // People to follow, once, after the fifth card (Phase 15a).
+                return i === 4 ? (
+                  <Fragment key={item.id}>
+                    {card}
+                    <FollowSuggestions />
+                  </Fragment>
+                ) : (
+                  card
+                )
               })}
             </div>
 
@@ -503,6 +511,58 @@ function FollowButton({ item }) {
     >
       {on ? 'Following' : 'Follow'}
     </button>
+  )
+}
+
+/**
+ * People to follow, a sideways strip in the feed after the fifth card (13 Oct
+ * 2026, docs/06 Phase 15a): people followed by the people you follow, then
+ * authors active this week. Follow is the same saved follow as everywhere
+ * else. Signed out, or with nobody to suggest, it is not drawn.
+ */
+function FollowSuggestions() {
+  const { session, hasFlag, toggleFlag } = useStore()
+  const [people, setPeople] = useState([])
+  const me = session?.user?.id
+  useEffect(() => {
+    let alive = true
+    if (me) fetchSuggestions().then((rows) => alive && setPeople(rows))
+    return () => {
+      alive = false
+    }
+  }, [me])
+  if (!me || !people.length) return null
+  return (
+    <section className="border-b border-rule bg-white py-3">
+      <p className="px-3 text-meta font-semibold text-t1">People to follow</p>
+      <div className="no-scrollbar mt-2.5 flex gap-2.5 overflow-x-auto px-3">
+        {people.map((p) => {
+          const key = `${p.is_consultant ? 'follow' : 'followp'}:${p.id}`
+          const on = hasFlag(key)
+          const first = (p.name || '').split(' ')[0]
+          const initials = (p.name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+          return (
+            <div key={p.id} className="flex w-36 flex-none flex-col items-center rounded-xl border border-stroke px-2 py-3 text-center">
+              <Link to={p.is_consultant ? `/consult/${p.id}` : `/u/${p.id}`} className="flex flex-col items-center">
+                <PopAvatar initials={initials} src={p.avatar_url} size={56} />
+                <span className="mt-2 block w-full truncate text-meta font-semibold text-t1">{p.name}</span>
+                <span className="block w-full truncate text-[11px] text-t3">{p.reason}</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => toggleFlag(key, { on: `Following ${first}`, off: `Unfollowed ${first}` })}
+                aria-pressed={on}
+                className={`mt-2.5 w-full rounded-lg py-1.5 text-meta font-semibold transition-colors ${
+                  on ? 'bg-ink/5 text-t3' : 'bg-btn text-white'
+                }`}
+              >
+                {on ? 'Following' : 'Follow'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

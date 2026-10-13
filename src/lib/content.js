@@ -444,6 +444,18 @@ export function isMine(authorId, me) {
   return !!authorId && !!me && String(authorId).replace(/-/g, '') === String(me).replace(/-/g, '')
 }
 
+/** People to follow, `{ id, name, avatar_url, is_consultant, reason }`
+ *  (13 Oct 2026, Phase 15a). Empty on any failure: it is a suggestion. */
+export async function fetchSuggestions() {
+  const token = await accessToken()
+  try {
+    const body = await api('/content/suggestions/', { token })
+    return body?.items ?? []
+  } catch {
+    return []
+  }
+}
+
 /** Posts carrying #tag, `sort` 'new' or 'top' (13 Oct 2026, Phase 15a). */
 export async function fetchByTag(tag, { sort = 'new', limit = 60 } = {}) {
   const body = await api(`/content/tag/${encodeURIComponent(tag)}/?sort=${sort}&limit=${limit}`)
