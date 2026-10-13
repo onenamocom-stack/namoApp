@@ -447,6 +447,19 @@ class TestFeed:
         assert row["author_id"] == SEEKER
         assert row["author_name"] == "Tara Verma"
         assert row["author_is_consultant"] is False
+        assert row["author_avatar"] is None
+
+    def test_feed_row_carries_the_author_picture(
+        self, api_client, seeker_token, roster
+    ):
+        # 13 Oct 2026, Rahul: the post header showed initials, never the photo.
+        from apps.profiles.models import Profile
+
+        url = "https://media.example/avatars/tara.jpg?v=1"
+        Profile.objects.filter(id=SEEKER).update(avatar_url=url)
+        _publish(api_client, seeker_token, kind="post", caption="a photo")
+        row = api_client.get("/v1/content/feed/").json()["results"][0]
+        assert row["author_avatar"] == url
 
     def test_ordering_newest_first_and_pagination_is_keyset_exact(
         self, api_client, roster

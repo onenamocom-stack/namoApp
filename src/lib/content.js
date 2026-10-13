@@ -112,6 +112,7 @@ function shape(row) {
       .slice(0, 2)
       .join('')
       .toUpperCase(),
+    avatarUrl: row.author_avatar || null,
     kind: row.kind,
     title: row.title,
     body: row.body,

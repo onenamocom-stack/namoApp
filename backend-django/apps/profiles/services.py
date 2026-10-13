@@ -318,6 +318,16 @@ def name_subquery(outer_field):
     )
 
 
+def avatar_subquery(outer_field):
+    """ORM annotation: the profile picture URL for the row's <outer_field>,
+    public like the name (`public_profile`). For the feed's post headers
+    (13 Oct 2026, Rahul: they showed initials only)."""
+    return Subquery(
+        Profile.objects.filter(id=OuterRef(outer_field)).values("avatar_url")[:1],
+        output_field=TextField(),
+    )
+
+
 def birth_subquery(outer_field, column):
     """ORM annotation for one of the birth columns the bookings_view join
     carries to the consultant ON the booking (010: a reading cannot be done

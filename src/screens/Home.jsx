@@ -459,7 +459,7 @@ function NewPostSheet({ onClose, onPublished }) {
    comments open CommentSheet and Share is a real share (both since 30 Sep). */
 
 /** The story-ring avatar: saffron into green, a white gap, then the face. */
-function RingAvatar({ initials, size = 32, ring = true }) {
+function RingAvatar({ initials, src = null, size = 32, ring = true }) {
   return (
     <span
       className="inline-flex flex-none rounded-full"
@@ -471,7 +471,7 @@ function RingAvatar({ initials, size = 32, ring = true }) {
       }}
     >
       <span className="inline-flex rounded-full bg-white" style={{ padding: ring ? 2 : 0 }}>
-        <PopAvatar initials={initials} size={size} />
+        <PopAvatar initials={initials} src={src} size={size} />
       </span>
     </span>
   )
@@ -506,10 +506,10 @@ function FollowButton({ item }) {
   )
 }
 
-function PostHead({ initials, name, to, note, tag, onMore, moreLabel, follow, onEdit }) {
+function PostHead({ initials, avatar, name, to, note, tag, onMore, moreLabel, follow, onEdit }) {
   const who = (
     <>
-      <RingAvatar initials={initials} size={30} />
+      <RingAvatar initials={initials} src={avatar} size={30} />
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-meta">
           <span className="font-semibold text-t1">{name}</span>
@@ -842,6 +842,7 @@ function PostCard({ post, resharedBy }) {
           by accident — a false report costs a real person an admin's time. */}
       <PostHead
         initials={p.initials}
+        avatar={p.avatarUrl}
         name={p.consultant}
         to={authorHref(p)}
         follow={p}
@@ -1062,6 +1063,7 @@ function ReelCard({ reel, resharedBy }) {
       <ResharedLine by={resharedBy} />
       <PostHead
         initials={r.initials}
+        avatar={r.avatarUrl}
         name={r.consultant}
         to={authorHref(r)}
         follow={r}
@@ -1305,6 +1307,7 @@ function ArticleCard({ read }) {
     <article className="border-b border-rule bg-white">
       <PostHead
         initials={b.initials}
+        avatar={b.avatarUrl}
         name={b.consultant}
         note={t('home.publishedArticle')}
         to={authorHref(b)}

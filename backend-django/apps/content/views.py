@@ -60,6 +60,7 @@ def _public_row(row):
         "id": str(row.id),
         "author_id": str(row.author_id),
         "author_name": row.author_name,
+        "author_avatar": getattr(row, "author_avatar", None),
         "author_is_consultant": bool(row._approved),
         "kind": row.kind,
         "title": row.title,

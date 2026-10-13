@@ -131,6 +131,7 @@ def public_content():
         .filter(_author_blocked=0)
         .annotate(
             author_name=profile_services.name_subquery("author_id"),
+            author_avatar=profile_services.avatar_subquery("author_id"),
             # 025: (cs.profile_id is not null) over a LEFT JOIN consultants
             # ON profile_id = author_id AND status = 'approved'.
             _approved=RawSQL(
