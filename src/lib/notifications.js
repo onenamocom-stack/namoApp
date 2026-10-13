@@ -44,6 +44,15 @@ async function api(path, { method = 'GET', body, token } = {}) {
 }
 
 /** The list, newest first, with the unread count beside it. */
+/** Where tapping an alert goes (13 Oct 2026, docs/06 Phase 15a): a follow
+ *  opens the follower's profile; a like, comment or reshare on your post
+ *  opens your Profile, where your posts are. Null: the alert is just words. */
+export function alertHref(n) {
+  if (n?.ref_type === 'profile' && n.ref_id) return `/u/${n.ref_id}`
+  if (n?.ref_type === 'content') return '/profile'
+  return null
+}
+
 export async function fetchAlerts({ limit = 50 } = {}) {
   const token = await accessToken()
   if (!token) return { items: [], unread: 0 }

@@ -2,7 +2,7 @@
 
 import logging
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .models import Notification
@@ -21,10 +21,13 @@ def push(profile_id, *, kind, title, body=None, ref_type=None, ref_id=None,
     the far side of its own commit for the same reason.
     """
     try:
-        return Notification.objects.create(
-            profile_id=profile_id, kind=kind, title=title, body=body,
-            ref_type=ref_type, ref_id=ref_id, dedupe_key=dedupe_key,
-        )
+        # A savepoint, so a deduped duplicate cannot poison a caller's
+        # transaction (likes dedupe per hour since 13 Oct 2026).
+        with transaction.atomic():
+            return Notification.objects.create(
+                profile_id=profile_id, kind=kind, title=title, body=body,
+                ref_type=ref_type, ref_id=ref_id, dedupe_key=dedupe_key,
+            )
     except IntegrityError:
         # The dedupe key. A retried job saying the same thing twice is the
         # normal case, not an error.

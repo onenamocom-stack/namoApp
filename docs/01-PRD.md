@@ -886,8 +886,6 @@ milestone.
 
 ## 10. Non-goals
 
-- A social network. The feed exists to surface consultants, not to retain
-  scrollers.
 - Free astrology at scale. The free tools are an entrance, not the product.
 - Western astrology parity. The product is Vedic-first, and since 7 Sep 2026
   this is literal rather than a leaning: the Western wheel and the South Indian
@@ -895,8 +893,15 @@ milestone.
   tarot decks. A tropical diagram or a tropical daily reading beside a Lahiri
   sidereal chart names two different signs for one person on two screens
   (`02-TRD.md` §8).
-- A pandit-booking or physical-puja marketplace. The mandir is e-puja and charges
-  nothing, on purpose.
+- A physical-puja marketplace. The mandir is e-puja and charges nothing, on
+  purpose.
+
+**Lifted 13 Oct 2026 (owner's yes to `06-IMPLEMENTATION.md` Phase 15).** Two
+non-goals are gone. "A social network": Namo is now a social network for
+India's devotional and spiritual life, and the feed exists to bring people
+back every day as well as to surface consultants. "Pandit booking": pandits
+join astrologers as experts (15c); its money rules go in this document
+before it is built.
 - Desktop for seekers. The app is a 420px phone frame. Only the admin console is
   a desktop product.
 

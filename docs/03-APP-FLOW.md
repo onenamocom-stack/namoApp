@@ -1398,6 +1398,12 @@ Refunds are a separate forward transition, never a mutation of the original.
   connected with, each with what you last did together ("Video call · 3 min");
   its Sessions tab lists calls and chats (with cost) and booked slots; Alerts
   carries an unread count. Alerts older than six months are deleted by the sweep.
+- **Social alerts (13 Oct 2026, Phase 15a):** a comment, a reshare, a like
+  (one per post per IST hour, named after the first liker) and a follow (once
+  per pair, ever) each tell the author or the person followed; never for
+  your own post. Tapping a follow alert opens the follower's `/u/:id`; a
+  like, comment or reshare opens your `/profile`. Both the Alerts tab and
+  `/notifications`.
 
 ### 8.3 Consultant approval
 

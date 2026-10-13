@@ -392,6 +392,53 @@ def notify_repost(content_id, actor_id):
     )
 
 
+def _same(a, b):
+    return str(a).replace("-", "") == str(b).replace("-", "")
+
+
+def _actor_name(actor_id):
+    from apps.profiles.models import Profile
+
+    return Profile.objects.filter(pk=actor_id).values_list("name", flat=True).first()
+
+
+def notify_like(content_id, actor_id):
+    """Tell the author, at most once per post per IST hour (13 Oct 2026,
+    docs/06 Phase 15a): ten likes in an hour are one notification, named
+    after the first. Never raises (notify.push); not for your own post."""
+    from apps.notifications import services as notify
+
+    post = Content.objects.filter(pk=content_id).only("author_id").first()
+    if post is None or _same(post.author_id, actor_id):
+        return
+    hour = (timezone.now() + timezone.timedelta(hours=5, minutes=30)).strftime("%Y%m%d%H")
+    notify.push(
+        post.author_id,
+        kind="content.like",
+        title=f"{_actor_name(actor_id) or 'Someone'} liked your post",
+        ref_type="content",
+        ref_id=str(content_id),
+        dedupe_key=f"like:{content_id}:{hour}",
+    )
+
+
+def notify_follow(profile_id, actor_id):
+    """Tell the person somebody followed them — once per pair, ever, so
+    unfollowing and following again does not ring twice."""
+    from apps.notifications import services as notify
+
+    if _same(profile_id, actor_id):
+        return
+    notify.push(
+        profile_id,
+        kind="profile.follow",
+        title=f"{_actor_name(actor_id) or 'Someone'} started following you",
+        ref_type="profile",
+        ref_id=str(actor_id),
+        dedupe_key=f"follow:{actor_id}:{profile_id}",
+    )
+
+
 def list_reposts(*, by=None, limit=50):
     """Reshares, newest first: who reshared what, and when, with the post as
     the feed renders it. `by` narrows to one person's profile. A post that

@@ -22,6 +22,7 @@ import {
   ago as alertAgo,
   markRead as markAlertsRead,
   subscribeToAlerts,
+  alertHref,
 } from '../lib/notifications.js'
 
 
@@ -653,6 +654,8 @@ function initialsOf(name) {
  */
 function Alerts() {
   const [items, setItems] = useState(null)
+  const { setChatOpen } = useStore()
+  const navigate = useNavigate()
 
   useEffect(() => subscribeToAlerts((payload) => setItems(payload.items)), [])
 
@@ -682,7 +685,20 @@ function Alerts() {
             className={`border-b border-rule px-4 py-4 ${n.read ? '' : 'bg-surface-2'}`}
           >
             <p className="caps-sm t-faint tnum">{alertAgo(n.created_at)}</p>
-            <p className="mt-1.5 text-meta t-heading">{n.title}</p>
+            {alertHref(n) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setChatOpen(false)
+                  navigate(alertHref(n))
+                }}
+                className="mt-1.5 block text-left text-meta t-heading"
+              >
+                {n.title}
+              </button>
+            ) : (
+              <p className="mt-1.5 text-meta t-heading">{n.title}</p>
+            )}
             {n.body && <p className="mt-1 text-meta t-sub">{n.body}</p>}
           </li>
         ))}

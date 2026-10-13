@@ -1,6 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
-import { ago, fetchAlerts } from '../lib/notifications.js'
+import { Link } from 'react-router-dom'
+import { ago, alertHref, fetchAlerts } from '../lib/notifications.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { Section } from '../components/Primitives.jsx'
 
@@ -48,7 +49,11 @@ export default function Notifications() {
                 <p className="mb-3 text-micro uppercase tracking-caps text-t3 tnum">
                   {ago(n.created_at)}
                 </p>
-                <p className="text-read text-t1">{n.title}</p>
+                {alertHref(n) ? (
+                  <Link to={alertHref(n)} className="block text-read text-t1">{n.title}</Link>
+                ) : (
+                  <p className="text-read text-t1">{n.title}</p>
+                )}
                 {n.body && <p className="mt-2 text-meta text-t2">{n.body}</p>}
               </li>
             ))}

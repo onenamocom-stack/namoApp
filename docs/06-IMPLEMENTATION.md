@@ -449,12 +449,16 @@ that way in writing or it grows.
 
 ---
 
-## Phase 15 — A bhakti social network (proposed 13 Oct 2026, not started)
+## Phase 15 — A bhakti social network (approved 13 Oct 2026, in progress)
 
-**Status: proposed by Rahul, waiting for the owner.** It reverses two
-non-goals in `01-PRD.md` §10: "A social network" and "A pandit-booking or
-physical-puja marketplace". Nothing here is built until the owner agrees
-to lift them; §10 then gets rewritten, saying what it replaced.
+**Status: approved by the owner on 13 Oct 2026, all of 15a to 15d,** built
+in order with no further approval between parts. It lifted two non-goals in
+`01-PRD.md` §10 (a social network; pandit booking). Each deploy still waits
+for "ship". The owner also said yes, the same day, to the three parts that
+touch owner-only areas: the 15a sign-up change (the phone OTP login stays
+as it is), 15b's private messages, and 15c's pandit-booking money rules
+(written into `01-PRD.md` before they are built). Anything else in wallet,
+payments, auth, secrets or production data still needs the owner's own yes.
 
 **The position.** A social network for India's devotional and spiritual
 life: bhakti, astrology, yoga, ayurveda and festivals, in the reader's own
