@@ -36,6 +36,12 @@ from django.utils import timezone
 from .fields import TextArrayField
 
 
+class Badge(models.TextChoices):
+    PRO = "pro", "Pro"
+    EXPERT = "expert", "Expert"
+    MASTER = "master", "Master"
+
+
 class ConsultantStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     APPROVED = "approved", "Approved"
@@ -122,6 +128,13 @@ class Consultant(models.Model):
     # fee_bps it was written with.
     fee_bps = models.IntegerField(null=True, blank=True)
 
+    # The badge on the consultant's card and page (13 Oct 2026, Rahul):
+    # Pro, Expert or Master, set in the console and nowhere else. Every
+    # consultant starts at Pro. It replaced the paid-session milestones.
+    # A database default too, so an API image older than the column still
+    # inserts (the reactions.note outage, 13 Oct).
+    badge = models.CharField(max_length=8, choices=Badge.choices, default=Badge.PRO, db_default="pro")
+
     # The intro on the consultant's page (11 Oct 2026, Rahul): one video or
     # one photo the consultant uploads. A public URL from their own READY
     # media asset, set only through `services.set_intro`; null shows nothing.
@@ -134,6 +147,10 @@ class Consultant(models.Model):
             models.CheckConstraint(
                 condition=models.Q(status__in=ConsultantStatus.values),
                 name="consultants_status_check",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(badge__in=Badge.values),
+                name="consultants_badge_check",
             ),
         ]
         indexes = [

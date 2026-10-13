@@ -1,6 +1,5 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
 import { catchAffiliateLink, sendAffiliateVisit } from './lib/referrals.js'
-import { MilestoneCelebration } from './components/Milestones.jsx'
 import { useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
@@ -326,8 +325,6 @@ function Frame() {
         <NotificationRouter />
         <LiveChatResume />
         {!isPro && <AffiliateCatcher />}
-        {/* A consultant crossing a milestone tier sees it once (lib/milestones.js). */}
-        {isPro && <MilestoneCelebration />}
         {/* The consultant's "app is open" beat, on every route — the call
             screen included, which is outside the shell (5 Oct 2026). */}
         {isPro && <PresenceKeeper />}

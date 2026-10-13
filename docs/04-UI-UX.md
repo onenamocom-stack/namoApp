@@ -142,15 +142,11 @@ mixed from one accent colour and the button family (`--btn`, `--btn-deep`,
 make text unreadable — but pick an accent dark enough for 11px `--gold` text,
 which is the accent mixed 28% toward black.
 
-**Milestone tiers** (3 Oct 2026) have their own five hues, used only for the
-ring around a consultant's avatar, the badge, and the ladder:
-`--tier-1` green · `--tier-10` blue · `--tier-100` saffron · `--tier-500`
-purple · `--tier-1000` gold, the top and the only gradient ring. Each has an
-`-ink` twin dark enough for 11px badge text on its own 14% wash. No ring at
-all below the first paid session. On the ladder every tier shows its colour
-from the start, at 40% until reached, and the sentence names the next ring
-("5 more to 10 sessions and a blue ring") — something to look forward to,
-not a row of grey circles (owner's call, 4 Oct).
+**The consultant badge** (13 Oct 2026) has three hues, used only for its
+pill: `--badge-pro` blue · `--badge-expert` saffron · `--badge-master` gold,
+each the text and rosette over its own `-wash`. The pills beside it
+(experience, rating) are white with a hairline. No ring on the avatar: the
+five milestone tier hues and rings were removed with the milestones.
 
 **Required fields** carry a red asterisk (`text-live`) after the label, with a
 "* Required" key at the top of a long form — sign-up details, payout details,

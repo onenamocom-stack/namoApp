@@ -182,7 +182,7 @@ const PATHS = {
       <path d="M9.4 4v16M14.6 4v16M4 9.4h16M4 14.6h16" />
     </>
   ),
-  // A rosette: the milestone badge (3 Oct 2026).
+  // A rosette: the consultant badge — Pro, Expert, Master (13 Oct 2026).
   award: (
     <>
       <circle cx="12" cy="9" r="5.2" />

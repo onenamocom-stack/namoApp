@@ -164,8 +164,8 @@ function shape(row, services = []) {
     busy: row.busy === true,
     rating: row.rating_avg_cache,
     reviewCount: row.rating_count_cache,
-    // Paid sessions given — the milestone tier (lib/milestones.js).
-    sessionsDone: row.sessions_done ?? 0,
+    // Pro, Expert or Master, set in the console (13 Oct 2026).
+    badge: row.badge ?? 'pro',
     // The intro video or photo on their page (11 Oct 2026); null when none.
     introUrl: row.intro_url ?? null,
     // For the share link, 1namo.com/<username> (11 Oct 2026).

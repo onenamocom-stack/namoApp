@@ -65,7 +65,10 @@ def _consultant_row(consultant, service_rows):
         "busy": bool(getattr(consultant, "busy", False)),
         "rating_avg_cache": consultant.rating_avg_cache,
         "rating_count_cache": consultant.rating_count_cache,
-        # Paid sessions given — the milestone badges read it (3 Oct 2026).
+        # Pro, Expert or Master, set in the console (13 Oct 2026).
+        "badge": consultant.badge,
+        # Paid sessions given (3 Oct 2026). The app stopped showing it when
+        # the console badge replaced the milestones; the count stays.
         "sessions_done": getattr(consultant, "sessions_done", 0),
         # The intro video or photo (11 Oct 2026); null when none.
         "intro_url": consultant.intro_url,
@@ -251,6 +254,7 @@ def me(request):
             "rating_avg_cache": consultant.rating_avg_cache,
             "rating_count_cache": consultant.rating_count_cache,
             "sessions_done": services.sessions_done(consultant.profile_id),
+            "badge": consultant.badge,
             "created_at": consultant.created_at,
             # Whole rupees a minute: chat, video, audio, booking (10 Oct 2026).
             "rates": services.rates_of(consultant.profile_id),

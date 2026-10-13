@@ -761,6 +761,13 @@ inside the block unwinds together, so a refusal leaves no order behind either.
 the consultant's own READY media assets (kind reel or image); public on the
 consultant's row.
 
+**The badge** (13 Oct 2026): `consultants.badge` — text, `pro` | `expert` |
+`master` (check `consultants_badge_check`), default and database default
+`pro`, migration `consultants/0008_consultant_badge`. Set only in the console
+(list-editable on the astrologer list); public on the consultant row and on
+`/consultants/me/`. Namo's-share migration, unapplied, renumbered from
+`0008` to `0009_consultant_fee_bps` to follow it.
+
 **A free first session** (7 Oct 2026): `consultants.free_first` (boolean,
 default false, migration `consultants/0005`) and `sessions.free_seconds`
 (integer, default 0, `chat/0004`). A session's free seconds extend its

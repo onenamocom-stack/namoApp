@@ -1,4 +1,4 @@
-import { MilestoneBadge, MilestoneLadder, TierRing } from '../components/Milestones.jsx'
+import ProFacts from '../components/ProFacts.jsx'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -77,47 +77,29 @@ export default function ProProfile() {
           same inline stats line — so the consultant recognises his own page. */}
       <section className="px-5 pb-6 pt-6">
         <div className="flex items-start gap-4">
-          <TierRing count={me.sessionsDone} size={76}>
-            <Avatar initials={me.initials} size={76} />
-          </TierRing>
+          <Avatar initials={me.initials} size={76} />
           <div className="min-w-0 flex-1 pt-1">
             <h1 className="truncate text-lead font-semibold t-heading">{me.name}</h1>
             <p className="mt-0.5 truncate text-meta t-body">{me.specialization}</p>
-            <MilestoneBadge count={me.sessionsDone} side="pro" className="mt-1.5" />
-            {/* Every number on this line is now yours. Rating and review count
-                come off the two `_cache` columns a trigger maintains over
-                `reviews`; the follower count is a COUNT of `reactions`. A
-                consultant nobody has reviewed reads "New", not 4.9. */}
-            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] t-faint tnum">
-              <span className="font-bold t-sub">{me.rating ?? 'New'}</span> rating
-              <span aria-hidden="true">·</span>
-              <span className="font-bold t-sub">{me.reviewCount.toLocaleString('en-IN')}</span>{' '}
-              {me.reviewCount === 1 ? 'review' : 'reviews'}
-              <span aria-hidden="true">·</span>
-              <span className="font-bold t-sub">
-                {me.experienceYrs ? `${me.experienceYrs} yrs` : '—'}
-              </span>
-              {followers !== null && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-bold t-sub">{followers.toLocaleString('en-IN')}</span>{' '}
-                  {followers === 1 ? 'follower' : 'followers'}
-                </>
-              )}
-            </p>
+            {/* Experience, rating and badge — the pills a client sees on
+                your page (13 Oct 2026, Rahul). Followers stay a line. */}
+            <ProFacts
+              className="mt-2"
+              experienceYrs={me.experienceYrs}
+              rating={me.rating}
+              reviewCount={me.reviewCount}
+              badge={me.badge}
+            />
+            {followers !== null && (
+              <p className="mt-1.5 text-[11px] t-faint tnum">
+                <span className="font-bold t-sub">{followers.toLocaleString('en-IN')}</span>{' '}
+                {followers === 1 ? 'follower' : 'followers'}
+              </p>
+            )}
           </div>
         </div>
 
         <p className="mt-4 text-meta leading-relaxed t-sub">{me.bio}</p>
-
-        {/* The ladder to 1000 paid sessions. The ring above and the badge a
-            client sees change colour at each stop (lib/milestones.js). */}
-        <div className="pop-card mt-5 p-4">
-          <p className="caps-sm t-faint">Milestones</p>
-          <div className="mt-2">
-            <MilestoneLadder count={me.sessionsDone} />
-          </div>
-        </div>
 
         <div className="mt-2 flex flex-wrap gap-1.5">
           {me.credentials.map((cr) => (

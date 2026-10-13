@@ -55,11 +55,12 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
 
     audit_target = "consultant"
     form = ConsultantForm
-    list_display = ("who", "category", "specialization", "rates", "namo_cut", "status", "verified", "free_first", "created_at")
-    list_filter = ("status", "verified", "free_first", "category")
+    list_display = ("who", "category", "specialization", "rates", "namo_cut", "status", "verified", "badge", "free_first", "created_at")
+    list_filter = ("status", "verified", "badge", "free_first", "category")
     # Ticked here, straight from the list: the in-house consultants a new
-    # seeker sees free for their first session (7 Oct 2026).
-    list_editable = ("free_first",)
+    # seeker sees free for their first session (7 Oct 2026), and the badge
+    # seekers see — Pro, Expert or Master (13 Oct 2026).
+    list_editable = ("badge", "free_first")
     # Tags are what a seeker searches by, so they are what an
     # operator should be able to search by too.
     search_fields = ("specialization", "bio", "category", "tags", "degree")

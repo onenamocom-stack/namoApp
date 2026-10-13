@@ -1,11 +1,12 @@
 import { Loader } from '../components/Cosmos.jsx'
-import { MilestoneBadge, TierRing } from '../components/Milestones.jsx'
+import ProFacts, { SkillChips } from '../components/ProFacts.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
+import Icon from '../components/Icon.jsx'
 import {
   Avatar,
   Button,
@@ -13,7 +14,6 @@ import {
   firstName,
   Section,
   Segmented,
-  Tag,
   Ticks,
 } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -277,11 +277,10 @@ export function ConsultantPage({
             intro clip. The identity block leads instead. */}
         <section className="px-5 pb-6 pt-6">
           <div className="flex items-center gap-4">
-            <TierRing count={c.sessionsDone} size={76}>
-              {/* The photo, not the initials (10 Oct 2026). Your own is the
-                  store's copy, so a new picture shows without a reload. */}
-              <Avatar initials={c.initials} src={(own && me.avatarUrl) || c.avatarUrl} size={76} />
-            </TierRing>
+            {/* The photo, not the initials (10 Oct 2026). Your own is the
+                store's copy, so a new picture shows without a reload. No
+                coloured ring since the milestones went (13 Oct 2026). */}
+            <Avatar initials={c.initials} src={(own && me.avatarUrl) || c.avatarUrl} size={76} />
             {/* Name over posts, followers and following (11 Oct 2026,
                 Rahul: Instagram's layout, the same block as every profile). */}
             <ProfileHead
@@ -295,31 +294,29 @@ export function ConsultantPage({
             />
           </div>
 
-          {/* What they practise, the milestone and the rating and experience,
-              under the photo now that the numbers sit beside it. */}
-          <p className="mt-4 text-meta font-semibold t-heading">{c.specialization}</p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <MilestoneBadge count={c.sessionsDone} />
-            <p className="text-[11px] t-faint tnum">
-              {/* The review count is hidden for now; the rating stays
-                  (8 Oct 2026, Rahul). */}
-              <span className="font-bold t-sub">{c.rating ?? 'New'}</span> rating
-              <span aria-hidden="true"> · </span>
-              <span className="font-bold t-sub">
-                {c.experienceYrs ? `${c.experienceYrs} yrs` : 'Practising'}
+          {/* Experience, rating and badge as three pills, then what they
+              practise as chips, the description and the degree (13 Oct
+              2026, Rahul — option A). The pills replaced the milestone
+              badge and the "rating · yrs" line. */}
+          <ProFacts
+            className="mt-4"
+            experienceYrs={c.experienceYrs}
+            rating={c.rating}
+            reviewCount={c.reviewCount}
+            badge={c.badge}
+          />
+          <SkillChips text={c.specialization} className="mt-3" />
+
+          <p className="mt-2.5 text-meta leading-relaxed t-sub">{c.bio}</p>
+
+          {c.credentials.map((cr) => (
+            <p key={cr} className="mt-2 flex items-center gap-1.5 text-meta font-semibold t-heading">
+              <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold/15 text-gold">
+                <Icon name="award" size={13} weight={2.2} />
               </span>
+              {cr}
             </p>
-          </div>
-
-          {/* The description. It was buried in the About tab; on a profile it
-              is the thing you read right after the name. */}
-          <p className="mt-2 text-meta leading-relaxed t-sub">{c.bio}</p>
-
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {c.credentials.map((cr) => (
-              <Tag key={cr}>{cr}</Tag>
-            ))}
-          </div>
+          ))}
 
           {/* Follow and Share profile, half the row each. The schedule,
               chat, video and call glyphs that sat beside Follow went on 11 Oct

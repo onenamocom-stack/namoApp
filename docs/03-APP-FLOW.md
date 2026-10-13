@@ -667,8 +667,11 @@ says `is_consultant`), so reshare and comment links that pointed at the
 thinner page land on the one with bookings. Every profile — yours, `/u/:id` and `/consult/:id` — has the same header
 beside the photo (11 Oct 2026, Rahul, Instagram's layout): the name, then
 **posts · followers · following** as three columns, number over label. On a
-consultant page the specialization, milestone, rating and experience sit
-under the photo. A verified consultant has a **blue verified mark** beside the
+consultant page, under the photo, three pills — years of experience ("10 yrs
+Exp"), the rating ("5.0 · New" with no reviews, else the average and count)
+and the badge (Pro, Expert or Master, set in the console) — then the
+specialization as chips (split on commas), the bio and the credentials
+(13 Oct 2026, Rahul; replaced the milestone badge). A verified consultant has a **blue verified mark** beside the
 name, here and on `/consult` cards; the top bar's second line is the category,
 never the word "Verified" (11 Oct 2026, Rahul). Above the tabs, the consultant's **intro** — the video (plays
 in place) or photo they uploaded from Settings → *Intro video or photo*; nothing
@@ -1131,8 +1134,8 @@ gone — nothing measures them.
 Mirrors the public consultant page and links to it rather than rebuilding it.
 Content grid, insights, reviews, settings. No switch to the client app since
 4 Oct 2026.
-Under the bio, the milestone ladder: paid sessions given and how many more to
-the next tier and to 1000. Settings → **Payout details** → `/pro/payout-details`.
+The same experience, rating and badge pills as the public page; no milestone
+ladder or congratulation since 13 Oct 2026. Settings → **Payout details** → `/pro/payout-details`.
 Settings → **Your rates** opens a sheet with the same four fields as the
 application and **Save rates**; all four save together, and new prices apply to
 what is asked or booked afterwards.
