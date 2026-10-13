@@ -2098,3 +2098,23 @@ to spend the backlog on the third, and a balance would let them. Past the
 date the row is inert and nothing has to clean it up. The allowance is
 `max(setting, bonus)` so raising `AI_DAILY_FREE` for a testing window
 cannot cut somebody's referral perk down.
+
+## Messages between people — `dm_threads`, `dm_messages`, `dm_blocks` (13 Oct 2026)
+
+Phase 15b, migration `dms/0001`. Apart from the paid chat's `threads` and
+`messages` on purpose: nothing here touches a session, the wallet or a rate.
+RLS is on with **no policies** on all three, so the browser's Supabase key
+reads nothing; the API connects as the owner.
+
+| Table | Columns |
+|---|---|
+| `dm_threads` | `id uuid pk`; `a_id`, `b_id uuid` — the pair, smaller id first, **unique (a_id, b_id)**; `started_by uuid`; `accepted_at`, `declined_at timestamptz null` (a request while `accepted_at` is null); `last_message_at`, `last_preview` (first 120 characters); `created_at`. Indexes `(a_id, -last_message_at)`, `(b_id, -last_message_at)` |
+| `dm_messages` | `id uuid pk`; `thread_id → dm_threads` cascade; `sender_id uuid`; `body text` (check `body <> ''`; the API trims and caps at 2,000); `created_at`; `read_at null`. Index `(thread_id, created_at)` |
+| `dm_blocks` | `id uuid pk`; `blocker_id`, `blocked_id uuid`, **unique (blocker_id, blocked_id)**; `created_at`. Either direction stops both people writing |
+
+API `/v1/dms/`, all signed in: `threads/?box=inbox|requests` (with `requests`
+and `unread` counts), `start/ {to}`, `threads/<id>/messages/?after=`,
+`threads/<id>/send/ {body}`, `…/read/`, `…/accept/`, `…/decline/`, and
+`block/ {profile_id}` (POST blocks, DELETE unblocks). A message alert is a
+`notifications` row, kind `dm.message`, `ref_type` `dm`, deduped per thread
+per IST hour.

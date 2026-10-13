@@ -17,6 +17,7 @@ import {
   subscribeToThread,
 } from '../lib/chat.js'
 import MySessions from './MySessions.jsx'
+import { MessagesList } from '../screens/Messages.jsx'
 import SessionRecharge from './SessionRecharge.jsx'
 import {
   ago as alertAgo,
@@ -81,10 +82,13 @@ export default function ChatPanel() {
             {(isPro
               ? [
                   { key: 'live', label: 'Clients' },
+                  // Free messages between people (13 Oct 2026, Phase 15b).
+                  { key: 'messages', label: 'Messages' },
                   { key: 'alerts', label: 'Alerts' },
                 ]
               : [
                   { key: 'live', label: 'Consultant' },
+                  { key: 'messages', label: 'Messages' },
                   // Booked sessions, moved here from Consult (5 Oct 2026).
                   { key: 'sessions', label: 'Sessions' },
                   { key: 'alerts', label: 'Alerts' },
@@ -115,6 +119,11 @@ export default function ChatPanel() {
         {chatTab === 'sessions' && !isPro && (
           <div className="flex-1 overflow-y-auto">
             <MySessions />
+          </div>
+        )}
+        {chatTab === 'messages' && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <MessagesList onOpen={() => setChatOpen(false)} />
           </div>
         )}
         {chatTab === 'alerts' && <Alerts />}

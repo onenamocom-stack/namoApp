@@ -68,6 +68,8 @@ In file order, which is also resolution order.
 | `/consult/:id` | ConsultantProfile | Plain |
 | `/notifications` | Notifications | Plain |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
+| `/messages` | Messages — Inbox · Requests (both apps) | Plain |
+| `/messages/:id` | Conversation — one person, free (both apps) | Plain |
 | `/premium` | → `/home` (Premium not offered, 11 Oct 2026) | — |
 | `/reports` | Reports | Plain |
 | `/tarot` | Tarot | Plain |
@@ -1667,3 +1669,23 @@ corrected later without breaking all of them.
 
 **Alerts poll at 15s**, against chat's 3s. An alert is something you find
 when you look, not something you are interrupted by.
+
+## Messages between people — 13 Oct 2026 (docs/06 Phase 15b)
+
+- **Start:** **Message** beside Follow on `/u/:id` (signed in, not your own)
+  opens the conversation, made if there is none. A refusal is a toast:
+  yourself, a blocked person, or an approved consultant (`01-PRD.md` §4.1).
+- **Find:** `/messages`, and the chat panel's **Messages** tab on both sides
+  (seeker: Consultant · Messages · Sessions · Alerts; consultant: Clients ·
+  Messages · Alerts). Inbox lists accepted conversations and the requests you
+  sent ("Sent. Waiting for them to accept."); **Requests** lists messages to
+  you from people you do not follow, with a count.
+- **A request:** the sender has one message until it is accepted. The
+  recipient sees *A request: you do not follow {name}. Accept to reply.* with
+  **Accept** and **Decline**; replying is accepting. Declined, the sender
+  cannot write again.
+- **Conversation:** polls every three seconds while open; opening it marks
+  the other person's messages read. ⋯ holds View profile, **Block** /
+  Unblock (neither person can then write) and **Report** (the person report).
+- **Alert:** "{name} sent you a message", at most once per conversation per
+  IST hour, without the words; tapping it opens the conversation.

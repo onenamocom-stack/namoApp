@@ -137,6 +137,13 @@ business is not a single take-rate with decoration around it.
 
 ### 4.1 Sessions — the primary line
 
+**Free messages never replace a paid chat (13 Oct 2026, Phase 15b).** People
+message each other for free. A seeker cannot start a free message to an
+approved consultant: their paid chat is how a client reaches them. A
+consultant may start one, to anybody, and a consultant who follows you can be
+written to. A message to somebody who does not follow you is a request, one
+message until they accept.
+
 **Consultants type their own rates — decided 10 Oct 2026 (Rahul).** Four
 numbers, each in whole rupees a minute: **chat, video call, audio call and
 booking**. Each is **₹5 to ₹110 a minute**; the server refuses anything else.

@@ -49,6 +49,7 @@ async function api(path, { method = 'GET', body, token } = {}) {
  *  opens your Profile, where your posts are. Null: the alert is just words. */
 export function alertHref(n) {
   if (n?.ref_type === 'profile' && n.ref_id) return `/u/${n.ref_id}`
+  if (n?.ref_type === 'dm' && n.ref_id) return `/messages/${n.ref_id}`
   if (n?.ref_type === 'content') return '/profile'
   return null
 }

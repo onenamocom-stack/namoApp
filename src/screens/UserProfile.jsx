@@ -1,6 +1,6 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName } from '../components/Primitives.jsx'
@@ -9,6 +9,7 @@ import ProfileHead from '../components/ProfileHead.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
+import { startDm } from '../lib/dms.js'
 
 /**
  * A person who posts, seen by everybody else.
@@ -26,7 +27,8 @@ import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
  */
 export default function UserProfile() {
   const { id } = useParams()
-  const { hasFlag, toggleFlag, session } = useStore()
+  const { hasFlag, toggleFlag, session, showToast } = useStore()
+  const navigate = useNavigate()
   const [author, setAuthor] = useState(undefined)
   const [posts, setPosts] = useState([])
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
@@ -128,8 +130,9 @@ export default function UserProfile() {
       {/* Your own page has no Follow button. Following yourself is a row the
           database would happily take and nobody wants. */}
       {!mine && (
-        <div className="px-5 pt-5">
+        <div className="flex gap-2.5 px-5 pt-5">
           <PopButton
+            className="flex-1"
             variant={following ? 'default' : 'gold'}
             onClick={() =>
               toggleFlag(`followp:${id}`, {
@@ -140,6 +143,20 @@ export default function UserProfile() {
           >
             {following ? 'Following' : 'Follow'}
           </PopButton>
+          {/* Free messages between people (13 Oct 2026, Phase 15b). */}
+          {session && (
+            <PopButton
+              className="flex-1"
+              variant="default"
+              onClick={() =>
+                startDm(id)
+                  .then((c) => navigate(`/messages/${c.id}`))
+                  .catch((e) => showToast(e.message))
+              }
+            >
+              Message
+            </PopButton>
+          )}
         </div>
       )}
 

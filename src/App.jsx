@@ -55,6 +55,8 @@ import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
 import TagScreen from './screens/TagScreen.jsx'
+import Messages from './screens/Messages.jsx'
+import Conversation from './screens/Conversation.jsx'
 import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
@@ -245,6 +247,8 @@ function SessionGate() {
       // page (Phase 15a). Both are routed in this build; until this line
       // the gate bounced them to the studio.
       if (pathname === '/practice/edit' || pathname.startsWith('/tag/')) return
+      // Free messages between people (Phase 15b).
+      if (pathname === '/messages' || pathname.startsWith('/messages/')) return
 
       const authStep =
         pathname.startsWith('/onboarding/name') ||
@@ -398,6 +402,9 @@ function Frame() {
                 <Route path="/search" element={<SearchScreen />} />
                 {/* A hashtag's own page (13 Oct 2026, Phase 15a). */}
                 <Route path="/tag/:tag" element={<TagScreen />} />
+                {/* Free messages between people (13 Oct 2026, Phase 15b). */}
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/messages/:id" element={<Conversation />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
                     anybody bookable. */}
@@ -438,6 +445,8 @@ function Frame() {
                 <Route path="/read/:id" element={<Article />} />
                 {/* A hashtag in the pro app's feed opens its page too. */}
                 <Route path="/tag/:tag" element={<TagScreen />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/messages/:id" element={<Conversation />} />
               </>
             )}
           </Route>

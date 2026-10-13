@@ -487,7 +487,7 @@ words, follows, profiles, the personal feed (`apps/content/ranking.py`),
 no likes or follows yet; a like sends one notification an hour, not ten;
 a kundli opened with no birth date asks for it and then shows the chart.
 
-### 15b — Person-to-person messages
+### 15b — Person-to-person messages (built 13 Oct 2026, not yet deployed)
 
 - Free direct messages between two people, on the chat system the paid
   consultations use, without the meter. A first message from somebody
