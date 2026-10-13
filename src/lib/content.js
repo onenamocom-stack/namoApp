@@ -194,9 +194,9 @@ function cachedFeed(kinds, limit) {
 }
 
 /* Your post, first, for five seconds after you publish it (12 Oct 2026,
-   Rahul: "like FB, Insta"). The feed is dealt at random, so a new post
-   could land anywhere in two hundred; the Home or Reels that opens right
-   after publishing leads with it. After that it is dealt like any other. */
+   Rahul: "like FB, Insta"). A new post could land anywhere in two hundred;
+   the Home or Reels that opens right after publishing leads with it. After
+   that it takes its place in the order like any other. */
 const JUST_POSTED_MS = 5000
 let justPosted = null
 
@@ -220,7 +220,34 @@ export function reshareToLead() {
   return justReshared && Date.now() - justReshared.at <= JUST_POSTED_MS ? justReshared.id : null
 }
 
+/* The feed in the reader's own order (13 Oct 2026, Rahul: "personalise the
+   feeds"). The server ranks it — follows, what you engage with, freshness,
+   popularity, what you have seen; backend-django/apps/content/ranking.py.
+   Kept apart from feedCache: this order belongs to one reader. Should the
+   ranked request fail, the old random deal stands in. */
+const forYouCache = new Map()
+
+async function fetchForYou(kinds, limit) {
+  const token = await accessToken()
+  const key = `${token ? 'in' : 'out'}:${(kinds ?? []).join(',')}:${limit}`
+  const hit = forYouCache.get(key)
+  if (hit && Date.now() - hit.at < FEED_TTL) return hit.rows
+  let path = `/content/feed/for-you/?limit=${limit}`
+  if (kinds?.length) path += `&kinds=${kinds.join(',')}`
+  const rows = api(path, { token }).then((body) => (body?.results ?? []).map(shape))
+  forYouCache.set(key, { at: Date.now(), rows })
+  rows.catch(() => forYouCache.delete(key))
+  return rows
+}
+
 export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
+  if (shuffle) {
+    try {
+      return leadWithJustPosted([...(await fetchForYou(kinds, limit))])
+    } catch (err) {
+      console.error('[feed] ranked feed failed, dealing at random:', err.message)
+    }
+  }
   let rows = await cachedFeed(kinds, limit)
   if (!rows) {
     let path = `/content/feed/?limit=${limit}`
@@ -446,6 +473,7 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
     token,
   })
   feedCache.clear() // the new post must show at once
+  forYouCache.clear()
   justPosted = { id: data.id, at: Date.now() }
   return data.id
 }
@@ -502,6 +530,7 @@ export async function uploadMediaAsset(file) {
 /** Soft delete. Never a DELETE — a removed post in a dispute is evidence. */
 export async function remove(contentId) {
   feedCache.clear()
+  forYouCache.clear()
   const token = await accessToken()
   if (!token) throw new Error('Sign in to continue')
   await api(`/content/${contentId}/remove/`, { method: 'POST', token })

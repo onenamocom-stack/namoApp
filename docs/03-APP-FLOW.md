@@ -227,10 +227,19 @@ through a tab that forwards again.
 right of every Home tab, above the tab bar. Signed out → toast *Sign in to
 post.* Signed in → **Create post** full screen; a blocked account sees the
 blocked note instead.
-Publishing closes it and reloads the feed. The feed and Reels are dealt at
-random; a Home or Reels loaded within five seconds of your publishing leads
-with your new post, and after that it is dealt like any other (12 Oct 2026,
-Rahul).
+Publishing closes it and reloads the feed. A Home or Reels loaded within
+five seconds of your publishing leads with your new post; after that it
+takes its place like any other (12 Oct 2026, Rahul).
+
+**The feed's order — 13 Oct 2026 (Rahul: "personalise the feeds").** Home
+and Reels are ordered for the reader; they were dealt at random. First come
+authors you follow, then authors whose posts you liked, saved, reshared or
+commented on, and the kind you engage with most (reel, photo, blog). Newer
+posts and more popular posts rank higher. A post you watched in the last two
+weeks sinks. The same author never shows twice in a row while there is
+another, and every fifth post is a random pick. Signed out, or with nothing
+liked or followed yet, the feed is fresh and popular posts. If the ranked
+feed fails to load, the old random deal stands in.
 
 **Create post — 12 Oct 2026 (Rahul: "like Facebook"; it replaced the tabs
 Text · Photo · Video · Blog).** One screen: Back, *Create post* and **Post**

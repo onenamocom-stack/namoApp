@@ -1362,6 +1362,13 @@ Both `/reposts/` lists return it as `note`.
 (or active Bhakti items) the caller has a live comment on, newest comment
 first, each once with `comment {id, body, created_at}` — the caller's latest.
 
+**For you** (13 Oct 2026, no table): `GET /v1/content/feed/for-you/?kinds=&limit=`,
+anonymous or signed in, returns feed rows ordered for the caller. It reads
+`reactions` (the caller's follows; likes, saves and reposts on content),
+`content_comments` (the caller's) and `content_views` (the caller's last 14
+days) over the newest 400 live rows. The weights and rules are in
+`apps/content/ranking.py`.
+
 ### 5.4 Reviews
 
 Two things the phase learned that the block below does not say.

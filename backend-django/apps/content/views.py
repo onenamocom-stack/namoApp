@@ -6,7 +6,7 @@ from rest_framework.status import HTTP_409_CONFLICT
 
 from apps.core.views import refusal_body
 
-from . import services
+from . import ranking, services
 from .models import Content, Report
 from .services import AlreadyReported, DuplicateReview
 
@@ -116,6 +116,30 @@ def feed(request):
     )
     rows = services.attach_products(rows)
     return Response({"results": [_public_row(r) for r in rows], "next_after": next_after})
+
+
+class ForYouQuery(serializers.Serializer):
+    kinds = serializers.CharField(required=False, default="")
+    limit = serializers.IntegerField(required=False, default=40, min_value=1, max_value=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def for_you(request):
+    """Home's and Reels' feed, ordered for the reader (13 Oct 2026, Rahul):
+    `ranking.py` has the rules. Signed out, it is fresh and popular posts.
+    One page; the client never asked for a second."""
+    query = ForYouQuery(data=request.query_params)
+    query.is_valid(raise_exception=True)
+    data = query.validated_data
+    kinds = [k for k in (data["kinds"] or "").split(",") if k] or None
+    qs = services.public_content()
+    if kinds:
+        qs = qs.filter(kind__in=kinds)
+    viewer = request.user.pk if request.user and request.user.is_authenticated else None
+    rows = ranking.for_you(qs, viewer, limit=data["limit"])
+    rows = services.attach_products(rows)
+    return Response({"results": [_public_row(r) for r in rows]})
 
 
 class ByAuthorQuery(serializers.Serializer):
