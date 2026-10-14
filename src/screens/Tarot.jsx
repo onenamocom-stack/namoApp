@@ -167,7 +167,7 @@ export default function Tarot() {
             </p>
           )}
           {refusal?.needs_money && (
-            <PopButton variant="ghost" to="/wallet" className="mt-3">
+            <PopButton variant="ghost" to="/wallet?add=1" className="mt-3">
               {t('a.addMoney')}
             </PopButton>
           )}

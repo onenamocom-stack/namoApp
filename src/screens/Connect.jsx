@@ -227,7 +227,7 @@ export default function Connect() {
               {/balance/i.test(message ?? '') && (
                 <button
                   type="button"
-                  onClick={() => navigate('/wallet')}
+                  onClick={() => navigate('/wallet?add=1')}
                   className="rounded-full bg-gold-fill px-5 py-2.5 text-meta font-semibold text-white"
                 >
                   Add money

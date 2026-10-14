@@ -3,6 +3,7 @@ import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { markConsultReturn } from '../lib/consultReturn.js'
+import AddMoneySheet from './AddMoneySheet.jsx'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -861,7 +862,9 @@ function Composer({ onSend, placeholder, disabled = false }) {
  *  from Profile's icons and the header. */
 function WalletCard({ onGo }) {
   const { balance } = useStore()
+  const [adding, setAdding] = useState(false)
   return (
+    <>
     <section className="px-4 pt-4">
       <div className="rounded-2xl bg-gradient-to-br from-[#fff4ea] to-white p-4 ring-1 ring-gold-fill/25">
         <p className="caps-sm t-faint">Wallet balance</p>
@@ -869,16 +872,15 @@ function WalletCard({ onGo }) {
           {balance === null ? '—' : `₹${rupees(balance)}`}
         </p>
         <div className="mt-3 flex gap-2">
-          <Link
-            to="/wallet?add=1&from=consult"
-            onClick={() => {
-              markConsultReturn()
-              onGo()
-            }}
+          {/* In place (14 Oct 2026, Rahul): after a recharge you stay here,
+              with the new balance. */}
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
             className="flex-1 rounded-xl bg-gold-fill py-2.5 text-center text-meta font-semibold text-white shadow-sm"
           >
             Add money
-          </Link>
+          </button>
           <Link
             to="/wallet?from=consult"
             onClick={() => {
@@ -892,5 +894,7 @@ function WalletCard({ onGo }) {
         </div>
       </div>
     </section>
+    <AddMoneySheet open={adding} onClose={() => setAdding(false)} />
+    </>
   )
 }

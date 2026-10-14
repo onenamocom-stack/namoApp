@@ -343,7 +343,7 @@ export function TabHeader({ action = null, search = true }) {
             type="button"
             onClick={() => openChat('live')}
             aria-label={balance === null ? 'Wallet and consultations' : `Wallet, ₹${rupees(balance)}, and consultations`}
-            className="pill knob relative !h-9 !w-9 justify-center"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-btn text-white shadow-sm transition-transform active:scale-95"
           >
             <Icon name="wallet" size={18} />
           </button>

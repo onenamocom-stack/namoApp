@@ -1,10 +1,11 @@
 import { useState } from 'react'
 
-import { BackButton, Sheet, TopBar } from '../components/Chrome.jsx'
+import { BackButton, TopBar } from '../components/Chrome.jsx'
 import { useNavigate } from 'react-router-dom'
+import { isPro } from '../side.js'
+import AddMoneySheet from '../components/AddMoneySheet.jsx'
 import { markConsultReturn } from '../lib/consultReturn.js'
 import { Kicker, PopButton, PopCard } from '../components/Pop.jsx'
-import { topUpAmounts } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -24,66 +25,52 @@ import { rupees, useStore } from '../store.jsx'
  * discount promise must not be on screen the day real money starts moving.
  */
 export default function Wallet() {
-  const { balance, ledger, topup, toppingUp, t } = useStore()
-  // `?add=1` opens Add money straight away: the Consult page's wallet card
-  // links here (14 Oct 2026).
+  const { balance, ledger, toppingUp, t } = useStore()
+  // `?add=1` opens Add money straight away (Paywall, Tarot, a call short of
+  // balance link here with it).
   const [sheetOpen, setSheetOpen] = useState(() => new URLSearchParams(window.location.search).get('add') === '1')
-  const [custom, setCustom] = useState('')
 
-  /* Rupees on this screen because that is what the person is typing. It
-     becomes paise once, on the way out, and the server re-checks the band —
-     this copy of it only exists so the refusal arrives before the card form. */
-  const amount = Number(custom)
-  const valid = Number.isFinite(amount) && amount >= 100 && amount <= 100000
-
-  /* Opened from the Consult list (14 Oct 2026): back, and a finished top-up,
-     return to it, and Consult reopens the list (lib/consultReturn.js). */
+  /* Opened from the Consult list (14 Oct 2026): back returns to it, and
+     Consult reopens the list (lib/consultReturn.js). */
   const fromConsult = new URLSearchParams(window.location.search).get('from') === 'consult'
   const navigate = useNavigate()
   const backToConsult = () => {
     markConsultReturn()
     navigate('/consult', { replace: true })
   }
-
-  const add = async (rupeeAmount) => {
-    if (await topup(Math.round(rupeeAmount * 100))) {
-      setSheetOpen(false)
-      setCustom('')
-      if (fromConsult) backToConsult()
-    }
+  const afterTopUp = () => {
+    if (fromConsult) backToConsult()
   }
+
+  /* The main app's page is the Wallet statement (14 Oct 2026, Rahul): the
+     balance and Add money live on the Consult page's wallet card. The pro
+     app keeps the balance card here, since it has no such card. */
+  const title = isPro ? t('a.wallet') : 'Wallet statement'
 
   return (
     <>
       {fromConsult ? (
-        <TopBar title={t('a.wallet')} left={<BackButton onClick={backToConsult} />} />
+        <TopBar title={title} left={<BackButton onClick={backToConsult} />} />
       ) : (
-        <TopBar title={t('a.wallet')} back backTo="/home" />
+        <TopBar title={title} back backTo="/home" />
       )}
 
-      {/* ── Balance ───────────────────────────────────────────────────── */}
-      <section className="px-5 py-6">
-        <PopCard raised className="p-5">
-          <p className="caps-sm t-faint">{t('wal.available')}</p>
-          <p className="mt-2 font-display text-huge leading-none tnum t-heading">
-            {balance === null ? '—' : `₹${rupees(balance)}`}
-          </p>
-          <p className="mt-3 text-meta t-body">
-            {t('wal.drawn')}
-          </p>
-
-          <div className="mt-6 flex gap-3">
-            <PopButton
-              size="sm"
-              variant="gold"
-              disabled={toppingUp}
-              onClick={() => setSheetOpen(true)}
-            >
-              {toppingUp ? t('wal.working') : t('a.addMoney')}
-            </PopButton>
-          </div>
-        </PopCard>
-      </section>
+      {isPro && (
+        <section className="px-5 py-6">
+          <PopCard raised className="p-5">
+            <p className="caps-sm t-faint">{t('wal.available')}</p>
+            <p className="mt-2 font-display text-huge leading-none tnum t-heading">
+              {balance === null ? '—' : `₹${rupees(balance)}`}
+            </p>
+            <p className="mt-3 text-meta t-body">{t('wal.drawn')}</p>
+            <div className="mt-6 flex gap-3">
+              <PopButton size="sm" variant="gold" disabled={toppingUp} onClick={() => setSheetOpen(true)}>
+                {toppingUp ? t('wal.working') : t('a.addMoney')}
+              </PopButton>
+            </div>
+          </PopCard>
+        </section>
+      )}
 
       {/* ── Transactions ──────────────────────────────────────────────── */}
       <section className="border-t border-rule px-5 py-6">
@@ -126,43 +113,7 @@ export default function Wallet() {
 
       <div className="h-8" />
 
-      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={t('a.addMoney')}>
-        <div className="grid grid-cols-2 gap-3">
-          {topUpAmounts.map((a) => (
-            <PopButton key={a} disabled={toppingUp} onClick={() => add(a)}>
-              ₹{a.toLocaleString('en-IN')}
-            </PopButton>
-          ))}
-        </div>
-
-        <p className="mt-7 caps-sm t-faint">{t('wal.other')}</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-body t-heading">₹</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min="100"
-            max="100000"
-            placeholder={t('wal.range')}
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            className="w-full rounded-lg border border-stroke bg-surface px-3 py-2 text-body tnum placeholder-t-faint focus:border-ink focus:outline-none"
-          />
-        </div>
-
-        <PopButton
-          variant="gold"
-          className="mt-4 w-full"
-          disabled={!valid || toppingUp}
-          onClick={() => add(amount)}
-        >
-          {toppingUp ? t('wal.opening') : t('wal.continue')}
-        </PopButton>
-
-        <p className="mt-5 text-meta t-faint">
-          {t('wal.razorpay')}
-        </p>
-      </Sheet>
+      <AddMoneySheet open={sheetOpen} onClose={() => setSheetOpen(false)} onDone={afterTopUp} />
     </>
   )
 }

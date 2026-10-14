@@ -39,7 +39,7 @@ export default function Paywall({ title, note, sku, refKey = '', pricePaise, onB
         {busy ? '…' : pricePaise ? `Unlock · ₹${rupees(pricePaise)}` : 'Unlock'}
       </PopButton>
       {short && (
-        <PopButton variant="ghost" to="/wallet" className="mt-3">
+        <PopButton variant="ghost" to="/wallet?add=1" className="mt-3">
           Add money
         </PopButton>
       )}
