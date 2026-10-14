@@ -333,12 +333,12 @@ export default function Home() {
           to="/groups"
           aria-label="Groups"
           title="Groups"
-          className="relative flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-sm transition-transform active:scale-95"
+          className="relative flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-sm transition-transform active:scale-95"
         >
-          <Icon name="groups" size={22} weight={1.9} />
+          <Icon name="groups" size={18} weight={1.9} />
           <span
             aria-hidden="true"
-            className="absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white text-[14px] font-bold leading-none text-gold-fill ring-1 ring-gold-fill/40"
+            className="absolute -bottom-1 -right-1 flex h-[15px] w-[15px] items-center justify-center rounded-full bg-white text-[12px] font-bold leading-none text-gold-fill ring-1 ring-gold-fill/40"
           >
             +
           </span>
