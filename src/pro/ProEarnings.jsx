@@ -1,7 +1,8 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { answerRatePct, earningsSeries, proMetrics, referrals } from '../data/mock.js'
-import { TabHeader } from '../components/Chrome.jsx'
+import ProHeader from '../components/ProHeader.jsx'
+import { proPath } from '../lib/dashboard.js'
 import Icon from '../components/Icon.jsx'
 import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
 import { Field, Segmented } from '../components/Primitives.jsx'
@@ -29,7 +30,7 @@ export default function ProEarnings() {
 
   return (
     <>
-      <TabHeader />
+      <ProHeader title="Earnings" />
 
       <div className="px-4 pt-4">
         <Segmented items={TABS} value={tab} onChange={setTab} />
@@ -379,7 +380,7 @@ function Earnings() {
           Payouts have not started yet. When they do, you are paid once a month for everything you
           earned the month before, with TDS deducted, into the bank account in your payout details.
         </p>
-        <PopButton variant="ghost" size="sm" className="mt-4" to="/pro/payout-details">
+        <PopButton variant="ghost" size="sm" className="mt-4" to={proPath('/pro/payout-details')}>
           Add payout details
         </PopButton>
       </section>
@@ -437,7 +438,9 @@ function Bars({ data, money = false }) {
    published with its views — tap to open it — and the shop products people
    bought with their coupon. */
 
-function Insights() {
+/** Exported for a Creator's Dashboard (Phase 16), which has no affiliate
+ *  links: `links` hides the way to them. */
+export function Insights({ links = true }) {
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
 
@@ -468,7 +471,7 @@ function Insights() {
       </section>
 
       <section className="border-b border-rule px-5 py-6">
-        <Kicker action={pieces.length ? 'Post more' : null} to="/pro/studio">
+        <Kicker action={pieces.length ? 'Post more' : null} to={proPath('/pro/studio')}>
           {`Your posts · ${pieces.length}`}
         </Kicker>
         {pieces.length === 0 ? (
@@ -491,7 +494,7 @@ function Insights() {
       </section>
 
       <section className="px-5 py-6">
-        <Kicker action="Your links" to="/pro/affiliate">
+        <Kicker action={links ? 'Your links' : null} to={proPath('/pro/affiliate')}>
           Sold with your code
         </Kicker>
         {shop.products.length === 0 ? (

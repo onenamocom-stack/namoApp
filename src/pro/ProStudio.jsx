@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchByAuthor } from '../lib/content.js'
-import { TabHeader } from '../components/Chrome.jsx'
+import ProHeader from '../components/ProHeader.jsx'
+import { proPath } from '../lib/dashboard.js'
 import Composer from '../components/Composer.jsx'
 import EditSheet from '../components/EditSheet.jsx'
 import { Kicker } from '../components/Pop.jsx'
@@ -21,7 +22,7 @@ import { useStore } from '../store.jsx'
 const KINDS = ['clip', 'post', 'article']
 
 export default function ProStudio() {
-  const { session } = useStore()
+  const { session, consultant } = useStore()
   const [published, setPublished] = useState([])
   const [editing, setEditing] = useState(null)
   const [reload, setReload] = useState(0)
@@ -45,17 +46,20 @@ export default function ProStudio() {
 
   return (
     <>
-      <TabHeader />
+      <ProHeader title="Studio" />
 
-      <Composer kinds={KINDS} tagProducts onPublished={() => setReload((n) => n + 1)} />
+      {/* Tagging products and affiliate links are a consultant's (their A
+          code); a Creator in the Dashboard posts without them. */}
+      <Composer kinds={KINDS} tagProducts={Boolean(consultant)} onPublished={() => setReload((n) => n + 1)} />
 
       {/* The way in to affiliate links, above the composer's output rather
           than buried in the profile tab. A screen reachable only by typing
           its URL is a screen nobody uses — the dashboard learned that the
           hard way on 22 Sep. This sits where a consultant already is when
           they have just finished posting about a product. */}
+      {consultant && (
       <Link
-        to="/pro/affiliate"
+        to={proPath('/pro/affiliate')}
         className="mx-5 mt-2 flex items-center justify-between gap-3 rounded-lg border border-rule px-4 py-3.5 transition-colors hover:border-t1"
       >
         <span className="min-w-0">
@@ -66,9 +70,10 @@ export default function ProStudio() {
         </span>
         <span aria-hidden="true" className="flex-none caps-sm gold">Open</span>
       </Link>
+      )}
 
       <section className="px-5 py-6">
-        <Kicker action="See all" to="/pro/profile">
+        <Kicker action={consultant ? 'See all' : null} to={proPath('/pro/profile')}>
           Already published
         </Kicker>
         <p className="mt-2 caps-sm t-faint tnum">

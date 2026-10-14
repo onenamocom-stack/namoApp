@@ -67,6 +67,8 @@ In file order, which is also resolution order.
 | `/live/:id` | LiveRoom | Plain |
 | `/consult/:id` | ConsultantProfile | Plain |
 | `/notifications` | Notifications | Plain |
+| `/dashboard` | Dashboard — a Pro's or a Creator's own screens (main app, 14 Oct 2026, Phase 16); anyone else goes to `/profile` | Plain |
+| `/dashboard/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
 | `/messages` | Messages — Inbox · Requests (both apps) | Plain |
 | `/messages/:id` | Conversation — one person, free (both apps) | Plain |
@@ -1175,6 +1177,23 @@ ladder or congratulation since 13 Oct 2026. Settings → **Payout details** → 
 Settings → **Your rates** opens a sheet with the same four fields as the
 application and **Save rates**; all four save together, and new prices apply to
 what is asked or booked afterwards.
+
+### `/dashboard` — a Pro's and a Creator's own screens (14 Oct 2026, Phase 16)
+
+Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
+until this day) and on a Creator's Profile, under the five icons.
+
+- **A Pro:** Your work (Studio, Earnings and Insights, Your links), Your
+  practice (Practice and reviews, Edit your page, View your public page,
+  Payout details), Calls and chats (Open the consultant app). Availability
+  and the call queue are not here; they belong to the calling app.
+- **A Creator:** Studio and Your code, then Insights (the last seven days,
+  every post with its views, products sold with their code).
+
+The screens are the pro app's own, at `/dashboard/...` and not `/pro/...`:
+a `/pro` path switches the online beat on, which would show a Pro as online
+where no call can ring. Calls stay in the pro app until Namo Consult
+(`/desk`) takes them. A Seeker downloads none of these screens.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
 In both apps, from **Edit profile** on your own page and from `/pro/profile`.

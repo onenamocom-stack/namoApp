@@ -1,6 +1,6 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
 import { catchAffiliateLink, sendAffiliateVisit } from './lib/referrals.js'
-import { useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
 import { isPro } from './side.js'
@@ -63,6 +63,27 @@ import Handle, { isHandlePath } from './screens/Handle.jsx'
 import ReelViewer from './screens/ReelViewer.jsx'
 import ConsultantProfile from './screens/ConsultantProfile.jsx'
 import EditPractice from './screens/EditPractice.jsx'
+import { Loader } from './components/Cosmos.jsx'
+
+/* Dashboard (Phase 16): the consultant screens inside the main app, loaded
+   only when a Pro or a Creator opens one, so a Seeker downloads none of it. */
+const Dashboard = lazy(() => import('./screens/Dashboard.jsx'))
+const DashboardGate = lazy(() =>
+  import('./screens/Dashboard.jsx').then((m) => ({ default: m.DashboardGate })),
+)
+const DashStudio = lazy(() => import('./pro/ProStudio.jsx'))
+const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
+const DashProfile = lazy(() => import('./pro/ProProfile.jsx'))
+const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
+const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
+
+function Dash({ need = 'pro', children }) {
+  return (
+    <Suspense fallback={<Loader />}>
+      <DashboardGate need={need}>{children}</DashboardGate>
+    </Suspense>
+  )
+}
 import Notifications from './screens/Notifications.jsx'
 
 /**
@@ -418,6 +439,24 @@ function Frame() {
                 <Route path="/premium" element={<Navigate to="/home" replace />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/tarot" element={<Tarot />} />
+
+                {/* Dashboard (14 Oct 2026, Phase 16): a Pro's and a
+                    Creator's own screens. Not under /pro — see
+                    lib/dashboard.js. */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <Suspense fallback={<Loader />}>
+                      <Dashboard />
+                    </Suspense>
+                  }
+                />
+                <Route path="/dashboard/studio" element={<Dash need="any"><DashStudio /></Dash>} />
+                <Route path="/dashboard/earnings" element={<Dash><DashEarnings /></Dash>} />
+                <Route path="/dashboard/profile" element={<Dash><DashProfile /></Dash>} />
+                <Route path="/dashboard/profile/:tab" element={<Dash><DashProfile /></Dash>} />
+                <Route path="/dashboard/affiliate" element={<Dash><DashAffiliate /></Dash>} />
+                <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
 
               </>
             )}

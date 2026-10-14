@@ -2,7 +2,9 @@ import ProFacts from '../components/ProFacts.jsx'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { Sheet, TabHeader } from '../components/Chrome.jsx'
+import { Sheet } from '../components/Chrome.jsx'
+import ProHeader from '../components/ProHeader.jsx'
+import { proPath } from '../lib/dashboard.js'
 import RateFields, { RATE_FIELDS, rateErrors, rateNumbers } from '../components/RateFields.jsx'
 import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
 import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
@@ -67,11 +69,11 @@ export default function ProProfile() {
      never for the name, the price or what you practise. */
   const me = useConsultantFields(services)
 
-  if (!TABS.some((t) => t.key === tab)) return <Navigate to="/pro/profile" replace />
+  if (!TABS.some((t) => t.key === tab)) return <Navigate to={proPath('/pro/profile')} replace />
 
   return (
     <>
-      <TabHeader />
+      <ProHeader title="Your practice" />
 
       {/* Identity. The same block a client sees on /consult/a1 — same order,
           same inline stats line — so the consultant recognises his own page. */}
@@ -132,7 +134,7 @@ export default function ProProfile() {
       <Segmented
         items={TABS}
         value={tab}
-        onChange={(k) => navigate(k === 'content' ? '/pro/profile' : `/pro/profile/${k}`)}
+        onChange={(k) => navigate(proPath(k === 'content' ? '/pro/profile' : `/pro/profile/${k}`))}
       />
 
       <div key={tab} className="animate-fade">
@@ -164,7 +166,7 @@ function Content() {
 
   return (
     <section className="px-5 py-6">
-      <Kicker action="Post something" to="/pro/studio">
+      <Kicker action="Post something" to={proPath('/pro/studio')}>
         {`${published.length} published`}
       </Kicker>
 
@@ -293,7 +295,11 @@ function Settings({ me, onRatesSaved }) {
           <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
           {/* Your profile link, 1namo.com/<username> (11 Oct 2026, Rahul). */}
           <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
-          <Row to="/pro/consult" title="Availability" note="Which slots you are open for" />
+          {/* The call queue and slots live in the calling app; the main
+              app's Dashboard leaves this row out (Phase 16). */}
+          {proPath('/pro/consult') && (
+            <Row to={proPath('/pro/consult')} title="Availability" note="Which slots you are open for" />
+          )}
           <Row
             onClick={() => showToast('Languages — prototype only')}
             title="Languages"
@@ -301,7 +307,7 @@ function Settings({ me, onRatesSaved }) {
           />
           {/* Real since 3 Oct 2026 (payouts P2). It said "HDFC ••4412" to
               everyone and toasted "prototype only". */}
-          <Row to="/pro/payout-details" title="Payout details" note="PAN and bank account" />
+          <Row to={proPath('/pro/payout-details')} title="Payout details" note="PAN and bank account" />
         </div>
       </section>
       {intro && <IntroSheet onClose={() => setIntro(false)} />}

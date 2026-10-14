@@ -24,7 +24,6 @@ import VerifiedMark from '../components/VerifiedMark.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
 import FollowSheet from '../components/FollowSheet.jsx'
 import { shareLink } from '../lib/share.js'
-import { PRO_APP_URL } from '../lib/urls.js'
 import { profileLink } from '../lib/profile.js'
 import { isPro } from '../side.js'
 
@@ -337,18 +336,12 @@ export function ConsultantPage({
               </Link>
               {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
                   edits your name and birth details, not this page.
-                  Dashboard (11 Oct 2026, Rahul) opens the consultant app:
-                  pro.1namo.com from here, its own start inside it. A route
-                  Link cannot cross apps, so the seeker side is an <a>. */}
-              {isPro ? (
-                <Link to="/" className={ownButton}>
-                  Dashboard
-                </Link>
-              ) : (
-                <a href={PRO_APP_URL} className={ownButton}>
-                  Dashboard
-                </a>
-              )}
+                  Dashboard (11 Oct 2026, Rahul) opened the consultant app;
+                  since 14 Oct 2026 (Phase 16) it is /dashboard in this app.
+                  The pro app keeps its own start. */}
+              <Link to={isPro ? '/' : '/dashboard'} className={ownButton}>
+                Dashboard
+              </Link>
               <button type="button" onClick={share} className={ownButton}>
                 Share profile
               </button>

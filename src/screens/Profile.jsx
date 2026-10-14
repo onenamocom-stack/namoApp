@@ -241,6 +241,16 @@ function Hero({ posts, counts }) {
           )
         })}
       </div>
+      {/* A Creator's own screens, Studio and Insights (14 Oct 2026, Phase
+          16). A Pro reaches theirs from their own page. */}
+      {profile?.influencer && (
+        <Link
+          to="/dashboard"
+          className="mt-2 block rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
+        >
+          Dashboard
+        </Link>
+      )}
       <FollowSheet which={listing} onClose={() => setListing(null)} />
     </section>
   )

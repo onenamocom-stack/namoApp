@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { affiliateLink, myCodes } from '../lib/referrals.js'
 import { fetchProducts } from '../lib/shop.js'
 import { TopBar } from '../components/Chrome.jsx'
+import { proPath } from '../lib/dashboard.js'
 import { Kicker, PopButton } from '../components/Pop.jsx'
 import { Section } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -66,7 +67,7 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your links" sub="Share a link, earn 10% of a first order" back backTo="/pro/studio" />
+      <TopBar title="Your links" sub="Share a link, earn 10% of a first order" back backTo={proPath('/pro/studio')} />
 
       {/* Said before the buttons, because both of these are what a
           consultant would otherwise learn from an angry message. */}

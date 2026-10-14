@@ -326,10 +326,15 @@ def my_rates(request):
 @permission_classes([IsAuthenticated])
 def my_insights(request):
     """The caller's Insights tab (4 Oct 2026): last 7 days, their own posts
-    with views, and products sold with their coupon. Consultants only."""
+    with views, and products sold with their coupon. Consultants, and
+    Creators since 14 Oct 2026 (their Dashboard, Phase 16)."""
+    from apps.profiles import services as profile_services
+
     from . import insights
 
-    if services.my_consultant(request.user.pk) is None:
+    if services.my_consultant(request.user.pk) is None and not profile_services.is_creator(
+        request.user.pk
+    ):
         return Response(
             refusal_body("not_consultant", "No practice on this account."), status=404
         )

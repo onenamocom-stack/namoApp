@@ -1,6 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { TopBar } from '../components/Chrome.jsx'
+import { proPath } from '../lib/dashboard.js'
 import { Kicker, PopButton } from '../components/Pop.jsx'
 import { Field } from '../components/Primitives.jsx'
 import { payoutDetails, savePayoutDetails } from '../lib/consultants.js'
@@ -63,7 +64,7 @@ export default function ProPayoutDetails() {
 
   return (
     <>
-      <TopBar title="Payout details" sub="PAN and bank account" back backTo="/pro/profile/settings" />
+      <TopBar title="Payout details" sub="PAN and bank account" back backTo={proPath('/pro/profile/settings')} />
 
       {failed && (
         <p className="px-5 pt-6 text-meta t-body">Could not load your payout details. Open this page again.</p>

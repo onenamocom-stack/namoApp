@@ -104,3 +104,12 @@ class TestInsights:
     def test_consultants_only(self, api_client, seeker_token, roster):
         assert api_client.get(URL, **auth(seeker_token)).status_code == 404
         assert api_client.get(URL).status_code == 401
+
+    def test_a_creator_reads_their_own(self, api_client, seeker_token, roster):
+        """Creators see Insights on their Dashboard (14 Oct 2026, Phase 16)."""
+        from apps.profiles.models import Profile
+
+        cid = _publish(api_client, seeker_token, kind="post", caption="c").json()["id"]
+        Profile.objects.filter(id=SEEKER).update(influencer=True)
+        body = api_client.get(URL, **auth(seeker_token)).json()
+        assert [p["id"] for p in body["pieces"]] == [cid]
