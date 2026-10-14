@@ -1838,7 +1838,9 @@ post first, then **Find groups** (a search box, by name, city or about) and
   the same strip as People to follow — live groups you are not in (nor
   removed from), most members first, each with Join; the card opens the
   group.
-- Every group is public for now: anyone joins. Namo blocks a group from the
+- Every group is public: anyone joins. Private groups (join requests) are
+  not planned for now, and a profile shows no count of groups (both Rahul,
+  14 Oct 2026). Namo blocks a group from the
   console (*Groups*), which takes it and its posts out of the app.
 
 ## Festival frames (14 Oct 2026, Phase 15c)
