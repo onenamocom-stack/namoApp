@@ -46,6 +46,9 @@ none. A Creator posts every kind of content, reels included, and sees the
 reach of their posts and the people their code brought. Pros and Creators
 reach their own screens through **Dashboard** in the main app; a Pro takes
 calls in a separate calling app, Namo Consult at 1namo.com/desk (`06` Phase 16).
+Two kinds of profile, in Rahul's words (14 Oct 2026): a **Basic profile**
+(Seeker and Creator, `/profile`, `/u/:id`) and a **Pro profile** (the
+astrologer's page, `/consult/:id`).
 
 ### The seeker
 
