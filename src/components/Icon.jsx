@@ -140,6 +140,10 @@ const PATHS = {
     </>
   ),
   /* Edit — a pencil, for Profile's row of icons (13 Oct 2026). */
+  /* Infinity, the Namo mark as a line (14 Oct 2026, Rahul): the Chat tab. */
+  infinity: (
+    <path d="M12 12c-1.9-2.5-3.5-3.9-5.4-3.9a3.9 3.9 0 1 0 0 7.8c1.9 0 3.5-1.4 5.4-3.9s3.5-3.9 5.4-3.9a3.9 3.9 0 1 1 0 7.8c-1.9 0-3.5-1.4-5.4-3.9Z" />
+  ),
   /* Groups (14 Oct 2026, Rahul picked option A): three people. */
   groups: (
     <>

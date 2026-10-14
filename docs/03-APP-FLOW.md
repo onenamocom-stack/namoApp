@@ -1325,8 +1325,10 @@ one blue mark for console-verified consultants only. The Influencer tab on
 Profile is the **Creator** tab.
 
 **The tab bar — 13 Oct 2026 (Rahul).** Home · Bhakti · **Chat** · Consult ·
-**Market**. Chat is `/messages`, under folded hands (the `namaste` icon,
-drawn from Rahul's reference). Market is Shop and Academy in one tab: it opens on `/shop`,
+**Market**. Chat is `/messages`. Icons since 14 Oct 2026 (Rahul): **Bhakti**
+under folded hands (the `namaste` icon, drawn from Rahul's reference; it was
+the diya) and **Chat** under the Namo infinity as a line (`infinity`, a
+size up from the rest; it was the folded hands). Market is Shop and Academy in one tab: it opens on `/shop`,
 stays lit on `/academy`, and both pages carry a Shop · Academy switch under
 the header; every old link to either still works. Messages took the freed
 slot, in the middle. **Ask AI left the panel on 30 Sep
