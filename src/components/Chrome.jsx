@@ -159,7 +159,7 @@ function Tab({ to, label, icon, also = [] }) {
             <span className="relative">
               <Icon name={icon} size={19} weight={isActive ? 2.1 : 1.6} />
               {unread > 0 && (
-                <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white ring-2 ring-white tnum">
+                <span className="absolute -bottom-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white ring-2 ring-white tnum">
                   {unread > 9 ? '9+' : unread}
                 </span>
               )}
