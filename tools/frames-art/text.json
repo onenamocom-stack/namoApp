@@ -1,0 +1,64 @@
+{
+ "navratri": [
+  {
+   "text": "Shubh Navratri",
+   "top": 18,
+   "family": "Georgia",
+   "px": 70,
+   "colour": "#ffe296"
+  },
+  {
+   "text": "शुभ नवरात्रि",
+   "top": 1150,
+   "family": "Nirmala UI",
+   "px": 86,
+   "colour": "#ffe296"
+  },
+  {
+   "text": "Jai Mata Di",
+   "top": 1260,
+   "family": "Georgia",
+   "px": 46,
+   "colour": "#ffffff"
+  }
+ ],
+ "dussehra": [
+  {
+   "text": "Happy Dussehra",
+   "top": 150,
+   "family": "Georgia",
+   "px": 62,
+   "colour": "#ffecbe"
+  },
+  {
+   "text": "विजयादशमी की शुभकामनाएँ",
+   "top": 1140,
+   "family": "Nirmala UI",
+   "px": 72,
+   "colour": "#ffecbe"
+  },
+  {
+   "text": "Truth wins",
+   "top": 1240,
+   "family": "Georgia",
+   "px": 44,
+   "colour": "#ffffff"
+  }
+ ],
+ "diwali": [
+  {
+   "text": "Shubh Deepawali",
+   "top": 110,
+   "family": "Georgia",
+   "px": 68,
+   "colour": "#ffd66e"
+  },
+  {
+   "text": "शुभ दीपावली",
+   "top": 1080,
+   "family": "Nirmala UI",
+   "px": 84,
+   "colour": "#ffd66e"
+  }
+ ]
+}
