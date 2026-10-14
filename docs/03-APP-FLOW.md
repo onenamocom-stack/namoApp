@@ -712,7 +712,7 @@ specialization as chips (split on commas), the bio and the credentials
 (13 Oct 2026, Rahul; replaced the milestone badge). A verified consultant has a **blue verified mark** beside the
 name, here and on `/consult` cards; the top bar's second line is the category,
 never the word "Verified" (11 Oct 2026, Rahul). Above the tabs, the consultant's **intro** — the video (plays
-in place) or photo they uploaded from Settings → *Intro video or photo*; nothing
+in place) or photo they uploaded from Edit profile → *Intro video or photo* (Settings until 14 Oct 2026); nothing
 when there is none (11 Oct 2026; it was a "Meet X · 1:24" placeholder). Its
 **Posts** tab (was "Work", a list of titles) shows each
 post in full, as the feed does (11 Oct 2026). **About** is the facts without a
@@ -969,9 +969,11 @@ Reviews · About; a client sees three. On your own page
 Followers and Following open the list of those people (12 Oct 2026, Rahul);
 on anybody else's they are numbers only — the server lists only your own.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
-settings, which gain a first section, Profile: **Intro video or photo** (and
-**Influencer**, at `/profile/influencer` under a plain top bar whose back is
-settings). Kundli and Saved left that section on 11 Oct 2026 (Rahul): the
+settings, which gain a first section, Profile, for a Creator only:
+**Creator**, at `/profile/influencer` under a plain top bar whose back is
+settings. The intro row left it for Edit profile, and Settings lost
+*Notification history*, on 14 Oct 2026 (Rahul): the bell is the
+notifications. Kundli and Saved left that section on 11 Oct 2026 (Rahul): the
 horoscope section has the kundli, and Saved is a tab on the page. An applicant who is not approved, or a blocked
 consultant, keeps the seeker profile. The consultant app's preview of
 `/consult/:id` stays the client's view.
