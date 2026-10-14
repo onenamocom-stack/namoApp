@@ -45,6 +45,12 @@ export default function ChatPanel() {
 
   if (!chatOpen) return null
 
+  /* The seeker app's bell opens notifications alone, and the Consult page's
+     bubble opens Consultant and Sessions (14 Oct 2026, Rahul). Messages
+     between people are the Chat tab's. The pro app keeps all its tabs. */
+  const alertsOnly = !isPro && chatTab === 'alerts'
+  const title = isPro ? 'Messages' : alertsOnly ? 'Notifications' : 'Consult'
+
   return (
     <div className="absolute inset-0 z-50 flex justify-end">
       <button
@@ -61,7 +67,7 @@ export default function ChatPanel() {
       <aside className="relative flex h-full w-[88%] max-w-[380px] animate-slide-in flex-col border-l border-stroke bg-white shadow-xl">
         <header className="flex-none border-b border-stroke">
           <div className="flex items-center justify-between px-4 py-3">
-            <p className="caps t-heading">Messages</p>
+            <p className="caps t-heading">{title}</p>
             <button
               type="button"
               onClick={() => setChatOpen(false)}
@@ -78,6 +84,7 @@ export default function ChatPanel() {
               "Clients" because she is not messaging one. */}
           {/* Padded and centred (4 Oct 2026): the labels sat flush on the
               panel's left edge. Same row on both sides of the app. */}
+          {!alertsOnly && (
           <div className="flex gap-2 px-4" role="tablist">
             {(isPro
               ? [
@@ -88,10 +95,8 @@ export default function ChatPanel() {
                 ]
               : [
                   { key: 'live', label: 'Consultant' },
-                  { key: 'messages', label: 'Messages' },
                   // Booked sessions, moved here from Consult (5 Oct 2026).
                   { key: 'sessions', label: 'Sessions' },
-                  { key: 'alerts', label: 'Alerts' },
                 ]
             ).map((t) => (
               <button
@@ -113,6 +118,7 @@ export default function ChatPanel() {
               </button>
             ))}
           </div>
+          )}
         </header>
 
         {chatTab === 'live' && <LiveConsultant isPro={isPro} />}

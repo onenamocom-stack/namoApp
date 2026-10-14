@@ -7,6 +7,7 @@ import PresenceToggle from './PresenceToggle.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { useEffect, useState } from 'react'
 import { subscribeToAlerts } from '../lib/notifications.js'
+import { fetchDmThreads } from '../lib/dms.js'
 
 /* App chrome: the top bar, the bottom nav, the sheet and the toast.
 
@@ -96,8 +97,31 @@ export const PRO_TABS = [
   { to: '/pro/profile', label: 'nav.profile', icon: 'consult' },
 ]
 
+/** Unread messages between people, for the Chat tab's badge (14 Oct 2026,
+ *  Rahul); 0 signed out. Polled as the Messages list is. */
+function useUnreadMessages(enabled) {
+  const { session } = useStore()
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!enabled || !session) return undefined
+    let alive = true
+    const load = () =>
+      fetchDmThreads('inbox')
+        .then((d) => alive && setN(d?.unread ?? 0))
+        .catch(() => {})
+    load()
+    const timer = setInterval(load, 30_000)
+    return () => {
+      alive = false
+      clearInterval(timer)
+    }
+  }, [enabled, session])
+  return n
+}
+
 function Tab({ to, label, icon, also = [] }) {
   const { t } = useStore()
+  const unread = useUnreadMessages(to === '/messages')
   const { pathname } = useLocation()
   // Market is lit on /academy as well as /shop.
   const alsoHere = also.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -132,7 +156,14 @@ function Tab({ to, label, icon, also = [] }) {
             />
             {/* The icon thickens rather than recolouring — one line set, two
                 states, and no second filled set to draw and keep in sync. */}
-            <Icon name={icon} size={19} weight={isActive ? 2.1 : 1.6} />
+            <span className="relative">
+              <Icon name={icon} size={19} weight={isActive ? 2.1 : 1.6} />
+              {unread > 0 && (
+                <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white ring-2 ring-white tnum">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </span>
             <span className="leading-none">{t(label)}</span>
           </>
           )
@@ -301,9 +332,21 @@ export function TabHeader({ action = null, search = true }) {
           <span className="absolute -right-0.5 -top-0.5 block h-2.5 w-2.5 rounded-full bg-live ring-2 ring-surface" />
         </button>
       ) : (
-        /* The seeker's bell opens the panel on Alerts; its other tabs
-           (consultant chat, messages, sessions) are one tap across. The
-           dot shows only when something is unread. */
+        <>
+        {/* The consultant chat bubble, on Consult only (14 Oct 2026, Rahul):
+            your chats with consultants and booked sessions. */}
+        {pathname === '/consult' && (
+          <button
+            type="button"
+            onClick={() => openChat('live')}
+            aria-label="Your consultations"
+            className="pill knob relative !h-9 !w-9 justify-center"
+          >
+            <Icon name="chat" size={18} />
+          </button>
+        )}
+        {/* The seeker's bell opens notifications alone (14 Oct 2026, Rahul).
+            The dot shows only when something is unread. */}
         <button
           type="button"
           onClick={() => openChat('alerts')}
@@ -317,6 +360,7 @@ export function TabHeader({ action = null, search = true }) {
             </span>
           )}
         </button>
+        </>
       )}
 
       {/* Identity comes from the store, not a hardcoded import — the same

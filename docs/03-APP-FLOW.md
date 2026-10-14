@@ -1285,11 +1285,16 @@ completed one, moved from `/consult` on 5 Oct 2026 — a consultant Clients /
 Messages / Alerts. The header's wallet knob is an icon, not the balance, since
 the same day.
 
-**The header's knobs — 13 Oct 2026 (Rahul).** In the seeker app the header
-keeps only a **bell**, on every tab: it opens the panel on Alerts, with the
-unread count on it (the old chat bubble's red dot was drawn always). The
-wallet, the consultant chat and sessions are icons on Profile. The pro app
-keeps the wallet and the bubble on every tab.
+**The header's knobs — 13 Oct 2026, revised 14 Oct (Rahul).** In the
+seeker app the header has a **bell** on every tab: it opens
+**Notifications** alone, no other tabs, with the unread count on it. On
+**Consult** only, a **chat bubble** sits beside it and opens the panel on
+**Consultant · Sessions** (your chats with consultants and booked
+sessions). Messages between people are not in either: their unread count is
+a red badge on the **Chat** tab in the bar, and a message alert no longer
+appears under the bell. The wallet, consultant chat and sessions are also
+icons on Profile. The pro app keeps the wallet, the bubble and all its
+panel tabs on every tab.
 
 **Ticks — 13 Oct 2026 (Rahul).** After a name: orange for a Pro (every
 approved consultant: Consult cards, their page, their posts in the feed),

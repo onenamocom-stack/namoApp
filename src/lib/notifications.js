@@ -11,6 +11,7 @@
  * The Alerts tab read seven hard-coded strings out of `mock.js` until
  * today — the same seven for every account, forever.
  */
+import { isPro } from '../side.js'
 import { supabase } from './supabase.js'
 
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL
@@ -58,7 +59,12 @@ export async function fetchAlerts({ limit = 50 } = {}) {
   const token = await accessToken()
   if (!token) return { items: [], unread: 0 }
   try {
-    return await api(`/notifications/?limit=${limit}`, { token })
+    const data = await api(`/notifications/?limit=${limit}`, { token })
+    if (isPro) return data
+    /* In the main app a message between people is counted on the Chat tab,
+       not under the bell (14 Oct 2026, Rahul). */
+    const items = (data?.items ?? []).filter((n) => n.kind !== 'dm.message')
+    return { ...data, items, unread: items.filter((n) => !n.read).length }
   } catch (err) {
     console.error('[alerts] load failed:', err?.message)
     return { items: [], unread: 0 }
