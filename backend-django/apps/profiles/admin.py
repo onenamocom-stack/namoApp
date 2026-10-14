@@ -1,15 +1,15 @@
 """People, in the console — the video flag and the block switch.
 
-Only three things are editable here and all are moderation decisions:
-the two switches and the username (11 Oct 2026 — to take back a name that
-impersonates somebody or is abusive; the form runs the same rules as the
-app). A
-profile's name, phone and birth details are the person's own and are
+Editable here: the two switches and the username (11 Oct 2026 — to take
+back a name that impersonates somebody or is abusive; the form runs the
+same rules as the app), and the bio, gender and interests, which the
+read-only list below does not cover. A profile's name, phone and birth details are the person's own and are
 read-only: the console is not a place to correct somebody's birth time for
 them, and an admin who can rewrite a birth chart can rewrite every reading
 derived from it without anybody noticing.
 """
 
+from django import forms
 from django.contrib import admin as dj, messages
 
 from apps.console.audit import record
@@ -18,15 +18,59 @@ from apps.console.site import at_least, site
 from apps.content import services as content_services
 
 from . import services
-from .models import Profile
+from .models import GENDERS, Profile
+
+
+class ProfileForm(forms.ModelForm):
+    """An empty box saves as NULL, not ''. Django's text field saves '',
+    and `profiles_gender_check` refuses '' — so ticking Influencer on
+    anybody who never gave a gender failed with "Constraint
+    profiles_gender_check is violated" (14 Oct 2026, Rahul). Gender is a
+    list for the same reason; '' in `username` would collide with the next
+    blank one on its unique index."""
+
+    gender = forms.TypedChoiceField(
+        choices=[("", "Not given")] + [(g, g.title()) for g in GENDERS],
+        required=False,
+        empty_value=None,
+    )
+
+    class Meta:
+        model = Profile
+        fields = "__all__"
+        # The column is `influencer`; the word on every screen is Creator
+        # (13 Oct in the app, 14 Oct here, Rahul).
+        labels = {"influencer": "Creator"}
+
+    def clean_username(self):
+        return self.cleaned_data.get("username") or None
+
+    def clean_bio(self):
+        return self.cleaned_data.get("bio") or None
+
+
+class CreatorFilter(dj.SimpleListFilter):
+    """The `influencer` filter, under the name the console uses."""
+
+    title = "creator"
+    parameter_name = "creator"
+
+    def lookups(self, request, model_admin):
+        return (("yes", "Yes"), ("no", "No"))
+
+    def queryset(self, request, queryset):
+        if self.value() in ("yes", "no"):
+            return queryset.filter(influencer=self.value() == "yes")
+        return queryset
 
 
 @dj.register(Profile, site=site)
 class ProfileAdmin(dj.ModelAdmin):
+    form = ProfileForm
     list_display = (
         "name", "username", "phone", "video", "is_influencer", "brought", "standing", "complaints", "created_at",
     )
-    list_filter = ("video_enabled", "influencer", "admin", "created_at")
+    list_filter = ("video_enabled", CreatorFilter, "admin", "created_at")
     search_fields = ("name", "username", "phone", "email")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
@@ -50,6 +94,11 @@ class ProfileAdmin(dj.ModelAdmin):
         if change and "username" in form.changed_data:
             record(request, "username.change", "profile", obj.pk,
                    was=form.initial.get("username"), now=obj.username)
+        # The two switches ticked on this page are audited as the list's
+        # actions are.
+        for field, verb in (("influencer", "creator"), ("video_enabled", "video")):
+            if change and field in form.changed_data:
+                record(request, f"profile.{verb} {'on' if getattr(obj, field) else 'off'}", "profile", obj.pk)
 
     def has_add_permission(self, request):
         """A profile is created when somebody signs up with a phone they
@@ -83,7 +132,7 @@ class ProfileAdmin(dj.ModelAdmin):
     def brought(self, obj):
         """An influencer's numbers, the same ones their tab shows: people who
         joined with their code, and how many of those have paid. Filter the
-        list by Influencer to see them all."""
+        list by Creator to see them all."""
         if not obj.influencer:
             return "—"
         from apps.referrals.influencer import totals_for

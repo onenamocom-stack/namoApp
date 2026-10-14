@@ -21,7 +21,7 @@ def influencer_stats(request):
 
     if not Profile.objects.filter(pk=request.user.pk, influencer=True).exists():
         return Response(
-            refusal_body("not_influencer", "This account is not set up as an influencer."),
+            refusal_body("not_influencer", "This account is not set up as a creator."),
             status=403,
         )
     return Response(influencer.stats(request.user.pk))

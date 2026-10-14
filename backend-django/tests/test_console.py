@@ -15,6 +15,7 @@ The isolation claim is tested too — a Supabase JWT, which is every
 credential the phone app has, opens nothing here.
 """
 
+import re
 import uuid
 
 import pytest
@@ -286,3 +287,36 @@ class TestProfileReview:
         assert review.status == "pending"
         consultant.refresh_from_db()
         assert consultant.category == before
+
+
+@pytest.mark.django_db
+class TestProfilePage:
+    def test_ticking_influencer_on_a_profile_with_no_gender_saves(self):
+        """14 Oct 2026, Rahul: the change page sent '' for an empty gender
+        and `profiles_gender_check` refused the whole save."""
+        client, _ = _admin(Tier.FULFILMENT)
+        person = Profile.objects.create(id=uuid.uuid4(), phone="919000000123", name="Rudra")
+        url = reverse("namo:profiles_profile_change", args=[person.pk])
+        form = client.get(url).context["adminform"].form
+        data = {k: ("" if v is None else v) for k, v in form.initial.items() if k in form.fields}
+        data.update({"influencer": "on", "gender": "", "bio": "", "username": "", "interests": ""})
+        data = {k: v for k, v in data.items() if v is not False}
+        response = client.post(url, data)
+        assert response.status_code == 302, response.context["adminform"].form.errors
+        person.refresh_from_db()
+        assert person.influencer is True
+        assert person.gender is None and person.username is None
+        assert AdminAction.objects.filter(action="profile.creator on", target_id=person.pk).exists()
+
+    def test_the_console_says_creator_not_influencer(self):
+        """14 Oct 2026, Rahul: "Influencer word ko full change karke creator"."""
+        client, _ = _admin(Tier.FULFILMENT)
+        person = Profile.objects.create(id=uuid.uuid4(), phone="919000000124", name="Rudra", influencer=True)
+        listing = client.get(reverse("namo:profiles_profile_changelist")).content.decode()
+        page = client.get(reverse("namo:profiles_profile_change", args=[person.pk])).content.decode()
+        # What a person reads: the text between tags, not names and values.
+        words = lambda html: re.sub(r"<[^>]*>", " ", re.sub(r"<script.*?</script>", " ", html, flags=re.S))  # noqa: E731
+        assert "nfluencer" not in words(listing) and "nfluencer" not in words(page)
+        assert "Creator" in page
+        only = client.get(reverse("namo:profiles_profile_changelist") + "?creator=yes").content.decode()
+        assert "Rudra" in only
