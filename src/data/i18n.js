@@ -338,7 +338,7 @@ export const strings = {
   },
   'prof.openChart': { en: 'Open full chart', hi: 'पूरा चार्ट खोलें' },
   'prof.tools': { en: 'Your astrology', hi: 'आपकी ज्योतिष' },
-  'prof.settingsTitle': { en: 'Settings', hi: 'सेटिंग्स' },
+  'prof.settingsTitle': { en: 'Profile settings', hi: 'प्रोफ़ाइल सेटिंग्स' }, // was Settings (14 Oct 2026, Rahul)
   'prof.walletNote': { en: 'Balance, add money, history', hi: 'बैलेंस, पैसे जोड़ें, इतिहास' },
   'prof.explore': { en: 'More from NAMO', hi: 'NAMO पर और' },
   'inf.yourCode': { en: 'Your code', hi: 'आपका कोड' },

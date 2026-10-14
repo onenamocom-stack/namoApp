@@ -285,11 +285,12 @@ function Status({ review }) {
 }
 
 /** The Basic profile, at the top of Edit profile (14 Oct 2026, Rahul: "so
- *  that all profile edits are in one place"): name and birth details. */
+ *  that all profile edits are in one place"): it opens Profile settings
+ *  whole, where the name, birth details, username and the rest are. */
 function BasicLink() {
   return (
     <div className="pt-4">
-      <Row to="/onboarding/details?edit=1" title="Basic profile" note="Your name and birth details" />
+      <Row to="/profile/settings" title="Basic profile" note="Name, birth details, username, orders, language" />
     </div>
   )
 }

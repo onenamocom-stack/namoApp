@@ -1244,9 +1244,9 @@ real paid call end to end.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
 
-**Top, since 14 Oct 2026 (Rahul; main app):** a **Basic profile** row
-(name and birth details, `/onboarding/details?edit=1`), so every profile
-edit starts here; then the section **Your Pro Profile** (it was "Your
+**Top, since 14 Oct 2026 (Rahul; main app):** a **Basic profile** row that
+opens **Profile settings** (`/profile/settings`, the page called Settings
+until that day) whole, so every profile edit starts here; then the section **Your Pro Profile** (it was "Your
 profile"), opening with **Intro video or photo**. The username is not here:
 it belongs to the Basic profile, in Settings.
 In both apps, from **Edit profile** on your own page and from `/pro/profile`.
