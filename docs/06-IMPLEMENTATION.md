@@ -503,7 +503,7 @@ paid consultation still meters exactly as before (its tests unchanged).
   creator moderates it; posts go to the group and its members' feeds.
 - Festival frames and stickers for a post on the festival's day. **Frames built 14 Oct 2026** (`03-APP-FLOW` Festival frames); stickers not started.
 - A japa or sadhana streak on the profile. **Built 14 Oct 2026** (`sadhana_days`).
-- Experts beyond astrologers: pandit, yoga teacher, vaidya, vastu, life
+- **Held 14 Oct 2026 (Rahul: "abhi rahne do").** Experts beyond astrologers: pandit, yoga teacher, vaidya, vastu, life
   coach, each verified as astrologers are. Booking a pandit is the
   §10 reversal and needs its own rules in `01-PRD.md` first.
 
