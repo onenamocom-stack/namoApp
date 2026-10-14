@@ -676,6 +676,22 @@ OTP requests per phone per hour. Booking attempts per user per minute. AI
 questions per user, which is a quota rather than a rate limit and is enforced
 server-side because it is money.
 
+**Writing limits (14 Oct 2026, Phase 15d)**, per person, in
+`apps/core/limits.py`. Refused with **429**, reason `too_fast`, and the
+rule's own sentence; nothing is written.
+
+| What | Limits |
+|---|---|
+| Comments (a post's, and a Bhakti picture's, counted apart) | 10 a minute, 300 a day |
+| Posts (admins exempt) | 10 an hour, 40 a day |
+| Messages between people | 30 a minute, 1,000 a day |
+| New conversations started | 30 a day |
+
+Counted from the person's own rows in Postgres, not the cache: the cache is
+each Cloud Run instance's own memory, so a limit kept there would multiply
+with the instances. Each count has its index. DRF's blanket throttle
+(600 a minute signed in, 60 signed out) still sits under everything.
+
 ### Performance
 
 The app ships **9.4 MB of images** — 5.8 MB of tarot faces and 3.6 MB of murtis

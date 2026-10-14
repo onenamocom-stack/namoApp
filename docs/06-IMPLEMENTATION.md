@@ -516,7 +516,7 @@ streak breaks after a missed IST day and not before.
   storage and bandwidth grow with every user.
 - A daily moderation queue a person clears in thirty minutes: reports,
   new accounts posting links, repeated text.
-- Rate limits on posting, commenting and messaging.
+- Rate limits on posting, commenting and messaging. **Built 14 Oct 2026** (`02-TRD` Rate limits).
 
 **Done when:** a 100 MB phone video is stored under 15 MB and still plays,
 and an account posting twenty comments in a minute is stopped.

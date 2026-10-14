@@ -2157,3 +2157,11 @@ astrologer. API: `GET /v1/referrals/creator-earnings/` (Creators only):
 `this_month_paise` (IST month), `lifetime_paise`, `pending_paise` (matured
 not yet), `rows`. `referrals/me/` and `referrals/link/` serve a Creator as
 an approved consultant.
+
+## Writing-limit indexes (14 Oct 2026)
+
+Phase 15d; migrations `content/0008`, `bhakti/0007`, `dms/0002`. One index
+per count the writing limits take (`02-TRD` Rate limits):
+`content (author_id, created_at)`, `content_comments (author_id,
+created_at)`, `bhakti_comments (author_id, created_at)`, `dm_messages
+(sender_id, created_at)`, `dm_threads (started_by, created_at)`.

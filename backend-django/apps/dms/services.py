@@ -10,6 +10,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.core import limits
 from apps.reactions.models import Reaction
 
 from .models import DmBlock, DmMessage, DmThread
@@ -94,6 +95,9 @@ def start(me, to):
         raise Refused(BLOCKED_REFUSAL, 403)
     if _approved_consultant(to) and not _approved_consultant(me) and not _follows(to, me):
         raise Refused(CONSULTANT_REFUSAL, 403)
+    too_fast = limits.first_broken(DmThread.objects.filter(started_by=me), limits.NEW_CONVERSATIONS)
+    if too_fast:
+        raise Refused(too_fast, 429)
     try:
         with transaction.atomic():
             return DmThread.objects.create(
@@ -125,6 +129,9 @@ def send(me, thread_id, body):
     if blocked_between(me, other):
         raise Refused(BLOCKED_REFUSAL, 403)
     now = timezone.now()
+    too_fast = limits.first_broken(DmMessage.objects.filter(sender_id=me), limits.MESSAGES, now)
+    if too_fast:
+        raise Refused(too_fast, 429)
     starter = _u(thread.started_by) == _u(me)
     if thread.accepted_at is None:
         if starter:

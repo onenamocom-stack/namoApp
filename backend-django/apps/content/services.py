@@ -42,6 +42,7 @@ from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
+from apps.core import limits
 from apps.profiles import services as profile_services
 from apps.reactions.models import Reaction
 
@@ -344,6 +345,8 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
     _assert_kind_allowed(author_id, role, kind)
     if status not in (Content.Status.LIVE, Content.Status.DRAFT):
         raise PermissionDenied("Removed content cannot be republished.")
+    if role != "admin":
+        limits.check(Content.objects.filter(author_id=author_id), limits.POSTS)
     products = _checked_products(author_id, role, product_ids)
     with transaction.atomic():
         row = Content(
@@ -554,6 +557,7 @@ def add_comment(content_id, author_id, body):
     post = public_content().filter(pk=content_id).only("id", "author_id").first()
     if post is None:
         raise NotFound("That post is not available.")
+    limits.check(Comment.objects.filter(author_id=author_id), limits.COMMENTS)
     row = _with_name(Comment.objects.create(content_id=post.id, author_id=author_id, body=text))
 
     if str(post.author_id).replace("-", "") != str(author_id).replace("-", ""):

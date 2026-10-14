@@ -38,6 +38,12 @@ def exception_handler(exc, context):
     if isinstance(exc, PermissionDenied):
         message = exc.detail if isinstance(exc.detail, str) else "You do not have access to this."
         return Response(refusal_body("forbidden", message), status=403)
+    # A person over a writing limit (apps/core/limits.py, Phase 15d): the
+    # rule's own sentence, so they know which limit and when it lifts.
+    from .limits import TooFast
+
+    if isinstance(exc, TooFast):
+        return Response(refusal_body("too_fast", str(exc.detail)), status=429)
     if isinstance(exc, Throttled):
         return Response(
             refusal_body("throttled", "Too many requests. Wait a moment and try again."),

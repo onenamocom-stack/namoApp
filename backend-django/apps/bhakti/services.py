@@ -136,6 +136,9 @@ def add_comment(asset_id, author_id, body):
         raise ValidationError({"body": COMMENT_LONG_REFUSAL})
     if not BhaktiAsset.objects.filter(pk=asset_id, active=True).exists():
         raise NotFound("That is not in the library.")
+    from apps.core import limits
+
+    limits.check(BhaktiComment.objects.filter(author_id=author_id), limits.COMMENTS)
     row = BhaktiComment.objects.create(asset_id=asset_id, author_id=author_id, body=text)
     return _named(BhaktiComment.objects.filter(pk=row.pk)).get()
 

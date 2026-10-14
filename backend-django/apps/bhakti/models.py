@@ -173,7 +173,11 @@ class BhaktiComment(models.Model):
 
     class Meta:
         db_table = "bhakti_comments"
-        indexes = [models.Index(fields=["asset", "status", "created_at"], name="bhakti_comments_asset_idx")]
+        indexes = [
+            models.Index(fields=["asset", "status", "created_at"], name="bhakti_comments_asset_idx"),
+            # The writing limit's count (apps/core/limits.py, Phase 15d).
+            models.Index(fields=["author_id", "created_at"], name="bhakti_comments_author_idx"),
+        ]
 
     def __str__(self):
         return self.body[:60]

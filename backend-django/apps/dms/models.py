@@ -38,6 +38,7 @@ class DmThread(models.Model):
         indexes = [
             models.Index(fields=["a_id", "-last_message_at"], name="dm_threads_a_idx"),
             models.Index(fields=["b_id", "-last_message_at"], name="dm_threads_b_idx"),
+            models.Index(fields=["started_by", "created_at"], name="dm_threads_starter_idx"),
         ]
 
 
@@ -56,6 +57,8 @@ class DmMessage(models.Model):
         ]
         indexes = [
             models.Index(fields=["thread", "created_at"], name="dm_messages_thread_idx"),
+            # The writing limit's count (apps/core/limits.py, Phase 15d).
+            models.Index(fields=["sender_id", "created_at"], name="dm_messages_sender_idx"),
         ]
 
 

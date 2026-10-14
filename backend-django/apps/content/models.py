@@ -82,6 +82,8 @@ class Content(models.Model):
                 name="content_author_idx",
                 condition=models.Q(status="live"),
             ),
+            # The writing limit's count (apps/core/limits.py, Phase 15d).
+            models.Index(fields=["author_id", "created_at"], name="content_author_created_idx"),
             models.Index(
                 fields=["-published_at"],
                 name="content_published_idx",
@@ -224,6 +226,8 @@ class Comment(models.Model):
                 name="content_comments_thread_idx",
                 condition=models.Q(status="live"),
             ),
+            # The writing limit's count (apps/core/limits.py, Phase 15d).
+            models.Index(fields=["author_id", "created_at"], name="content_comments_author_idx"),
         ]
 
 
