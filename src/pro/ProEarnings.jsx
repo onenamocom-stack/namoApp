@@ -1,10 +1,8 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
-import { answerRatePct, earningsSeries, proMetrics, referrals } from '../data/mock.js'
 import ProHeader from '../components/ProHeader.jsx'
 import { proPath } from '../lib/dashboard.js'
-import Icon from '../components/Icon.jsx'
-import { Kicker, PopAvatar, PopButton, PopCard, PopTag, Stat } from '../components/Pop.jsx'
+import { Kicker, PopButton, PopCard, Stat } from '../components/Pop.jsx'
 import { Field, Segmented } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import { earningsPage, earningsSummary, myInsights } from '../lib/consultants.js'
@@ -153,13 +151,7 @@ function Earnings() {
     }
   }
 
-  const missed = proMetrics.callsRequested - proMetrics.callsAttended
-  // `Bars` wants {label, value}; the reply series is seven bare minutes.
-  const replySeries = proMetrics.replyByDay.map((value, i) => ({
-    label: earningsSeries[i].label,
-    value,
-  }))
-  const week = (sum?.last_7_days ?? []).map((d) => ({
+    const week = (sum?.last_7_days ?? []).map((d) => ({
     label: new Date(`${d.date}T12:00:00Z`).toLocaleDateString('en-IN', {
       weekday: 'short',
       timeZone: 'UTC',
@@ -236,44 +228,6 @@ function Earnings() {
         </section>
       )}
 
-      {/* ── How she is performing ───────────────────────────────────────
-          Answer rate and reply speed live with the money because that is what
-          they are: the two things that decide whether a request becomes a
-          session. A missed call is a refund and a slow reply is a cancelled
-          booking. */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>Performance</Kicker>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <PopCard className="p-4">
-            <p className="caps-sm t-faint">Median reply</p>
-            <p className="mt-1.5 text-lead tnum t-heading">{proMetrics.medianReplyMins} min</p>
-            <p className="mt-1 caps-sm tnum text-ok">
-              Target {proMetrics.replyTargetMins} min
-            </p>
-          </PopCard>
-          <PopCard className="p-4">
-            <p className="caps-sm t-faint">Calls attended</p>
-            <p className="mt-1.5 text-lead tnum t-heading">
-              {proMetrics.callsAttended}
-              <span className="t-faint">/{proMetrics.callsRequested}</span>
-            </p>
-            <p className="mt-1 caps-sm tnum t-body">{answerRatePct}% answered</p>
-          </PopCard>
-        </div>
-
-        <div className="mt-3">
-          <Field k="Sessions completed" v={proMetrics.sessionsCompleted} />
-          <Field k="Repeat clients" v={`${proMetrics.repeatClientPct}%`} />
-          <Field k="Rating" v={proMetrics.ratingAvg} />
-        </div>
-
-        <p className="mt-4 caps-sm t-faint">Median reply, last 7 days · minutes</p>
-        <Bars data={replySeries} />
-        <p className="mt-3 text-meta t-faint">
-          {missed} requests went unanswered. Each one was a session someone booked
-          elsewhere.
-        </p>
-      </section>
 
       {/* ── The entries behind the total ───────────────────────────────── */}
       <section className="border-b border-rule px-5 py-6">
@@ -312,63 +266,6 @@ function Earnings() {
         )}
       </section>
 
-      {/* ── Referrals ──────────────────────────────────────────────────────
-          Sits with the money because that is what it is: another line of
-          revenue, not a social feature. */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>Referrals</Kicker>
-
-        <PopCard className="mt-4 p-4">
-          <div className="flex items-center gap-3">
-            <span className="min-w-0 flex-1">
-              <span className="caps-sm t-faint">Your code</span>
-              <span className="mt-1 block font-display text-lead tnum t-heading">
-                {referrals.code}
-              </span>
-            </span>
-            <button
-              type="button"
-              aria-label="Share your code"
-              onClick={() => showToast('Code copied')}
-              className="pill knob !h-10 !w-10 flex-none justify-center"
-            >
-              <Icon name="share" size={17} />
-            </button>
-          </div>
-          <p className="mt-3 text-meta t-body">
-            Bring another reader in. You earn ₹{referrals.perJoin.toLocaleString('en-IN')} once
-            they finish their first paid session — not when they sign up.
-          </p>
-        </PopCard>
-
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat label="Invited" value={referrals.invited} />
-          <Stat label="Joined" value={referrals.joined} />
-          <Stat label="Earned" value={`₹${(referrals.earned / 1000).toFixed(1)}k`} />
-        </div>
-
-        <ul className="mt-5">
-          {referrals.list.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center gap-3 border-b border-rule py-3 last:border-b-0"
-            >
-              <PopAvatar initials={r.initials} size={34} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-meta t-heading">{r.name}</span>
-                <span className="mt-0.5 block caps-sm t-faint">Joined {r.joined}</span>
-              </span>
-              {r.earned > 0 ? (
-                <span className="flex-none text-meta tnum text-ok">
-                  +₹{r.earned.toLocaleString('en-IN')}
-                </span>
-              ) : (
-                <PopTag>{r.status}</PopTag>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       {/* ── Payouts ──────────────────────────────────────────────────────
           Nothing is paid yet: sending money is P3. This says how it will
