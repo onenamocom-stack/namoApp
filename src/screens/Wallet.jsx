@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
-import { Sheet, TopBar } from '../components/Chrome.jsx'
+import { BackButton, Sheet, TopBar } from '../components/Chrome.jsx'
+import { useNavigate } from 'react-router-dom'
+import { markConsultReturn } from '../lib/consultReturn.js'
 import { Kicker, PopButton, PopCard } from '../components/Pop.jsx'
 import { topUpAmounts } from '../data/mock.js'
 import { rupees, useStore } from '../store.jsx'
@@ -34,16 +36,30 @@ export default function Wallet() {
   const amount = Number(custom)
   const valid = Number.isFinite(amount) && amount >= 100 && amount <= 100000
 
+  /* Opened from the Consult list (14 Oct 2026): back, and a finished top-up,
+     return to it, and Consult reopens the list (lib/consultReturn.js). */
+  const fromConsult = new URLSearchParams(window.location.search).get('from') === 'consult'
+  const navigate = useNavigate()
+  const backToConsult = () => {
+    markConsultReturn()
+    navigate('/consult', { replace: true })
+  }
+
   const add = async (rupeeAmount) => {
     if (await topup(Math.round(rupeeAmount * 100))) {
       setSheetOpen(false)
       setCustom('')
+      if (fromConsult) backToConsult()
     }
   }
 
   return (
     <>
-      <TopBar title={t('a.wallet')} back backTo="/home" />
+      {fromConsult ? (
+        <TopBar title={t('a.wallet')} left={<BackButton onClick={backToConsult} />} />
+      ) : (
+        <TopBar title={t('a.wallet')} back backTo="/home" />
+      )}
 
       {/* ── Balance ───────────────────────────────────────────────────── */}
       <section className="px-5 py-6">

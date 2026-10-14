@@ -2,6 +2,7 @@ import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { markConsultReturn } from '../lib/consultReturn.js'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -869,15 +870,21 @@ function WalletCard({ onGo }) {
         </p>
         <div className="mt-3 flex gap-2">
           <Link
-            to="/wallet?add=1"
-            onClick={onGo}
+            to="/wallet?add=1&from=consult"
+            onClick={() => {
+              markConsultReturn()
+              onGo()
+            }}
             className="flex-1 rounded-xl bg-gold-fill py-2.5 text-center text-meta font-semibold text-white shadow-sm"
           >
             Add money
           </Link>
           <Link
-            to="/wallet"
-            onClick={onGo}
+            to="/wallet?from=consult"
+            onClick={() => {
+              markConsultReturn()
+              onGo()
+            }}
             className="flex-1 rounded-xl bg-white py-2.5 text-center text-meta font-semibold t-heading ring-1 ring-rule"
           >
             Details

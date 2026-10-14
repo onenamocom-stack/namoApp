@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { categories, SESSION } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
+import { takeConsultReturn } from '../lib/consultReturn.js'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton } from '../components/Pop.jsx'
@@ -125,8 +126,12 @@ const BANNERS = [
    call): video, audio and chat run on the per-minute meter now; Book takes a
    slot later at 20% under that rate (docs/01-PRD.md §4.1). */
 export default function Consult() {
-  const { showToast, t, lang } = useStore()
+  const { showToast, t, lang, openChat } = useStore()
   const navigate = useNavigate()
+  // Back from the wallet opened on the Consult list: open the list again.
+  useEffect(() => {
+    if (takeConsultReturn()) openChat('live')
+  }, [openChat])
   // The console's banners first, then the built-in three (4 Oct 2026).
   const banners = useBanners('consult', BANNERS, lang)
   const { start, asking } = useStartSession()

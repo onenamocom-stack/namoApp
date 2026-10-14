@@ -1309,8 +1309,9 @@ seeker app the header has a **bell** on every tab: it opens
 **Notifications** alone, no other tabs, with the unread count on it. On
 **Consult** only, a **wallet** button sits beside it (a chat bubble until 14
 Oct 2026) and opens **Consult**, one list with no tabs: first the **wallet
-card** (balance, **Add money** to `/wallet?add=1`, **Details** to `/wallet`),
-then **Upcoming** (booked sessions still ahead, nearest first,
+card** (balance, **Add money** to `/wallet?add=1`, **Details** to `/wallet`;
+back from the wallet, by its ← or the phone's, and a finished top-up return
+to this list, reopened), then **Upcoming** (booked sessions still ahead, nearest first,
 "Remember to attend", or "Waiting for them to confirm"), **Recently
 connected** (the consultants you have talked to), **Past bookings** (with
 Review where one is owed). No "Find a consultant": Consult is a tab. Both
