@@ -2194,3 +2194,14 @@ reader's own groups. API `/v1/groups/`, all signed in: `GET ?mine=1 | ?q= | ?sug
 `members/`, `members/remove/`, `members/admin/`, `posts/`,
 `posts/remove/`. Publishing takes `group_id`; only an active member of a live
 group may use it.
+
+## Festival frames — `frames` (14 Oct 2026)
+
+Phase 15c, migration `appearance/0003`. RLS on with **no policies**.
+
+| Table | Columns |
+|---|---|
+| `frames` | `id uuid pk`; `name` (≤60); `image_url` (the PNG on R2, set by the console upload); `sort`; `active`; `starts_at`, `ends_at` (null = open); `created_at` |
+
+`GET /v1/appearance/` carries `frames`: the live ones with a picture, as
+`{id, name, image_url}`.

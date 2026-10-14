@@ -113,12 +113,12 @@ def navratri():
     band(img, 0, H, (160, 20, 60), (110, 10, 70))
     d = ImageDraw.Draw(img)
     for x in range(30, W, 90):  # small mirror-work dots along the edges
-        for y in (24, H - 28):
+        for y in (10, H - 14):
             d.ellipse((x - 7, y - 7, x + 7, y + 7), fill=(255, 215, 120))
     garland(d, 34, 150, 34, H - 230, 22, 22, rng)
     garland(d, W - 34, 150, W - 34, H - 230, 22, 22, rng)
     swag(d, 34, W - 34, 120, 70, 26, 24, rng)
-    text_center(d, 18, "Shubh Navratri", ("Georgia", 70), (255, 226, 150))
+    text_center(d, 30, "Shubh Navratri", ("Georgia", 70), (255, 226, 150))
     text_center(d, H - 200, "शुभ नवरात्रि", ("Nirmala UI", 86), (255, 226, 150))
     text_center(d, H - 90, "Jai Mata Di", ("Georgia", 46), (255, 255, 255))
     hole(img, 70, 210, 230, 36)

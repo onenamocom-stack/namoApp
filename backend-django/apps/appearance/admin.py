@@ -18,7 +18,7 @@ from apps.console.site import admin_row, at_least, site
 from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
 
-from .models import Banner, LinkCard, Theme
+from .models import Banner, Frame, LinkCard, Theme
 
 COLOUR = forms.TextInput(attrs={"type": "color", "style": "width:72px;height:36px;padding:2px"})
 
@@ -242,4 +242,67 @@ class LinkCardAdmin(_Tiered, AuditedAdmin, dj.ModelAdmin):
                 size_bytes=upload.size, status=MediaStatus.READY,
             )
             record(request, "link_card.picture", "link_card", target_id=obj.pk, bucket_key=key)
+        super().save_model(request, obj, form, change)
+
+
+class FrameForm(forms.ModelForm):
+    upload = forms.FileField(
+        required=False, label="Frame picture",
+        help_text="A PNG, 1080 x 1350, with a see-through middle where the photo shows.",
+    )
+
+    class Meta:
+        model = Frame
+        fields = ("name", "sort", "active", "starts_at", "ends_at")
+
+    def clean(self):
+        data = super().clean()
+        starts, ends = data.get("starts_at"), data.get("ends_at")
+        if starts and ends and ends <= starts:
+            raise forms.ValidationError({"ends_at": "The end must be after the start."})
+        upload = data.get("upload")
+        if upload and (upload.content_type or "") != "image/png":
+            raise forms.ValidationError({"upload": "A frame is a PNG, so the middle can be see-through."})
+        if not upload and not getattr(self.instance, "image_url", ""):
+            raise forms.ValidationError({"upload": "Upload the frame picture."})
+        return data
+
+
+@dj.register(Frame, site=site)
+class FrameAdmin(_Tiered, AuditedAdmin, dj.ModelAdmin):
+    """Festival frames for photo posts (14 Oct 2026, Phase 15c). Live between
+    the start and the end; offered under a chosen photo, before the app's
+    built-in Navratri, Dussehra and Diwali frames."""
+
+    audit_target = "frame"
+    form = FrameForm
+    list_display = ("name", "picture", "status", "sort", "starts_at", "ends_at")
+    ordering = ("sort", "-created_at")
+    fieldsets = (
+        ("Frame", {"fields": ("name", "upload", "sort")}),
+        ("When", {"fields": ("active", "starts_at", "ends_at")}),
+    )
+
+    @dj.display(description="Picture")
+    def picture(self, obj):
+        if not obj.image_url:
+            return "—"
+        return format_html('<img src="{}" style="height:56px;border-radius:4px;background:#ccc" alt="">', obj.image_url)
+
+    @dj.display(description="Status")
+    def status(self, obj):
+        return _live(obj)
+
+    def save_model(self, request, obj, form, change):
+        upload = form.cleaned_data.get("upload")
+        if upload:
+            admin = admin_row(request)
+            owner = str(admin.profile_id) if admin else "console"
+            key = media.make_bucket_key(owner, "image", upload.name)
+            obj.image_url = media.get_provider().put_bytes(key, upload.read(), "image/png")
+            MediaAsset.objects.create(
+                owner=owner, kind=MediaKind.IMAGE, bucket_key=key, mime="image/png",
+                size_bytes=upload.size, status=MediaStatus.READY,
+            )
+            record(request, "frame.picture", "frame", target_id=obj.pk, bucket_key=key)
         super().save_model(request, obj, form, change)

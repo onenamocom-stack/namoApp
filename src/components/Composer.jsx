@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { frameFile, useFrames } from '../lib/frames.js'
 import { apiSupportsTags, editContent, publish, uploadMedia } from '../lib/content.js'
 import { fetchProducts } from '../lib/shop.js'
 import { BackButton } from './Chrome.jsx'
@@ -90,6 +91,12 @@ export default function Composer({
   const [uploading, setUploading] = useState(false)
   // 0 to 1 while a video is being made smaller before it uploads (Phase 15d).
   const [shrinking, setShrinking] = useState(null)
+  // Festival frames (Phase 15c): the photo as chosen, its plain upload, and
+  // the frame on it now, so "No frame" goes back without a second upload.
+  const frames = useFrames()
+  const photo = useRef(null)
+  const [plainUrl, setPlainUrl] = useState(null)
+  const [frameId, setFrameId] = useState(null)
   const gallery = useRef(null)
   const camera = useRef(null)
   const blog = mode === 'article'
@@ -145,11 +152,33 @@ export default function Composer({
     try {
       const url = await uploadMedia(file, video ? (p) => setShrinking(p) : null)
       setMedia({ url, type: video ? 'video/mp4' : file.type })
+      photo.current = video ? null : file
+      setPlainUrl(video ? null : url)
+      setFrameId(null)
     } catch (err) {
       showToast(err.message)
     } finally {
       setUploading(false)
       setShrinking(null)
+    }
+  }
+
+  async function chooseFrame(frame) {
+    if (uploading || !photo.current) return
+    if (!frame) {
+      setFrameId(null)
+      setMedia({ url: plainUrl, type: photo.current.type })
+      return
+    }
+    setUploading(true)
+    try {
+      const framed = await frameFile(photo.current, frame.image_url)
+      setMedia({ url: await uploadMedia(framed), type: 'image/jpeg' })
+      setFrameId(frame.id)
+    } catch (err) {
+      showToast(err.message)
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -290,7 +319,40 @@ export default function Composer({
                 ) : (
                   <img src={media.url} alt="What you are about to post" className="max-h-[60vh] w-full object-contain" />
                 )}
-                <RemoveMark onClick={() => setMedia(null)} label="Remove" />
+                <RemoveMark
+                  onClick={() => {
+                    setMedia(null)
+                    photo.current = null
+                    setFrameId(null)
+                  }}
+                  label="Remove"
+                />
+              </div>
+            )}
+            {/* Today's festival frames under a photo (Phase 15c). */}
+            {media && !isVideo(media) && photo.current && frames.length > 0 && !editing && (
+              <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1">
+                {[{ id: null, name: 'No frame' }, ...frames].map((f) => (
+                  <button
+                    key={f.id ?? 'none'}
+                    type="button"
+                    onClick={() => chooseFrame(f.id ? f : null)}
+                    disabled={uploading}
+                    aria-pressed={frameId === f.id}
+                    className={`flex w-[72px] flex-none flex-col items-center gap-1 rounded-xl p-1 disabled:opacity-50 ${
+                      frameId === f.id ? 'ring-2 ring-gold-fill' : ''
+                    }`}
+                  >
+                    <span className="block h-[90px] w-[72px] overflow-hidden rounded-lg bg-surface-2">
+                      {f.image_url ? (
+                        <img src={f.image_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <img src={plainUrl} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </span>
+                    <span className="w-full truncate text-center text-[10px] font-semibold t-sub">{f.name}</span>
+                  </button>
+                ))}
               </div>
             )}
           </>

@@ -1210,7 +1210,9 @@ until this day) and on a Creator's Profile, under the five icons.
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
 A chosen video is made smaller on the phone first, under the post as
-"Making the video smaller · 40%", then "Uploading…" (Phase 15d). A video
+"Making the video smaller · 40%", then "Uploading…" (Phase 15d). A chosen
+photo, on a festival's days, shows a row of **festival frames** under it
+(below). A video
 longer than 90 seconds is refused before upload: "Videos can be up to 90
 seconds. This one is 2 min 10 s."
 In that sheet a Pro and a Creator also get video and Tag product (a
@@ -1806,3 +1808,18 @@ post first, then **Find groups** (a search box, by name, city or about) and
   group.
 - Every group is public for now: anyone joins. Namo blocks a group from the
   console (*Groups*), which takes it and its posts out of the app.
+
+## Festival frames (14 Oct 2026, Phase 15c)
+
+Under a photo chosen in the composer (Home's +, a group's Post), on a
+festival's days: a row of frames, "No frame" first. Tapping one draws the
+photo cut to 4:5 under the frame, uploads that, and shows it; "No frame"
+goes back to the photo as chosen. Not for a video, a blog cover or an edit.
+
+The console's frames (*Frames*: a name, a 1080 × 1350 PNG with a
+see-through middle, a start and an end) come first; then the app's own,
+each in its IST window: **Shubh Navratri** 10–19 Oct, **Happy Dussehra**
+20–21 Oct, **Shubh Deepawali** 6–10 Nov 2026 (`src/lib/frames.js`). The
+built-in art is drawn by `tools/festival-frames.py`, with its English and
+Hindi set by Chrome in `tools/festival-frames-text.mjs` (this Pillow cannot
+shape Devanagari). Stickers are not built.

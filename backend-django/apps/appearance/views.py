@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Banner, Theme
+from .models import Banner, Frame, Theme
 
 
 def _banner(b):
@@ -32,6 +32,11 @@ def appearance(request):
     return Response(
         {
             "banners": [_banner(b) for b in Banner.objects.live()],
+            # Festival frames for photo posts (Phase 15c), before the app's own.
+            "frames": [
+                {"id": str(f.id), "name": f.name, "image_url": f.image_url}
+                for f in Frame.objects.live().exclude(image_url="")
+            ],
             "theme": None
             if theme is None
             else {

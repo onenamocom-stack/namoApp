@@ -135,3 +135,28 @@ class LinkCard(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Frame(models.Model):
+    """A festival frame for a photo post (14 Oct 2026, Phase 15c): a PNG,
+    1080 x 1350, with a transparent middle the photo shows through. Live
+    between its start and end, it is offered under a chosen photo in the
+    composer, before the app's built-in ones (src/data/frames.js)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=60, help_text="Shown under the frame, e.g. Shubh Deepawali.")
+    image_url = models.TextField(blank=True, default="", help_text="Set by uploading below.")
+    sort = models.PositiveSmallIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    objects = LiveQuerySet.as_manager()
+
+    class Meta:
+        db_table = "frames"
+        ordering = ("sort", "-created_at")
+
+    def __str__(self):
+        return self.name

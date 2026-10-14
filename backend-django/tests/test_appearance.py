@@ -135,3 +135,23 @@ class TestBhaktiConsole:
         asset = self._asset()
         client, _ = _admin(Tier.SUPPORT)
         assert client.get(reverse("namo:bhakti_bhaktiasset_change", args=[asset.pk])).status_code in (302, 403)
+
+
+@pytest.mark.django_db
+class TestFrames:
+    """Festival frames for photo posts (14 Oct 2026, Phase 15c)."""
+
+    def test_only_live_frames_with_a_picture(self, api_client):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.appearance.models import Frame
+
+        now = timezone.now()
+        Frame.objects.create(name="Live", image_url="https://x/a.png")
+        Frame.objects.create(name="Over", image_url="https://x/b.png", ends_at=now - timedelta(days=1))
+        Frame.objects.create(name="No picture")
+        Frame.objects.create(name="Off", image_url="https://x/c.png", active=False)
+        frames = api_client.get("/v1/appearance/").json()["frames"]
+        assert [f["name"] for f in frames] == ["Live"]

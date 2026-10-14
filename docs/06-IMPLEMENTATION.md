@@ -501,7 +501,7 @@ paid consultation still meters exactly as before (its tests unchanged).
 
 - **Groups built 14 Oct 2026** (`03-APP-FLOW` Groups; public groups only). Groups: a mandir, a sampradaya or a city. Anyone creates one; the
   creator moderates it; posts go to the group and its members' feeds.
-- Festival frames and stickers for a post on the festival's day.
+- Festival frames and stickers for a post on the festival's day. **Frames built 14 Oct 2026** (`03-APP-FLOW` Festival frames); stickers not started.
 - A japa or sadhana streak on the profile. **Built 14 Oct 2026** (`sadhana_days`).
 - Experts beyond astrologers: pandit, yoga teacher, vaidya, vastu, life
   coach, each verified as astrologers are. Booking a pandit is the
