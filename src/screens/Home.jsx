@@ -321,7 +321,7 @@ export default function Home() {
 
       {/* The three tabs, and Groups beside them as a round button (14 Oct
           2026, Rahul): white people on saffron, a small + on its corner. */}
-      <section className="flex items-center gap-2 px-4 pt-3">
+      <section className="flex items-center gap-2 pl-2 pr-4 pt-3">
         <div className="min-w-0 flex-1">
           <Segmented
             items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
