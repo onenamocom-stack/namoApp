@@ -61,7 +61,7 @@
  */
 
 import { supabase } from './supabase.js'
-import { compressVideo } from './compress.js'
+import { assertVideoLength, compressVideo } from './compress.js'
 import { toAsset } from './bhakti.js'
 
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example.com/v1
@@ -527,6 +527,7 @@ export async function uploadMediaAsset(original, onProgress = null) {
   if (!token) throw new Error('Sign in to upload')
   // A video is made small on the phone first (Phase 15d, lib/compress.js);
   // anything it cannot shrink uploads as it was.
+  await assertVideoLength(original) // 90 seconds at most (14 Oct 2026, Rahul)
   const file = await compressVideo(original, onProgress)
 
   const presigned = await api('/media/presign/', {

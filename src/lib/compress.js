@@ -20,6 +20,44 @@ const LEAVE_UNDER = 8 * 1024 * 1024
 
 const even = (n) => Math.max(2, Math.round(n / 2) * 2)
 
+/* The longest video anybody posts (14 Oct 2026, Rahul: "like Instagram").
+   Reels were 90 s on Instagram for years; it keeps uploads, compression
+   and bandwidth short. */
+export const MAX_VIDEO_SECONDS = 90
+
+/** A video's length in seconds, read from its metadata; null when the
+ *  browser cannot tell. */
+export function videoSeconds(file) {
+  return new Promise((resolve) => {
+    const v = document.createElement('video')
+    const url = URL.createObjectURL(file)
+    const done = (n) => {
+      URL.revokeObjectURL(url)
+      resolve(Number.isFinite(n) ? n : null)
+    }
+    v.preload = 'metadata'
+    v.onloadedmetadata = () => done(v.duration)
+    v.onerror = () => done(null)
+    setTimeout(() => done(null), 8000)
+    v.src = url
+  })
+}
+
+const clock = (s) => {
+  const m = Math.floor(s / 60)
+  const r = Math.round(s % 60)
+  return m ? `${m} min${r ? ` ${r} s` : ''}` : `${r} s`
+}
+
+/** Throws the sentence the person reads when a video is too long. */
+export async function assertVideoLength(file) {
+  if (!file?.type?.startsWith('video/')) return
+  const secs = await videoSeconds(file)
+  if (secs !== null && secs > MAX_VIDEO_SECONDS + 0.5) {
+    throw new Error(`Videos can be up to ${MAX_VIDEO_SECONDS} seconds. This one is ${clock(secs)}.`)
+  }
+}
+
 /** The file to upload: a smaller MP4, or `file` unchanged. `onProgress`
  *  receives 0 to 1 while it works. */
 export async function compressVideo(file, onProgress = null) {
