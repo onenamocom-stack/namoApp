@@ -39,7 +39,7 @@ const TABS = [
   { to: '/bhakti', label: 'nav.bhakti', icon: 'namaste' },
   // The Namo infinity, a size up from the rest (14 Oct 2026, Rahul; it was
   // the folded hands).
-  { to: '/messages', label: 'nav.messages', icon: 'infinity', iconSize: 24 },
+  { to: '/messages', label: 'nav.messages', icon: 'infinity', iconSize: 29 },
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
   { to: '/shop', label: 'nav.market', icon: 'shop', also: ['/academy'] },
 ]
@@ -160,7 +160,7 @@ function Tab({ to, label, icon, iconSize = 19, also = [] }) {
             {/* The icon thickens rather than recolouring — one line set, two
                 states, and no second filled set to draw and keep in sync. */}
             <span className="relative">
-              <Icon name={icon} size={iconSize} weight={isActive ? 2.1 : 1.6} className={iconSize > 19 ? '-my-[2.5px]' : ''} />
+              <Icon name={icon} size={iconSize} weight={isActive ? 2.1 : 1.6} className={iconSize > 19 ? '-my-[5px]' : ''} />
               {unread > 0 && (
                 <span className="absolute -bottom-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-live px-1 text-[10px] font-bold text-white ring-2 ring-white tnum">
                   {unread > 9 ? '9+' : unread}
