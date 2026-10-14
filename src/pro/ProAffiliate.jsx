@@ -81,7 +81,7 @@ export default function ProAffiliate() {
         </p>
         <ul className="mt-4 space-y-2 text-meta t-sub">
           <li>• Only their <b>first order</b> pays. After that, links change nothing.</li>
-          <li>• If they open <b>another astrologer's link</b> before buying, it is theirs from then.</li>
+          <li>• If they open <b>somebody else's link</b> before buying, it is theirs from then.</li>
           <li>• The money lands <b>seven days after delivery</b>, not at checkout — a returned parcel cancels it.</li>
           <li>• Put a product on your post or reel and it carries your link too.</li>
         </ul>

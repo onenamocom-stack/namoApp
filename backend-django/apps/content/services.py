@@ -66,7 +66,7 @@ DUPLICATE_REFUSAL = "You have already reviewed this session"
 REEL_REFUSAL = "Only a consultant can post a reel"
 VIDEO_REFUSAL = "Video posting is not switched on for your account"
 BLOCKED_REFUSAL = "Your account cannot post"
-TAG_REFUSAL = "Only an approved consultant can tag products"
+TAG_REFUSAL = "Only an approved consultant or a Creator can tag products"
 TAG_LIMIT_REFUSAL = f"Tag at most {MAX_TAGGED_PRODUCTS} products"
 TAG_MISSING_REFUSAL = "One of those products is not in the shop"
 SELF_REPORT_REFUSAL = "You cannot report your own post"
@@ -318,7 +318,10 @@ def _checked_products(author_id, role, product_ids):
     ids = list(dict.fromkeys(str(p) for p in product_ids))  # de-dup, keep order
     if not ids:
         return []
-    if role != "admin" and not gateway.is_approved_consultant(author_id):
+    # An approved consultant or a Creator tags (14 Oct 2026, 01-PRD §12).
+    if role != "admin" and not (
+        gateway.is_approved_consultant(author_id) or profile_services.is_creator(author_id)
+    ):
         raise PermissionDenied(TAG_REFUSAL)
     if len(ids) > MAX_TAGGED_PRODUCTS:
         raise ValidationError({"product_ids": TAG_LIMIT_REFUSAL})
@@ -626,12 +629,19 @@ def attach_products(rows):
             profile_id__in=tagged_authors, kind=CodeKind.CONSULTANT, active=True
         )
     }
+    from apps.profiles.models import Profile
+
+    creators = set(
+        Profile.objects.filter(id__in=tagged_authors, influencer=True, blocked_at__isnull=True)
+        .values_list("id", flat=True)
+    )
     for r in rows:
         r._products = by_content.get(r.id, [])
-        # Only an approved consultant's code is worth carrying. Belt and
-        # braces: an unapproved consultant's posts already leave the public
-        # projection, but an admin-authored tag has no consultant behind it.
-        r._shop_ref = codes.get(r.author_id) if r._products and r._approved else None
+        # Only an approved consultant's or a Creator's code is worth
+        # carrying (Creators since 14 Oct 2026). An admin-authored tag has
+        # nobody behind it.
+        earns = r._approved or r.author_id in creators
+        r._shop_ref = codes.get(r.author_id) if r._products and earns else None
     return rows
 
 

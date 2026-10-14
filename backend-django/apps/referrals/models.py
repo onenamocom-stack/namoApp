@@ -20,7 +20,7 @@ would have done neither.
 import secrets
 import uuid
 
-from django.db import models
+from django.db import IntegrityError, models
 from django.utils import timezone
 
 # No 0/O/1/I/L. These codes get read aloud on calls, typed off a
@@ -271,3 +271,36 @@ class AffiliateVisit(models.Model):
             models.Index(fields=["profile_id", "-clicked_at"], name="affiliate_visits_who_idx"),
             models.Index(fields=["consultant_id", "-clicked_at"], name="affiliate_visits_pro_idx"),
         ]
+
+
+class CreatorEarning(models.Model):
+    """A Creator's book (14 Oct 2026, 01-PRD §12 "Creators earn as
+    astrologers do"): their 10% of a first order made through their link or
+    tag, written when the cashback row matures, as an astrologer's goes to
+    `earnings_ledger`. Separate because that ledger belongs to the
+    consultants table and a Creator has no row there.
+
+    Append-only, as the ledger is: a mistake is corrected by a reversing
+    row, never an edit. One row per cashback, so a sweep that runs twice
+    cannot pay twice."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField()
+    cashback = models.OneToOneField(
+        Cashback, null=True, blank=True, on_delete=models.SET_NULL, related_name="creator_earning",
+    )
+    amount_paise = models.IntegerField()
+    kind = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "creator_earnings"
+        indexes = [models.Index(fields=["profile_id", "-created_at"], name="creator_earnings_owner_idx")]
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise IntegrityError("creator_earnings is append-only: write a reversing row")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise IntegrityError("creator_earnings is append-only: write a reversing row")

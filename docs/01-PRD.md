@@ -962,6 +962,26 @@ The owner's rule, replacing the astrologer's code at checkout.
   carry the link through the Play Store with Google's Install Referrer
   when there is one; an iPhone app cannot without a paid service.
 
+### Creators earn as astrologers do — decided 14 Oct 2026 (owner)
+
+Rahul's request, the owner's yes. A **Creator** (§2) tags shop products on
+their posts and shares product and shop links exactly as an approved
+astrologer does, with an `A…` code of their own, and earns the same: **10%
+of the first order inside the window, after the buyer's cashback**. Every
+rule above holds unchanged: the window, last link wins, first order only,
+seven days after delivery before it is paid, cancelled by a return.
+
+- **Their book.** A Creator's 10%, once paid, is written to their own
+  earnings book (`creator_earnings`), which they read on Dashboard. An
+  astrologer's stays in `earnings_ledger`.
+- **Paid out like an astrologer's**, when payouts exist (§8: monthly on
+  the 7th, designed, not built). PAN and bank details are collected from a
+  Creator before their first payout, as from an astrologer.
+- **A consultant buying through a Creator's link earns the Creator
+  nothing**, the same rule as consultant to consultant.
+- A Creator whose flag is removed keeps what was already earned; new
+  links and tags stop earning.
+
 **Both directions into a consultant pay nothing**, and for one reason:
 this programme exists to bring SEEKERS into the product. A practitioner
 arriving is a different event with its own queue — they apply, and

@@ -46,6 +46,13 @@ async function api(path, { method = 'GET', body, token } = {}) {
 /** An influencer's numbers (3 Oct 2026): `{code, link, periods: {this_month,
  *  last_month, lifetime: {signups, buyers}}, recent: [{joined_on, bought_on}]}`.
  *  Throws — a 403 means the account is not an influencer. */
+/** A Creator's 10% book (14 Oct 2026): `this_month_paise`,
+ *  `lifetime_paise`, `pending_paise` and the latest `rows`. */
+export async function creatorEarnings() {
+  const token = await accessToken()
+  return api('/referrals/creator-earnings/', { token })
+}
+
 export async function influencerStats() {
   const token = await accessToken()
   return api('/referrals/influencer/', { token })

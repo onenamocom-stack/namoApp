@@ -36,11 +36,10 @@ def my_codes(request):
     code they share on posts, and the N code they can still use to bring
     a friend into the app as a seeker. The two buy different things.
     """
-    from apps.consultants import services as consultant_services
-
     codes = {"seeker": services.code_for(request.user.pk,
                                          ReferralCode.Kind.SEEKER).code}
-    if consultant_services.is_approved(request.user.pk):
+    # A Creator holds one too (14 Oct 2026, 01-PRD §12).
+    if services.may_share(request.user.pk):
         codes["consultant"] = services.code_for(
             request.user.pk, ReferralCode.Kind.CONSULTANT
         ).code
@@ -84,9 +83,7 @@ def affiliate_link(request):
 
     With a product, it opens that product. Without one, the shop.
     """
-    from apps.consultants import services as consultant_services
-
-    if not consultant_services.is_approved(request.user.pk):
+    if not services.may_share(request.user.pk):
         return Response(
             refusal_body(
                 "not_a_consultant",
@@ -222,3 +219,14 @@ def first_order(request):
     data = serializer.validated_data
     lines = [{"product_id": r["product_id"], "qty": r["qty"]} for r in data["lines"]]
     return Response(services.first_order_preview(request.user.pk, lines, data.get("payment")))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def creator_earnings(request):
+    """A Creator's 10% book for their Dashboard (14 Oct 2026)."""
+    from apps.profiles import services as profile_services
+
+    if not profile_services.is_creator(request.user.pk):
+        return Response(refusal_body("not_creator", "Only a Creator has this book."), status=404)
+    return Response(services.creator_earnings(request.user.pk))

@@ -11,4 +11,5 @@ urlpatterns = [
     path("link/", views.affiliate_link, name="referrals-link"),
     path("earnings/", views.my_cashback, name="referrals-cashback"),
     path("influencer/", views.influencer_stats, name="referrals-influencer"),
+    path("creator-earnings/", views.creator_earnings, name="referrals-creator-earnings"),
 ]

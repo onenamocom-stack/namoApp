@@ -1,10 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
-import { Kicker } from '../components/Pop.jsx'
+import { Kicker, Stat } from '../components/Pop.jsx'
 import { Row } from '../components/Primitives.jsx'
 import { Insights } from '../pro/ProEarnings.jsx'
-import { useStore } from '../store.jsx'
+import { useEffect, useState } from 'react'
+import { rupees, useStore } from '../store.jsx'
+import { creatorEarnings } from '../lib/referrals.js'
 
 /**
  * Dashboard (Phase 16, 14 Oct 2026): a Pro's and a Creator's own screens,
@@ -62,8 +64,6 @@ export default function Dashboard() {
             <Kicker>Your practice</Kicker>
             <div className="mt-2">
               <Row to="/dashboard/profile" title="Practice and reviews" note="Rates, intro video, username, reviews" />
-              <Row to="/practice/edit" title="Edit your page" note="Specialization, About, experience, languages" />
-              <Row to={`/consult/${consultant.profile_id}`} title="View your public page" note="Exactly what a client sees" />
               <Row to="/dashboard/payout-details" title="Payout details" note="PAN and bank account" />
             </div>
           </section>
@@ -76,15 +76,48 @@ export default function Dashboard() {
         </>
       ) : (
         <>
-          <section className="px-5 py-5">
+          <CreatorBook />
+          <section className="px-5 pb-5">
             <div>
+              <Row to="/dashboard/affiliate" title="Your links" note="Share a product, earn 10%" />
               <Row to="/profile/influencer" title="Your code" note="Who joined with your code, and who paid" />
             </div>
           </section>
-          <Insights links={false} />
+          <Insights />
         </>
       )}
       <div className="h-16" />
     </>
+  )
+}
+
+/** A Creator's 10% (14 Oct 2026, 01-PRD §12): paid this month, in all,
+ *  and what is still waiting out the seven days after delivery. Paid out
+ *  as an astrologer's is, once payouts exist. */
+function CreatorBook() {
+  const [book, setBook] = useState(null)
+  useEffect(() => {
+    let live = true
+    creatorEarnings()
+      .then((d) => live && setBook(d))
+      .catch(() => live && setBook(false))
+    return () => {
+      live = false
+    }
+  }, [])
+  if (book === false) return null
+  return (
+    <section className="px-5 py-5">
+      <Kicker>Your earnings</Kicker>
+      {book ? (
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <Stat label="This month" value={`₹${rupees(book.this_month_paise)}`} />
+          <Stat label="In all" value={`₹${rupees(book.lifetime_paise)}`} />
+          <Stat label="Waiting" value={`₹${rupees(book.pending_paise)}`} sub="7 days after delivery" />
+        </div>
+      ) : (
+        <Loader />
+      )}
+    </section>
   )
 }

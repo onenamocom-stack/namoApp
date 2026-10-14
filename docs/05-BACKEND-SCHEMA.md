@@ -2138,3 +2138,22 @@ API `/v1/bhakti/streak/`, signed in: GET the caller's `{current, best,
 today}`; POST `{kind: japa|aarti, rounds}` counts today. `streak/<profile_id>/`
 gives anybody's `{current, best}`. The run counts consecutive IST days
 ending today, or yesterday while today is open (`apps/bhakti/streak.py`).
+
+## A Creator's book — `creator_earnings` (14 Oct 2026)
+
+Migration `referrals/0003`; the rule is `01-PRD.md` §12, "Creators earn as
+astrologers do". A Creator's 10% of a first order, written when its
+`referral_cashback` row (side `referrer`) matures, as an astrologer's goes
+to `earnings_ledger`. Its own table because that ledger's `consultant_id`
+references `consultants`, where a Creator has no row. Append-only in the
+model; RLS on with **no policies**.
+
+| Table | Columns |
+|---|---|
+| `creator_earnings` | `id uuid pk`; `profile_id uuid`; `cashback_id → referral_cashback` **unique**, set null; `amount_paise int`; `kind text` (what the Creator reads); `created_at`. Index `(profile_id, -created_at)` |
+
+A Creator holds an `A…` code in `referral_codes` (kind `consultant`) like an
+astrologer. API: `GET /v1/referrals/creator-earnings/` (Creators only):
+`this_month_paise` (IST month), `lifetime_paise`, `pending_paise` (matured
+not yet), `rows`. `referrals/me/` and `referrals/link/` serve a Creator as
+an approved consultant.

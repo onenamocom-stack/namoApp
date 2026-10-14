@@ -440,11 +440,12 @@ function NewPostButton({ onOpen }) {
  *  nothing, the server decides what may be published. */
 function NewPostSheet({ onClose, onPublished }) {
   const { profile, consultant, t } = useStore()
-  /* A Pro and a Creator post video, and a Pro tags products (14 Oct 2026,
-     Rahul: Studio went from Dashboard; posting is this sheet). A Seeker
-     gets photo, text and blog. The server keeps the same rules. */
-  const pro = consultant?.status === 'approved'
-  const video = pro || profile?.influencer || profile?.video_enabled
+  /* A Pro and a Creator post video and tag products (14 Oct 2026, Rahul:
+     Studio went from Dashboard; posting is this sheet; a Creator's tag
+     earns as a Pro's, owner's yes). A Seeker gets photo, text and blog.
+     The server keeps the same rules. */
+  const sharer = consultant?.status === 'approved' || Boolean(profile?.influencer)
+  const video = sharer || profile?.video_enabled
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">
       <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-white">
@@ -461,7 +462,7 @@ function NewPostSheet({ onClose, onPublished }) {
              and its toolbar (12 Oct 2026, Rahul: Facebook's shape). */
           <Composer
             kinds={video ? ['clip', 'post', 'article'] : ['post', 'article']}
-            tagProducts={pro}
+            tagProducts={sharer}
             onPublished={onPublished}
             onClose={onClose}
           />

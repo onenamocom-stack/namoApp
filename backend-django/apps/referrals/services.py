@@ -245,8 +245,17 @@ def _day(iso):
 
 
 REFUSAL_CONSULTANT_LINK_NOT_YOURS = (
-    "Affiliate links are for approved consultants."
+    "Affiliate links are for approved consultants and Creators."
 )
+
+
+def may_share(profile_id):
+    """Who holds an A code, tags products and earns on a link: an approved
+    consultant, or a Creator (14 Oct 2026, 01-PRD §12)."""
+    from apps.consultants import services as consultant_services
+    from apps.profiles import services as profile_services
+
+    return consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
 
 
 def affiliate_link(consultant_id, product_id=None):
@@ -487,9 +496,9 @@ def is_first_order(profile_id, exclude_order_id=None):
 
 
 def _may_earn(code_row, buyer_id):
-    """An astrologer's link earns on this buyer: an active consultant code,
-    not their own, and the buyer is not a consultant (consultant to
-    consultant pays nobody)."""
+    """An astrologer's or a Creator's link earns on this buyer: an active A
+    code, not their own, and the buyer is not a consultant (consultant to
+    consultant pays nobody; consultant through a Creator likewise)."""
     from apps.consultants import services as consultant_services
 
     if code_row is None or not code_row.active or code_row.kind != ReferralCode.Kind.CONSULTANT:
@@ -498,7 +507,7 @@ def _may_earn(code_row, buyer_id):
         return False
     if consultant_services.is_approved(buyer_id):
         return False
-    return consultant_services.is_approved(code_row.profile_id)
+    return may_share(code_row.profile_id)
 
 
 def record_visit(profile_id, code, product_id=None, clicked_at=None, now=None):
@@ -729,15 +738,25 @@ def _credit_wallet(row):
 
 
 def _credit_earnings(row):
-    """The consultant's 10%, into the book they draw from at month end.
+    """The referrer's 10%, into the book they draw from at month end: a
+    Creator's own `creator_earnings` when they have no consultant row
+    (14 Oct 2026), the consultant's `earnings_ledger` otherwise.
 
     The earnings ledger and not the wallet, because that is where a
     consultant's money already lives and where the payout run already
     looks. `fee_bps` is zero: the platform takes no cut of a referral
     bonus it is itself paying.
     """
-    from apps.consultants.models import EarningsLedger
+    from apps.consultants.models import Consultant, EarningsLedger
 
+    if not Consultant.objects.filter(profile_id=row.profile_id).exists():
+        from .models import CreatorEarning
+
+        CreatorEarning.objects.create(
+            profile_id=row.profile_id, cashback=row, amount_paise=row.amount_paise,
+            kind=f"Referral cashback · {row.note or ''}".strip(" ·"),
+        )
+        return
     EarningsLedger.objects.create(
         consultant_id=row.profile_id,
         booking=None,
@@ -846,3 +865,31 @@ def describe_code(code, viewer_id=None, subtotal_paise=0, lines=None, payment=No
         return {"ok": False, "kind": row.kind, "reason": REFUSAL_ALREADY_REFERRED}
     return {"ok": True, "kind": row.kind,
             "note": "Three free questions a day for three days, for both of you."}
+
+
+def creator_earnings(profile_id, now=None):
+    """A Creator's book for their Dashboard: paid this IST month and in
+    all, what is still waiting out the return window, and the latest rows."""
+    from datetime import datetime, time, timedelta, timezone as dt_tz
+
+    from django.db.models import Sum
+
+    from .models import CreatorEarning
+
+    now = now or timezone.now()
+    ist = dt_tz(timedelta(hours=5, minutes=30))
+    month_start = datetime.combine(now.astimezone(ist).date().replace(day=1), time(), tzinfo=ist)
+    rows = CreatorEarning.objects.filter(profile_id=profile_id)
+    pending = Cashback.objects.filter(
+        profile_id=profile_id, side=Cashback.Side.REFERRER, status=Cashback.Status.PENDING,
+    ).aggregate(n=Sum("amount_paise"))["n"] or 0
+    return {
+        "this_month_paise": rows.filter(created_at__gte=month_start).aggregate(n=Sum("amount_paise"))["n"] or 0,
+        "lifetime_paise": rows.aggregate(n=Sum("amount_paise"))["n"] or 0,
+        "pending_paise": pending,
+        "rows": [
+            {"id": str(r.id), "amount_paise": r.amount_paise, "kind": r.kind,
+             "created_at": r.created_at.isoformat()}
+            for r in rows.order_by("-created_at")[:50]
+        ],
+    }

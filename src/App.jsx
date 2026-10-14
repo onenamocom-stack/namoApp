@@ -460,7 +460,7 @@ function Frame() {
                 <Route path="/dashboard/earnings" element={<Dash><DashEarnings /></Dash>} />
                 <Route path="/dashboard/profile" element={<Dash><DashProfile /></Dash>} />
                 <Route path="/dashboard/profile/:tab" element={<Dash><DashProfile /></Dash>} />
-                <Route path="/dashboard/affiliate" element={<Dash><DashAffiliate /></Dash>} />
+                <Route path="/dashboard/affiliate" element={<Dash need="any"><DashAffiliate /></Dash>} />
                 <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
 
               </>

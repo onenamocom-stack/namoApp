@@ -1193,15 +1193,19 @@ what is asked or booked afterwards.
 Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
 until this day) and on a Creator's Profile, under the five icons.
 
-- **A Pro:** Your work (Studio, Earnings and Insights, Your links), Your
-  practice (Practice and reviews, Edit your page, View your public page,
-  Payout details), Calls and chats (**Namo Consult**, `/desk`).
-- **A Creator:** Your code, then Insights (the last seven days, every post
+- **A Pro:** Your work (Earnings and Insights, Your links), Your practice
+  (Practice and reviews, Payout details), Calls and chats (**Namo
+  Consult**, `/desk`). Edit and the public page are not here (14 Oct 2026,
+  Rahul): Dashboard opens from that page, which carries Edit profile.
+- **A Creator:** Your earnings (this month, in all, waiting out the seven
+  days after delivery), Your links (`/dashboard/affiliate`, the same screen
+  a Pro has), Your code, then Insights (the last seven days, every post
   with its views, products sold with their code).
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
-In that sheet a Pro and a Creator also get video, and a Pro gets Tag
-product; a Seeker gets photo, text and blog. Gallery and Camera are icons
+In that sheet a Pro and a Creator also get video and Tag product (a
+Creator's tag earns as a Pro's, 01-PRD §12); a Seeker gets photo, text and
+blog. Gallery and Camera are icons
 without words. `/dashboard/studio` and "Post more" open Home with the sheet
 up (`/home?compose=1`).
 
