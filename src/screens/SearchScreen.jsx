@@ -11,6 +11,9 @@ import { fetchFeed } from '../lib/content.js'
 import { fetchProducts, productHref } from '../lib/shop.js'
 import { fetchAssets } from '../lib/bhakti.js'
 import { authorHref } from './Home.jsx'
+import VerifiedMark from '../components/VerifiedMark.jsx'
+import { searchPeople } from '../lib/people.js'
+import { findGroups, kindLabel } from '../lib/groups.js'
 
 /**
  * Search, from Home (6 Oct 2026, Rahul: "search bar in home section").
@@ -20,14 +23,21 @@ import { authorHref } from './Home.jsx'
  * answers as you type and needs no search server. Older posts than those
  * are not found; that is the next step when there are thousands.
  */
+// People and Groups joined on 14 Oct 2026 (Rahul), Products fourth. `people`
+// stays the astrologers' key, so old `?in=people` links still land there.
 const TABS = [
   { key: 'all', label: 'All' },
+  { key: 'users', label: 'People' },
   { key: 'people', label: 'Astrologers' },
   { key: 'products', label: 'Products' },
+  { key: 'groups', label: 'Groups' },
   { key: 'posts', label: 'Posts' },
   { key: 'bhakti', label: 'Bhakti' },
 ]
 const BHAKTI_KIND = { status: 'Status', wallpaper: 'Wallpaper', bhajan: 'Bhajan', mantra: 'Mantra', tune: 'Tune', aarti: 'Aarti' }
+
+const initialsOf = (name) =>
+  (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
 const fold = (s) => (s || '').toString().toLowerCase().normalize('NFC')
 
@@ -60,8 +70,28 @@ export default function SearchScreen() {
   const [params] = useSearchParams()
   // `q` arrives from a tapped #hashtag (10 Oct 2026).
   const [query, setQuery] = useState(() => params.get('q') ?? '')
-  const [tab, setTab] = useState(() => (['people', 'products', 'posts', 'bhakti'].includes(params.get('in')) ? params.get('in') : 'all'))
+  const [tab, setTab] = useState(() => (['users', 'people', 'products', 'groups', 'posts', 'bhakti'].includes(params.get('in')) ? params.get('in') : 'all'))
   const [data, setData] = useState(null)
+  /* People and groups are asked of the server as you type (there are too
+     many to load whole), a moment after the typing stops. */
+  const [remote, setRemote] = useState({ q: '', users: [], groups: [] })
+  useEffect(() => {
+    const q = query.trim()
+    if (q.replace(/^@/, '').length < 2) {
+      setRemote({ q, users: [], groups: [] })
+      return undefined
+    }
+    let live = true
+    const timer = setTimeout(() => {
+      Promise.all([searchPeople(q), findGroups(q).catch(() => [])]).then(
+        ([users, groups]) => live && setRemote({ q, users, groups }),
+      )
+    }, 250)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [query])
   const box = useRef(null)
 
   useEffect(() => {
@@ -82,22 +112,24 @@ export default function SearchScreen() {
     if (!data || !query.trim()) return null
     const q = query.trim()
     return {
+      users: remote.q === q ? remote.users : [],
+      groups: remote.q === q ? remote.groups : [],
       people: data.people.filter((c) => matches(q, c.name, c.specialization, c.category, c.languages)),
       products: data.products.filter((p) => matches(q, p.name, p.subtitle, p.brand, p.categories, p.subcategories)),
       posts: data.posts.filter((p) => matches(q, p.title, p.caption, p.body, p.consultant)),
       bhakti: data.bhakti.filter((a) => matches(q, a.title, a.deity, BHAKTI_KIND[a.kind] || a.kind)),
     }
-  }, [data, query])
+  }, [data, query, remote])
 
   const show = (k) => tab === 'all' || tab === k
   const cap = tab === 'all' ? 5 : 50
-  const none = found && !found.people.length && !found.products.length && !found.posts.length && !found.bhakti.length
+  const none = found && !found.users.length && !found.groups.length && !found.people.length && !found.products.length && !found.posts.length && !found.bhakti.length
 
   return (
     <>
       <TopBar title="Search" back backTo="/home" />
       <div ref={box}>
-        <Search value={query} onChange={setQuery} placeholder="Astrologers, products, posts, bhakti" />
+        <Search value={query} onChange={setQuery} placeholder="People, astrologers, products, groups" />
       </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
         {TABS.map((t) => (
@@ -118,6 +150,23 @@ export default function SearchScreen() {
         <p className="px-6 py-12 text-center text-meta t-faint">Nothing matches “{query.trim()}”.</p>
       ) : (
         <div className="pb-24">
+          {show('users') && found.users.length > 0 && (
+            <Group title="People" more={tab === 'all' && found.users.length > cap} onMore={() => setTab('users')}>
+              {found.users.slice(0, cap).map((u) => (
+                <Link key={u.id} to={u.is_consultant ? `/consult/${u.id}` : `/u/${u.id}`} className="flex items-center gap-3 px-4 py-2.5">
+                  <PopAvatar initials={initialsOf(u.name)} src={u.avatar_url} size={40} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1 truncate text-meta font-semibold t-heading">
+                      <span className="truncate">{u.name}</span>
+                      {u.is_consultant ? <VerifiedMark size={14} tone="pro" /> : u.is_creator ? <VerifiedMark size={14} tone="creator" /> : null}
+                    </span>
+                    {u.username && <span className="block truncate text-micro t-faint">@{u.username}</span>}
+                  </span>
+                </Link>
+              ))}
+            </Group>
+          )}
+
           {show('people') && found.people.length > 0 && (
             <Group title="Astrologers" more={tab === 'all' && found.people.length > cap} onMore={() => setTab('people')}>
               {found.people.slice(0, cap).map((c) => (
@@ -146,6 +195,23 @@ export default function SearchScreen() {
                     <span className="block truncate text-micro t-faint">{p.brand || p.category}</span>
                   </span>
                   <span className="flex-none text-meta gold tnum">₹{p.price.toLocaleString('en-IN')}</span>
+                </Link>
+              ))}
+            </Group>
+          )}
+
+          {show('groups') && found.groups.length > 0 && (
+            <Group title="Groups" more={tab === 'all' && found.groups.length > cap} onMore={() => setTab('groups')}>
+              {found.groups.slice(0, cap).map((g) => (
+                <Link key={g.id} to={`/groups/${g.id}`} className="flex items-center gap-3 px-4 py-2.5">
+                  <PopAvatar initials={initialsOf(g.name)} src={g.avatar_url} size={40} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-meta font-semibold t-heading">{g.name}</span>
+                    <span className="block truncate text-micro t-faint tnum">
+                      {kindLabel(g.kind)}
+                      {g.city ? ` · ${g.city}` : ''} · {g.member_count} {g.member_count === 1 ? 'member' : 'members'}
+                    </span>
+                  </span>
                 </Link>
               ))}
             </Group>

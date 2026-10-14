@@ -193,3 +193,10 @@ def by_username(request, username):
     if body is None:
         return Response(refusal_body("not_found", "Nobody by that name."), status=404)
     return Response(body)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def search(request):
+    """Search's People tab (14 Oct 2026): `?q=` by name or username."""
+    return Response({"items": services.search_people(request.query_params.get("q", ""))})

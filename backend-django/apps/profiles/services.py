@@ -390,6 +390,42 @@ def public_profile(profile_id):
     }
 
 
+def search_people(q, limit=30):
+    """People by name or username, for Search's People tab (14 Oct 2026,
+    Rahul). The same rule as `public_profile`: only somebody the public
+    surfaces already show — live content, or an approved practice — so a
+    seeker who has never posted is no more findable by name here than by
+    id. Blocked accounts never. Two characters at least."""
+    from django.db.models import Q
+
+    from apps.consultants.models import Consultant, ConsultantStatus
+    from apps.content.models import Content
+
+    q = (q or "").strip().lstrip("@")
+    if len(q) < 2:
+        return []
+    authors = Content.objects.filter(status=Content.Status.LIVE).values("author_id")
+    approved = Consultant.objects.filter(status=ConsultantStatus.APPROVED).values("profile_id")
+    rows = (
+        Profile.objects.filter(Q(name__icontains=q) | Q(username__istartswith=q))
+        .filter(blocked_at__isnull=True)
+        .filter(Q(id__in=authors) | Q(id__in=approved))
+        .order_by("name")[:limit]
+    )
+    approved_ids = set(
+        Consultant.objects.filter(status=ConsultantStatus.APPROVED, profile_id__in=[r.id for r in rows])
+        .values_list("profile_id", flat=True)
+    )
+    return [
+        {
+            "id": str(r.id), "name": r.name, "username": r.username,
+            "avatar_url": r.avatar_url, "is_consultant": r.id in approved_ids,
+            "is_creator": bool(r.influencer),
+        }
+        for r in rows
+    ]
+
+
 # ── usernames (11 Oct 2026, Rahul) ───────────────────────────────────────────
 #
 # 1namo.com/<username> instead of an id nobody can read. Everybody gets one

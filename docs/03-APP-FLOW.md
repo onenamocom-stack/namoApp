@@ -688,6 +688,16 @@ phone over the roster, the catalogue and the newest 200 posts — older posts
 are not found. A row opens the consultant, the product, the blog, the reel,
 or a post's author.
 
+**People and Groups (14 Oct 2026, Rahul).** The chips are All · **People** ·
+Astrologers · Products · **Groups** · Posts · Bhakti. People and Groups are
+asked of the server as you type (two characters at least, a quarter second
+after typing stops): **People** by name or `@username`, each with their
+tick, opening `/consult/:id` for a Pro and `/u/:id` for anyone else;
+**Groups** by name, city or about, opening the group. Only people the app
+already shows publicly are found — somebody who has posted, or an approved
+Pro — so a seeker who has never posted is not findable by name, the same
+rule as their profile link. The Chat tab's box opens on People.
+
 **`1namo.com/<username>`** (11 Oct 2026, Rahul) forwards to `/consult/:id`
 for a consultant and `/u/:id` for anybody else, signed out too (a seeker's
 page still asks a signed-out visitor to sign in). A name nobody has, or a
