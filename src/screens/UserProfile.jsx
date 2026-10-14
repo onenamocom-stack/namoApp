@@ -117,7 +117,7 @@ export default function UserProfile() {
       />
 
       <section className="flex items-center gap-4 border-b border-stroke px-5 py-6">
-        <PopAvatar initials={initials} size={72} />
+        <PopAvatar initials={initials} src={author.avatar_url || null} size={72} />
         {/* Name over the three numbers (11 Oct 2026, Rahul). */}
         <ProfileHead
           name={author.name}

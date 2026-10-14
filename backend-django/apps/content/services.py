@@ -1066,7 +1066,10 @@ def fetch_author(profile_id, viewer_id=None):
     return {"id": str(profile_id), "name": name,
             "username": gateway.profile_username(profile_id),
             "is_consultant": bool(gateway.is_approved_consultant(profile_id)),
-            "is_creator": profile_services.is_creator(profile_id)}
+            "is_creator": profile_services.is_creator(profile_id),
+            # Their photo for the page's header (14 Oct 2026): /u/:id drew
+            # initials only, because this never carried it.
+            "avatar_url": Profile.objects.filter(pk=profile_id).values_list("avatar_url", flat=True).first()}
 
 
 # ── reporting and moderation ────────────────────────────────────────────────

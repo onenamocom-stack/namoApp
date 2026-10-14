@@ -843,7 +843,7 @@ class TestFollowCountsAndAuthors:
         # is_consultant: the app forwards a consultant to /consult/:id (6 Oct 2026).
         assert published.json() == {
             "id": SEEKER, "name": "Tara Verma", "username": None,
-            "is_consultant": False, "is_creator": False,
+            "is_consultant": False, "is_creator": False, "avatar_url": None,
         }
 
         # A draft does not make an author.

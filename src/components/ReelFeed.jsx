@@ -9,6 +9,7 @@ import ReportSheet from './ReportSheet.jsx'
 import CommentSheet from './CommentSheet.jsx'
 import { useReshare } from './ReshareSheet.jsx'
 import { firstName } from './Primitives.jsx'
+import VerifiedMark from './VerifiedMark.jsx'
 import { useStore } from '../store.jsx'
 
 /**
@@ -178,7 +179,12 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   const saved = hasFlag(`save:${c.id}`)
   const reshared = hasFlag(`repost:${c.id}`)
   const reshare = useReshare(`repost:${c.id}`)
-  const following = hasFlag(`follow:${c.consultantId}`)
+  /* A reel's author is a Pro or a Creator (14 Oct 2026): a Pro follows as a
+     consultant and opens /consult/:id; anybody else as a person, /u/:id. It
+     was always the Pro's, so a Creator's name opened an empty practice. */
+  const followKey = `${c.isConsultant ? 'follow' : 'followp'}:${c.authorId}`
+  const following = hasFlag(followKey)
+  const authorTo = c.isConsultant ? `/consult/${c.authorId}` : `/u/${c.authorId}`
 
   /* A view is two seconds on screen, not a frame. Opening a reel link makes
      the FIRST reel active for an instant before the scroll lands on the
@@ -326,16 +332,26 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
       {/* ── The overlay strip ──────────────────────────────────────────── */}
       <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-6 pr-20">
         <div className="flex items-center gap-2.5">
-          <Link to={`/consult/${c.consultantId}`} className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white/15 text-[11px] font-bold text-white ring-1 ring-white/40">
-              {c.initials}
-            </span>
+          <Link to={authorTo} className="flex min-w-0 items-center gap-2.5">
+            {c.avatarUrl ? (
+              <img src={c.avatarUrl} alt="" className="h-8 w-8 flex-none rounded-full object-cover ring-1 ring-white/40" />
+            ) : (
+              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-white/15 text-[11px] font-bold text-white ring-1 ring-white/40">
+                {c.initials}
+              </span>
+            )}
             <span className="truncate text-meta font-semibold text-white">{c.consultant}</span>
+            {/* The ticks, as in the feed (14 Oct 2026). */}
+            {c.isConsultant ? (
+              <VerifiedMark size={14} tone="pro" className="-ml-1 flex-none" />
+            ) : c.isCreator ? (
+              <VerifiedMark size={14} tone="creator" className="-ml-1 flex-none" />
+            ) : null}
           </Link>
           <button
             type="button"
             onClick={() =>
-              toggleFlag(`follow:${c.consultantId}`, {
+              toggleFlag(followKey, {
                 on: `Following ${firstName(c.consultant)}`,
                 off: `Unfollowed ${firstName(c.consultant)}`,
               })
