@@ -698,7 +698,10 @@ with the instances. Each count has its index. DRF's blanket throttle
 15d; `src/lib/compress.js`). WebCodecs through `mediabunny` (pinned 1.60.0,
 loaded only when a video is chosen, ~186 kB gzipped): H.264 at most 1280 px
 on the long side, 1.2 Mbit/s, AAC 96 kbit/s, about 9 MB a minute. Files
-under 8 MB are left alone. It takes about as long as the video runs, and
+under 8 MB are left alone. **A video is at most 90 seconds** (14 Oct 2026,
+Rahul; read from the file's metadata before anything uploads, so a longer
+one is refused with its length; `MAX_VIDEO_SECONDS`), which keeps a
+compressed video near 14 MB. It takes about as long as the video runs, and
 the composer says so with a percentage. Anything it cannot do (no
 WebCodecs, no H.264 or AAC encoder, an unreadable file, a track it would
 drop, a result not 10% smaller) uploads the original, under the same
