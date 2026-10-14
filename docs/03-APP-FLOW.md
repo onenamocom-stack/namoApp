@@ -1227,6 +1227,12 @@ unread count on it (the old chat bubble's red dot was drawn always). The
 wallet, the consultant chat and sessions are icons on Profile. The pro app
 keeps the wallet and the bubble on every tab.
 
+**Ticks — 13 Oct 2026 (Rahul).** After a name: orange for a Pro (every
+approved consultant: Consult cards, their page, their posts in the feed),
+blue for a Creator (their posts, `/u/:id`, their own Profile). It replaced
+one blue mark for console-verified consultants only. The Influencer tab on
+Profile is the **Creator** tab.
+
 **The tab bar — 13 Oct 2026 (Rahul).** Home · Bhakti · **Chat** · Consult ·
 **Market**. Chat is `/messages`, under folded hands (the `namaste` icon,
 drawn from Rahul's reference). Market is Shop and Academy in one tab: it opens on `/shop`,

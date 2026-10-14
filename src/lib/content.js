@@ -102,6 +102,7 @@ function shape(row) {
     id: row.id,
     authorId: row.author_id,
     isConsultant: row.author_is_consultant,
+    isCreator: Boolean(row.author_is_creator),
     // Kept so the call sites reading `consultantId` keep working.
     consultantId: row.author_id,
     consultant: row.author_name,

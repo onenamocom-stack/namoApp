@@ -49,7 +49,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import OuterRef, Subquery, TextField
+from django.db.models import BooleanField, OuterRef, Subquery, TextField
 from django.utils import timezone
 
 from apps.media.models import MediaAsset
@@ -267,6 +267,22 @@ def video_enabled(profile_id):
     return Profile.objects.filter(
         pk=profile_id, video_enabled=True, blocked_at__isnull=True
     ).exists()
+
+
+def is_creator(profile_id):
+    """A Creator (13 Oct 2026, Rahul; the console's "Make creator", stored as
+    `influencer`): a blue tick, and every kind of post."""
+    return Profile.objects.filter(
+        pk=profile_id, influencer=True, blocked_at__isnull=True
+    ).exists()
+
+
+def creator_subquery(outer_field):
+    """ORM annotation: is the row's <outer_field> a Creator."""
+    return Subquery(
+        Profile.objects.filter(id=OuterRef(outer_field)).values("influencer")[:1],
+        output_field=BooleanField(),
+    )
 
 
 def set_influencer(profile_id, on):

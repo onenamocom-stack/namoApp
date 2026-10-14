@@ -302,7 +302,7 @@ export const strings = {
   'prof.set.help': { en: 'Help & support', hi: 'मदद और सहायता' },
 
   // ── Influencer tab (3 Oct 2026) ──
-  'prof.tab.influencer': { en: 'Influencer', hi: 'इन्फ्लुएंसर' },
+  'prof.tab.influencer': { en: 'Creator', hi: 'क्रिएटर' }, // was Influencer (13 Oct 2026, Rahul)
   // ── Profile, Instagram-shaped (4 Oct 2026) ──
   'prof.tab.posts': { en: 'Posts', hi: 'पोस्ट' },
   'prof.bioDefault': { en: 'Available', hi: 'उपलब्ध' },

@@ -532,6 +532,33 @@ Video cost grows with use until 15d lands.
 
 ---
 
+## Phase 16 — One app for everybody (approved 13 Oct 2026, not started)
+
+**Approved by the owner on 13 Oct 2026** (Rahul's proposal). It touches
+consultant sign-in and where a paid call rings, the two reasons it needed
+the owner's yes.
+
+Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
+`src/side.js`), with its own sign-in. After this phase there is one app at
+1namo.com:
+
+- Pros and Creators get **Dashboard** on their own page and Profile. A Pro's
+  dashboard: Earnings, Studio, the consult queue, Insights and the online
+  switch. A Creator's: Studio and Insights.
+- One sign-in. pro.1namo.com forwards to 1namo.com, path and all.
+- The consultant's call and chat requests ring on **every** screen of the
+  one app, and the online heartbeat runs wherever a Pro is, as both do on
+  every pro screen today.
+- pro.1namo.com keeps working, unchanged, until the merged app has carried
+  a real paid call end to end.
+
+**Done when:** a Pro on Home, Bhakti or Market receives a call request,
+hears it ring and answers it, and the session meters exactly as before (the
+chat tests unchanged); a Creator opens Insights from Dashboard; an old
+pro.1namo.com link lands on the same screen in 1namo.com.
+
+---
+
 ## Seed
 
 The largest single task, in phase 4.

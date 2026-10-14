@@ -136,3 +136,25 @@ class TestSuggestions:
         _publish(api_client, consultant_token, kind="post", caption="hello")
         items = api_client.get("/v1/content/suggestions/").json()["items"]
         assert [i["reason"] for i in items] == ["Active this week"]
+
+
+@pytest.mark.django_db
+class TestCreators:
+    """Creators (13 Oct 2026, Rahul): every kind of post, and a flag on
+    their feed rows and author page for the blue tick."""
+
+    def test_a_creator_may_post_a_reel_and_carries_the_flag(self, api_client, seeker_token, roster):
+        from apps.profiles.models import Profile
+
+        refused = _publish(api_client, seeker_token, kind="clip", caption="r", media_url="https://x/r.mp4")
+        assert refused.status_code == 403
+        Profile.objects.filter(id=SEEKER).update(influencer=True)
+        made = _publish(api_client, seeker_token, kind="clip", caption="r", media_url="https://x/r.mp4")
+        assert made.status_code == 201
+        row = api_client.get("/v1/content/feed/").json()["results"][0]
+        assert row["author_is_creator"] is True
+        assert api_client.get(f"/v1/content/authors/{SEEKER}/").json()["is_creator"] is True
+
+    def test_a_seeker_is_not_a_creator(self, api_client, seeker_token, roster):
+        _publish(api_client, seeker_token, kind="post", caption="hi")
+        assert api_client.get("/v1/content/feed/").json()["results"][0]["author_is_creator"] is False

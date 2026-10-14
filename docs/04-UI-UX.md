@@ -121,8 +121,9 @@ at the start of the deity chips read as a button that scrolls them.
 purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash
 with the icon in the colour, and the full colour with a halo when selected.
 **The Consult card** (8 Oct 2026): a 76 px square photo with rounded corners
-and a gold border, the online dot on its corner; the verified mark, a white tick in a blue
-circle (round since 13 Oct 2026; it was a scalloped rosette);
+and a gold border, the online dot on its corner; the tick, a white check in a circle — orange
+`#f5782c` for a Pro, blue `#1d9bf0` for a Creator (two tones since 13 Oct
+2026; round since the same day, it was a scalloped rosette);
 the specialty in a gold outlined chip; gold stars filled to the rating; a
 dashed rule over four equal buttons, label over rate — Chat solid gold,
 Video, Audio and Book outlined in gold; the live three grey when offline.

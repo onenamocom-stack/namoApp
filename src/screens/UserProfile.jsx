@@ -6,6 +6,7 @@ import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
+import VerifiedMark from '../components/VerifiedMark.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
@@ -119,6 +120,7 @@ export default function UserProfile() {
         {/* Name over the three numbers (11 Oct 2026, Rahul). */}
         <ProfileHead
           name={author.name}
+          mark={author.is_creator && <VerifiedMark size={20} tone="creator" />}
           stats={[
             { n: posts.length, label: 'posts' },
             { n: counts.followers, label: 'followers' },

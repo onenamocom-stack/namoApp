@@ -1367,6 +1367,11 @@ anonymous or signed in: up to ten `{id, name, avatar_url, is_consultant,
 reason}` from `reactions` (follows of the people you follow) and the last 14
 days of live `content` authors; blocked profiles excluded.
 
+**Creators** (13 Oct 2026, no new column): `profiles.influencer` is the
+Creator flag, named "Creator" everywhere a person reads it. Feed rows carry
+`author_is_creator`; `GET /v1/content/authors/<id>/` carries `is_creator`. A
+Creator passes the video gate (`content.services._may_post_video`).
+
 **Tag** (13 Oct 2026, no table): `GET /v1/content/tag/<tag>/?sort=new|top`,
 anonymous, returns feed rows whose caption, body or title carries `#tag`
 whole-word, case-blind, among the newest 1,000 live rows.

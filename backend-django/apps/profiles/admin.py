@@ -75,7 +75,7 @@ class ProfileAdmin(dj.ModelAdmin):
     def video(self, obj):
         return obj.video_enabled
 
-    @dj.display(description="Influencer", boolean=True)
+    @dj.display(description="Creator", boolean=True)
     def is_influencer(self, obj):
         return obj.influencer
 
@@ -125,17 +125,17 @@ class ProfileAdmin(dj.ModelAdmin):
         self._switch(request, queryset, "video enabled",
                      lambda r: services.set_video_enabled(r.pk, True))
 
-    @dj.action(description="Make influencer — adds the Influencer tab and its numbers")
+    @dj.action(description="Make creator — blue tick, video, the Creator tab and its numbers")
     def make_influencer(self, request, queryset):
         """Owner's request, 3 Oct 2026: an influencer sees how many people
         joined with their code and how many of those paid. Their code is the
         N invite code they already have; this flag only turns on the tab."""
-        self._switch(request, queryset, "made influencer",
+        self._switch(request, queryset, "made creator",
                      lambda r: services.set_influencer(r.pk, True))
 
-    @dj.action(description="Remove influencer")
+    @dj.action(description="Remove creator")
     def remove_influencer(self, request, queryset):
-        self._switch(request, queryset, "influencer removed",
+        self._switch(request, queryset, "creator removed",
                      lambda r: services.set_influencer(r.pk, False))
 
     @dj.action(description="Revoke video")

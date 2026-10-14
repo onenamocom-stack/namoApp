@@ -61,6 +61,9 @@ def _public_row(row):
         "author_id": str(row.author_id),
         "author_name": row.author_name,
         "author_avatar": getattr(row, "author_avatar", None),
+        # The blue tick (13 Oct 2026); a consultant's is orange, from
+        # author_is_consultant.
+        "author_is_creator": bool(getattr(row, "author_creator", False)),
         "author_is_consultant": bool(row._approved),
         "kind": row.kind,
         "title": row.title,

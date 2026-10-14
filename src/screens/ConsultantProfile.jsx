@@ -285,7 +285,7 @@ export function ConsultantPage({
                 Rahul: Instagram's layout, the same block as every profile). */}
             <ProfileHead
               name={c.name}
-              mark={c.verified && <VerifiedMark size={20} />}
+              mark={(!c.status || c.status === 'approved') && <VerifiedMark size={20} tone="pro" />}
               stats={[
                 { n: items?.length ?? null, label: 'posts' },
                 { n: followers?.followers ?? null, label: 'followers', onClick: own ? () => setListing('followers') : undefined },

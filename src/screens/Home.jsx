@@ -18,6 +18,7 @@ import CommentSheet from '../components/CommentSheet.jsx'
 import EditSheet from '../components/EditSheet.jsx'
 import Composer from '../components/Composer.jsx'
 import Hashtags from '../components/Hashtags.jsx'
+import VerifiedMark from '../components/VerifiedMark.jsx'
 import { BackButton } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
@@ -567,6 +568,14 @@ function FollowSuggestions() {
   )
 }
 
+/** The tick after an author's name (13 Oct 2026): orange for a Pro, blue
+ *  for a Creator, nothing for anyone else. */
+function AuthorMark({ item }) {
+  if (item?.isConsultant) return <VerifiedMark size={14} tone="pro" className="ml-1 align-[-2px]" />
+  if (item?.isCreator) return <VerifiedMark size={14} tone="creator" className="ml-1 align-[-2px]" />
+  return null
+}
+
 function PostHead({ initials, avatar, name, to, note, tag, onMore, moreLabel, follow, onEdit }) {
   const who = (
     <>
@@ -574,6 +583,7 @@ function PostHead({ initials, avatar, name, to, note, tag, onMore, moreLabel, fo
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-meta">
           <span className="font-semibold text-t1">{name}</span>
+          <AuthorMark item={follow} />
         </span>
         {note && <span className="block truncate text-[11px] text-t3">{note}</span>}
       </span>

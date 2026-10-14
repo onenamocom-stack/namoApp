@@ -13,6 +13,7 @@ import { shareLink } from '../lib/share.js'
 import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
+import VerifiedMark from '../components/VerifiedMark.jsx'
 import { uploadAvatar } from '../lib/avatar.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
@@ -205,6 +206,7 @@ function Hero({ posts, counts }) {
         <AvatarPicker />
         <ProfileHead
           name={me.name}
+          mark={profile?.influencer && <VerifiedMark size={20} tone="creator" />}
           stats={[
             { n: posts?.length ?? null, label: t('prof.posts') },
             { n: counts.followers, label: t('prof.followers'), onClick: () => setListing('followers') },

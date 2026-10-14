@@ -132,6 +132,7 @@ def public_content():
         .annotate(
             author_name=profile_services.name_subquery("author_id"),
             author_avatar=profile_services.avatar_subquery("author_id"),
+            author_creator=profile_services.creator_subquery("author_id"),
             # 025: (cs.profile_id is not null) over a LEFT JOIN consultants
             # ON profile_id = author_id AND status = 'approved'.
             _approved=RawSQL(
@@ -287,6 +288,9 @@ def _may_post_video(author_id, role):
     if role == "admin":
         return True
     if gateway.is_approved_consultant(author_id):
+        return True
+    # 4. A Creator posts every kind (13 Oct 2026, Rahul).
+    if profile_services.is_creator(author_id):
         return True
     return profile_services.video_enabled(author_id)
 
@@ -1019,7 +1023,8 @@ def fetch_author(profile_id, viewer_id=None):
     # forwards /u/:id there when this is true.
     return {"id": str(profile_id), "name": name,
             "username": gateway.profile_username(profile_id),
-            "is_consultant": bool(gateway.is_approved_consultant(profile_id))}
+            "is_consultant": bool(gateway.is_approved_consultant(profile_id)),
+            "is_creator": profile_services.is_creator(profile_id)}
 
 
 # ── reporting and moderation ────────────────────────────────────────────────
