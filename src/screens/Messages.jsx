@@ -20,10 +20,11 @@ const initialsOf = (name) =>
  * `/messages` and by the consultant app's chat panel; `onOpen` lets the
  * panel close itself first.
  *
- * Redrawn 14 Oct 2026 (Rahul: "thoda modern"): a "Chats" heading with a
- * new-message pen (it opens People search), underline tabs, larger photos,
- * unread in bold with a saffron count. Groups left this screen the same day;
- * they are Home's round button.
+ * Redrawn 14 Oct 2026 (Rahul: "thoda modern"): underline tabs, larger
+ * photos, unread in bold with a saffron count. Groups left this screen the
+ * same day; they are Home's round button. The "Chats" heading and its
+ * new-message pen left the main app that evening (the header's search finds
+ * people); the consultant app, with no header search, keeps them.
  */
 export function MessagesList({ onOpen }) {
   const navigate = useNavigate()
@@ -65,20 +66,25 @@ export function MessagesList({ onOpen }) {
 
   return (
     <div className="min-h-0 flex-1 bg-white">
-      <div className="flex items-center justify-between px-4 pb-1 pt-4">
-        <h1 className="font-display text-[26px] font-bold leading-none t-heading">Chats</h1>
-        <Link
-          to="/search?in=users"
-          onClick={() => onOpen?.()}
-          aria-label="New message"
-          title="New message"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 t-heading transition-colors hover:bg-surface"
-        >
-          <Icon name="edit" size={19} weight={1.9} />
-        </Link>
-      </div>
+      {/* Main app: no heading or pen (14 Oct 2026, Rahul) — the header's
+          search finds people. The consultant app keeps both: it has no
+          header search. */}
+      {isPro && (
+        <div className="flex items-center justify-between px-4 pb-1 pt-4">
+          <h1 className="font-display text-[26px] font-bold leading-none t-heading">Chats</h1>
+          <Link
+            to="/search?in=users"
+            onClick={() => onOpen?.()}
+            aria-label="New message"
+            title="New message"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 t-heading transition-colors hover:bg-surface"
+          >
+            <Icon name="edit" size={19} weight={1.9} />
+          </Link>
+        </div>
+      )}
 
-      <div role="tablist" className="flex gap-6 border-b border-rule px-4">
+      <div role="tablist" className={`flex gap-6 border-b border-rule px-4 ${isPro ? '' : 'pt-2'}`}>
         {tabs.map((t) => (
           <button
             key={t.key}
