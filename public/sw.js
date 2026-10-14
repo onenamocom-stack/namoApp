@@ -1,11 +1,13 @@
 /* Namo's service worker — the consultant's phone rings (6 Oct 2026).
  *
- * Registered only by the consultant app (src/lib/push.js). The server
+ * Registered by the consultant app and by Namo Consult in the main app
+ * (src/lib/push.js). The server
  * pushes {type: 'incoming', session_id, title, body} the moment a seeker
  * asks for a session; this turns it into a notification that stays until
  * it is answered, vibrates like a phone, and carries Answer and Decline —
  * whether or not the app is open. Tapping it opens (or focuses) the app on
- * /pro/ring/<id>, which does what was tapped.
+ * /pro/ring/<id> (pro app) or /desk/ring/<id> (main app), which does what
+ * was tapped.
  *
  * Nothing here holds data or caches pages: it exists only to be woken.
  */
@@ -54,7 +56,12 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const id = event.notification.data && event.notification.data.session_id
   const act = event.action || 'open'
-  const path = id ? `/pro/ring/${id}?do=${act}` : '/pro/studio'
+  // The pro app rings at /pro/ring; the main app's Namo Consult at
+  // /desk/ring (Phase 16). Each registers this worker on its own origin.
+  const pro = self.location.hostname.startsWith('pro.')
+  const path = id
+    ? `${pro ? '/pro/ring' : '/desk/ring'}/${id}?do=${act}`
+    : pro ? '/pro/studio' : '/desk'
   event.waitUntil(
     (async () => {
       const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })

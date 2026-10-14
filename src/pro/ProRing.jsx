@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { acceptChat, declineRequest } from '../lib/chat.js'
 import { Loader } from '../components/Cosmos.jsx'
 import { useStore } from '../store.jsx'
+import { DUTY_HOME, callPath } from '../lib/dashboard.js'
 
 /**
  * Where a call notification lands (6 Oct 2026). `?do=answer` answers it,
@@ -26,19 +27,19 @@ export default function ProRing() {
         const r = await acceptChat(id)
         if (!r?.ok) {
           showToast(r?.reason ?? 'That call is no longer waiting.')
-          return navigate('/pro/studio', { replace: true })
+          return navigate(DUTY_HOME, { replace: true })
         }
         if (r.mode === 'chat') {
-          navigate('/pro/studio', { replace: true })
+          navigate(DUTY_HOME, { replace: true })
           return openChat('live', r.thread_id ?? null)
         }
-        return navigate(`/call/${id}`, { replace: true })
+        return navigate(callPath(id), { replace: true })
       }
       if (act === 'decline') {
         await declineRequest(id)
         showToast('Declined. Nothing was charged.')
       }
-      navigate('/pro/studio', { replace: true })
+      navigate(DUTY_HOME, { replace: true })
     })()
   }, [id, navigate, openChat, params, showToast])
 

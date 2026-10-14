@@ -6,14 +6,26 @@ import { isPro } from '../side.js'
  * The pro app keeps its `/pro/...` paths. The main app carries the same
  * screens under `/dashboard/...`: not `/pro`, because the store reads a
  * `/pro` path as the consultant app and would switch on the online beat,
- * showing a Pro as online on a screen where no call can ring. Calls stay in
- * the pro app until Namo Consult (`/desk`) takes them.
+ * showing a Pro as online on a screen where no call can ring.
  *
- * Returns null for a screen the main app does not carry — the call queue
- * and availability (`/pro/consult`), which belong to the calling app.
+ * The call queue and availability (`/pro/consult`) and a call
+ * notification's landing (`/pro/ring/:id`) belong to Namo Consult,
+ * `/desk`, the one main-app screen where calls ring.
  */
 export function proPath(path) {
   if (isPro) return path
-  if (path === '/pro/consult' || path.startsWith('/pro/ring')) return null
+  if (path === '/pro/consult') return '/desk'
+  if (path.startsWith('/pro/ring/')) return path.replace('/pro/ring/', '/desk/ring/')
   return path.replace(/^\/pro(?=\/|$)/, '/dashboard')
+}
+
+/** Where a consultant lands after a call or a ring: the studio in the pro
+ *  app, Namo Consult in the main app. */
+export const DUTY_HOME = isPro ? '/pro/studio' : '/desk'
+
+/** The call screen for a session the consultant answered. In the main app
+ *  it carries `?from=desk`, so hanging up returns to Namo Consult and not
+ *  to the seeker's Consult tab. */
+export function callPath(id) {
+  return isPro ? `/call/${id}` : `/call/${id}?from=desk`
 }

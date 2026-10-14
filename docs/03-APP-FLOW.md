@@ -69,6 +69,7 @@ In file order, which is also resolution order.
 | `/notifications` | Notifications | Plain |
 | `/dashboard` | Dashboard — a Pro's or a Creator's own screens (main app, 14 Oct 2026, Phase 16); anyone else goes to `/profile` | Plain |
 | `/dashboard/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
+| `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
 | `/messages` | Messages — Inbox · Requests (both apps) | Plain |
 | `/messages/:id` | Conversation — one person, free (both apps) | Plain |
@@ -1185,15 +1186,28 @@ until this day) and on a Creator's Profile, under the five icons.
 
 - **A Pro:** Your work (Studio, Earnings and Insights, Your links), Your
   practice (Practice and reviews, Edit your page, View your public page,
-  Payout details), Calls and chats (Open the consultant app). Availability
-  and the call queue are not here; they belong to the calling app.
+  Payout details), Calls and chats (**Namo Consult**, `/desk`).
 - **A Creator:** Studio and Your code, then Insights (the last seven days,
   every post with its views, products sold with their code).
 
 The screens are the pro app's own, at `/dashboard/...` and not `/pro/...`:
 a `/pro` path switches the online beat on, which would show a Pro as online
-where no call can ring. Calls stay in the pro app until Namo Consult
-(`/desk`) takes them. A Seeker downloads none of these screens.
+where no call can ring. A Seeker downloads none of these screens.
+
+### `/desk` — Namo Consult (14 Oct 2026, Phase 16)
+
+The main app's one screen where a Pro is on duty, reached from Dashboard
+and from Availability in Practice settings. Header: back to Dashboard, the
+name, the **Online** switch. Under it the ringing requests (Decline,
+Answer), then the pro app's Consult screen as it is: approval state,
+Sessions · Chat · Call, the slots. No tab bar.
+
+Open, the app beats and the Pro can be online; leaving it stops the beat,
+so the Pro drops offline as they would by closing the pro app. On this
+screen the page names itself Namo Consult and offers `desk.webmanifest`
+(start `/desk`), so Add to Home Screen installs it as its own icon.
+pro.1namo.com keeps working beside it until Namo Consult has carried a
+real paid call end to end.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
 In both apps, from **Edit profile** on your own page and from `/pro/profile`.
@@ -1427,6 +1441,10 @@ Refunds are a separate forward transition, never a mutation of the original.
   tone. Three requests in a row that ring out unanswered switch them
   offline and tell them so. Turning Online is the tap that asks for
   notification permission.
+- **Where it rings** (14 Oct 2026, Phase 16): in the pro app on every
+  screen, and in the main app only in **Namo Consult** (`/desk`). A tapped
+  notification opens `/pro/ring/<id>` or `/desk/ring/<id>`, by the app it
+  came from. A call answered in Namo Consult returns there when it ends.
 - **Busy** shows beside the consultant's name while a request rings for them or
   a session is live; it clears by itself when that ends.
 - **A chat** opens the chat panel on that conversation for both people; **a call**

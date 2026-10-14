@@ -6,7 +6,7 @@ import {
   listSessions,
   subscribeToMySessions,
 } from '../lib/chat.js'
-import { isPro } from '../side.js'
+import { callPath } from '../lib/dashboard.js'
 import { startRinging, stopRinging } from '../lib/ringtone.js'
 import { rupees, useStore } from '../store.jsx'
 
@@ -32,7 +32,10 @@ import { rupees, useStore } from '../store.jsx'
  */
 export default function IncomingCall() {
   const navigate = useNavigate()
-  const { showToast, session, openChat } = useStore()
+  /* The store's side, not the build's (Phase 16): true on the pro app's
+     screens, which is where this is mounted there, and on Namo Consult
+     (`/desk`) in the main app. */
+  const { showToast, session, openChat, isPro } = useStore()
   const myId = session?.user?.id
   const [pending, setPending] = useState([])
   const [busy, setBusy] = useState(null)
@@ -56,14 +59,14 @@ export default function IncomingCall() {
     // The same five-second poller the thread list uses. A request is
     // worth knowing about quickly; it is not worth a websocket yet.
     return subscribeToMySessions(myId, load)
-  }, [myId, load])
+  }, [isPro, myId, load])
 
   // Ring while somebody is waiting (6 Oct 2026); stop the moment nobody is.
   useEffect(() => {
     if (isPro && pending.length > 0) startRinging()
     else stopRinging()
     return () => stopRinging()
-  }, [pending.length])
+  }, [isPro, pending.length])
 
   if (!isPro || !myId || pending.length === 0) return null
 
@@ -99,7 +102,7 @@ export default function IncomingCall() {
       openChat('live', result.thread_id ?? null)
       return
     }
-    navigate(`/call/${row.id}`)
+    navigate(callPath(row.id))
   }
 
   return (

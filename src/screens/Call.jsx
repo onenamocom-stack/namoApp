@@ -5,6 +5,12 @@ import { cancelRequest, endChat, heartbeat } from '../lib/chat.js'
 import { useStore } from '../store.jsx'
 import SessionRecharge from '../components/SessionRecharge.jsx'
 
+/** Where hanging up lands: Namo Consult for a consultant who answered
+ *  there (`?from=desk`, Phase 16), the Consult tab otherwise. */
+function afterCall() {
+  return new URLSearchParams(window.location.search).get('from') === 'desk' ? '/desk' : '/consult'
+}
+
 /**
  * The call. Both sides land here; the URL carries the session.
  *
@@ -127,7 +133,7 @@ export default function Call() {
         ended.current = true
         showToast('The call has ended.')
         await refreshWallet(session?.user?.id)
-        navigate('/consult', { replace: true })
+        navigate(afterCall(), { replace: true })
         return
       }
       setResumeBy(h.resume_by ?? null)
@@ -162,7 +168,7 @@ export default function Call() {
             : 'The call has ended.',
         )
         await refreshWallet(session?.user?.id)
-        navigate('/consult', { replace: true })
+        navigate(afterCall(), { replace: true })
         return
       }
       if (h?.connecting === false && h.expires_at) {
@@ -220,7 +226,7 @@ export default function Call() {
         ended.current = true
         showToast('The call has ended.')
         await refreshWallet(session?.user?.id)
-        navigate('/consult', { replace: true })
+        navigate(afterCall(), { replace: true })
       }
     })
   }, [dropped, id, navigate, refreshWallet, session, showToast])
@@ -243,7 +249,7 @@ export default function Call() {
       /* The sweeper settles it within the minute regardless. Leaving is
          not the thing that must not fail. */
     }
-    navigate('/consult', { replace: true })
+    navigate(afterCall(), { replace: true })
   }, [id, leaving, navigate, refreshWallet, session])
 
   if (call === null) {
@@ -274,7 +280,7 @@ export default function Call() {
           type="button"
           onClick={async () => {
             await cancelRequest(id)
-            navigate('/consult', { replace: true })
+            navigate(afterCall(), { replace: true })
           }}
           className="mt-12 text-micro uppercase tracking-caps text-white/50 underline"
         >

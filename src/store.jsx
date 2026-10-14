@@ -1,3 +1,4 @@
+import { proPath } from './lib/dashboard.js'
 import {
   createContext,
   useCallback,
@@ -78,8 +79,10 @@ function readBirthDraft() {
 }
 
 export function AppProvider({ children }) {
-  // Which side we are on, and therefore who "me" is.
-  const isPro = useLocation().pathname.startsWith('/pro')
+  // Which side we are on, and therefore who "me" is. Namo Consult (`/desk`,
+  // Phase 16) is the consultant's side inside the main app.
+  const { pathname: here } = useLocation()
+  const isPro = here.startsWith('/pro') || here === '/desk' || here.startsWith('/desk/')
 
   const [birth, setBirth] = useState(readBirthDraft)
 
@@ -759,8 +762,8 @@ export function AppProvider({ children }) {
                have one and borrowing a stranger's would be the identity bug
                above with a picture attached. */
             avatarUrl: session ? profile?.avatar_url || null : null,
-            profileTo: '/pro/profile',
-            homeTo: '/pro/studio',
+            profileTo: proPath('/pro/profile'),
+            homeTo: proPath('/pro/studio'),
           }
         : {
             ...user,

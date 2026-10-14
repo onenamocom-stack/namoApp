@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { timeSlots, weekDays } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
+import { DeskHeader } from '../components/ProHeader.jsx'
+import { isPro } from '../side.js'
+import { callPath, proPath } from '../lib/dashboard.js'
 import Icon from '../components/Icon.jsx'
 import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
 import { Segmented, firstName } from '../components/Primitives.jsx'
@@ -56,9 +59,13 @@ export default function ProConsult() {
 
   return (
     <>
-      <TabHeader
-        action={pending.length > 0 ? <PopTag tone="gold">{pending.length} waiting</PopTag> : null}
-      />
+      {isPro ? (
+        <TabHeader
+          action={pending.length > 0 ? <PopTag tone="gold">{pending.length} waiting</PopTag> : null}
+        />
+      ) : (
+        <DeskHeader />
+      )}
 
       {/* ── Whether clients can see you at all ────────────────────────────
           This was a toggle backed by a browser flag, on a `pro.online` field
@@ -163,7 +170,7 @@ function Sessions({ me, rows, bookings, reload }) {
     if (!res?.ok) return showToast(res?.reason ?? 'Could not start that session.')
     loadRequests()
     // A call goes to the call screen; a chat opens on its conversation.
-    if ((res.mode ?? sess.mode) !== 'chat') return navigate(`/call/${sess.id}`)
+    if ((res.mode ?? sess.mode) !== 'chat') return navigate(callPath(sess.id))
     showToast(`Live · ${res.minutes_held} min held`)
     openChat('live', res.thread_id ?? null)
   }
@@ -409,7 +416,7 @@ function Sessions({ me, rows, bookings, reload }) {
 
       {/* ── Done ───────────────────────────────────────────────────────── */}
       <section className="px-5 py-6">
-        <Kicker action="Earnings" to="/pro/earnings">
+        <Kicker action="Earnings" to={proPath('/pro/earnings')}>
           Finished
         </Kicker>
         <ul className="mt-3">

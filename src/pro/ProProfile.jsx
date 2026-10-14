@@ -295,11 +295,8 @@ function Settings({ me, onRatesSaved }) {
           <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
           {/* Your profile link, 1namo.com/<username> (11 Oct 2026, Rahul). */}
           <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
-          {/* The call queue and slots live in the calling app; the main
-              app's Dashboard leaves this row out (Phase 16). */}
-          {proPath('/pro/consult') && (
-            <Row to={proPath('/pro/consult')} title="Availability" note="Which slots you are open for" />
-          )}
+          {/* In the main app the slots are in Namo Consult (Phase 16). */}
+          <Row to={proPath('/pro/consult')} title="Availability" note="Which slots you are open for" />
           <Row
             onClick={() => showToast('Languages — prototype only')}
             title="Languages"

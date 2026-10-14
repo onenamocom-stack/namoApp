@@ -76,6 +76,10 @@ const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
 const DashProfile = lazy(() => import('./pro/ProProfile.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
+// Namo Consult, `/desk`: where a Pro takes calls in the main app.
+const DeskLayout = lazy(() => import('./screens/Desk.jsx'))
+const DeskQueue = lazy(() => import('./pro/ProConsult.jsx'))
+const DeskRing = lazy(() => import('./pro/ProRing.jsx'))
 
 function Dash({ need = 'pro', children }) {
   return (
@@ -145,7 +149,8 @@ function BuildWatcher() {
 function NotificationRouter() {
   const navigate = useNavigate()
   useEffect(() => {
-    if (!isPro || !('serviceWorker' in navigator)) return undefined
+    // Both apps since Phase 16: Namo Consult (`/desk`) rings in the main app.
+    if (!('serviceWorker' in navigator)) return undefined
     const onMessage = (e) => {
       if (e.data?.type === 'namo-route' && typeof e.data.path === 'string') navigate(e.data.path)
     }
@@ -510,6 +515,24 @@ function Frame() {
               <Route path="/shop" element={<Shop />} />
               {/* Messages took Academy's slot in the bar (13 Oct 2026). */}
               <Route path="/messages" element={<Messages />} />
+            </Route>
+          )}
+
+          {/* Namo Consult (14 Oct 2026, Phase 16): the main app's one
+              screen where a Pro is on duty — online switch, ringing,
+              queue, slots. Its own shell: no tab bar, so nothing leads
+              away from a call by accident. */}
+          {!isPro && (
+            <Route
+              element={
+                <Dash>
+                  <DeskLayout />
+                </Dash>
+              }
+            >
+              <Route path="/desk" element={<Suspense fallback={<Loader />}><DeskQueue /></Suspense>} />
+              {/* Where a call notification's Answer / Decline lands. */}
+              <Route path="/desk/ring/:id" element={<Suspense fallback={<Loader />}><DeskRing /></Suspense>} />
             </Route>
           )}
 

@@ -532,7 +532,7 @@ Video cost grows with use until 15d lands.
 
 ---
 
-## Phase 16 — One app, and a calling app for Pros (approved 13 Oct 2026, revised 14 Oct, not started)
+## Phase 16 — One app, and a calling app for Pros (approved 13 Oct 2026, revised 14 Oct, in progress)
 
 **Approved by the owner on 13 Oct 2026; revised 14 Oct** (Rahul's proposal,
 owner's yes). It replaced a plan in which a paid call rang on every screen
@@ -554,6 +554,9 @@ Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
 - One sign-in: both are on 1namo.com, so they share it.
 - pro.1namo.com keeps working, unchanged, until /desk has carried a real
   paid call end to end. Then it forwards to 1namo.com, path and all.
+
+**Progress (14 Oct 2026):** Dashboard live; Namo Consult at `/desk` built.
+Left: a real paid call through `/desk`, then the pro.1namo.com forward.
 
 **Done when:** a Pro with /desk open receives a call request, hears it ring
 and answers it, and the session meters exactly as before (the chat tests

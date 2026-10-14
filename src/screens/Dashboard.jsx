@@ -4,15 +4,14 @@ import { Loader } from '../components/Cosmos.jsx'
 import { Kicker } from '../components/Pop.jsx'
 import { Row } from '../components/Primitives.jsx'
 import { Insights } from '../pro/ProEarnings.jsx'
-import { PRO_APP_URL } from '../lib/urls.js'
 import { useStore } from '../store.jsx'
 
 /**
  * Dashboard (Phase 16, 14 Oct 2026): a Pro's and a Creator's own screens,
  * inside the main app. A Pro's are the pro app's — Studio, Earnings and
  * Insights, the practice, links, payout details — at `/dashboard/...`. A
- * Creator's are Studio and Insights. Calls are not here: they ring in the
- * pro app until Namo Consult (`/desk`) carries them.
+ * Creator's are Studio and Insights. Calls are not here: they ring only in
+ * Namo Consult (`/desk`) and in the pro app.
  *
  * Anybody else reaching this address goes to their Profile.
  */
@@ -70,9 +69,8 @@ export default function Dashboard() {
           </section>
           <section className="px-5 pb-8">
             <Kicker>Calls and chats</Kicker>
-            {/* The pro app until Namo Consult (`/desk`) takes the calls. */}
             <div className="mt-2">
-              <Row href={PRO_APP_URL} title="Open the consultant app" note="Go online, and take calls and chats there" />
+              <Row to="/desk" title="Namo Consult" note="Go online, take calls and chats, set your slots" />
             </div>
           </section>
         </>

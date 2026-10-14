@@ -1,0 +1,15 @@
+{
+  "id": "/desk",
+  "name": "Namo Consult",
+  "short_name": "Namo Consult",
+  "description": "Take calls and chats on Namo.",
+  "start_url": "/desk",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f5782c",
+  "icons": [
+    { "src": "/namo-icon.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
