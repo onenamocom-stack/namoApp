@@ -512,14 +512,19 @@ streak breaks after a missed IST day and not before.
 
 ### 15d — Safety and cost at scale (before any growth push)
 
-- Video is compressed on upload. Reels are stored as uploaded today, so
-  storage and bandwidth grow with every user.
+- Video is compressed on upload. **Built 14 Oct 2026**, on the phone
+  before it uploads (`02-TRD` Performance); it was stored as shot, so
+  storage and bandwidth grew with every user.
 - **Built 14 Oct 2026** (`01-PRD` reporting; console *Moderation queue*). A daily moderation queue a person clears in thirty minutes: reports,
   new accounts posting links, repeated text.
 - Rate limits on posting, commenting and messaging. **Built 14 Oct 2026** (`02-TRD` Rate limits).
 
 **Done when:** a 100 MB phone video is stored under 15 MB and still plays,
 and an account posting twenty comments in a minute is stopped.
+
+**Status (14 Oct 2026):** all three built. The comment limit is proven by
+test. Compression is proven in desktop Chrome (17.2 MB, 20 s, 1080×1920 →
+4.8 MB, 720×1280, plays); a real 100 MB video from a phone is not yet tried.
 
 ### Later
 

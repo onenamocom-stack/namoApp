@@ -61,6 +61,7 @@
  */
 
 import { supabase } from './supabase.js'
+import { compressVideo } from './compress.js'
 import { toAsset } from './bhakti.js'
 
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example.com/v1
@@ -515,15 +516,18 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
  * its path is now a UUID in the bucket key, so the file still never changes
  * under its URL and caches for a year.
  */
-export async function uploadMedia(file) {
-  return (await uploadMediaAsset(file)).url
+export async function uploadMedia(file, onProgress = null) {
+  return (await uploadMediaAsset(file, onProgress)).url
 }
 
 /** The same upload, keeping the asset's id — for a write that takes the id
  *  rather than a URL (a consultant's intro, 11 Oct 2026). */
-export async function uploadMediaAsset(file) {
+export async function uploadMediaAsset(original, onProgress = null) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to upload')
+  // A video is made small on the phone first (Phase 15d, lib/compress.js);
+  // anything it cannot shrink uploads as it was.
+  const file = await compressVideo(original, onProgress)
 
   const presigned = await api('/media/presign/', {
     method: 'POST',

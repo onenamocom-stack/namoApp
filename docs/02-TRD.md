@@ -694,6 +694,18 @@ with the instances. Each count has its index. DRF's blanket throttle
 
 ### Performance
 
+**Video is made small on the phone, before it uploads** (14 Oct 2026, Phase
+15d; `src/lib/compress.js`). WebCodecs through `mediabunny` (pinned 1.60.0,
+loaded only when a video is chosen, ~186 kB gzipped): H.264 at most 1280 px
+on the long side, 1.2 Mbit/s, AAC 96 kbit/s, about 9 MB a minute. Files
+under 8 MB are left alone. It takes about as long as the video runs, and
+the composer says so with a percentage. Anything it cannot do (no
+WebCodecs, no H.264 or AAC encoder, an unreadable file, a track it would
+drop, a result not 10% smaller) uploads the original, under the same
+100 MB gate. Client-side rather than a server transcode: the upload shrinks
+too, which on Indian mobile data matters more than the storage, and no
+server pays for CPU.
+
 The app ships **9.4 MB of images** — 5.8 MB of tarot faces and 3.6 MB of murtis
 — referenced by filename rather than imported, so they stay out of the bundle
 graph and only the one on screen is fetched. That property must survive the

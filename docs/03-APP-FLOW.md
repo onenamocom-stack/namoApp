@@ -1203,6 +1203,8 @@ until this day) and on a Creator's Profile, under the five icons.
   with its views, products sold with their code).
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
+A chosen video is made smaller on the phone first, under the post as
+"Making the video smaller · 40%", then "Uploading…" (Phase 15d).
 In that sheet a Pro and a Creator also get video and Tag product (a
 Creator's tag earns as a Pro's, 01-PRD §12); a Seeker gets photo, text and
 blog. Gallery and Camera are icons

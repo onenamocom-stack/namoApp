@@ -87,6 +87,8 @@ export default function Composer({
   const [tagging, setTagging] = useState(first.tagged.length > 0)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
+  // 0 to 1 while a video is being made smaller before it uploads (Phase 15d).
+  const [shrinking, setShrinking] = useState(null)
   const gallery = useRef(null)
   const camera = useRef(null)
   const blog = mode === 'article'
@@ -135,16 +137,18 @@ export default function Composer({
     if (!file) return
     const video = file.type.startsWith('video/')
     if (video && (!canVideo || blog)) {
-      return showToast(blog ? 'A blog cover is a photo.' : 'Video posts are for verified pros. Choose a photo.')
+      return showToast(blog ? 'A blog cover is a photo.' : 'Video posts are for Pros and Creators. Choose a photo.')
     }
     if (editing && editing.kind === 'clip' && !video) return showToast('A reel stays a video. Choose a video.')
     setUploading(true)
     try {
-      setMedia({ url: await uploadMedia(file), type: file.type })
+      const url = await uploadMedia(file, video ? (p) => setShrinking(p) : null)
+      setMedia({ url, type: video ? 'video/mp4' : file.type })
     } catch (err) {
       showToast(err.message)
     } finally {
       setUploading(false)
+      setShrinking(null)
     }
   }
 
@@ -270,7 +274,13 @@ export default function Composer({
               aria-label="Post"
               className="mt-4 w-full resize-none bg-transparent text-lead leading-snug outline-none placeholder:text-t4 t-heading"
             />
-            {uploading && !media && <p className="mt-2 text-meta t-faint">Uploading…</p>}
+            {uploading && !media && (
+              <p className="mt-2 text-meta t-faint tnum">
+                {shrinking !== null && shrinking < 1
+                  ? `Making the video smaller · ${Math.round(shrinking * 100)}%`
+                  : 'Uploading…'}
+              </p>
+            )}
             {media && (
               <div className="relative mt-2 overflow-hidden rounded-2xl bg-ink">
                 {isVideo(media) ? (
