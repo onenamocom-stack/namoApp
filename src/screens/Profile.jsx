@@ -22,7 +22,6 @@ import { Row } from '../components/Primitives.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import { housesFrom, useMyChart } from '../lib/astro.js'
 import { ConsultantPage } from './ConsultantProfile.jsx'
-import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
 import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
 import { profileLink } from '../lib/profile.js'
 import ProfileHead from '../components/ProfileHead.jsx'
@@ -510,9 +509,8 @@ function KundliTab() {
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
 function SettingsPage({ pro }) {
-  const { showToast, profile, t, lang, setLang, consultant } = useStore()
+  const { showToast, profile, t, lang, setLang } = useStore()
   const [leaving, setLeaving] = useState(false)
-  const [intro, setIntro] = useState(false)
   const [naming, setNaming] = useState(false)
 
   const leave = async () => {
@@ -533,19 +531,18 @@ function SettingsPage({ pro }) {
       <ReferralCard />
 
       {/* A pro's profile is their consultant page; what was in its tabs is
-          here (10 Oct 2026). */}
-      {pro && (
+          here (10 Oct 2026). The intro went to Edit profile (14 Oct 2026,
+          Rahul), so this is only a Creator's tab now. */}
+      {pro && profile?.influencer && (
         <section className="border-b border-rule px-5 py-6">
           <Kicker>{t('nav.profile')}</Kicker>
           <div className="mt-2">
-            <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
             {/* Kundli and Saved went on 11 Oct 2026 (Rahul): the horoscope
                 section has the kundli, and Saved is a tab on your page. */}
-            {profile?.influencer && <Row to="/profile/influencer" title={t('prof.tab.influencer')} />}
+            <Row to="/profile/influencer" title={t('prof.tab.influencer')} />
           </div>
         </section>
       )}
-      {intro && <IntroSheet onClose={() => setIntro(false)} />}
       {naming && <UsernameSheet onClose={() => setNaming(false)} />}
 
       <section className="border-b border-rule px-5 py-6">
@@ -561,7 +558,8 @@ function SettingsPage({ pro }) {
               2026, Rahul). */}
           <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
           <Row to="/orders" title={t('prof.orders')} note={t('prof.ordersNote')} />
-          <Row to="/notifications" title={t('prof.notifHistory')} />
+          {/* Notification history went on 14 Oct 2026 (Rahul): the bell
+              is the notifications. /notifications still opens. */}
           <Row
             onClick={() => showToast(t('prof.signedInAs', { phone: profile?.phone ?? '—' }))}
             title={t('prof.phone')}
