@@ -201,7 +201,10 @@ function Sessions({ me, rows, bookings, reload }) {
      failure on the consultant side. Anything not chat is the honest toast. */
   const start = (b) => {
     if (b.mode === 'chat') return openChat('live')
-    return showToast(`Calling ${firstName(b.seeker_name)} — prototype only`)
+    // A booked call is not dialled from here (14 Oct 2026: the toast said
+    // "prototype only"): the client calls at the time, and it rings on the
+    // consultant's screen like any call.
+    return showToast(`At the time, ${firstName(b.seeker_name)} calls you. Stay online and it rings here.`)
   }
 
   const decide = async (b, status) => {
@@ -468,25 +471,22 @@ function Chat({ onOpen }) {
   )
 }
 
-/** Call — a stub like today. Real dialling needs a video/voice SDK (Phase 11, unbuilt). */
+/** Call — where calls arrive (14 Oct 2026: it was a "Pick up" card that
+ *  toasted "prototype only"). A client's call rings at the top of the
+ *  screen while you are online; there is nothing to press here. */
 function Call() {
-  const { showToast } = useStore()
   return (
     <section className="px-5 py-6">
       <Kicker>Incoming calls</Kicker>
-      <button
-        type="button"
-        onClick={() => showToast('Calling — prototype only')}
-        className="pop-card pop-tap mt-4 flex w-full items-center gap-3 p-4"
-      >
+      <div className="pop-card mt-4 flex items-center gap-3 p-4">
         <span className="pill knob !h-10 !w-10 flex-none justify-center">
           <Icon name="phone" size={18} />
         </span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-meta t-heading">Pick up</span>
-          <span className="mt-0.5 block caps-sm t-faint">Prototype only — no call actually connects</span>
+          <span className="block text-meta t-heading">Calls ring at the top of the screen</span>
+          <span className="mt-0.5 block caps-sm t-faint">Stay online. Answer or decline there</span>
         </span>
-      </button>
+      </div>
     </section>
   )
 }

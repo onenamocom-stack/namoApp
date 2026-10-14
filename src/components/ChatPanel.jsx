@@ -752,27 +752,6 @@ function Alerts() {
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
-/**
- * Call, wherever message appears.
- *
- * Classes are written out rather than built from props — Tailwind scans source
- * text, so a name assembled at runtime (`!h-${size}`) is a class it never
- * generates and a button that silently loses its size.
- */
-export function CallButton({ name, className = '' }) {
-  const { showToast } = useStore()
-  return (
-    <button
-      type="button"
-      aria-label={`Call ${name}`}
-      onClick={() => showToast(`Calling ${name} — prototype only`)}
-      className={`pill knob !h-9 !w-9 flex-none justify-center ${className}`}
-    >
-      <Icon name="phone" size={16} />
-    </button>
-  )
-}
-
 function Bubble({ mine, text, time, state, onRetry }) {
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>

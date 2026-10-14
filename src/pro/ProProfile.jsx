@@ -297,11 +297,9 @@ function Settings({ me, onRatesSaved }) {
           <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
           {/* In the main app the slots are in Namo Consult (Phase 16). */}
           <Row to={proPath('/pro/consult')} title="Availability" note="Which slots you are open for" />
-          <Row
-            onClick={() => showToast('Languages — prototype only')}
-            title="Languages"
-            note={me.languages.join(' · ') || 'Not set'}
-          />
+          {/* Languages are edited in Edit profile (14 Oct 2026; this row
+              toasted "prototype only"). */}
+          <Row to="/practice/edit" title="Languages" note={me.languages.join(' · ') || 'Not set'} />
           {/* Real since 3 Oct 2026 (payouts P2). It said "HDFC ••4412" to
               everyone and toasted "prototype only". */}
           <Row to={proPath('/pro/payout-details')} title="Payout details" note="PAN and bank account" />

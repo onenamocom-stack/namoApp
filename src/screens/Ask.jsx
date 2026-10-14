@@ -94,7 +94,9 @@ export default function Ask() {
             </li>
           )}
         </ul>
-        <div ref={endRef} className="h-4" />
+        {/* Scrolled to with room for the composer pinned over the bottom
+            (14 Oct 2026): it hid the newest message under it. */}
+        <div ref={endRef} className="h-4 scroll-mb-40" />
       </div>
 
       {/* Pinned to the bottom of the scroll, like every chat. */}
