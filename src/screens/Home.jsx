@@ -319,12 +319,30 @@ export default function Home() {
           the search field — see `FreeTools` there for why that reversed. */}
       <TabHeader />
 
-      <section className="px-4 pt-3">
-        <Segmented
-          items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
-          value={tab}
-          onChange={(k) => navigate(k === 'feed' ? '/home' : `/home/${k}`)}
-        />
+      {/* The three tabs, and Groups beside them as a round button (14 Oct
+          2026, Rahul): white people on saffron, a small + on its corner. */}
+      <section className="flex items-center gap-2 px-4 pt-3">
+        <div className="min-w-0 flex-1">
+          <Segmented
+            items={TABS.map((tb) => ({ ...tb, label: t(tb.label) }))}
+            value={tab}
+            onChange={(k) => navigate(k === 'feed' ? '/home' : `/home/${k}`)}
+          />
+        </div>
+        <Link
+          to="/groups"
+          aria-label="Groups"
+          title="Groups"
+          className="relative flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-sm transition-transform active:scale-95"
+        >
+          <Icon name="groups" size={22} weight={1.9} />
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white text-[14px] font-bold leading-none text-gold-fill ring-1 ring-gold-fill/40"
+          >
+            +
+          </span>
+        </Link>
       </section>
 
       {/* `key` re-runs the fade on every switch, so the tabs feel like they

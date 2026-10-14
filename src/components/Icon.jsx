@@ -140,6 +140,17 @@ const PATHS = {
     </>
   ),
   /* Edit — a pencil, for Profile's row of icons (13 Oct 2026). */
+  /* Groups (14 Oct 2026, Rahul picked option A): three people. */
+  groups: (
+    <>
+      <circle cx="12" cy="8" r="3" />
+      <path d="M6.5 19.5c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" />
+      <circle cx="5" cy="9.5" r="2.2" />
+      <path d="M1.8 18c.4-2.2 1.7-3.6 3.6-3.9" />
+      <circle cx="19" cy="9.5" r="2.2" />
+      <path d="M22.2 18c-.4-2.2-1.7-3.6-3.6-3.9" />
+    </>
+  ),
   edit: (
     <>
       <path d="M15.6 4.6a2.2 2.2 0 0 1 3.1 3.1L8.4 18l-4.2 1.1 1.1-4.2L15.6 4.6Z" />

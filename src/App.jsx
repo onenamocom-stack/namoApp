@@ -59,6 +59,7 @@ import Messages from './screens/Messages.jsx'
 import Conversation from './screens/Conversation.jsx'
 import Group from './screens/Group.jsx'
 import NewGroup from './screens/NewGroup.jsx'
+import GroupsPage from './screens/GroupsPage.jsx'
 import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
@@ -432,6 +433,8 @@ function Frame() {
                     the list is a tab, below. */}
                 <Route path="/messages/:id" element={<Conversation />} />
                 {/* Groups (14 Oct 2026, Phase 15c); the list is Chat's Groups. */}
+                {/* Home's Groups button (14 Oct 2026, Rahul). */}
+                <Route path="/groups" element={<GroupsPage />} />
                 <Route path="/groups/new" element={<NewGroup />} />
                 <Route path="/groups/:id" element={<Group />} />
                 <Route path="/groups/:id/edit" element={<NewGroup />} />
