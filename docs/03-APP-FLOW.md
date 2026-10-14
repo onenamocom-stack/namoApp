@@ -1195,8 +1195,13 @@ Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
 until this day) and on a Creator's Profile, under the five icons.
 
 - **A Pro:** Your work (Earnings and Insights, Your links), Your practice
-  (Practice and reviews, Payout details), Calls and chats (**Namo
-  Consult**, `/desk`). Edit and the public page are not here (14 Oct 2026,
+  (**Your rates**, which opens the rates sheet here, and Payout details),
+  Calls and chats (**Namo Consult**, `/desk`). "Practice and reviews" went
+  on 14 Oct 2026 (Rahul): reviews are on the Pro's page, Intro video and
+  Username moved to Edit profile (`/practice/edit`, main app), slots are in
+  Namo Consult, and its Languages row only ever said "prototype only" (the
+  languages a seeker sees are edited in Edit profile). `/dashboard/profile`
+  opens the Dashboard. The pro app keeps its Practice tab. Edit and the public page are not here (14 Oct 2026,
   Rahul): Dashboard opens from that page, which carries Edit profile.
 - **A Creator:** Your earnings (this month, in all, waiting out the seven
   days after delivery), Your links (`/dashboard/affiliate`, the same screen

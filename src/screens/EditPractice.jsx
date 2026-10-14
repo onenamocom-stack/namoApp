@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
-import { Section } from '../components/Primitives.jsx'
+import { Row, Section } from '../components/Primitives.jsx'
+import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
+import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
+import { isPro } from '../side.js'
 import { PopButton } from '../components/Pop.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import { categories } from '../data/mock.js'
@@ -45,6 +48,8 @@ export default function EditPractice() {
 
   return (
     <EditPracticeBody
+      // The pro app keeps these in its Practice settings.
+      top={isPro ? null : <PageRows />}
       consultant={consultant}
       review={review}
       onSaved={() => refreshConsultant(session.user.id)}
@@ -55,11 +60,12 @@ export default function EditPractice() {
 }
 
 /** The screen itself, with no store — so it can be drawn on its own. */
-export function EditPracticeBody({ consultant, review, onSaved, onSent, toast }) {
+export function EditPracticeBody({ consultant, review, onSaved, onSent, toast, top = null }) {
   return (
     <div className="flex h-full flex-col">
       <TopBar title="Edit profile" back backTo={`/consult/${consultant.profile_id}`} />
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-16">
+        {top}
         <Direct consultant={consultant} onSaved={onSaved} toast={toast} />
         {review === null ? (
           <Loader />
@@ -273,4 +279,20 @@ function Status({ review }) {
     return <p className="mt-4 text-meta font-semibold text-ok">Your last change was approved.</p>
   }
   return null
+}
+
+/** Your intro and your profile link, here since 14 Oct 2026 (Rahul: they
+ *  are your page, not your practice; they were in Practice settings). */
+function PageRows() {
+  const { consultant, profile } = useStore()
+  const [intro, setIntro] = useState(false)
+  const [naming, setNaming] = useState(false)
+  return (
+    <div className="pt-4">
+      <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
+      <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
+      {intro && <IntroSheet onClose={() => setIntro(false)} />}
+      {naming && <UsernameSheet onClose={() => setNaming(false)} />}
+    </div>
+  )
 }

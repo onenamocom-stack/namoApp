@@ -4,6 +4,8 @@ import { Loader } from '../components/Cosmos.jsx'
 import { Kicker, Stat } from '../components/Pop.jsx'
 import { Row } from '../components/Primitives.jsx'
 import { Insights } from '../pro/ProEarnings.jsx'
+import { RatesSheet } from '../pro/ProProfile.jsx'
+import { RATE_FIELDS } from '../components/RateFields.jsx'
 import { useEffect, useState } from 'react'
 import { rupees, useStore } from '../store.jsx'
 import { creatorEarnings } from '../lib/referrals.js'
@@ -38,6 +40,7 @@ export function DashboardGate({ need = 'any', children }) {
 export default function Dashboard() {
   const role = useDashboardRole()
   const { consultant } = useStore()
+  const [rating, setRating] = useState(false)
 
   if (role === 'loading') return <Loader />
   if (!role) return <Navigate to="/profile" replace />
@@ -63,7 +66,18 @@ export default function Dashboard() {
           <section className="px-5 pb-5">
             <Kicker>Your practice</Kicker>
             <div className="mt-2">
-              <Row to="/dashboard/profile" title="Practice and reviews" note="Rates, intro video, username, reviews" />
+              {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
+                  reviews" page went — reviews are on your page, the intro
+                  and username in Edit profile, the slots in Namo Consult. */}
+              <Row
+                onClick={() => setRating(true)}
+                title="Your rates"
+                note={
+                  consultant.rates
+                    ? RATE_FIELDS.map(([k, label]) => `${label} ₹${consultant.rates[k] ?? '—'}`).join(' · ') + ' /min'
+                    : 'Not set yet'
+                }
+              />
               <Row to="/dashboard/payout-details" title="Payout details" note="PAN and bank account" />
             </div>
           </section>
@@ -87,6 +101,9 @@ export default function Dashboard() {
         </>
       )}
       <div className="h-16" />
+      {rating && (
+        <RatesSheet current={consultant?.rates} onClose={() => setRating(false)} onSaved={() => setRating(false)} />
+      )}
     </>
   )
 }

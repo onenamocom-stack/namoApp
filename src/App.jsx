@@ -74,7 +74,6 @@ const DashboardGate = lazy(() =>
   import('./screens/Dashboard.jsx').then((m) => ({ default: m.DashboardGate })),
 )
 const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
-const DashProfile = lazy(() => import('./pro/ProProfile.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
 // Namo Consult, `/desk`: where a Pro takes calls in the main app.
@@ -464,8 +463,9 @@ function Frame() {
                 {/* Studio went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
                 <Route path="/dashboard/earnings" element={<Dash><DashEarnings /></Dash>} />
-                <Route path="/dashboard/profile" element={<Dash><DashProfile /></Dash>} />
-                <Route path="/dashboard/profile/:tab" element={<Dash><DashProfile /></Dash>} />
+                {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
+                <Route path="/dashboard/profile" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard/profile/:tab" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard/affiliate" element={<Dash need="any"><DashAffiliate /></Dash>} />
                 <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
 

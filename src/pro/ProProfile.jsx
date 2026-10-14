@@ -359,7 +359,9 @@ function Settings({ me, onRatesSaved }) {
  * prices apply to what is asked or booked after the save. A booking or a
  * session already made keeps the price it was made at.
  */
-function RatesSheet({ current, onClose, onSaved }) {
+/** Exported for the main app's Dashboard, where "Your rates" opens it
+ *  directly (14 Oct 2026, Rahul). */
+export function RatesSheet({ current, onClose, onSaved }) {
   const { showToast, refreshConsultant, session } = useStore()
   const [rates, setRates] = useState(() =>
     Object.fromEntries(RATE_FIELDS.map(([k]) => [k, current?.[k] != null ? String(current[k]) : ''])),
