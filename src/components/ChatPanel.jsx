@@ -293,7 +293,7 @@ function ThreadList({ threads, isPro, onOpen, top = null, bottom = null }) {
                     )}
                   </span>
                   {last && (
-                    <span className="mt-1 flex items-center gap-1.5 text-[12px] t-faint">
+                    <span className="mt-1 flex items-center gap-1.5 text-[12px] gold">
                       <Icon name={last.kind === 'chat' ? 'chat' : last.kind === 'audio' ? 'phone' : 'video'} size={13} />
                       {lastLine(last)}
                     </span>
@@ -727,7 +727,7 @@ function Alerts() {
             key={n.id}
             className={`border-b border-rule px-4 py-4 ${n.read ? '' : 'bg-surface-2'}`}
           >
-            <p className="caps-sm t-faint tnum">{alertAgo(n.created_at)}</p>
+            <p className="caps-sm gold tnum">{alertAgo(n.created_at)}</p>
             {alertHref(n) ? (
               <button
                 type="button"

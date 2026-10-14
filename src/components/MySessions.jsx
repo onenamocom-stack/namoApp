@@ -88,7 +88,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-meta t-heading">{r.consultant_name}</span>
-                  <span className="mt-0.5 block caps-sm t-faint tnum">
+                  <span className="mt-0.5 block caps-sm gold tnum">
                     {new Date(r.started_at || r.accepted_at).toLocaleString('en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -117,7 +117,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
           <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
             <span className="min-w-0 flex-1">
               <span className="block truncate text-meta t-heading">{b.consultant_name}</span>
-              <span className="mt-0.5 block caps-sm t-faint tnum">
+              <span className="mt-0.5 block caps-sm gold tnum">
                 {new Date(b.starts_at).toLocaleString('en-IN', {
                   day: 'numeric',
                   month: 'short',
@@ -323,7 +323,7 @@ export function UpcomingSessions() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-meta font-semibold t-heading">{b.consultant_name}</span>
-              <span className="mt-0.5 block text-[12px] t-sub tnum">
+              <span className="mt-0.5 block text-[12px] font-semibold gold tnum">
                 {whenIs(b.starts_at)} · {t('a.min', { n: b.duration_mins })}
               </span>
               <span className="mt-0.5 block text-[12px] font-semibold gold">

@@ -34,7 +34,6 @@ const API_BASE = import.meta.env.VITE_DJANGO_API_URL // e.g. https://api.example
 
 const KINDS = {
   follow: 'consultant',
-  followp: 'profile',
   save: 'content',
   like: 'content',
   // Reshare to your profile and the feed (30 Sep 2026). The server checks
@@ -46,6 +45,11 @@ const KINDS = {
 // Bhakti picture's is `blike:` (12 Oct 2026), so the store's two Sets of
 // flags never mistake one for the other.
 const ALIASES = {
+  // Following a person who is not a consultant: the server's kind is
+  // `follow` on a `profile` (14 Oct 2026 fix). It was sent as kind
+  // `followp`, which the server refuses, so the tap was rolled back and
+  // nobody could follow an ordinary account.
+  followp: { kind: 'follow', targetType: 'profile' },
   blike: { kind: 'like', targetType: 'bhakti' },
   brepost: { kind: 'repost', targetType: 'bhakti' },
 }
@@ -101,9 +105,12 @@ export async function fetchMine() {
   if (!token) return []
 
   const rows = await api('/reactions/', { token })
-  return (rows ?? []).map((r) =>
-    r.target_type === 'bhakti' ? `b${r.kind}:${r.target_id}` : `${r.kind}:${r.target_id}`,
-  )
+  return (rows ?? []).map((r) => {
+    if (r.target_type === 'bhakti') return `b${r.kind}:${r.target_id}`
+    // A follow of a person reads back as the key the buttons set.
+    if (r.kind === 'follow' && r.target_type === 'profile') return `followp:${r.target_id}`
+    return `${r.kind}:${r.target_id}`
+  })
 }
 
 /**
