@@ -1296,9 +1296,13 @@ the same day.
 **The header's knobs — 13 Oct 2026, revised 14 Oct (Rahul).** In the
 seeker app the header has a **bell** on every tab: it opens
 **Notifications** alone, no other tabs, with the unread count on it. On
-**Consult** only, a **chat bubble** sits beside it and opens the panel on
-**Consultant · Sessions** (your chats with consultants and booked
-sessions). Messages between people are not in either: their unread count is
+**Consult** only, a **chat bubble** sits beside it and opens **Consult**, one
+list with no tabs: **Upcoming** (booked sessions still ahead, nearest first,
+"Remember to attend", or "Waiting for them to confirm"), **Recently
+connected** (the consultants you have talked to), **Past bookings** (with
+Review where one is owed). No "Find a consultant": Consult is a tab. Both
+the bell and the bubble open a full page with a ✕ in the seeker app (14 Oct
+2026, Rahul; they were a side panel). Messages between people are not in either: their unread count is
 a red badge on the **Chat** tab in the bar, and a message alert no longer
 appears under the bell. The wallet, consultant chat and sessions are also
 icons on Profile. The pro app keeps the wallet, the bubble and all its

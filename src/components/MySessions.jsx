@@ -14,7 +14,7 @@ import { rupees, useStore } from '../store.jsx'
  * `bookings_view`, so a booking survives a reload; a session waiting on your
  * review comes first, whatever its date.
  */
-export default function MySessions() {
+export default function MySessions({ calls: withCalls = true, pastOnly = false }) {
   const { session, t } = useStore()
   const [mine, setMine] = useState(null)
   const [calls, setCalls] = useState(null)
@@ -57,24 +57,31 @@ export default function MySessions() {
   }, [session, reloadReviewable])
 
   if (mine === null || calls === null) {
-    return <p className="px-5 py-8 text-center text-meta t-faint">{t('ord.loading')}</p>
+    return pastOnly ? null : <p className="px-5 py-8 text-center text-meta t-faint">{t('ord.loading')}</p>
   }
-  if (!mine.length && !calls.length) {
-    return <p className="px-5 py-8 text-center text-meta t-faint">{t('con.noSessions')}</p>
+  /* In the one consult list (14 Oct 2026) only bookings already past show
+     here: the ones ahead are Upcoming, and calls are Recently connected. */
+  const now = Date.now()
+  const booked = pastOnly
+    ? mine.filter((b) => !(['pending', 'confirmed'].includes(b.status) && Date.parse(b.starts_at) + (b.duration_mins || 0) * 6e4 > now))
+    : mine
+  const callRows = withCalls ? calls : []
+  if (!booked.length && !callRows.length) {
+    return pastOnly ? null : <p className="px-5 py-8 text-center text-meta t-faint">{t('con.noSessions')}</p>
   }
 
   const shown = [
-    ...mine.filter((b) => reviewable.some((r) => r.id === b.id)),
-    ...mine.filter((b) => !reviewable.some((r) => r.id === b.id)),
+    ...booked.filter((b) => reviewable.some((r) => r.id === b.id)),
+    ...booked.filter((b) => !reviewable.some((r) => r.id === b.id)),
   ]
 
   return (
     <>
-      {calls.length > 0 && (
+      {callRows.length > 0 && (
         <>
           <p className="px-4 pt-4 caps-sm t-faint">Calls and chats</p>
           <ul className="space-y-2 px-4 pt-2">
-            {calls.map((r) => (
+            {callRows.map((r) => (
               <li key={r.id} className="pop-inset flex items-center gap-3 p-3">
                 <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-surface t-body">
                   <Icon name={r.mode === 'chat' ? 'chat' : r.audio_only ? 'phone' : 'video'} size={16} />
@@ -104,7 +111,7 @@ export default function MySessions() {
           </ul>
         </>
       )}
-      {mine.length > 0 && <p className="px-4 pt-5 caps-sm t-faint">Booked slots</p>}
+      {booked.length > 0 && <p className="px-4 pt-5 caps-sm t-faint">{pastOnly ? 'Past bookings' : 'Booked slots'}</p>}
       <ul className="space-y-2 px-4 py-2">
         {shown.map((b) => (
           <li key={b.id} className="pop-inset flex items-center gap-3 p-3">
@@ -260,4 +267,72 @@ function minutesOf(r) {
   if (!r.started_at) return 'did not connect'
   const secs = (new Date(r.ended_at) - new Date(r.started_at)) / 1000
   return `${Math.max(1, Math.round(secs / 60))} min`
+}
+
+/** "Today 6:30 pm", "Tomorrow 11:00 am", "Sat 18 Oct, 7:00 pm", in IST. */
+function whenIs(iso) {
+  const tz = 'Asia/Kolkata'
+  const day = (d) => d.toLocaleDateString('en-CA', { timeZone: tz })
+  const at = new Date(iso)
+  const time = at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: tz })
+  const today = new Date()
+  const tomorrow = new Date(Date.now() + 864e5)
+  if (day(at) === day(today)) return `Today ${time}`
+  if (day(at) === day(tomorrow)) return `Tomorrow ${time}`
+  const date = at.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz })
+  return `${date}, ${time}`
+}
+
+/**
+ * Sessions you have booked that are still ahead, the nearest first, at the
+ * top of the consult panel (14 Oct 2026, Rahul: one list, "remember to
+ * attend"). Nothing when there are none.
+ */
+export function UpcomingSessions() {
+  const { session, t } = useStore()
+  const [rows, setRows] = useState([])
+
+  useEffect(() => {
+    let live = true
+    const uid = session?.user?.id
+    if (uid) {
+      listMyBookings(uid)
+        .then((all) => {
+          const now = Date.now()
+          const ahead = (all ?? [])
+            .filter((b) => ['pending', 'confirmed'].includes(b.status) && Date.parse(b.starts_at) + (b.duration_mins || 0) * 6e4 > now)
+            .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+          if (live) setRows(ahead)
+        })
+        .catch(() => {})
+    }
+    return () => {
+      live = false
+    }
+  }, [session])
+
+  if (!rows.length) return null
+  return (
+    <section className="border-b border-rule pb-3">
+      <p className="px-4 pb-1 pt-3 caps-sm t-faint">Upcoming</p>
+      <ul className="space-y-2 px-4 pt-1">
+        {rows.map((b) => (
+          <li key={b.id} className="flex items-center gap-3 rounded-xl border border-gold-fill/40 bg-gold-fill/5 p-3">
+            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-white gold">
+              <Icon name="calendar" size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-meta font-semibold t-heading">{b.consultant_name}</span>
+              <span className="mt-0.5 block text-[12px] t-sub tnum">
+                {whenIs(b.starts_at)} · {t('a.min', { n: b.duration_mins })}
+              </span>
+              <span className="mt-0.5 block text-[12px] font-semibold gold">
+                {b.status === 'pending' ? 'Waiting for them to confirm' : 'Remember to attend'}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
 }

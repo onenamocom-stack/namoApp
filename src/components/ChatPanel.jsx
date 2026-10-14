@@ -16,7 +16,7 @@ import {
   subscribeToMySessions,
   subscribeToThread,
 } from '../lib/chat.js'
-import MySessions from './MySessions.jsx'
+import MySessions, { UpcomingSessions } from './MySessions.jsx'
 import { MessagesList } from '../screens/Messages.jsx'
 import SessionRecharge from './SessionRecharge.jsx'
 import {
@@ -49,6 +49,10 @@ export default function ChatPanel() {
      bubble opens Consultant and Sessions (14 Oct 2026, Rahul). Messages
      between people are the Chat tab's. The pro app keeps all its tabs. */
   const alertsOnly = !isPro && chatTab === 'alerts'
+  /* And the bubble opens one list, no tabs (14 Oct 2026, Rahul): sessions
+     still ahead on top ("remember to attend"), then the people you have
+     talked to. */
+  const oneList = !isPro && !alertsOnly
   const title = isPro ? 'Messages' : alertsOnly ? 'Notifications' : 'Consult'
 
   return (
@@ -64,18 +68,36 @@ export default function ChatPanel() {
           slides on one axis and stops, per the linear-motion rule. */}
       {/* Solid white since 3 Oct 2026: `glass-panel` over the dark scrim read
           as grey, the same failure the Tarot dialog had. */}
-      <aside className="relative flex h-full w-[88%] max-w-[380px] animate-slide-in flex-col border-l border-stroke bg-white shadow-xl">
+      {/* The seeker app opens it as a full page with a ✕ (14 Oct 2026,
+          Rahul: the side panel left a dark strip of the screen behind it).
+          The pro app keeps the side panel. */}
+      <aside
+        className={`relative flex h-full animate-slide-in flex-col bg-white ${
+          isPro ? 'w-[88%] max-w-[380px] border-l border-stroke shadow-xl' : 'w-full'
+        }`}
+      >
         <header className="flex-none border-b border-stroke">
           <div className="flex items-center justify-between px-4 py-3">
             <p className="caps t-heading">{title}</p>
-            <button
-              type="button"
-              onClick={() => setChatOpen(false)}
-              className="caps-sm t-body"
-              aria-label="Close"
-            >
-              Close
-            </button>
+            {isPro ? (
+              <button
+                type="button"
+                onClick={() => setChatOpen(false)}
+                className="caps-sm t-body"
+                aria-label="Close"
+              >
+                Close
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setChatOpen(false)}
+                aria-label="Close"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-lead t-heading transition-colors hover:bg-surface"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Ask AI is a seeker product. A consultant is the person being
@@ -84,7 +106,7 @@ export default function ChatPanel() {
               "Clients" because she is not messaging one. */}
           {/* Padded and centred (4 Oct 2026): the labels sat flush on the
               panel's left edge. Same row on both sides of the app. */}
-          {!alertsOnly && (
+          {!alertsOnly && !oneList && (
           <div className="flex gap-2 px-4" role="tablist">
             {(isPro
               ? [
@@ -121,12 +143,16 @@ export default function ChatPanel() {
           )}
         </header>
 
-        {chatTab === 'live' && <LiveConsultant isPro={isPro} />}
-        {chatTab === 'sessions' && !isPro && (
-          <div className="flex-1 overflow-y-auto">
-            <MySessions />
-          </div>
+        {oneList && (
+          <LiveConsultant
+            isPro={false}
+            top={<UpcomingSessions />}
+            // Past bookings, with Review where one is owed: they were the
+            // Sessions tab's.
+            bottom={<MySessions calls={false} pastOnly />}
+          />
         )}
+        {isPro && chatTab === 'live' && <LiveConsultant isPro={isPro} />}
         {chatTab === 'messages' && (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <MessagesList onOpen={() => setChatOpen(false)} />
@@ -152,7 +178,7 @@ export default function ChatPanel() {
    `m.sender_id === myId` and cannot be backwards. That was the bug the mock
    made unavoidable. */
 
-function LiveConsultant({ isPro }) {
+function LiveConsultant({ isPro, top = null, bottom = null }) {
   const { session, chatFocus, setChatFocus } = useStore()
   const myId = session?.user?.id
   const [threads, setThreads] = useState(null)
@@ -209,10 +235,10 @@ function LiveConsultant({ isPro }) {
     }
   }
 
-  return <ThreadList threads={threads} isPro={isPro} onOpen={setActiveId} />
+  return <ThreadList threads={threads} isPro={isPro} onOpen={setActiveId} top={top} bottom={bottom} />
 }
 
-function ThreadList({ threads, isPro, onOpen }) {
+function ThreadList({ threads, isPro, onOpen, top = null, bottom = null }) {
   if (threads === null) {
     return <p className="px-4 py-6 text-meta t-faint">Loading your conversations.</p>
   }
@@ -223,6 +249,8 @@ function ThreadList({ threads, isPro, onOpen }) {
      exists once a consultant has accepted. */
   if (threads.length === 0) {
     return (
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      {top}
       <div className="px-5 py-10 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-surface t-faint">
           <Icon name="chat" size={24} />
@@ -235,13 +263,15 @@ function ThreadList({ threads, isPro, onOpen }) {
             ? 'They appear here when you accept a chat or a call.'
             : 'Chat, video or audio with an astrologer — everyone you talk to stays here.'}
         </p>
-        {!isPro && <FindConsultant />}
+      </div>
+      {bottom}
       </div>
     )
   }
 
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+      {top}
       <p className="px-4 pb-1 pt-3 caps-sm t-faint">Recently connected</p>
       <ul>
         {threads.map((t) => {
@@ -282,11 +312,9 @@ function ThreadList({ threads, isPro, onOpen }) {
           )
         })}
       </ul>
-      {!isPro && (
-        <div className="px-4 py-6">
-          <FindConsultant />
-        </div>
-      )}
+      {bottom}
+      {/* No "Find a consultant" here since 14 Oct 2026 (Rahul): Consult is
+          a tab in the bar. */}
     </div>
   )
 }

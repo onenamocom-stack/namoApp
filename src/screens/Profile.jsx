@@ -222,10 +222,10 @@ function Hero({ posts, counts }) {
           booked sessions, wallet, edit and share. The header keeps only the
           bell, so this row is where money and paid chat are reached from.
           Each says its name to a screen reader and on long press. */}
-      <div className="mt-4 grid grid-cols-5 gap-2">
+      {/* Four since 14 Oct 2026 (Rahul): Sessions joined Consult in one list. */}
+      <div className="mt-4 grid grid-cols-4 gap-2">
         {[
           { icon: 'consult', label: 'Consult', onClick: () => openChat('live') },
-          { icon: 'calendar', label: 'Sessions', onClick: () => openChat('sessions') },
           { icon: 'wallet', label: t('a.wallet'), to: '/wallet' },
           { icon: 'edit', label: t('prof.editProfile'), to: '/onboarding/details?edit=1' },
           { icon: 'share', label: t('prof.shareProfile'), onClick: share },
