@@ -2175,3 +2175,22 @@ console's *Moderation queue* reads it. RLS on with **no policies**.
 | Table | Columns |
 |---|---|
 | `moderation_flags` | `id uuid pk`; `kind` (`new_link`, `repeated`); `target_type` (`post`, `comment`, `bhakti_comment`); `target_id uuid`; `subject_id uuid` (the author); `excerpt` (first 280 characters); `status` (`open`, `cleared`, `removed`, `blocked`); `decided_by`, `decided_at`; `created_at`. **Unique (target_type, target_id, kind)**; index `(status, created_at)` |
+
+## Groups — `groups`, `group_members`, `content.group_id` (14 Oct 2026)
+
+Phase 15c; migrations `groups/0001`, `content/0010`. RLS on with **no
+policies** on both new tables.
+
+| Table | Columns |
+|---|---|
+| `groups` | `id uuid pk`; `name` (≤80); `kind` (`mandir`, `sampradaya`, `city`, `other`); `city`; `about`; `avatar_url`; `created_by uuid`; `status` (`live`, `blocked`); `blocked_reason`; `last_post_at`; `created_at`. Indexes `(status, -last_post_at)`, `(created_by, created_at)` |
+| `group_members` | `id uuid pk`; `group_id → groups` cascade; `profile_id uuid`; `role` (`admin`, `member`); `status` (`active`, `left`, `removed`); `joined_at`. **Unique (group_id, profile_id)**; index `(profile_id, status)` |
+| `content.group_id` | `uuid null`: the group a post was made in. Index `(group_id, -published_at)` |
+
+`public_content()` drops a blocked group's posts and carries `group_name`;
+the open feed (`feed/`) leaves group posts out; `feed/for-you/` adds the
+reader's own groups. API `/v1/groups/`, all signed in: `GET ?mine=1 | ?q=`,
+`POST` (create), `<id>/` (GET, PATCH by an admin), `join/`, `leave/`,
+`members/`, `members/remove/`, `members/admin/`, `posts/`,
+`posts/remove/`. Publishing takes `group_id`; only an active member of a live
+group may use it.

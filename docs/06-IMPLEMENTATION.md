@@ -499,7 +499,7 @@ paid consultation still meters exactly as before (its tests unchanged).
 
 ### 15c — Communities and habits
 
-- Groups: a mandir, a sampradaya or a city. Anyone creates one; the
+- **Groups built 14 Oct 2026** (`03-APP-FLOW` Groups; public groups only). Groups: a mandir, a sampradaya or a city. Anyone creates one; the
   creator moderates it; posts go to the group and its members' feeds.
 - Festival frames and stickers for a post on the festival's day.
 - A japa or sadhana streak on the profile. **Built 14 Oct 2026** (`sadhana_days`).

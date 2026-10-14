@@ -54,6 +54,10 @@ class Content(models.Model):
     view_count = models.IntegerField(default=0)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # The group it was posted in (14 Oct 2026, Phase 15c; `groups`), or
+    # null. A group post shows on the group's page and in its members'
+    # Home feeds, not in everybody's.
+    group_id = models.UUIDField(null=True, blank=True)
     legacy_id = models.TextField(null=True, blank=True, unique=True)
 
     Kind = ContentKind
@@ -84,6 +88,8 @@ class Content(models.Model):
             ),
             # The writing limit's count (apps/core/limits.py, Phase 15d).
             models.Index(fields=["author_id", "created_at"], name="content_author_created_idx"),
+            # A group's page (Phase 15c).
+            models.Index(fields=["group_id", "-published_at"], name="content_group_idx"),
             models.Index(
                 fields=["-published_at"],
                 name="content_published_idx",

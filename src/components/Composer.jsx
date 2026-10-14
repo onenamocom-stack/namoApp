@@ -73,6 +73,7 @@ export default function Composer({
   onClose = null,
   tagProducts = false,
   editing = null,
+  groupId = null,
 }) {
   const { showToast, me } = useStore()
   const canVideo = editing ? editing.kind === 'clip' : allowed.includes('clip')
@@ -174,6 +175,7 @@ export default function Composer({
         kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
         mediaUrl: media?.url,
         productIds: tagProducts ? tagged.map((p) => p.id) : [],
+        groupId,
         ...fields,
       })
       setCaption('')

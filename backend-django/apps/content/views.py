@@ -34,6 +34,8 @@ class PublishInput(serializers.Serializer):
     product_ids = serializers.ListField(
         child=serializers.UUIDField(), required=False, default=list
     )
+    # Post into a group you are a member of (Phase 15c).
+    group_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
 class EditInput(serializers.Serializer):
@@ -61,6 +63,8 @@ def _public_row(row):
         "author_id": str(row.author_id),
         "author_name": row.author_name,
         "author_avatar": getattr(row, "author_avatar", None),
+        # The group it was posted in, or null (Phase 15c).
+        "group": {"id": str(row.group_id), "name": getattr(row, "group_name", None) or ""} if getattr(row, "group_id", None) else None,
         # The blue tick (13 Oct 2026); a consultant's is orange, from
         # author_is_consultant.
         "author_is_creator": bool(getattr(row, "author_creator", False)),
@@ -136,10 +140,17 @@ def for_you(request):
     query.is_valid(raise_exception=True)
     data = query.validated_data
     kinds = [k for k in (data["kinds"] or "").split(",") if k] or None
-    qs = services.public_content()
+    viewer = request.user.pk if request.user and request.user.is_authenticated else None
+    # Everybody's posts, plus the posts of the reader's own groups (Phase 15c).
+    from django.db.models import Q
+
+    from apps.groups import services as group_services
+
+    qs = services.public_content().filter(
+        Q(group_id__isnull=True) | Q(group_id__in=group_services.my_group_ids(viewer))
+    )
     if kinds:
         qs = qs.filter(kind__in=kinds)
-    viewer = request.user.pk if request.user and request.user.is_authenticated else None
     rows = ranking.for_you(qs, viewer, limit=data["limit"])
     rows = services.attach_products(rows)
     return Response({"results": [_public_row(r) for r in rows]})
@@ -209,6 +220,7 @@ def publish(request):
         media_url=data["media_url"],
         status=data["status"],
         product_ids=data["product_ids"],
+        group_id=data["group_id"],
     )
     return Response({"id": str(row.id)}, status=201)
 

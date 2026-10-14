@@ -57,6 +57,8 @@ import ProductPage from './screens/ProductPage.jsx'
 import TagScreen from './screens/TagScreen.jsx'
 import Messages from './screens/Messages.jsx'
 import Conversation from './screens/Conversation.jsx'
+import Group from './screens/Group.jsx'
+import NewGroup from './screens/NewGroup.jsx'
 import SearchScreen from './screens/SearchScreen.jsx'
 import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
@@ -430,6 +432,10 @@ function Frame() {
                 {/* Free messages between people (13 Oct 2026, Phase 15b);
                     the list is a tab, below. */}
                 <Route path="/messages/:id" element={<Conversation />} />
+                {/* Groups (14 Oct 2026, Phase 15c); the list is Chat's Groups. */}
+                <Route path="/groups/new" element={<NewGroup />} />
+                <Route path="/groups/:id" element={<Group />} />
+                <Route path="/groups/:id/edit" element={<NewGroup />} />
                 {/* A person who posts. Deliberately not /consult/:id — that screen
                     sells a practitioner, and publishing a photo does not make
                     anybody bookable. */}

@@ -137,6 +137,8 @@ function shape(row) {
       mrp: p.mrp_paise ? p.mrp_paise / 100 : null,
     })),
     shopRef: row.shop_ref ?? null,
+    // The group it was posted in, `{id, name}`, or null (Phase 15c).
+    group: row.group ?? null,
   }
 }
 
@@ -475,7 +477,7 @@ export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
  * an identity at all (rule 3). The kind gate's refusal arrives with the
  * same sentence the old 42501 mapping produced.
  */
-export async function publish({ kind, title, body, caption, mediaUrl, productIds = [] }) {
+export async function publish({ kind, title, body, caption, mediaUrl, productIds = [], groupId = null }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to publish')
 
@@ -490,6 +492,8 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
       // Only sent when there are some, so a post from an ordinary account
       // is byte-identical to the request it made before tagging existed.
       ...(productIds.length ? { product_ids: productIds } : {}),
+      // Into a group the author is a member of (Phase 15c).
+      ...(groupId ? { group_id: groupId } : {}),
     },
     token,
   })
@@ -678,4 +682,9 @@ export async function fetchAuthor(profileId) {
     if (err.message === 'That author is not available.') return null
     throw err
   }
+}
+
+/** Feed rows from another endpoint (a group's page), shaped as the feed's. */
+export function shapeRows(rows) {
+  return (rows ?? []).map(shape)
 }

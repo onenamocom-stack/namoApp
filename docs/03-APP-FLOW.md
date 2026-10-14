@@ -72,7 +72,8 @@ In file order, which is also resolution order.
 | `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
 | `/home?compose=1` | Home with the new-post sheet open (14 Oct 2026) | Tab |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
-| `/messages` | Messages — Inbox · Requests (both apps) | Plain |
+| `/messages` | Messages — Inbox · Requests (both apps); **Groups** in the seeker app | Plain |
+| `/groups/:id` · `/groups/new` · `/groups/:id/edit` | A group's page; start a group; edit yours (14 Oct 2026, Phase 15c) | Plain |
 | `/messages/:id` | Conversation — one person, free (both apps) | Plain |
 | `/premium` | → `/home` (Premium not offered, 11 Oct 2026) | — |
 | `/reports` | Reports | Plain |
@@ -1772,3 +1773,27 @@ when you look, not something you are interrupted by.
   Unblock (neither person can then write) and **Report** (the person report).
 - **Alert:** "{name} sent you a message", at most once per conversation per
   IST hour, without the words; tapping it opens the conversation.
+
+## Groups (14 Oct 2026, Phase 15c)
+
+Rahul's placement, option A: **Chat → Groups**, a third segment beside Inbox
+and Requests (the tab bar stays five). It lists **Your groups**, the newest
+post first, then **Find groups** (a search box, by name, city or about) and
+**Start a group**.
+
+- **Start a group** (`/groups/new`): photo, name (3 to 80 characters), what
+  it is (Mandir · Sampradaya · City · Other), city, about. You become its
+  admin. Three new groups a day at most.
+- **A group's page** (`/groups/:id`): photo, name, kind · city, the member
+  count (opens Members), about, then **Join** or **Leave** and, for a
+  member, **Post in the group** (the same composer as Home's +, posting into
+  the group). Its posts follow, newest first.
+- **An admin** also sees Edit (`/groups/:id/edit`), **Remove from group**
+  under each post, and in Members **Make admin** and **Remove** beside each
+  person. A removed member cannot post, rejoin, or leave and rejoin. The
+  last admin cannot leave while others remain.
+- **In the feed** a group post carries "In <group>" above its author,
+  opening the group. It reaches the group's members' Home feeds, not
+  everybody's.
+- Every group is public for now: anyone joins. Namo blocks a group from the
+  console (*Groups*), which takes it and its posts out of the app.

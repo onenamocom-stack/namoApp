@@ -7,6 +7,7 @@ import { PopAvatar } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { fetchDmThreads } from '../lib/dms.js'
 import { ago } from '../lib/notifications.js'
+import GroupsPane from '../components/GroupsPane.jsx'
 
 const initialsOf = (name) =>
   (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -24,6 +25,7 @@ export function MessagesList({ onOpen }) {
   useEffect(() => {
     let alive = true
     setData(null)
+    if (box === 'groups') return undefined
     const load = () =>
       fetchDmThreads(box)
         .then((d) => alive && setData(d))
@@ -48,20 +50,23 @@ export function MessagesList({ onOpen }) {
           items={[
             { key: 'inbox', label: 'Inbox' },
             { key: 'requests', label: data?.requests ? `Requests · ${data.requests}` : 'Requests' },
+            // Groups live in Chat (14 Oct 2026, Rahul: option A).
+            ...(isPro ? [] : [{ key: 'groups', label: 'Groups' }]),
           ]}
           value={box}
           onChange={setBox}
         />
       </div>
-      {data === null && <Loader />}
-      {data && !data.items.length && (
+      {box === 'groups' && <GroupsPane onOpen={onOpen} />}
+      {box !== 'groups' && data === null && <Loader />}
+      {box !== 'groups' && data && !data.items.length && (
         <p className="px-5 py-6 text-meta t-faint">
           {box === 'inbox'
             ? 'No messages yet. Open somebody’s profile and tap Message.'
             : 'No requests. A message from somebody who does not follow you waits here.'}
         </p>
       )}
-      {data && data.items.length > 0 && (
+      {box !== 'groups' && data && data.items.length > 0 && (
         <ul className="mt-2">
           {data.items.map((c) => (
             <li key={c.id}>

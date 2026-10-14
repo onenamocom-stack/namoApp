@@ -842,6 +842,21 @@ export function ProductStrip({ tagged = [], shopRef }) {
 /** "↻ Tara reshared" above a post that is in the feed because somebody
  *  reshared it, and their words when they wrote some. Nothing for an
  *  ordinary post. */
+/** "In Shirdi Sai Bhakt" above a post made in a group, opening the group
+ *  (14 Oct 2026, Phase 15c). */
+function GroupLine({ group }) {
+  if (!group) return null
+  return (
+    <Link
+      to={`/groups/${group.id}`}
+      className="flex items-center gap-1.5 px-3 pt-2.5 text-[12px] font-semibold text-t3 hover:text-t1"
+    >
+      <Icon name="namaste" size={13} />
+      <span className="truncate">In {group.name}</span>
+    </Link>
+  )
+}
+
 function ResharedLine({ by }) {
   const { t } = useStore()
   if (!by) return null
@@ -953,6 +968,7 @@ function PostCard({ post, resharedBy }) {
   return (
     <article ref={frame} className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
+      <GroupLine group={p.group} />
       <Quoted on={!!resharedBy?.note}>
       {/* Report stays under the ⋯, not in the action row: it is the one action
           nobody looks for until they need it, and beside Like it gets pressed
@@ -1179,6 +1195,7 @@ function ReelCard({ reel, resharedBy }) {
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
+      <GroupLine group={r.group} />
       <Quoted on={!!resharedBy?.note}>
       <PostHead
         initials={r.initials}
@@ -1427,6 +1444,7 @@ function ArticleCard({ read }) {
   const [comments, setComments] = useState(b.comments ?? 0)
   return (
     <article className="border-b border-rule bg-white">
+      <GroupLine group={b.group} />
       <PostHead
         initials={b.initials}
         avatar={b.avatarUrl}

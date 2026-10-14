@@ -37,7 +37,7 @@ Three layers live here:
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, F
+from django.db.models import Avg, Count, F, OuterRef, Subquery
 from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
@@ -124,8 +124,13 @@ def public_content():
         [],
         output_field=models.IntegerField(),
     )
+    from apps.groups.models import Group
+
     return (
         Content.objects.filter(status=Content.Status.LIVE)
+        # A blocked group's posts leave the app with it (Phase 15c).
+        .exclude(group_id__in=Group.objects.filter(status=Group.Status.BLOCKED).values("id"))
+        .annotate(group_name=Subquery(Group.objects.filter(pk=OuterRef("group_id")).values("name")[:1]))
         .annotate(_blocked=blocked)
         .filter(_blocked=0)
         .annotate(_author_blocked=blocked_author)
@@ -208,7 +213,9 @@ def _public_page(qs, *, after_id=None, limit=40):
 def feed_page(*, kinds=None, after_id=None, limit=40):
     """Newest live content across all authors — the feed is a query, not a
     table (docs/05 §5.3); no ranking, no feed_pins weight in M1."""
-    qs = public_content()
+    # Group posts are for the group and its members (Phase 15c): the open
+    # feed leaves them out; for_you adds the reader's own groups.
+    qs = public_content().filter(group_id__isnull=True)
     if kinds:
         qs = qs.filter(kind__in=kinds)
     return _public_page(qs, after_id=after_id, limit=limit)
@@ -333,7 +340,7 @@ def _checked_products(author_id, role, product_ids):
 
 
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
-                    media_url=None, status=Content.Status.LIVE, product_ids=()):
+                    media_url=None, status=Content.Status.LIVE, product_ids=(), group_id=None):
     """Insert one content row as the caller. author_id is forced (rule 3);
     published_at is the server's clock, never the client's (rule 3 again —
     a timestamp the client picks is a number the user benefits from).
@@ -348,9 +355,19 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
     if role != "admin":
         limits.check(Content.objects.filter(author_id=author_id), limits.POSTS)
     products = _checked_products(author_id, role, product_ids)
+    if group_id:
+        # Only a member of a live group posts in it; a removed member never
+        # again (Phase 15c, the done-condition).
+        from apps.groups import services as group_services
+
+        try:
+            group_services.assert_may_post(group_id, author_id)
+        except group_services.Refused as err:
+            raise PermissionDenied(err.message) from None
     with transaction.atomic():
         row = Content(
             author_id=author_id,
+            group_id=group_id or None,
             kind=kind,
             title=title,
             body=body,
@@ -367,6 +384,10 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
         from . import moderation
 
         moderation.scan_post(row)  # the daily queue's finders (Phase 15d)
+    if group_id:
+        from apps.groups import services as group_services
+
+        group_services.posted(group_id)
     if products:
         # Mint the author's A code now, so every reader of this post finds
         # one to carry — the read side never mints (a GET must not write).
