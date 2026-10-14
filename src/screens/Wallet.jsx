@@ -22,8 +22,10 @@ import { rupees, useStore } from '../store.jsx'
  * discount promise must not be on screen the day real money starts moving.
  */
 export default function Wallet() {
-  const { balance, ledger, showToast, topup, toppingUp, t } = useStore()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const { balance, ledger, topup, toppingUp, t } = useStore()
+  // `?add=1` opens Add money straight away: the Consult page's wallet card
+  // links here (14 Oct 2026).
+  const [sheetOpen, setSheetOpen] = useState(() => new URLSearchParams(window.location.search).get('add') === '1')
   const [custom, setCustom] = useState('')
 
   /* Rupees on this screen because that is what the person is typing. It
@@ -63,18 +65,15 @@ export default function Wallet() {
             >
               {toppingUp ? t('wal.working') : t('a.addMoney')}
             </PopButton>
-            <PopButton onClick={() => showToast(t('wal.statementProto'))}>
-              {t('wal.statement')}
-            </PopButton>
           </div>
         </PopCard>
       </section>
 
       {/* ── Transactions ──────────────────────────────────────────────── */}
       <section className="border-t border-rule px-5 py-6">
-        <Kicker action={t('a.all')} onAction={() => showToast(t('wal.historyProto'))}>
-          {t('wal.recent')}
-        </Kicker>
+        {/* "All" and "Statement" went on 14 Oct 2026: both only toasted that
+            they were not built. */}
+        <Kicker>{t('wal.recent')}</Kicker>
 
         <ul className="mt-4">
           {ledger.map((tx) => (

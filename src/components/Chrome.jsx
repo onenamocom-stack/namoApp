@@ -336,16 +336,16 @@ export function TabHeader({ action = null, search = true }) {
         </button>
       ) : (
         <>
-        {/* The consultant chat bubble, on Consult only (14 Oct 2026, Rahul):
-            your chats with consultants and booked sessions. */}
+        {/* The wallet, on Consult only (14 Oct 2026, Rahul; it was a chat
+            bubble): your balance, your consultations and sessions, one page. */}
         {pathname === '/consult' && (
           <button
             type="button"
             onClick={() => openChat('live')}
-            aria-label="Your consultations"
+            aria-label={balance === null ? 'Wallet and consultations' : `Wallet, ₹${rupees(balance)}, and consultations`}
             className="pill knob relative !h-9 !w-9 justify-center"
           >
-            <Icon name="chat" size={18} />
+            <Icon name="wallet" size={18} />
           </button>
         )}
         {/* The seeker's bell opens notifications alone (14 Oct 2026, Rahul).

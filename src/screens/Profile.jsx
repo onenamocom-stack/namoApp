@@ -188,7 +188,7 @@ export default function Profile() {
 /* ── The top: you ────────────────────────────────────────────────────────── */
 
 function Hero({ posts, counts }) {
-  const { t, session, showToast, profile, openChat } = useStore()
+  const { t, session, showToast, profile } = useStore()
   const [listing, setListing] = useState(null)
   const me = useProfileFields()
 
@@ -222,12 +222,13 @@ function Hero({ posts, counts }) {
           booked sessions, wallet, edit and share. The header keeps only the
           bell, so this row is where money and paid chat are reached from.
           Each says its name to a screen reader and on long press. */}
-      {/* Four since 14 Oct 2026 (Rahul): Sessions joined Consult in one list. */}
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      {/* Two since 14 Oct 2026 (Rahul): Sessions joined Consult, and Consult
+          and Wallet are the Consult page's wallet button. */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
         {[
-          { icon: 'consult', label: 'Consult', onClick: () => openChat('live') },
-          { icon: 'wallet', label: t('a.wallet'), to: '/wallet' },
-          { icon: 'edit', label: t('prof.editProfile'), to: '/onboarding/details?edit=1' },
+          // Edit opens Profile settings, every edit in one place (14 Oct
+          // 2026, Rahul, as a Pro's Basic profile does).
+          { icon: 'edit', label: t('prof.editProfile'), to: '/profile/settings' },
           { icon: 'share', label: t('prof.shareProfile'), onClick: share },
         ].map((b) => {
           const cls =
@@ -552,9 +553,9 @@ function SettingsPage({ pro }) {
           {/* No Wallet row since 11 Oct 2026 (Rahul): the wallet is the
               icon at the top of every tab. Name and birth details are here
               for a pro, whose page has no Edit profile button (11 Oct). */}
-          {pro && (
-            <Row to="/onboarding/details?edit=1" title="Edit details" />
-          )}
+          {/* For everybody since 14 Oct 2026 (it was a Pro's only): Profile's
+              Edit opens this page. */}
+          <Row to="/onboarding/details?edit=1" title="Edit details" note="Name and birth details" />
           {/* Your profile link, 1namo.com/<username>, for everybody (11 Oct
               2026, Rahul). */}
           <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />

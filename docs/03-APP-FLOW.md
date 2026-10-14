@@ -927,10 +927,11 @@ length, because their two clock times are identical.
 **Instagram-shaped since 4 Oct 2026** (owner's call). The top: your picture in a
 saffron ring (tap to change), beside it your name over posts · followers ·
 following (the shared profile header), then
-a row of five icons without words (13 Oct 2026, Rahul; it was Edit profile
-and Share profile): **Consult** (the chat panel on Consultant), **Sessions**
-(the panel on Sessions), **Wallet** (`/wallet`), **Edit** (`/onboarding/details?edit=1`)
-and **Share** (`/u/<you>`), each named to a screen reader and on long press.
+two icons without words since 14 Oct 2026 (Rahul; five the day before):
+**Edit**, which opens **Profile settings** (`/profile/settings`: Edit details
+for name and birth details, Username, Orders, language — every edit in one
+place), and **Share** (`/u/<you>`). Consult, Sessions and Wallet went: they
+are all the Consult page's wallet button.
 
 **Sadhana streak** (14 Oct 2026, Phase 15c): under the bio, beside a mala,
 "7-day sadhana streak · best 12" on your Profile, a Pro's page and `/u/:id`.
@@ -1306,8 +1307,10 @@ the same day.
 **The header's knobs — 13 Oct 2026, revised 14 Oct (Rahul).** In the
 seeker app the header has a **bell** on every tab: it opens
 **Notifications** alone, no other tabs, with the unread count on it. On
-**Consult** only, a **chat bubble** sits beside it and opens **Consult**, one
-list with no tabs: **Upcoming** (booked sessions still ahead, nearest first,
+**Consult** only, a **wallet** button sits beside it (a chat bubble until 14
+Oct 2026) and opens **Consult**, one list with no tabs: first the **wallet
+card** (balance, **Add money** to `/wallet?add=1`, **Details** to `/wallet`),
+then **Upcoming** (booked sessions still ahead, nearest first,
 "Remember to attend", or "Waiting for them to confirm"), **Recently
 connected** (the consultants you have talked to), **Past bookings** (with
 Review where one is owed). No "Find a consultant": Consult is a tab. Both

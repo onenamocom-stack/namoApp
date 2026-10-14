@@ -1,7 +1,7 @@
 import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { rupees, useStore } from '../store.jsx'
@@ -146,7 +146,12 @@ export default function ChatPanel() {
         {oneList && (
           <LiveConsultant
             isPro={false}
-            top={<UpcomingSessions />}
+            top={
+              <>
+                <WalletCard onGo={() => setChatOpen(false)} />
+                <UpcomingSessions />
+              </>
+            }
             // Past bookings, with Review where one is owed: they were the
             // Sessions tab's.
             bottom={<MySessions calls={false} pastOnly />}
@@ -847,5 +852,38 @@ function Composer({ onSend, placeholder, disabled = false }) {
         </PopButton>
       </span>
     </form>
+  )
+}
+
+/** The wallet at the top of the Consult page (14 Oct 2026, Rahul): the
+ *  balance, Add money, and Details (the wallet page's history). It moved here
+ *  from Profile's icons and the header. */
+function WalletCard({ onGo }) {
+  const { balance } = useStore()
+  return (
+    <section className="px-4 pt-4">
+      <div className="rounded-2xl bg-gradient-to-br from-[#fff4ea] to-white p-4 ring-1 ring-gold-fill/25">
+        <p className="caps-sm t-faint">Wallet balance</p>
+        <p className="mt-1 font-display text-[30px] font-bold leading-none tnum t-heading">
+          {balance === null ? '—' : `₹${rupees(balance)}`}
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Link
+            to="/wallet?add=1"
+            onClick={onGo}
+            className="flex-1 rounded-xl bg-gold-fill py-2.5 text-center text-meta font-semibold text-white shadow-sm"
+          >
+            Add money
+          </Link>
+          <Link
+            to="/wallet"
+            onClick={onGo}
+            className="flex-1 rounded-xl bg-white py-2.5 text-center text-meta font-semibold t-heading ring-1 ring-rule"
+          >
+            Details
+          </Link>
+        </div>
+      </div>
+    </section>
   )
 }
