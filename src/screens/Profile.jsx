@@ -494,7 +494,8 @@ function KundliTab() {
           <Row to="/chart" title={t('row.chart')} note={t('prof.chartNote')} />
           <Row to="/match" title={t('tool.match')} note={t('prof.matchNote')} />
           <Row to="/muhurat" title={t('tool.muhurat')} note={t('row.muhuratNote')} />
-          <Row to="/reports" title={t('prof.reports')} note={t('prof.reportsNote')} />
+          {/* Reports hidden 14 Oct 2026 (owner): they were mock reports that
+              charged the wallet and generated nothing. */}
         </div>
       </section>
     </>

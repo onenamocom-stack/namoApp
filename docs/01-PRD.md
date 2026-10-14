@@ -103,7 +103,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 | Tarot — 5 decks, 48 painted Bhaktamar faces | UI | **Charges the wallet for real** |
 | Pooja — animated mandir, 7 deities, 26 murtis | UI | E-puja only. Nothing books a pandit, nothing is charged |
 | Shop — categories, cart, checkout | UI | **Charges the wallet for real** |
-| Reports | UI | **Charges the wallet for real** |
+| Reports | **Hidden 14 Oct 2026 (owner)** | It charged the wallet for real and generated no report; the Profile row is gone and `/reports` opens Home until a report exists |
 | Premium tiers | **Removed 11 Oct 2026** | Not offered (Rahul). `/premium` forwards to Home; the screen is deleted, so an unlinked page is not indexed |
 | Academy — courses, events, e-books | UI | Enrol toasts. Course links go to YouTube *search* URLs |
 | Wallet — balance and ledger | **Real** | Server-owned. Debits only — top-up waits for payments |
@@ -226,6 +226,9 @@ about 3 paise of model time against the ₹11, and it is why the question is typ
 rather than held in the head.
 
 ### 4.3 Reports
+
+**Hidden since 14 Oct 2026 (owner's call):** the catalogue was mock and a
+purchase produced nothing. What follows is the plan for when it returns.
 
 Six reports. **Their prices are an open decision (§5)** because the current
 numbers are a placeholder multiplied at load time:

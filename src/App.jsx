@@ -10,7 +10,6 @@ import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
-import Reports from './screens/Reports.jsx'
 
 import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
 import AboutYou from './screens/onboarding/AboutYou.jsx'
@@ -449,7 +448,9 @@ function Frame() {
                 <Route path="/notifications" element={<Notifications />} />
                 {/* Premium is not offered (11 Oct 2026, Rahul); an old link lands on Home. */}
                 <Route path="/premium" element={<Navigate to="/home" replace />} />
-                <Route path="/reports" element={<Reports />} />
+                {/* Hidden 14 Oct 2026 (owner): mock reports charged the wallet and
+                    produced nothing. Back when a real report exists. */}
+                <Route path="/reports" element={<Navigate to="/home" replace />} />
                 <Route path="/tarot" element={<Tarot />} />
 
                 {/* Dashboard (14 Oct 2026, Phase 16): a Pro's and a
