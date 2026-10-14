@@ -1868,6 +1868,28 @@ built-in art is drawn by `tools/festival-frames.py`, with its English and
 Hindi set by Chrome in `tools/festival-frames-text.mjs` (this Pillow cannot
 shape Devanagari). Stickers are not built.
 
+## The share sheet (14 Oct 2026, Rahul)
+
+Every Share button opens it: reels, posts, articles, products, Bhakti items,
+profiles, the invite link. A status card's green WhatsApp Share is the one
+exception; it still hands the dated picture to the phone. Signed out, Share
+goes straight to the phone's sheet.
+
+- **People on NAMO.** A search box, then your recent chats and whom you
+  follow, three to a row. Tap to pick one or more; **Send to <name>** or
+  **Send to N people**. Each gets it as a message in your chat with them,
+  under the ordinary rules: a stranger gets one message as a request, a
+  blocked person nothing.
+- **Never a Pro.** Approved Pros are left out of the list and the search
+  (Rahul: "Pro ko koi msg nahi jayga"); their paid chat is the way to them.
+- **Outside NAMO.** WhatsApp (`wa.me`, the title and link), Share (the
+  phone's sheet, as the button did before) and Copy link.
+
+In the chat, a share is a card: the picture, or the reel's first frame,
+what it is (Reel, Post, Article, Shop, Bhakti, Profile) and its title. A tap
+opens it. A post has no page, so it opens its author's. The Chats list
+reads "Sent a reel", "Sent a post" and so on.
+
 ## Chats, `/messages` (redrawn 14 Oct 2026, Rahul)
 
 The header carries the search box like every other tab (14 Oct 2026,

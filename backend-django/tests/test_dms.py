@@ -134,6 +134,16 @@ class TestConsultantsKeepTheirPaidChat:
         _follow(api_client, consultant_token, SEEKER)
         assert _start(api_client, seeker_token, APPROVED).status_code == 200
 
+    def test_a_conversation_says_when_the_other_person_is_a_pro(
+        self, api_client, consultant_token, seeker_token, roster
+    ):
+        # The share sheet leaves Pros out by this flag (14 Oct 2026).
+        tid = _start(api_client, consultant_token, SEEKER).json()["id"]
+        _send(api_client, consultant_token, tid, "Thank you for the session")
+        seen = _box(api_client, seeker_token, "requests")["items"] + _box(api_client, seeker_token)["items"]
+        assert seen[0]["with"]["is_consultant"] is True
+        assert _box(api_client, consultant_token)["items"][0]["with"]["is_consultant"] is False
+
 
 @pytest.mark.django_db
 class TestOne:

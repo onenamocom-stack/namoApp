@@ -302,7 +302,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
           tone="plain"
           onClick={async () => {
             // Real now — this toasted "Reel link copied" and copied nothing.
-            const said = await shareLink(`/reels/${c.id}`, { title: c.consultant })
+            const said = await shareLink(`/reels/${c.id}`, { title: c.caption || c.consultant, media: c.mediaUrl })
             if (said) showToast(said)
           }}
         />

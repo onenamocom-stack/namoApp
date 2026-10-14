@@ -2114,7 +2114,7 @@ reads nothing; the API connects as the owner.
 | Table | Columns |
 |---|---|
 | `dm_threads` | `id uuid pk`; `a_id`, `b_id uuid` — the pair, smaller id first, **unique (a_id, b_id)**; `started_by uuid`; `accepted_at`, `declined_at timestamptz null` (a request while `accepted_at` is null); `last_message_at`, `last_preview` (first 120 characters); `created_at`. Indexes `(a_id, -last_message_at)`, `(b_id, -last_message_at)` |
-| `dm_messages` | `id uuid pk`; `thread_id → dm_threads` cascade; `sender_id uuid`; `body text` (check `body <> ''`; the API trims and caps at 2,000); `created_at`; `read_at null`. Index `(thread_id, created_at)` |
+| `dm_messages` | `id uuid pk`; `thread_id → dm_threads` cascade; `sender_id uuid`; `body text` (check `body <> ''`; the API trims and caps at 2,000); a share from the share sheet (14 Oct 2026) is an ordinary body: a `https://1namo.com/…` link on the first line, the title on the second, a picture from our storage on the third — no column of its own; `created_at`; `read_at null`. Index `(thread_id, created_at)` |
 | (14 Oct 2026, `dms/0003`) | `dm_threads.a_cleared_at`, `b_cleared_at` (each side's Delete chat: their messages up to it are hidden for them, and the thread leaves their list until a newer message); `dm_messages.deleted_at` (deleted by its sender for both; the body is overwritten with "—", returned as `body: null, deleted: true`). API `threads/<id>/clear/`, `threads/<id>/messages/<mid>/delete/` |
 | `dm_blocks` | `id uuid pk`; `blocker_id`, `blocked_id uuid`, **unique (blocker_id, blocked_id)**; `created_at`. Either direction stops both people writing |
 

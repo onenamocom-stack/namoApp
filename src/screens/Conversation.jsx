@@ -6,6 +6,7 @@ import { PopAvatar } from '../components/Pop.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import { DM_POLL_MS, acceptDm, blockPerson, declineDm, deleteDm, fetchDmMessages, markDmRead, sendDm } from '../lib/dms.js'
 import { useLongPress } from '../lib/longpress.js'
+import { KIND_LABEL, parseShare } from '../lib/share.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -232,6 +233,14 @@ export default function Conversation() {
  *  deleted one, either side's, reads "This message was deleted". */
 function Bubble({ m, mine, onHold }) {
   const hold = useLongPress(() => mine && !m.deleted && onHold())
+  const shared = !m.deleted && parseShare(m.body)
+  if (shared) {
+    return (
+      <div className={`mb-1.5 flex ${mine ? 'justify-end' : 'justify-start'}`}>
+        <ShareCard s={shared} mine={mine} hold={mine ? hold : {}} />
+      </div>
+    )
+  }
   return (
     <div className={`mb-1.5 flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <p
@@ -247,5 +256,34 @@ function Bubble({ m, mine, onHold }) {
         {m.deleted ? 'This message was deleted' : m.body}
       </p>
     </div>
+  )
+}
+
+/** Something shared from a Share button (14 Oct 2026, Rahul): its picture
+ *  or the reel's first frame, what it is and its title; a tap opens it. */
+function ShareCard({ s, mine, hold }) {
+  const video = s.media && /\.(mp4|webm|mov)(\?|#|$)/i.test(s.media)
+  return (
+    <Link
+      to={s.path}
+      {...hold}
+      className={`block w-[220px] select-none overflow-hidden rounded-2xl border ${
+        mine ? 'border-transparent bg-btn text-white' : 'border-rule bg-white text-t1'
+      }`}
+    >
+      {s.media && (
+        <span className="block aspect-[4/5] w-full overflow-hidden bg-ink/[0.06]">
+          {video ? (
+            <video src={`${s.media}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+          ) : (
+            <img src={s.media} alt="" loading="lazy" className="h-full w-full object-cover" />
+          )}
+        </span>
+      )}
+      <span className="block px-3.5 py-2.5">
+        <span className={`block caps-sm ${mine ? 'opacity-70' : 't-faint'}`}>{KIND_LABEL[s.kind]}</span>
+        <span className="mt-0.5 line-clamp-2 block text-body">{s.title || 'Open on NAMO'}</span>
+      </span>
+    </Link>
   )
 }

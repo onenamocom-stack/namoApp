@@ -125,7 +125,7 @@ export default function Article() {
             <button
               type="button"
               onClick={async () => {
-                const said = await shareLink(`/read/${b.id}`, { title: b.title })
+                const said = await shareLink(`/read/${b.id}`, { title: b.title, media: b.mediaUrl })
                 if (said) showToast(said)
               }}
               className="text-label uppercase tracking-label text-t2"
@@ -197,7 +197,7 @@ export default function Article() {
             comments={comments}
             onComment={() => setCommenting(true)}
             onShare={async () => {
-              const said = await shareLink(`/read/${b.id}`, { title: b.title })
+              const said = await shareLink(`/read/${b.id}`, { title: b.title, media: b.mediaUrl })
               if (said) showToast(said)
             }}
           />

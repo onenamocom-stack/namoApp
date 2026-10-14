@@ -1091,9 +1091,14 @@ function PostCard({ post, resharedBy }) {
         reposts={p.reposts}
         onComment={() => setCommenting(true)}
         // A post has no page of its own, so Share sends the author's —
-        // until 30 Sep this toasted "Note copied" and copied nothing.
+        // until 30 Sep this toasted "Note copied" and copied nothing. The
+        // `post` mark makes it a post's card in a chat (14 Oct 2026).
         onShare={async () => {
-          const said = await shareLink(authorHref(p), { title: p.consultant })
+          const href = authorHref(p)
+          const said = await shareLink(`${href}${href.includes('?') ? '&' : '?'}post=${p.id}`, {
+            title: p.title || p.caption || p.body || p.consultant,
+            media: p.mediaUrl,
+          })
           if (said) showToast(said)
         }}
       />
@@ -1344,7 +1349,7 @@ function ReelCard({ reel, resharedBy }) {
         reposts={r.reposts}
         onComment={() => setCommenting(true)}
         onShare={async () => {
-          const said = await shareLink(`/reels/${r.id}`, { title: r.consultant })
+          const said = await shareLink(`/reels/${r.id}`, { title: r.caption || r.consultant, media: r.mediaUrl })
           if (said) showToast(said)
         }}
       />
@@ -1564,7 +1569,7 @@ function ArticleCard({ read }) {
         comments={comments}
         onComment={() => setCommenting(true)}
         onShare={async () => {
-          const said = await shareLink(`/read/${b.id}`, { title: b.title })
+          const said = await shareLink(`/read/${b.id}`, { title: b.title, media: b.mediaUrl })
           if (said) showToast(said)
         }}
       />

@@ -10,6 +10,7 @@ import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
+import ShareSheet from './components/ShareSheet.jsx'
 
 import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
 import AboutYou from './screens/onboarding/AboutYou.jsx'
@@ -592,9 +593,11 @@ function Frame() {
             chat screen too (Consult → Chat, the header's Messages button and
             "Open chat" all call openChat). It was seeker-only from the build
             split on 19 Sep until 3 Oct 2026, so in the consultant app every
-            one of those did nothing. The cart sheet stays seeker-only. */}
+            one of those did nothing. The cart sheet stays seeker-only; the
+            share sheet is every Share button's, in both. */}
         <ChatPanel />
         {!isPro && <CartSheet />}
+        <ShareSheet />
         <Toast message={toast} />
       </div>
     </div>

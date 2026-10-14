@@ -291,6 +291,8 @@ def row(thread, me):
             "id": str(other.id) if other else None,
             "name": (other.name if other else None) or "NAMO member",
             "avatar_url": other.avatar_url if other else None,
+            # The share sheet leaves Pros out (14 Oct 2026, Rahul).
+            "is_consultant": _approved_consultant(other.id) if other else False,
         },
         "last_preview": thread.last_preview,
         "last_message_at": thread.last_message_at,

@@ -32,6 +32,7 @@
 
 import { supabase } from './supabase.js'
 import { myCodes } from './referrals.js'
+import { openShare } from './share.js'
 import { SEEKER_APP_URL } from './urls.js'
 
 /** The Django API's base, e.g. https://api.example.com/v1 */
@@ -664,9 +665,20 @@ export async function inviteMessage(asset) {
   ].join('\n')
 }
 
+/** Share one asset: the app's share sheet (14 Oct 2026), whose people get
+ *  it as a card in a chat and whose Share button is `phoneShareAsset`. */
+export function shareAsset(asset) {
+  return openShare({
+    path: `/bhakti/s/${asset.id}`,
+    title: asset.title,
+    media: PICTURES.has(asset.kind) ? asset.url : null,
+    external: () => phoneShareAsset(asset),
+  })
+}
+
 /** Share one asset's invitation: the phone's share sheet, or the clipboard.
  *  Returns the sentence to toast, or null when there is nothing to say. */
-export async function shareAsset(asset) {
+export async function phoneShareAsset(asset) {
   const text = await inviteMessage(asset)
   /* A status or wallpaper goes out as the picture itself, the message as its
      caption (8 Oct 2026: a link alone arrived with no image). Audio, and a

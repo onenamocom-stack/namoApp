@@ -8,6 +8,7 @@ import { PopAvatar } from '../components/Pop.jsx'
 import { clearDm, fetchDmThreads } from '../lib/dms.js'
 import { useLongPress } from '../lib/longpress.js'
 import { ago } from '../lib/notifications.js'
+import { sharePreview } from '../lib/share.js'
 import { useStore } from '../store.jsx'
 
 const initialsOf = (name) =>
@@ -159,7 +160,7 @@ export function MessagesList({ onOpen }) {
                         }`}
                       >
                         {waiting && <ClockMark />}
-                        <span className="truncate">{waiting ? 'Sent · waiting for them to accept' : c.last_preview}</span>
+                        <span className="truncate">{waiting ? 'Sent · waiting for them to accept' : sharePreview(c.last_preview)}</span>
                       </span>
                       {unread && (
                         <span className="flex h-5 min-w-5 flex-none items-center justify-center rounded-full bg-gold-fill px-1.5 text-[11px] font-bold text-white tnum">

@@ -8,6 +8,7 @@ import { PopButton } from '../components/Pop.jsx'
 import { fetchProduct, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import RichText from '../components/RichText.jsx'
+import { openShare } from '../lib/share.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -101,7 +102,12 @@ export default function ProductPage() {
   const off = p.mrp ? Math.round((1 - p.price / p.mrp) * 100) : null
   const hasDescription = !!p.description.trim()
 
-  const share = async () => {
+  /* The app's share sheet (14 Oct 2026); its Share button is the phone's,
+     with the name and price. */
+  const share = () =>
+    openShare({ path: window.location.pathname + window.location.search, title: `${p.name} · ₹${p.price.toLocaleString('en-IN')}`, media: p.image, external: phone })
+
+  const phone = async () => {
     const url = window.location.href
     try {
       // WhatsApp shows `text` and the link, not `title`: the full name and
