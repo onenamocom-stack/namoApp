@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { TabHeader, TopBar } from '../components/Chrome.jsx'
+import { Sheet, TabHeader, TopBar } from '../components/Chrome.jsx'
 import { isPro } from '../side.js'
 import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
 import { PopAvatar } from '../components/Pop.jsx'
-import { fetchDmThreads } from '../lib/dms.js'
+import { clearDm, fetchDmThreads } from '../lib/dms.js'
+import { useLongPress } from '../lib/longpress.js'
 import { ago } from '../lib/notifications.js'
+import { useStore } from '../store.jsx'
 
 const initialsOf = (name) =>
   (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -27,6 +29,9 @@ export function MessagesList({ onOpen }) {
   const [box, setBox] = useState('inbox')
   const [data, setData] = useState(null)
   const [requests, setRequests] = useState(0)
+  // The chat held down for "Delete chat" (14 Oct 2026, Rahul).
+  const [picked, setPicked] = useState(null)
+  const { showToast } = useStore()
 
   useEffect(() => {
     let alive = true
@@ -132,10 +137,10 @@ export function MessagesList({ onOpen }) {
             const waiting = c.state === 'waiting'
             return (
               <li key={c.id}>
-                <button
-                  type="button"
+                <HoldButton
+                  onHold={() => setPicked(c)}
                   onClick={() => open(c.id)}
-                  className="flex w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors active:bg-surface-2"
+                  className="flex w-full select-none items-center gap-3.5 px-4 py-2.5 text-left transition-colors active:bg-surface-2"
                 >
                   <PopAvatar initials={initialsOf(c.with.name)} src={c.with.avatar_url} size={54} />
                   <span className="min-w-0 flex-1">
@@ -163,13 +168,48 @@ export function MessagesList({ onOpen }) {
                       )}
                     </span>
                   </span>
-                </button>
+                </HoldButton>
               </li>
             )
           })}
         </ul>
       )}
+      <Sheet open={!!picked} onClose={() => setPicked(null)} title={picked?.with?.name || 'Chat'}>
+        <p className="text-meta t-sub">
+          The chat leaves your Chats. {picked?.with?.name?.split(' ')[0] || 'They'} keeps their copy, and a new
+          message brings it back.
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            const c = picked
+            setPicked(null)
+            try {
+              await clearDm(c.id)
+              setData((d) => (d ? { ...d, items: d.items.filter((x) => x.id !== c.id) } : d))
+            } catch (err) {
+              showToast(err.message)
+            }
+          }}
+          className="mt-5 block w-full rounded-xl bg-[#c0392b] py-3 text-center text-meta font-semibold text-white"
+        >
+          Delete chat
+        </button>
+        <button type="button" onClick={() => setPicked(null)} className="mt-2 block w-full py-3 text-center text-meta font-semibold t-sub">
+          Cancel
+        </button>
+      </Sheet>
     </div>
+  )
+}
+
+/** A row that opens on a tap and offers Delete on a hold (14 Oct 2026). */
+function HoldButton({ onHold, onClick, className, children }) {
+  const hold = useLongPress(onHold)
+  return (
+    <button type="button" onClick={onClick} className={className} {...hold}>
+      {children}
+    </button>
   )
 }
 

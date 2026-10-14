@@ -119,3 +119,25 @@ def block(request):
     except Refused as err:
         return _refused(err)
     return Response({"ok": True, "blocked": request.method == "POST"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def delete_message(request, thread_id, message_id):
+    """Delete a message you sent, for both people (14 Oct 2026, Rahul)."""
+    try:
+        message = services.delete_message(request.user.pk, thread_id, message_id)
+    except Refused as err:
+        return _refused(err)
+    return Response(services.message_row(message))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def clear(request, thread_id):
+    """Delete chat: the conversation leaves your side only (14 Oct 2026)."""
+    try:
+        services.clear(request.user.pk, thread_id)
+    except Refused as err:
+        return _refused(err)
+    return Response({"ok": True})

@@ -1869,3 +1869,10 @@ time in saffron and a saffron count. A message still waiting to be
 accepted reads "Sent · waiting for them to accept" behind a small clock.
 Empty, the Chatbox shows the infinity mark, "No chats yet" and **Find
 people**.
+
+**Deleting (14 Oct 2026, Rahul).** Hold a chat in the list: **Delete chat**
+takes it off your Chats only; the other person keeps theirs, and a new
+message brings it back, from that message on. Hold a message you sent in a
+conversation: **Delete message** deletes it for both people; each sees
+"This message was deleted" in its place (the other person on their next
+open of the conversation). Nobody deletes another person's message.

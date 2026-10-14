@@ -7,7 +7,7 @@ verified caller (rule 3): no body can say who is sending.
 import uuid
 
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 
 from apps.core import limits
@@ -201,9 +201,57 @@ def unblock(me, profile_id):
     return True
 
 
+DELETED_BODY = "\u2014"  # what a deleted message's words become (the CHECK forbids "")
+DELETED_PREVIEW = "This message was deleted"
+NOT_YOURS_MESSAGE = "You can delete only your own messages."
+
+
+def _cleared_at(thread, me):
+    return thread.a_cleared_at if _u(thread.a_id) == _u(me) else thread.b_cleared_at
+
+
+def _mine_after_clear(qs, me):
+    """Messages of threads I am in, newer than my own clearing of each."""
+    return qs.filter(
+        (Q(thread__a_id=me) & (Q(thread__a_cleared_at__isnull=True) | Q(created_at__gt=F("thread__a_cleared_at"))))
+        | (Q(thread__b_id=me) & (Q(thread__b_cleared_at__isnull=True) | Q(created_at__gt=F("thread__b_cleared_at"))))
+    )
+
+
+def delete_message(me, thread_id, message_id):
+    """The sender deletes a message, for both people (14 Oct 2026)."""
+    thread = _thread_for(me, thread_id)
+    message = thread.messages.filter(pk=message_id).first()
+    if message is None:
+        raise Refused("That message is not here.", 404)
+    if _u(message.sender_id) != _u(me):
+        raise Refused(NOT_YOURS_MESSAGE, 403)
+    if message.deleted_at is None:
+        message.body = DELETED_BODY
+        message.deleted_at = timezone.now()
+        message.save(update_fields=["body", "deleted_at"])
+        newest = thread.messages.order_by("-created_at", "-id").first()
+        if newest is not None and newest.pk == message.pk:
+            thread.last_preview = DELETED_PREVIEW
+            thread.save(update_fields=["last_preview"])
+    return message
+
+
+def clear(me, thread_id):
+    """"Delete chat" for me: everything up to now leaves my side only."""
+    thread = _thread_for(me, thread_id)
+    field = "a_cleared_at" if _u(thread.a_id) == _u(me) else "b_cleared_at"
+    setattr(thread, field, timezone.now())
+    thread.save(update_fields=[field])
+    return thread
+
+
 def messages(me, thread_id, after=None, limit=500):
     thread = _thread_for(me, thread_id)
     rows = thread.messages.all()
+    cleared = _cleared_at(thread, me)
+    if cleared is not None:
+        rows = rows.filter(created_at__gt=cleared)
     if after:
         anchor = thread.messages.filter(pk=after).first()
         if anchor is not None:
@@ -221,6 +269,10 @@ def box(me, which):
     """Your conversations, newest first. `inbox`: accepted, or requests you
     sent. `requests`: requests to you, not declined."""
     mine = DmThread.objects.filter(Q(a_id=me) | Q(b_id=me)).exclude(last_message_at=None)
+    # A chat I deleted stays off my list until a newer message arrives.
+    mine = mine.exclude(Q(a_id=me) & Q(a_cleared_at__gte=F("last_message_at"))).exclude(
+        Q(b_id=me) & Q(b_cleared_at__gte=F("last_message_at"))
+    )
     if which == "requests":
         mine = mine.filter(accepted_at=None, declined_at=None).exclude(started_by=me)
     else:
@@ -242,7 +294,11 @@ def row(thread, me):
         },
         "last_preview": thread.last_preview,
         "last_message_at": thread.last_message_at,
-        "unread": thread.messages.filter(read_at__isnull=True).exclude(sender_id=me).count(),
+        "unread": (
+            thread.messages.filter(read_at__isnull=True).exclude(sender_id=me)
+            .filter(**({"created_at__gt": _cleared_at(thread, me)} if _cleared_at(thread, me) else {}))
+            .count()
+        ),
         "state": (
             "open" if thread.accepted_at else
             "declined" if thread.declined_at else
@@ -255,18 +311,18 @@ def row(thread, me):
 
 
 def message_row(m):
+    deleted = m.deleted_at is not None
     return {
         "id": str(m.id),
         "sender_id": str(m.sender_id),
-        "body": m.body,
+        "body": None if deleted else m.body,
+        "deleted": deleted,
         "created_at": m.created_at,
         "read_at": m.read_at,
     }
 
 
 def unread_total(me):
-    return DmMessage.objects.filter(
-        Q(thread__a_id=me) | Q(thread__b_id=me), read_at__isnull=True,
-    ).exclude(sender_id=me).filter(
+    return _mine_after_clear(DmMessage.objects.filter(read_at__isnull=True), me).exclude(sender_id=me).filter(
         Q(thread__accepted_at__isnull=False) | Q(thread__started_by=me)
     ).count()

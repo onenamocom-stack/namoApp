@@ -11,4 +11,6 @@ urlpatterns = [
     path("threads/<uuid:thread_id>/read/", views.read, name="dms-read"),
     path("threads/<uuid:thread_id>/accept/", views.accept, name="dms-accept"),
     path("threads/<uuid:thread_id>/decline/", views.decline, name="dms-decline"),
+    path("threads/<uuid:thread_id>/clear/", views.clear, name="dms-clear"),
+    path("threads/<uuid:thread_id>/messages/<uuid:message_id>/delete/", views.delete_message, name="dms-message-delete"),
 ]

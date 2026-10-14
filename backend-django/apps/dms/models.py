@@ -29,6 +29,11 @@ class DmThread(models.Model):
     last_message_at = models.DateTimeField(null=True, blank=True)
     last_preview = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # "Delete chat" (14 Oct 2026, Rahul): each side's own clearing. Messages
+    # up to it are gone for that person only; a newer message brings the
+    # conversation back to their list, from that message on.
+    a_cleared_at = models.DateTimeField(null=True, blank=True)
+    b_cleared_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "dm_threads"
@@ -49,6 +54,10 @@ class DmMessage(models.Model):
     body = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     read_at = models.DateTimeField(null=True, blank=True)
+    # Deleted by its sender, for both people (14 Oct 2026, Rahul). The words
+    # are overwritten, not kept: "This message was deleted" is all anybody,
+    # Namo included, reads afterwards.
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "dm_messages"

@@ -51,3 +51,10 @@ export const acceptDm = (id) => api(`/dms/threads/${id}/accept/`, { method: 'POS
 export const declineDm = (id) => api(`/dms/threads/${id}/decline/`, { method: 'POST' })
 export const blockPerson = (profileId, on = true) =>
   api('/dms/block/', { method: on ? 'POST' : 'DELETE', body: { profile_id: profileId } })
+
+/** Delete a message you sent, for both people (14 Oct 2026). */
+export const deleteDm = (threadId, messageId) =>
+  api(`/dms/threads/${threadId}/messages/${messageId}/delete/`, { method: 'POST' })
+
+/** Delete chat: the conversation leaves your side only, until a new message. */
+export const clearDm = (threadId) => api(`/dms/threads/${threadId}/clear/`, { method: 'POST' })

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { TopBar } from '../components/Chrome.jsx'
+import { Sheet, TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import { PopAvatar } from '../components/Pop.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
-import { DM_POLL_MS, acceptDm, blockPerson, declineDm, fetchDmMessages, markDmRead, sendDm } from '../lib/dms.js'
+import { DM_POLL_MS, acceptDm, blockPerson, declineDm, deleteDm, fetchDmMessages, markDmRead, sendDm } from '../lib/dms.js'
+import { useLongPress } from '../lib/longpress.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -25,6 +26,8 @@ export default function Conversation() {
   const [menu, setMenu] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [error, setError] = useState('')
+  // The message held down for "Delete" (14 Oct 2026, Rahul).
+  const [picked, setPicked] = useState(null)
   const end = useRef(null)
   const last = useRef(null)
 
@@ -147,20 +150,9 @@ export default function Conversation() {
             <span className="mt-2 text-meta font-semibold text-t1">{other.name}</span>
           </Link>
         )}
-        {items?.map((m) => {
-          const mine = m.sender_id === me
-          return (
-            <div key={m.id} className={`mb-1.5 flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <p
-                className={`max-w-[78%] whitespace-pre-line rounded-2xl px-3.5 py-2 text-body ${
-                  mine ? 'bg-btn text-white' : 'bg-white text-t1'
-                }`}
-              >
-                {m.body}
-              </p>
-            </div>
-          )
-        })}
+        {items?.map((m) => (
+          <Bubble key={m.id} m={m} mine={m.sender_id === me} onHold={() => setPicked(m)} />
+        ))}
         <div ref={end} />
       </div>
 
@@ -207,9 +199,53 @@ export default function Conversation() {
       )}
       {error && <p className="bg-white px-4 pb-2 text-[12px] text-live">{error}</p>}
 
+      <Sheet open={!!picked} onClose={() => setPicked(null)} title="Message">
+        <p className="text-meta t-sub">It is deleted for both of you. They will see "This message was deleted".</p>
+        <button
+          type="button"
+          onClick={async () => {
+            const m = picked
+            setPicked(null)
+            try {
+              const row = await deleteDm(id, m.id)
+              setItems((all) => (all ?? []).map((x) => (x.id === m.id ? { ...x, ...row } : x)))
+            } catch (err) {
+              showToast(err.message)
+            }
+          }}
+          className="mt-5 block w-full rounded-xl bg-[#c0392b] py-3 text-center text-meta font-semibold text-white"
+        >
+          Delete message
+        </button>
+        <button type="button" onClick={() => setPicked(null)} className="mt-2 block w-full py-3 text-center text-meta font-semibold t-sub">
+          Cancel
+        </button>
+      </Sheet>
       {other && (
-        <ReportSheet open={reporting} onClose={() => setReporting(false)} profileId={other.id} name={other.name} />
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} profileId={other.id} name={other.name} />
       )}
+    </div>
+  )
+}
+
+/** One message. Your own can be held down to delete (14 Oct 2026); a
+ *  deleted one, either side's, reads "This message was deleted". */
+function Bubble({ m, mine, onHold }) {
+  const hold = useLongPress(() => mine && !m.deleted && onHold())
+  return (
+    <div className={`mb-1.5 flex ${mine ? 'justify-end' : 'justify-start'}`}>
+      <p
+        {...(mine && !m.deleted ? hold : {})}
+        className={`max-w-[78%] select-none whitespace-pre-line rounded-2xl px-3.5 py-2 text-body ${
+          m.deleted
+            ? 'border border-rule bg-transparent italic t-faint'
+            : mine
+              ? 'bg-btn text-white'
+              : 'bg-white text-t1'
+        }`}
+      >
+        {m.deleted ? 'This message was deleted' : m.body}
+      </p>
     </div>
   )
 }
