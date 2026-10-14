@@ -1243,6 +1243,12 @@ pro.1namo.com keeps working beside it until Namo Consult has carried a
 real paid call end to end.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
+
+**Top, since 14 Oct 2026 (Rahul; main app):** a **Basic profile** row
+(name and birth details, `/onboarding/details?edit=1`), so every profile
+edit starts here; then the section **Your Pro Profile** (it was "Your
+profile"), opening with **Intro video or photo**. The username is not here:
+it belongs to the Basic profile, in Settings.
 In both apps, from **Edit profile** on your own page and from `/pro/profile`.
 **Your profile** — specialization (comma-separated, one chip each), About,
 years of practice, languages, tags — saves on **Save** and shows at once.

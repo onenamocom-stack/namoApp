@@ -3,7 +3,6 @@ import { Navigate } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Row, Section } from '../components/Primitives.jsx'
 import IntroSheet, { introNote } from '../components/IntroSheet.jsx'
-import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
 import { isPro } from '../side.js'
 import { PopButton } from '../components/Pop.jsx'
 import { Loader } from '../components/Cosmos.jsx'
@@ -48,8 +47,9 @@ export default function EditPractice() {
 
   return (
     <EditPracticeBody
-      // The pro app keeps these in its Practice settings.
-      top={isPro ? null : <PageRows />}
+      // The pro app keeps the intro in its Practice settings.
+      top={isPro ? null : <BasicLink />}
+      introRow={isPro ? null : <IntroRow />}
       consultant={consultant}
       review={review}
       onSaved={() => refreshConsultant(session.user.id)}
@@ -60,13 +60,13 @@ export default function EditPractice() {
 }
 
 /** The screen itself, with no store — so it can be drawn on its own. */
-export function EditPracticeBody({ consultant, review, onSaved, onSent, toast, top = null }) {
+export function EditPracticeBody({ consultant, review, onSaved, onSent, toast, top = null, introRow = null }) {
   return (
     <div className="flex h-full flex-col">
       <TopBar title="Edit profile" back backTo={`/consult/${consultant.profile_id}`} />
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-16">
         {top}
-        <Direct consultant={consultant} onSaved={onSaved} toast={toast} />
+        <Direct consultant={consultant} onSaved={onSaved} toast={toast} introRow={introRow} />
         {review === null ? (
           <Loader />
         ) : (
@@ -77,7 +77,7 @@ export function EditPracticeBody({ consultant, review, onSaved, onSent, toast, t
   )
 }
 
-function Direct({ consultant, onSaved, toast }) {
+function Direct({ consultant, onSaved, toast, introRow = null }) {
   const [form, setForm] = useState(() => ({
     specialization: consultant.specialization || '',
     bio: consultant.bio || '',
@@ -111,7 +111,10 @@ function Direct({ consultant, onSaved, toast }) {
   }
 
   return (
-    <Section label="Your profile" className="mt-6">
+    // "Your Pro Profile" (14 Oct 2026, Rahul): the Basic profile is linked
+    // above it, and the intro opens this section.
+    <Section label="Your Pro Profile" className="mt-6">
+      {introRow}
       <Input
         label="Specialization"
         value={form.specialization}
@@ -281,18 +284,25 @@ function Status({ review }) {
   return null
 }
 
-/** Your intro and your profile link, here since 14 Oct 2026 (Rahul: they
- *  are your page, not your practice; they were in Practice settings). */
-function PageRows() {
-  const { consultant, profile } = useStore()
-  const [intro, setIntro] = useState(false)
-  const [naming, setNaming] = useState(false)
+/** The Basic profile, at the top of Edit profile (14 Oct 2026, Rahul: "so
+ *  that all profile edits are in one place"): name and birth details. */
+function BasicLink() {
   return (
     <div className="pt-4">
-      <Row onClick={() => setIntro(true)} title="Intro video or photo" note={introNote(consultant)} />
-      <Row onClick={() => setNaming(true)} title="Username" note={usernameNote(profile)} />
-      {intro && <IntroSheet onClose={() => setIntro(false)} />}
-      {naming && <UsernameSheet onClose={() => setNaming(false)} />}
+      <Row to="/onboarding/details?edit=1" title="Basic profile" note="Your name and birth details" />
     </div>
+  )
+}
+
+/** Your intro, the first thing in Your Pro Profile (14 Oct 2026, Rahul). The
+ *  username stays with the Basic profile, in Settings. */
+function IntroRow() {
+  const { consultant } = useStore()
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Row onClick={() => setOpen(true)} title="Intro video or photo" note={introNote(consultant)} />
+      {open && <IntroSheet onClose={() => setOpen(false)} />}
+    </>
   )
 }
