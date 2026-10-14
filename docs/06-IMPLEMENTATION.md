@@ -532,30 +532,33 @@ Video cost grows with use until 15d lands.
 
 ---
 
-## Phase 16 — One app for everybody (approved 13 Oct 2026, not started)
+## Phase 16 — One app, and a calling app for Pros (approved 13 Oct 2026, revised 14 Oct, not started)
 
-**Approved by the owner on 13 Oct 2026** (Rahul's proposal). It touches
+**Approved by the owner on 13 Oct 2026; revised 14 Oct** (Rahul's proposal,
+owner's yes). It replaced a plan in which a paid call rang on every screen
+of one app: the call code works today and stays where it is. It touches
 consultant sign-in and where a paid call rings, the two reasons it needed
 the owner's yes.
 
 Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
-`src/side.js`), with its own sign-in. After this phase there is one app at
-1namo.com:
+`src/side.js`), with its own sign-in. After this phase:
 
-- Pros and Creators get **Dashboard** on their own page and Profile. A Pro's
-  dashboard: Earnings, Studio, the consult queue, Insights and the online
-  switch. A Creator's: Studio and Insights.
-- One sign-in. pro.1namo.com forwards to 1namo.com, path and all.
-- The consultant's call and chat requests ring on **every** screen of the
-  one app, and the online heartbeat runs wherever a Pro is, as both do on
-  every pro screen today.
-- pro.1namo.com keeps working, unchanged, until the merged app has carried
-  a real paid call end to end.
+- **The main app, 1namo.com,** holds everything else. Pros and Creators get
+  **Dashboard** on their own page and Profile. A Pro's: Earnings, Studio,
+  Insights and the profile. A Creator's: Studio and Insights.
+- **The calling app, 1namo.com/duty,** holds only the online switch, the
+  incoming call and chat requests, and the running session with its meter.
+  It installs with its own icon. A Pro with it open is on duty; closed, off.
+  The ringing and heartbeat code moves there unchanged; the main app carries
+  none of it.
+- One sign-in: both are on 1namo.com, so they share it.
+- pro.1namo.com keeps working, unchanged, until /duty has carried a real
+  paid call end to end. Then it forwards to 1namo.com, path and all.
 
-**Done when:** a Pro on Home, Bhakti or Market receives a call request,
-hears it ring and answers it, and the session meters exactly as before (the
-chat tests unchanged); a Creator opens Insights from Dashboard; an old
-pro.1namo.com link lands on the same screen in 1namo.com.
+**Done when:** a Pro with /duty open receives a call request, hears it ring
+and answers it, and the session meters exactly as before (the chat tests
+unchanged); a Seeker's 1namo.com loads no pro code; a Creator opens Insights
+from Dashboard; an old pro.1namo.com link lands on the same screen.
 
 ---
 

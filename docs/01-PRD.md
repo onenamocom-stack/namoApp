@@ -44,7 +44,8 @@ the console makes one; it replaced the name "Influencer"). A Pro carries an
 **orange tick**, every approved one; a Creator a **blue tick**; a Seeker
 none. A Creator posts every kind of content, reels included, and sees the
 reach of their posts and the people their code brought. Pros and Creators
-reach their own screens through **Dashboard**, in one app (`06` Phase 16).
+reach their own screens through **Dashboard** in the main app; a Pro takes
+calls in a separate calling app, 1namo.com/duty (`06` Phase 16).
 
 ### The seeker
 
