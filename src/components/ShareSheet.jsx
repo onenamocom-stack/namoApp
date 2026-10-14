@@ -4,8 +4,6 @@ import { fetchDmThreads, sendDm, startDm } from '../lib/dms.js'
 import { followList } from '../lib/content.js'
 import { searchPeople } from '../lib/people.js'
 import { copyLink, fullUrl, onShareRequest, shareMessage } from '../lib/share.js'
-import { Sheet } from './Chrome.jsx'
-import { Search } from './Primitives.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import Icon from './Icon.jsx'
 
@@ -129,76 +127,108 @@ export default function ShareSheet() {
     close()
   }
 
+  /* Its own panel, not the shared `Sheet` (14 Oct 2026, Rahul: "thoda
+     modern"): a handle and nothing else on top, a round search, big faces,
+     and the way out of NAMO in round buttons along the foot. */
   return (
-    <Sheet open onClose={close} title="Share">
-      <Search value={q} onChange={setQ} placeholder="Search people" className="" />
+    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+      <button type="button" aria-label="Close" onClick={close} className="absolute inset-0 animate-fade bg-ink opacity-40" />
+      <div className="relative flex max-h-[82%] animate-sheet-in flex-col rounded-t-[28px] bg-white shadow-xl">
+        <span className="mx-auto mt-3 block h-1 w-10 flex-none rounded-full bg-black/15" aria-hidden="true" />
 
-      <div className="mt-5 min-h-[120px]">
-        {shown === null ? (
-          <p className="py-8 text-center text-meta t-faint">Loading</p>
-        ) : shown.length === 0 ? (
-          <p className="py-8 text-center text-meta t-faint">
-            {found ? 'Nobody by that name.' : 'Follow people or chat with them, and they show here. Or search.'}
-          </p>
-        ) : (
-          <ul className="grid grid-cols-3 gap-x-2 gap-y-4">
-            {shown.slice(0, 30).map((p) => {
-              const on = picked.includes(p.id)
-              return (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onClick={() => toggle(p)}
-                    aria-pressed={on}
-                    className="flex w-full flex-col items-center gap-1.5"
-                  >
-                    <span className="relative">
-                      <PopAvatar initials={initialsOf(p.name)} src={p.avatar_url} size={64} />
-                      {on && (
-                        <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-gold-fill text-white">
-                          <Icon name="check" size={13} weight={2.6} />
-                        </span>
-                      )}
-                    </span>
-                    <span className={`line-clamp-2 text-center text-meta ${on ? 't-heading' : 't-sub'}`}>{p.name}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
-
-      {picked.length > 0 && (
-        <PopButton variant="gold" onClick={send} disabled={sending} className="mt-5">
-          {sending ? 'Sending' : picked.length === 1 ? `Send to ${pickedPeople[0]?.name ?? '1 person'}` : `Send to ${picked.length} people`}
-        </PopButton>
-      )}
-
-      <div className="mt-6 flex justify-around border-t border-rule pt-5">
-        <Outside label="WhatsApp" onClick={whatsapp}>
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-            <path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.3 11.3 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" />
+        <label className="mx-5 mt-4 flex h-11 flex-none items-center gap-2.5 rounded-full bg-ink/[0.05] px-4">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="flex-none t-faint">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
           </svg>
-        </Outside>
-        <Outside label="Share" onClick={() => outside(item.external)}>
-          <Icon name="share" size={21} />
-        </Outside>
-        <Outside label="Copy link" onClick={() => outside(() => copyLink(item.path))}>
-          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
-            <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
-          </svg>
-        </Outside>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search"
+            aria-label="Search people"
+            className="min-w-0 flex-1 bg-transparent text-body text-t1 outline-none placeholder:text-t4"
+          />
+          {q && (
+            <button type="button" aria-label="Clear search" onClick={() => setQ('')} className="flex-none t-faint">
+              <Icon name="close" size={16} />
+            </button>
+          )}
+        </label>
+
+        <div className="no-scrollbar min-h-[160px] flex-1 overflow-y-auto px-4 pb-4 pt-5">
+          {shown === null ? (
+            <p className="py-10 text-center text-meta t-faint">Loading</p>
+          ) : shown.length === 0 ? (
+            <p className="px-6 py-10 text-center text-meta t-faint">
+              {found ? 'Nobody by that name.' : 'Follow people or chat with them, and they show here. Or search.'}
+            </p>
+          ) : (
+            <ul className="grid grid-cols-3 gap-x-2 gap-y-5">
+              {shown.slice(0, 30).map((p) => {
+                const on = picked.includes(p.id)
+                return (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(p)}
+                      aria-pressed={on}
+                      className="flex w-full flex-col items-center gap-2 transition-transform active:scale-95"
+                    >
+                      <span className={`relative rounded-full p-[3px] transition-shadow ${on ? 'ring-2 ring-gold' : ''}`}>
+                        <PopAvatar initials={initialsOf(p.name)} src={p.avatar_url} size={70} />
+                        {on && (
+                          <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-gold-fill text-white">
+                            <Icon name="check" size={13} weight={2.6} />
+                          </span>
+                        )}
+                      </span>
+                      <span className={`line-clamp-2 px-1 text-center text-meta leading-tight ${on ? 'font-semibold t-heading' : 't-sub'}`}>{p.name}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="flex-none border-t border-rule bg-white px-5 pb-6 pt-4">
+          {picked.length > 0 ? (
+            <PopButton variant="gold" onClick={send} disabled={sending}>
+              {sending ? 'Sending' : 'Send'}
+            </PopButton>
+          ) : (
+            <div className="flex justify-around">
+              <Outside label="WhatsApp" onClick={whatsapp} green>
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.3 11.3 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" />
+                </svg>
+              </Outside>
+              <Outside label="Share" onClick={() => outside(item.external)}>
+                <Icon name="share" size={22} />
+              </Outside>
+              <Outside label="Copy link" onClick={() => outside(() => copyLink(item.path))}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
+                  <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+                </svg>
+              </Outside>
+            </div>
+          )}
+        </div>
       </div>
-    </Sheet>
+    </div>
   )
 }
 
-function Outside({ label, onClick, children }) {
+/* WhatsApp's button is the app's green (Rahul); the others plain. */
+function Outside({ label, onClick, green = false, children }) {
   return (
-    <button type="button" onClick={onClick} className="flex flex-col items-center gap-1.5">
-      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-stroke bg-surface-2 t-heading">
+    <button type="button" onClick={onClick} className="flex flex-col items-center gap-1.5 transition-transform active:scale-95">
+      <span
+        className={`flex h-14 w-14 items-center justify-center rounded-full ${
+          green ? 'pop-btn-gold border-0' : 'bg-ink/[0.06] t-heading'
+        }`}
+      >
         {children}
       </span>
       <span className="text-meta t-sub">{label}</span>

@@ -1876,14 +1876,15 @@ exception; it still hands the dated picture to the phone. Signed out, Share
 goes straight to the phone's sheet.
 
 - **People on NAMO.** A search box, then your recent chats and whom you
-  follow, three to a row. Tap to pick one or more; **Send to <name>** or
-  **Send to N people**. Each gets it as a message in your chat with them,
+  follow, three to a row. Tap to pick one or more; **Send** (no name on
+  it, Rahul) takes the place of the row below while anyone is picked. Each gets it as a message in your chat with them,
   under the ordinary rules: a stranger gets one message as a request, a
   blocked person nothing.
 - **Never a Pro.** Approved Pros are left out of the list and the search
   (Rahul: "Pro ko koi msg nahi jayga"); their paid chat is the way to them.
-- **Outside NAMO.** WhatsApp (`wa.me`, the title and link), Share (the
-  phone's sheet, as the button did before) and Copy link.
+- **Outside NAMO.** Round buttons along the foot: WhatsApp (`wa.me`, the
+  title and link; green, Rahul), Share (the phone's sheet, as the button
+  did before) and Copy link.
 
 In the chat, a share is a card: the picture, or the reel's first frame,
 what it is (Reel, Post, Article, Shop, Bhakti, Profile) and its title. A tap
