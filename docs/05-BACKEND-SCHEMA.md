@@ -2184,7 +2184,7 @@ policies** on both new tables.
 
 | Table | Columns |
 |---|---|
-| `groups` | `id uuid pk`; `name` (≤80); `kind` (`mandir`, `sampradaya`, `city`, `other`); `city`; `about`; `avatar_url`; `created_by uuid`; `status` (`live`, `blocked`); `blocked_reason`; `last_post_at`; `created_at`. Indexes `(status, -last_post_at)`, `(created_by, created_at)` |
+| `groups` | `id uuid pk`; `name` (≤80); `kind` (`mandir`, `bhagwan` since `groups/0002`, `sampradaya`, `city`, `other`); `city`; `about`; `avatar_url`; `created_by uuid`; `status` (`live`, `blocked`); `blocked_reason`; `last_post_at`; `created_at`. Indexes `(status, -last_post_at)`, `(created_by, created_at)` |
 | `group_members` | `id uuid pk`; `group_id → groups` cascade; `profile_id uuid`; `role` (`admin`, `member`); `status` (`active`, `left`, `removed`); `joined_at`. **Unique (group_id, profile_id)**; index `(profile_id, status)` |
 | `content.group_id` | `uuid null`: the group a post was made in. Index `(group_id, -published_at)` |
 

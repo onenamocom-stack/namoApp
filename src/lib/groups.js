@@ -29,6 +29,8 @@ async function api(path, { method = 'GET', body } = {}) {
 
 export const GROUP_KINDS = [
   { key: 'mandir', label: 'Mandir' },
+  // A group around one deity (14 Oct 2026, Rahul).
+  { key: 'bhagwan', label: 'Bhagwan' },
   { key: 'sampradaya', label: 'Sampradaya' },
   { key: 'city', label: 'City' },
   { key: 'other', label: 'Other' },

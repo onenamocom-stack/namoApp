@@ -16,6 +16,8 @@ from django.utils import timezone
 
 class GroupKind(models.TextChoices):
     MANDIR = "mandir", "Mandir"
+    # A group around one deity (14 Oct 2026, Rahul).
+    BHAGWAN = "bhagwan", "Bhagwan"
     SAMPRADAYA = "sampradaya", "Sampradaya"
     CITY = "city", "City"
     OTHER = "other", "Other"

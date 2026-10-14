@@ -1818,9 +1818,13 @@ when you look, not something you are interrupted by.
 
 Rahul's placement was option A, **Chat → Groups**, a third segment; it left
 Chat the same day (Rahul), and groups are reached from **Home's Groups
-button**. `/groups` lists **Groups you created**, then **Groups you're in**,
-then **Find groups**; the one way to start a group is the green **+** at the
-top right (the two Start a group links went, 14 Oct 2026, Rahul). The button: a round saffron button with white people and a small +, to the
+button**. `/groups`: a search box on top ("Find group: a mandir, deity,
+sampradaya or city"; typing shows what it finds), then **Groups you created**,
+**Groups you're in** and **Suggested groups** (live groups you are not in,
+busiest first); the one way to start a group is the green **+** at the top
+right (the two Start a group links went, 14 Oct 2026, Rahul). A group's kind
+is Mandir, **Bhagwan** (added the same day), Sampradaya, City or Other. The
+button: a round saffron button with white people and a small +, to the
 right of Reels · Aaj ka panchang · Aaj ke darshan, opening `/groups` (the
 same list as a page, back to Home). It lists **Your groups**, the newest
 post first, then **Find groups** (a search box, by name, city or about) and

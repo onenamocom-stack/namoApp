@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader } from './Cosmos.jsx'
 import { Kicker, PopAvatar } from './Pop.jsx'
-import { findGroups, kindLabel, myGroups } from '../lib/groups.js'
+import { findGroups, kindLabel, myGroups, suggestGroups } from '../lib/groups.js'
 import { ago } from '../lib/notifications.js'
 
 const initialsOf = (name) =>
@@ -20,8 +20,12 @@ export default function GroupsPane({ onOpen }) {
   const [q, setQ] = useState('')
   const [found, setFound] = useState(null)
 
+  // Third on the page, Suggested groups (14 Oct 2026, Rahul): live groups you
+  // are not in, busiest first, as Home's strip.
+  const [suggested, setSuggested] = useState([])
   useEffect(() => {
     myGroups().then(setMine).catch(() => setMine([]))
+    suggestGroups().then(setSuggested).catch(() => setSuggested([]))
   }, [])
 
   useEffect(() => {
@@ -40,18 +44,52 @@ export default function GroupsPane({ onOpen }) {
     navigate(`/groups/${id}`)
   }
 
-  const mineIds = new Set((mine ?? []).map((g) => g.id))
 
   /* Two lists since 14 Oct 2026 (Rahul): the groups you started, and the
      ones you joined. Starting one is the + at the top of the page. */
   const created = (mine ?? []).filter((g) => g.created_by_me)
   const joined = (mine ?? []).filter((g) => !g.created_by_me)
 
+  const searching = q.trim().length > 0
+
   return (
     <div className="pb-10">
+      {/* Search on top (14 Oct 2026, Rahul). Typing shows what it finds,
+          your own groups included; empty, the page is your groups, then
+          the rest. */}
+      <div className="px-4 pt-3">
+        <label className="flex h-11 items-center gap-2 rounded-xl border border-stroke bg-white px-3 text-meta focus-within:border-gold">
+          <span aria-hidden="true" className="flex-none t-faint">⌕</span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Find group: a mandir, deity, sampradaya or city"
+            aria-label="Find group"
+            className="min-w-0 flex-1 bg-transparent t-heading outline-none placeholder:text-t4"
+          />
+          {q && (
+            <button type="button" aria-label="Clear" onClick={() => setQ('')} className="flex-none t-faint">
+              ✕
+            </button>
+          )}
+        </label>
+      </div>
+
+      {searching ? (
+        <section className="px-4 pt-3">
+          {found === null && <Loader />}
+          {found && !found.length && <p className="mt-3 text-meta t-faint">No group by that name yet.</p>}
+          <ul className="mt-1">
+            {(found ?? []).map((g) => (
+              <GroupRow key={g.id} g={g} onOpen={open} />
+            ))}
+          </ul>
+        </section>
+      ) : (
+      <>
       {mine === null && <Loader />}
       {mine && !mine.length && (
-        <p className="px-4 pt-4 text-meta t-faint">You are in no group yet. Find one below, or start one with +.</p>
+        <p className="px-4 pt-4 text-meta t-faint">You are in no group yet. Find one above, or start one with +.</p>
       )}
       {created.length > 0 && (
         <section className="px-4 pt-4">
@@ -74,25 +112,18 @@ export default function GroupsPane({ onOpen }) {
         </section>
       )}
 
-      <section className="px-4 pt-5">
-        <Kicker>Find groups</Kicker>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="A mandir, a sampradaya, a city"
-          aria-label="Find groups"
-          className="mt-2 h-10 w-full rounded-xl border border-stroke bg-surface-2 px-3 text-meta outline-none focus:border-gold"
-        />
-        {found === null && <Loader />}
-        {found && !found.filter((g) => !mineIds.has(g.id)).length && (
-          <p className="mt-3 text-meta t-faint">{q ? 'No group by that name yet.' : 'No other groups yet.'}</p>
-        )}
-        <ul className="mt-1">
-          {found?.filter((g) => !mineIds.has(g.id)).map((g) => (
-            <GroupRow key={g.id} g={g} onOpen={open} />
-          ))}
-        </ul>
-      </section>
+      {suggested.length > 0 && (
+        <section className="px-4 pt-5">
+          <Kicker>Suggested groups</Kicker>
+          <ul className="mt-1">
+            {suggested.map((g) => (
+              <GroupRow key={g.id} g={g} onOpen={open} />
+            ))}
+          </ul>
+        </section>
+      )}
+      </>
+      )}
     </div>
   )
 }
