@@ -8,9 +8,10 @@ import { useStore } from '../store.jsx'
 
 /**
  * Dashboard (Phase 16, 14 Oct 2026): a Pro's and a Creator's own screens,
- * inside the main app. A Pro's are the pro app's — Studio, Earnings and
- * Insights, the practice, links, payout details — at `/dashboard/...`. A
- * Creator's are Studio and Insights. Calls are not here: they ring only in
+ * inside the main app. A Pro's are the pro app's — Earnings and Insights,
+ * the practice, links, payout details — at `/dashboard/...`. A Creator's
+ * are their code and Insights. No Studio (14 Oct 2026, Rahul): posting is
+ * Home's +, where a Pro and a Creator also get video. Calls are not here: they ring only in
  * Namo Consult (`/desk`) and in the pro app.
  *
  * Anybody else reaching this address goes to their Profile.
@@ -53,7 +54,6 @@ export default function Dashboard() {
           <section className="px-5 py-5">
             <Kicker>Your work</Kicker>
             <div className="mt-2">
-              <Row to="/dashboard/studio" title="Studio" note="Post a reel, a photo or a blog post" />
               <Row to="/dashboard/earnings" title="Earnings and Insights" note="What you earned, and who saw your posts" />
               <Row to="/dashboard/affiliate" title="Your links" note="Share a product, earn 10%" />
             </div>
@@ -78,7 +78,6 @@ export default function Dashboard() {
         <>
           <section className="px-5 py-5">
             <div>
-              <Row to="/dashboard/studio" title="Studio" note="Post a reel, a photo or a blog post" />
               <Row to="/profile/influencer" title="Your code" note="Who joined with your code, and who paid" />
             </div>
           </section>

@@ -15,6 +15,8 @@ import { isPro } from '../side.js'
 export function proPath(path) {
   if (isPro) return path
   if (path === '/pro/consult') return '/desk'
+  // No Studio in the main app (14 Oct 2026, Rahul): Home's + posts.
+  if (path === '/pro/studio') return '/home?compose=1'
   if (path.startsWith('/pro/ring/')) return path.replace('/pro/ring/', '/desk/ring/')
   return path.replace(/^\/pro(?=\/|$)/, '/dashboard')
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities as SHIPPED, offerings } from '../data/mock.js'
+import { markSadhana } from '../lib/streak.js'
 import { BackButton, useGoBack } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import {
@@ -375,6 +376,8 @@ export default function Pooja() {
     // thali's lamp, both diyas and the agarbatti. Ending it leaves the diyas
     // and agarbatti burning — they go out from their own buttons.
     if (!aarti) setLit({ diya: true, incense: true })
+    // Beginning an aarti counts today's sadhana (14 Oct 2026, Phase 15c).
+    if (!aarti) markSadhana('aarti')
     setAarti((a) => !a)
     ripple()
   }

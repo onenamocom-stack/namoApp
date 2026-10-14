@@ -14,6 +14,7 @@ import { LANGS } from '../data/i18n.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
+import SadhanaStreak from '../components/SadhanaStreak.jsx'
 import { uploadAvatar } from '../lib/avatar.js'
 import { ChartNorth } from '../components/ChartSquare.jsx'
 import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
@@ -216,6 +217,8 @@ function Hero({ posts, counts }) {
       </div>
 
       <Bio />
+      {/* Your sadhana streak (14 Oct 2026, Phase 15c). */}
+      <SadhanaStreak own className="mt-3" />
       {/* Five icons, no words (13 Oct 2026, Rahul): your consultant chat,
           booked sessions, wallet, edit and share. The header keeps only the
           bell, so this row is where money and paid chat are reached from.

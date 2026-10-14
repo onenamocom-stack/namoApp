@@ -2123,3 +2123,18 @@ and `unread` counts), `start/ {to}`, `threads/<id>/messages/?after=`,
 `block/ {profile_id}` (POST blocks, DELETE unblocks). A message alert is a
 `notifications` row, kind `dm.message`, `ref_type` `dm`, deduped per thread
 per IST hour.
+
+## Sadhana streak — `sadhana_days` (14 Oct 2026)
+
+Phase 15c, migration `bhakti/0006`. One row per person per IST day on which
+they finished a mantra's japa in Bhakti or began an aarti in Darshan.
+Self-reported. RLS on with **no policies**; the API connects as the owner.
+
+| Table | Columns |
+|---|---|
+| `sadhana_days` | `id uuid pk`; `profile_id uuid`; `day date` (IST); `japa_rounds int ≥ 0` (repetitions finished that day); `aarti bool`; `created_at`. **Unique (profile_id, day)** |
+
+API `/v1/bhakti/streak/`, signed in: GET the caller's `{current, best,
+today}`; POST `{kind: japa|aarti, rounds}` counts today. `streak/<profile_id>/`
+gives anybody's `{current, best}`. The run counts consecutive IST days
+ending today, or yesterday while today is open (`apps/bhakti/streak.py`).

@@ -153,7 +153,9 @@ export default function Home() {
   const { tab = 'feed' } = useParams()
   const navigate = useNavigate()
   const { t, session } = useStore()
-  const [posting, setPosting] = useState(false)
+  // `?compose=1` opens the composer: Dashboard's "Post more" and Studio's
+  // old address land here (14 Oct 2026, Rahul: posting is Home's +).
+  const [posting, setPosting] = useState(() => new URLSearchParams(window.location.search).get('compose') === '1')
   // Bumped after a publish, so the feed reloads with the new post in it.
   const [fresh, setFresh] = useState(0)
 
@@ -385,9 +387,13 @@ export default function Home() {
       <NewPostButton onOpen={() => setPosting(true)} />
       {posting && (
         <NewPostSheet
-          onClose={() => setPosting(false)}
+          onClose={() => {
+            setPosting(false)
+            if (window.location.search.includes('compose=')) navigate('/home', { replace: true })
+          }}
           onPublished={() => {
             setPosting(false)
+            if (window.location.search.includes('compose=')) navigate('/home', { replace: true })
             setFresh((n) => n + 1)
           }}
         />
@@ -433,7 +439,12 @@ function NewPostButton({ onOpen }) {
  *  everyone; Reel only where the server's video flag is on — the tab grants
  *  nothing, the server decides what may be published. */
 function NewPostSheet({ onClose, onPublished }) {
-  const { profile, t } = useStore()
+  const { profile, consultant, t } = useStore()
+  /* A Pro and a Creator post video, and a Pro tags products (14 Oct 2026,
+     Rahul: Studio went from Dashboard; posting is this sheet). A Seeker
+     gets photo, text and blog. The server keeps the same rules. */
+  const pro = consultant?.status === 'approved'
+  const video = pro || profile?.influencer || profile?.video_enabled
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">
       <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-white">
@@ -449,7 +460,8 @@ function NewPostSheet({ onClose, onPublished }) {
           /* The composer draws its own header — Back, Create post, Post —
              and its toolbar (12 Oct 2026, Rahul: Facebook's shape). */
           <Composer
-            kinds={profile?.video_enabled ? ['clip', 'post', 'article'] : ['post', 'article']}
+            kinds={video ? ['clip', 'post', 'article'] : ['post', 'article']}
+            tagProducts={pro}
             onPublished={onPublished}
             onClose={onClose}
           />

@@ -300,8 +300,10 @@ export default function Composer({
         ) : (
           <>
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-              <Tool icon="image" tone="bg-[#e7f6ee] text-[#2f8f5b]" label={canVideo ? 'Photo/Video' : 'Photo'} onClick={() => gallery.current?.click()} disabled={uploading || busy} />
-              <Tool icon="camera" tone="bg-[#fdeee4] text-[#d9641f]" label="Camera" onClick={() => camera.current?.click()} disabled={uploading || busy} />
+              {/* Gallery and Camera are icons alone (14 Oct 2026, Rahul), so
+                  the row fits a phone with Tag and Blog beside them. */}
+              <Tool icon="image" tone="bg-[#e7f6ee] text-[#2f8f5b]" label={canVideo ? 'Photo or video' : 'Photo'} iconOnly onClick={() => gallery.current?.click()} disabled={uploading || busy} />
+              <Tool icon="camera" tone="bg-[#fdeee4] text-[#d9641f]" label="Camera" iconOnly onClick={() => camera.current?.click()} disabled={uploading || busy} />
               {tagProducts && (
                 <Tool glyph={<TagGlyph size={16} />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag" on={tagging} onClick={() => setTagging((v) => !v)} />
               )}
@@ -322,21 +324,23 @@ export default function Composer({
 /** One pill in the toolbar: a tinted round icon beside its name, one line
  *  (12 Oct 2026, Rahul: lower, "more modern"; they were tiles, icon over
  *  name, 70px tall). */
-function Tool({ icon, glyph, tone, label, onClick, disabled = false, on = false }) {
+function Tool({ icon, glyph, tone, label, onClick, disabled = false, on = false, iconOnly = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-pressed={on || undefined}
-      className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-2 text-[12px] font-semibold text-t1 transition-transform active:scale-95 disabled:opacity-40 ${
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
+      className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 ${iconOnly ? 'pr-1.5' : 'pr-2'} text-[12px] font-semibold text-t1 transition-transform active:scale-95 disabled:opacity-40 ${
         on ? 'bg-gold-fill/10 ring-1 ring-gold-fill/40' : 'bg-[#f4f4f6]'
       }`}
     >
       <span className={`grid h-7 w-7 place-items-center rounded-full ${tone}`}>
         {glyph ?? <Icon name={icon} size={16} weight={2} />}
       </span>
-      {label}
+      {!iconOnly && label}
     </button>
   )
 }

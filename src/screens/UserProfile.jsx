@@ -6,6 +6,7 @@ import { Kicker, PopAvatar, PopButton } from '../components/Pop.jsx'
 import { firstName } from '../components/Primitives.jsx'
 import ReportSheet from '../components/ReportSheet.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
+import SadhanaStreak from '../components/SadhanaStreak.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
@@ -128,6 +129,8 @@ export default function UserProfile() {
           ]}
         />
       </section>
+      {/* Their sadhana streak, while it runs (14 Oct 2026, Phase 15c). */}
+      <SadhanaStreak profileId={id} className="px-5 pt-3" />
 
       {/* Your own page has no Follow button. Following yourself is a row the
           database would happily take and nobody wants. */}

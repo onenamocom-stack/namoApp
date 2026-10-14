@@ -21,6 +21,7 @@ import { getConsultant, istToday, openSlots } from '../lib/consultants.js'
 import { fetchByAuthor, fetchReviews, followCounts } from '../lib/content.js'
 import { FeedCard } from './Home.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
+import SadhanaStreak from '../components/SadhanaStreak.jsx'
 import ProfileHead from '../components/ProfileHead.jsx'
 import FollowSheet from '../components/FollowSheet.jsx'
 import { shareLink } from '../lib/share.js'
@@ -307,6 +308,8 @@ export function ConsultantPage({
           <SkillChips text={c.specialization} className="mt-3" />
 
           <p className="mt-2.5 text-meta leading-relaxed t-sub">{c.bio}</p>
+          {/* The sadhana streak (14 Oct 2026, Phase 15c). */}
+          <SadhanaStreak profileId={c.id} own={own} className="mt-2.5" />
 
           {c.credentials.map((cr) => (
             <p key={cr} className="mt-2 flex items-center gap-1.5 text-meta font-semibold t-heading">

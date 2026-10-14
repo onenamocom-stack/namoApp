@@ -177,3 +177,27 @@ class BhaktiComment(models.Model):
 
     def __str__(self):
         return self.body[:60]
+
+
+class SadhanaDay(models.Model):
+    """One IST day on which a person did their sadhana (14 Oct 2026, Phase
+    15c): a mantra's japa played through to its count in Bhakti, or an
+    aarti in Darshan. One row per person per day; the streak on the profile
+    is the run of consecutive days (`streak.py`). Self-reported, as a mala
+    is: nothing here proves anybody chanted."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField()
+    day = models.DateField()
+    japa_rounds = models.PositiveIntegerField(default=0)
+    aarti = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "sadhana_days"
+        constraints = [
+            models.UniqueConstraint(fields=["profile_id", "day"], name="sadhana_days_one_per_day"),
+        ]
+
+    def __str__(self):
+        return f"{self.profile_id} {self.day}"

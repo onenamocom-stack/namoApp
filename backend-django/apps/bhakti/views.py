@@ -175,3 +175,32 @@ def commented(request):
         }
         for c, asset in services.list_commented(request.user.pk)
     ])
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def my_streak(request):
+    """The caller's sadhana streak (Phase 15c). POST {kind: japa|aarti,
+    rounds} counts today and answers with the new streak."""
+    from . import streak
+
+    if request.method == "GET":
+        return Response(streak.summary(request.user.pk))
+    kind = request.data.get("kind")
+    if kind not in streak.KINDS:
+        return Response(refusal_body("bad_kind", "Kind is japa or aarti."), status=400)
+    try:
+        rounds = int(request.data.get("rounds") or 1)
+    except (TypeError, ValueError):
+        rounds = 1
+    return Response(streak.mark(request.user.pk, kind, rounds))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def streak_of(request, profile_id):
+    """Anybody's current streak, for their profile (Phase 15c)."""
+    from . import streak
+
+    s = streak.summary(profile_id)
+    return Response({"current": s["current"], "best": s["best"]})

@@ -70,6 +70,7 @@ In file order, which is also resolution order.
 | `/dashboard` | Dashboard — a Pro's or a Creator's own screens (main app, 14 Oct 2026, Phase 16); anyone else goes to `/profile` | Plain |
 | `/dashboard/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
 | `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
+| `/home?compose=1` | Home with the new-post sheet open (14 Oct 2026) | Tab |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
 | `/messages` | Messages — Inbox · Requests (both apps) | Plain |
 | `/messages/:id` | Conversation — one person, free (both apps) | Plain |
@@ -918,7 +919,15 @@ following (the shared profile header), then
 a row of five icons without words (13 Oct 2026, Rahul; it was Edit profile
 and Share profile): **Consult** (the chat panel on Consultant), **Sessions**
 (the panel on Sessions), **Wallet** (`/wallet`), **Edit** (`/onboarding/details?edit=1`)
-and **Share** (`/u/<you>`), each named to a screen reader and on long press. A green dot on the photo's top right (it was a "● Available" line
+and **Share** (`/u/<you>`), each named to a screen reader and on long press.
+
+**Sadhana streak** (14 Oct 2026, Phase 15c): under the bio, beside a mala,
+"7-day sadhana streak · best 12" on your Profile, a Pro's page and `/u/:id`.
+A day counts when a mantra's japa in Bhakti plays through to the count you
+chose, or when you begin an aarti in Darshan. Days are IST; the run breaks
+once a whole day passes with neither. Somebody else's shows only while it
+runs; yours at zero says "Finish a japa in Bhakti to start your sadhana
+streak" and opens Bhakti. A green dot on the photo's top right (it was a "● Available" line
 under the name until 11 Oct, Rahul). Under the name, your bio — *Write about
 yourself* until you write one, which opens Edit profile; the bio itself has no
 pencil and is edited only there (13 Oct 2026, Rahul). Choosing a new picture opens an adjuster first: drag to
@@ -1187,8 +1196,14 @@ until this day) and on a Creator's Profile, under the five icons.
 - **A Pro:** Your work (Studio, Earnings and Insights, Your links), Your
   practice (Practice and reviews, Edit your page, View your public page,
   Payout details), Calls and chats (**Namo Consult**, `/desk`).
-- **A Creator:** Studio and Your code, then Insights (the last seven days,
-  every post with its views, products sold with their code).
+- **A Creator:** Your code, then Insights (the last seven days, every post
+  with its views, products sold with their code).
+
+No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
+In that sheet a Pro and a Creator also get video, and a Pro gets Tag
+product; a Seeker gets photo, text and blog. Gallery and Camera are icons
+without words. `/dashboard/studio` and "Post more" open Home with the sheet
+up (`/home?compose=1`).
 
 The screens are the pro app's own, at `/dashboard/...` and not `/pro/...`:
 a `/pro` path switches the online beat on, which would show a Pro as online

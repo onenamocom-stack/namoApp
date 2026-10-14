@@ -1,5 +1,6 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { markSadhana } from '../lib/streak.js'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { BackButton, TabHeader } from '../components/Chrome.jsx'
@@ -586,6 +587,8 @@ function TrackCard({ asset, counted = false }) {
       el.current.currentTime = 0
       play()
     } else {
+      // The last repetition of a counted japa: today's sadhana (Phase 15c).
+      if (counted && left === 1) markSadhana('japa', total)
       setLeft(0)
       setPlaying(false)
     }
