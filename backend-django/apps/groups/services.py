@@ -6,7 +6,7 @@ Every refusal is a sentence the person reads, raised as `Refused`.
 import uuid
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.utils import timezone
 
 from apps.core import limits
@@ -224,6 +224,16 @@ def search(q="", limit=40):
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q) | Q(about__icontains=q))
     return list(_with_counts(qs).order_by("-last_post_at", "-created_at")[:limit])
+
+
+def suggest(profile_id, limit=10):
+    """Home's "Groups for you" (14 Oct 2026, Rahul): live groups the person
+    is not in and was not removed from, the busiest first."""
+    taken = GroupMember.objects.filter(profile_id=profile_id).exclude(
+        status=GroupMember.Status.LEFT
+    ).values("group_id")
+    qs = _with_counts(Group.objects.filter(status=Group.Status.LIVE).exclude(pk__in=taken))
+    return list(qs.order_by("-member_count", F("last_post_at").desc(nulls_last=True))[:limit])
 
 
 def detail(group_id):

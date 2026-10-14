@@ -8,6 +8,7 @@ import { fetchFeed, fetchReposts, fetchSuggestions, isMine, productHref, recordV
 import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
+import { joinGroup, kindLabel, suggestGroups } from '../lib/groups.js'
 import Icon from '../components/Icon.jsx'
 import { ActIcon, Count } from '../components/ActIcon.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
@@ -362,11 +363,12 @@ export default function Home() {
                   default:
                     return null
                 } })()
-                // People to follow, once, after the fifth card (Phase 15a).
-                return i === 4 ? (
+                // People to follow, once, after the fifth card (Phase 15a);
+                // Groups for you after the twelfth (14 Oct 2026, Rahul).
+                return i === 4 || i === 11 ? (
                   <Fragment key={item.id}>
                     {card}
-                    <FollowSuggestions />
+                    {i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
                   </Fragment>
                 ) : (
                   card
@@ -572,6 +574,69 @@ function FollowSuggestions() {
                 }`}
               >
                 {on ? 'Following' : 'Follow'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/** "Groups for you" (14 Oct 2026, Rahul): the same strip as People to
+ *  follow, of live groups you are not in, busiest first, each with Join.
+ *  Joining opens nothing; the card itself opens the group. */
+function GroupSuggestions() {
+  const { session, showToast } = useStore()
+  const [groups, setGroups] = useState([])
+  const [joined, setJoined] = useState({})
+  const me = session?.user?.id
+  useEffect(() => {
+    let alive = true
+    if (me) suggestGroups().then((rows) => alive && setGroups(rows)).catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [me])
+  if (!me || !groups.length) return null
+  async function join(g) {
+    try {
+      await joinGroup(g.id)
+      setJoined((j) => ({ ...j, [g.id]: true }))
+      showToast(`Joined ${g.name}`)
+    } catch (err) {
+      showToast(err.message)
+    }
+  }
+  return (
+    <section className="border-b border-rule bg-white py-3">
+      <p className="px-3 text-meta font-semibold text-t1">Groups for you</p>
+      <div className="no-scrollbar mt-2.5 flex gap-2.5 overflow-x-auto px-3">
+        {groups.map((g) => {
+          const initials = (g.name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+          const on = joined[g.id]
+          return (
+            <div key={g.id} className="flex w-36 flex-none flex-col items-center rounded-xl border border-stroke px-2 py-3 text-center">
+              <Link to={`/groups/${g.id}`} className="flex w-full flex-col items-center">
+                <PopAvatar initials={initials} src={g.avatar_url} size={56} />
+                <span className="mt-2 block w-full truncate text-meta font-semibold text-t1">{g.name}</span>
+                <span className="block w-full truncate text-[11px] text-t3">
+                  {kindLabel(g.kind)}
+                  {g.city ? ` · ${g.city}` : ''}
+                </span>
+                <span className="block w-full truncate text-[11px] text-t3 tnum">
+                  {g.member_count} {g.member_count === 1 ? 'member' : 'members'}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => !on && join(g)}
+                aria-pressed={!!on}
+                className={`mt-2.5 w-full rounded-lg py-1.5 text-meta font-semibold transition-colors ${
+                  on ? 'bg-ink/5 text-t3' : 'bg-btn text-white'
+                }`}
+              >
+                {on ? 'Joined' : 'Join'}
               </button>
             </div>
           )

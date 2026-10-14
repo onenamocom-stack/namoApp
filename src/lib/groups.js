@@ -35,6 +35,8 @@ export const GROUP_KINDS = [
 ]
 
 export const myGroups = () => api('/groups/?mine=1').then((d) => d.items)
+/** Home's "Groups for you": live groups you are not in, busiest first. */
+export const suggestGroups = () => api('/groups/?suggest=1').then((d) => d.items)
 export const findGroups = (q = '') => api(`/groups/?q=${encodeURIComponent(q)}`).then((d) => d.items)
 export const fetchGroup = (id) => api(`/groups/${id}/`)
 export const createGroup = (fields) => api('/groups/', { method: 'POST', body: fields })

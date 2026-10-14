@@ -56,6 +56,8 @@ def groups(request):
         return Response(services.row(services.detail(group.id), me), status=201)
     if request.query_params.get("mine"):
         rows = services.mine(me)
+    elif request.query_params.get("suggest"):
+        rows = services.suggest(me)
     else:
         rows = services.search(request.query_params.get("q", ""))
     return Response({"items": [services.row(g, me) for g in rows]})

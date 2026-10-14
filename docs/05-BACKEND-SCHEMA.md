@@ -2189,7 +2189,7 @@ policies** on both new tables.
 
 `public_content()` drops a blocked group's posts and carries `group_name`;
 the open feed (`feed/`) leaves group posts out; `feed/for-you/` adds the
-reader's own groups. API `/v1/groups/`, all signed in: `GET ?mine=1 | ?q=`,
+reader's own groups. API `/v1/groups/`, all signed in: `GET ?mine=1 | ?q= | ?suggest=1`,
 `POST` (create), `<id>/` (GET, PATCH by an admin), `join/`, `leave/`,
 `members/`, `members/remove/`, `members/admin/`, `posts/`,
 `posts/remove/`. Publishing takes `group_id`; only an active member of a live

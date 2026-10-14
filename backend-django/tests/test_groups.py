@@ -126,3 +126,18 @@ class TestGroups:
         api_client.post(f"{G}{gid}/join/", **auth(second_seeker_token))
         out = api_client.post(f"{G}{gid}/leave/", **auth(seeker_token))
         assert out.status_code == 400 and "admin" in out.json()["message"]
+
+
+@pytest.mark.django_db
+class TestGroupsForYou:
+    def test_suggests_groups_you_are_not_in_busiest_first(
+        self, api_client, seeker_token, second_seeker_token, roster
+    ):
+        quiet = _make(api_client, seeker_token, name="Quiet Group").json()["id"]
+        busy = _make(api_client, seeker_token, name="Busy Group").json()["id"]
+        api_client.post(f"{G}{busy}/join/", **auth(second_seeker_token))
+        theirs = _make(api_client, second_seeker_token, name="Their Own").json()["id"]
+        got = [g["id"] for g in api_client.get(f"{G}?suggest=1", **auth(second_seeker_token)).json()["items"]]
+        assert got == [quiet]  # not Busy (a member), not Their Own
+        mine = [g["id"] for g in api_client.get(f"{G}?suggest=1", **auth(seeker_token)).json()["items"]]
+        assert mine == [theirs]

@@ -1800,5 +1800,9 @@ post first, then **Find groups** (a search box, by name, city or about) and
 - **In the feed** a group post carries "In <group>" above its author,
   opening the group. It reaches the group's members' Home feeds, not
   everybody's.
+- **Groups for you** on Home (14 Oct 2026, Rahul): after the twelfth card,
+  the same strip as People to follow — live groups you are not in (nor
+  removed from), most members first, each with Join; the card opens the
+  group.
 - Every group is public for now: anyone joins. Namo blocks a group from the
   console (*Groups*), which takes it and its posts out of the app.
