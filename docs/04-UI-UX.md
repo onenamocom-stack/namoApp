@@ -119,7 +119,9 @@ at the start of the deity chips read as a button that scrolls them.
 
 **Bhakti's shelf tiles each have a colour** — status saffron, wallpapers
 purple, tunes blue, bhajans pink, mantras green, darshan gold — a soft wash
-with the icon in the colour, and the full colour with a halo when selected.
+with the icon in the colour, and the full colour with a halo when selected. The first two are named on two lines, **WhatsApp / Status** with
+WhatsApp's bubble and **Mobile / Wallpaper** with a phone (14 Oct 2026,
+Rahul; they were Status with a paper plane and Wallpapers with a picture).
 **The Consult card** (8 Oct 2026): a 76 px square photo with rounded corners
 and a gold border, the online dot on its corner; the tick, a white check in a circle — orange
 `#f5782c` for a Pro, blue `#1d9bf0` for a Creator (two tones since 13 Oct

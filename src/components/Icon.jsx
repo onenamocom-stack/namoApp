@@ -195,6 +195,20 @@ const PATHS = {
       <path d="M18.6 16.4l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7.7-2.2Z" />
     </>
   ),
+  // Bhakti's Status and Wallpaper tiles (14 Oct 2026, Rahul): WhatsApp's
+  // bubble with its handset, and a phone.
+  whatsapp: (
+    <>
+      <path d="M4.4 19.6 5.5 16a8 8 0 1 1 3 2.9Z" />
+      <path d="M9.2 8.6c.3-.4.8-.4 1 0l.7 1.5c.1.3 0 .5-.2.7l-.4.4a5.6 5.6 0 0 0 2.5 2.5l.4-.4c.2-.2.4-.3.7-.2l1.5.7c.4.2.4.7 0 1a2.4 2.4 0 0 1-2.4.6 7 7 0 0 1-4.4-4.4 2.4 2.4 0 0 1 .6-2.4Z" />
+    </>
+  ),
+  mobile: (
+    <>
+      <rect x="6.6" y="2.8" width="10.8" height="18.4" rx="2.4" />
+      <path d="M10.6 18.2h2.8" />
+    </>
+  ),
   // Bhakti's share screen (4 Oct 2026): a gallery, a camera, a person.
   image: (
     <>

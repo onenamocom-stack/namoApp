@@ -64,8 +64,11 @@ import { tileStyle } from '../lib/tiles.js'
 const KINDS = [
   /* Each shelf has its own colour since 4 Oct 2026 (owner's call): a row of
      six identical peach circles read as one control, not six places. */
-  { key: 'status', label: 'Status', icon: 'share', hue: '#f5782c', help: 'Pick a picture, then share it to WhatsApp → Status.' },
-  { key: 'wallpaper', label: 'Wallpapers', icon: 'image', hue: '#8e44ad', help: 'Save it, then set it from your photo gallery.' },
+  /* `tile` is the round button's own name, on two lines, where it differs
+     from `label` (14 Oct 2026, Rahul: "WhatsApp / Status", "Mobile /
+     Wallpaper", with those icons). */
+  { key: 'status', label: 'Status', tile: 'WhatsApp\nStatus', icon: 'whatsapp', hue: '#f5782c', help: 'Pick a picture, then share it to WhatsApp → Status.' },
+  { key: 'wallpaper', label: 'Wallpapers', tile: 'Mobile\nWallpaper', icon: 'mobile', hue: '#8e44ad', help: 'Save it, then set it from your photo gallery.' },
   { key: 'bhajan', label: 'Bhajans', icon: 'sound', hue: '#c2185b', help: 'Saves as an audio file you can play anywhere.' },
   { key: 'mantra', label: 'Mantras', icon: 'mala', hue: '#1e9e5a', help: 'Tap play, say how many times, and it repeats that many.' },
   /* Darshan is not a kind of file — it is the shrine, and it LEAVES this
@@ -236,7 +239,7 @@ export default function Bhakti() {
                   <span className="tile-face" style={tileStyle(k.hue, false)}>
                     <Icon name={k.icon} size={20} />
                   </span>
-                  <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
+                  <span className="whitespace-pre-line text-center text-[12px] font-semibold leading-tight t-body">{k.tile ?? k.label}</span>
                 </Link>
               ) : (
                 <button
@@ -248,7 +251,7 @@ export default function Bhakti() {
                   <span className="tile-face" style={tileStyle(k.hue, kind === k.key)}>
                     <Icon name={k.icon} size={20} weight={kind === k.key ? 2.1 : 1.8} />
                   </span>
-                  <span className="text-center text-[12px] font-semibold leading-tight t-body">{k.label}</span>
+                  <span className="whitespace-pre-line text-center text-[12px] font-semibold leading-tight t-body">{k.tile ?? k.label}</span>
                 </button>
               )}
             </li>
