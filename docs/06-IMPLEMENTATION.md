@@ -546,16 +546,16 @@ Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
 - **The main app, 1namo.com,** holds everything else. Pros and Creators get
   **Dashboard** on their own page and Profile. A Pro's: Earnings, Studio,
   Insights and the profile. A Creator's: Studio and Insights.
-- **The calling app, 1namo.com/duty,** holds only the online switch, the
+- **The calling app, 1namo.com/desk, named Namo Consult,** holds only the online switch, the
   incoming call and chat requests, and the running session with its meter.
-  It installs with its own icon. A Pro with it open is on duty; closed, off.
+  It installs with its own icon. A Pro with it open is online; closed, offline.
   The ringing and heartbeat code moves there unchanged; the main app carries
   none of it.
 - One sign-in: both are on 1namo.com, so they share it.
-- pro.1namo.com keeps working, unchanged, until /duty has carried a real
+- pro.1namo.com keeps working, unchanged, until /desk has carried a real
   paid call end to end. Then it forwards to 1namo.com, path and all.
 
-**Done when:** a Pro with /duty open receives a call request, hears it ring
+**Done when:** a Pro with /desk open receives a call request, hears it ring
 and answers it, and the session meters exactly as before (the chat tests
 unchanged); a Seeker's 1namo.com loads no pro code; a Creator opens Insights
 from Dashboard; an old pro.1namo.com link lands on the same screen.
