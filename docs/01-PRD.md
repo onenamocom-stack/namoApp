@@ -660,6 +660,16 @@ silence anyone; it is not moderation but a brigading tool, and it converts
 into an appeals backlog within a quarter. An admin reads the report and
 decides.
 
+**The daily moderation queue** (14 Oct 2026, Phase 15d) adds what nobody
+reported, found the moment it is written: **a link from an account under a
+week old**, and **the same words three times in a day from one person**.
+Many people writing the same words is not flagged: "Jai Shri Ram" from a
+thousand devotees is the network working. Posts and comments on posts and
+on Bhakti pictures are read; private messages are not. Like a report, a
+flag hides nothing; an admin decides: *Looks fine*, *Remove it* or *Block
+the person*. Reports and the queue together are a thirty-minute job a day
+for one person.
+
 An admin has two actions and they are deliberately different weights:
 
 | | What it does |

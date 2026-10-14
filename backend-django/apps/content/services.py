@@ -363,6 +363,10 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
         ContentProduct.objects.bulk_create(
             ContentProduct(content=row, product=p, sort=i) for i, p in enumerate(products)
         )
+    if role != "admin":
+        from . import moderation
+
+        moderation.scan_post(row)  # the daily queue's finders (Phase 15d)
     if products:
         # Mint the author's A code now, so every reader of this post finds
         # one to carry — the read side never mints (a GET must not write).
@@ -559,6 +563,9 @@ def add_comment(content_id, author_id, body):
         raise NotFound("That post is not available.")
     limits.check(Comment.objects.filter(author_id=author_id), limits.COMMENTS)
     row = _with_name(Comment.objects.create(content_id=post.id, author_id=author_id, body=text))
+    from . import moderation
+
+    moderation.scan_comment(row)  # the daily queue's finders (Phase 15d)
 
     if str(post.author_id).replace("-", "") != str(author_id).replace("-", ""):
         # After the write and never raising (notify.push): a comment that

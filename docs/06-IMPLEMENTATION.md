@@ -514,7 +514,7 @@ streak breaks after a missed IST day and not before.
 
 - Video is compressed on upload. Reels are stored as uploaded today, so
   storage and bandwidth grow with every user.
-- A daily moderation queue a person clears in thirty minutes: reports,
+- **Built 14 Oct 2026** (`01-PRD` reporting; console *Moderation queue*). A daily moderation queue a person clears in thirty minutes: reports,
   new accounts posting links, repeated text.
 - Rate limits on posting, commenting and messaging. **Built 14 Oct 2026** (`02-TRD` Rate limits).
 

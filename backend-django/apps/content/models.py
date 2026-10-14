@@ -450,3 +450,52 @@ class DriveReel(models.Model):
 
     def __str__(self):
         return f"{self.folder}/{self.file_name}"
+
+
+class FlagKind(models.TextChoices):
+    NEW_LINK = "new_link", "A link from an account under a week old"
+    REPEATED = "repeated", "The same words, three times in a day"
+
+
+class FlagTarget(models.TextChoices):
+    POST = "post", "Post"
+    COMMENT = "comment", "Comment on a post"
+    BHAKTI_COMMENT = "bhakti_comment", "Comment on a Bhakti picture"
+
+
+class FlagStatus(models.TextChoices):
+    OPEN = "open", "Open"
+    CLEARED = "cleared", "Looked at — fine"
+    REMOVED = "removed", "Removed"
+    BLOCKED = "blocked", "Person blocked"
+
+
+class ModerationFlag(models.Model):
+    """One item in the daily moderation queue that nobody reported (14 Oct
+    2026, Phase 15d; finders in `moderation.py`). Like a report, a flag
+    hides nothing: an admin decides. One per thing per reason."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(max_length=16, choices=FlagKind.choices)
+    target_type = models.CharField(max_length=16, choices=FlagTarget.choices)
+    target_id = models.UUIDField()
+    subject_id = models.UUIDField()
+    excerpt = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=16, choices=FlagStatus.choices, default=FlagStatus.OPEN)
+    decided_by = models.TextField(blank=True, default="")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    Kind = FlagKind
+    Target = FlagTarget
+    Status = FlagStatus
+
+    class Meta:
+        db_table = "moderation_flags"
+        constraints = [
+            models.UniqueConstraint(fields=["target_type", "target_id", "kind"], name="moderation_flags_once"),
+        ]
+        indexes = [models.Index(fields=["status", "created_at"], name="moderation_flags_queue_idx")]
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.excerpt[:40]}"

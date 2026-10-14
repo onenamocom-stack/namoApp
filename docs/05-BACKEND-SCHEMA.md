@@ -2165,3 +2165,13 @@ per count the writing limits take (`02-TRD` Rate limits):
 `content (author_id, created_at)`, `content_comments (author_id,
 created_at)`, `bhakti_comments (author_id, created_at)`, `dm_messages
 (sender_id, created_at)`, `dm_threads (started_by, created_at)`.
+
+## The moderation queue — `moderation_flags` (14 Oct 2026)
+
+Phase 15d, migration `content/0009`. What the finders in
+`apps/content/moderation.py` raise when a post or comment is written; the
+console's *Moderation queue* reads it. RLS on with **no policies**.
+
+| Table | Columns |
+|---|---|
+| `moderation_flags` | `id uuid pk`; `kind` (`new_link`, `repeated`); `target_type` (`post`, `comment`, `bhakti_comment`); `target_id uuid`; `subject_id uuid` (the author); `excerpt` (first 280 characters); `status` (`open`, `cleared`, `removed`, `blocked`); `decided_by`, `decided_at`; `created_at`. **Unique (target_type, target_id, kind)**; index `(status, created_at)` |

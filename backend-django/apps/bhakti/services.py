@@ -140,6 +140,9 @@ def add_comment(asset_id, author_id, body):
 
     limits.check(BhaktiComment.objects.filter(author_id=author_id), limits.COMMENTS)
     row = BhaktiComment.objects.create(asset_id=asset_id, author_id=author_id, body=text)
+    from apps.content import moderation
+
+    moderation.scan_bhakti_comment(row)  # the daily queue's finders (Phase 15d)
     return _named(BhaktiComment.objects.filter(pk=row.pk)).get()
 
 

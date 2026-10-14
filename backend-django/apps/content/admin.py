@@ -23,7 +23,7 @@ from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 from apps.content import services
 from apps.content.models import (
-    Content, ContentKind, ContentStatus, Report,
+    Content, ContentKind, ContentStatus, ModerationFlag, Report,
 )
 from apps.profiles import services as profile_services
 from apps.media import providers as media
@@ -347,6 +347,138 @@ class ReportAdmin(dj.ModelAdmin):
         self._act(request, queryset, upheld=True, outcome="person blocked",
                   each=block)
 
+
+
+class OpenFirst(dj.SimpleListFilter):
+    """The queue opens on what is still open; the rest is one click away."""
+
+    title = "status"
+    parameter_name = "status"
+
+    def lookups(self, request, model_admin):
+        return [("all", "All")] + list(ModerationFlag.Status.choices)
+
+    def choices(self, changelist):
+        for value, label in self.lookup_choices:
+            yield {
+                "selected": (self.value() or "open") == value,
+                "query_string": changelist.get_query_string({self.parameter_name: value}),
+                "display": label,
+            }
+
+    def queryset(self, request, queryset):
+        value = self.value() or "open"
+        return queryset if value == "all" else queryset.filter(status=value)
+
+
+@dj.register(ModerationFlag, site=site)
+class ModerationFlagAdmin(AuditedAdmin, dj.ModelAdmin):
+    """The daily moderation queue (14 Oct 2026, Phase 15d): what nobody
+    reported but somebody should look at — a link from an account under a
+    week old, and the same words three times in a day from one person.
+    Reports are the other half of the day's work, under Reports.
+
+    Oldest first, open only, forty a page: one person clears it in thirty
+    minutes. Nothing here acted on its own; every removal and block is the
+    admin's, in the audit log."""
+
+    audit_target = "moderation_flag"
+    list_display = ("what", "why", "who", "account_age", "status", "created_at")
+    list_filter = (OpenFirst, "kind", "target_type")
+    readonly_fields = ("kind", "target_type", "target_id", "subject_id", "excerpt",
+                       "status", "decided_by", "decided_at", "created_at")
+    actions = ("looks_fine", "remove_it", "block_the_person")
+    list_per_page = 40
+    ordering = ("created_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
+    @dj.display(description="What")
+    def what(self, obj):
+        if obj.target_type == ModerationFlag.Target.POST:
+            return format_html('<a href="../content/{}/change/">Post · {}</a>', obj.target_id, obj.excerpt[:80])
+        return f"{obj.get_target_type_display()} · {obj.excerpt[:80]}"
+
+    @dj.display(description="Why")
+    def why(self, obj):
+        return obj.get_kind_display()
+
+    @dj.display(description="Who")
+    def who(self, obj):
+        return _profile_label(obj.subject_id)
+
+    @dj.display(description="Joined")
+    def account_age(self, obj):
+        from apps.profiles.models import Profile
+
+        joined = Profile.objects.filter(pk=obj.subject_id).values_list("created_at", flat=True).first()
+        if not joined:
+            return "—"
+        days = (timezone.now() - joined).days
+        return "today" if days == 0 else f"{days} days ago"
+
+    def _decide(self, request, queryset, status, each=None):
+        done = 0
+        for flag in queryset.filter(status=ModerationFlag.Status.OPEN):
+            if each:
+                each(flag)
+            ModerationFlag.objects.filter(pk=flag.pk).update(
+                status=status, decided_by=request.user.get_username(), decided_at=timezone.now(),
+            )
+            record(request, f"moderation.{status}", "moderation_flag", target_id=flag.pk,
+                   subject=str(flag.subject_id), kind=flag.kind)
+            done += 1
+        self.message_user(request, f"{done} item(s) decided.", messages.SUCCESS if done else messages.WARNING)
+
+    @dj.action(description="Looks fine — keep it")
+    def looks_fine(self, request, queryset):
+        self._decide(request, queryset, ModerationFlag.Status.CLEARED)
+
+    @dj.action(description="Remove it — the post or comment goes, the account stays")
+    def remove_it(self, request, queryset):
+        def take_down(flag):
+            _remove_flagged(flag)
+            record(request, f"{flag.target_type}.remove", flag.target_type,
+                   target_id=flag.target_id, via="moderation")
+        self._decide(request, queryset, ModerationFlag.Status.REMOVED, take_down)
+
+    @dj.action(description="Block the person — every post hidden, cannot post again")
+    def block_the_person(self, request, queryset):
+        def block(flag):
+            _remove_flagged(flag)
+            profile_services.set_blocked(flag.subject_id, True, reason=f"Moderation: {flag.get_kind_display().lower()}")
+            record(request, "profile.block", "profile", target_id=flag.subject_id, via="moderation")
+        self._decide(request, queryset, ModerationFlag.Status.BLOCKED, block)
+
+
+def _remove_flagged(flag):
+    """Take the flagged thing down, as an admin. Already gone is fine."""
+    from rest_framework.exceptions import NotFound
+
+    try:
+        if flag.target_type == ModerationFlag.Target.POST:
+            services.admin_remove_content(flag.target_id)
+        elif flag.target_type == ModerationFlag.Target.COMMENT:
+            services.remove_comment(flag.target_id, None, "admin")
+        else:
+            from apps.bhakti import services as bhakti_services
+
+            bhakti_services.remove_comment(flag.target_id, None, "admin")
+    except NotFound:
+        pass
 
 def _profile_label(profile_id):
     from apps.profiles.models import Profile
