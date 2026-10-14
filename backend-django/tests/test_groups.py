@@ -37,6 +37,7 @@ class TestGroups:
         gid = made.json()["id"]
         assert made.json()["me"] == {"status": "active", "role": "admin"}
         assert made.json()["member_count"] == 1
+        assert made.json()["created_by_me"] is True
 
         # Not a member: refused.
         refused = _post(api_client, second_seeker_token, gid)
@@ -112,6 +113,7 @@ class TestGroups:
         _make(api_client, seeker_token, name="Pune Jain Sangh")
         found = api_client.get(f"{G}?q=pune", **auth(second_seeker_token)).json()["items"]
         assert [g["name"] for g in found] == ["Pune Jain Sangh"] and found[0]["me"] is None
+        assert found[0]["created_by_me"] is False
         assert api_client.get(f"{G}?mine=1", **auth(second_seeker_token)).json()["items"] == []
         assert len(api_client.get(f"{G}?mine=1", **auth(seeker_token)).json()["items"]) == 1
 

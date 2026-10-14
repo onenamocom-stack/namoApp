@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Loader } from './Cosmos.jsx'
-import { Kicker, PopAvatar, PopButton } from './Pop.jsx'
+import { Kicker, PopAvatar } from './Pop.jsx'
 import { findGroups, kindLabel, myGroups } from '../lib/groups.js'
 import { ago } from '../lib/notifications.js'
 
@@ -9,9 +9,10 @@ const initialsOf = (name) =>
   (name || '?').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
 /**
- * Chat's Groups segment (14 Oct 2026, Rahul: option A): your groups, the
- * one with the newest post first; then Find groups (by name or city) and
- * Start a group. `onOpen` lets the chat panel close itself first.
+ * The groups list on `/groups` (14 Oct 2026, Rahul; it began as Chat's
+ * Groups segment): the groups you created, the ones you are in, each with
+ * the newest post first, then Find groups (by name or city). `onOpen` runs
+ * before a group opens.
  */
 export default function GroupsPane({ onOpen }) {
   const navigate = useNavigate()
@@ -41,28 +42,40 @@ export default function GroupsPane({ onOpen }) {
 
   const mineIds = new Set((mine ?? []).map((g) => g.id))
 
+  /* Two lists since 14 Oct 2026 (Rahul): the groups you started, and the
+     ones you joined. Starting one is the + at the top of the page. */
+  const created = (mine ?? []).filter((g) => g.created_by_me)
+  const joined = (mine ?? []).filter((g) => !g.created_by_me)
+
   return (
     <div className="pb-10">
-      <section className="px-4 pt-4">
-        <Kicker>Your groups</Kicker>
-        {mine === null && <Loader />}
-        {mine && !mine.length && (
-          <p className="mt-2 text-meta t-faint">You are in no group yet. Find one below, or start one.</p>
-        )}
-        <ul className="mt-1">
-          {mine?.map((g) => (
-            <GroupRow key={g.id} g={g} onOpen={open} />
-          ))}
-        </ul>
-      </section>
+      {mine === null && <Loader />}
+      {mine && !mine.length && (
+        <p className="px-4 pt-4 text-meta t-faint">You are in no group yet. Find one below, or start one with +.</p>
+      )}
+      {created.length > 0 && (
+        <section className="px-4 pt-4">
+          <Kicker>Groups you created</Kicker>
+          <ul className="mt-1">
+            {created.map((g) => (
+              <GroupRow key={g.id} g={g} onOpen={open} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {joined.length > 0 && (
+        <section className="px-4 pt-4">
+          <Kicker>Groups you&apos;re in</Kicker>
+          <ul className="mt-1">
+            {joined.map((g) => (
+              <GroupRow key={g.id} g={g} onOpen={open} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="px-4 pt-5">
-        <div className="flex items-center justify-between gap-3">
-          <Kicker>Find groups</Kicker>
-          <Link to="/groups/new" onClick={() => onOpen?.()} className="text-meta font-semibold gold">
-            Start a group
-          </Link>
-        </div>
+        <Kicker>Find groups</Kicker>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -72,12 +85,7 @@ export default function GroupsPane({ onOpen }) {
         />
         {found === null && <Loader />}
         {found && !found.filter((g) => !mineIds.has(g.id)).length && (
-          <div className="mt-3">
-            <p className="text-meta t-faint">{q ? 'No group by that name yet.' : 'No groups yet.'}</p>
-            <PopButton className="mt-3" to="/groups/new" onClick={() => onOpen?.()}>
-              Start a group
-            </PopButton>
-          </div>
+          <p className="mt-3 text-meta t-faint">{q ? 'No group by that name yet.' : 'No other groups yet.'}</p>
         )}
         <ul className="mt-1">
           {found?.filter((g) => !mineIds.has(g.id)).map((g) => (

@@ -275,4 +275,6 @@ def row(group, viewer_id=None):
         "member_count": getattr(group, "member_count", None),
         "last_post_at": group.last_post_at.isoformat() if group.last_post_at else None,
         "me": None if m is None else {"status": m.status, "role": m.role},
+        # "Groups you created" on the groups page (14 Oct 2026, Rahul).
+        "created_by_me": bool(viewer_id) and str(group.created_by).replace("-", "") == str(viewer_id).replace("-", ""),
     }
