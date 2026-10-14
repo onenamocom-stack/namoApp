@@ -1870,7 +1870,9 @@ shape Devanagari). Stickers are not built.
 
 ## Chats, `/messages` (redrawn 14 Oct 2026, Rahul)
 
-A large **Chats** heading with a pen on the right (New message: it opens
+The header carries the search box like every other tab (14 Oct 2026,
+Rahul; Chats had none): it opens Search on People. Below it, a large
+**Chats** heading with a pen on the right (New message: it opens
 Search on People). Underline tabs **Chatbox** · **Chat requests** with the
 requests count in a saffron pill (they were Inbox · Requests on a pill
 switch; Groups was a third tab). Each conversation: a 54 px photo, the name,

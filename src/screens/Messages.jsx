@@ -223,11 +223,12 @@ function ClockMark() {
 }
 
 /* A tab in the seeker app (the bar's middle slot, 13 Oct 2026), so the
-   shared header; a page with Back in the consultant app. */
+   shared header, with its search like every other tab (14 Oct, Rahul) —
+   it opens /search on people; a page with Back in the consultant app. */
 export default function Messages() {
   return (
     <>
-      {isPro ? <TopBar title="Messages" back backTo="/pro/studio" /> : <TabHeader search={false} />}
+      {isPro ? <TopBar title="Messages" back backTo="/pro/studio" /> : <TabHeader />}
       <MessagesList />
     </>
   )
