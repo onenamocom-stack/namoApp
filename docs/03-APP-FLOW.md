@@ -72,7 +72,7 @@ In file order, which is also resolution order.
 | `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
 | `/home?compose=1` | Home with the new-post sheet open (14 Oct 2026) | Tab |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
-| `/messages` | Messages — Inbox · Requests (both apps); **Groups** in the seeker app | Plain |
+| `/messages` | Chats — Chatbox · Chat requests (both apps) | Plain |
 | `/groups` · `/groups/:id` · `/groups/new` · `/groups/:id/edit` | A group's page; start a group; edit yours (14 Oct 2026, Phase 15c) | Plain |
 | `/messages/:id` | Conversation — one person, free (both apps) | Plain |
 | `/premium` | → `/home` (Premium not offered, 11 Oct 2026) | — |
@@ -1812,8 +1812,8 @@ when you look, not something you are interrupted by.
 
 ## Groups (14 Oct 2026, Phase 15c)
 
-Rahul's placement, option A: **Chat → Groups**, a third segment beside Inbox
-and Requests (the tab bar stays five). Since 14 Oct 2026 also **Home's Groups
+Rahul's placement was option A, **Chat → Groups**, a third segment; it left
+Chat the same day (Rahul), and groups are reached from **Home's Groups
 button**: a round saffron button with white people and a small +, to the
 right of Reels · Aaj ka panchang · Aaj ke darshan, opening `/groups` (the
 same list as a page, back to Home). It lists **Your groups**, the newest
@@ -1855,3 +1855,15 @@ each in its IST window: **Shubh Navratri** 10–19 Oct, **Happy Dussehra**
 built-in art is drawn by `tools/festival-frames.py`, with its English and
 Hindi set by Chrome in `tools/festival-frames-text.mjs` (this Pillow cannot
 shape Devanagari). Stickers are not built.
+
+## Chats, `/messages` (redrawn 14 Oct 2026, Rahul)
+
+A large **Chats** heading with a pen on the right (New message: it opens
+Search on People). Underline tabs **Chatbox** · **Chat requests** with the
+requests count in a saffron pill (they were Inbox · Requests on a pill
+switch; Groups was a third tab). Each conversation: a 54 px photo, the name,
+the last message and its time; unread shows the name and line in bold, the
+time in saffron and a saffron count. A message still waiting to be
+accepted reads "Sent · waiting for them to accept" behind a small clock.
+Empty, the Chatbox shows the infinity mark, "No chats yet" and **Find
+people**.
