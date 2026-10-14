@@ -81,8 +81,8 @@ In file order, which is also resolution order.
 | `/home` | Home | **Tab** |
 | `/consult` | Consult | **Tab** |
 | `/pooja` | Pooja | **Tab** |
-| `/shop` | Shop — **Market** tab, with Academy (13 Oct 2026) | **Tab** |
-| `/academy` | Academy — **Market** tab, with Shop | **Tab** |
+| `/shop` | Market — products, E-books, Courses and Events as tiles (one page since 14 Oct 2026) | **Tab** |
+| `/academy` | Forwards to `/shop?cat=ebooks` (and a `?book=`) since 14 Oct 2026 | Redirect |
 | `/messages` | Messages (seeker app) | **Tab** |
 | `/pro/apply` | ProApply | Plain |
 | `/pro/consult` | ProConsult | **Pro** |
@@ -319,7 +319,7 @@ the reel's tagged products — "Book a session" was removed from there.
 | Reading | Under the panchang: **the free reading by sign** (30 Sep) — twelve sign chips, opening on the reader's own moon sign; the sign and date, headline, summary and Ujjain's windows; a last line to *Your own predictions* on `/chart`. No heading and no *Read all* |
 | Article | → `/read/:id` · Save |
 | Live | → `/live/:id` |
-| Course | → `/academy` |
+| Course | → `/academy`, which opens the Market's E-books |
 | Product | **Add → cart** · → `/shop` |
 
 The reading and panchang cards are hoisted to positions 1 and 2 **in the
@@ -756,22 +756,25 @@ shop", with the way back. The tab title, meta description and a
 schema.org Product block are set while the page is open.
 
 
-### `/academy`
-E-book / Courses / Events. E-book leads and opens by default (28 Sep 2026) — it is the only tab reading real content.
-Each book has the Bhakti row under its title (12 Oct 2026, Rahul): Like,
-Comment, Reshare and Share, with Read on the right; a priced book has no
-Reshare. A shared book's address (`/bhakti/s/:id`) opens `/academy?book=:id`,
-that book first.
+### Market, `/shop` (Shop and Academy in one page, 14 Oct 2026, Rahul)
 
-Course *Resume* and *Watch* are external links to **YouTube search URLs** — the
-only outbound links in the app. *Enrol* toasts. Events show a seat-fill bar and
-toggle a flag; full events refuse.
+One page where somebody buys goods and services. The tiles, after the
+header's search: **All**, **E-books**, **Courses**, **Events**, then the
+console's shop categories. `?cat=ebooks`, `?cat=courses` or `?cat=events`
+opens on that tile; `/academy` forwards to `?cat=ebooks`, and a shared
+book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
 
-**The third tab was Downloads until 25 Sep 2026**, and the rename took the two
-video rows with it: a shelf called E-book listing a 410 MB recording is the
-kind of label this codebase keeps deleting. Lessons live inside their course,
-which is where somebody looking for one goes. The list is still a prototype
-and says so; the real books arrive with the Academy's own materials.
+- **All**: the banners, subcategory pills and products as before, then the
+  first two e-books with *See all* (nothing when there are none).
+- **E-books**: every book. Each has the Bhakti row under its title (12 Oct
+  2026, Rahul): Like, Comment, Reshare and Share, with Read on the right; a
+  priced book has no Reshare. A priced book is still bought from the wallet
+  (the Paywall). Rahul asked on 14 Oct for e-books to be paid through the
+  gateway, as products are, with no wallet: waiting for the owner's yes.
+- **Courses** and **Events**: a *Soon* under the tile and a coming-soon
+  panel. Academy's Courses and Events tabs were mock data and went with it.
+
+The Shop · Academy switch under the header is gone.
 
 ### `/tarot`
 A guided pull, as a state machine rather than one laid-out screen:
@@ -1332,9 +1335,9 @@ Profile is the **Creator** tab.
 **Market**. Chat is `/messages`. Icons since 14 Oct 2026 (Rahul): **Bhakti**
 under folded hands (the `namaste` icon, drawn from Rahul's reference; it was
 the diya) and **Chat** under the Namo infinity as a line (`infinity`, a
-29 px against the others' 19; it was the folded hands). Market is Shop and Academy in one tab: it opens on `/shop`,
-stays lit on `/academy`, and both pages carry a Shop · Academy switch under
-the header; every old link to either still works. Messages took the freed
+29 px against the others' 19; it was the folded hands). Market is Shop and Academy in one page, `/shop` (14 Oct 2026;
+one tab with a Shop · Academy switch from 13 Oct); `/academy` forwards to its
+E-books tile, so every old link still works. Messages took the freed
 slot, in the middle. **Ask AI left the panel on 30 Sep
 2026** for its own page, `/ask` — messages are people.
 

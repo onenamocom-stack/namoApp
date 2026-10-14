@@ -2,10 +2,11 @@ import { Loader } from '../components/Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { MarketSwitch, TabHeader } from '../components/Chrome.jsx'
+import { TabHeader } from '../components/Chrome.jsx'
+import Ebooks from '../components/Ebooks.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import Icon from '../components/Icon.jsx'
 import { useStore } from '../store.jsx'
@@ -77,7 +78,19 @@ const CAT_TILE = {
    icon matched on its name and a colour from this ring, by position, so a
    new category is a tile like the others rather than a blank. */
 const CAT_HUES = ['#2f7fd1', '#8e44ad', '#a0522d', '#1e9e5a', '#c2410c', '#0f766e', '#b45309', '#7c3aed']
+/* The Market is Shop and Academy in one page (14 Oct 2026, Rahul): what was
+   Academy's is three tiles after All. E-books are live; Courses and Events
+   say Soon until they are built. Keys, not names, so a console category
+   called "Events" is never mistaken for one. */
+const MARKET = [
+  { key: ':ebooks', label: 'ac.tab.ebooks', icon: 'academy', hue: '#0f766e' },
+  { key: ':courses', label: 'ac.tab.courses', icon: 'play', hue: '#c2410c', soon: 'ac.soon.courses' },
+  { key: ':events', label: 'ac.tab.events', icon: 'calendar', hue: '#7c3aed', soon: 'ac.soon.events' },
+]
+const marketOf = (key) => MARKET.find((m) => m.key === key)
+
 function tileFor(name, i) {
+  if (marketOf(name)) return marketOf(name)
   if (CAT_TILE[name]) return CAT_TILE[name]
   const n = name.toLowerCase()
   const icon = /gem|stone|ratna|crystal/.test(n) ? 'gem'
@@ -97,7 +110,9 @@ export default function Shop() {
   // One line of copy on the hero card names your sun sign. It was the seed
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
-  const [cat, setCat] = useState('All')
+  // `?cat=ebooks` opens on that tile: where /academy and a shared book land.
+  const [params] = useSearchParams()
+  const [cat, setCat] = useState(() => (marketOf(`:${params.get('cat')}`) ? `:${params.get('cat')}` : 'All'))
   // The header's box searches now (6 Oct 2026); nothing narrows here.
   const query = ''
   const [slide, setSlide] = useState(0)
@@ -174,7 +189,8 @@ export default function Shop() {
   }, [loadingShop, focusId])
   const focusRing = 'ring-2 ring-gold-fill ring-offset-2 ring-offset-bg'
 
-  const filters = ['All', ...catList.map((c) => c.name)]
+  const filters = ['All', ...MARKET.map((m) => m.key), ...catList.map((c) => c.name)]
+  const special = marketOf(cat)
   const q = query.trim().toLowerCase()
   const list = products.filter((p) => {
     const inCat = cat === 'All' || p.categories.includes(cat)
@@ -214,7 +230,6 @@ export default function Shop() {
               </button>
         }
       />
-      <MarketSwitch />
 
 
       {/* Search and the cart, pinned under the header (3 Oct). The cart was
@@ -243,8 +258,9 @@ export default function Shop() {
                     <Icon name={tile.icon} size={20} weight={on ? 2.1 : 1.8} />
                   </span>
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">
-                    {f === 'All' ? t('a.all') : f}
+                    {f === 'All' ? t('a.all') : marketOf(f) ? t(marketOf(f).label) : f}
                   </span>
+                  {tile.soon && <span className="-mt-1 caps-sm text-[9px] t-faint">{t('a.soon')}</span>}
                 </button>
               </li>
             )
@@ -316,6 +332,20 @@ export default function Shop() {
         </div>
       </div>
 
+      {special ? (
+        special.soon ? (
+          <section className="px-6 py-14 text-center">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={tileStyle(special.hue, false)}>
+              <Icon name={special.icon} size={26} />
+            </span>
+            <p className="mt-4 text-lead t-heading">{t(special.label)}</p>
+            <p className="mx-auto mt-2 max-w-[30ch] text-meta t-sub">{t(special.soon)}</p>
+          </section>
+        ) : (
+          <Ebooks />
+        )
+      ) : (
+      <>
       {/* Subcategories where the category pills were (5 Oct 2026). On All,
           every subcategory, and picking one also picks its category. */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-4">
@@ -503,6 +533,11 @@ export default function Shop() {
           {t('shop.disclaimer')}
         </p>
       </section>
+
+      {/* On All, the first e-books under the products, with See all. */}
+      {cat === 'All' && !sub && <Ebooks limit={2} onMore={() => setCat(':ebooks')} />}
+      </>
+      )}
 
       <div className="h-28" />
     </>

@@ -51,6 +51,8 @@ export const strings = {
   'a.wallet': { en: 'Wallet', hi: 'वॉलेट' },
   'a.free': { en: 'Free · no session needed', hi: 'निःशुल्क · सत्र की ज़रूरत नहीं' },
   'a.all': { en: 'All', hi: 'सभी' },
+  'a.seeAll': { en: 'See all', hi: 'सब देखें' },
+  'a.soon': { en: 'Soon', hi: 'जल्द' },
   'a.min': { en: '{n} min', hi: '{n} मिनट' },
   'a.loading': { en: 'Loading…', hi: 'लोड हो रहा है…' },
   /* Tarot asked for this before it existed, and printed the key itself. */
@@ -597,9 +599,12 @@ export const strings = {
   },
 
   // ── Academy ──────────────────────────────────────────────────────────────
-  'ac.tab.ebooks': { en: 'E-book', hi: 'ई-बुक' },
+  'ac.tab.ebooks': { en: 'E-books', hi: 'ई-बुक' },
   'ac.tab.courses': { en: 'Courses', hi: 'कोर्स' },
   'ac.tab.events': { en: 'Events', hi: 'इवेंट' },
+  // The Market's two tiles still to be built (14 Oct 2026, Rahul).
+  'ac.soon.courses': { en: 'Courses are coming soon. Learn from Pros, at your own pace.', hi: 'कोर्स जल्द आ रहे हैं। Pros से सीखें, अपनी रफ़्तार से।' },
+  'ac.soon.events': { en: 'Events are coming soon. Join a satsang, a workshop or a live katha, free or paid.', hi: 'इवेंट जल्द आ रहे हैं। सत्संग, वर्कशॉप या लाइव कथा से जुड़ें, मुफ़्त या पेड।' },
   'ac.continue': { en: 'Continue', hi: 'जारी रखें' },
   'ac.progress': { en: 'Progress', hi: 'प्रगति' },
   'ac.resume': { en: 'Resume · watch now', hi: 'जारी रखें · अभी देखें' },

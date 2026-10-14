@@ -21,7 +21,6 @@ import Computing from './screens/onboarding/Computing.jsx'
 
 import Home from './screens/Home.jsx'
 import Consult from './screens/Consult.jsx'
-import Academy from './screens/Academy.jsx'
 import Pooja from './screens/Pooja.jsx'
 import Bhakti from './screens/Bhakti.jsx'
 import Shop from './screens/Shop.jsx'
@@ -522,7 +521,9 @@ function Frame() {
               <Route path="/home/:tab" element={<Home />} />
               <Route path="/consult" element={<Consult />} />
               <Route path="/bhakti" element={<Bhakti />} />
-              <Route path="/academy" element={<Academy />} />
+              {/* Academy is in the Market now (14 Oct 2026, Rahul): its old
+                  address, and a shared book's ?book=, open the E-books tile. */}
+              <Route path="/academy" element={<AcademyMoved />} />
               <Route path="/shop" element={<Shop />} />
               {/* Messages took Academy's slot in the bar (13 Oct 2026). */}
               <Route path="/messages" element={<Messages />} />
@@ -602,6 +603,12 @@ function Frame() {
       </div>
     </div>
   )
+}
+
+function AcademyMoved() {
+  const { search } = useLocation()
+  const book = new URLSearchParams(search).get('book')
+  return <Navigate to={`/shop?cat=ebooks${book ? `&book=${encodeURIComponent(book)}` : ''}`} replace />
 }
 
 export default function App() {

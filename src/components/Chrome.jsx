@@ -29,10 +29,10 @@ import { fetchDmThreads } from '../lib/dms.js'
  * bar entirely, and the slot now carries the whole devotional-media surface
  * rather than one screen.
  */
-/* Market is Shop and Academy in one tab (13 Oct 2026, Rahul): it opens on
-   /shop and stays lit on /academy, and the two pages switch between each
-   other at the top. Messages took the freed slot, in the middle of the
-   bar (Rahul, the same day). */
+/* Market is Shop and Academy in one tab (13 Oct 2026, Rahul), and one page
+   since 14 Oct: Academy's E-books, Courses and Events are tiles on /shop,
+   and /academy forwards there. Messages took the freed slot, in the middle
+   of the bar (Rahul, 13 Oct). */
 const TABS = [
   { to: '/home', label: 'nav.home', icon: 'home' },
   // The folded hands since 14 Oct 2026 (Rahul; it was the diya).
@@ -43,36 +43,6 @@ const TABS = [
   { to: '/consult', label: 'nav.consult', icon: 'consult' },
   { to: '/shop', label: 'nav.market', icon: 'shop', also: ['/academy'] },
 ]
-
-/** Shop · Academy, under the header of both (13 Oct 2026): the two halves
- *  of the Market tab. */
-export function MarketSwitch() {
-  const { t } = useStore()
-  const { pathname } = useLocation()
-  const navigate = useNavigate()
-  const on = pathname.startsWith('/academy') ? 'academy' : 'shop'
-  return (
-    <div className="flex gap-2 px-4 pt-3" role="tablist">
-      {[
-        { key: 'shop', label: t('nav.shop') },
-        { key: 'academy', label: t('nav.academy') },
-      ].map((s) => (
-        <button
-          key={s.key}
-          type="button"
-          role="tab"
-          aria-selected={on === s.key}
-          onClick={() => navigate(`/${s.key}`, { replace: true })}
-          className={`flex-1 rounded-full py-2 text-center text-meta font-semibold transition-colors ${
-            on === s.key ? 'bg-ink text-white' : 'bg-ink/[0.07] text-t1'
-          }`}
-        >
-          {s.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 /**
  * The consultant's four. Kept next to the seeker's so the two lists stay

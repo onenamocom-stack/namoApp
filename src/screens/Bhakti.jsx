@@ -200,7 +200,7 @@ export default function Bhakti() {
   }
 
   // A book is not a Bhakti shelf: its shared address opens the Academy.
-  if (shared?.kind === 'ebook') return <Navigate to={`/academy?book=${shared.id}`} replace />
+  if (shared?.kind === 'ebook') return <Navigate to={`/shop?cat=ebooks&book=${shared.id}`} replace />
 
   return (
     <>
