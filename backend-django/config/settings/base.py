@@ -299,6 +299,10 @@ REFERRAL_CASHBACK_BPS = int(os.environ.get("REFERRAL_CASHBACK_BPS", "1000"))
 # the console can still give them something.
 REFERRAL_SHARER_BPS = int(os.environ.get("REFERRAL_SHARER_BPS", "600"))
 REFERRAL_BUYER_BPS = int(os.environ.get("REFERRAL_BUYER_BPS", "0"))
+# A product's cashback on EVERY prepaid order, not only the first (15 Oct
+# 2026, Rahul). Wallet money: off until the owner says yes; off is the
+# first order only, as before.
+CASHBACK_EVERY_ORDER = os.environ.get("CASHBACK_EVERY_ORDER", "0") == "1"
 
 # The cap per side, per order. **Zero means no cap**, which is where it
 # starts on the owner's instruction — the flag exists so a limit can be

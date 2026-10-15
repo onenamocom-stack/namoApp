@@ -30,6 +30,7 @@ def _old_rates(settings):
     test_referral_offers.TestTodaysRates)."""
     settings.REFERRAL_SHARER_BPS = 1000
     settings.REFERRAL_BUYER_BPS = 1000
+    settings.CASHBACK_EVERY_ORDER = True  # Rahul's rule; off by default until the owner's yes
 
 
 PRO2 = "eeeeeeee-1111-2222-3333-444444444444"
@@ -107,6 +108,12 @@ class TestTheWindow:
         _buy(product)
         assert _buy(product)["cashback_paise"] == TENTH
         assert Cashback.objects.filter(side="buyer").count() == 2
+
+    def test_with_the_switch_off_only_the_first_order_gets_it(self, people, product, settings):
+        settings.CASHBACK_EVERY_ORDER = False
+        _buy(product)
+        assert _buy(product)["cashback_paise"] == 0
+        assert Cashback.objects.filter(side="buyer").count() == 1
 
     def test_one_click_one_order(self, people, product):
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)

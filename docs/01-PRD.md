@@ -1010,8 +1010,10 @@ The owner's rule, replacing the astrologer's code at checkout.
   below; from Namo's share. That order uses the click up; opening the link
   again (or another person's) holds the customer for the next. After the
   window, nothing. A cancelled or lapsed order still uses the click.
-- **The buyer's cashback needs no link and no first order.** It belongs to
-  the product (below): every prepaid order gets it.
+- **The buyer's cashback needs no link.** It belongs to the product
+  (below). Every prepaid order gets it once the owner says yes (Rahul's
+  rule, 15 Oct 2026; the switch `CASHBACK_EVERY_ORDER` is off); until then,
+  the first prepaid order only.
 - **Installs.** On the website this is complete. An Android app will
   carry the link through the Play Store with Google's Install Referrer
   when there is one; an iPhone app cannot without a paid service.
@@ -1054,10 +1056,11 @@ what they were given. Nothing reaches backwards.
 ### Each product sets its own cashback — decided 9 Oct 2026
 
 The owner's rule, replacing a flat 10% to both sides. The console sets, per
-product, what an order gives the BUYER — **every prepaid order, link or
-none** (15 Oct 2026, Rahul: "Customer cashback is linked to product not
-referral"; from 11 Oct it was every first order, before that only through
-a code):
+product, what an order gives the BUYER, link or none — **the first
+prepaid order**, and **every prepaid order** once the owner says yes to
+Rahul's rule of 15 Oct 2026 ("Customer cashback is linked to product not
+referral"; the switch `CASHBACK_EVERY_ORDER` is off). From 11 Oct it was
+every first order, before that only through a code:
 **a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
 **a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
 **platform default** — **nothing** since 15 Oct 2026 (Rahul; owner's yes;

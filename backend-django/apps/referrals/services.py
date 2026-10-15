@@ -584,9 +584,10 @@ def claim_first_order(buyer_id, order, now=None):
     delivery, and a return cancels them).
 
       - the buyer: each product's own cashback (the console's rule on the
-        product), prepaid only — on every order, link or none (15 Oct 2026,
-        Rahul: "Customer cashback is linked to product not referral"; it
-        was the first order only);
+        product), prepaid only, link or none — on every order when
+        CASHBACK_EVERY_ORDER is on (15 Oct 2026, Rahul: "Customer cashback
+        is linked to product not referral"; waiting on the owner's yes),
+        else the first order only;
       - the Pro or Creator whose link holds them (live_visit): 6% of each
         line after the buyer's share — on any order, new customer or old
         (15 Oct 2026, Rahul; it was the first order only).
@@ -605,6 +606,8 @@ def claim_first_order(buyer_id, order, now=None):
     buyer_amount, referrer_amount = cashback_split(_order_lines(order), prepaid)
     if not earns:
         referrer_amount = 0
+    if not first and not _every_order():
+        buyer_amount = 0
     short = str(order.id)[:8]
 
     referral = None
@@ -636,11 +639,21 @@ def claim_first_order(buyer_id, order, now=None):
             "referral_id": str(referral.id) if referral else None}
 
 
+def _every_order():
+    """A product's cashback on every order (CASHBACK_EVERY_ORDER), or on the
+    first only — off until the owner's yes (15 Oct 2026)."""
+    from django.conf import settings
+
+    return bool(getattr(settings, "CASHBACK_EVERY_ORDER", False))
+
+
 def first_order_preview(buyer_id, lines, payment):
     """What the cart says before Pay: what comes back on this basket — on
     any order since 15 Oct 2026 (the name is older). Read-only."""
     first = not buyer_id or is_first_order(buyer_id)
     back, _ = cashback_split(preview_lines(lines), prepaid=True)
+    if not first and not _every_order():
+        back = 0
     if not back:
         return {"first_order": first, "cashback_paise": 0, "note": None}
     rupees = f"₹{back / 100:,.0f}"

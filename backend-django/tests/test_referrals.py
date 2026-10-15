@@ -212,10 +212,11 @@ class TestPurchaseReferral:
         assert all(r.status == Cashback.Status.PENDING for r in rows)
         assert all(r.matures_at is None for r in rows), "the clock starts at delivery"
 
-    def test_a_second_order_through_the_code_pays_the_sharer_again(self, people, product):
+    def test_a_second_order_through_the_code_pays_the_sharer_again(self, people, product, settings):
         """An astrologer's code is a link (11 Oct 2026); typed again, it is
         a fresh click, and an old customer pays the sharer too (15 Oct 2026,
-        Rahul). The buyer's cashback comes on every order."""
+        Rahul). The buyer's cashback comes on every order, switch on."""
+        settings.CASHBACK_EVERY_ORDER = True
         _fund(BUYER, PRICE * 3)
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)
         shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}], coupon_code=code)
@@ -225,8 +226,9 @@ class TestPurchaseReferral:
         assert Cashback.objects.count() == 4  # both sides, both orders
 
     def test_somebody_who_has_already_shopped_still_pays_the_sharer(
-        self, people, product
+        self, people, product, settings
     ):
+        settings.CASHBACK_EVERY_ORDER = True
         _fund(BUYER, PRICE * 3)
         shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}])   # a plain first order
         result = shop_services.buy(
