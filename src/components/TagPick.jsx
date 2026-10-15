@@ -13,7 +13,7 @@ import Icon from './Icon.jsx'
  *                 post is waiting for tags: how many, and Done.
  *   SharerBar   — on a product page: Tag this product (in pick mode), or
  *                 Tag in post and My link.
- *   LinkButton  — a card's corner: copies your 10% link.
+ *   CardCorner  — a card's corner while picking: tag it.
  */
 
 export function useSharer() {
@@ -117,7 +117,7 @@ export function SharerBar({ product }) {
   )
 }
 
-/** A card's corner, for a sharer: copy your link, or (in pick mode) tag. */
+/** A card's corner, for a sharer picking tags for a post: + to tag, ✓ once tagged. */
 export function CardCorner({ product }) {
   const { showToast } = useStore()
   const sharer = useSharer()
@@ -142,18 +142,7 @@ export function CardCorner({ product }) {
       </span>
     )
   }
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-label="Copy my link"
-      onClick={(e) => {
-        e.stopPropagation()
-        shareLink(product, product.name || product.title, showToast)
-      }}
-      className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-ink shadow-md"
-    >
-      <Icon name="share" size={15} />
-    </span>
-  )
+  // Out of pick mode a card carries nothing (15 Oct 2026, Rahul: the
+  // product page's Share is enough).
+  return null
 }

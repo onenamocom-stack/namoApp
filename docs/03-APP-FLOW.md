@@ -2004,15 +2004,15 @@ page carries **Tag this product** (tap again to remove) and *Done, back to
 my post*. Done returns to Home with the composer open and the products
 tagged; three at most, as before. Out of pick mode, a product page carries
 **Tag in post** (a new post with it tagged) and **My link · 10%** (the
-phone's share sheet, or the link copied), and a card's corner copies the
-link. Editing a post, a group's composer and the pro app keep the search
+phone's share sheet, or the link copied); a card carries nothing out of
+pick mode (15 Oct 2026, Rahul: the page's Share is enough). Editing a post, a group's composer and the pro app keep the search
 list in the composer. The composer no longer lists shop products under the
 tags there (15 Oct 2026, Rahul): the chips (one line each, cut at the edge)
 and *+ Tag more from the Market*.
 
 **Listings too (15 Oct 2026, Rahul):** downloads, courses and events carry
-the same Tag in post and My link on their page, and the corner on their
-cards; a post tags up to three things, products and listings together, and
+the same Tag in post and My link on their page, and the pick corner on
+their cards; a post tags up to three things, products and listings together, and
 its strip opens a listing's page with the author's code. A buyer a link or
 tag brought is recorded on the purchase (`market_purchases.referrer_id`);
 nothing is paid on it until the sharer's share of a listing is decided, so
