@@ -47,6 +47,7 @@ def form(docs, **over):
         "account_number_confirm": "50100123456789",
         "ifsc": "hdfc0001234",
         "upi_id": "",
+        "account_type": "savings",
         "pan_doc_asset_id": str(pan_doc.pk),
         "bank_doc_asset_id": str(bank_doc.pk),
     }
@@ -86,6 +87,8 @@ class TestPayoutDetails:
             ("account_number_confirm", "50100123456780"),
             ("ifsc", "HDFC1234567"),
             ("upi_id", "not-an-upi"),
+            ("account_type", ""),
+            ("gst_number", "07ABCDE1234F"),
         ],
     )
     def test_each_field_is_checked(self, api_client, pro_token, docs, field, value):
@@ -93,6 +96,18 @@ class TestPayoutDetails:
         assert response.status_code == 400
         assert response.json()["field"] == field
         assert not PayoutDetails.objects.exists()
+
+    def test_firm_and_gst_are_optional_and_kept(self, api_client, pro_token, docs):
+        """Savings or current, a firm's name, GST and its certificate (16 Oct
+        2026, Rahul): the type is required, the rest optional."""
+        body = api_client.put(URL, form(docs), format="json", **auth(pro_token)).json()
+        assert body["account_type"] == "savings" and body["gst_number"] == "" and body["has_gst_doc"] is False
+        cert = document()
+        body = api_client.put(URL, form(docs, account_type="current", firm_name="Shree  Jyotish",
+                                        gst_number="07abcde1234f1z5", gst_doc_asset_id=str(cert.pk)),
+                              format="json", **auth(pro_token)).json()
+        assert (body["account_type"], body["firm_name"], body["gst_number"], body["has_gst_doc"]) == (
+            "current", "Shree Jyotish", "07ABCDE1234F1Z5", True)
 
     def test_documents_must_be_the_callers_own_private_uploads(self, api_client, pro_token, docs):
         strangers = document(owner=SEEKER)

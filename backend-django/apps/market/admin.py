@@ -267,13 +267,16 @@ class SellerPayoutAdmin(AuditedAdmin, dj.ModelAdmin):
         pro = PayoutDetails.objects.filter(consultant_id=obj.seller_id).first()
         if pro is not None:
             account = crypto.decrypt(pro.account_cipher) or f"…{pro.account_last4}"
-            return format_html("{}<br><small>A/c {} · {} · UPI {} · {}</small>", pro.account_holder, account,
-                               pro.ifsc, pro.upi_id or "—", pro.status)
+            return format_html("{}<br><small>A/c {} · {} · {} · UPI {} · {}</small><br><small>{} · GST {}</small>",
+                               pro.account_holder, account, pro.ifsc, pro.account_type or "type not given",
+                               pro.upi_id or "—", pro.status, pro.firm_name or "no firm", pro.gst_number or "—")
         bank = SellerBank.objects.filter(pk=obj.seller_id).first()
         if bank is not None:
             account = crypto.decrypt(bank.account_cipher) if bank.account_cipher else "—"
-            return format_html("{}<br><small>A/c {} · {} · UPI {}</small>", bank.account_holder,
-                               account or f"…{bank.account_last4}", bank.ifsc or "—", bank.upi_id or "—")
+            return format_html("{}<br><small>A/c {} · {} · {} · UPI {}</small><br><small>{} · GST {}</small>",
+                               bank.account_holder, account or f"…{bank.account_last4}", bank.ifsc or "—",
+                               bank.account_type or "type not given", bank.upi_id or "—",
+                               bank.firm_name or "no firm", bank.gst_number or "—")
         return format_html("<strong style='color:#b91c1c'>No payout details yet</strong>")
 
     @dj.display(description="Sales in it")

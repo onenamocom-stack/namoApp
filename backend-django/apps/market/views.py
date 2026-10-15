@@ -148,6 +148,10 @@ class BankInput(serializers.Serializer):
     ifsc = serializers.CharField(required=False, allow_blank=True, default="", max_length=11)
     upi_id = serializers.CharField(required=False, allow_blank=True, default="", max_length=100)
     pan = serializers.CharField(required=False, allow_blank=True, default="", max_length=10)
+    account_type = serializers.CharField(required=False, allow_blank=True, default="", max_length=8)
+    firm_name = serializers.CharField(required=False, allow_blank=True, default="", max_length=200)
+    gst_number = serializers.CharField(required=False, allow_blank=True, default="", max_length=20)
+    gst_doc_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
 @api_view(["GET", "PUT"])

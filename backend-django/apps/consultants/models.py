@@ -499,8 +499,14 @@ class PayoutDetails(models.Model):
     account_last4 = models.CharField(max_length=4)
     ifsc = models.CharField(max_length=11)
     upi_id = models.TextField(blank=True, default="")
+    # Savings or current (16 Oct 2026, Rahul); blank on details sent before.
+    account_type = models.CharField(max_length=8, blank=True, default="", db_default="")
+    # A firm's name and GST, both optional (16 Oct 2026, Rahul).
+    firm_name = models.TextField(blank=True, default="", db_default="")
+    gst_number = models.CharField(max_length=15, blank=True, default="", db_default="")
     pan_doc_asset_id = models.UUIDField(null=True, blank=True)
     bank_doc_asset_id = models.UUIDField(null=True, blank=True)
+    gst_doc_asset_id = models.UUIDField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=PayoutDetailsStatus.choices, default=PayoutDetailsStatus.SUBMITTED
     )

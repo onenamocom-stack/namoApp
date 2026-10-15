@@ -267,9 +267,16 @@ class TestBank:
         from cryptography.fernet import Fernet
 
         settings.PAYOUT_ENCRYPTION_KEY = Fernet.generate_key().decode()
+        with pytest.raises(services.Refused):  # an account needs its type (16 Oct 2026)
+            services.save_bank(CREATOR, {"account_holder": "Asha", "account_number": "123456789012",
+                                         "ifsc": "SBIN0001234", "pan": "ABCDE1234F"})
         got = services.save_bank(CREATOR, {"account_holder": "Asha", "account_number": "123456789012",
-                                           "ifsc": "SBIN0001234", "pan": "ABCDE1234F"})
+                                           "ifsc": "SBIN0001234", "pan": "ABCDE1234F", "account_type": "current",
+                                           "firm_name": "Asha Arts", "gst_number": "07ABCDE1234F1Z5"})
         assert got["account_last4"] == "9012" and got["pan_last4"] == "234F"
+        assert (got["account_type"], got["firm_name"], got["gst_number"]) == ("current", "Asha Arts", "07ABCDE1234F1Z5")
+        with pytest.raises(services.Refused):
+            services.save_bank(CREATOR, {"account_holder": "Asha", "upi_id": "a@b", "gst_number": "bad"})
         with pytest.raises(services.Refused):
             services.save_bank(CREATOR, {"account_holder": "Asha", "account_number": "12", "ifsc": "x"})
 

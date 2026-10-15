@@ -40,7 +40,12 @@ const EMPTY = {
   account_number_confirm: '',
   ifsc: '',
   upi_id: '',
+  account_type: '',
+  firm_name: '',
+  gst_number: '',
 }
+
+const ACCOUNT_TYPES = [['savings', 'Savings'], ['current', 'Current']]
 
 export default function ProPayoutDetails() {
   const { showToast } = useStore()
@@ -119,11 +124,23 @@ function Summary({ details, onChange }) {
         <div className="mt-2">
           <Field k="Account holder" v={details.account_holder} />
           <Field k="Account" v={`••••${details.account_last4}`} />
+          {details.account_type && <Field k="Account type" v={details.account_type === 'current' ? 'Current' : 'Savings'} />}
           <Field k="IFSC" v={details.ifsc} />
           {details.upi_id && <Field k="UPI ID" v={details.upi_id} />}
           <Field k="Cheque or passbook" v={details.has_bank_doc ? 'Added' : 'Missing'} />
         </div>
       </section>
+
+      {(details.firm_name || details.gst_number) && (
+        <section className="px-5 pb-6">
+          <Kicker>Firm and GST</Kicker>
+          <div className="mt-2">
+            {details.firm_name && <Field k="Firm name" v={details.firm_name} />}
+            {details.gst_number && <Field k="GST number" v={details.gst_number} />}
+            <Field k="GST certificate" v={details.has_gst_doc ? 'Added' : 'Not added'} />
+          </div>
+        </section>
+      )}
 
       <section className="px-5">
         <PopButton variant="ghost" onClick={onChange}>
@@ -144,16 +161,20 @@ function Form({ prior, onSaved, onCancel }) {
     account_holder: prior.account_holder ?? '',
     ifsc: prior.ifsc ?? '',
     upi_id: prior.upi_id ?? '',
+    account_type: prior.account_type ?? '',
+    firm_name: prior.firm_name ?? '',
+    gst_number: prior.gst_number ?? '',
   })
   const [panDoc, setPanDoc] = useState(null)
   const [bankDoc, setBankDoc] = useState(null)
+  const [gstDoc, setGstDoc] = useState(null)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [bank, setBank] = useState(null)
 
   const put = (k) => (e) => {
     let value = e.target.value
-    if (k === 'pan' || k === 'ifsc') value = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (k === 'pan' || k === 'ifsc' || k === 'gst_number') value = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
     if (k === 'account_number' || k === 'account_number_confirm') value = value.replace(/\D/g, '')
     setV((x) => ({ ...x, [k]: value }))
     if (error?.field === k) setError(null)
@@ -182,6 +203,8 @@ function Form({ prior, onSaved, onCancel }) {
     v.account_number.length >= 9 &&
     v.account_number_confirm &&
     v.ifsc.length === 11 &&
+    v.account_type &&
+    (!v.gst_number || v.gst_number.length === 15) &&
     panDoc?.id &&
     bankDoc?.id &&
     !saving
@@ -195,6 +218,7 @@ function Form({ prior, onSaved, onCancel }) {
         ...v,
         pan_doc_asset_id: panDoc.id,
         bank_doc_asset_id: bankDoc.id,
+        gst_doc_asset_id: gstDoc?.id ?? null,
       })
       onSaved(d)
     } catch (err) {
@@ -254,10 +278,41 @@ function Form({ prior, onSaved, onCancel }) {
           {bank && <p className="mt-1.5 text-meta t-faint">{bank}</p>}
         </div>
         {err('ifsc')}
+        <div>
+          <span className="mb-1.5 block text-meta font-semibold t-heading">
+            Account type
+            <Req />
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {ACCOUNT_TYPES.map(([key, name]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={v.account_type === key}
+                onClick={() => setV((x) => ({ ...x, account_type: key }))}
+                className={`rounded-xl border py-3 text-meta font-semibold ${v.account_type === key ? 'border-gold-fill bg-gold-fill/10 gold' : 'border-rule bg-white t-body'}`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+        {err('account_type')}
         <Upload required label="Photo of a cancelled cheque or your passbook's first page" value={bankDoc} onChange={setBankDoc} />
         {err('bank_doc')}
         <Input label="UPI ID · optional" value={v.upi_id} onChange={put('upi_id')} placeholder="name@bank" autoCapitalize="none" />
         {err('upi_id')}
+      </div>
+
+      {/* A firm's details, all optional (16 Oct 2026, Rahul). */}
+      <Kicker className="mt-8">Firm and GST · optional</Kicker>
+      <div className="mt-3 space-y-5">
+        <Input label="Firm name" value={v.firm_name} onChange={put('firm_name')} />
+        {err('firm_name')}
+        <Input label="GST number" value={v.gst_number} onChange={put('gst_number')} placeholder="07ABCDE1234F1Z5" maxLength={15} autoCapitalize="characters" />
+        {err('gst_number')}
+        <Upload label="GST certificate" value={gstDoc} onChange={setGstDoc} />
+        {err('gst_doc')}
       </div>
 
       {error && !error.field && <p className="mt-5 text-meta text-live">{error.message}</p>}

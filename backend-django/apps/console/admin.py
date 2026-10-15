@@ -196,13 +196,14 @@ class PayoutDetailsAdmin(AuditedAdmin, dj.ModelAdmin):
     list_filter = ("status",)
     ordering = ("-submitted_at",)
     fields = (
-        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "ifsc",
-        "upi_id", "pan_document", "bank_document", "review_note",
-        "submitted_at", "reviewed_at", "reviewed_by",
+        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "account_type",
+        "ifsc", "upi_id", "pan_document", "bank_document", "firm_name", "gst_number", "gst_document",
+        "review_note", "submitted_at", "reviewed_at", "reviewed_by",
     )
     readonly_fields = (
-        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "ifsc",
-        "upi_id", "pan_document", "bank_document", "submitted_at", "reviewed_at", "reviewed_by",
+        "who", "status", "pan_full", "pan_name", "account_holder", "account_full", "account_type",
+        "ifsc", "upi_id", "pan_document", "bank_document", "firm_name", "gst_number", "gst_document",
+        "submitted_at", "reviewed_at", "reviewed_by",
     )
     actions = ("verify", "reject")
     list_per_page = 50
@@ -233,6 +234,12 @@ class PayoutDetailsAdmin(AuditedAdmin, dj.ModelAdmin):
     @dj.display(description="Cheque or passbook photo")
     def bank_document(self, obj):
         return _signed_document(obj.bank_doc_asset_id, "cheque or passbook")
+
+    @dj.display(description="GST certificate")
+    def gst_document(self, obj):
+        if not obj.gst_doc_asset_id:
+            return "—"
+        return _signed_document(obj.gst_doc_asset_id, "GST certificate")
 
     def _review(self, request, queryset, status, verb):
         if not at_least(request, Tier.FINANCE):

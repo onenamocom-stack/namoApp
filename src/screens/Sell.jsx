@@ -431,14 +431,18 @@ function toLocalInput(iso) {
 export function SellBank() {
   const navigate = useNavigate()
   const { showToast } = useStore()
-  const [form, setForm] = useState({ account_holder: '', account_number: '', ifsc: '', upi_id: '', pan: '' })
+  const [form, setForm] = useState({ account_holder: '', account_number: '', ifsc: '', upi_id: '', pan: '',
+    account_type: '', firm_name: '', gst_number: '', gst_doc_asset_id: null })
+  const [gstName, setGstName] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [current, setCurrent] = useState(null)
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     bank().then((d) => {
       if (d.pro) return navigate('/dashboard/payout-details', { replace: true })
       setCurrent(d.bank)
-      if (d.bank) setForm((f) => ({ ...f, account_holder: d.bank.account_holder, ifsc: d.bank.ifsc, upi_id: d.bank.upi_id }))
+      if (d.bank) setForm((f) => ({ ...f, account_holder: d.bank.account_holder, ifsc: d.bank.ifsc, upi_id: d.bank.upi_id,
+        account_type: d.bank.account_type || '', firm_name: d.bank.firm_name || '', gst_number: d.bank.gst_number || '' }))
     }).catch(() => {})
   }, [navigate])
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -463,11 +467,49 @@ export function SellBank() {
           <input className="field-line tnum" inputMode="numeric" value={form.account_number} onChange={set('account_number')} />
         </Field>
         <Field label="IFSC"><input className="field-line uppercase" value={form.ifsc} onChange={set('ifsc')} maxLength={11} /></Field>
+        {/* Savings or current, as on a Pro's payout details (16 Oct 2026, Rahul). */}
+        <div>
+          <span className="mb-1.5 block text-meta font-semibold t-heading">Account type</span>
+          <div className="grid grid-cols-2 gap-2">
+            {[['savings', 'Savings'], ['current', 'Current']].map(([key, name]) => (
+              <button key={key} type="button" aria-pressed={form.account_type === key}
+                onClick={() => setForm((f) => ({ ...f, account_type: key }))}
+                className={`rounded-xl border py-3 text-meta font-semibold ${form.account_type === key ? 'border-gold-fill bg-gold-fill/10 gold' : 'border-rule bg-white t-body'}`}>
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
         <Field label="UPI ID" note="Instead of, or as well as, the account."><input className="field-line" value={form.upi_id} onChange={set('upi_id')} /></Field>
         <Field label="PAN" note={current?.pan_last4 ? `On file: …${current.pan_last4}.` : 'Needed for tax on what you earn.'}>
           <input className="field-line uppercase" value={form.pan} onChange={set('pan')} maxLength={10} />
         </Field>
-        <PopButton variant="gold" onClick={save} disabled={busy}>{busy ? '…' : 'Save'}</PopButton>
+        <Kicker>Firm and GST · optional</Kicker>
+        <Field label="Firm name"><input className="field-line" value={form.firm_name} onChange={set('firm_name')} /></Field>
+        <Field label="GST number"><input className="field-line uppercase" value={form.gst_number} onChange={set('gst_number')} maxLength={15} /></Field>
+        <div>
+          <span className="mb-1.5 block text-meta font-semibold t-heading">GST certificate</span>
+          <label className="pop-tap flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-rule bg-white px-4 py-3.5">
+            <span className="min-w-0 truncate text-meta t-body">{uploading ? 'Uploading' : gstName || 'Add a photo or PDF'}</span>
+            <span className={`flex-none text-meta font-semibold ${gstName ? 'text-ok' : 'gold'}`}>{gstName ? 'Added' : 'Choose'}</span>
+            <input type="file" accept="application/pdf,image/jpeg,image/png" className="hidden" onChange={async (e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              setUploading(true)
+              try {
+                const { assetId } = await uploadAsset(file, 'document')
+                setForm((f) => ({ ...f, gst_doc_asset_id: assetId }))
+                setGstName(file.name)
+              } catch (err) {
+                showToast(err.message)
+              }
+              setUploading(false)
+            }} />
+          </label>
+          {current?.has_gst_doc && !gstName && <span className="mt-1 block text-micro t-faint">On file.</span>}
+        </div>
+        <PopButton variant="gold" onClick={save} disabled={busy || uploading}>{busy ? '…' : 'Save'}</PopButton>
       </div>
     </>
   )

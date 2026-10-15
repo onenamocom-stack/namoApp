@@ -206,6 +206,12 @@ class SellerBank(models.Model):
     upi_id = models.TextField(default="", db_default="", blank=True)
     pan_cipher = models.TextField(default="", db_default="", blank=True)
     pan_last4 = models.CharField(max_length=4, default="", db_default="", blank=True)
+    # As on a Pro's payout details (16 Oct 2026, Rahul): savings or current,
+    # and a firm's name and GST, optional.
+    account_type = models.CharField(max_length=8, default="", db_default="", blank=True)
+    firm_name = models.TextField(default="", db_default="", blank=True)
+    gst_number = models.CharField(max_length=15, default="", db_default="", blank=True)
+    gst_doc_asset_id = models.UUIDField(null=True, blank=True)
     updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

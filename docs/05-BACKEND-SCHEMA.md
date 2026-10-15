@@ -1471,8 +1471,12 @@ create table payout_details (
   account_last4     varchar(4) not null,
   ifsc              varchar(11) not null,
   upi_id            text not null default '',
+  account_type      varchar(8) not null default '',   -- 'savings' | 'current'; '' on rows sent before 16 Oct 2026
+  firm_name         text not null default '',         -- optional
+  gst_number        varchar(15) not null default '',  -- optional, a GSTIN
   pan_doc_asset_id  uuid,                 -- media_assets, kind 'document' (private bucket)
   bank_doc_asset_id uuid,                 -- cancelled cheque or passbook page
+  gst_doc_asset_id  uuid,                 -- optional GST certificate
   status            varchar(16) not null default 'submitted'
                     check (status in ('submitted','verified','rejected')),
   review_note       text not null default '',
@@ -1483,7 +1487,9 @@ create table payout_details (
 alter table payout_details enable row level security;  -- no policies
 ```
 
-Migration `consultants/0004_payout_details`. One row per consultant, replaced
+Migration `consultants/0004_payout_details`; `0011_payout_gst` (16 Oct 2026,
+Rahul) added the account type, firm name, GST number and certificate — the
+type required on every save since, the rest optional. One row per consultant, replaced
 whole by `PUT /v1/consultants/me/payout-details/`, which sends it back to
 `submitted`; only Finance moves it on, in the console. The PAN and account
 number exist only as ciphertext plus their last four. `sessions_done` on the
@@ -2244,8 +2250,11 @@ Migration `market/0001`, RLS on with no policies (API only). Rules in
   `reference` (the bank's UTR), `paid_at`, `paid_by`.
 - **`market_seller_banks`** — a Creator's payout account, keyed by profile:
   `account_holder`, `account_cipher` and `pan_cipher` (Fernet, the
-  `payout_details` key), `account_last4`, `pan_last4`, `ifsc`, `upi_id`. A
-  Pro's is `payout_details`.
+  `payout_details` key), `account_last4`, `pan_last4`, `ifsc`, `upi_id`;
+  `market/0004` (16 Oct 2026): `account_type` (required once there is an
+  account), `firm_name`, `gst_number`, `gst_doc_asset_id` (optional). A
+  Pro's is `payout_details`, which every payout of theirs uses —
+  consultations, Market sales, referrals.
 
 Also: `media_assets.kind` gains `download` (private bucket, up to 500 MB;
 `media/0003`), and `entitlements.sku` gains `listing` (`wallet/0005`).

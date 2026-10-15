@@ -617,13 +617,16 @@ def bank(profile_id):
     if row is None:
         return None
     return {"account_holder": row.account_holder, "account_last4": row.account_last4, "ifsc": row.ifsc,
-            "upi_id": row.upi_id, "pan_last4": row.pan_last4, "updated_at": row.updated_at.isoformat()}
+            "upi_id": row.upi_id, "pan_last4": row.pan_last4, "account_type": row.account_type,
+            "firm_name": row.firm_name, "gst_number": row.gst_number, "has_gst_doc": bool(row.gst_doc_asset_id),
+            "updated_at": row.updated_at.isoformat()}
 
 
 def save_bank(profile_id, data):
     import re
 
-    from apps.consultants.payout_details import encrypt
+    from apps.consultants.payout_details import ACCOUNT_TYPES, GSTIN, encrypt
+    from apps.media.models import MediaAsset
 
     holder = " ".join((data.get("account_holder") or "").split())[:120]
     account = re.sub(r"\s", "", data.get("account_number") or "")
@@ -640,7 +643,22 @@ def save_bank(profile_id, data):
         raise Refused("Add a bank account or a UPI ID.")
     if pan and not re.fullmatch(r"[A-Z]{5}\d{4}[A-Z]", pan):
         raise Refused("That PAN does not look right: like ABCDE1234F.")
+    account_type = (data.get("account_type") or "").strip().lower()
     row = SellerBank.objects.filter(pk=profile_id).first() or SellerBank(profile_id=profile_id)
+    if (account or row.account_cipher) and account_type not in ACCOUNT_TYPES:
+        raise Refused("Pick savings or current for the account.")
+    firm = " ".join((data.get("firm_name") or "").split())[:200]
+    gst = re.sub(r"\s", "", data.get("gst_number") or "").upper()
+    if gst and not GSTIN.fullmatch(gst):
+        raise Refused("That is not a GST number. It has 15 characters, like 07ABCDE1234F1Z5.")
+    gst_doc = data.get("gst_doc_asset_id")
+    if gst_doc:
+        asset = MediaAsset.objects.filter(pk=gst_doc, owner=str(profile_id), kind=MediaAsset.Kind.DOCUMENT).first()
+        if asset is None or asset.status != MediaAsset.Status.READY:
+            raise Refused("The GST certificate did not upload. Add it again.")
+        row.gst_doc_asset_id = asset.pk
+    row.account_type = account_type if account_type in ACCOUNT_TYPES else ""
+    row.firm_name, row.gst_number = firm, gst
     row.account_holder = holder
     if account:
         row.account_cipher, row.account_last4, row.ifsc = encrypt(account), account[-4:], ifsc

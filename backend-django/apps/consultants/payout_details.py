@@ -33,6 +33,8 @@ PAN = re.compile(r"^[A-Z]{5}[0-9]{4}[A-Z]$")
 IFSC = re.compile(r"^[A-Z]{4}0[A-Z0-9]{6}$")
 ACCOUNT = re.compile(r"^[0-9]{9,18}$")
 UPI = re.compile(r"^[A-Za-z0-9.\-_]{2,256}@[A-Za-z][A-Za-z0-9]{1,63}$")
+GSTIN = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
+ACCOUNT_TYPES = ("savings", "current")
 
 
 class NotOpen(Exception):
@@ -69,8 +71,10 @@ def _clean(text):
     return " ".join((text or "").split())
 
 
-def _document(owner_id, asset_id, field, label):
+def _document(owner_id, asset_id, field, label, optional=False):
     if not asset_id:
+        if optional:
+            return None
         raise Refused(field, f"Add a photo of your {label}.")
     asset = MediaAsset.objects.filter(
         pk=asset_id, owner=str(owner_id), kind=MediaAsset.Kind.DOCUMENT
@@ -92,8 +96,12 @@ def shape(details):
         "account_last4": details.account_last4,
         "ifsc": details.ifsc,
         "upi_id": details.upi_id,
+        "account_type": details.account_type,
+        "firm_name": details.firm_name,
+        "gst_number": details.gst_number,
         "has_pan_doc": bool(details.pan_doc_asset_id),
         "has_bank_doc": bool(details.bank_doc_asset_id),
+        "has_gst_doc": bool(details.gst_doc_asset_id),
         "review_note": details.review_note,
         "submitted_at": details.submitted_at,
         "reviewed_at": details.reviewed_at,
@@ -131,12 +139,20 @@ def save(consultant, data):
     upi = _clean(data.get("upi_id")).replace(" ", "")
     if upi and not UPI.match(upi):
         raise Refused("upi_id", "That is not a UPI ID. It looks like name@bank.")
+    account_type = _clean(data.get("account_type")).lower()
+    if account_type not in ACCOUNT_TYPES:
+        raise Refused("account_type", "Pick savings or current.")
+    firm = _clean(data.get("firm_name"))
+    gst = _clean(data.get("gst_number")).replace(" ", "").upper()
+    if gst and not GSTIN.match(gst):
+        raise Refused("gst_number", "That is not a GST number. It has 15 characters, like 07ABCDE1234F1Z5.")
 
     owner = consultant.profile_id
     pan_doc = _document(owner, data.get("pan_doc_asset_id"), "pan_doc", "PAN card")
     bank_doc = _document(
         owner, data.get("bank_doc_asset_id"), "bank_doc", "cancelled cheque or passbook"
     )
+    gst_doc = _document(owner, data.get("gst_doc_asset_id"), "gst_doc", "GST certificate", optional=True)
 
     fields = {
         "pan_cipher": encrypt(pan),
@@ -147,8 +163,12 @@ def save(consultant, data):
         "account_last4": account[-4:],
         "ifsc": ifsc,
         "upi_id": upi,
+        "account_type": account_type,
+        "firm_name": firm,
+        "gst_number": gst,
         "pan_doc_asset_id": pan_doc,
         "bank_doc_asset_id": bank_doc,
+        "gst_doc_asset_id": gst_doc,
         "status": PayoutDetailsStatus.SUBMITTED,
         "review_note": "",
         "submitted_at": timezone.now(),
