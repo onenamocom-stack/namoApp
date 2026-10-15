@@ -4,7 +4,7 @@ import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Ebooks from '../components/Ebooks.jsx'
-import { MarketCard, MarketSection } from '../components/MarketCard.jsx'
+import { MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -80,15 +80,19 @@ const CAT_TILE = {
    new category is a tile like the others rather than a blank. */
 const CAT_HUES = ['#2f7fd1', '#8e44ad', '#a0522d', '#1e9e5a', '#c2410c', '#0f766e', '#b45309', '#7c3aed']
 /* The Market is Shop and Academy in one page (14 Oct 2026, Rahul): what was
-   Academy's is three tiles after All. E-books are live; Courses and Events
-   say Soon until they are built. Keys, not names, so a console category
-   called "Events" is never mistaken for one. */
+   Academy's is three tiles after All, in Rahul's order (15 Oct): Downloads
+   (was E-books: any file, a PDF, a tool), Events, Courses. Downloads are
+   live; Events and Courses say Soon until they are built. Keys, not names,
+   so a console category called "Events" is never mistaken for one. The key
+   stays `:ebooks` so every link already sent still lands. */
 const MARKET = [
-  { key: ':ebooks', label: 'ac.tab.ebooks', icon: 'academy', hue: '#0f766e' },
-  { key: ':courses', label: 'ac.tab.courses', icon: 'play', hue: '#c2410c', soon: 'ac.soon.courses' },
+  { key: ':ebooks', label: 'ac.tab.ebooks', icon: 'download', hue: '#0f766e' },
   { key: ':events', label: 'ac.tab.events', icon: 'calendar', hue: '#7c3aed', soon: 'ac.soon.events' },
+  { key: ':courses', label: 'ac.tab.courses', icon: 'play', hue: '#c2410c', soon: 'ac.soon.courses' },
 ]
 const marketOf = (key) => MARKET.find((m) => m.key === key)
+// `?cat=downloads` is the new name for `?cat=ebooks`.
+const catParam = (v) => (v === 'downloads' ? 'ebooks' : v)
 
 function tileFor(name, i) {
   if (marketOf(name)) return marketOf(name)
@@ -113,7 +117,10 @@ export default function Shop() {
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   // `?cat=ebooks` opens on that tile: where /academy and a shared book land.
   const [params, setParams] = useSearchParams()
-  const [cat, setCat] = useState(() => (marketOf(`:${params.get('cat')}`) ? `:${params.get('cat')}` : 'All'))
+  const [cat, setCat] = useState(() => {
+    const c = `:${catParam(params.get('cat'))}`
+    return marketOf(c) ? c : 'All'
+  })
   // The header's box searches now (6 Oct 2026); nothing narrows here.
   const query = ''
   const [slide, setSlide] = useState(0)
@@ -209,8 +216,10 @@ export default function Shop() {
   const rest = hero ? list.filter((p) => p.id !== hero.id) : list
 
   /* On All, unfiltered, the page is sections (15 Oct 2026, Rahul's
-     reference): each category's name, See all, and its first two. A
-     product on no console category is under More, so none drops out. */
+     reference): each category's name, See all, and its first two —
+     Downloads first, then Events and Courses once they exist, then the
+     products. A product on no console category is under More, so none
+     drops out. */
   const home = cat === 'All' && !sub && !q
   const known = new Set(catList.map((c) => c.name))
   const sections = [
@@ -437,6 +446,7 @@ export default function Shop() {
       {/* ── Sections, on All ──────────────────────────────────────────── */}
       {home && !loadingShop && !shopError && (
         <>
+          <Ebooks cards limit={2} onMore={() => setCat(':ebooks')} onOpen={openBook} />
           {sections.map((s) => (
             <MarketSection
               key={s.label}
@@ -450,13 +460,13 @@ export default function Shop() {
                   id={`product-${p.id}`}
                   art={<ProductArt product={p} className={`h-full w-full ${focusId === p.id ? focusRing : ''}`} />}
                   name={p.name}
-                  lines={[p.brand || 'Namo', p.soldOut ? t('shop.soldOut') : `₹${p.price.toLocaleString('en-IN')}`]}
+                  lines={[p.brand || 'Namo', p.soldOut && t('shop.soldOut')]}
+                  price={!p.soldOut && <MarketPrice price={p.price} mrp={p.mrp} />}
                   onOpen={() => navigate(productHref(p))}
                 />
               ))}
             </MarketSection>
           ))}
-          <Ebooks cards limit={2} onMore={() => setCat(':ebooks')} onOpen={openBook} />
         </>
       )}
 

@@ -57,6 +57,8 @@ export function toAsset(row) {
     /* null is "not priced yet", which is not the same as free, and the screen
        says so differently. 0 never appears — the column refuses it. */
     pricePaise: row.price_paise,
+    // Struck through beside the price (15 Oct 2026); null shows none.
+    mrpPaise: row.mrp_paise ?? null,
     artist: row.artist,
     licence: row.licence,
     source: row.source,

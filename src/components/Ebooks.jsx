@@ -5,7 +5,7 @@ import Paywall from './Paywall.jsx'
 import Plate from './Plate.jsx'
 import BhaktiActions from './BhaktiActions.jsx'
 import { Kicker, PopButton, PopCard } from './Pop.jsx'
-import { MarketCard, MarketSection } from './MarketCard.jsx'
+import { MarketCard, MarketPrice, MarketSection } from './MarketCard.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -61,7 +61,14 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
               )
             }
             name={d.title}
-            lines={[d.artist, `PDF · ${d.pricePaise ? `₹${rupees(d.pricePaise)}` : t('ac.free')}`]}
+            lines={[d.artist]}
+            price={
+              <MarketPrice
+                price={d.pricePaise ? d.pricePaise / 100 : 0}
+                mrp={d.mrpPaise ? d.mrpPaise / 100 : null}
+                free={t('ac.free')}
+              />
+            }
             onOpen={() => onOpen?.(d.id)}
           />
         ))}
@@ -129,6 +136,12 @@ function Ebook({ book: d }) {
         <p className="mt-1 caps-sm t-faint">
           PDF · {d.artist}
           {priced && ` · ₹${rupees(d.pricePaise)}`}
+          {priced && d.mrpPaise > d.pricePaise && (
+            <>
+              {' '}
+              <span className="line-through">₹{rupees(d.mrpPaise)}</span>
+            </>
+          )}
         </p>
       </div>
       {/* Like, comment, reshare and share, as on the Bhakti shelves (12 Oct

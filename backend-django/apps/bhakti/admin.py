@@ -17,6 +17,7 @@ from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
+from apps.shop.admin import RupeeField
 
 from .models import BhaktiAsset, DarshanDeity, DarshanImage
 
@@ -24,6 +25,9 @@ AUDIO_KINDS = {BhaktiAsset.Kind.TUNE, BhaktiAsset.Kind.BHAJAN, BhaktiAsset.Kind.
 
 
 class BhaktiAssetForm(forms.ModelForm):
+    # An e-book's MRP, struck through beside its price (15 Oct 2026, Rahul).
+    mrp = RupeeField(label="MRP (struck through)", required=False,
+                     help_text="In rupees. For a priced e-book; leave blank for none.")
     upload = forms.FileField(
         required=False,
         label="New file",
@@ -61,9 +65,14 @@ class BhaktiAssetForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["media_url"].required = False
         self.fields["source"].required = False
+        if self.instance and self.instance.pk:
+            self.fields["mrp"].initial = self.instance.mrp_paise
 
     def clean(self):
         data = super().clean()
+        price, mrp = self.instance.price_paise if self.instance else None, data.get("mrp")
+        if mrp is not None and price is not None and mrp <= price:
+            raise forms.ValidationError({"mrp": "The MRP must be above the price, or left blank."})
         upload = data.get("upload")
         if upload:
             mime = getattr(upload, "content_type", "") or ""
@@ -79,6 +88,10 @@ class BhaktiAssetForm(forms.ModelForm):
         data["source"] = data.get("source") or ""
         data["media_url"] = data.get("media_url") or ""
         return data
+
+    def save(self, commit=True):
+        self.instance.mrp_paise = self.cleaned_data.get("mrp")
+        return super().save(commit)
 
 
 @dj.register(BhaktiAsset, site=site)
@@ -96,6 +109,7 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
         ("What it is", {"fields": ("kind", "deity", "title")}),
         ("Credit line", {"fields": ("artist", "licence", "source")}),
         ("File", {"fields": ("preview", "upload", "media_url", "preview_url")}),
+        ("Price", {"fields": ("mrp",)}),
         ("Showing", {"fields": ("sort", "active")}),
     )
 

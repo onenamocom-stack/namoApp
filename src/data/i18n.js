@@ -600,7 +600,7 @@ export const strings = {
   },
 
   // ── Academy ──────────────────────────────────────────────────────────────
-  'ac.tab.ebooks': { en: 'E-books', hi: 'ई-बुक' },
+  'ac.tab.ebooks': { en: 'Downloads', hi: 'डाउनलोड' },
   'ac.tab.courses': { en: 'Courses', hi: 'कोर्स' },
   'ac.tab.events': { en: 'Events', hi: 'इवेंट' },
   // The Market's two tiles still to be built (14 Oct 2026, Rahul).
@@ -622,8 +622,8 @@ export const strings = {
   'ac.isFull': { en: 'That one is full', hi: 'यह भर चुका है' },
   'ac.cancelled': { en: 'Enrolment cancelled', hi: 'दाख़िला रद्द' },
   'ac.libErr': { en: 'Could not reach the library. Try again.', hi: 'लाइब्रेरी से संपर्क नहीं हो सका। फिर कोशिश करें।' },
-  'ac.noBooks': { en: 'No e-books yet.', hi: 'अभी कोई ई-बुक नहीं।' },
-  'ac.yoursToRead': { en: 'Yours to read', hi: 'आपके पढ़ने के लिए' },
+  'ac.noBooks': { en: 'No downloads yet.', hi: 'अभी कोई डाउनलोड नहीं।' },
+  'ac.yoursToRead': { en: 'Yours to download', hi: 'आपके डाउनलोड के लिए' },
   'ac.read': { en: 'Read', hi: 'पढ़ें' },
   'ac.openPdf': { en: 'Open PDF', hi: 'PDF खोलें' },
   'ac.paywallNote': {

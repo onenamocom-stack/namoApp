@@ -21,9 +21,28 @@ export function MarketSection({ title, seeAll, onSeeAll, children }) {
   )
 }
 
+/** The price, the MRP struck through and the saving (15 Oct 2026, Rahul:
+ *  "mention MRP"), in rupees. No MRP, or one not above the price, shows the
+ *  price alone. */
+export function MarketPrice({ price, mrp, free }) {
+  const off = mrp && mrp > price ? Math.round((1 - price / mrp) * 100) : 0
+  return (
+    <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 tnum">
+      <span className="text-meta font-semibold t-heading">{price ? `₹${price.toLocaleString('en-IN')}` : free}</span>
+      {off > 0 && (
+        <>
+          <span className="text-micro t-faint line-through">₹{mrp.toLocaleString('en-IN')}</span>
+          <span className="text-micro font-semibold text-ok">{off}% off</span>
+        </>
+      )}
+    </span>
+  )
+}
+
 /** `art` is the picture, already sized by the caller (a product's photo, a
- *  book's cover); `lines` the grey rows under the name. */
-export function MarketCard({ art, name, lines = [], onOpen, id }) {
+ *  book's cover); `lines` the grey rows under the name; `price` a
+ *  MarketPrice. */
+export function MarketCard({ art, name, lines = [], price = null, onOpen, id }) {
   return (
     <li id={id}>
       <button type="button" onClick={onOpen} className="pop-tap block w-full text-left">
@@ -34,6 +53,7 @@ export function MarketCard({ art, name, lines = [], onOpen, id }) {
             {l}
           </span>
         ))}
+        {price}
       </button>
     </li>
   )

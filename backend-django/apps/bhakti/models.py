@@ -50,6 +50,9 @@ class BhaktiAsset(models.Model):
     # which is not the same as free — and 0 never appears, the check refuses
     # it (024).
     price_paise = models.IntegerField(null=True, blank=True)
+    # Struck through beside the price on the Market (15 Oct 2026). Display
+    # only; NULL shows none.
+    mrp_paise = models.IntegerField(null=True, blank=True)
     # Attribution is three columns and all three are NOT NULL (024): these
     # files are downloaded and some will be sold; `licence` is what the
     # future paywall filters on.
@@ -86,6 +89,10 @@ class BhaktiAsset(models.Model):
             models.CheckConstraint(
                 condition=models.Q(price_paise__isnull=True) | models.Q(price_paise__gt=0),
                 name="bhakti_assets_price_paise_check",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(mrp_paise__isnull=True) | models.Q(mrp_paise__gt=0),
+                name="bhakti_assets_mrp_paise_check",
             ),
         ]
         indexes = [

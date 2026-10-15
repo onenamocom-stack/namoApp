@@ -36,6 +36,7 @@ def _row(asset):
         "media_url": None if asset.price_paise else asset.media_url,
         "preview_url": asset.preview_url,
         "price_paise": asset.price_paise,
+        "mrp_paise": asset.mrp_paise,
         "artist": asset.artist,
         "licence": asset.licence,
         "source": asset.source,

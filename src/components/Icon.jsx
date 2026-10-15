@@ -49,6 +49,14 @@ const PATHS = {
       <path d="M18.5 18.5a9.2 9.2 0 0 0 0-13" />
     </>
   ),
+  // The Market's Downloads tile (15 Oct 2026): an arrow into a tray.
+  download: (
+    <>
+      <path d="M12 3.5v11" />
+      <path d="m7.5 10 4.5 4.5 4.5-4.5" />
+      <path d="M4 15.5v2.8A2.2 2.2 0 0 0 6.2 20.5h11.6a2.2 2.2 0 0 0 2.2-2.2v-2.8" />
+    </>
+  ),
   academy: (
     <>
       <path d="M12 4 2.6 8.5 12 13l9.4-4.5L12 4Z" />
