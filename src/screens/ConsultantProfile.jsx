@@ -27,6 +27,7 @@ import FollowSheet from '../components/FollowSheet.jsx'
 import { shareLink } from '../lib/share.js'
 import { profileLink } from '../lib/profile.js'
 import { isPro } from '../side.js'
+import SellerShop, { useSellerListings } from '../components/SellerShop.jsx'
 
 // Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
 const TABS = [
@@ -92,6 +93,10 @@ export function ConsultantPage({
   const { start, asking } = useStartSession()
   const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
   const [tab, setTab] = useState('work')
+  // What they sell on the Market (15 Oct 2026, Phase 17): a Shop tab when
+  // there is something, and always on your own page.
+  const shop = useSellerListings(id)
+  const shopTab = own || shop?.length ? [{ key: 'shop', label: 'Shop' }] : []
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
   const [service, setService] = useState(null)
@@ -420,12 +425,13 @@ export function ConsultantPage({
             own && saved
               ? [
                   TABS[0],
+                  ...shopTab,
                   ...(reshared ? [{ key: 'reshared', label: 'Reshared' }] : []),
                   ...(commented ? [{ key: 'commented', label: 'Commented' }] : []),
                   { key: 'saved', label: 'Saved' },
                   ...TABS.slice(1),
                 ]
-              : TABS
+              : [TABS[0], ...shopTab, ...TABS.slice(1)]
           }
           value={tab}
           onChange={setTab}
@@ -436,6 +442,7 @@ export function ConsultantPage({
           {tab === 'about' && <About c={c} />}
           {tab === 'work' && <Work c={c} items={items} />}
           {tab === 'reviews' && <Reviews c={c} />}
+          {tab === 'shop' && <SellerShop rows={shop} own={own} />}
           {tab === 'saved' && own && saved}
           {tab === 'reshared' && own && reshared}
           {tab === 'commented' && own && commented}

@@ -1,3 +1,4 @@
+import SellerShop, { useSellerListings } from '../components/SellerShop.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -30,6 +31,7 @@ import { startDm } from '../lib/dms.js'
 export default function UserProfile() {
   const { id } = useParams()
   const { hasFlag, toggleFlag, session, showToast } = useStore()
+  const shopRows = useSellerListings(id)
   const navigate = useNavigate()
   const [author, setAuthor] = useState(undefined)
   const [posts, setPosts] = useState([])
@@ -164,6 +166,9 @@ export default function UserProfile() {
           )}
         </div>
       )}
+
+      {/* What a Creator sells on the Market (15 Oct 2026, Phase 17). */}
+      {shopRows?.length > 0 && <SellerShop rows={shopRows} />}
 
       <section className="py-6">
         <Kicker className="px-5">Posts</Kicker>

@@ -4,7 +4,8 @@ import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Ebooks from '../components/Ebooks.jsx'
-import { MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
+import { ListingCard, MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
+import { browse } from '../lib/market.js'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -172,6 +173,20 @@ export default function Shop() {
 
   useEffect(loadProducts, [loadProducts])
 
+  /* The sellers' downloads, courses and events (15 Oct 2026, Phase 17):
+     approved listings, one request. Their products are shop products. */
+  const [listings, setListings] = useState([])
+  useEffect(() => {
+    browse()
+      .then(setListings)
+      .catch((err) => console.error('[market] listings failed:', err.message))
+  }, [])
+  const ofKind = (k) => listings.filter((l) => l.kind === k)
+  const KIND_OF = { ':ebooks': 'download', ':events': 'event', ':courses': 'course' }
+  // Events and Courses say Soon until somebody lists one.
+  const soonFor = (m) => m?.soon && !ofKind(KIND_OF[m.key]).length
+  const openListing = (id) => navigate(`/shop/l/${id}`)
+
   /* The tiles and pills are the console's categories (6 Oct 2026). Until
      they load — or if they cannot — the categories the products carry,
      so a slow request never leaves a shop with no tiles. */
@@ -283,7 +298,7 @@ export default function Shop() {
                   <span className="text-center text-[12px] font-semibold leading-tight t-body">
                     {f === 'All' ? t('a.all') : marketOf(f) ? t(marketOf(f).label) : f}
                   </span>
-                  {tile.soon && <span className="-mt-1 caps-sm text-[9px] t-faint">{t('a.soon')}</span>}
+                  {soonFor(tile) && <span className="-mt-1 caps-sm text-[9px] t-faint">{t('a.soon')}</span>}
                 </button>
               </li>
             )
@@ -356,7 +371,15 @@ export default function Shop() {
       </div>
 
       {special ? (
-        special.soon ? (
+        special.key === ':ebooks' ? (
+          <Ebooks extra={ofKind('download')} />
+        ) : !soonFor(special) ? (
+          <MarketSection title={t(special.label)}>
+            {ofKind(KIND_OF[special.key]).map((row) => (
+              <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} />
+            ))}
+          </MarketSection>
+        ) : (
           <section className="px-6 py-14 text-center">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={tileStyle(special.hue, false)}>
               <Icon name={special.icon} size={26} />
@@ -364,8 +387,6 @@ export default function Shop() {
             <p className="mt-4 text-lead t-heading">{t(special.label)}</p>
             <p className="mx-auto mt-2 max-w-[30ch] text-meta t-sub">{t(special.soon)}</p>
           </section>
-        ) : (
-          <Ebooks />
         )
       ) : (
       <>
@@ -444,7 +465,16 @@ export default function Shop() {
       {/* ── Sections, on All ──────────────────────────────────────────── */}
       {home && !loadingShop && !shopError && (
         <>
-          <Ebooks cards limit={STRIP_MAX} onMore={() => setCat(':ebooks')} onOpen={openBook} />
+          <Ebooks cards limit={STRIP_MAX} onMore={() => setCat(':ebooks')} onOpen={openBook} extra={ofKind('download')} />
+          {[[':events', 'event'], [':courses', 'course']].map(([key, kind]) =>
+            ofKind(kind).length ? (
+              <MarketSection key={key} title={t(marketOf(key).label)} seeAll={t('a.seeAll')} onSeeAll={() => setCat(key)} strip>
+                {ofKind(kind).slice(0, STRIP_MAX).map((row) => (
+                  <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} />
+                ))}
+              </MarketSection>
+            ) : null,
+          )}
           {sections.map((s) => (
             <MarketSection
               key={s.label}

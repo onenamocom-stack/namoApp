@@ -1,3 +1,5 @@
+import Plate from './Plate.jsx'
+
 /**
  * The Market's home layout (15 Oct 2026, Rahul's reference): on All, every
  * category is a section — its name, See all, and two cards side by side.
@@ -66,5 +68,29 @@ export function MarketCard({ art, name, lines = [], price = null, onOpen, id }) 
         {price}
       </button>
     </li>
+  )
+}
+
+/** A seller's listing as a card (15 Oct 2026, Phase 17): its cover, name,
+ *  seller, what it is (an event's day, a course's lessons) and price. */
+export function ListingCard({ row, onOpen, free = 'Free' }) {
+  const when = row.starts_at
+    ? new Date(row.starts_at).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+    : null
+  const what = row.kind === 'event' ? when : row.kind === 'course' ? `${row.lessons_count} lessons` : null
+  return (
+    <MarketCard
+      art={
+        row.cover_url ? (
+          <img src={row.cover_url} alt={row.title} loading="lazy" className="h-full w-full bg-surface2 object-contain" />
+        ) : (
+          <Plate seed={row.id} variant="contour" className="h-full w-full" />
+        )
+      }
+      name={row.title}
+      lines={[row.seller?.name, what]}
+      price={<MarketPrice price={row.price_paise / 100} mrp={row.mrp_paise ? row.mrp_paise / 100 : null} free={free} />}
+      onOpen={onOpen}
+    />
   )
 }

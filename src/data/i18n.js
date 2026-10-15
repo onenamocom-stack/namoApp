@@ -569,6 +569,7 @@ export const strings = {
   'shop.item': { en: '{n} item', hi: '{n} आइटम' },
   'shop.items': { en: '{n} items', hi: '{n} आइटम' },
   'shop.more': { en: 'More', hi: 'और' },
+  'prof.tab.shop': { en: 'Shop', hi: 'दुकान' },
   'shop.pp.ships': { en: 'Shipped by Namo', hi: 'Namo भेजता है' },
   'shop.pp.free': { en: 'Free delivery', hi: 'मुफ़्त डिलीवरी' },
   'shop.pp.soldBy': { en: 'Sold by {name}', hi: '{name} बेचते हैं' },
@@ -890,7 +891,7 @@ export const strings = {
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
   // 12 Oct 2026, Rahul: NAMO is a spiritual social network first.
   // Rahul's tagline, 13 Oct 2026 (was "India's Spiritual Network", 12 Oct).
-  'w.title': { en: 'Hindu Social Network', hi: 'हिंदू सोशल नेटवर्क' },
+  'w.title': { en: 'Connecting Bharat', hi: 'कनेक्टिंग भारत' },
   'w.p.follow': { en: 'Follow gurus & astrologers', hi: 'गुरु और ज्योतिषी फ़ॉलो करें' },
   'w.p.share': { en: 'Post & share bhakti', hi: 'भक्ति पोस्ट और शेयर करें' },
   'w.p.darshan': { en: 'Daily darshan & bhajans', hi: 'रोज़ दर्शन और भजन' },

@@ -1,3 +1,4 @@
+import SellerShop, { useSellerListings } from '../components/SellerShop.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import InfluencerTab from '../components/InfluencerTab.jsx'
@@ -69,6 +70,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const { session, t, profile, consultant, consultantLoading } = useStore()
   const me = session?.user?.id
+  const shopRows = useSellerListings(profile?.influencer ? me : null)
   const [posts, setPosts] = useState(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
 
@@ -88,8 +90,9 @@ export default function Profile() {
 
   if (tab === 'settings') return <SettingsPage pro={Boolean(consultant)} />
 
+  // A Creator sells on the Market (15 Oct 2026, Phase 17): a Shop tab.
   const tabs = profile?.influencer
-    ? [...TABS, { key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }]
+    ? [...TABS, { key: 'shop', icon: 'cart', label: 'prof.tab.shop' }, { key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }]
     : TABS
   // Bare /profile opens on Posts, always (5 Oct 2026, owner's request) —
   // it used to open on the kundli when you had not posted yet.
@@ -160,6 +163,7 @@ export default function Profile() {
           <PostsTab posts={posts} />
         )}
         {active === 'reshared' && <ResharedTab />}
+        {active === 'shop' && profile?.influencer && <SellerShop rows={shopRows} own />}
         {active === 'commented' && <CommentedTab />}
         {active === 'saved' && <SavedTab />}
         {active === 'kundli' && <KundliTab />}

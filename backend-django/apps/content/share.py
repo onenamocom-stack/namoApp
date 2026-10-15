@@ -121,8 +121,9 @@ def _summary(text, limit=180):
 
 
 # What a link that matches nothing previews as (13 Oct 2026, Phase 15a:
-# the Hindu social network, not "astrology, darshan and the shop").
-SITE_LINE = "The Hindu social network. Bhakti, darshan, gurus and your kundli."
+# the Hindu social network, not "astrology, darshan and the shop"); the
+# line itself is "Connecting Bharat" since 15 Oct 2026 (Rahul).
+SITE_LINE = "Connecting Bharat. Bhakti, darshan, gurus and your kundli."
 
 
 def blog_page(request, content_id):

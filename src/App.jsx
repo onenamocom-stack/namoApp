@@ -54,12 +54,7 @@ import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
 import DownloadPage from './screens/DownloadPage.jsx'
-/* The course and event pages' design preview (15 Oct 2026): a development
-   build only. In production `import.meta.env.DEV` is false, the import is
-   dead code, and neither the route nor its sample data is built. */
-const ListingPreview = import.meta.env.DEV
-  ? lazy(() => import('./screens/ListingPage.jsx').then((m) => ({ default: m.ListingPreview })))
-  : null
+import ListingRoute from './screens/ListingPage.jsx'
 import TagScreen from './screens/TagScreen.jsx'
 import Messages from './screens/Messages.jsx'
 import Conversation from './screens/Conversation.jsx'
@@ -83,6 +78,10 @@ const DashboardGate = lazy(() =>
 const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
+// Sell on the Market (15 Oct 2026, Phase 17): a Pro's or a Creator's listings.
+const SellHome = lazy(() => import('./screens/Sell.jsx'))
+const SellForm = lazy(() => import('./screens/Sell.jsx').then((m) => ({ default: m.SellForm })))
+const SellBank = lazy(() => import('./screens/Sell.jsx').then((m) => ({ default: m.SellBank })))
 // Namo Consult, `/desk`: where a Pro takes calls in the main app.
 const DeskLayout = lazy(() => import('./screens/Desk.jsx'))
 const DeskQueue = lazy(() => import('./pro/ProConsult.jsx'))
@@ -429,16 +428,8 @@ function Frame() {
                 <Route path="/shop/p/:key" element={<ProductPage />} />
                 {/* A download's own page (15 Oct 2026, Rahul). */}
                 <Route path="/shop/d/:id" element={<DownloadPage />} />
-                {ListingPreview && (
-                  <Route
-                    path="/shop/preview/:kind"
-                    element={
-                      <Suspense fallback={null}>
-                        <ListingPreview />
-                      </Suspense>
-                    }
-                  />
-                )}
+                {/* A seller's download, course or event (15 Oct 2026, Phase 17). */}
+                <Route path="/shop/l/:id" element={<ListingRoute />} />
                 {/* A shared Bhakti item's address: the link previews with
                     its picture; opened, it is that item on its shelf, with
                     "See all" under it (12 Oct 2026, Rahul — it opened the
@@ -491,6 +482,10 @@ function Frame() {
                 <Route path="/dashboard/profile/:tab" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard/affiliate" element={<Dash need="any"><DashAffiliate /></Dash>} />
                 <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
+                <Route path="/dashboard/market" element={<Dash need="any"><SellHome /></Dash>} />
+                <Route path="/dashboard/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
+                <Route path="/dashboard/market/new/:kind" element={<Dash need="any"><SellForm /></Dash>} />
+                <Route path="/dashboard/market/:id" element={<Dash need="any"><SellForm /></Dash>} />
 
               </>
             )}

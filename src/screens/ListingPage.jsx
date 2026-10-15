@@ -1,31 +1,126 @@
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
+import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
 import { MarketPrice } from '../components/MarketCard.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
+import RichText from '../components/RichText.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
+import { access, get, listing as fetchListing, previewLesson } from '../lib/market.js'
 import { useStore } from '../store.jsx'
 
 /**
- * A course's and an event's own pages (15 Oct 2026, Rahul: "show product
- * page for events and courses also"). Designed ahead of the listings: no
- * table holds a course or an event yet (docs/06 Phase 17), so nothing in
- * the app links here. `/shop/preview/course` and `/shop/preview/event`
- * render them with the sample below in a development build only — a
- * production build never carries the route or the sample.
+ * A seller's listing, `/shop/l/:id` (15 Oct 2026, Phase 17): a download, a
+ * course or an event, each with the page that suits it (Rahul: "optimise
+ * for the category"). A product listing is a shop product and opens its
+ * product page.
  *
  * A course sells hours of teaching: what you will learn, the lessons (the
  * first a free preview), who teaches it. An event sells a seat at a time:
- * when, how long, where (online — the link comes after booking), how many
- * seats are left, the agenda, who hosts it.
+ * when, how long, online, seats left, who hosts it. A download sells a
+ * file. One button at the thumb: Enroll, Book seat or Get it — free is
+ * taken, paid opens Razorpay — and once yours, Start, Join or Download.
  */
+export default function ListingRoute() {
+  const { id } = useParams()
+  const { session, showToast } = useStore()
+  const [row, setRow] = useState(undefined)
+  const [opened, setOpened] = useState(null) // what access() answered
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(() => {
+    fetchListing(id)
+      .then(setRow)
+      .catch(() => setRow(null))
+  }, [id])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    setRow(undefined)
+    setOpened(null)
+    load()
+  }, [load])
+
+  // Once it is yours, what you bought: the file, the lessons, the link.
+  useEffect(() => {
+    if (row?.owned && !opened) access(row.id).then(setOpened).catch(() => {})
+  }, [row, opened])
+
+  if (row === undefined) {
+    return (
+      <>
+        <TopBar title="Market" back backTo="/shop" />
+        <Loader className="py-24" />
+      </>
+    )
+  }
+  if (row === null) {
+    return (
+      <>
+        <TopBar title="Market" back backTo="/shop" />
+        <p className="px-6 py-16 text-center text-meta t-body">That is no longer on the Market.</p>
+      </>
+    )
+  }
+  if (row.kind === 'product' && row.product_id) return <Navigate to={`/shop/p/${row.product_id}`} replace />
+
+  const buy = async () => {
+    if (!session) return showToast('Sign in to get it.')
+    setBusy(true)
+    const res = await get(row, { prefill: { contact: session?.user?.phone || undefined } })
+    setBusy(false)
+    if (res.closed) return
+    if (res.unconfirmed) return showToast('Payment received. It opens in a minute.')
+    if (!res.ok) return showToast(res.reason)
+    showToast(row.price_paise ? 'Paid. It is yours.' : 'It is yours.')
+    load()
+  }
+
+  const props = { l: row, opened, busy, buy }
+  if (row.kind === 'course') return <CoursePage {...props} />
+  if (row.kind === 'event') return <EventPage {...props} />
+  return <DownloadListing {...props} />
+}
+
+function Cover({ l, children }) {
+  return (
+    <div className="relative">
+      {l.cover_url ? (
+        <img src={l.cover_url} alt={l.title} className="aspect-video w-full bg-surface2 object-contain" />
+      ) : (
+        <Plate seed={l.id} variant="contour" className="aspect-video w-full" />
+      )}
+      {children}
+    </div>
+  )
+}
+
+function Head({ l, kindLabel }) {
+  const { t } = useStore()
+  return (
+    <section className="px-5 pt-5">
+      <span className="pill caps-sm">{kindLabel}</span>
+      <h1 className="mt-3 text-title t-heading">{l.title}</h1>
+      <p className="mt-1 flex items-center gap-1 text-meta t-faint">
+        {t('dl.by', { name: l.seller?.name })}
+        {(l.seller?.is_pro || l.seller?.is_creator) && (
+          <VerifiedMark size={14} tone={l.seller?.is_pro ? 'pro' : 'creator'} />
+        )}
+      </p>
+      <div className="mt-3 text-lead">
+        <MarketPrice price={l.price_paise / 100} mrp={l.mrp_paise ? l.mrp_paise / 100 : null} free={t('ac.free')} />
+      </div>
+    </section>
+  )
+}
 
 function Facts({ items }) {
   return (
     <ul className="mt-4 grid grid-cols-3 divide-x divide-rule rounded-2xl border border-rule text-center">
       {items.map(([icon, head, note]) => (
-        <li key={head} className="flex flex-col items-center gap-0.5 px-2 py-3">
+        <li key={icon} className="flex flex-col items-center gap-0.5 px-2 py-3">
           <span className="gold">
             <Icon name={icon} size={18} />
           </span>
@@ -37,233 +132,270 @@ function Facts({ items }) {
   )
 }
 
-function Seller({ who, t }) {
+function About({ l }) {
+  if (!l.description?.trim()) return null
+  return (
+    <section className="px-5 pt-7">
+      <h2 className="caps-sm t-faint">About</h2>
+      <RichText text={l.description} className="mt-3" />
+    </section>
+  )
+}
+
+function Seller({ l }) {
+  const { t } = useStore()
+  const s = l.seller || {}
+  const to = s.is_pro ? `/consult/${s.id}` : `/u/${s.id}`
   return (
     <section className="px-5 pt-7">
       <h2 className="caps-sm t-faint">{t('ls.about')}</h2>
-      <div className="mt-3 flex items-start gap-3 rounded-2xl border border-rule p-4">
-        <Plate seed={who.name} variant="contour" className="h-12 w-12 flex-none rounded-full" />
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 text-meta font-semibold t-heading">
-            {who.name} {who.verified && <VerifiedMark size={15} />}
-          </p>
-          <p className="text-micro t-faint">{who.line}</p>
-          <p className="mt-2 text-meta t-body">{who.bio}</p>
-        </div>
-      </div>
+      <Link to={to} className="mt-3 flex items-center gap-3 rounded-2xl border border-rule p-4">
+        {s.avatar_url ? (
+          <img src={s.avatar_url} alt="" className="h-12 w-12 flex-none rounded-full object-cover" />
+        ) : (
+          <Plate seed={s.id || 'seller'} variant="contour" className="h-12 w-12 flex-none rounded-full" />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1 text-meta font-semibold t-heading">
+            {s.name} {(s.is_pro || s.is_creator) && <VerifiedMark size={15} tone={s.is_pro ? 'pro' : 'creator'} />}
+          </span>
+          <span className="block text-micro t-faint">{s.is_pro ? 'Pro' : 'Creator'} · see their page</span>
+        </span>
+        <Icon name="back" size={16} className="rotate-180 t-faint" />
+      </Link>
     </section>
   )
 }
 
-function Head({ l, kindLabel, t }) {
-  return (
-    <section className="px-5 pt-5">
-      <span className="pill caps-sm">{kindLabel}</span>
-      <h1 className="mt-3 text-title t-heading">{l.title}</h1>
-      <p className="mt-1 flex items-center gap-1 text-meta t-faint">
-        {t('dl.by', { name: l.seller.name })} {l.seller.verified && <VerifiedMark size={14} />}
-      </p>
-      <div className="mt-3 text-lead">
-        <MarketPrice price={l.price} mrp={l.mrp} free={t('ac.free')} />
-      </div>
-    </section>
-  )
-}
-
-function Foot({ price, action, note }) {
+function Foot({ price, note, children }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[420px] items-center gap-3 border-t border-rule bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
       <span className="flex-1">
         <span className="block text-lead font-semibold t-heading tnum">{price}</span>
         {note && <span className="block text-micro t-faint">{note}</span>}
       </span>
-      <PopButton variant="gold" full={false} className="px-6">
-        {action}
-      </PopButton>
+      {children}
     </div>
   )
 }
 
-export function CoursePage({ course: c }) {
-  const { t } = useStore()
+const priceLabel = (l, t) => (l.price_paise ? `₹${(l.price_paise / 100).toLocaleString('en-IN')}` : t('ac.free'))
+
+// ── a course ────────────────────────────────────────────────────────────────
+
+export function CoursePage({ l, opened, busy, buy }) {
+  const { t, showToast } = useStore()
+  const [playing, setPlaying] = useState(null) // {url, title}
+  const hours = Math.max(1, Math.round((l.minutes || 0) / 60))
+
+  const play = async (i) => {
+    const lesson = l.lessons[i]
+    const own = opened?.lessons?.[i]?.url
+    if (own) return setPlaying({ url: own, title: lesson.title })
+    if (!lesson.preview) return showToast('Enroll to watch this lesson.')
+    try {
+      setPlaying({ url: await previewLesson(l.id, i), title: lesson.title })
+    } catch {
+      showToast('Could not open the preview. Try again.')
+    }
+  }
+
   return (
     <>
       <TopBar title={t('ac.tab.courses')} back backTo="/shop?cat=courses" />
-      <div className="relative">
-        <Plate seed={c.title} variant="contour" className="aspect-video w-full" />
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-ink shadow-lg">
-            <Icon name="play" size={24} />
-          </span>
-        </span>
-        <span className="caps-sm absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-white">{t('ls.c.trailer')}</span>
-      </div>
+      {playing ? (
+        <div className="bg-black">
+          <video src={playing.url} controls autoPlay playsInline className="aspect-video w-full" />
+          <p className="px-4 py-2 text-micro text-white/80">{playing.title}</p>
+        </div>
+      ) : (
+        <Cover l={l}>
+          {l.lessons?.some((x) => x.preview) && (
+            <button type="button" onClick={() => play(0)} className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-ink shadow-lg">
+                <Icon name="play" size={24} />
+              </span>
+              <span className="caps-sm absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-white">
+                {t('ls.c.preview')}
+              </span>
+            </button>
+          )}
+        </Cover>
+      )}
 
-      <Head l={c} kindLabel={t('ls.c.kind')} t={t} />
+      <Head l={l} kindLabel={t('ls.c.kind')} />
       <section className="px-5">
         <Facts
           items={[
-            ['play', t('ls.c.lessons', { n: c.lessons.length }), t('ls.c.hours', { n: c.hours })],
-            ['chat', c.language, t('ls.c.lang')],
+            ['play', t('ls.c.lessons', { n: l.lessons_count }), l.minutes ? t('ls.c.hours', { n: hours }) : ''],
+            ['chat', l.language || '—', t('ls.c.lang')],
             ['infinity', t('ls.c.yours'), t('ls.c.yoursNote')],
           ]}
         />
       </section>
-
-      <section className="px-5 pt-7">
-        <h2 className="caps-sm t-faint">{t('ls.c.learn')}</h2>
-        <ul className="mt-3 space-y-2">
-          {c.learn.map((x) => (
-            <li key={x} className="flex items-start gap-2 text-meta t-body">
-              <span className="mt-0.5 flex-none text-ok">
-                <Icon name="check" size={16} />
-              </span>
-              {x}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <About l={l} />
 
       <section className="px-5 pt-7">
         <h2 className="caps-sm t-faint">{t('ls.c.content')}</h2>
         <ol className="mt-3 divide-y divide-rule rounded-2xl border border-rule">
-          {c.lessons.map(([name, mins], i) => (
-            <li key={name} className="flex items-center gap-3 px-4 py-3">
-              <span className="w-5 flex-none text-micro t-faint tnum">{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate text-meta t-heading">{name}</span>
-              {i === 0 ? (
-                <span className="caps-sm gold">{t('ls.c.preview')}</span>
-              ) : (
-                <span className="text-micro t-faint tnum">{t('ls.c.mins', { n: mins })}</span>
-              )}
+          {l.lessons.map((x, i) => (
+            <li key={i}>
+              <button type="button" onClick={() => play(i)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                <span className="w-5 flex-none text-micro t-faint tnum">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-meta t-heading">{x.title}</span>
+                {l.owned ? (
+                  <span className="gold"><Icon name="play" size={14} /></span>
+                ) : x.preview ? (
+                  <span className="caps-sm gold">{t('ls.c.preview')}</span>
+                ) : (
+                  <span className="text-micro t-faint tnum">{x.minutes ? t('ls.c.mins', { n: x.minutes }) : ''}</span>
+                )}
+              </button>
             </li>
           ))}
         </ol>
       </section>
 
-      <Seller who={c.seller} t={t} />
+      <Seller l={l} />
       <div className="h-28" />
-      <Foot price={`₹${c.price.toLocaleString('en-IN')}`} action={t('ls.c.enroll')} note={t('ls.c.footNote')} />
+      <Foot price={l.owned ? 'Yours' : priceLabel(l, t)} note={l.owned ? 'Every lesson is open' : t('ls.c.footNote')}>
+        {l.owned ? (
+          <PopButton variant="gold" full={false} className="px-6" onClick={() => play(0)}>
+            Start
+          </PopButton>
+        ) : (
+          <PopButton variant="gold" full={false} className="px-6" onClick={buy} disabled={busy || !l.open}>
+            {busy ? '…' : t('ls.c.enroll')}
+          </PopButton>
+        )}
+      </Foot>
     </>
   )
 }
 
-export function EventPage({ event: e }) {
+// ── an event ────────────────────────────────────────────────────────────────
+
+export function EventPage({ l, opened, busy, buy }) {
   const { t } = useStore()
+  const at = l.starts_at ? new Date(l.starts_at) : null
+  const end = at ? new Date(at.getTime() + (l.duration_minutes || 0) * 60_000) : null
+  const tm = (d) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  const left = l.seats_left
   return (
     <>
       <TopBar title={t('ac.tab.events')} back backTo="/shop?cat=events" />
-      <div className="relative">
-        <Plate seed={e.title} variant="contour" className="aspect-[16/9] w-full" />
-        {/* The date as a calendar leaf over the banner. */}
-        <span className="absolute left-4 top-4 flex w-14 flex-col items-center overflow-hidden rounded-xl bg-white text-center shadow-lg">
-          <span className="w-full bg-live py-0.5 caps-sm text-white">{e.month}</span>
-          <span className="py-1 text-title font-semibold leading-none t-heading tnum">{e.day}</span>
-        </span>
+      <Cover l={l}>
+        {at && (
+          <span className="absolute left-4 top-4 flex w-14 flex-col items-center overflow-hidden rounded-xl bg-white text-center shadow-lg">
+            <span className="w-full bg-live py-0.5 caps-sm text-white">
+              {at.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase()}
+            </span>
+            <span className="py-1 text-title font-semibold leading-none t-heading tnum">{at.getDate()}</span>
+          </span>
+        )}
         <span className="caps-sm absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-white">
           <span className="h-2 w-2 rounded-full bg-ok" /> {t('ls.e.online')}
         </span>
-      </div>
+      </Cover>
 
-      <Head l={e} kindLabel={t('ls.e.kind')} t={t} />
+      <Head l={l} kindLabel={t('ls.e.kind')} />
       <section className="px-5">
         <Facts
           items={[
-            ['calendar', e.when, e.time],
-            ['video', t('ls.e.online'), t('ls.e.linkNote')],
-            ['groups', t('ls.e.left', { n: e.seatsLeft }), t('ls.e.of', { n: e.seats })],
+            ['calendar', at ? at.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '—',
+              at ? `${tm(at)} – ${tm(end)}` : ''],
+            ['video', t('ls.e.online'), l.owned ? 'Link below' : t('ls.e.linkNote')],
+            ['groups', left == null ? '—' : t('ls.e.left', { n: left }), l.seats ? t('ls.e.of', { n: l.seats }) : ''],
           ]}
         />
-        {e.seatsLeft <= 10 && <p className="mt-3 caps-sm text-live">{t('ls.e.filling', { n: e.seatsLeft })}</p>}
+        {!l.owned && left != null && left > 0 && left <= 10 && (
+          <p className="mt-3 caps-sm text-live">{t('ls.e.filling', { n: left })}</p>
+        )}
+        {l.owned && opened?.join_url && (
+          <a href={opened.join_url} target="_blank" rel="noopener noreferrer"
+            className="mt-4 block rounded-2xl border border-gold-fill bg-gold-fill/10 p-4">
+            <span className="caps-sm gold">Your seat is booked</span>
+            <span className="mt-1 block break-all text-meta t-heading">{opened.join_url}</span>
+            <span className="mt-1 block text-micro t-faint">Open it at the time. Keep this to yourself.</span>
+          </a>
+        )}
       </section>
-
-      <section className="px-5 pt-7">
-        <h2 className="caps-sm t-faint">{t('ls.e.agenda')}</h2>
-        <ol className="mt-3 border-l-2 border-gold-fill/40 pl-4">
-          {e.agenda.map(([at, what]) => (
-            <li key={at} className="relative pb-4 last:pb-0">
-              <span className="absolute -left-[23px] top-1 h-3 w-3 rounded-full border-2 border-bg bg-gold-fill" />
-              <span className="block text-micro t-faint tnum">{at}</span>
-              <span className="block text-meta t-heading">{what}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <About l={l} />
 
       <section className="px-5 pt-7">
         <h2 className="caps-sm t-faint">{t('ls.e.how')}</h2>
         <ul className="mt-3 space-y-2">
-          {[t('ls.e.how1'), t('ls.e.how2'), t('ls.e.how3')].map((x) => (
+          {['Book your seat. It is held for you at once.',
+            'The joining link shows here once you have booked.',
+            'Join from your phone or computer. Nothing to install.'].map((x) => (
             <li key={x} className="flex items-start gap-2 text-meta t-body">
-              <span className="mt-0.5 flex-none text-ok">
-                <Icon name="check" size={16} />
-              </span>
+              <span className="mt-0.5 flex-none text-ok"><Icon name="check" size={16} /></span>
               {x}
             </li>
           ))}
         </ul>
       </section>
 
-      <Seller who={e.seller} t={t} />
+      <Seller l={l} />
       <div className="h-28" />
-      <Foot price={`₹${e.price.toLocaleString('en-IN')}`} action={t('ls.e.book')} note={t('ls.e.left', { n: e.seatsLeft })} />
+      <Foot price={l.owned ? 'Booked' : priceLabel(l, t)} note={l.owned ? null : left != null ? t('ls.e.left', { n: left }) : null}>
+        {l.owned ? (
+          <PopButton href={opened?.join_url} variant="gold" full={false} className="px-6" disabled={!opened?.join_url}>
+            Join
+          </PopButton>
+        ) : (
+          <PopButton variant="gold" full={false} className="px-6" onClick={buy} disabled={busy || !l.open}>
+            {busy ? '…' : !l.open ? 'Closed' : t('ls.e.book')}
+          </PopButton>
+        )}
+      </Foot>
     </>
   )
 }
 
-/* The design's sample: invented, and only ever rendered by the
-   development-only preview route. */
-const SAMPLE_SELLER = {
-  name: 'Acharya Raghav Shastri',
-  verified: true,
-  line: 'Vedic astrologer · 18 years',
-  bio: 'Teaches Parashari jyotish in plain Hindi and English. Has read over 20,000 charts.',
-}
-const SAMPLE = {
-  course: {
-    title: 'Read Your Own Kundli in 7 Days',
-    price: 1499,
-    mrp: 2999,
-    hours: 6,
-    language: 'Hindi',
-    seller: SAMPLE_SELLER,
-    learn: [
-      'Find your lagna, Moon sign and nakshatra',
-      'Read the twelve houses and what rules each',
-      'Judge a planet: strong, weak, friendly or not',
-      'Read your current dasha and what it brings',
-    ],
-    lessons: [
-      ['What a kundli is, and what it is not', 8],
-      ['The twelve houses', 42],
-      ['The nine planets', 55],
-      ['Signs and their lords', 38],
-      ['Nakshatras', 47],
-      ['Dashas: timing in a chart', 61],
-      ['Putting it together: one chart, start to end', 70],
-    ],
-  },
-  event: {
-    title: 'Sharad Purnima Lakshmi Sadhana — Live',
-    price: 299,
-    mrp: 499,
-    month: 'OCT',
-    day: '17',
-    when: 'Fri, 17 Oct',
-    time: '7:00 – 8:30 pm',
-    seats: 200,
-    seatsLeft: 8,
-    seller: SAMPLE_SELLER,
-    agenda: [
-      ['7:00 pm', 'Sankalp and the meaning of Sharad Purnima'],
-      ['7:15 pm', 'Lakshmi puja, step by step, together'],
-      ['7:50 pm', 'Shri Suktam chanting'],
-      ['8:15 pm', 'Your questions, answered live'],
-    ],
-  },
-}
+// ── a download ──────────────────────────────────────────────────────────────
 
-export function ListingPreview() {
-  const { kind } = useParams()
-  return kind === 'event' ? <EventPage event={SAMPLE.event} /> : <CoursePage course={SAMPLE.course} />
+function DownloadListing({ l, opened, busy, buy }) {
+  const { t } = useStore()
+  const ext = (l.file_name || '').split('.').pop()?.toUpperCase() || 'FILE'
+  const mb = l.file_size ? `${(l.file_size / 1_048_576).toFixed(1)} MB` : ''
+  return (
+    <>
+      <TopBar title={t('ac.tab.ebooks')} back backTo="/shop?cat=ebooks" />
+      <Cover l={l} />
+      <Head l={l} kindLabel={ext} />
+      <section className="px-5 pt-7">
+        <h2 className="caps-sm t-faint">{t('dl.get')}</h2>
+        <ul className="mt-3 divide-y divide-rule rounded-2xl border border-rule">
+          {[
+            ['download', `${ext} file${mb ? ` · ${mb}` : ''}`, t('dl.get.formatNote')],
+            ['check', t('dl.get.now'), t('dl.get.nowNote')],
+            ['infinity', t('dl.get.keep'), l.price_paise ? t('dl.get.keepPaid') : t('dl.get.keepFree')],
+          ].map(([icon, head, note]) => (
+            <li key={icon} className="flex items-start gap-3 px-4 py-3">
+              <span className="mt-0.5 flex-none gold"><Icon name={icon} size={18} /></span>
+              <span>
+                <span className="block text-meta t-heading">{head}</span>
+                <span className="block text-micro t-faint">{note}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <About l={l} />
+      <Seller l={l} />
+      <div className="h-28" />
+      <Foot price={l.owned ? 'Yours' : priceLabel(l, t)}>
+        {l.owned ? (
+          <PopButton href={opened?.file_url} variant="gold" full={false} className="px-6" disabled={!opened?.file_url}>
+            {t('dl.download')}
+          </PopButton>
+        ) : (
+          <PopButton variant="gold" full={false} className="px-6" onClick={buy} disabled={busy}>
+            {busy ? '…' : l.price_paise ? t('dl.buy') : t('dl.download')}
+          </PopButton>
+        )}
+      </Foot>
+    </>
+  )
 }

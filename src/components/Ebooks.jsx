@@ -5,7 +5,8 @@ import Paywall from './Paywall.jsx'
 import Plate from './Plate.jsx'
 import BhaktiActions from './BhaktiActions.jsx'
 import { Kicker, PopButton, PopCard } from './Pop.jsx'
-import { MarketCard, MarketPrice, MarketSection } from './MarketCard.jsx'
+import { useNavigate } from 'react-router-dom'
+import { ListingCard, MarketCard, MarketPrice, MarketSection } from './MarketCard.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -19,8 +20,9 @@ import { rupees, useStore } from '../store.jsx'
    credited, priceable catalogue as the Bhakti shelves, read in the same one
    request. A PDF opens in the browser's own viewer, which is also where it
    saves from. */
-export default function Ebooks({ limit = null, onMore = null, cards = false, onOpen = null }) {
+export default function Ebooks({ limit = null, onMore = null, cards = false, onOpen = null, extra = [] }) {
   const { t } = useStore()
+  const navigate = useNavigate()
   const [books, setBooks] = useState(null)
   const [failed, setFailed] = useState(false)
   // A shared book (/bhakti/s/:id forwards here as ?book=) leads the list.
@@ -37,19 +39,24 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
   }, [first])
 
   // Under the products on All it is an extra: quiet unless it has books.
-  if (onMore && (failed || !books?.length)) return null
-  if (failed) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.libErr')}</p>
-  if (!books) return <p className="px-5 py-10 text-center text-meta t-faint">{t('a.loading')}</p>
-  if (!books.length) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.noBooks')}</p>
+  // A seller's downloads (15 Oct 2026) sit beside Namo's books.
+  if (onMore && (failed || !books?.length) && !extra.length) return null
+  if (failed && !extra.length) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.libErr')}</p>
+  if (!books && !failed) return <p className="px-5 py-10 text-center text-meta t-faint">{t('a.loading')}</p>
+  if (!books?.length && !extra.length) return <p className="px-5 py-10 text-center text-meta t-faint">{t('ac.noBooks')}</p>
 
   /* On the Market's All, the first few with See all (`onMore`); on the
      E-books tile, every one. */
-  const shown = limit ? books.slice(0, limit) : books
+  const list = books || []
+  const shown = limit ? list.slice(0, limit) : list
   /* `cards`: a section of the Market's home (15 Oct 2026); a card opens the
      download's own page. */
   if (cards) {
     return (
       <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore} strip>
+        {extra.map((row) => (
+          <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} />
+        ))}
         {shown.map((d) => (
           <MarketCard
             key={d.id}
@@ -75,9 +82,19 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
       </MarketSection>
     )
   }
+  const sellers = extra.length ? (
+    <MarketSection title="From Pros and Creators">
+      {extra.map((row) => (
+        <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} />
+      ))}
+    </MarketSection>
+  ) : null
   return (
+    <>
+    {sellers}
+    {list.length > 0 && (
     <section className="px-4 py-4">
-      <Kicker action={onMore && books.length > shown.length ? t('a.seeAll') : undefined} onAction={onMore || undefined}>
+      <Kicker action={onMore && list.length > shown.length ? t('a.seeAll') : undefined} onAction={onMore || undefined}>
         {onMore ? t('ac.tab.ebooks') : t('ac.yoursToRead')}
       </Kicker>
       <ul className="mt-4 space-y-4">
@@ -88,6 +105,8 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
         ))}
       </ul>
     </section>
+    )}
+    </>
   )
 }
 

@@ -61,6 +61,7 @@ export default function Dashboard() {
             <div className="mt-2">
               <Row to="/dashboard/earnings" title="Earnings and Insights" note="What you earned, and who saw your posts" />
               <Row to="/dashboard/affiliate" title="Your links" note="Share a product, earn 10%" />
+              <Row to="/dashboard/market" title="Sell on the Market" note="Downloads, courses, events and products" />
             </div>
           </section>
           <section className="px-5 pb-5">
@@ -95,6 +96,7 @@ export default function Dashboard() {
             <div>
               <Row to="/dashboard/affiliate" title="Your links" note="Share a product, earn 10%" />
               <Row to="/profile/influencer" title="Your code" note="Who joined with your code, and who paid" />
+              <Row to="/dashboard/market" title="Sell on the Market" note="Downloads, courses, events and products" />
             </div>
           </section>
           <Insights />
