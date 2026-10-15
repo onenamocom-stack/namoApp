@@ -570,6 +570,34 @@ from Dashboard; an old pro.1namo.com link lands on the same screen.
 
 ---
 
+## Phase 17 — The Market: Pros and Creators sell (proposed 14 Oct 2026, awaiting the owner)
+
+**Not approved.** Rahul's proposal; it touches payments, commission and
+payouts, so nothing goes live without the owner's yes. Step 1 is done and
+live: Shop and Academy are one Market page, with Courses and Events as
+"Soon" tiles (`docs/03` Market).
+
+- **Step 2a — e-books through the gateway.** A priced e-book is paid in
+  Razorpay's checkout, as a product is, not from the wallet (Rahul, 14 Oct:
+  "code bana lo par live raghu ki yes ke baad").
+- **Step 2b — sellers.** Pros and Creators list Downloads, Courses, Events
+  and Products from Dashboard ("Sell on Market"): kind, name, picture,
+  price or free, description, and the file, lessons, or date and seats.
+- **Step 2c — approval.** A console queue, Approve or Reject with a reason;
+  only approved listings reach the Market, each with its seller's name and
+  tick.
+- **Step 2d — money.** The buyer pays by gateway; the seller's share, less
+  commission, joins the payout run (Phase 12).
+
+**Decisions blocking it:** the commission; who ships a seller's product;
+when payouts run; online or in-person events.
+
+**Done when:** a Creator lists a paid PDF, an admin approves it, a buyer
+pays by gateway and opens it, and the Creator's share appears in their
+earnings with Namo's commission taken.
+
+---
+
 ## Seed
 
 The largest single task, in phase 4.

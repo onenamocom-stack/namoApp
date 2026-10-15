@@ -387,6 +387,15 @@ requested capability with **no upload path in the app today**.
 
 E-books are free unless priced; the first priced one is **₹99** (§4.11).
 
+**Proposed, not approved (14 Oct 2026, Rahul):** the Market sells four
+kinds — Downloads (PDF, e-book), Courses, Events and Products — and Pros
+and Creators list their own, each shown only after an admin approves it.
+Paid through the gateway, never the wallet; the seller is paid out less
+Namo's commission. It moves money to sellers, so it waits for the owner's
+yes and four decisions: the commission (one rate or one per kind), who
+ships a seller's product, when payouts run, and whether events are online,
+in person or both. The plan is `docs/06` Phase 17.
+
 ### 4.8 Wallet
 
 Everything is paid from a wallet rather than per transaction.
