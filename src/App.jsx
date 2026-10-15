@@ -78,6 +78,7 @@ const DashboardGate = lazy(() =>
 const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
+const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
 // Sell on the Market (15 Oct 2026, Phase 17): a Pro's or a Creator's listings.
 const SellHome = lazy(() => import('./screens/Sell.jsx'))
 const SellForm = lazy(() => import('./screens/Sell.jsx').then((m) => ({ default: m.SellForm })))
@@ -482,6 +483,7 @@ function Frame() {
                 <Route path="/dashboard/profile/:tab" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard/affiliate" element={<Dash need="any"><DashAffiliate /></Dash>} />
                 <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
+                <Route path="/dashboard/calendar" element={<Dash><ProCalendar /></Dash>} />
                 <Route path="/dashboard/market" element={<Dash need="any"><SellHome /></Dash>} />
                 <Route path="/dashboard/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
                 <Route path="/dashboard/market/new/:kind" element={<Dash need="any"><SellForm /></Dash>} />
@@ -573,6 +575,7 @@ function Frame() {
               <Route path="/pro/ring/:id" element={<ProRing />} />
               <Route path="/pro/affiliate" element={<ProAffiliate />} />
               <Route path="/pro/payout-details" element={<ProPayoutDetails />} />
+              <Route path="/pro/calendar" element={<Suspense fallback={<Loader />}><ProCalendar /></Suspense>} />
               <Route path="/pro/consult" element={<ProConsult />} />
               {/* Profile carries its tab in the URL too, same reason as the
                   seeker's — Earnings needs to stay deep-linkable now that it

@@ -541,11 +541,96 @@ def set_availability(consultant_id, weekday, slot_time, open):
 
 
 def add_time_off(consultant_id, starts_at, ends_at, reason=None):
-    """A closure window. Service layer only (009's check writes these
-    directly); there is no client screen for time off yet, so no URL."""
+    """A closure window (009's check writes these directly; the calendar's
+    blocked dates since 15 Oct 2026)."""
     return ConsultantTimeOff.objects.create(
         consultant_id=consultant_id, starts_at=starts_at, ends_at=ends_at, reason=reason
     )
+
+
+# ── the week, as windows (15 Oct 2026, Rahul) ────────────────────────────────
+#
+# A Pro sets each day of the week as up to two windows ("9 to 12, 4 to 7");
+# a customer books 20 minutes inside one (SLOT_MINUTES). The windows are
+# stored as the 20-minute cells they expand to, in the same
+# `consultant_availability` table the slots function already reads, so
+# booking and the slots subtraction are unchanged. Reading back, runs of
+# back-to-back cells are the windows again.
+
+MAX_WINDOWS = 2
+REFUSAL_WINDOWS = "Each day takes up to two windows, each at least 20 minutes, not overlapping."
+
+
+def _minutes(t):
+    return t.hour * 60 + t.minute
+
+
+def _at(minutes):
+    return time(minutes // 60, minutes % 60)
+
+
+def week(consultant_id):
+    """{weekday (0 = Sunday): [{"from": "09:00", "to": "12:00"}, ...]} for
+    every day, empty where closed. Cells that do not run back to back (the
+    old six-times grid) read as windows of one slot each."""
+    out = {d: [] for d in range(7)}
+    rows = (ConsultantAvailability.objects.filter(consultant_id=consultant_id)
+            .order_by("weekday", "slot_time").values_list("weekday", "slot_time"))
+    for weekday, slot in rows:
+        start = _minutes(slot)
+        runs = out[weekday]
+        if runs and runs[-1][1] == start:
+            runs[-1][1] = start + SLOT_MINUTES
+        else:
+            runs.append([start, start + SLOT_MINUTES])
+    return {d: [{"from": _at(a).strftime("%H:%M"), "to": _at(min(b, 24 * 60 - 1)).strftime("%H:%M")}
+                for a, b in runs] for d, runs in out.items()}
+
+
+def set_week(consultant_id, days):
+    """The whole week at once: `days` maps weekday (0 = Sunday) to a list of
+    (from, to) times. Each window becomes its 20-minute starts — 9:00 to
+    12:00 is 9:00, 9:20 … 11:40; a remainder shorter than a slot is not
+    offered. Replaces every cell in one transaction. A booking already made
+    stands whatever changes."""
+    cells = []
+    for weekday, windows in days.items():
+        if not 0 <= int(weekday) <= 6 or len(windows) > MAX_WINDOWS:
+            raise ValueError(REFUSAL_WINDOWS)
+        spans = sorted((_minutes(a), _minutes(b)) for a, b in windows)
+        for i, (a, b) in enumerate(spans):
+            if b - a < SLOT_MINUTES or (i and a < spans[i - 1][1]):
+                raise ValueError(REFUSAL_WINDOWS)
+            for start in range(a, b - SLOT_MINUTES + 1, SLOT_MINUTES):
+                cells.append(ConsultantAvailability(consultant_id=consultant_id, weekday=int(weekday),
+                                                    slot_time=_at(start)))
+    with transaction.atomic():
+        ConsultantAvailability.objects.filter(consultant_id=consultant_id).delete()
+        ConsultantAvailability.objects.bulk_create(cells)
+    return week(consultant_id)
+
+
+def blocked_dates(consultant_id):
+    """The days off still to come, whole IST days, soonest first."""
+    rows = ConsultantTimeOff.objects.filter(consultant_id=consultant_id,
+                                            ends_at__gt=timezone.now()).order_by("starts_at")
+    return [{"id": str(r.id), "from": r.starts_at.astimezone(IST).date().isoformat(),
+             "to": (r.ends_at.astimezone(IST) - timedelta(seconds=1)).date().isoformat(),
+             "reason": r.reason or ""} for r in rows]
+
+
+def block_dates(consultant_id, first, last, reason=None):
+    """Closes whole days, `first` to `last` inclusive (IST)."""
+    if last < first:
+        raise ValueError("The last day is before the first.")
+    if first < ist_today():
+        raise ValueError("Pick today or a later day.")
+    return add_time_off(consultant_id, _combine_ist(first, time.min),
+                        _combine_ist(last + timedelta(days=1), time.min), reason or None)
+
+
+def unblock(consultant_id, time_off_id):
+    return ConsultantTimeOff.objects.filter(consultant_id=consultant_id, pk=time_off_id).delete()[0]
 
 
 # ── the application (007's insert grant + 009 assertion 9's band rule) ───────

@@ -222,6 +222,73 @@ def set_availability(request, consultant_id):
     return Response({"ok": True})
 
 
+# ── the week as windows, and blocked dates (15 Oct 2026, Rahul) ──────────────
+
+
+class WindowInput(serializers.Serializer):
+    start = serializers.RegexField(r"^\d{2}:\d{2}$")
+    end = serializers.RegexField(r"^\d{2}:\d{2}$")
+
+
+class WeekInput(serializers.Serializer):
+    """Every day of the week: weekday (0 = Sunday) to its windows."""
+
+    days = serializers.DictField(child=serializers.ListField(child=WindowInput(), max_length=2))
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def week(request, consultant_id):
+    """The Pro's own week. GET reads it; POST replaces it whole."""
+    if not _owns(request, consultant_id):
+        return Response(refusal_body("forbidden", "That is not your practice."), status=403)
+    if request.method == "GET":
+        return Response({"days": services.week(consultant_id), "slot_minutes": services.SLOT_MINUTES})
+    serializer = WeekInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    parse = lambda s: datetime.strptime(s, "%H:%M").time()  # noqa: E731
+    try:
+        days = {int(d): [(parse(w["start"]), parse(w["end"])) for w in ws]
+                for d, ws in serializer.validated_data["days"].items()}
+        saved = services.set_week(consultant_id, days)
+    except ValueError as err:
+        return Response(refusal_body("bad_week", str(err)), status=400)
+    return Response({"days": saved, "slot_minutes": services.SLOT_MINUTES})
+
+
+class BlockInput(serializers.Serializer):
+    first = serializers.DateField()
+    last = serializers.DateField(required=False, allow_null=True)
+    reason = serializers.CharField(max_length=120, required=False, allow_blank=True)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def blocked(request, consultant_id):
+    """The Pro's days off to come; POST closes a day or a run of days."""
+    if not _owns(request, consultant_id):
+        return Response(refusal_body("forbidden", "That is not your practice."), status=403)
+    if request.method == "POST":
+        serializer = BlockInput(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            services.block_dates(consultant_id, data["first"], data.get("last") or data["first"],
+                                 data.get("reason"))
+        except ValueError as err:
+            return Response(refusal_body("bad_dates", str(err)), status=400)
+    return Response(services.blocked_dates(consultant_id))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def unblock(request, consultant_id, time_off_id):
+    if not _owns(request, consultant_id):
+        return Response(refusal_body("forbidden", "That is not your practice."), status=403)
+    services.unblock(consultant_id, time_off_id)
+    return Response(services.blocked_dates(consultant_id))
+
+
 # ── the caller's own consultant row (007's consultants_select_own) ───────────
 
 

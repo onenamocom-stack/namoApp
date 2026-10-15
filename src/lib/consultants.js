@@ -262,6 +262,59 @@ export async function setAvailability(id, weekday, slot, open) {
   }
 }
 
+/* ── The booking calendar: the week as windows (15 Oct 2026) ─────────────── */
+
+/** {weekday (0 = Sunday): [{from, to}]} — the Pro's own week, or null. */
+export async function loadWeek(id) {
+  const token = await accessToken()
+  try {
+    return (await api(`/consultants/${id}/week/`, { token })).days
+  } catch (err) {
+    console.error('[week] load failed:', err?.message)
+    return null
+  }
+}
+
+/** Replaces the whole week. `{ok, days}` or `{ok: false, reason}`. */
+export async function saveWeek(id, days) {
+  const token = await accessToken()
+  const body = { days: Object.fromEntries(Object.entries(days).map(([d, ws]) =>
+    [d, ws.map((w) => ({ start: w.from, end: w.to }))])) }
+  try {
+    return { ok: true, days: (await api(`/consultants/${id}/week/`, { method: 'POST', body, token })).days }
+  } catch (err) {
+    return { ok: false, reason: err?.message || 'Could not save the calendar.' }
+  }
+}
+
+export async function listBlocked(id) {
+  const token = await accessToken()
+  try {
+    return await api(`/consultants/${id}/blocked/`, { token })
+  } catch {
+    return null
+  }
+}
+
+/** Blocks `first` to `last` (YYYY-MM-DD, IST). `{ok, rows}` or `{ok: false, reason}`. */
+export async function blockDates(id, first, last) {
+  const token = await accessToken()
+  try {
+    return { ok: true, rows: await api(`/consultants/${id}/blocked/`, { method: 'POST', body: { first, last }, token }) }
+  } catch (err) {
+    return { ok: false, reason: err?.message || 'Could not block those dates.' }
+  }
+}
+
+export async function unblockDates(id, blockId) {
+  const token = await accessToken()
+  try {
+    return await api(`/consultants/${id}/blocked/${blockId}/remove/`, { method: 'POST', token })
+  } catch {
+    return null
+  }
+}
+
 /* ── Bookings ─────────────────────────────────────────────────────────────── */
 
 /** Every booking on this consultant, newest slot first — carrying the

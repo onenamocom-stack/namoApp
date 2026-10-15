@@ -1207,14 +1207,20 @@ cannot carry a status — the column grant does not include one.
 Requests with accept and decline, now real status writes rather than flag
 toggles: a second tap on Accept changes nothing, because the policy only allows
 the move *out of* pending. Confirmed sessions each get a channel button — chat
-opens the panel, live navigates to a room, call toasts. The availability grid
-below writes `consultant_availability`, one row per open cell, and reads what is
-taken from the same slots function the seeker's booking sheet calls.
+opens the panel, live navigates to a room, call toasts. Below, **Booking
+calendar** opens its own page (15 Oct 2026; it replaced the 7 × 6 grid).
 
-An availability grid of weekdays against times; tapping a cell toggles it closed.
-**The same booked-slots data the seeker's booking sheet reads** — except this
-screen applies it only on Thursday, so the two views already disagree. One
-endpoint fixes it.
+### `/pro/calendar` · `/dashboard/calendar`
+The booking calendar (Dashboard → Your practice → Booking calendar on the
+website). Monday to Sunday, each with a switch; on, a day shows its windows as
+From and To times, **+ New window** adds the second (two at most), × removes
+one. **Save calendar** sends the whole week (`POST /v1/consultants/<id>/week/`);
+the server turns each window into 20-minute starts (9:00 to 12:00 → 9:00 …
+11:40) and refuses three windows, a window under 20 minutes, or two that
+overlap. **Blocked dates**: a first and an optional last day, **Add blocked
+dates**, and the list to come with Remove (`/blocked/`). A booking already made
+stands whatever changes. The seeker's booking sheet offers the 20-minute slots
+on the day picked, minus blocked days and slots taken.
 
 ### `/pro/studio`
 Compose a reel, a photo or a blog post — the same Create post screen as Home's

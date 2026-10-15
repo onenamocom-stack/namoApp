@@ -34,6 +34,9 @@ urlpatterns = [
         views.set_availability,
         name="consultants-set-availability",
     ),
+    path("<uuid:consultant_id>/week/", views.week, name="consultants-week"),
+    path("<uuid:consultant_id>/blocked/", views.blocked, name="consultants-blocked"),
+    path("<uuid:consultant_id>/blocked/<uuid:time_off_id>/remove/", views.unblock, name="consultants-unblock"),
     path(
         "<uuid:consultant_id>/bookings/",
         views.consultant_bookings,

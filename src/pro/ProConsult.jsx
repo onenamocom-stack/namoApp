@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { timeSlots, weekDays } from '../data/mock.js'
 import { TabHeader } from '../components/Chrome.jsx'
 import { DeskHeader } from '../components/ProHeader.jsx'
 import { isPro } from '../side.js'
@@ -11,11 +10,7 @@ import { Segmented, firstName } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import {
   decideBooking,
-  listAvailability,
   listBookings,
-  nextDateFor,
-  openSlots,
-  setAvailability,
 } from '../lib/consultants.js'
 import { acceptChat, listSessions, subscribeToRequests } from '../lib/chat.js'
 
@@ -124,10 +119,6 @@ const CHANNELS = {
   call: { icon: 'phone', verb: 'Start call' },
 }
 
-/** `weekDays` starts on Monday; the `weekday` column is Postgres `dow`, which
- *  starts on Sunday. One conversion, in one place. */
-const dowOf = (index) => (index + 1) % 7
-
 const hhmm = (iso) =>
   new Date(iso).toLocaleTimeString('en-IN', {
     hour: '2-digit',
@@ -174,25 +165,7 @@ function Sessions({ me, rows, bookings, reload }) {
     showToast(`Live · ${res.minutes_held} min held`)
     openChat('live', res.thread_id ?? null)
   }
-  const [dayIndex, setDayIndex] = useState(0)
-  const [rules, setRules] = useState([])
-  const [open, setOpen] = useState(null)
   const [busy, setBusy] = useState(null)
-
-  const day = weekDays[dayIndex]
-  const dow = dowOf(dayIndex)
-  const date = nextDateFor(dow)
-
-  const loadGrid = useCallback(() => {
-    if (!me) return
-    listAvailability(me).then(setRules)
-    setOpen(null)
-    openSlots(me, date).then(setOpen)
-  }, [me, date])
-
-  useEffect(() => {
-    loadGrid()
-  }, [loadGrid])
 
   /* Chat opens the panel; a call is the one stub. A `live` mode used to
      navigate to a hardcoded `/live/l1`, which outlived the room it pointed
@@ -219,7 +192,6 @@ function Sessions({ me, rows, bookings, reload }) {
         : `Declined · ${firstName(b.seeker_name)}`,
     )
     reload()
-    loadGrid()
   }
 
   const pending = bookings.filter((b) => b.status === 'pending')
@@ -360,60 +332,12 @@ function Sessions({ me, rows, bookings, reload }) {
         </ul>
       </section>
 
-      {/* ── Availability ───────────────────────────────────────────────────
-          Tapping a cell is one INSERT or one DELETE against
-          `consultant_availability`. What is already taken comes from
-          `consultant_open_slots` — the same call the seeker's booking sheet
-          makes, on the same date. There is no longer a rule here to disagree
-          with, which is what the old `day === 'Thu'` guard was. */}
+      {/* ── Availability: the booking calendar, its own page since 15 Oct
+          2026 (Rahul) — the week as windows, 20-minute bookings. */}
       <section className="border-b border-rule px-5 py-6">
-        <Kicker>Availability</Kicker>
+        <Kicker action="Open" to={proPath('/pro/calendar')}>Booking calendar</Kicker>
         <p className="mt-2 text-meta t-body">
-          Tap to open or close a slot. Struck-through slots are taken or already past, and cannot
-          be pulled.
-        </p>
-
-        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto">
-          {weekDays.map((d, i) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={dayIndex === i}
-              onClick={() => setDayIndex(i)}
-              className="pill caps-sm flex-none"
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {timeSlots.map((t) => {
-            const isRule = rules.some((r) => r.weekday === dow && r.slot === t)
-            // Open on paper but not on offer: someone has it, or it has been.
-            const gone = isRule && open !== null && !open.some((o) => o.slot === t)
-            return (
-              <button
-                key={t}
-                type="button"
-                disabled={gone || open === null}
-                aria-pressed={isRule && !gone}
-                onClick={async () => {
-                  const ok = await setAvailability(me, dow, t, !isRule)
-                  if (!ok) return showToast('Could not change that slot.')
-                  showToast(isRule ? `${day} ${t} closed` : `${day} ${t} open`)
-                  loadGrid()
-                }}
-                className="pill caps-sm justify-center tnum"
-              >
-                {gone ? <s>{t}</s> : t}
-              </button>
-            )
-          })}
-        </div>
-
-        <p className="mt-4 caps-sm t-faint">
-          {open === null ? 'Checking' : `${open.length} open on ${day}`}
+          Set your hours each day of the week. Customers book 20 minutes inside them.
         </p>
       </section>
 

@@ -79,13 +79,15 @@ export default function Dashboard() {
                     : 'Not set yet'
                 }
               />
+              {/* The week as windows, 20-minute bookings (15 Oct 2026, Rahul). */}
+              <Row to="/dashboard/calendar" title="Booking calendar" note="Your hours each day, 20-minute bookings" />
               <Row to="/dashboard/payout-details" title="Payout details" note="PAN and bank account" />
             </div>
           </section>
           <section className="px-5 pb-8">
             <Kicker>Calls and chats</Kicker>
             <div className="mt-2">
-              <Row to="/desk" title="Namo Consult" note="Go online, take calls and chats, set your slots" />
+              <Row to="/desk" title="Namo Consult" note="Go online, take calls and chats" />
             </div>
           </section>
         </>
