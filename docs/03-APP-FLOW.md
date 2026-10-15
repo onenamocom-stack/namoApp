@@ -774,18 +774,25 @@ the server: a ten-minute link to an owner, else the Paywall opens on the
 page), *Open PDF* once the link is in hand. An id that matches nothing:
 "This download is no longer here", with the way back.
 
-### A course's and an event's pages — designed, not reachable (15 Oct 2026, Rahul)
+### `/shop/l/:id` — a seller's listing (15 Oct 2026, Phase 17)
 
-`src/screens/ListingPage.jsx`, `CoursePage` and `EventPage`, wait for the
-listings (`docs/06` Phase 17); nothing links to them, and a development
-build alone renders them with sample data at `/shop/preview/course` and
-`/shop/preview/event`.
+`src/screens/ListingPage.jsx`. A download, course or event a Pro or a
+Creator listed and an admin approved (a product listing opens its shop
+product page). The Market's Downloads tile and strip carry sellers'
+downloads beside Namo's books; Events and Courses stop saying *Soon* once
+one is listed, and show theirs as a strip on All and a grid on the tile.
+One button at the foot: free is taken, paid opens Razorpay; once yours,
+*Start* (the lessons play in place), *Join* (the link shows on the page),
+or *Download* (a ten-minute link). Not live yet: an unknown id says it is
+no longer on the Market.
 
 - **Course:** the trailer; Course chip, name, *By* the teacher and tick,
   price with MRP; three facts — lessons and hours of video, language, yours
   to keep; *What you will learn*; *Lessons*, numbered with minutes, the
   first a *Free preview*; *About the teacher*. At the foot: the price, "One
   payment. Every lesson.", **Enroll**.
+- **Download:** the cover, the file's type and size, What you get, About,
+  the seller.
 - **Event:** the banner with the date as a calendar leaf and *Online*;
   Event chip, name, host, price with MRP; three facts — day and time,
   online (link after booking), seats left of the total, and "Only N seats
@@ -1964,3 +1971,24 @@ message brings it back, from that message on. Hold a message you sent in a
 conversation: **Delete message** deletes it for both people; each sees
 "This message was deleted" in its place (the other person on their next
 open of the conversation). Nobody deletes another person's message.
+
+### `/dashboard/market` — Sell on the Market (15 Oct 2026, Phase 17)
+
+A Pro or a Creator (Dashboard → *Sell on the Market*, or *Add a listing* on
+their profile's Shop tab). Market earnings after Namo's share — earned, due,
+paid, the next 7th — and where the money goes (a Pro: Payout details; a
+Creator: `/dashboard/market/bank`, account or UPI and PAN). *Add a listing*:
+Download, Course, Event or Product → `/dashboard/market/new/:kind`: cover
+(16:9), name, price (0 free; not for a product), MRP, description, and the
+file; or the language and lessons (each a video or PDF, the first a free
+preview); or the start, length, seats and joining link; or the category,
+stock to send and packed weight. The form shows what Namo keeps and what the
+seller gets. *Send for approval*. Their listings, each Live, Waiting for
+approval or Needs a change (with the admin's note): Edit (back to approval),
+See it, Remove. Then their sales.
+
+**Shop tab on profiles:** a Pro's page (`ConsultantPage`) has *Shop* after
+Posts when they sell something, and always on their own page; a Creator's
+own Profile has a Shop tab; anybody's `/u/:id` shows *For sale* above the
+posts when there is something.
+

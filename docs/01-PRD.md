@@ -387,12 +387,12 @@ requested capability with **no upload path in the app today**.
 
 E-books are free unless priced; the first priced one is **₹99** (§4.11).
 
-**Proposed, not approved (14 Oct 2026, Rahul):** the Market sells four
-kinds — Downloads (PDF, e-book), Courses, Events and Products — and Pros
-and Creators list their own, each shown only after an admin approves it.
-Paid through the gateway, never the wallet; the seller is paid out less
-Namo's commission. It moves money to sellers, so it waits for the owner's
-yes. Rahul's terms (15 Oct 2026), not yet the owner's:
+**Pros and Creators sell (owner's yes 15 Oct 2026, on Rahul's terms):** the
+Market sells four kinds — Downloads (any file: a PDF, an e-book, a tool in a
+zip, audio, video), Courses, Events and Products — and Pros and Creators
+list their own, each shown only after an admin approves it; an edit goes
+back for approval. Paid through the gateway, never the wallet; a free one is
+simply taken. The seller is paid out less Namo's commission:
 
 - **Commission:** Products **20%** plus **₹100** for delivery, taken from
   the seller's share (delivery is free to the buyer); Downloads, Courses and
@@ -402,9 +402,14 @@ yes. Rahul's terms (15 Oct 2026), not yet the owner's:
   the buyer.
 - **Payouts:** monthly, every seller in one run, on the **7th** for the
   previous month's sales.
-- **Events:** online only for now.
+- **Events:** online only for now; the joining link shows to the people who
+  booked, and a full or finished event sells no more seats.
+- **Downloads and courses:** the file and the lessons are private; a buyer
+  opens a ten-minute link. A course's first lesson is a free preview.
+- **Earnings:** written when a download, course or event is paid, and when a
+  product is **delivered** (so a return costs the seller nothing paid).
 
-The plan is `docs/06` Phase 17.
+Built: `docs/06` Phase 17.
 
 ### 4.8 Wallet
 

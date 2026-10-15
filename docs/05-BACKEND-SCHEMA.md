@@ -2213,3 +2213,40 @@ Phase 15c, migration `appearance/0003`. RLS on with **no policies**.
 
 `GET /v1/appearance/` carries `frames`: the live ones with a picture, as
 `{id, name, image_url}`.
+
+## The Market's sellers — `market_listings`, `market_purchases`, `market_earnings`, `market_payouts`, `market_seller_banks` (15 Oct 2026)
+
+Migration `market/0001`, RLS on with no policies (API only). Rules in
+`docs/01` §4.7.
+
+- **`market_listings`** — `seller_id` (profiles), `kind` (download · course ·
+  event · product), `title`, `description`, `cover_url` (16:9),
+  `price_paise` (≥ 0; 0 is free, never for a product), `mrp_paise` (null or
+  above the price), `status` (pending · approved · rejected · withdrawn),
+  `review_note`, `commission_bps` (null takes the kind's default; 0–10000),
+  then per kind: `file_asset_id`, `file_name`, `file_size` (download);
+  `lessons` jsonb `[{title, minutes, asset_id, preview}]`, `language`
+  (course); `starts_at`, `duration_minutes`, `seats`, `join_url` (event);
+  `category_name`, `stock`, `weight_grams`, `product_id` (product — the shop
+  row approval makes); `reviewed_at`, `reviewed_by`. Index on (status,
+  kind, created_at desc).
+- **`market_purchases`** — one person's access to one download, course or
+  event: `listing_id`, `buyer_id`, `amount_paise` (0 when free); unique
+  (listing, buyer). A paid one also has its `entitlements` row (sku
+  `listing`, ref the listing id).
+- **`market_earnings`** — append-only, one per sale: `seller_id`,
+  `listing_id`, `purchase_id` (unique) or `order_item_id` (unique, a shop
+  line), `gross_paise`, `commission_bps`, `commission_paise`,
+  `delivery_paise`, `net_paise`; CHECK net = gross − commission − delivery;
+  `payout_id` set once by the run.
+- **`market_payouts`** — one per seller per month (`month` the 1st it pays
+  for; unique with `seller_id`), `amount_paise` > 0, `status` (due · paid),
+  `reference` (the bank's UTR), `paid_at`, `paid_by`.
+- **`market_seller_banks`** — a Creator's payout account, keyed by profile:
+  `account_holder`, `account_cipher` and `pan_cipher` (Fernet, the
+  `payout_details` key), `account_last4`, `pan_last4`, `ifsc`, `upi_id`. A
+  Pro's is `payout_details`.
+
+Also: `media_assets.kind` gains `download` (private bucket, up to 500 MB;
+`media/0003`), and `entitlements.sku` gains `listing` (`wallet/0005`).
+

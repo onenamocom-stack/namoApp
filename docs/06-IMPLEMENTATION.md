@@ -570,12 +570,12 @@ from Dashboard; an old pro.1namo.com link lands on the same screen.
 
 ---
 
-## Phase 17 — The Market: Pros and Creators sell (proposed 14 Oct 2026, awaiting the owner)
+## Phase 17 — The Market: Pros and Creators sell (owner's yes 15 Oct 2026)
 
-**Not approved.** Rahul's proposal; it touches payments, commission and
-payouts, so nothing goes live without the owner's yes. Step 1 is done and
-live: Shop and Academy are one Market page, with Courses and Events as
-"Soon" tiles (`docs/03` Market).
+Approved by the owner on 15 Oct ("2 yes") on Rahul's terms (`docs/01`
+§4.7). Step 1 is live: Shop and Academy are one Market page. Step 2a is
+live: e-books through Razorpay. Steps 2b–2d are built (15 Oct, app
+`apps/market`) and wait for "ship" and their migrations.
 
 - **Step 2a — e-books through the gateway.** A priced e-book is paid in
   Razorpay's checkout, as a product is, not from the wallet (Rahul, 14 Oct:
@@ -589,10 +589,17 @@ live: Shop and Academy are one Market page, with Courses and Events as
 - **Step 2d — money.** The buyer pays by gateway; the seller's share, less
   commission, joins the payout run (Phase 12).
 
-**Terms:** Rahul answered the four decisions on 15 Oct (`docs/01` §4.7):
-the commission per kind with an admin override, Namo ships, monthly payouts,
-online events; the ₹100 comes from the seller, payouts on the 7th.
-**Blocking going live:** the owner's yes.
+**Built (15 Oct):** listing from Dashboard → Sell on the Market; the
+console's Listings queue (approve with an optional commission %, or reject
+with a note); a product becomes a shop row; gateway purchases through the
+wallet's `listing` sku; seller earnings (`market_earnings`); the payout run
+on the 7th (`market_payouts`, made when Finance opens the list, or
+`manage.py market_payouts`); a Creator's bank account. Tests
+`tests/test_market.py` (22).
+
+**Not built:** where a seller sends product stock (Fulfilment tells them by
+hand); refunds of a seller's sale (by hand, as a shop return is); a joining
+link sent as a notification before an event (it shows on the page).
 
 **Done when:** a Creator lists a paid PDF, an admin approves it, a buyer
 pays by gateway and opens it, and the Creator's share appears in their
