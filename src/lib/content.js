@@ -129,13 +129,25 @@ function shape(row) {
     time: ago(row.published_at),
     // Shop products the author tagged, and the author's A code for the link.
     // Defaulted, not assumed: an API deployed before tagging sends neither.
-    products: (row.products ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      image: p.image_url || null,
-      price: p.price_paise / 100,
-      mrp: p.mrp_paise ? p.mrp_paise / 100 : null,
-    })),
+    products: [
+      ...(row.products ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: p.image_url || null,
+        price: p.price_paise / 100,
+        mrp: p.mrp_paise ? p.mrp_paise / 100 : null,
+      })),
+      // Market listings tagged on the post (15 Oct 2026), in the same strip.
+      ...(row.listings ?? []).map((x) => ({
+        id: x.id,
+        listing: true,
+        kind: x.kind,
+        name: x.title,
+        image: x.cover_url || null,
+        price: x.price_paise / 100,
+        mrp: x.mrp_paise ? x.mrp_paise / 100 : null,
+      })),
+    ],
     shopRef: row.shop_ref ?? null,
     // The group it was posted in, `{id, name}`, or null (Phase 15c).
     group: row.group ?? null,
@@ -151,6 +163,7 @@ function shape(row) {
 export function productHref(product, shopRef) {
   // The product's own page since 6 Oct 2026, the author's code carried.
   const q = shopRef ? `?${new URLSearchParams({ ref: shopRef })}` : ''
+  if (product.listing) return `/shop/l/${product.id}${q}`
   return `/shop/p/${encodeURIComponent(product.slug || product.id)}${q}`
 }
 
@@ -430,7 +443,7 @@ export async function fetchOne(contentId) {
 
 /** Change your own post, reel or blog (6 Oct 2026). Only the fields given
  *  are sent; `productIds`, when given, replaces the tags. */
-export async function editContent(id, { title, body, caption, mediaUrl, productIds } = {}) {
+export async function editContent(id, { title, body, caption, mediaUrl, productIds, listingIds } = {}) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in first')
   const payload = {}
@@ -439,6 +452,7 @@ export async function editContent(id, { title, body, caption, mediaUrl, productI
   if (caption !== undefined) payload.caption = caption
   if (mediaUrl !== undefined) payload.media_url = mediaUrl
   if (productIds !== undefined) payload.product_ids = productIds
+  if (listingIds !== undefined) payload.listing_ids = listingIds
   return api(`/content/${id}/edit/`, { method: 'POST', token, body: payload })
 }
 
@@ -477,7 +491,7 @@ export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
  * an identity at all (rule 3). The kind gate's refusal arrives with the
  * same sentence the old 42501 mapping produced.
  */
-export async function publish({ kind, title, body, caption, mediaUrl, productIds = [], groupId = null }) {
+export async function publish({ kind, title, body, caption, mediaUrl, productIds = [], listingIds = [], groupId = null }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to publish')
 
@@ -492,6 +506,7 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
       // Only sent when there are some, so a post from an ordinary account
       // is byte-identical to the request it made before tagging existed.
       ...(productIds.length ? { product_ids: productIds } : {}),
+      ...(listingIds.length ? { listing_ids: listingIds } : {}),
       // Into a group the author is a member of (Phase 15c).
       ...(groupId ? { group_id: groupId } : {}),
     },

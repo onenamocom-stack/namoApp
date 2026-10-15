@@ -10,6 +10,7 @@ import RichText from '../components/RichText.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import { access, get, listing as fetchListing, previewLesson } from '../lib/market.js'
 import { useStore } from '../store.jsx'
+import { PickBar, SharerBar } from '../components/TagPick.jsx'
 
 /**
  * A seller's listing, `/shop/l/:id` (15 Oct 2026, Phase 17): a download, a
@@ -100,6 +101,8 @@ function Cover({ l, children }) {
 function Head({ l, kindLabel }) {
   const { t } = useStore()
   return (
+    <>
+    <PickBar />
     <section className="px-5 pt-5">
       <span className="pill caps-sm">{kindLabel}</span>
       <h1 className="mt-3 text-title t-heading">{l.title}</h1>
@@ -113,6 +116,9 @@ function Head({ l, kindLabel }) {
         <MarketPrice price={l.price_paise / 100} mrp={l.mrp_paise ? l.mrp_paise / 100 : null} free={t('ac.free')} />
       </div>
     </section>
+    {/* A Pro's or a Creator's Tag and Link (15 Oct 2026, Rahul). */}
+    <SharerBar product={l} />
+    </>
   )
 }
 

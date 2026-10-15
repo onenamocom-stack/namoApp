@@ -380,7 +380,7 @@ export default function Shop() {
         ) : !soonFor(special) ? (
           <MarketSection title={t(special.label)}>
             {ofKind(KIND_OF[special.key]).map((row) => (
-              <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} />
+              <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} corner={<CardCorner product={row} />} />
             ))}
           </MarketSection>
         ) : (
@@ -474,7 +474,7 @@ export default function Shop() {
             ofKind(kind).length ? (
               <MarketSection key={key} title={t(marketOf(key).label)} seeAll={t('a.seeAll')} onSeeAll={() => setCat(key)} strip>
                 {ofKind(kind).slice(0, STRIP_MAX).map((row) => (
-                  <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} />
+                  <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} corner={<CardCorner product={row} />} />
                 ))}
               </MarketSection>
             ) : null,

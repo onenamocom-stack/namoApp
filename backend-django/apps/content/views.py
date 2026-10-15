@@ -34,6 +34,8 @@ class PublishInput(serializers.Serializer):
     product_ids = serializers.ListField(
         child=serializers.UUIDField(), required=False, default=list
     )
+    # Market listings to tag (15 Oct 2026): downloads, courses, events.
+    listing_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
     # Post into a group you are a member of (Phase 15c).
     group_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
@@ -46,6 +48,7 @@ class EditInput(serializers.Serializer):
     caption = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     media_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     product_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+    listing_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
 
 
 class FeedQuery(serializers.Serializer):
@@ -91,6 +94,18 @@ def _public_row(row):
                 "mrp_paise": p.mrp_paise,
             }
             for p in getattr(row, "_products", [])
+        ],
+        # Tagged Market listings (15 Oct 2026); the same code carries.
+        "listings": [
+            {
+                "id": str(x.id),
+                "kind": x.kind,
+                "title": x.title,
+                "cover_url": x.cover_url,
+                "price_paise": x.price_paise,
+                "mrp_paise": x.mrp_paise,
+            }
+            for x in getattr(row, "_listings", [])
         ],
         "shop_ref": getattr(row, "_shop_ref", None),
     }
@@ -220,6 +235,7 @@ def publish(request):
         media_url=data["media_url"],
         status=data["status"],
         product_ids=data["product_ids"],
+        listing_ids=data["listing_ids"],
         group_id=data["group_id"],
     )
     return Response({"id": str(row.id)}, status=201)
@@ -233,9 +249,10 @@ def edit(request, content_id):
     serializer.is_valid(raise_exception=True)
     data = dict(serializer.validated_data)
     product_ids = data.pop("product_ids", None)
+    listing_ids = data.pop("listing_ids", None)
     row = services.edit_content(
         content_id, request.user.pk, getattr(request.user, "role", ""),
-        product_ids=product_ids, **data,
+        product_ids=product_ids, listing_ids=listing_ids, **data,
     )
     return Response({"ok": True, "id": str(row.id)})
 

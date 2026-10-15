@@ -269,3 +269,56 @@ class TestBank:
         assert got["account_last4"] == "9012" and got["pan_last4"] == "234F"
         with pytest.raises(services.Refused):
             services.save_bank(CREATOR, {"account_holder": "Asha", "account_number": "12", "ifsc": "x"})
+
+
+@pytest.mark.django_db
+class TestTagsAndLinks:
+    """A Pro or a Creator tags a listing on a post and shares a link to it
+    (15 Oct 2026, Rahul). The buyer a link brings is recorded on the
+    purchase; nothing is paid on it until the rate is decided."""
+
+    def test_a_post_tags_a_listing_and_carries_the_code(self, creator):
+        from apps.content import services as content
+
+        row = _approved()
+        post = content.publish_content(CREATOR, "", kind="post", caption="Read this", listing_ids=[row.id])
+        [got] = content.attach_products(list(content.public_content().filter(pk=post.pk)))
+        assert [x.id for x in got._listings] == [row.id] and got._shop_ref
+
+    def test_three_tags_at_most_counting_both(self, creator):
+        from rest_framework.exceptions import ValidationError
+
+        from apps.content import services as content
+
+        rows = [_approved() for _ in range(4)]
+        with pytest.raises(ValidationError):
+            content.publish_content(CREATOR, "", kind="post", caption="x", listing_ids=[r.id for r in rows])
+
+    def test_a_seeker_cannot_tag(self, creator):
+        from rest_framework.exceptions import PermissionDenied
+
+        from apps.content import services as content
+
+        Profile.objects.create(id=NOBODY, phone="9000000c2", name="Seeker")
+        with pytest.raises(PermissionDenied):
+            content.publish_content(NOBODY, "", kind="post", caption="x", listing_ids=[_approved().id])
+
+    def test_the_link_opens_the_listing(self, creator, settings):
+        from apps.referrals import services as referrals
+
+        settings.APP_PUBLIC_URL = "https://1namo.com"
+        row = _approved()
+        link = referrals.affiliate_link(CREATOR, listing_id=row.id)
+        assert link["url"].startswith(f"https://1namo.com/shop/l/{row.id}?ref=")
+
+    def test_the_buyer_a_link_brought_is_recorded(self, creator):
+        from apps.referrals import services as referrals
+        from apps.referrals.models import CodeKind
+
+        Profile.objects.create(id=NOBODY, phone="9000000c2", name="A Pro")
+        code = referrals.code_for(NOBODY, CodeKind.CONSULTANT).code
+        with mock.patch("apps.referrals.services.may_share", return_value=True):
+            referrals.record_visit(TEST_USER, code)
+        row = _approved(price=0)
+        services.take_free(TEST_USER, row.id)
+        assert Purchase.objects.get(buyer_id=TEST_USER).referrer_id == NOBODY

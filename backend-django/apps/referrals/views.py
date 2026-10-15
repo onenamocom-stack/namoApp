@@ -69,6 +69,7 @@ def claim(request):
 
 class LinkInput(serializers.Serializer):
     product_id = serializers.UUIDField(required=False, allow_null=True)
+    listing_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 @api_view(["POST", "GET"])
@@ -97,7 +98,8 @@ def affiliate_link(request):
     serializer.is_valid(raise_exception=True)
     return Response(
         services.affiliate_link(
-            request.user.pk, serializer.validated_data.get("product_id")
+            request.user.pk, serializer.validated_data.get("product_id"),
+            serializer.validated_data.get("listing_id"),
         )
     )
 

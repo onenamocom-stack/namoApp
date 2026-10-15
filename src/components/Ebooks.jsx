@@ -6,6 +6,7 @@ import Plate from './Plate.jsx'
 import BhaktiActions from './BhaktiActions.jsx'
 import { Kicker, PopButton, PopCard } from './Pop.jsx'
 import { useNavigate } from 'react-router-dom'
+import { CardCorner } from './TagPick.jsx'
 import { ListingCard, MarketCard, MarketPrice, MarketSection } from './MarketCard.jsx'
 import { rupees, useStore } from '../store.jsx'
 
@@ -55,7 +56,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
     return (
       <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore} strip>
         {extra.map((row) => (
-          <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} />
+          <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} corner={<CardCorner product={row} />} />
         ))}
         {shown.map((d) => (
           <MarketCard
@@ -85,7 +86,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
   const sellers = extra.length ? (
     <MarketSection title="From Pros and Creators">
       {extra.map((row) => (
-        <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} />
+        <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => navigate(`/shop/l/${row.id}`)} corner={<CardCorner product={row} />} />
       ))}
     </MarketSection>
   ) : null

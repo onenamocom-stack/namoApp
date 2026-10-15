@@ -213,7 +213,7 @@ export default function Composer({
         const changes = {
           ...fields,
           mediaUrl: media?.url ?? null,
-          ...(tagProducts ? { productIds: tagged.map((p) => p.id) } : {}),
+          ...(tagProducts ? { productIds: tagged.filter((p) => !p.listing).map((p) => p.id), listingIds: tagged.filter((p) => p.listing).map((p) => p.id) } : {}),
         }
         await editContent(editing.id, changes)
         showToast('Saved')
@@ -223,7 +223,8 @@ export default function Composer({
       await publish({
         kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
         mediaUrl: media?.url,
-        productIds: tagProducts ? tagged.map((p) => p.id) : [],
+        productIds: tagProducts ? tagged.filter((p) => !p.listing).map((p) => p.id) : [],
+        listingIds: tagProducts ? tagged.filter((p) => p.listing).map((p) => p.id) : [],
         groupId,
         ...fields,
       })
@@ -378,7 +379,7 @@ export default function Composer({
           </>
         )}
 
-        {tagProducts && tagging && <ProductPicker tagged={tagged} onChange={setTagged} />}
+        {tagProducts && tagging && <ProductPicker tagged={tagged} onChange={setTagged} search={!pickFromMarket} onMore={openTags} />}
       </div>
 
       {/* The toolbar: pinned to the bottom of the sheet, as Facebook's is. */}
@@ -491,7 +492,7 @@ function PenGlyph() {
  * with this consultant's code, so the tag earns the same 10% a link from
  * "Your links" does; the note under the field says so.
  */
-function ProductPicker({ tagged, onChange }) {
+function ProductPicker({ tagged, onChange, search = true, onMore = null }) {
   const [all, setAll] = useState(null)
   const [query, setQuery] = useState('')
   const [supported, setSupported] = useState(null)
@@ -541,16 +542,24 @@ function ProductPicker({ tagged, onChange }) {
               type="button"
               onClick={() => onChange(tagged.filter((t) => t.id !== p.id))}
               aria-label={`Remove ${p.name}`}
-              className="pill"
+              className="pill max-w-full"
               data-active="true"
             >
-              {p.name} <span aria-hidden="true">×</span>
+              {/* One line, cut at the screen's edge (15 Oct 2026, Rahul). */}
+              <span className="min-w-0 truncate">{p.name}</span> <span aria-hidden="true" className="flex-none">×</span>
             </button>
           ))}
         </div>
       )}
 
-      {!full && (
+      {/* Tag opens the Market now (15 Oct 2026, Rahul): no list here, only
+          the way back to it. Editing a post and the pro app keep the search. */}
+      {!search && !full && onMore && (
+        <button type="button" onClick={onMore} className="pill caps-sm mt-3">
+          + Tag more from the Market
+        </button>
+      )}
+      {search && !full && (
         <>
           <input
             value={query}

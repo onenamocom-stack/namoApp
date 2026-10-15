@@ -40,14 +40,15 @@ export function PickBar() {
   )
 }
 
-async function shareLink(productId, name, showToast) {
-  const built = await affiliateLink(productId)
+async function shareLink(item, name, showToast) {
+  const isListing = item.title !== undefined && item.price_paise !== undefined
+  const built = await affiliateLink(isListing ? null : item.id, isListing ? item.id : null)
   if (!built?.url) return showToast('Could not make your link. Try again.')
   try {
     if (navigator.share) await navigator.share({ title: name, text: name, url: built.url })
     else {
       await navigator.clipboard.writeText(built.url)
-      showToast('Your link is copied. You earn on what it sells.')
+      showToast(isListing ? 'Your link is copied.' : 'Your link is copied. You earn on what it sells.')
     }
   } catch {
     /* dismissed */
@@ -102,12 +103,16 @@ export function SharerBar({ product }) {
       </button>
       <button
         type="button"
-        onClick={() => shareLink(product.id, product.name, showToast)}
+        onClick={() => shareLink(product, product.name || product.title, showToast)}
         className="flex items-center justify-center gap-2 rounded-xl border border-gold-fill py-2.5 caps-sm gold"
       >
         <Icon name="share" size={15} /> My link
       </button>
-      <p className="col-span-2 text-center text-micro t-faint">Only you see these. You earn on what your link or tag sells.</p>
+      {/* A listing earns its sharer nothing yet: the rate is being set
+          (Rahul, 15 Oct 2026). Only a shop product says it pays. */}
+      <p className="col-span-2 text-center text-micro t-faint">
+        {product.price_paise !== undefined ? 'Only you see these.' : 'Only you see these. You earn on what your link or tag sells.'}
+      </p>
     </div>
   )
 }
@@ -144,7 +149,7 @@ export function CardCorner({ product }) {
       aria-label="Copy my link"
       onClick={(e) => {
         e.stopPropagation()
-        shareLink(product.id, product.name, showToast)
+        shareLink(product, product.name || product.title, showToast)
       }}
       className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-ink shadow-md"
     >

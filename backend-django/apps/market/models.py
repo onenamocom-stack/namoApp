@@ -114,6 +114,10 @@ class Purchase(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.PROTECT, related_name="purchases")
     buyer_id = models.UUIDField(db_index=True)
     amount_paise = models.IntegerField()
+    # Whose link or tag brought the buyer (15 Oct 2026, Rahul): the Pro or
+    # Creator holding them (referrals.live_visit), recorded only — what a
+    # sharer earns on a listing is not decided, so nothing is paid on it.
+    referrer_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -206,3 +210,19 @@ class SellerBank(models.Model):
 
     class Meta:
         db_table = "market_seller_banks"
+
+
+class ListingTag(models.Model):
+    """A listing tagged on a post or reel (15 Oct 2026, Rahul), as a shop
+    product is (content.ContentProduct): set by a Pro or a Creator, at most
+    three tags a post counting products, shown while the listing is live."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content_id = models.UUIDField(db_index=True)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="tags")
+    sort = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "market_listing_tags"
+        constraints = [models.UniqueConstraint(fields=["content_id", "listing"], name="market_listing_tags_once")]
+

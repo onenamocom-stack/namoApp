@@ -2250,3 +2250,9 @@ Migration `market/0001`, RLS on with no policies (API only). Rules in
 Also: `media_assets.kind` gains `download` (private bucket, up to 500 MB;
 `media/0003`), and `entitlements.sku` gains `listing` (`wallet/0005`).
 
+`market/0002` (15 Oct 2026): **`market_listing_tags`** (`content_id`,
+`listing_id`, `sort`; unique pair; RLS on, no policies) — a listing tagged on
+a post, counted with `content_products` against the three-tag limit — and
+`market_purchases.referrer_id` (nullable): the Pro or Creator whose link or
+tag held the buyer (`referrals.live_visit`), recorded only.
+

@@ -258,7 +258,7 @@ def may_share(profile_id):
     return consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
 
 
-def affiliate_link(consultant_id, product_id=None):
+def affiliate_link(consultant_id, product_id=None, listing_id=None):
     """A link the consultant can paste anywhere, with their code in it.
 
     The code IS the coupon — there is no second identifier to track,
@@ -277,11 +277,18 @@ def affiliate_link(consultant_id, product_id=None):
     # Old /shop?p=…&ref=… links still work: the app catches `ref` anywhere.
     product = Product.objects.filter(pk=product_id).first() if product_id else None
     path = f"/shop/p/{product.slug or product.id}" if product else "/shop"
+    # A Market listing opens its own page (15 Oct 2026).
+    if listing_id and not product:
+        from apps.market.models import Listing
+
+        if Listing.objects.filter(pk=listing_id).exists():
+            path = f"/shop/l/{listing_id}"
     url = f"{base}{path}?ref={code.code}"
     return {
         "code": code.code,
         "url": url,
         "product_id": str(product_id) if product_id else None,
+        "listing_id": str(listing_id) if listing_id else None,
         "share_text": (
             "I use this one. Your first order on NAMO comes with cashback in "
             f"your wallet: {url}"

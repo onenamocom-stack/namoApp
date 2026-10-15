@@ -51,6 +51,11 @@ export function pickState() {
 
 /** The fields a tag needs: what the composer's chips and the feed card read. */
 function slim(p) {
+  // A Market listing (an API row: title, cover_url, price_paise).
+  if (p.kind && p.title !== undefined && p.price_paise !== undefined) {
+    return { id: p.id, listing: true, kind: p.kind, name: p.title, image: p.cover_url || null,
+      price: p.price_paise / 100, mrp: p.mrp_paise ? p.mrp_paise / 100 : null }
+  }
   return { id: p.id, slug: p.slug ?? null, name: p.name, subtitle: p.subtitle ?? '', image: p.image ?? null,
     price: p.price, mrp: p.mrp ?? null, category: p.category ?? null, categories: p.categories ?? [] }
 }

@@ -15,7 +15,8 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
-from .models import Listing, ListingKind, ListingStatus, Purchase, SellerBank, SellerEarning, SellerPayout
+from .models import (Listing, ListingKind, ListingStatus, ListingTag, Purchase, SellerBank, SellerEarning,
+                     SellerPayout)
 
 logger = logging.getLogger(__name__)
 
@@ -323,8 +324,21 @@ def take_free(profile_id, listing_id):
         raise Refused("That one is paid.", status=402)
     if not _can_buy(listing):
         raise Refused("That is closed: no seats left, or it is over.")
-    Purchase.objects.get_or_create(listing=listing, buyer_id=profile_id, defaults={"amount_paise": 0})
+    Purchase.objects.get_or_create(listing=listing, buyer_id=profile_id,
+                                   defaults={"amount_paise": 0, "referrer_id": _referrer(profile_id, listing)})
     return listing
+
+
+def _referrer(buyer_id, listing):
+    """The Pro or Creator whose link or tag holds this buyer now, if any
+    and not the seller themselves. Recorded on the purchase; nothing is paid
+    on it until what a sharer earns on a listing is decided (Rahul, 15 Oct)."""
+    from apps.referrals import services as referrals
+
+    visit = referrals.live_visit(buyer_id)
+    if visit is None or str(visit.consultant_id) in (str(listing.seller_id), str(buyer_id)):
+        return None
+    return visit.consultant_id
 
 
 def on_listing_paid(profile_id, ref, amount_paise):
@@ -332,7 +346,8 @@ def on_listing_paid(profile_id, ref, amount_paise):
     its transaction): the purchase and the seller's share, together."""
     listing = Listing.objects.get(pk=ref)
     purchase, made = Purchase.objects.get_or_create(
-        listing=listing, buyer_id=profile_id, defaults={"amount_paise": amount_paise})
+        listing=listing, buyer_id=profile_id,
+        defaults={"amount_paise": amount_paise, "referrer_id": _referrer(profile_id, listing)})
     if not made:
         return
     commission, delivery, net = split(listing, amount_paise)
@@ -626,3 +641,42 @@ def _notify(profile_id, kind, title, body, listing):
 
 def first_of_month(d: date):
     return d.replace(day=1)
+
+
+# ── tags on posts (15 Oct 2026, Rahul) ─────────────────────────────────────
+
+
+def checked_tags(listing_ids, already=0, limit=3):
+    """The live listings a post may carry, in the author's order; refuses
+    rather than trims, as the products' check does. `already` counts the
+    post's product tags against the same limit."""
+    from rest_framework.exceptions import ValidationError
+
+    ids = list(dict.fromkeys(str(i) for i in listing_ids or []))
+    if not ids:
+        return []
+    if already + len(ids) > limit:
+        raise ValidationError({"listing_ids": f"A post can tag up to {limit} things."})
+    found = {str(x.id): x for x in Listing.objects.filter(id__in=ids, status=ListingStatus.APPROVED)}
+    if len(found) != len(ids):
+        raise ValidationError({"listing_ids": "One of those is no longer on the Market."})
+    return [found[i] for i in ids]
+
+
+def set_tags(content_id, listings):
+    ListingTag.objects.filter(content_id=content_id).delete()
+    ListingTag.objects.bulk_create(ListingTag(content_id=content_id, listing=x, sort=i)
+                                   for i, x in enumerate(listings))
+
+
+def attach_tags(rows):
+    """Each row gets `_listings`: its live tagged listings, in order. One
+    query for the page."""
+    by_content = {}
+    for t in (ListingTag.objects.filter(content_id__in=[r.id for r in rows], listing__status=ListingStatus.APPROVED)
+              .select_related("listing").order_by("content_id", "sort")):
+        by_content.setdefault(str(t.content_id), []).append(t.listing)
+    for r in rows:
+        r._listings = by_content.get(str(r.id), [])
+    return rows
+
