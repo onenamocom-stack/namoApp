@@ -322,3 +322,31 @@ class TestTagsAndLinks:
         row = _approved(price=0)
         services.take_free(TEST_USER, row.id)
         assert Purchase.objects.get(buyer_id=TEST_USER).referrer_id == NOBODY
+
+
+@pytest.mark.django_db
+class TestReminders:
+    def test_an_hour_before_everybody_booked_hears_it_once(self, creator):
+        from apps.notifications.models import Notification
+
+        row = services.approve(services.create(CREATOR, {
+            "kind": "event", "title": "Live katha", "cover_url": "https://x/c.jpg", "price_paise": 0,
+            "starts_at": timezone.now() + timedelta(hours=3), "duration_minutes": 60, "seats": 10,
+            "join_url": "https://meet.google.com/abc"}), "admin")
+        Purchase.objects.create(listing=row, buyer_id=TEST_USER, amount_paise=0)
+        assert services.remind_events() == 0                                  # three hours out
+        later = timezone.now() + timedelta(hours=2, minutes=30)
+        assert services.remind_events(now=later) == 2                          # the buyer and the host
+        assert services.remind_events(now=later + timedelta(minutes=1)) == 0  # once
+        assert Notification.objects.filter(kind="market.event_soon", profile_id=TEST_USER).count() == 1
+
+    def test_an_approved_product_tells_the_seller_to_send_stock(self, creator):
+        from apps.notifications.models import Notification
+
+        ShopCategory.objects.create(name="Maalas", sort=1)
+        services.approve(services.create(CREATOR, {
+            "kind": "product", "title": "Tulsi Mala", "cover_url": "https://x/c.jpg", "price_paise": 89000,
+            "stock": 10, "weight_grams": 150}), "admin")
+        note = Notification.objects.get(profile_id=CREATOR, kind="market.approved")
+        assert "Send the 10" in note.body and "address" in note.body
+

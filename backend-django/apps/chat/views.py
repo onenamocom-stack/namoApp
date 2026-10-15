@@ -216,4 +216,8 @@ def sweep(request):
     from apps.shop.services import lapse_unpaid
 
     result["shop_orders_lapsed"] = lapse_unpaid()
+    # The Market's events, an hour before they start (15 Oct 2026).
+    from apps.market.services import remind_events
+
+    result["event_reminders"] = remind_events()
     return JsonResponse({"ok": True, **result})

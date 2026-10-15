@@ -52,6 +52,12 @@ export function alertHref(n) {
   if (n?.ref_type === 'profile' && n.ref_id) return `/u/${n.ref_id}`
   if (n?.ref_type === 'dm' && n.ref_id) return `/messages/${n.ref_id}`
   if (n?.ref_type === 'content') return '/profile'
+  // A Market listing (15 Oct 2026): a seller's news opens their listings,
+  // an event's reminder its page.
+  if (n?.ref_type === 'listing' && n.ref_id) {
+    return n.kind === 'market.event_soon' ? `/shop/l/${n.ref_id}` : '/dashboard/market'
+  }
+  if (n?.kind === 'market.payout') return '/dashboard/market'
   return null
 }
 

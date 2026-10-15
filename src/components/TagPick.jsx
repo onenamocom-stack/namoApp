@@ -106,7 +106,7 @@ export function SharerBar({ product }) {
         onClick={() => shareLink(product, product.name || product.title, showToast)}
         className="flex items-center justify-center gap-2 rounded-xl border border-gold-fill py-2.5 caps-sm gold"
       >
-        <Icon name="share" size={15} /> My link
+        <Icon name="share" size={15} /> My Referral Link
       </button>
       {/* A listing earns its sharer nothing yet: the rate is being set
           (Rahul, 15 Oct 2026). Only a shop product says it pays. */}

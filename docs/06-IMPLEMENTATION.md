@@ -597,9 +597,11 @@ on the 7th (`market_payouts`, made when Finance opens the list, or
 `manage.py market_payouts`); a Creator's bank account. Tests
 `tests/test_market.py` (22).
 
-**Not built:** where a seller sends product stock (Fulfilment tells them by
-hand); refunds of a seller's sale (by hand, as a shop return is); a joining
-link sent as a notification before an event (it shows on the page).
+**Not built:** where a seller sends product stock — the approval
+notification tells them our team will call with the address; refunds of a
+seller's sale (by hand, as a shop return is). An event's reminder is built
+(15 Oct): an hour before, everybody booked and the host get a notification
+opening its page (`market.remind_events`, run by the every-minute sweep).
 
 **Done when:** a Creator lists a paid PDF, an admin approves it, a buyer
 pays by gateway and opens it, and the Creator's share appears in their

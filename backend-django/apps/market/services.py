@@ -227,8 +227,15 @@ def approve(listing, who, bps=None):
     if listing.kind == ListingKind.PRODUCT:
         listing.product_id = _shelve(listing).pk
     listing.save()
-    _notify(listing.seller_id, "market.approved", "Your listing is live",
-            f"{listing.title} is on the Market now.", listing)
+    if listing.kind == ListingKind.PRODUCT:
+        # Where the stock goes is told by a person for now (15 Oct 2026):
+        # the note says so, rather than leaving the seller to wonder.
+        _notify(listing.seller_id, "market.approved", "Your product is approved",
+                f"{listing.title} is on the Market. Send the {listing.stock} you listed to Namo: "
+                "our team will call you with the address. Orders ship once it arrives.", listing)
+    else:
+        _notify(listing.seller_id, "market.approved", "Your listing is live",
+                f"{listing.title} is on the Market now.", listing)
     return listing
 
 
@@ -679,4 +686,32 @@ def attach_tags(rows):
     for r in rows:
         r._listings = by_content.get(str(r.id), [])
     return rows
+
+
+# ── an event's reminder (15 Oct 2026) ──────────────────────────────────────
+
+
+REMIND_BEFORE = timedelta(hours=1)
+
+
+def remind_events(now=None):
+    """An hour before an event, everybody booked (and its host) hears it is
+    starting, with a tap to its page where the link is. Once each: the
+    notification's dedupe key. Run every minute by the sweep."""
+    from apps.notifications import services as notify
+
+    now = now or timezone.now()
+    soon = Listing.objects.filter(kind=ListingKind.EVENT, status=ListingStatus.APPROVED,
+                                  starts_at__gt=now, starts_at__lte=now + REMIND_BEFORE)
+    sent = 0
+    for event in soon:
+        at = timezone.localtime(event.starts_at).strftime("%I:%M %p").lstrip("0")
+        people = list(event.purchases.values_list("buyer_id", flat=True)) + [event.seller_id]
+        for who in people:
+            row = notify.push(who, kind="market.event_soon", title="Starting soon",
+                              body=f"{event.title} starts at {at}. Open it to join.",
+                              ref_type="listing", ref_id=event.id,
+                              dedupe_key=f"event-soon:{event.id}:{who}")
+            sent += 1 if row else 0
+    return sent
 
