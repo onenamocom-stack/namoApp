@@ -335,8 +335,7 @@ button shows that consultant's own rate for it — video, audio and chat per
 minute, Book the 20-minute price (`01-PRD.md` §4.1, 10 Oct 2026). The booking
 sheet has no length picker: a slot is 20 minutes. The profile page carries the
 same four as its sticky footer (Video · Audio · Chat · Book, each with its
-rate; on a pro's own page they show the rates and press nothing), and its
-About tab lists all four rates.
+rate; on a pro's own page they show the rates and press nothing).
 
 **Free-tools row of six circles, above the search field** — all six navigate.
 **Horoscope opens `/chart`** and **Ask AI opens `/ask`**, both since 30 Sep 2026
@@ -1023,7 +1022,8 @@ data, matching, muhurat and reports — but nothing in Profile links to it.
 
 **A pro has one profile** (10 Oct 2026, Rahul). For an approved consultant,
 `/profile` and `/profile/posts` render the `/consult/:id` page itself — photo,
-specialization, rating line, bio, intro, Posts · Reviews · About (Posts
+specialization, rating line, bio, the degree and *Speaks* (the languages,
+15 Oct 2026, Rahul), intro, Posts · Shop (when they sell) · Reviews (Posts
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** (13 Oct 2026, Rahul; the old one, which edited name and birth
@@ -1035,7 +1035,9 @@ the row each, both the white button (no saffron, Follow or Following) (11 Oct 20
 call icons, which did what the footer's four tiles do). The **+** went on 11 Oct 2026 (Rahul): a post is
 made from Home's +. Your own page has six tabs, scrolling: Posts ·
 **Reshared** · **Commented** (13 Oct 2026, Rahul) · **Saved** (11 Oct) ·
-Reviews · About; a client sees three. On your own page
+Shop · Reviews; a client sees Posts, Shop when there is one, and Reviews.
+The About tab went on 15 Oct 2026 (Rahul): its languages are under the
+degree, and its category, experience and verified tick were on top already. On your own page
 Followers and Following open the list of those people (12 Oct 2026, Rahul);
 on anybody else's they are numbers only — the server lists only your own.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens

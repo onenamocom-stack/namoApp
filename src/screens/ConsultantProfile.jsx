@@ -29,11 +29,11 @@ import { profileLink } from '../lib/profile.js'
 import { isPro } from '../side.js'
 import SellerShop, { useSellerListings } from '../components/SellerShop.jsx'
 
-// Posts first and open, then Reviews, then About (10 Oct 2026, Rahul).
+// Posts first and open, then Reviews (10 Oct 2026, Rahul). About went on
+// 15 Oct 2026: its languages are under the degree, the rest was on top.
 const TABS = [
   { key: 'work', label: 'Posts' },
   { key: 'reviews', label: 'Reviews' },
-  { key: 'about', label: 'About' },
 ]
 
 /**
@@ -324,6 +324,16 @@ export function ConsultantPage({
               {cr}
             </p>
           ))}
+          {/* The languages, under the degree (15 Oct 2026, Rahul); they were
+              the About tab's, which went with it. */}
+          {c.languages.length > 0 && (
+            <p className="mt-2 flex items-center gap-1.5 text-meta t-heading">
+              <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold/15 text-gold">
+                <Icon name="chat" size={13} weight={2.2} />
+              </span>
+              Speaks {c.languages.join(', ')}
+            </p>
+          )}
 
           {/* Follow and Share profile, half the row each. The schedule,
               chat, video and call glyphs that sat beside Follow went on 11 Oct
@@ -439,7 +449,6 @@ export function ConsultantPage({
         />
 
         <div key={tab} className="animate-fade">
-          {tab === 'about' && <About c={c} />}
           {tab === 'work' && <Work c={c} items={items} />}
           {tab === 'reviews' && <Reviews c={c} />}
           {tab === 'shop' && <SellerShop rows={shop} own={own} />}
@@ -573,26 +582,6 @@ export function ConsultantPage({
         </p>
       </Sheet>
     </div>
-  )
-}
-
-function About({ c }) {
-  return (
-    <>
-      {/* The bio and credentials moved up into the identity block — repeating
-          them here would be the same paragraph twice on one screen. */}
-      {/* No heading (11 Oct 2026, Rahul: "Practical" said nothing). */}
-      <Section>
-        <Field k="Speaks" v={c.languages.join(' · ') || '—'} />
-        <Field k="Category" v={c.category} />
-        <Field k="Experience" v={c.experienceYrs ? `${c.experienceYrs} yrs` : '—'} />
-        <Field k="Verified" v={c.verified ? 'Yes' : 'Not yet'} />
-      </Section>
-
-      {/* The Rates section went on 13 Oct 2026 (Rahul: "this is duplicate"):
-          the footer's four tiles carry every rate, and the booking sheet the
-          booking's length. */}
-    </>
   )
 }
 
