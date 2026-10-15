@@ -1,6 +1,7 @@
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
+import Icon from '../components/Icon.jsx'
 import { Kicker, Stat } from '../components/Pop.jsx'
 import { Row } from '../components/Primitives.jsx'
 import { Insights } from '../pro/ProEarnings.jsx'
@@ -83,7 +84,22 @@ export default function Dashboard() {
               />
               {/* The week as windows, 20-minute bookings (15 Oct 2026, Rahul). */}
               <Row to="/dashboard/calendar" title="Booking calendar" note="Your hours each day, 20-minute bookings" />
-              <Row to="/desk" title="Go online" note="Take calls and chats" />
+              {/* The one row that earns, made to stand out (16 Oct 2026, Rahul):
+                  the main-action green, a phone and a live dot. */}
+              <Link
+                to="/desk"
+                className="pop-tap mt-3 flex items-center gap-4 rounded-2xl bg-gradient-to-br from-btn to-btn-deep px-4 py-4 text-white shadow-lg"
+              >
+                <span className="relative flex h-12 w-12 flex-none items-center justify-center rounded-full bg-white/20">
+                  <Icon name="phone" size={22} />
+                  <span className="absolute right-0.5 top-0.5 block h-3 w-3 animate-pulse rounded-full border-2 border-white bg-[#ffd27a]" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lead font-semibold">Go online</span>
+                  <span className="mt-0.5 block text-meta text-white/85">Take calls and chats, and start earning</span>
+                </span>
+                <span aria-hidden="true" className="text-lead">→</span>
+              </Link>
             </div>
           </section>
           <section className="px-5 pb-8">

@@ -1276,7 +1276,7 @@ until this day) and on a Creator's Profile, under the five icons.
 
 - **A Pro:** Your work (Earnings and Insights, Your links, Sell on the
   Market), Your consulting setting (**Your consulting price**, which opens
-  the rates sheet here; **Booking calendar**; **Go online**, `/desk`), and
+  the rates sheet here; **Booking calendar**; **Go online**, `/desk`, a card that stands out from the rows), and
   Payout details last (16 Oct 2026, Rahul; the headings were Your practice
   and Calls and chats, the rows Your rates and Namo Consult). "Practice and reviews" went
   on 14 Oct 2026 (Rahul): reviews are on the Pro's page, Intro video and
