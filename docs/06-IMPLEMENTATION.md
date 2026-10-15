@@ -589,8 +589,10 @@ live: Shop and Academy are one Market page, with Courses and Events as
 - **Step 2d — money.** The buyer pays by gateway; the seller's share, less
   commission, joins the payout run (Phase 12).
 
-**Decisions blocking it:** the commission; who ships a seller's product;
-when payouts run; online or in-person events.
+**Terms:** Rahul answered the four decisions on 15 Oct (`docs/01` §4.7):
+the commission per kind with an admin override, Namo ships, monthly payouts,
+online events. Still open: who pays the ₹100 delivery, and the payout date.
+**Blocking going live:** the owner's yes.
 
 **Done when:** a Creator lists a paid PDF, an admin approves it, a buyer
 pays by gateway and opens it, and the Creator's share appears in their
