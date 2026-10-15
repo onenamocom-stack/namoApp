@@ -54,6 +54,12 @@ import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
 import DownloadPage from './screens/DownloadPage.jsx'
+/* The course and event pages' design preview (15 Oct 2026): a development
+   build only. In production `import.meta.env.DEV` is false, the import is
+   dead code, and neither the route nor its sample data is built. */
+const ListingPreview = import.meta.env.DEV
+  ? lazy(() => import('./screens/ListingPage.jsx').then((m) => ({ default: m.ListingPreview })))
+  : null
 import TagScreen from './screens/TagScreen.jsx'
 import Messages from './screens/Messages.jsx'
 import Conversation from './screens/Conversation.jsx'
@@ -423,6 +429,16 @@ function Frame() {
                 <Route path="/shop/p/:key" element={<ProductPage />} />
                 {/* A download's own page (15 Oct 2026, Rahul). */}
                 <Route path="/shop/d/:id" element={<DownloadPage />} />
+                {ListingPreview && (
+                  <Route
+                    path="/shop/preview/:kind"
+                    element={
+                      <Suspense fallback={null}>
+                        <ListingPreview />
+                      </Suspense>
+                    }
+                  />
+                )}
                 {/* A shared Bhakti item's address: the link previews with
                     its picture; opened, it is that item on its shelf, with
                     "See all" under it (12 Oct 2026, Rahul — it opened the

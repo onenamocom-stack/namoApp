@@ -774,6 +774,25 @@ the server: a ten-minute link to an owner, else the Paywall opens on the
 page), *Open PDF* once the link is in hand. An id that matches nothing:
 "This download is no longer here", with the way back.
 
+### A course's and an event's pages — designed, not reachable (15 Oct 2026, Rahul)
+
+`src/screens/ListingPage.jsx`, `CoursePage` and `EventPage`, wait for the
+listings (`docs/06` Phase 17); nothing links to them, and a development
+build alone renders them with sample data at `/shop/preview/course` and
+`/shop/preview/event`.
+
+- **Course:** the trailer; Course chip, name, *By* the teacher and tick,
+  price with MRP; three facts — lessons and hours of video, language, yours
+  to keep; *What you will learn*; *Lessons*, numbered with minutes, the
+  first a *Free preview*; *About the teacher*. At the foot: the price, "One
+  payment. Every lesson.", **Enroll**.
+- **Event:** the banner with the date as a calendar leaf and *Online*;
+  Event chip, name, host, price with MRP; three facts — day and time,
+  online (link after booking), seats left of the total, and "Only N seats
+  left" at ten or fewer; *Agenda* as a timeline; *How it works* (book and
+  pay, the link on Namo an hour before, join from phone or computer);
+  *About the teacher*. At the foot: the price, seats left, **Book seat**.
+
 
 ### Market, `/shop` (Shop and Academy in one page, 14 Oct 2026, Rahul)
 
