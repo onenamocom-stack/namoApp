@@ -2003,7 +2003,7 @@ mode: a dark bar under the header, "Tag a product · N/3 tagged", and
 page carries **Tag this product** (tap again to remove) and *Done, back to
 my post*. Done returns to Home with the composer open and the products
 tagged; three at most, as before. Out of pick mode, a product page carries
-**Tag in post** (a new post with it tagged) and **My link · 10%** (the
+**Tag in post** (a new post with it tagged) and **My link** (the
 phone's share sheet, or the link copied); a card carries nothing out of
 pick mode (15 Oct 2026, Rahul: the page's Share is enough). Editing a post, a group's composer and the pro app keep the search
 list in the composer. The composer no longer lists shop products under the
