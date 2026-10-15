@@ -1418,8 +1418,8 @@ courier serves it (and for the charge, which is "Free" since 8 Oct 2026); the
 sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
 An order says its cashback above Pay, for this basket and this way of
-paying — the first order, and every order once `CASHBACK_EVERY_ORDER`
-is on (waiting on the owner's yes, 15 Oct 2026): "₹500
+paying — every order since 16 Oct 2026 (`CASHBACK_EVERY_ORDER`; it was
+the first only): "₹500
 back in your wallet seven days after delivery", or on cash on delivery
 "This order gets ₹500 back when you pay online. Not on cash on delivery."
 Nothing is said when no product in the basket carries a cashback. The code box

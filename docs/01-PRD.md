@@ -122,7 +122,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 |---|---|---|
 | Feed | UI | Renders the *seeker's* Home, including the free-tools row and shop cards |
 | Session requests — accept / decline | UI | Toggles a flag |
-| Booking calendar | `consultant_availability`, `consultant_time_off` (15 Oct 2026, Rahul) | Each day of the week on or off with up to two windows; a customer books **20 minutes** inside one. Blocked dates close whole days. It replaced the 7 × 6 grid of fixed times. **Default week: 11 am–2 pm and 4 pm–9 pm, every day** (16 Oct 2026, Rahul) — a new Pro starts on it; existing Pros are moved onto it by `manage.py default_week --yes`, production data, run on the owner's yes |
+| Booking calendar | `consultant_availability`, `consultant_time_off` (15 Oct 2026, Rahul) | Each day of the week on or off with up to two windows; a customer books **20 minutes** inside one. Blocked dates close whole days. It replaced the 7 × 6 grid of fixed times. **Default week: 11 am–2 pm and 4 pm–9 pm, every day** (16 Oct 2026, Rahul) — a new Pro starts on it; existing Pros were moved onto it by `manage.py default_week --yes` on 16 Oct (owner's yes) |
 | Channels — chat / live / call per booking | UI | Chat opens the panel; call toasts |
 | Studio — publish reel / article / go live | UI | Publishes to a toast. **No upload path exists anywhere in the app** |
 | Earnings | `earnings_ledger`, payouts P1 (3 Oct 2026) | Real totals by period: this month, last month, this and last financial year, lifetime; by source; the last seven days. No withdrawing |
@@ -1010,10 +1010,9 @@ The owner's rule, replacing the astrologer's code at checkout.
   below; from Namo's share. That order uses the click up; opening the link
   again (or another person's) holds the customer for the next. After the
   window, nothing. A cancelled or lapsed order still uses the click.
-- **The buyer's cashback needs no link.** It belongs to the product
-  (below). Every prepaid order gets it once the owner says yes (Rahul's
-  rule, 15 Oct 2026; the switch `CASHBACK_EVERY_ORDER` is off); until then,
-  the first prepaid order only.
+- **The buyer's cashback needs no link and no first order.** It belongs to
+  the product (below): every prepaid order gets it (Rahul's rule, owner's
+  yes 16 Oct 2026; `CASHBACK_EVERY_ORDER` on).
 - **Installs.** On the website this is complete. An Android app will
   carry the link through the Play Store with Google's Install Referrer
   when there is one; an iPhone app cannot without a paid service.
@@ -1056,11 +1055,10 @@ what they were given. Nothing reaches backwards.
 ### Each product sets its own cashback — decided 9 Oct 2026
 
 The owner's rule, replacing a flat 10% to both sides. The console sets, per
-product, what an order gives the BUYER, link or none — **the first
-prepaid order**, and **every prepaid order** once the owner says yes to
-Rahul's rule of 15 Oct 2026 ("Customer cashback is linked to product not
-referral"; the switch `CASHBACK_EVERY_ORDER` is off). From 11 Oct it was
-every first order, before that only through a code:
+product, what an order gives the BUYER — **every prepaid order, link or
+none** (Rahul, 15 Oct 2026: "Customer cashback is linked to product not
+referral"; owner's yes 16 Oct; `CASHBACK_EVERY_ORDER` on). From 11 Oct it
+was every first order, before that only through a code:
 **a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
 **a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
 **platform default** — **nothing** since 15 Oct 2026 (Rahul; owner's yes;
