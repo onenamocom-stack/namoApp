@@ -471,7 +471,8 @@ crash.
 
 | What | Shape | Upload at |
 |---|---|---|
-| Shop product (card, feed card, product page) | 1:1 square | 1200 × 1200 px |
+| Shop product (Market card, feed card, product page) | 16:9, the photo fitted whole on white (15 Oct 2026, Rahul; was 1:1) | 1280 × 720 px |
+| Market card for a download | 16:9, the cover fitted whole | the cover as it is |
 | Blog cover (feed card, reader, composer) | 16:9 | 1600 × 900 px |
 | Photo post | 4:5 | 1080 × 1350 px |
 | Reel | 9:16 | 1080 × 1920 px |

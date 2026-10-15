@@ -6,6 +6,10 @@ import Plate from './Plate.jsx'
  * the engraved plate when it does not or the photo fails to load (6 Oct
  * 2026 — the cards drew the plate for every product, real photo or not).
  * Children are the badges laid over it, as on Plate.
+ *
+ * Every frame is 16:9 since 15 Oct 2026 (Rahul: "YouTube wala"); the photo
+ * is fitted whole, so an older square one sits on white rather than losing
+ * its top and bottom.
  */
 export default function ProductArt({ product, className = '', children }) {
   const [broken, setBroken] = useState(false)
@@ -24,7 +28,7 @@ export default function ProductArt({ product, className = '', children }) {
         loading="lazy"
         decoding="async"
         onError={() => setBroken(true)}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-contain"
       />
       {children}
     </div>

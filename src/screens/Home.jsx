@@ -1637,7 +1637,7 @@ function ProductCard({ product: p }) {
       <HouseHead name={t('home.namoShop')} note={t('home.forChart')} to="/shop" />
       {/* Square, as on the shop's grid and the product page. */}
       <Link to={pageOf(p)} className="block">
-        <ProductArt product={p} className="aspect-square w-full" />
+        <ProductArt product={p} className="aspect-video w-full" />
       </Link>
       <CtaStrip onClick={() => addToCart(p)} tone="green">
         {t('home.addToCart', { price: p.price.toLocaleString('en-IN') })}

@@ -169,12 +169,12 @@ class ProductForm(forms.ModelForm):
     upload = forms.FileField(
         required=False,
         label="Cover photo",
-        help_text="The first photo, on the card and the page. Goes to R2; the database keeps the URL.",
+        help_text="The first photo, on the card and the page. Best at 1280×720 (16:9, YouTube's shape): every frame in the app is 16:9. Goes to R2; the database keeps the URL.",
     )
     gallery_upload = MultipleImageField(
         required=False,
         label="Add photos or videos",
-        help_text="Pick several at once. Photos up to 10 MB, videos up to 30 MB (MP4 or WebM). They join the end of the gallery below.",
+        help_text="Pick several at once. Photos up to 10 MB, best at 1280×720 (16:9); videos up to 30 MB (MP4 or WebM). They join the end of the gallery below.",
     )
     gallery_text = forms.CharField(
         required=False,

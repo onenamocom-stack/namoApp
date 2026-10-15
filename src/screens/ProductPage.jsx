@@ -233,7 +233,7 @@ function Gallery({ product }) {
   const [at, setAt] = useState(0)
 
   if (!items.length) {
-    return <Plate seed={product.id} className="aspect-square w-full" />
+    return <Plate seed={product.id} className="aspect-video w-full" />
   }
 
   const go = (i) => {
@@ -246,7 +246,7 @@ function Gallery({ product }) {
       <div
         ref={rail}
         onScroll={(e) => setAt(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        className="no-scrollbar flex aspect-square w-full snap-x snap-mandatory overflow-x-auto"
+        className="no-scrollbar flex aspect-video w-full snap-x snap-mandatory overflow-x-auto"
       >
         {items.map((m, i) => (
           <div key={m.url} className="relative h-full w-full flex-none snap-center">
@@ -370,7 +370,7 @@ function MoreProducts({ current }) {
         {rows.map((x) => (
           <li key={x.id}>
             <Link to={productHref(x)} className="block overflow-hidden rounded-2xl border border-stroke bg-white">
-              <ProductArt product={x} className="aspect-square w-full" />
+              <ProductArt product={x} className="aspect-video w-full" />
               <span className="block p-2.5">
                 <span className="line-clamp-2 block text-meta t-heading">{x.name}</span>
                 <MarketPrice price={x.price} mrp={x.mrp} />

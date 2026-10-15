@@ -405,7 +405,7 @@ export default function Shop() {
             onClick={() => navigate(productHref(hero))}
             className={`mt-3 overflow-hidden ${focusId === hero.id ? focusRing : ''}`}
           >
-            <ProductArt product={hero} className="aspect-[16/10] w-full">
+            <ProductArt product={hero} className="aspect-video w-full">
               <span className="absolute left-3 top-3">
                 <PopTag tone="gold">{hero.category}</PopTag>
               </span>
@@ -505,7 +505,7 @@ export default function Shop() {
                     onKeyDown={(e) => e.key === 'Enter' && navigate(productHref(p))}
                     className={`flex h-full cursor-pointer flex-col overflow-hidden ${focusId === p.id ? focusRing : ''}`}
                   >
-                    <ProductArt product={p} className="aspect-square w-full">
+                    <ProductArt product={p} className="aspect-video w-full">
                       {focusId === p.id && (
                         <span className="caps-sm absolute right-2 top-2 rounded-full bg-btn-deep px-2 py-1 text-white shadow-sm">
                           {t('shop.linked')}

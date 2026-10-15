@@ -56,7 +56,7 @@ export function MarketCard({ art, name, lines = [], price = null, onOpen, id }) 
   return (
     <li id={id}>
       <button type="button" onClick={onOpen} className="pop-tap block w-full text-left">
-        <span className="block aspect-[16/10] w-full overflow-hidden rounded-lg">{art}</span>
+        <span className="block aspect-video w-full overflow-hidden rounded-lg">{art}</span>
         <span className="mt-2 block line-clamp-2 text-meta t-heading">{name}</span>
         {lines.filter(Boolean).map((l, i) => (
           <span key={i} className="mt-0.5 block truncate text-micro t-faint">
