@@ -55,7 +55,7 @@ class BhaktiAsset(models.Model):
     mrp_paise = models.IntegerField(null=True, blank=True)
     # A download's own page (15 Oct 2026): what is in it, in the console's
     # words — headings, bold and lists, as a product's description.
-    description = models.TextField(default="", blank=True)
+    description = models.TextField(default="", db_default="", blank=True)
     # Attribution is three columns and all three are NOT NULL (024): these
     # files are downloaded and some will be sold; `licence` is what the
     # future paywall filters on.

@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="bhaktiasset", name="description",
-            field=models.TextField(blank=True, default=""),
+            field=models.TextField(blank=True, default="", db_default=""),
         ),
         migrations.AddField(
             model_name="bhaktiasset", name="mrp_paise",
