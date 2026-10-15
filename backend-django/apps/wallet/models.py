@@ -256,6 +256,9 @@ class Entitlement(models.Model):
     price_paise = models.IntegerField()
     starts_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
+    # The Pro or Creator whose link or tag brought the buyer to an e-book
+    # (15 Oct 2026, Rahul): paid 6% at the grant, and the click is used.
+    referrer_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

@@ -92,14 +92,15 @@ export async function claimCode(code) {
  * concatenation in this file is one that cannot be corrected later
  * without breaking every link already shared.
  */
-export async function affiliateLink(productId = null, listingId = null) {
+export async function affiliateLink(productId = null, listingId = null, ebookId = null) {
   const token = await accessToken()
   if (!token) return null
   try {
     return await api('/referrals/link/', {
       method: 'POST',
       token,
-      body: productId ? { product_id: productId } : listingId ? { listing_id: listingId } : {},
+      body: productId ? { product_id: productId } : listingId ? { listing_id: listingId }
+        : ebookId ? { ebook_id: ebookId } : {},
     })
   } catch (err) {
     console.error('[referrals] link failed:', err?.message)

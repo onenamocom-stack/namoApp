@@ -36,6 +36,8 @@ class PublishInput(serializers.Serializer):
     )
     # Market listings to tag (15 Oct 2026): downloads, courses, events.
     listing_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
+    # Namo's e-books to tag (15 Oct 2026).
+    ebook_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
     # Post into a group you are a member of (Phase 15c).
     group_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
@@ -49,6 +51,7 @@ class EditInput(serializers.Serializer):
     media_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     product_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
     listing_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+    ebook_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
 
 
 class FeedQuery(serializers.Serializer):
@@ -106,6 +109,17 @@ def _public_row(row):
                 "mrp_paise": x.mrp_paise,
             }
             for x in getattr(row, "_listings", [])
+        ],
+        # Tagged e-books, Namo's own downloads (15 Oct 2026).
+        "ebooks": [
+            {
+                "id": str(x.id),
+                "title": x.title,
+                "cover_url": x.preview_url or "",
+                "price_paise": x.price_paise or 0,
+                "mrp_paise": x.mrp_paise,
+            }
+            for x in getattr(row, "_ebooks", [])
         ],
         "shop_ref": getattr(row, "_shop_ref", None),
     }
@@ -236,6 +250,7 @@ def publish(request):
         status=data["status"],
         product_ids=data["product_ids"],
         listing_ids=data["listing_ids"],
+        ebook_ids=data["ebook_ids"],
         group_id=data["group_id"],
     )
     return Response({"id": str(row.id)}, status=201)
@@ -250,9 +265,10 @@ def edit(request, content_id):
     data = dict(serializer.validated_data)
     product_ids = data.pop("product_ids", None)
     listing_ids = data.pop("listing_ids", None)
+    ebook_ids = data.pop("ebook_ids", None)
     row = services.edit_content(
         content_id, request.user.pk, getattr(request.user, "role", ""),
-        product_ids=product_ids, listing_ids=listing_ids, **data,
+        product_ids=product_ids, listing_ids=listing_ids, ebook_ids=ebook_ids, **data,
     )
     return Response({"ok": True, "id": str(row.id)})
 

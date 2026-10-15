@@ -481,8 +481,10 @@ def _grant_paid(profile_id, sku, ref, amount_paise):
         with transaction.atomic():
             if owns(profile_id, sku, ref):
                 raise IntegrityError("already owned")
-            Entitlement.objects.create(profile_id=profile_id, sku=sku, ref=ref or "",
-                                       price_paise=amount_paise)
+            row = Entitlement.objects.create(profile_id=profile_id, sku=sku, ref=ref or "",
+                                             price_paise=amount_paise)
+            if sku == "ebook":
+                _ebook_sharer(row)
             if sku == "listing":
                 # The seller's share is written with the grant, or neither.
                 from apps.market import services as market
@@ -904,9 +906,28 @@ def buy(profile_id, sku, ref=""):
             return {"ok": False, "reason": REFUSAL_SHORT_BALANCE, "balance_paise": balance}
         row.save()
         insert_ledger(profile_id, -price, _sku_label(sku), ref_type=RefType.ORDER, ref_id=row.id)
+        if sku == Sku.EBOOK:
+            _ebook_sharer(row)
     return {"ok": True, "already": False,
             "expires_at": expires.isoformat() if expires else None,
             "balance_paise": balance - price}
+
+
+def _ebook_sharer(row):
+    """An e-book bought through a Pro's or a Creator's link or tag pays them
+    6% of it, from Namo's own (15 Oct 2026, Rahul) — the same rule as a
+    Market listing: new customer or old, the purchase uses the click up."""
+    from apps.bhakti.models import BhaktiAsset
+    from apps.referrals import services as referrals
+
+    sharer = referrals.holding(row.profile_id)
+    if sharer is None:
+        return
+    type(row).objects.filter(pk=row.pk).update(referrer_id=sharer)
+    title = BhaktiAsset.objects.filter(pk=row.ref).values_list("title", flat=True).first() or "E-book"
+    amount = row.price_paise * settings.REFERRAL_SHARER_BPS // 10_000
+    if amount > 0:
+        referrals.credit_sharer(sharer, amount, f"E-book · {title}")
 
 
 def _sku_label(sku):

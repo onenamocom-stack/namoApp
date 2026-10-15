@@ -78,6 +78,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
               />
             }
             onOpen={() => onOpen?.(d.id)}
+            corner={<CardCorner product={d} />}
           />
         ))}
       </MarketSection>

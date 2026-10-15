@@ -9,6 +9,7 @@ import Paywall from '../components/Paywall.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
 import RichText from '../components/RichText.jsx'
+import { PickBar, SharerBar } from '../components/TagPick.jsx'
 import { assetFile, fetchAssets } from '../lib/bhakti.js'
 import { rupees, useStore } from '../store.jsx'
 
@@ -104,6 +105,7 @@ export default function DownloadPage() {
   return (
     <>
       <TopBar title={t('ac.tab.ebooks')} back backTo={back} />
+      <PickBar />
 
       {/* The whole cover at its own shape, on a quiet ground. */}
       <div className="flex justify-center bg-surface2 px-10 py-6">
@@ -127,6 +129,8 @@ export default function DownloadPage() {
           <BhaktiActions asset={d} share />
         </div>
       </section>
+      {/* A Pro's or a Creator's Tag and Link, as on a product (15 Oct 2026, Rahul). */}
+      <SharerBar product={d} />
 
       {/* What you get: the three things a buyer of a file asks first. */}
       <section className="px-5 pt-7">

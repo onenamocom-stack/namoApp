@@ -2254,7 +2254,15 @@ Also: `media_assets.kind` gains `download` (private bucket, up to 500 MB;
 `listing_id`, `sort`; unique pair; RLS on, no policies) — a listing tagged on
 a post, counted with `content_products` against the three-tag limit — and
 `market_purchases.referrer_id` (nullable): the Pro or Creator whose link or
-tag held the buyer (`referrals.live_visit`), recorded only.
+tag held the buyer (`referrals.live_visit`), paid 6% on a paid purchase.
+
+`bhakti/0009` (15 Oct 2026): **`bhakti_asset_tags`** (`content_id`,
+`asset_id` → `bhakti_assets`, `sort`; unique pair; RLS on, no policies) — one
+of Namo's e-books tagged on a post, counted with the other two tag tables
+against the three-tag limit. `wallet/0006`: `entitlements.referrer_id`
+(nullable) — the Pro or Creator whose link held an e-book's buyer, paid 6%
+at the grant (`wallet._ebook_sharer`); a paid purchase or e-book credited
+to a sharer since a click uses that click (`referrals._used`).
 
 **`commission_rates`** (`market/0003`, 15 Oct 2026): one row per category —
 `consultation`, `product`, `download`, `course`, `event` (the primary key) —

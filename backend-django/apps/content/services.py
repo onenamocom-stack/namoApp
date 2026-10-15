@@ -330,6 +330,20 @@ def _checked_listings(author_id, role, listing_ids, n_products):
     return market.checked_tags(listing_ids, already=n_products, limit=MAX_TAGGED_PRODUCTS)
 
 
+def _checked_ebooks(author_id, role, ebook_ids, n_other):
+    """Namo's e-books a post may tag (15 Oct 2026): the same people as
+    products, and the same three-tag limit counting everything."""
+    if not ebook_ids:
+        return []
+    if role != "admin" and not (
+        gateway.is_approved_consultant(author_id) or profile_services.is_creator(author_id)
+    ):
+        raise PermissionDenied(TAG_REFUSAL)
+    from apps.bhakti import services as bhakti
+
+    return bhakti.checked_tags(ebook_ids, already=n_other, limit=MAX_TAGGED_PRODUCTS)
+
+
 def _checked_products(author_id, role, product_ids):
     """The products a post may carry, in the order the author picked them.
 
@@ -355,7 +369,7 @@ def _checked_products(author_id, role, product_ids):
 
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
                     media_url=None, status=Content.Status.LIVE, product_ids=(), group_id=None,
-                    listing_ids=()):
+                    listing_ids=(), ebook_ids=()):
     """Insert one content row as the caller. author_id is forced (rule 3);
     published_at is the server's clock, never the client's (rule 3 again —
     a timestamp the client picks is a number the user benefits from).
@@ -371,6 +385,7 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
         limits.check(Content.objects.filter(author_id=author_id), limits.POSTS)
     products = _checked_products(author_id, role, product_ids)
     listings = _checked_listings(author_id, role, listing_ids, len(products))
+    ebooks = _checked_ebooks(author_id, role, ebook_ids, len(products) + len(listings))
     if group_id:
         # Only a member of a live group posts in it; a removed member never
         # again (Phase 15c, the done-condition).
@@ -400,6 +415,10 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
             from apps.market import services as market
 
             market.set_tags(row.id, listings)
+        if ebooks:
+            from apps.bhakti import services as bhakti
+
+            bhakti.set_tags(row.id, ebooks)
     if role != "admin":
         from . import moderation
 
@@ -408,7 +427,7 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
         from apps.groups import services as group_services
 
         group_services.posted(group_id)
-    if products or listings:
+    if products or listings or ebooks:
         # Mint the author's A code now, so every reader of this post finds
         # one to carry — the read side never mints (a GET must not write).
         from apps.referrals import services as referral_services
@@ -676,8 +695,11 @@ def attach_products(rows):
     from apps.market import services as market
 
     market.attach_tags(rows)
+    from apps.bhakti import services as bhakti
 
-    tagged_authors = {r.author_id for r in rows if by_content.get(r.id) or r._listings}
+    bhakti.attach_tags(rows)
+
+    tagged_authors = {r.author_id for r in rows if by_content.get(r.id) or r._listings or r._ebooks}
     codes = {
         c.profile_id: c.code
         for c in ReferralCode.objects.filter(
@@ -696,7 +718,7 @@ def attach_products(rows):
         # carrying (Creators since 14 Oct 2026). An admin-authored tag has
         # nobody behind it.
         earns = r._approved or r.author_id in creators
-        r._shop_ref = codes.get(r.author_id) if (r._products or r._listings) and earns else None
+        r._shop_ref = codes.get(r.author_id) if (r._products or r._listings or r._ebooks) and earns else None
     return rows
 
 
@@ -704,7 +726,7 @@ _UNSET = object()
 
 
 def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, caption=_UNSET,
-                 media_url=_UNSET, product_ids=None, listing_ids=None):
+                 media_url=_UNSET, product_ids=None, listing_ids=None, ebook_ids=None):
     """The author changes their own post, reel or blog (6 Oct 2026, Rahul:
     "edit button in blog and all posts"). Owner-scoped like remove, admin
     excepted. The kind never changes — a reel is not edited into a blog —
@@ -724,9 +746,14 @@ def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, capti
     if row.kind == Content.Kind.CLIP and not after["media_url"]:
         raise ValidationError({"media_url": "A reel needs its video."})
     products = None if product_ids is None else _checked_products(row.author_id, role, product_ids)
+    n = len(products) if products is not None else ContentProduct.objects.filter(content=row).count()
     if listing_ids is not None:
-        n = len(products) if products is not None else ContentProduct.objects.filter(content=row).count()
         listings = _checked_listings(row.author_id, role, listing_ids, n)
+    if ebook_ids is not None:
+        from apps.market.models import ListingTag
+
+        n_listings = len(listings) if listing_ids is not None else ListingTag.objects.filter(content_id=row.id).count()
+        ebooks = _checked_ebooks(row.author_id, role, ebook_ids, n + n_listings)
     with transaction.atomic():
         for field, value in changes.items():
             setattr(row, field, value)
@@ -741,7 +768,11 @@ def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, capti
             from apps.market import services as market
 
             market.set_tags(row.id, listings)
-    if products or listing_ids:
+        if ebook_ids is not None:
+            from apps.bhakti import services as bhakti
+
+            bhakti.set_tags(row.id, ebooks)
+    if products or listing_ids or ebook_ids:
         from apps.referrals import services as referral_services
         from apps.referrals.models import CodeKind
 

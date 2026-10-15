@@ -213,7 +213,7 @@ export default function Composer({
         const changes = {
           ...fields,
           mediaUrl: media?.url ?? null,
-          ...(tagProducts ? { productIds: tagged.filter((p) => !p.listing).map((p) => p.id), listingIds: tagged.filter((p) => p.listing).map((p) => p.id) } : {}),
+          ...(tagProducts ? { productIds: tagged.filter((p) => !p.listing && !p.ebook).map((p) => p.id), listingIds: tagged.filter((p) => p.listing).map((p) => p.id), ebookIds: tagged.filter((p) => p.ebook).map((p) => p.id) } : {}),
         }
         await editContent(editing.id, changes)
         showToast('Saved')
@@ -223,8 +223,9 @@ export default function Composer({
       await publish({
         kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
         mediaUrl: media?.url,
-        productIds: tagProducts ? tagged.filter((p) => !p.listing).map((p) => p.id) : [],
+        productIds: tagProducts ? tagged.filter((p) => !p.listing && !p.ebook).map((p) => p.id) : [],
         listingIds: tagProducts ? tagged.filter((p) => p.listing).map((p) => p.id) : [],
+        ebookIds: tagProducts ? tagged.filter((p) => p.ebook).map((p) => p.id) : [],
         groupId,
         ...fields,
       })

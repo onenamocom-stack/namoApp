@@ -258,7 +258,7 @@ def may_share(profile_id):
     return consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
 
 
-def affiliate_link(consultant_id, product_id=None, listing_id=None):
+def affiliate_link(consultant_id, product_id=None, listing_id=None, ebook_id=None):
     """A link the consultant can paste anywhere, with their code in it.
 
     The code IS the coupon — there is no second identifier to track,
@@ -283,6 +283,12 @@ def affiliate_link(consultant_id, product_id=None, listing_id=None):
 
         if Listing.objects.filter(pk=listing_id).exists():
             path = f"/shop/l/{listing_id}"
+    # One of Namo's own downloads opens its page (15 Oct 2026).
+    if ebook_id and not product and not listing_id:
+        from apps.bhakti.models import BhaktiAsset
+
+        if BhaktiAsset.objects.filter(pk=ebook_id, kind="ebook").exists():
+            path = f"/shop/d/{ebook_id}"
     url = f"{base}{path}?ref={code.code}"
     return {
         "code": code.code,
@@ -538,13 +544,26 @@ def record_visit(profile_id, code, product_id=None, clicked_at=None, now=None):
 
 def _used(visit):
     """An order took this click: a shop order (`visit.order`), or a paid
-    Market purchase credited to the same person since the click."""
+    Market purchase or e-book credited to the same person since the click."""
     if visit.order_id is not None:
         return True
     from apps.market.models import Purchase
+    from apps.wallet.models import Entitlement
 
-    return Purchase.objects.filter(buyer_id=visit.profile_id, referrer_id=visit.consultant_id,
-                                   amount_paise__gt=0, created_at__gte=visit.clicked_at).exists()
+    since = {"referrer_id": visit.consultant_id, "created_at__gte": visit.clicked_at}
+    return (Purchase.objects.filter(buyer_id=visit.profile_id, amount_paise__gt=0, **since).exists()
+            or Entitlement.objects.filter(profile_id=visit.profile_id, **since).exists())
+
+
+def holding(buyer_id, owner_id=None):
+    """The Pro or Creator whose live link holds this buyer and may earn on
+    them, or None; never `owner_id` (a listing's seller) or the buyer."""
+    visit = live_visit(buyer_id)
+    if visit is None or not _may_earn(resolve(visit.code), buyer_id):
+        return None
+    if owner_id is not None and str(visit.consultant_id) == str(owner_id):
+        return None
+    return visit.consultant_id
 
 
 def live_visit(profile_id, now=None):
@@ -907,7 +926,8 @@ def creator_earnings(profile_id, now=None):
 
 def credit_sharer(profile_id, amount_paise, note):
     """A sharer's money that waits for no return window (a Market download,
-    course or event bought through their link or tag, 15 Oct 2026): straight
+    course or event, or one of Namo's e-books, bought through their link or
+    tag, 15 Oct 2026): straight
     into their book — a Creator's `creator_earnings`, a consultant's
     `earnings_ledger` at fee 0 — as a matured referrer cashback is."""
     from apps.consultants.models import Consultant, EarningsLedger

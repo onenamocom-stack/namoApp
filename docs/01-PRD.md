@@ -404,7 +404,9 @@ simply taken. The seller is paid out less Namo's commission:
 - **Referrals:** a Pro or a Creator whose link or tag brought the buyer
   to a paid download, course or event earns **6%** of it, from Namo's
   share (the seller's is untouched) — new customer or old, one click one
-  purchase, as on shop orders (§12).
+  purchase, as on shop orders (§12). **Namo's own e-books** are tagged and
+  linked the same way (Tag in post, My Referral Link on their page) and pay
+  the sharer 6% of the price.
 - **Delivery:** the seller sends the product to Namo; Namo delivers it to
   the buyer.
 - **Payouts:** monthly, every seller in one run, on the **7th** for the

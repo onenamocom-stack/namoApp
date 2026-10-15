@@ -215,3 +215,19 @@ class SadhanaDay(models.Model):
 
     def __str__(self):
         return f"{self.profile_id} {self.day}"
+
+
+class AssetTag(models.Model):
+    """One of Namo's e-books tagged on a post or reel (15 Oct 2026, Rahul),
+    as a shop product (content.ContentProduct) and a Market listing
+    (market.ListingTag) are: set by a Pro or a Creator, three tags a post at
+    most counting all of them, shown while the e-book is active."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content_id = models.UUIDField(db_index=True)
+    asset = models.ForeignKey(BhaktiAsset, on_delete=models.CASCADE, related_name="tags")
+    sort = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "bhakti_asset_tags"
+        constraints = [models.UniqueConstraint(fields=["content_id", "asset"], name="bhakti_asset_tags_once")]

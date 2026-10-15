@@ -12,7 +12,7 @@ const DRAFT_KEY = (mode) => `namo.draft.${mode}`
 const EMPTY = { caption: '', title: '', body: '', media: null, tagged: [] }
 export const MAX_TAGS = 3 // the composer's and the server's cap
 
-/** A Pro (approved) or a Creator: who may tag and share for 10%. */
+/** A Pro (approved) or a Creator: who may tag and share, and earn on it. */
 export function isSharer(consultant, profile) {
   return consultant?.status === 'approved' || Boolean(profile?.influencer)
 }
@@ -51,6 +51,11 @@ export function pickState() {
 
 /** The fields a tag needs: what the composer's chips and the feed card read. */
 function slim(p) {
+  // One of Namo's e-books (a bhakti asset: title, previewUrl, pricePaise).
+  if (p.kind === 'ebook' && p.pricePaise !== undefined) {
+    return { id: p.id, ebook: true, kind: 'ebook', name: p.title, image: p.previewUrl || null,
+      price: (p.pricePaise || 0) / 100, mrp: p.mrpPaise ? p.mrpPaise / 100 : null }
+  }
   // A Market listing (an API row: title, cover_url, price_paise).
   if (p.kind && p.title !== undefined && p.price_paise !== undefined) {
     return { id: p.id, listing: true, kind: p.kind, name: p.title, image: p.cover_url || null,

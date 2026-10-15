@@ -234,3 +234,42 @@ def list_commented(actor_id, *, limit=50):
         if len(out) == limit:
             break
     return out
+
+
+# ── e-books tagged on posts (15 Oct 2026, Rahul) ───────────────────────────
+
+
+def checked_tags(ebook_ids, already=0, limit=3):
+    """The active e-books a post may carry, in the author's order; refuses
+    rather than trims, as the products' check does. `already` counts the
+    post's other tags against the same limit."""
+    ids = list(dict.fromkeys(str(i) for i in ebook_ids or []))
+    if not ids:
+        return []
+    if already + len(ids) > limit:
+        raise ValidationError({"ebook_ids": f"A post can tag up to {limit} things."})
+    found = {str(x.id): x for x in BhaktiAsset.objects.filter(id__in=ids, kind="ebook", active=True)}
+    if len(found) != len(ids):
+        raise ValidationError({"ebook_ids": "One of those is no longer on the Market."})
+    return [found[i] for i in ids]
+
+
+def set_tags(content_id, assets):
+    from .models import AssetTag
+
+    AssetTag.objects.filter(content_id=content_id).delete()
+    AssetTag.objects.bulk_create(AssetTag(content_id=content_id, asset=x, sort=i) for i, x in enumerate(assets))
+
+
+def attach_tags(rows):
+    """Each row gets `_ebooks`: its active tagged e-books, in order. One
+    query for the page."""
+    from .models import AssetTag
+
+    by_content = {}
+    for t in (AssetTag.objects.filter(content_id__in=[r.id for r in rows], asset__active=True)
+              .select_related("asset").order_by("content_id", "sort")):
+        by_content.setdefault(str(t.content_id), []).append(t.asset)
+    for r in rows:
+        r._ebooks = by_content.get(str(r.id), [])
+    return rows
