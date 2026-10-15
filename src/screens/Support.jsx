@@ -20,9 +20,9 @@ import { useStore } from '../store.jsx'
  * promised here until somebody has decided them.
  */
 
-export const SUPPORT_PHONE = '+91 99580 40508'
+export const SUPPORT_PHONE = '+91 99538 08908'
 export const SUPPORT_EMAIL = 'support@1namo.com'
-const PHONE_DIGITS = '919958040508'
+const PHONE_DIGITS = '919953808908'
 
 const TOPICS = ['sup.t.money', 'sup.t.session', 'sup.t.order', 'sup.t.account', 'sup.t.other']
 const FAQ = [1, 2, 3, 4, 5]

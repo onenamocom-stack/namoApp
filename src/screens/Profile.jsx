@@ -598,7 +598,7 @@ function SettingsPage({ pro }) {
         {/* No "Full deity image" toggle since 11 Oct 2026 (Rahul): the
             murti is always shown whole. */}
         <div className="mt-3">
-          <Row to="/support" title={t('prof.set.help')} note="+91 99580 40508 · support@1namo.com" />
+          <Row to="/support" title={t('prof.set.help')} note="+91 99538 08908 · support@1namo.com" />
         </div>
       </section>
 

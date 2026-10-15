@@ -324,7 +324,7 @@ function Settings({ me, onRatesSaved }) {
           {/* "Switch to seeking" was here until 4 Oct 2026, removed with its
               twin in the client app (owner's call). It also went nowhere: the
               consultant build has no /home, so it bounced back to Studio. */}
-          <Row to="/support" title="Help & support" note="+91 99580 40508 · support@1namo.com" />
+          <Row to="/support" title="Help & support" note="+91 99538 08908 · support@1namo.com" />
         </div>
 
         {/* Last, alone, and it takes the green dot down on the way out.
