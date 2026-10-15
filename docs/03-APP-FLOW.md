@@ -813,9 +813,12 @@ book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
   category is under *More*; a category with nothing in it has no section.
 - **Downloads**: every one. Each has the Bhakti row under its title (12 Oct
   2026, Rahul): Like, Comment, Reshare and Share, with Read on the right; a
-  priced book has no Reshare. A priced book is still bought from the wallet
-  (the Paywall). Rahul asked on 14 Oct for e-books to be paid through the
-  gateway, as products are, with no wallet: waiting for the owner's yes.
+  priced book has no Reshare. A priced book is bought from the wallet (the
+  Paywall's *Unlock*). Built and switched off (15 Oct 2026, Rahul's ask,
+  waiting for the owner's yes): with `EBOOK_PAY_ONLINE` on, the server's
+  402 says `pay: online`, the Paywall's button reads *Pay · ₹99* and opens
+  Razorpay's checkout, the signed answer (or the webhook) unlocks the book,
+  and the wallet refuses to sell e-books. A closed sheet charges nothing.
 - **Courses** and **Events**: a *Soon* under the tile and a coming-soon
   panel. Academy's Courses and Events tabs were mock data and went with it.
 

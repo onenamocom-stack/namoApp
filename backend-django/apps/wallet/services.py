@@ -421,6 +421,71 @@ def open_shop_payment(profile_id, amount_paise, shop_order_id, client=None):
     return {"order_id": order["id"], "amount_paise": amount_paise, "key_id": key_id}
 
 
+def ebook_pay_online():
+    return bool(getattr(settings, "EBOOK_PAY_ONLINE", False))
+
+
+def pay_mode(sku):
+    """How `sku` is paid for: 'online' (Razorpay) or 'wallet'."""
+    from .models import Sku
+
+    return "online" if sku == Sku.EBOOK and ebook_pay_online() else "wallet"
+
+
+def open_entitlement_payment(profile_id, sku, ref="", client=None):
+    """A Razorpay order for something kept (15 Oct 2026: an e-book, when
+    EBOOK_PAY_ONLINE is on). The price is the server's; the 'created' row
+    names what it buys, so the capture grants it rather than crediting the
+    wallet. Already owned: {already: True} and no order. Returns
+    {already: False, order_id, amount_paise, key_id} or raises Refusal."""
+    ref = ref or ""
+    if pay_mode(sku) != "online":
+        raise Refusal(400, REFUSAL_UNKNOWN_SKU)
+    price = sku_price(sku, ref)
+    if not price:
+        raise Refusal(400, REFUSAL_UNKNOWN_SKU)
+    if owns(profile_id, sku, ref):
+        return {"already": True}
+    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
+    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
+    if not key_id or not key_secret:
+        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
+    client = client or RazorpayClient(
+        key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
+    )
+    try:
+        order = client.create_order(
+            price, notes={"profile_id": str(profile_id), "sku": sku, "ref": ref}
+        )
+    except RazorpayError as exc:
+        logger.error("[sku-pay] razorpay refused: %s", exc.status)
+        raise Refusal(502, REFUSAL_PROVIDER) from None
+    Payment.objects.create(
+        profile_id=profile_id, provider_order_id=order["id"], amount_paise=price,
+        status=PaymentStatus.CREATED, entitlement_sku=sku, entitlement_ref=ref,
+    )
+    return {"already": False, "order_id": order["id"], "amount_paise": price, "key_id": key_id}
+
+
+def _grant_paid(profile_id, sku, ref, amount_paise):
+    """The capture of a gateway payment for something kept. Forever things
+    only (an e-book). Already owned — two checkouts raced, or a second tab
+    — and the money is not lost: it goes to the wallet, and the log says
+    why. A savepoint, so the unique index refusing the row rolls back only
+    the grant, never the payments row around it."""
+    from .models import Entitlement
+
+    try:
+        with transaction.atomic():
+            if owns(profile_id, sku, ref):
+                raise IntegrityError("already owned")
+            Entitlement.objects.create(profile_id=profile_id, sku=sku, ref=ref or "",
+                                       price_paise=amount_paise)
+    except IntegrityError:
+        logger.warning("[sku-pay] %s %s paid twice by %s; credited to wallet", sku, ref, profile_id)
+        credit(profile_id, amount_paise, f"{_sku_label(sku)} already yours", ref_type=RefType.PAYMENT)
+
+
 def confirm_checkout(profile_id, provider_order_id, provider_payment_id, signature):
     """The checkout's own proof of payment, so the order is settled the
     moment Razorpay's sheet closes rather than when the webhook lands.
@@ -488,7 +553,8 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         raise CaptureFailed(f"payment {payment_id} has no positive amount")
     with connection.cursor() as cursor:
         cursor.execute(
-            "select profile_id, amount_paise, shop_order_id from payments"
+            "select profile_id, amount_paise, shop_order_id, entitlement_sku, entitlement_ref"
+            " from payments"
             " where provider_order_id = %s and status = 'created'"
             " order by created_at desc limit 1",
             [str(order_id)],
@@ -496,7 +562,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         created = cursor.fetchone()
     if created is None:
         raise CaptureFailed(f"no order {order_id} on this system")
-    profile_id, order_amount, shop_order_id = created
+    profile_id, order_amount, shop_order_id, entitlement_sku, entitlement_ref = created
     # Canonical dashed form whatever the backend stored (Django keeps
     # UUIDFields dashless on SQLite) — the value is returned to the
     # webhook log and feeds the ORM payment row.
@@ -517,6 +583,8 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                 status=status,
                 raw=raw,
                 shop_order_id=shop_order_id,
+                entitlement_sku=entitlement_sku,
+                entitlement_ref=entitlement_ref,
             )
             if status == PaymentStatus.CAPTURED and shop_order_id:
                 # A shop order paid directly (6 Oct 2026): the order is
@@ -530,6 +598,10 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                     logger.warning("[shop-pay] %s paid after its order lapsed; credited to wallet", shop_order_id)
                     credit(profile_id, amount_paise, "Shop payment after the order lapsed",
                            ref_type=RefType.PAYMENT)
+            elif status == PaymentStatus.CAPTURED and entitlement_sku:
+                # Something kept, paid at the gateway (15 Oct 2026): it is
+                # granted, nothing is credited.
+                _grant_paid(profile_id, entitlement_sku, entitlement_ref or "", amount_paise)
             elif status == PaymentStatus.CAPTURED:
                 # The balance is not touched here. The after-insert
                 # trigger on `ledger` moves it (003), emulated by
@@ -696,6 +768,7 @@ def reconcile(client=None):
 # and the wallet row lock serialises one person's taps.
 
 REFUSAL_UNKNOWN_SKU = "That is not something we sell."
+REFUSAL_PAY_ONLINE = "Pay for this at checkout. The wallet does not sell it."
 
 
 def _now_utc():
@@ -771,6 +844,7 @@ def entitlement_state(profile_id, sku, ref=""):
         "owned": row is not None,
         "expires_at": until.isoformat() if until else None,
         "price_paise": sku_price(sku, ref),
+        "pay": pay_mode(sku),
     }
 
 
@@ -792,6 +866,8 @@ def buy(profile_id, sku, ref=""):
     price = sku_price(sku, ref)
     if not price:
         return {"ok": False, "reason": REFUSAL_UNKNOWN_SKU}
+    if pay_mode(sku) == "online":
+        return {"ok": False, "reason": REFUSAL_PAY_ONLINE}
 
     with transaction.atomic():
         # The lock first: two taps by the same person queue here, so the

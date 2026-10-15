@@ -104,6 +104,7 @@ function Ebook({ book: d }) {
   const { showToast, t } = useStore()
   const [link, setLink] = useState(null)
   const [offer, setOffer] = useState(null)
+  const [pay, setPay] = useState('wallet')
   const [busy, setBusy] = useState(false)
   const priced = Boolean(d.pricePaise)
 
@@ -116,6 +117,7 @@ function Ebook({ book: d }) {
       setOffer(null)
     } else if (res.code === 'needs_purchase') {
       setOffer(res.pricePaise ?? d.pricePaise)
+      setPay(res.pay)
     } else {
       showToast(res.reason)
     }
@@ -173,6 +175,7 @@ function Ebook({ book: d }) {
             sku="ebook"
             refKey={d.id}
             pricePaise={offer}
+            pay={pay}
             onBought={fetchLink}
           />
         </div>
