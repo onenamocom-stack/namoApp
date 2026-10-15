@@ -307,3 +307,52 @@ export async function buy(sku, ref = '') {
   const { body } = await call('/buy/', { method: 'POST', token, body: { sku, ref } })
   return body ?? { ok: false, reason: 'Could not reach the wallet. Try again.' }
 }
+
+/**
+ * Pay for something kept in Razorpay's checkout, not from the wallet (15
+ * Oct 2026: a priced e-book, when the server says `pay: 'online'`).
+ * Resolves {ok: true, already?} once the server has checked Razorpay's
+ * signature and granted it; {ok: false, reason} on a refusal; {ok: false,
+ * closed: true} when the sheet was dismissed; {ok: false, unconfirmed:
+ * true} when Razorpay said paid but the confirmation did not get through
+ * (the webhook grants it).
+ */
+export async function payOnline(sku, ref = '', { prefill = {}, description = 'Namo' } = {}) {
+  const token = await getToken()
+  const { body } = await call('/pay/', { method: 'POST', token, body: { sku, ref } })
+  if (!body?.ok) return { ok: false, reason: body?.reason ?? 'Could not start that payment. Try again.' }
+  if (body.already) return { ok: true, already: true }
+  const razorpay = body.razorpay
+  try {
+    await loadCheckout()
+  } catch {
+    return { ok: false, reason: 'Could not open the payment page. Try again.' }
+  }
+  const answer = await new Promise((resolve) => {
+    const rzp = new window.Razorpay({
+      key: razorpay.key_id,
+      order_id: razorpay.order_id,
+      amount: razorpay.amount_paise,
+      currency: 'INR',
+      name: 'Namo',
+      description,
+      prefill,
+      theme: { color: '#1a1a1a' },
+      handler: (response) => resolve(response),
+      modal: { ondismiss: () => resolve(null) },
+    })
+    rzp.on('payment.failed', () => resolve(null))
+    rzp.open()
+  })
+  if (!answer) return { ok: false, closed: true }
+  const { body: done } = await call('/pay/confirm/', {
+    method: 'POST',
+    token,
+    body: {
+      razorpay_order_id: answer.razorpay_order_id,
+      razorpay_payment_id: answer.razorpay_payment_id,
+      razorpay_signature: answer.razorpay_signature,
+    },
+  })
+  return done?.ok ? { ok: true } : { ok: false, unconfirmed: true }
+}

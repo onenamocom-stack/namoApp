@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { PopButton, PopCard } from './Pop.jsx'
-import { buy } from '../lib/wallet.js'
+import { buy, payOnline } from '../lib/wallet.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -11,13 +11,18 @@ import { rupees, useStore } from '../store.jsx'
  * `entitlement()` — and this never states one of its own. `onBought` runs
  * after the wallet has been charged and the thing granted, so the caller
  * refetches whatever was refused.
+ *
+ * `pay="online"` (15 Oct 2026, a priced e-book once the owner switches it
+ * on): Razorpay's checkout instead of the wallet. The server decides which
+ * and says so on the refusal; this only follows it.
  */
-export default function Paywall({ title, note, sku, refKey = '', pricePaise, onBought, className = '' }) {
+export default function Paywall({ title, note, sku, refKey = '', pricePaise, pay = 'wallet', onBought, className = '' }) {
   const { session, showToast, refreshWallet } = useStore()
   const [busy, setBusy] = useState(false)
   const [short, setShort] = useState(false)
 
   const unlock = async () => {
+    if (pay === 'online') return payNow()
     setBusy(true)
     const res = await buy(sku, refKey)
     setBusy(false)
@@ -31,12 +36,26 @@ export default function Paywall({ title, note, sku, refKey = '', pricePaise, onB
     onBought?.()
   }
 
+  const payNow = async () => {
+    setBusy(true)
+    const res = await payOnline(sku, refKey, {
+      description: title,
+      prefill: { contact: session?.user?.phone || undefined },
+    })
+    setBusy(false)
+    if (res.closed) return
+    if (res.unconfirmed) return showToast('Payment received. It unlocks in a minute.')
+    if (!res.ok) return showToast(res.reason)
+    showToast(res.already ? 'Already yours' : 'Unlocked')
+    onBought?.()
+  }
+
   return (
     <PopCard raised className={`p-5 text-center ${className}`}>
       <p className="caps t-heading">{title}</p>
       {note && <p className="mt-2 text-meta t-body">{note}</p>}
       <PopButton variant="gold" className="mt-5" disabled={busy || !pricePaise} onClick={unlock}>
-        {busy ? '…' : pricePaise ? `Unlock · ₹${rupees(pricePaise)}` : 'Unlock'}
+        {busy ? '…' : pricePaise ? `${pay === 'online' ? 'Pay' : 'Unlock'} · ₹${rupees(pricePaise)}` : 'Unlock'}
       </PopButton>
       {short && (
         <PopButton variant="ghost" to="/wallet?add=1" className="mt-3">

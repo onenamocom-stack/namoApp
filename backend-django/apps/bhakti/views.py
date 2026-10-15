@@ -70,7 +70,8 @@ def asset_file(request, asset_id):
     if not wallet.owns(request.user.pk, asset.kind, str(asset.id)):
         return Response(
             refusal_body("needs_purchase", "Buy this book to read it.", sku=asset.kind,
-                         ref=str(asset.id), price_paise=asset.price_paise),
+                         ref=str(asset.id), price_paise=asset.price_paise,
+                         pay=wallet.pay_mode(asset.kind)),
             status=402,
         )
     url = get_provider().presign_get(asset.media_url, settings.R2_PRIVATE_BUCKET, seconds=600)

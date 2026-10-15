@@ -199,3 +199,42 @@ def buy(request):
     form.is_valid(raise_exception=True)
     return Response(services.buy(
         request.user.pk, form.validated_data["sku"], form.validated_data["ref"]))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def pay(request):
+    """A Razorpay order for something kept (15 Oct 2026: an e-book, when
+    EBOOK_PAY_ONLINE is on). {sku, ref} in, never a price. Out:
+    {already: True}, or {already: False, razorpay: {order_id, amount_paise,
+    key_id}} for the checkout sheet."""
+    form = BuyInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    try:
+        opened = services.open_entitlement_payment(
+            request.user.pk, form.validated_data["sku"], form.validated_data["ref"])
+    except services.Refusal as refusal:
+        return Response({"ok": False, "reason": refusal.reason}, status=refusal.status)
+    if opened["already"]:
+        return Response({"ok": True, "already": True})
+    return Response({"ok": True, "already": False, "razorpay": {
+        "order_id": opened["order_id"], "amount_paise": opened["amount_paise"],
+        "key_id": opened["key_id"]}})
+
+
+class PayConfirmInput(serializers.Serializer):
+    razorpay_order_id = serializers.CharField(max_length=64)
+    razorpay_payment_id = serializers.CharField(max_length=64)
+    razorpay_signature = serializers.CharField(max_length=256)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def pay_confirm(request):
+    """The checkout's proof of payment for `pay`: the thing is granted now
+    rather than when the webhook lands."""
+    form = PayConfirmInput(data=request.data)
+    form.is_valid(raise_exception=True)
+    d = form.validated_data
+    return Response(services.confirm_checkout(
+        request.user.pk, d["razorpay_order_id"], d["razorpay_payment_id"], d["razorpay_signature"]))

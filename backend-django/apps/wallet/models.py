@@ -194,6 +194,10 @@ class Payment(models.Model):
     # wallet top-up. Set on the 'created' row; the capture reads it there,
     # never from the payload.
     shop_order_id = models.UUIDField(null=True, blank=True)
+    # Something kept, paid at the gateway (15 Oct 2026: an e-book). Set on
+    # the 'created' row like shop_order_id; the capture grants it.
+    entitlement_sku = models.CharField(max_length=16, null=True, blank=True)
+    entitlement_ref = models.TextField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=PaymentStatus.choices, default=PaymentStatus.CREATED
     )
@@ -231,9 +235,11 @@ class Sku(models.TextChoices):
 class Entitlement(models.Model):
     """One purchase from the wallet that unlocks something.
 
-    Written only by `services.buy`, in the same transaction as the ledger
-    row that paid for it — the ledger row's ref_id is this row's id, so a
-    charge can always be traced to what it bought.
+    Written by `services.buy`, in the same transaction as the ledger row
+    that paid for it — the ledger row's ref_id is this row's id — or by
+    `payment_capture` for one paid at the gateway (an e-book, behind
+    EBOOK_PAY_ONLINE), in the same transaction as its payments row. Either
+    way a charge traces to what it bought.
 
     `expires_at` NULL means forever (an e-book, one muhurat). A prediction
     purchase is a row per 30 days; buying again while one is running starts

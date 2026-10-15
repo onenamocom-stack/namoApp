@@ -374,6 +374,10 @@ TAROT_FREE_WEEKLY = int(os.environ.get("TAROT_FREE_WEEKLY", "2"))
 PREDICTION_PRICE_PAISE = int(os.environ.get("PREDICTION_PRICE_PAISE", "9900"))  # ₹99
 PREDICTION_DAYS = int(os.environ.get("PREDICTION_DAYS", "30"))
 MUHURAT_ME_PRICE_PAISE = int(os.environ.get("MUHURAT_ME_PRICE_PAISE", "4900"))  # ₹49
+# A priced e-book paid at Razorpay instead of from the wallet (15 Oct 2026,
+# Rahul). Off until the owner says yes: a deploy for anything else must not
+# switch how money is taken. On, the wallet no longer sells e-books.
+EBOOK_PAY_ONLINE = os.environ.get("EBOOK_PAY_ONLINE", "") == "1"
 
 # --- Razorpay (module 8; rule 7 — server-side only, never a response body)
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")

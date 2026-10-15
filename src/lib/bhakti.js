@@ -631,6 +631,8 @@ export async function assetFile(id) {
       code: response.status === 401 ? 'signed_out' : body.reason,
       reason: body.message ?? 'Could not open that book. Try again.',
       pricePaise: body.price_paise ?? null,
+      // 'online' once e-books are paid at Razorpay (15 Oct 2026); else 'wallet'.
+      pay: body.pay ?? 'wallet',
     }
   } catch {
     return { ok: false, code: 'unavailable', reason: 'Could not reach the library. Try again.' }
