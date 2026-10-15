@@ -293,6 +293,16 @@ export default function Welcome() {
             {t('w.privacyLink')}
           </a>
         </p>
+        {/* Every policy, one tap away, as the payment gateway's review asks
+            (15 Oct 2026). Plain pages in public/. */}
+        <p className="mt-2 text-[12px] leading-relaxed text-t3">
+          {[['about', 'About'], ['shipping', 'Shipping'], ['refunds', 'Cancellation and refunds'], ['contact', 'Contact']].map(([f, label], i) => (
+            <span key={f}>
+              {i > 0 && ' · '}
+              <a href={`${import.meta.env.BASE_URL}${f}.html`} className="underline">{label}</a>
+            </span>
+          ))}
+        </p>
         <a href={PRO_APP_URL} className="mt-3 inline-block text-[12px] text-t3 underline">
           {t('w.consultant')}
         </a>
