@@ -289,10 +289,7 @@ def affiliate_link(consultant_id, product_id=None, listing_id=None):
         "url": url,
         "product_id": str(product_id) if product_id else None,
         "listing_id": str(listing_id) if listing_id else None,
-        "share_text": (
-            "I use this one. Your first order on NAMO comes with cashback in "
-            f"your wallet: {url}"
-        ),
+        "share_text": f"I use this one. Find it on NAMO: {url}",
     }
 
 
@@ -392,19 +389,8 @@ def check_coupon(buyer_id, code, exclude_order_id=None):
     if consultant_services.is_approved(buyer_id):
         return {"ok": False, "reason": REFUSAL_CONSULTANT_TO_CONSULTANT}
 
-    if _has_bought_before(buyer_id, exclude_order_id):
-        return {"ok": False, "reason": REFUSAL_NOT_FIRST_ORDER}
-    from apps.shop.models import Order
-
-    if Referral.objects.filter(
-        referee_id=buyer_id, kind=Referral.Kind.PURCHASE
-    ).exclude(order_id=exclude_order_id).exclude(
-        # An order that never happened (lapsed unpaid, cancelled) does not
-        # use the offer up, the same rule as _has_bought_before.
-        order__status=Order.Status.CANCELLED,
-    ).exists():
-        return {"ok": False, "reason": REFUSAL_NOT_FIRST_ORDER}
-
+    # Not "first order only" since 15 Oct 2026 (Rahul): a code typed by a
+    # customer who has bought before still credits the sharer.
     return {"ok": True, "referrer_id": str(row.profile_id), "code": row.code}
 
 
@@ -472,14 +458,14 @@ def _order_lines(order):
 
 # ── affiliate links: who brought this customer (11 Oct 2026) ────────────────
 #
-# The owner's rule. An astrologer shares a link (a product, the shop, a reel
-# with products on it). A customer who arrives through it is that
-# astrologer's for AFFILIATE_DAYS (15, set in the console) — for the whole
-# store, not just the product linked. Another astrologer's link before the
-# customer's first order replaces it, and the window starts again. The
-# FIRST order inside the window pays the astrologer; after the window, or
-# after the first order, links change nothing. The buyer's own first-order
-# cashback does not depend on any link.
+# The owner's rule. A Pro or a Creator shares a link (a product, the shop,
+# a reel with products on it). A customer who arrives through it is theirs
+# for AFFILIATE_DAYS (15, set in the console) — for the whole store, not
+# just the product linked. Another person's link before the customer buys
+# replaces it, and the window starts again. The next order inside the
+# window pays the sharer and uses the link up; a fresh click holds them
+# again. New customer or old (15 Oct 2026, Rahul; it was the FIRST order
+# only). The buyer's own first-order cashback does not depend on any link.
 
 
 def attribution_days():
@@ -531,15 +517,13 @@ def record_visit(profile_id, code, product_id=None, clicked_at=None, now=None):
     row = resolve(code)
     if not _may_earn(row, profile_id):
         return {"ok": False, "recorded": False, "reason": "That link does not apply to you."}
-    if not is_first_order(profile_id):
-        return {"ok": True, "recorded": False, "reason": "Links count only before your first order."}
     clicked = min(clicked_at or now, now)
     expires = clicked + timezone.timedelta(days=attribution_days())
     if expires <= now:
         return {"ok": True, "recorded": False, "reason": "That link is older than the window."}
     latest = AffiliateVisit.objects.filter(profile_id=profile_id).order_by("-clicked_at").first()
-    if latest is not None and latest.code == row.code and latest.order_id is None:
-        # The same astrologer again: the window starts again from this click.
+    if latest is not None and latest.code == row.code and not _used(latest):
+        # The same person again: the window starts again from this click.
         if clicked >= latest.clicked_at:
             latest.clicked_at, latest.expires_at = clicked, expires
             latest.product_id = product_id or latest.product_id
@@ -552,6 +536,17 @@ def record_visit(profile_id, code, product_id=None, clicked_at=None, now=None):
     return {"ok": True, "recorded": True, "expires_at": visit.expires_at.isoformat()}
 
 
+def _used(visit):
+    """An order took this click: a shop order (`visit.order`), or a paid
+    Market purchase credited to the same person since the click."""
+    if visit.order_id is not None:
+        return True
+    from apps.market.models import Purchase
+
+    return Purchase.objects.filter(buyer_id=visit.profile_id, referrer_id=visit.consultant_id,
+                                   amount_paise__gt=0, created_at__gte=visit.clicked_at).exists()
+
+
 def live_visit(profile_id, now=None):
     """The link that holds this customer now: the newest click, if it has
     not expired and has not been used. Last click wins."""
@@ -559,28 +554,31 @@ def live_visit(profile_id, now=None):
 
     now = now or timezone.now()
     latest = AffiliateVisit.objects.filter(profile_id=profile_id).order_by("-clicked_at").first()
-    if latest is None or latest.order_id is not None or latest.expires_at <= now:
+    if latest is None or latest.expires_at <= now or _used(latest):
         return None
     return latest
 
 
 def claim_first_order(buyer_id, order, now=None):
-    """The rewards of a customer's FIRST order, written as pending rows
-    inside the order's own transaction (nothing is paid here — they mature
-    seven days after delivery, and a return cancels them).
+    """An order's rewards, written as pending rows inside the order's own
+    transaction (nothing is paid here — they mature seven days after
+    delivery, and a return cancels them).
 
-      - the buyer: each product's cashback, on a prepaid order only;
-      - the astrologer whose link holds them (live_visit): 10% of each line
-        after the buyer's share.
+      - the buyer: each product's own cashback (the console's rule on the
+        product), prepaid only — on every order, link or none (15 Oct 2026,
+        Rahul: "Customer cashback is linked to product not referral"; it
+        was the first order only);
+      - the Pro or Creator whose link holds them (live_visit): 6% of each
+        line after the buyer's share — on any order, new customer or old
+        (15 Oct 2026, Rahul; it was the first order only).
 
-    Not their first order: nothing, and no refusal — the order stands."""
+    Neither applies: nothing, and no refusal — the order stands."""
     from apps.shop.models import Order
 
     from .models import AffiliateVisit
 
     now = now or timezone.now()
-    if not is_first_order(buyer_id, exclude_order_id=order.id):
-        return {"ok": True, "cashback_paise": 0, "first_order": False}
+    first = is_first_order(buyer_id, exclude_order_id=order.id)
     prepaid = order.payment_method != Order.PaymentMethod.COD
     visit = live_visit(buyer_id, now)
     code_row = resolve(visit.code) if visit else None
@@ -592,14 +590,17 @@ def claim_first_order(buyer_id, order, now=None):
 
     referral = None
     if referrer_amount > 0:
-        # A purchase referral left by an order that never happened would
-        # trip the one-per-buyer constraint; it is worth nothing now.
+        # The attribution row is one per buyer, ever: their first referred
+        # order writes it; a later one is a cashback row on its own. A
+        # purchase referral left by an order that never happened would trip
+        # that constraint; it is worth nothing now.
         Referral.objects.filter(referee_id=buyer_id, kind=Referral.Kind.PURCHASE).filter(
             models.Q(order__isnull=True) | models.Q(order__status=Order.Status.CANCELLED)).delete()
-        referral = Referral.objects.create(
-            kind=Referral.Kind.PURCHASE, referrer_id=visit.consultant_id, referee_id=buyer_id,
-            code=visit.code, order=order,
-        )
+        if not Referral.objects.filter(referee_id=buyer_id, kind=Referral.Kind.PURCHASE).exists():
+            referral = Referral.objects.create(
+                kind=Referral.Kind.PURCHASE, referrer_id=visit.consultant_id, referee_id=buyer_id,
+                code=visit.code, order=order,
+            )
         Cashback.objects.create(
             referral=referral, order=order, profile_id=visit.consultant_id,
             side=Cashback.Side.REFERRER, amount_paise=referrer_amount,
@@ -610,26 +611,25 @@ def claim_first_order(buyer_id, order, now=None):
         Cashback.objects.create(
             referral=referral, order=order, profile_id=buyer_id,
             side=Cashback.Side.BUYER, amount_paise=buyer_amount,
-            note=f"Cashback on your first order {short}",
+            note=f"Cashback on your order {short}",
         )
-    return {"ok": True, "cashback_paise": buyer_amount, "first_order": True,
+    return {"ok": True, "cashback_paise": buyer_amount, "first_order": first,
             "referral_id": str(referral.id) if referral else None}
 
 
 def first_order_preview(buyer_id, lines, payment):
-    """What the cart says before Pay: is this their first order, and what
-    comes back. Read-only."""
-    if buyer_id and not is_first_order(buyer_id):
-        return {"first_order": False, "cashback_paise": 0, "note": None}
+    """What the cart says before Pay: what comes back on this basket — on
+    any order since 15 Oct 2026 (the name is older). Read-only."""
+    first = not buyer_id or is_first_order(buyer_id)
     back, _ = cashback_split(preview_lines(lines), prepaid=True)
     if not back:
-        return {"first_order": True, "cashback_paise": 0, "note": None}
+        return {"first_order": first, "cashback_paise": 0, "note": None}
     rupees = f"₹{back / 100:,.0f}"
     if payment == "cod":
-        return {"first_order": True, "cashback_paise": 0, "prepaid_cashback_paise": back,
-                "note": f"Your first order gets {rupees} back when you pay online. Not on cash on delivery."}
-    return {"first_order": True, "cashback_paise": back, "prepaid_cashback_paise": back,
-            "note": f"Your first order: {rupees} back in your wallet seven days after delivery."}
+        return {"first_order": first, "cashback_paise": 0, "prepaid_cashback_paise": back,
+                "note": f"This order gets {rupees} back when you pay online. Not on cash on delivery."}
+    return {"first_order": first, "cashback_paise": back, "prepaid_cashback_paise": back,
+            "note": f"{rupees} back in your wallet seven days after delivery."}
 
 
 # ── maturation: delivery, then the wait, then the money ─────────────────────

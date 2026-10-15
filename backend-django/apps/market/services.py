@@ -342,8 +342,8 @@ def take_free(profile_id, listing_id):
 
 def _referrer(buyer_id, listing):
     """The Pro or Creator whose link or tag holds this buyer now, if any
-    and not the seller themselves. Recorded on the purchase; nothing is paid
-    on it until what a sharer earns on a listing is decided (Rahul, 15 Oct)."""
+    and not the seller themselves. A paid purchase credited to them uses
+    the link up (referrals._used)."""
     from apps.referrals import services as referrals
 
     visit = referrals.live_visit(buyer_id)
@@ -731,18 +731,13 @@ def remind_events(now=None):
 
 def _pay_sharer(purchase):
     """6% of a paid purchase to the Pro or Creator whose link or tag brought
-    the buyer — on that buyer's first such purchase only (Rahul, 15 Oct
-    2026: every new customer, once each). From Namo's share. An event's
-    waits until it has happened (it joins the payout then)."""
+    the buyer — new customer or old (Rahul, 15 Oct 2026). From Namo's
+    share. The purchase uses the link up; a fresh click holds them again."""
     from django.conf import settings
 
     from apps.referrals import services as referrals
 
     if not purchase.referrer_id or not purchase.amount_paise:
-        return
-    earlier = (Purchase.objects.filter(buyer_id=purchase.buyer_id, referrer_id__isnull=False, amount_paise__gt=0)
-               .exclude(pk=purchase.pk).exists())
-    if earlier:
         return
     amount = purchase.amount_paise * settings.REFERRAL_SHARER_BPS // 10_000
     if amount > 0:

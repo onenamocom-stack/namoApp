@@ -1411,10 +1411,11 @@ Keep items or Clear cart — since one tap emptied a built cart. Choosing an add
 courier serves it (and for the charge, which is "Free" since 8 Oct 2026); the
 sheet then shows Items, Delivery and Total, and **Pay
 stays disabled, reading "Choose an address", until a charge has come back**.
-A customer's first order says its cashback above Pay, for this basket and
-this way of paying: "Your first order: ₹500 back in your wallet seven days
-after delivery", or on cash on delivery "Your first order gets ₹500 back
-when you pay online. Not on cash on delivery." (11 Oct 2026). The code box
+An order says its cashback above Pay, for this basket and this way of
+paying — every order since 15 Oct 2026 (it was the first only): "₹500
+back in your wallet seven days after delivery", or on cash on delivery
+"This order gets ₹500 back when you pay online. Not on cash on delivery."
+Nothing is said when no product in the basket carries a cashback. The code box
 is for shop coupons; an astrologer's code is a link now, caught from
 `?ref=A…` on any page and held by the server (`docs/01-PRD.md` §12).
 Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online

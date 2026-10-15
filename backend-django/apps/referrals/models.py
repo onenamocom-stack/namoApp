@@ -243,14 +243,17 @@ class AffiliateSettings(models.Model):
 
 
 class AffiliateVisit(models.Model):
-    """A customer who arrived through an astrologer's link (11 Oct 2026).
+    """A customer who arrived through a Pro's or a Creator's link or tag
+    (11 Oct 2026).
 
     One row per arrival; a second arrival through the SAME link refreshes
-    its row, through ANOTHER astrologer's link adds a row. The live one is
-    the newest unexpired row — last click wins — until the customer's first
-    order, which takes it; after that, links change nothing. Recorded when
-    the person is signed in (a visitor's click waits in the browser and is
-    sent at sign-in, with the time it happened)."""
+    its row, through ANOTHER person's link adds a row. The live one is the
+    newest unexpired row — last click wins — until an order takes it (a
+    shop order, or a paid Market purchase after the click). New customer or
+    old (15 Oct 2026, Rahul; it was the first order only). A fresh click
+    holds them again. Recorded when the person is signed in (a visitor's
+    click waits in the browser and is sent at sign-in, with the time it
+    happened)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile_id = models.UUIDField()           # the customer
@@ -259,7 +262,7 @@ class AffiliateVisit(models.Model):
     product_id = models.UUIDField(null=True, blank=True)  # the product linked, if any
     clicked_at = models.DateTimeField()
     expires_at = models.DateTimeField()
-    # The first order this link earned on, once it has.
+    # The shop order this link earned on, once it has.
     order = models.ForeignKey(
         "shop.Order", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
     )

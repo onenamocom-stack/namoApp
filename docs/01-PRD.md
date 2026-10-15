@@ -401,9 +401,10 @@ simply taken. The seller is paid out less Namo's commission:
   from their share: **₹100 a unit** unless Finance writes that order's real
   cost on the sale (Seller earnings) before its payout. Delivery is free to
   the buyer.
-- **Referrals:** a Pro or a Creator whose link or tag brought a customer's
-  first purchase of a download, course or event earns **6%** of it, from
-  Namo's share (the seller's is untouched) — as on shop orders below.
+- **Referrals:** a Pro or a Creator whose link or tag brought the buyer
+  to a paid download, course or event earns **6%** of it, from Namo's
+  share (the seller's is untouched) — new customer or old, one click one
+  purchase, as on shop orders (§12).
 - **Delivery:** the seller sends the product to Namo; Namo delivers it to
   the buyer.
 - **Payouts:** monthly, every seller in one run, on the **7th** for the
@@ -983,8 +984,8 @@ typed at the till), the other a code typed at sign-up.
 |---|---|---|---|---|
 | Carried by | an affiliate **link** (`?ref=A…`) | the `N…` code | a link | the `N…` code |
 | Used | opening the link, any page | at sign-up | — | at sign-up |
-| Reward | **6% of the first order (after the buyer's cashback) to the Pro or Creator** (15 Oct 2026; it was 10%) — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
-| Limit | the buyer's **first order, within the window** | once per account, ever | — | — |
+| Reward | **6% of the order (after the buyer's cashback) to the Pro or Creator** (15 Oct 2026; it was 10%) — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
+| Limit | **one order per click, within the window**, new customer or old (15 Oct 2026; it was the first order) | once per account, ever | — | — |
 
 ### Affiliate links with a window — decided 11 Oct 2026
 
@@ -998,16 +999,17 @@ The owner's rule, replacing the astrologer's code at checkout.
   shop, not just the product linked. A visitor who signs up first keeps
   it: the click waits in the browser and is sent, with its time, at
   sign-in.
-- **Last link wins.** Another astrologer's link before the customer's
-  first order replaces it, and the window starts again.
-- **First order only.** The first order inside the window pays the
-  astrologer or Creator **6%** (15 Oct 2026, Rahul; owner's yes; it was 10%)
-  of what is left after the buyer's cashback, per item — below; from
-  Namo's share. Every new customer through the same link earns it again; a
-  customer's second order earns nobody. After the window, or after the first order, links change
-  nothing. A cancelled or lapsed order does not use the first order up.
-- **The buyer's first-order cashback needs no link.** Every customer's
-  first prepaid order gets each product's cashback.
+- **Last link wins.** Another astrologer's link before the customer buys
+  replaces it, and the window starts again.
+- **New customer or old; one click, one order** (15 Oct 2026, Rahul; it
+  replaced "first order only"). The next order inside the window — a shop
+  order or a paid Market listing — pays the astrologer or Creator **6%**
+  (it was 10%) of what is left after the buyer's cashback, per item —
+  below; from Namo's share. That order uses the click up; opening the link
+  again (or another person's) holds the customer for the next. After the
+  window, nothing. A cancelled or lapsed order still uses the click.
+- **The buyer's cashback needs no link and no first order.** It belongs to
+  the product (below): every prepaid order gets it.
 - **Installs.** On the website this is complete. An Android app will
   carry the link through the Play Store with Google's Install Referrer
   when there is one; an iPhone app cannot without a paid service.
@@ -1016,12 +1018,13 @@ The owner's rule, replacing the astrologer's code at checkout.
 
 Rahul's request, the owner's yes. A **Creator** (§2) tags shop products on
 their posts and shares product and shop links exactly as an approved
-astrologer does, with an `A…` code of their own, and earns the same: **10%
-of the first order inside the window, after the buyer's cashback**. Every
-rule above holds unchanged: the window, last link wins, first order only,
-seven days after delivery before it is paid, cancelled by a return.
+astrologer does, with an `A…` code of their own, and earns the same: **6%
+of the order inside the window, after the buyer's cashback** (15 Oct 2026;
+it was 10% of the first order). Every rule above holds unchanged: the
+window, last link wins, one click one order, seven days after delivery
+before it is paid, cancelled by a return.
 
-- **Their book.** A Creator's 10%, once paid, is written to their own
+- **Their book.** A Creator's share, once paid, is written to their own
   earnings book (`creator_earnings`), which they read on Dashboard. An
   astrologer's stays in `earnings_ledger`.
 - **Paid out like an astrologer's**, when payouts exist (§8: monthly on
@@ -1049,8 +1052,10 @@ what they were given. Nothing reaches backwards.
 ### Each product sets its own cashback — decided 9 Oct 2026
 
 The owner's rule, replacing a flat 10% to both sides. The console sets, per
-product, what a customer's FIRST order gives the BUYER (since 11 Oct 2026
-every first order, astrologer's link or not; before, only through a code):
+product, what an order gives the BUYER — **every prepaid order, link or
+none** (15 Oct 2026, Rahul: "Customer cashback is linked to product not
+referral"; from 11 Oct it was every first order, before that only through
+a code):
 **a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
 **a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
 **platform default** — **nothing** since 15 Oct 2026 (Rahul; owner's yes;

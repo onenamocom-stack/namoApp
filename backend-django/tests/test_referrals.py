@@ -212,18 +212,19 @@ class TestPurchaseReferral:
         assert all(r.status == Cashback.Status.PENDING for r in rows)
         assert all(r.matures_at is None for r in rows), "the clock starts at delivery"
 
-    def test_a_second_order_earns_nobody_and_is_not_refused(self, people, product):
-        """11 Oct 2026: an astrologer's code is a link. Only the FIRST order
-        pays; a second goes through and earns nothing."""
+    def test_a_second_order_through_the_code_pays_the_sharer_again(self, people, product):
+        """An astrologer's code is a link (11 Oct 2026); typed again, it is
+        a fresh click, and an old customer pays the sharer too (15 Oct 2026,
+        Rahul). The buyer's cashback comes on every order."""
         _fund(BUYER, PRICE * 3)
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)
         shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}], coupon_code=code)
 
         second = shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}], coupon_code=code)
-        assert second["ok"] and second["cashback_paise"] == 0
-        assert Cashback.objects.count() == 2  # the first order's two rows only
+        assert second["ok"] and second["cashback_paise"] == TENTH
+        assert Cashback.objects.count() == 4  # both sides, both orders
 
-    def test_somebody_who_has_already_shopped_cannot_start_using_one(
+    def test_somebody_who_has_already_shopped_still_pays_the_sharer(
         self, people, product
     ):
         _fund(BUYER, PRICE * 3)
@@ -232,8 +233,8 @@ class TestPurchaseReferral:
             BUYER, [{"product_id": str(product.id), "qty": 1}],
             coupon_code=_code(PRO, ReferralCode.Kind.CONSULTANT),
         )
-        assert result["ok"] and result["cashback_paise"] == 0
-        assert not Cashback.objects.filter(side="referrer").exists()
+        assert result["ok"] and result["cashback_paise"] == TENTH  # every order, 15 Oct
+        assert Cashback.objects.filter(side="referrer", order_id=result["order_id"]).exists()
 
     def test_consultant_to_consultant_pays_nobody(self, people, product):
         """The owner's point 3: a consultant buying through another's link
@@ -740,15 +741,15 @@ class TestCheckingACode:
                                      viewer_id=BUYER)
         assert out["reason"] == services.REFUSAL_SELF
 
-    def test_a_second_order_is_refused_before_the_tap(self, people, product):
-        """The whole point of checking early: the refusal that used to
-        arrive after Pay now arrives while they are still typing."""
+    def test_a_second_order_is_not_refused(self, people, product):
+        """Not first order only since 15 Oct 2026 (Rahul): the code still
+        credits the sharer on a customer who has bought before."""
         _fund(BUYER, PRICE * 3)
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)
         shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}],
                           coupon_code=code)
         out = services.describe_code(code, viewer_id=BUYER, subtotal_paise=PRICE)
-        assert out["reason"] == services.REFUSAL_NOT_FIRST_ORDER
+        assert out["ok"] is True
 
     def test_signed_out_it_says_what_kind_without_guessing_at_rules(self, people):
         """The onboarding field sits before the OTP. With no session there

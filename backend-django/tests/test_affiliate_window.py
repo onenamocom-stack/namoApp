@@ -2,9 +2,10 @@
 
 A customer who arrives through an astrologer's link is that astrologer's for
 the window (15 days, set in the console), whole store. Another astrologer's
-link before the first order replaces it and the window starts again. Only the
-FIRST order pays the astrologer; after the window, or after the first order,
-links change nothing. The buyer's first-order cashback needs no link."""
+link before they buy replaces it and the window starts again. The next order
+inside the window pays the astrologer and uses the link up — new customer or
+old (15 Oct 2026, Rahul; it was the first order only). The buyer's
+first-order cashback needs no link."""
 
 import pytest
 from django.utils import timezone
@@ -91,14 +92,31 @@ class TestTheWindow:
         _buy(product)
         assert ("referrer", PRO2) in _owed()
 
-    def test_after_the_first_order_links_change_nothing(self, two_pros, product):
+    def test_an_old_customer_through_a_link_pays_the_sharer(self, two_pros, product):
         _buy(product)
         answer = services.record_visit(BUYER, _code(PRO2, ReferralCode.Kind.CONSULTANT))
-        assert answer["recorded"] is False
-        _fund(BUYER, PRICE)
-        second = shop_services.buy(BUYER, [{"product_id": str(product.id), "qty": 1}])
-        assert second["cashback_paise"] == 0
-        assert not Cashback.objects.filter(side="referrer").exists()
+        assert answer["recorded"] is True
+        second = _buy(product)
+        assert second["cashback_paise"] == TENTH  # the buyer's cashback comes on every order
+        row = Cashback.objects.get(side="referrer")
+        assert str(row.profile_id) == PRO2 and str(row.order_id) == second["order_id"] and row.amount_paise == TENTH
+
+    def test_a_returning_customer_gets_the_product_cashback_again(self, people, product):
+        """Cashback belongs to the product, not to a link or a first order
+        (15 Oct 2026, Rahul)."""
+        _buy(product)
+        assert _buy(product)["cashback_paise"] == TENTH
+        assert Cashback.objects.filter(side="buyer").count() == 2
+
+    def test_one_click_one_order(self, people, product):
+        code = _code(PRO, ReferralCode.Kind.CONSULTANT)
+        services.record_visit(BUYER, code)
+        _buy(product)
+        _buy(product)
+        assert Cashback.objects.filter(side="referrer").count() == 1
+        services.record_visit(BUYER, code)  # a fresh click holds them again
+        _buy(product)
+        assert Cashback.objects.filter(side="referrer").count() == 2
 
     def test_a_cancelled_first_order_does_not_use_the_link_up(self, people, product):
         services.record_visit(BUYER, _code(PRO, ReferralCode.Kind.CONSULTANT))

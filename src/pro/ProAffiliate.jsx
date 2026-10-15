@@ -23,9 +23,9 @@ import { rupees, useStore } from '../store.jsx'
  * notices until a month of commission is missing.
  *
  * The screen is deliberately honest about the two things a consultant
- * gets wrong here: it only pays on somebody's FIRST order, and the money
- * arrives after delivery rather than at checkout. Both are said before
- * the copy button, not in a help page.
+ * gets wrong here: one click pays on one order, and the money arrives
+ * after delivery rather than at checkout. Both are said before the copy
+ * button, not in a help page.
  */
 export default function ProAffiliate() {
   const { showToast } = useStore()
@@ -67,20 +67,21 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your links" sub="Share a link, earn on a first order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
+      <TopBar title="Your links" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
 
       {/* Said before the buttons, because both of these are what a
           consultant would otherwise learn from an angry message. */}
-      {/* The rules as they are since 11 Oct 2026: a link, not a code; a
-          window; the first order only; the last link wins. */}
+      {/* The rules as they are since 15 Oct 2026 (Rahul): a link, not a
+          code; a window; new customer or old; one click, one order; the
+          last link wins. */}
       <Section label="How it pays" tight>
         <p className="horoscope">
           Someone who opens your link is yours for {days ?? 15} days, for the whole
-          shop — not just the product you linked. If their first order comes in
-          that time, you earn on it, into your earnings, with your next payout.
+          shop — not just the product you linked. If they order in that time, you
+          earn on it, into your earnings, with your next payout.
         </p>
         <ul className="mt-4 space-y-2 text-meta t-sub">
-          <li>• Only their <b>first order</b> pays. After that, links change nothing.</li>
+          <li>• <b>New or old customer</b>, it pays. One click pays on one order; they open your link again for the next.</li>
           <li>• If they open <b>somebody else's link</b> before buying, it is theirs from then.</li>
           <li>• The money lands <b>seven days after delivery</b>, not at checkout — a returned parcel cancels it.</li>
           <li>• Put a product on your post or reel and it carries your link too.</li>
@@ -107,7 +108,7 @@ export default function ProAffiliate() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-body text-t1">{p.name}</span>
                 <span className="mt-0.5 block caps-sm t-faint tnum">
-                  ₹{rupees(Math.round(p.price * 100))} · you earn ₹{rupees(Math.floor((p.price * 100) / 10))}
+                  ₹{rupees(Math.round(p.price * 100))} · you earn ₹{rupees(Math.floor((p.price * 100 * 6) / 100))}
                 </span>
               </span>
               <PopButton

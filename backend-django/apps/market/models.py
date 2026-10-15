@@ -115,8 +115,8 @@ class Purchase(models.Model):
     buyer_id = models.UUIDField(db_index=True)
     amount_paise = models.IntegerField()
     # Whose link or tag brought the buyer (15 Oct 2026, Rahul): the Pro or
-    # Creator holding them (referrals.live_visit), recorded only — what a
-    # sharer earns on a listing is not decided, so nothing is paid on it.
+    # Creator holding them (referrals.live_visit). A paid purchase pays them
+    # 6% (services._pay_sharer) and uses their link up.
     referrer_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 

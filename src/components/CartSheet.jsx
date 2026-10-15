@@ -75,8 +75,9 @@ export default function CartSheet() {
   // 2026) and is held on the server, not carried into this box.
   const [coupon, setCoupon] = useState('')
 
-  /* The first order's cashback for this basket and this way of paying,
-     said above Pay — every first order, link or no link (11 Oct 2026). */
+  /* This basket's cashback for this way of paying, said above Pay — the
+     products' own, on every order, link or no link (15 Oct 2026; it was
+     the first order only). */
   const [firstOrder, setFirstOrder] = useState(null)
   const basketKey = JSON.stringify(cart.map((l) => [l.id, l.qty]))
   useEffect(() => {

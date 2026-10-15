@@ -325,6 +325,11 @@ class TestTagsAndLinks:
         row = _approved(price=0)
         services.take_free(TEST_USER, row.id)
         assert Purchase.objects.get(buyer_id=TEST_USER).referrer_id == NOBODY
+        # A free one does not use the link up; a paid one does.
+        assert referrals.live_visit(TEST_USER) is not None
+        paid = _approved(price=10000)
+        Purchase.objects.create(listing=paid, buyer_id=TEST_USER, amount_paise=10000, referrer_id=NOBODY)
+        assert referrals.live_visit(TEST_USER) is None
 
 
 @pytest.mark.django_db
@@ -379,7 +384,7 @@ class TestRates:
         e = services.set_delivery(e, 6500, "finance")
         assert (e.delivery_paise, e.net_paise) == (6500, 63500)
 
-    def test_the_sharer_gets_six_percent_of_a_first_purchase_once(self, api_client, token, creator, keys):
+    def test_the_sharer_gets_six_percent_of_each_purchase_through_their_link(self, api_client, token, creator, keys):
         from apps.referrals.models import CreatorEarning
 
         SHARER = uuid.UUID("00000000-0000-4000-8000-0000000000c9")
@@ -396,7 +401,7 @@ class TestRates:
         with mock.patch("apps.market.services._referrer", return_value=SHARER):
             order = _pay(api_client, token, second.id, fake=FakeRazorpay()).json()["razorpay"]["order_id"]
             _confirm(api_client, token, order, payment_id="pay_2")
-        assert CreatorEarning.objects.filter(profile_id=SHARER).count() == 1
+        assert CreatorEarning.objects.filter(profile_id=SHARER).count() == 2  # old customer too (15 Oct)
 
     def test_an_event_pays_out_only_once_it_has_happened(self, creator):
         row = services.approve(services.create(CREATOR, {
