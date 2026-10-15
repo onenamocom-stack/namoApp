@@ -77,6 +77,7 @@ class TestFetchAssets:
                 "preview_url": r["preview_url"],
                 "price_paise": r["price_paise"],
                 "mrp_paise": None,
+                "description": "",
                 "artist": r["artist"],
                 "licence": r["licence"],
                 "source": r["source"],

@@ -53,6 +53,7 @@ import Muhurat from './screens/Muhurat.jsx'
 import Invite from './screens/Invite.jsx'
 import Article from './screens/Article.jsx'
 import ProductPage from './screens/ProductPage.jsx'
+import DownloadPage from './screens/DownloadPage.jsx'
 import TagScreen from './screens/TagScreen.jsx'
 import Messages from './screens/Messages.jsx'
 import Conversation from './screens/Conversation.jsx'
@@ -420,6 +421,8 @@ function Frame() {
                 <Route path="/read/:id" element={<Article />} />
                 {/* A product's own page (6 Oct 2026), by slug or id. */}
                 <Route path="/shop/p/:key" element={<ProductPage />} />
+                {/* A download's own page (15 Oct 2026, Rahul). */}
+                <Route path="/shop/d/:id" element={<DownloadPage />} />
                 {/* A shared Bhakti item's address: the link previews with
                     its picture; opened, it is that item on its shelf, with
                     "See all" under it (12 Oct 2026, Rahul — it opened the

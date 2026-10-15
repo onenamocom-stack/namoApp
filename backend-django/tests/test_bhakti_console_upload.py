@@ -32,7 +32,8 @@ def test_neither_file_nor_link_is_refused():
 def _ebook_data(mrp):
     return {"kind": "ebook", "title": "A Complete Guide to Beej Mantra", "deity": "", "artist": "Namo",
             "licence": "All rights reserved", "source": "", "media_url": "ebooks/beej.pdf",
-            "preview_url": "", "sort": "0", "active": "on", "mrp": mrp}
+            "preview_url": "", "sort": "0", "active": "on", "mrp": mrp,
+            "description": "## Inside\n- 108 mantras"}
 
 
 @pytest.mark.django_db
@@ -46,6 +47,7 @@ def test_an_ebook_takes_an_mrp_in_rupees():
     form.save()
     book.refresh_from_db()
     assert book.mrp_paise == 19900 and book.price_paise == 9900
+    assert book.description.startswith("## Inside")
     # At or under the price it is no saving, and is refused.
     assert not BhaktiAssetForm(data=_ebook_data("99"), instance=book).is_valid()
     # Blank clears it.

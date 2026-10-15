@@ -46,7 +46,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
      E-books tile, every one. */
   const shown = limit ? books.slice(0, limit) : books
   /* `cards`: a section of the Market's home (15 Oct 2026); a card opens the
-     E-books tile with that book first. */
+     download's own page. */
   if (cards) {
     return (
       <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore}>

@@ -739,7 +739,10 @@ category), the cart. Then the gallery — swipe through every photo and
 video, thumbnails under it to jump; a video plays in place. Brand, name,
 subtitle, price, MRP and the discount, "Inclusive of all taxes. Free
 delivery." (8 Oct 2026), "Sold out" only when it is (the stock count and the
-SKU chip went on 7 Oct 2026, Rahul), chips for category and subcategory,
+SKU chip went on 7 Oct 2026, Rahul), a row of three for a thing that is
+shipped (15 Oct 2026, Rahul: each kind's page suits it) — *Sold by* the
+brand (or Namo), *Shipped by Namo*, *Free delivery* — chips for category
+and subcategory,
 and **Share** (the phone's share sheet, or
 the link copied). Then **About this product** — the description with its
 formatting (6 Oct 2026): `## heading`, `### smaller heading`, `**bold**`,
@@ -755,6 +758,22 @@ down, or a key that matches nothing: "That product is no longer in the
 shop", with the way back. The tab title, meta description and a
 schema.org Product block are set while the page is open.
 
+### `/shop/d/:id` — a download's page (15 Oct 2026, Rahul)
+
+A Downloads card on the Market opens it. Top bar: back to the Downloads
+tile. The whole cover on a quiet ground; the format chip (PDF), the name,
+*By* the credited name, the price with the MRP struck through and the %
+off (or *Free*), and the Bhakti row (Like, Comment, Share). **What you
+get**: the format and that it opens on any phone or computer; that it is
+yours at once, in the browser; that it is yours to keep (bought once and
+reopened from here, or free to keep). **What is inside** — the console's
+description, in the product page's marks — when there is one; **Credit**;
+**More downloads**, four, with *See all*. Fixed to the foot: the price and
+one button — *Download* for a free one, *Get it* for a priced one (asks
+the server: a ten-minute link to an owner, else the Paywall opens on the
+page), *Open PDF* once the link is in hand. An id that matches nothing:
+"This download is no longer here", with the way back.
+
 
 ### Market, `/shop` (Shop and Academy in one page, 14 Oct 2026, Rahul)
 
@@ -769,8 +788,8 @@ book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
   category (15 Oct 2026, Rahul's reference layout): its name, *See all*
   (opens that tile), and its first two as cards side by side — picture,
   name, seller, then the price with the MRP struck through and the % off
-  when there is an MRP above it. Downloads first (a card opens the
-  Downloads tile with that one first), then Events and Courses once they
+  when there is an MRP above it. Downloads first (a card opens that
+  download's page, `/shop/d/:id`), then Events and Courses once they
   have listings, then the console's categories. A product on no console
   category is under *More*; a category with nothing in it has no section.
 - **Downloads**: every one. Each has the Bhakti row under its title (12 Oct

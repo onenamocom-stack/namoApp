@@ -59,6 +59,8 @@ export function toAsset(row) {
     pricePaise: row.price_paise,
     // Struck through beside the price (15 Oct 2026); null shows none.
     mrpPaise: row.mrp_paise ?? null,
+    // A download's own page (15 Oct 2026).
+    description: row.description ?? '',
     artist: row.artist,
     licence: row.licence,
     source: row.source,

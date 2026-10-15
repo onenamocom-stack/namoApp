@@ -116,7 +116,7 @@ export default function Shop() {
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   // `?cat=ebooks` opens on that tile: where /academy and a shared book land.
-  const [params, setParams] = useSearchParams()
+  const [params] = useSearchParams()
   const [cat, setCat] = useState(() => {
     const c = `:${catParam(params.get('cat'))}`
     return marketOf(c) ? c : 'All'
@@ -226,11 +226,7 @@ export default function Shop() {
     ...catList.map((c) => ({ name: c.name, label: c.name, items: rest.filter((p) => p.categories.includes(c.name)) })),
     { name: null, label: t('shop.more'), items: rest.filter((p) => !p.categories.some((c) => known.has(c))) },
   ].filter((s) => s.items.length)
-  const openBook = (id) => {
-    setParams({ cat: 'ebooks', book: id })
-    setCat(':ebooks')
-    window.scrollTo({ top: 0 })
-  }
+  const openBook = (id) => navigate(`/shop/d/${id}`)
 
   return (
     <>

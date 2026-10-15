@@ -37,6 +37,7 @@ def _row(asset):
         "preview_url": asset.preview_url,
         "price_paise": asset.price_paise,
         "mrp_paise": asset.mrp_paise,
+        "description": asset.description,
         "artist": asset.artist,
         "licence": asset.licence,
         "source": asset.source,

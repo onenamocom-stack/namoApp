@@ -1282,6 +1282,8 @@ must not be writable through PostgREST with the anon key.
 `bhakti_assets.mrp_paise` (migration `bhakti/0008`, 15 Oct 2026): nullable,
 `> 0` (`bhakti_assets_mrp_paise_check`). Display only, struck through beside
 the price on the Market; the console refuses one at or under the price.
+`bhakti_assets.description` (same migration): text, default `''`, a
+download's page's *What is inside*.
 
 A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
 (`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;

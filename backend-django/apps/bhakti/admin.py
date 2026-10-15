@@ -38,7 +38,7 @@ class BhaktiAssetForm(forms.ModelForm):
         model = BhaktiAsset
         fields = (
             "kind", "title", "deity", "artist", "licence", "source",
-            "media_url", "preview_url", "upload", "sort", "active",
+            "media_url", "preview_url", "upload", "description", "sort", "active",
         )
         widgets = {
             "title": forms.TextInput(attrs={"size": 60}),
@@ -48,6 +48,7 @@ class BhaktiAssetForm(forms.ModelForm):
             "source": forms.TextInput(attrs={"size": 80}),
             "media_url": forms.TextInput(attrs={"size": 80}),
             "preview_url": forms.TextInput(attrs={"size": 80}),
+            "description": forms.Textarea(attrs={"rows": 8, "cols": 80}),
         }
         help_texts = {
             "title": "The caption, e.g. Ganesh — good beginnings",
@@ -55,6 +56,7 @@ class BhaktiAssetForm(forms.ModelForm):
             "licence": "Shown after the artist, e.g. Public domain",
             "source": "Optional. Where the file came from — a link, or e.g. “Own recording” — for attribution.",
             "media_url": "Leave empty when you upload a file: it fills itself. Or paste a link to a file instead of uploading.",
+            "description": "For a download's own page: what is in it. ## for a heading, **bold**, - for a list.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +111,7 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
         ("What it is", {"fields": ("kind", "deity", "title")}),
         ("Credit line", {"fields": ("artist", "licence", "source")}),
         ("File", {"fields": ("preview", "upload", "media_url", "preview_url")}),
-        ("Price", {"fields": ("mrp",)}),
+        ("Market (downloads)", {"fields": ("mrp", "description")}),
         ("Showing", {"fields": ("sort", "active")}),
     )
 

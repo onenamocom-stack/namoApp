@@ -5,6 +5,7 @@ import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
+import { MarketPrice } from '../components/MarketCard.jsx'
 import { fetchProduct, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import RichText from '../components/RichText.jsx'
@@ -147,6 +148,23 @@ export default function ProductPage() {
         {/* Only when it cannot be bought (7 Oct 2026, Rahul: "Only 3 left"
             and "In stock" were not needed). */}
         {p.soldOut && <p className="mt-3 caps-sm text-bad">{t('shop.soldOut')}</p>}
+
+        {/* A thing that is shipped (15 Oct 2026, Rahul: the page suits its
+            kind): who sells it, who ships it, what delivery costs. */}
+        <ul className="mt-4 grid grid-cols-3 divide-x divide-rule rounded-2xl border border-rule text-center">
+          {[
+            ['cart', t('shop.pp.soldBy', { name: p.brand || 'Namo' })],
+            ['shop', t('shop.pp.ships')],
+            ['check', t('shop.pp.free')],
+          ].map(([icon, label]) => (
+            <li key={icon} className="flex flex-col items-center gap-1 px-2 py-3">
+              <span className="gold">
+                <Icon name={icon} size={18} />
+              </span>
+              <span className="text-micro leading-tight t-body">{label}</span>
+            </li>
+          ))}
+        </ul>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {p.category && <span className="pill caps-sm">{p.category}</span>}
@@ -355,7 +373,7 @@ function MoreProducts({ current }) {
               <ProductArt product={x} className="aspect-square w-full" />
               <span className="block p-2.5">
                 <span className="line-clamp-2 block text-meta t-heading">{x.name}</span>
-                <span className="mt-1 block text-meta gold tnum">₹{x.price.toLocaleString('en-IN')}</span>
+                <MarketPrice price={x.price} mrp={x.mrp} />
               </span>
             </Link>
           </li>
