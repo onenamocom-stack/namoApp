@@ -29,6 +29,17 @@ KIND_RULES = {
     "audio": (("audio/",), 25 * 1024 * 1024),   # 25 MB
     # A certificate is a scan or a PDF, and 5 MB is a generous scan.
     "document": (("application/pdf", "image/jpeg", "image/png"), 5 * 1024 * 1024),
+    # A Market seller's file (15 Oct 2026, Rahul: "all type of file or
+    # software or tool"): documents, books, archives (software goes in a
+    # zip), audio, video and pictures. No bare executables: a listing is
+    # approved by a person, but an .exe or .apk served from Namo is a risk
+    # that approval cannot see inside.
+    "download": ((
+        "application/pdf", "application/epub+zip", "application/zip",
+        "application/x-zip-compressed", "application/vnd.openxmlformats-officedocument",
+        "application/msword", "application/vnd.ms-", "text/plain",
+        "audio/", "video/", "image/",
+    ), 500 * 1024 * 1024),
 }
 
 # THE KINDS THAT MUST NOT BE PUBLIC. Everything else in this app is art or a
@@ -37,7 +48,7 @@ KIND_RULES = {
 # number, and belongs in a bucket with no public URL at all. An unset
 # R2_PRIVATE_BUCKET is a refusal rather than a silent fall back to the
 # public one — falling back would publish the document.
-PRIVATE_KINDS = {"document"}
+PRIVATE_KINDS = {"document", "download"}
 
 
 def bucket_for(kind):

@@ -86,6 +86,7 @@ LOCAL_APPS = [
     "apps.video",
     "apps.analytics",
     "apps.appearance",
+    "apps.market",
 ]
 # apps.console comes FIRST, before django.contrib.admin, and that order is
 # load-bearing: APP_DIRS resolves templates in INSTALLED_APPS order, so an

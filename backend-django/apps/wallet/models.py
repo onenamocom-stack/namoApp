@@ -230,6 +230,9 @@ class Sku(models.TextChoices):
     EBOOK = "ebook", "E-book"            # ref = the bhakti_assets id; forever
     MUHURAT = "muhurat", "Muhurat"       # ref = "<purpose>:<YYYY-MM>"; forever
     PREDICTION = "prediction", "Prediction"  # ref = ""; 30 days a purchase
+    # A Market seller's download, course or event (15 Oct 2026); ref = the
+    # market_listings id; forever; always paid at the gateway.
+    LISTING = "listing", "Market listing"
 
 
 class Entitlement(models.Model):

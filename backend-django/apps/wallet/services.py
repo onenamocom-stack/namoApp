@@ -429,6 +429,8 @@ def pay_mode(sku):
     """How `sku` is paid for: 'online' (Razorpay) or 'wallet'."""
     from .models import Sku
 
+    if sku == Sku.LISTING:
+        return "online"  # a Market listing is always paid at the gateway
     return "online" if sku == Sku.EBOOK and ebook_pay_online() else "wallet"
 
 
@@ -481,6 +483,11 @@ def _grant_paid(profile_id, sku, ref, amount_paise):
                 raise IntegrityError("already owned")
             Entitlement.objects.create(profile_id=profile_id, sku=sku, ref=ref or "",
                                        price_paise=amount_paise)
+            if sku == "listing":
+                # The seller's share is written with the grant, or neither.
+                from apps.market import services as market
+
+                market.on_listing_paid(profile_id, ref, amount_paise)
     except IntegrityError:
         logger.warning("[sku-pay] %s %s paid twice by %s; credited to wallet", sku, ref, profile_id)
         credit(profile_id, amount_paise, f"{_sku_label(sku)} already yours", ref_type=RefType.PAYMENT)
@@ -800,6 +807,10 @@ def sku_price(sku, ref=""):
             )
         except (ValueError, ValidationError):  # not a uuid — nothing to sell
             return None
+    if sku == Sku.LISTING:
+        from apps.market import services as market
+
+        return market.price_to_pay(ref)
     return None
 
 
@@ -904,4 +915,5 @@ def _sku_label(sku):
         "ebook": "E-book",
         "muhurat": "Muhurat · judged against your chart",
         "prediction": "Predictions · 30 days",
+        "listing": "Market",
     }.get(sku, sku)

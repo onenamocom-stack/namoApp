@@ -40,6 +40,7 @@ if settings.PUBLIC_API_ENABLED:
         path("v1/events/", include("apps.analytics.urls")),
         path("v1/shop/", include("apps.shop.urls")),
         path("v1/appearance/", include("apps.appearance.urls")),
+        path("v1/market/", include("apps.market.urls")),
         # Link previews (apps/content/share.py): Firebase Hosting sends these
         # addresses of 1namo.com here. No trailing slash — they are the app's
         # own addresses, and a redirect would break the shared link.

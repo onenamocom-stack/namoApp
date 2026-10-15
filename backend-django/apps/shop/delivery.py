@@ -342,6 +342,9 @@ def apply_tracking(shipment, raw_status, when=None):
     if moved:
         order_follows_shipment(shipment.order_id, fields["status"])
         referral_services.on_shipment_status(shipment.order_id, fields["status"])
+        from apps.market import services as market  # a seller's product earns on delivery
+
+        market.on_shipment_status(shipment.order_id, fields["status"])
     return moved
 
 

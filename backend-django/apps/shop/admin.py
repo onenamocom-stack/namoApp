@@ -838,6 +838,9 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
 
             delivery.order_follows_shipment(obj.order_id, obj.status)
             referral_services.on_shipment_status(obj.order_id, obj.status)
+            from apps.market import services as market  # a seller's product earns on delivery
+
+            market.on_shipment_status(obj.order_id, obj.status)
 
 
 @dj.register(ShopCategory, site=site)
