@@ -49,7 +49,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
      download's own page. */
   if (cards) {
     return (
-      <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore}>
+      <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore} strip>
         {shown.map((d) => (
           <MarketCard
             key={d.id}

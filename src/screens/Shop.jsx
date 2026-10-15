@@ -91,6 +91,8 @@ const MARKET = [
   { key: ':courses', label: 'ac.tab.courses', icon: 'play', hue: '#c2410c', soon: 'ac.soon.courses' },
 ]
 const marketOf = (key) => MARKET.find((m) => m.key === key)
+// A home section's strip shows this many; See all has the rest.
+const STRIP_MAX = 12
 // `?cat=downloads` is the new name for `?cat=ebooks`.
 const catParam = (v) => (v === 'downloads' ? 'ebooks' : v)
 
@@ -442,15 +444,16 @@ export default function Shop() {
       {/* ── Sections, on All ──────────────────────────────────────────── */}
       {home && !loadingShop && !shopError && (
         <>
-          <Ebooks cards limit={2} onMore={() => setCat(':ebooks')} onOpen={openBook} />
+          <Ebooks cards limit={STRIP_MAX} onMore={() => setCat(':ebooks')} onOpen={openBook} />
           {sections.map((s) => (
             <MarketSection
               key={s.label}
               title={s.label}
               seeAll={t('a.seeAll')}
               onSeeAll={s.name ? () => { setCat(s.name); setSub(null) } : undefined}
+              strip
             >
-              {s.items.slice(0, s.name ? 2 : s.items.length).map((p) => (
+              {s.items.slice(0, STRIP_MAX).map((p) => (
                 <MarketCard
                   key={p.id}
                   id={`product-${p.id}`}

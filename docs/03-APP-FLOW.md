@@ -805,7 +805,8 @@ book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
 
 - **All**: the banners and subcategory pills, then one section per
   category (15 Oct 2026, Rahul's reference layout): its name, *See all*
-  (opens that tile), and its first two as cards side by side — picture,
+  (opens that tile), and its first twelve as one strip of cards that swipes
+  sideways, about two and a third on screen (15 Oct 2026, Rahul) — picture,
   name, seller, then the price with the MRP struck through and the % off
   when there is an MRP above it. Downloads first (a card opens that
   download's page, `/shop/d/:id`), then Events and Courses once they

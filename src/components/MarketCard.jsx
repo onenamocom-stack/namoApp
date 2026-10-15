@@ -4,8 +4,12 @@
  * A card is a wide picture, then the name, who sells it, and what it is.
  * No star rating: nothing in the Market is rated yet, and a made-up one on
  * a thing for sale is worse than none.
+ *
+ * `strip` (15 Oct 2026, Rahul: "products slide honge"): the cards are one
+ * row that swipes sideways, edge to edge, about two and a third on screen
+ * so the next one shows there is more. Without it, a two-up grid.
  */
-export function MarketSection({ title, seeAll, onSeeAll, children }) {
+export function MarketSection({ title, seeAll, onSeeAll, strip = false, children }) {
   return (
     <section className="px-4 pt-6">
       <div className="flex items-baseline justify-between gap-4">
@@ -16,7 +20,13 @@ export function MarketSection({ title, seeAll, onSeeAll, children }) {
           </button>
         )}
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-3">{children}</ul>
+      {strip ? (
+        <ul className="no-scrollbar -mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 [&>li]:w-[42%] [&>li]:flex-none [&>li]:snap-start">
+          {children}
+        </ul>
+      ) : (
+        <ul className="mt-3 grid grid-cols-2 gap-3">{children}</ul>
+      )}
     </section>
   )
 }
