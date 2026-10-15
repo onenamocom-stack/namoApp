@@ -65,14 +65,16 @@ export default function Dashboard() {
             </div>
           </section>
           <section className="px-5 pb-5">
-            <Kicker>Your practice</Kicker>
+            {/* One heading for the practice, Go online in it, payouts last
+                (16 Oct 2026, Rahul). */}
+            <Kicker>Your consulting setting</Kicker>
             <div className="mt-2">
               {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                   reviews" page went — reviews are on your page, the intro
                   and username in Edit profile, the slots in Namo Consult. */}
               <Row
                 onClick={() => setRating(true)}
-                title="Your rates"
+                title="Your consulting price"
                 note={
                   consultant.rates
                     ? RATE_FIELDS.map(([k, label]) => `${label} ₹${consultant.rates[k] ?? '—'}`).join(' · ') + ' /min'
@@ -81,13 +83,13 @@ export default function Dashboard() {
               />
               {/* The week as windows, 20-minute bookings (15 Oct 2026, Rahul). */}
               <Row to="/dashboard/calendar" title="Booking calendar" note="Your hours each day, 20-minute bookings" />
-              <Row to="/dashboard/payout-details" title="Payout details" note="PAN and bank account" />
+              <Row to="/desk" title="Go online" note="Take calls and chats" />
             </div>
           </section>
           <section className="px-5 pb-8">
-            <Kicker>Calls and chats</Kicker>
+            <Kicker>Payout details</Kicker>
             <div className="mt-2">
-              <Row to="/desk" title="Namo Consult" note="Go online, take calls and chats" />
+              <Row to="/dashboard/payout-details" title="Payout details" note="PAN and bank account" />
             </div>
           </section>
         </>

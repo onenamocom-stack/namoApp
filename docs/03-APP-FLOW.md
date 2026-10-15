@@ -1211,7 +1211,7 @@ opens the panel, live navigates to a room, call toasts. Below, **Booking
 calendar** opens its own page (15 Oct 2026; it replaced the 7 × 6 grid).
 
 ### `/pro/calendar` · `/dashboard/calendar`
-The booking calendar (Dashboard → Your practice → Booking calendar on the
+The booking calendar (Dashboard → Your consulting setting → Booking calendar on the
 website). Monday to Sunday, each with a switch; on, a day shows its windows as
 From and To times, **+ New window** adds the second (two at most), × removes
 one. **Save calendar** sends the whole week (`POST /v1/consultants/<id>/week/`);
@@ -1265,7 +1265,7 @@ Content grid, insights, reviews, settings. No switch to the client app since
 4 Oct 2026.
 The same experience, rating and badge pills as the public page; no milestone
 ladder or congratulation since 13 Oct 2026. Settings → **Payout details** → `/pro/payout-details`.
-Settings → **Your rates** opens a sheet with the same four fields as the
+Settings → **Your consulting price** (16 Oct 2026; it was Your rates) opens a sheet with the same four fields as the
 application and **Save rates**; all four save together, and new prices apply to
 what is asked or booked afterwards.
 
@@ -1274,9 +1274,11 @@ what is asked or booked afterwards.
 Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
 until this day) and on a Creator's Profile, under the five icons.
 
-- **A Pro:** Your work (Earnings and Insights, Your links), Your practice
-  (**Your rates**, which opens the rates sheet here, and Payout details),
-  Calls and chats (**Namo Consult**, `/desk`). "Practice and reviews" went
+- **A Pro:** Your work (Earnings and Insights, Your links, Sell on the
+  Market), Your consulting setting (**Your consulting price**, which opens
+  the rates sheet here; **Booking calendar**; **Go online**, `/desk`), and
+  Payout details last (16 Oct 2026, Rahul; the headings were Your practice
+  and Calls and chats, the rows Your rates and Namo Consult). "Practice and reviews" went
   on 14 Oct 2026 (Rahul): reviews are on the Pro's page, Intro video and
   Username moved to Edit profile (`/practice/edit`, main app), slots are in
   Namo Consult, and its Languages row only ever said "prototype only" (the

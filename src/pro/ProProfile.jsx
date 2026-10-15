@@ -285,7 +285,7 @@ function Settings({ me, onRatesSaved }) {
               read-only platform band. Tap to change them. */}
           <Row
             onClick={() => setEditingRates(true)}
-            title="Your rates"
+            title="Your consulting price"
             note={
               me.rates
                 ? RATE_FIELDS.map(([k, label]) => `${label} ₹${me.rates[k] ?? '—'}`).join(' · ') + ' /min'
@@ -385,7 +385,7 @@ export function RatesSheet({ current, onClose, onSaved }) {
   // same; inside the settings tab a sheet opened mid-page.
   return createPortal(
     <div className="fixed inset-y-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
-    <Sheet open onClose={onClose} title="Your rates">
+    <Sheet open onClose={onClose} title="Your consulting price">
       <p className="text-meta t-sub">
         Rupees a minute, ₹5 to ₹110. New prices apply to what is asked or booked from now on.
       </p>
