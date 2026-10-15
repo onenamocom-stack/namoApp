@@ -54,11 +54,11 @@ export function MarketPrice({ price, mrp, free }) {
 /** `art` is the picture, already sized by the caller (a product's photo, a
  *  book's cover); `lines` the grey rows under the name; `price` a
  *  MarketPrice. */
-export function MarketCard({ art, name, lines = [], price = null, onOpen, id }) {
+export function MarketCard({ art, name, lines = [], price = null, onOpen, id, corner = null }) {
   return (
     <li id={id}>
       <button type="button" onClick={onOpen} className="pop-tap block w-full text-left">
-        <span className="block aspect-video w-full overflow-hidden rounded-lg">{art}</span>
+        <span className="relative block aspect-video w-full overflow-hidden rounded-lg">{art}{corner}</span>
         <span className="mt-2 block line-clamp-2 text-meta t-heading">{name}</span>
         {lines.filter(Boolean).map((l, i) => (
           <span key={i} className="mt-0.5 block truncate text-micro t-faint">

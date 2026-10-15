@@ -7,6 +7,9 @@ import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import { useStore } from '../store.jsx'
+import { useNavigate } from 'react-router-dom'
+import { endPick, startPick } from '../lib/tagpick.js'
+import { isPro } from '../side.js'
 
 /**
  * One composer, Facebook's shape (12 Oct 2026, Rahul — it was four tabs:
@@ -77,6 +80,7 @@ export default function Composer({
   groupId = null,
 }) {
   const { showToast, me } = useStore()
+  const navigate = useNavigate()
   const canVideo = editing ? editing.kind === 'clip' : allowed.includes('clip')
   const canBlog = !editing && allowed.includes('article')
   const [mode, setMode] = useState(editing?.kind === 'article' ? 'article' : 'post')
@@ -101,6 +105,22 @@ export default function Composer({
   const camera = useRef(null)
   const blog = mode === 'article'
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
+
+  /* Tag opens the Market in pick mode (15 Oct 2026, Rahul): a new post on
+     Home, in the main app. The draft is written now, not in 400 ms, so
+     what was typed is there when Done brings them back. Editing a post, a
+     group's composer and the pro app keep the search list here. */
+  const pickFromMarket = !editing && !groupId && !isPro && mode === 'post' && window.location.pathname.startsWith('/home')
+  // Back at the post, however they came back: the Market is no longer picking.
+  useEffect(() => {
+    endPick()
+  }, [])
+  const openTags = () => {
+    if (!pickFromMarket) return setTagging((v) => !v)
+    startPick({ mode, back: '/home?compose=1', draft: { caption, title, body, media, tagged } })
+    onClose?.()
+    navigate('/shop')
+  }
 
   /* The draft of the screen you are on, saved a moment after typing stops. */
   const draft = { caption, title, body, media, tagged }
@@ -365,7 +385,7 @@ export default function Composer({
       <div className={`${sheet ? 'sticky bottom-0' : ''} border-t border-rule bg-white px-2 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5`}>
         {blog ? (
           <div className="flex items-center gap-2 px-1">
-            {tagProducts && <ToolChip on={tagging} onClick={() => setTagging((v) => !v)} />}
+            {tagProducts && <ToolChip on={tagging} onClick={openTags} />}
             <span className="flex-1" />
             <span className="text-[12px] t-faint tnum">
               {words.toLocaleString('en-IN')} words{words > 0 && ` · ${Math.max(1, Math.ceil(words / 200))} min read`}
@@ -379,7 +399,7 @@ export default function Composer({
               <Tool icon="image" tone="bg-[#e7f6ee] text-[#2f8f5b]" label={canVideo ? 'Photo or video' : 'Photo'} iconOnly onClick={() => gallery.current?.click()} disabled={uploading || busy} />
               <Tool icon="camera" tone="bg-[#fdeee4] text-[#d9641f]" label="Camera" iconOnly onClick={() => camera.current?.click()} disabled={uploading || busy} />
               {tagProducts && (
-                <Tool glyph={<TagGlyph size={16} />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag" on={tagging} onClick={() => setTagging((v) => !v)} />
+                <Tool glyph={<TagGlyph size={16} />} tone="bg-[#fff4d6] text-[#a8740a]" label="Tag" on={tagging} onClick={openTags} />
               )}
               {canBlog && (
                 <Tool glyph={<PenGlyph />} tone="bg-[#eef0fb] text-[#4b57b8]" label="Blog" onClick={() => switchTo('article')} disabled={busy} />

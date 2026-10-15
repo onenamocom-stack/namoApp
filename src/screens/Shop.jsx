@@ -6,6 +6,7 @@ import { TabHeader } from '../components/Chrome.jsx'
 import Ebooks from '../components/Ebooks.jsx'
 import { ListingCard, MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
 import { browse } from '../lib/market.js'
+import { CardCorner, PickBar } from '../components/TagPick.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -270,6 +271,9 @@ export default function Shop() {
       />
 
 
+      {/* Tagging a post from the Market (15 Oct 2026, Rahul). */}
+      <PickBar />
+
       {/* Search and the cart, pinned under the header (3 Oct). The cart was
           a floating button over the grid from 10 Sep, and wherever it
           floated it sat on some product's Buy. Here it covers nothing and
@@ -489,6 +493,7 @@ export default function Shop() {
                   id={`product-${p.id}`}
                   art={<ProductArt product={p} className={`h-full w-full ${focusId === p.id ? focusRing : ''}`} />}
                   name={p.name}
+                  corner={<CardCorner product={p} />}
                   lines={[p.brand || 'Namo', p.soldOut && t('shop.soldOut')]}
                   price={!p.soldOut && <MarketPrice price={p.price} mrp={p.mrp} />}
                   onOpen={() => navigate(productHref(p))}
@@ -536,6 +541,7 @@ export default function Shop() {
                     className={`flex h-full cursor-pointer flex-col overflow-hidden ${focusId === p.id ? focusRing : ''}`}
                   >
                     <ProductArt product={p} className="aspect-video w-full">
+                      <CardCorner product={p} />
                       {focusId === p.id && (
                         <span className="caps-sm absolute right-2 top-2 rounded-full bg-btn-deep px-2 py-1 text-white shadow-sm">
                           {t('shop.linked')}

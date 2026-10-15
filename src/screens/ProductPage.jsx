@@ -6,6 +6,7 @@ import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
 import { MarketPrice } from '../components/MarketCard.jsx'
+import { PickBar, SharerBar } from '../components/TagPick.jsx'
 import { fetchProduct, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import RichText from '../components/RichText.jsx'
@@ -126,6 +127,7 @@ export default function ProductPage() {
   return (
     <>
       <TopBar title={p.brand || p.category} back backTo="/shop" right={cart} />
+      <PickBar />
 
       <Gallery product={p} />
 
@@ -174,6 +176,9 @@ export default function ProductPage() {
           </button>
         </div>
       </section>
+
+      {/* A Pro's or a Creator's own buttons (15 Oct 2026, Rahul). */}
+      <SharerBar product={p} />
 
       {hasDescription && (
         <section className="px-5 pt-7">

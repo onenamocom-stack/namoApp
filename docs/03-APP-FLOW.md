@@ -1992,3 +1992,17 @@ Posts when they sell something, and always on their own page; a Creator's
 own Profile has a Shop tab; anybody's `/u/:id` shows *For sale* above the
 posts when there is something.
 
+### Tagging from the Market (15 Oct 2026, Rahul)
+
+For a Pro or a Creator only (`src/lib/tagpick.js`, `components/TagPick.jsx`).
+In a new post on Home, **Tag** saves the draft and opens the Market in pick
+mode: a dark bar under the header, "Tag a product · N/3 tagged", and
+**Done**. A product card carries a corner **+** (✓ once tagged); a product
+page carries **Tag this product** (tap again to remove) and *Done, back to
+my post*. Done returns to Home with the composer open and the products
+tagged; three at most, as before. Out of pick mode, a product page carries
+**Tag in post** (a new post with it tagged) and **My link · 10%** (the
+phone's share sheet, or the link copied), and a card's corner copies the
+link. Editing a post, a group's composer and the pro app keep the search
+list in the composer.
+
