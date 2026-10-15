@@ -599,6 +599,12 @@ next reader concludes it works.
 
 ## 10. Voice
 
+**No earning percentage in front of anybody (15 Oct 2026, Rahul).** What a
+Pro, a Creator or Namo keeps is never stated as a percent in the app or on
+the site's pages ("You earn on what it sells", not "earn 10%"); the rates
+are being decided again. Amounts in rupees are fine, and so is an MRP's
+"% off". The console shows the rates to admins.
+
 Second person, present tense, imperative where possible. Short declarative
 sentences. No hedging, no emoji, no exclamation marks. Blunt rather than
 reassuring, ranging from practical to cryptic.

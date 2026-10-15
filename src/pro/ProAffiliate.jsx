@@ -67,7 +67,7 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your links" sub="Share a link, earn 10% of a first order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
+      <TopBar title="Your links" sub="Share a link, earn on a first order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
 
       {/* Said before the buttons, because both of these are what a
           consultant would otherwise learn from an angry message. */}
@@ -77,7 +77,7 @@ export default function ProAffiliate() {
         <p className="horoscope">
           Someone who opens your link is yours for {days ?? 15} days, for the whole
           shop — not just the product you linked. If their first order comes in
-          that time, you get 10% of it, into your earnings, with your next payout.
+          that time, you earn on it, into your earnings, with your next payout.
         </p>
         <ul className="mt-4 space-y-2 text-meta t-sub">
           <li>• Only their <b>first order</b> pays. After that, links change nothing.</li>

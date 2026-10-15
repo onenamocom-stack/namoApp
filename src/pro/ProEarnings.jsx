@@ -65,7 +65,7 @@ const RANGES = [
 const SOURCE_LABEL = {
   sessions: 'Chat, call and video',
   bookings: 'Booked sessions',
-  shop: 'Shop commission · 10%',
+  shop: 'Shop commission',
   reversals: 'Reversals',
 }
 
@@ -403,7 +403,7 @@ export function Insights({ links = true }) {
           <>
             <p className="mt-2 text-meta t-faint tnum">
               {shop.units} {shop.units === 1 ? 'item' : 'items'} across {shop.orders}{' '}
-              {shop.orders === 1 ? 'order' : 'orders'}. You earn 10% on each, after delivery.
+              {shop.orders === 1 ? 'order' : 'orders'}. You earn on each, after delivery.
             </p>
             <ul className="mt-2">
               {shop.products.map((p) => (

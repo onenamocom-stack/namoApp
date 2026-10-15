@@ -26,12 +26,6 @@ const STATUS = {
   rejected: ['Needs a change', 'text-live'],
 }
 const KIND_ICON = { download: 'download', course: 'play', event: 'calendar', product: 'cart' }
-const CUT = {
-  download: 'Namo keeps 30%',
-  course: 'Namo keeps 30%',
-  event: 'Namo keeps 30%',
-  product: 'Namo keeps 20% and ₹100 a unit for delivery',
-}
 
 export default function SellHome() {
   const navigate = useNavigate()
@@ -263,7 +257,6 @@ export function SellForm() {
   const kind = row.kind
   const set = (k) => (e) => setRow((r) => ({ ...r, [k]: e?.target ? e.target.value : e }))
   const price = toPaise(row.price ?? toRupees(row.price_paise))
-  const cut = kind === 'product' ? Math.round(price * 0.2) + 10000 : Math.round(price * 0.3)
 
   const lessons = row.lessons || []
   const setLesson = (i, patch) => setRow((r) => ({ ...r, lessons: r.lessons.map((x, j) => (j === i ? { ...x, ...patch } : x)) }))
@@ -328,11 +321,6 @@ export function SellForm() {
             <input className="field-line tnum" inputMode="decimal" value={row.mrp ?? toRupees(row.mrp_paise)} onChange={set('mrp')} />
           </Field>
         </div>
-        {price > 0 && (
-          <p className="-mt-3 text-micro t-faint">
-            {CUT[kind]}: you get ₹{rupees(Math.max(price - cut, 0))} a sale{kind === 'product' ? ', on delivery' : ''}.
-          </p>
-        )}
         <Field label="Description" note="What it is and who it is for. ## for a heading, **bold**, - for a list.">
           <textarea className="field-line min-h-[120px]" value={row.description || ''} onChange={set('description')} />
         </Field>
@@ -418,7 +406,7 @@ export function SellForm() {
               </Field>
             </div>
             <p className="text-micro t-faint">
-              Once it is approved, you send the stock to Namo and Namo ships every order. Delivery is free for the buyer; ₹100 a unit comes from your share.
+              Once it is approved, you send the stock to Namo and Namo ships every order. Delivery is free for the buyer.
             </p>
           </>
         )}

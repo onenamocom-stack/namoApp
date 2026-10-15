@@ -530,7 +530,7 @@ function ProductPicker({ tagged, onChange }) {
     <div className="mt-6">
       <p className="label text-left">Tag products · {tagged.length}/{MAX_TAGS}</p>
       <p className="mt-1 text-meta t-body">
-        Seekers tap through to the shop. You earn 10% on what they buy, as with your links.
+        Seekers tap through to the shop. You earn on what they buy, as with your links.
       </p>
 
       {tagged.length > 0 && (

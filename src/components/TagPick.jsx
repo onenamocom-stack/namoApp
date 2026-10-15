@@ -47,7 +47,7 @@ async function shareLink(productId, name, showToast) {
     if (navigator.share) await navigator.share({ title: name, text: name, url: built.url })
     else {
       await navigator.clipboard.writeText(built.url)
-      showToast('Your link is copied. You earn 10% on what it sells.')
+      showToast('Your link is copied. You earn on what it sells.')
     }
   } catch {
     /* dismissed */
@@ -105,9 +105,9 @@ export function SharerBar({ product }) {
         onClick={() => shareLink(product.id, product.name, showToast)}
         className="flex items-center justify-center gap-2 rounded-xl border border-gold-fill py-2.5 caps-sm gold"
       >
-        <Icon name="share" size={15} /> My link · 10%
+        <Icon name="share" size={15} /> My link
       </button>
-      <p className="col-span-2 text-center text-micro t-faint">Only you see these. You earn 10% on what your link or tag sells.</p>
+      <p className="col-span-2 text-center text-micro t-faint">Only you see these. You earn on what your link or tag sells.</p>
     </div>
   )
 }

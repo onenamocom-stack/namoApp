@@ -63,7 +63,7 @@ export default function ProStudio() {
         className="mx-5 mt-2 flex items-center justify-between gap-3 rounded-lg border border-rule px-4 py-3.5 transition-colors hover:border-t1"
       >
         <span className="min-w-0">
-          <span className="block text-body text-t1">Share a product, earn 10%</span>
+          <span className="block text-body text-t1">Share a product and earn</span>
           <span className="mt-0.5 block text-micro t-faint">
             Your link, and what it pays
           </span>
