@@ -394,16 +394,17 @@ Paid through the gateway, never the wallet; the seller is paid out less
 Namo's commission. It moves money to sellers, so it waits for the owner's
 yes. Rahul's terms (15 Oct 2026), not yet the owner's:
 
-- **Commission:** Products **20%** plus **₹100** for delivery; Downloads,
-  Courses and Events **30%**. The admin may type a different rate for a
+- **Commission:** Products **20%** plus **₹100** for delivery, taken from
+  the seller's share (delivery is free to the buyer); Downloads, Courses and
+  Events **30%**. The admin may type a different rate for a
   listing when approving it; a blank rate takes the default.
 - **Delivery:** the seller sends the product to Namo; Namo delivers it to
   the buyer.
-- **Payouts:** monthly, every seller in one run.
+- **Payouts:** monthly, every seller in one run, on the **7th** for the
+  previous month's sales.
 - **Events:** online only for now.
 
-Open: whether the ₹100 is added to the buyer's price or taken from the
-seller's share, and the payout date. The plan is `docs/06` Phase 17.
+The plan is `docs/06` Phase 17.
 
 ### 4.8 Wallet
 

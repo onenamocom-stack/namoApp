@@ -591,7 +591,7 @@ live: Shop and Academy are one Market page, with Courses and Events as
 
 **Terms:** Rahul answered the four decisions on 15 Oct (`docs/01` §4.7):
 the commission per kind with an admin override, Namo ships, monthly payouts,
-online events. Still open: who pays the ₹100 delivery, and the payout date.
+online events; the ₹100 comes from the seller, payouts on the 7th.
 **Blocking going live:** the owner's yes.
 
 **Done when:** a Creator lists a paid PDF, an admin approves it, a buyer
