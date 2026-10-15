@@ -764,8 +764,13 @@ console's shop categories. `?cat=ebooks`, `?cat=courses` or `?cat=events`
 opens on that tile; `/academy` forwards to `?cat=ebooks`, and a shared
 book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
 
-- **All**: the banners, subcategory pills and products as before, then the
-  first two e-books with *See all* (nothing when there are none).
+- **All**: the banners and subcategory pills, then one section per
+  category (15 Oct 2026, Rahul's reference layout): its name, *See all*
+  (opens that tile), and its first two as cards side by side — picture,
+  name, seller, price. A product on no console category is under *More*.
+  E-books are the last section; a book's card opens the E-books tile with
+  that book first. A category with nothing in it has no section; Courses
+  and Events get theirs when they have listings.
 - **E-books**: every book. Each has the Bhakti row under its title (12 Oct
   2026, Rahul): Like, Comment, Reshare and Share, with Read on the right; a
   priced book has no Reshare. A priced book is still bought from the wallet

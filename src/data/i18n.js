@@ -568,6 +568,7 @@ export const strings = {
   'shop.reviewBuy': { en: 'Review & buy', hi: 'देखें और खरीदें' },
   'shop.item': { en: '{n} item', hi: '{n} आइटम' },
   'shop.items': { en: '{n} items', hi: '{n} आइटम' },
+  'shop.more': { en: 'More', hi: 'और' },
   'shop.opening': { en: 'Opening the shop', hi: 'दुकान खुल रही है' },
   'shop.err': { en: 'We could not reach the shop.', hi: 'दुकान से संपर्क नहीं हो सका।' },
   'shop.errNote': { en: 'Nothing is wrong with your search.', hi: 'आपकी खोज में कोई गड़बड़ी नहीं है।' },

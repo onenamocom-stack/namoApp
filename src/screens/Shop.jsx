@@ -4,6 +4,7 @@ import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Ebooks from '../components/Ebooks.jsx'
+import { MarketCard, MarketSection } from '../components/MarketCard.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton, PopCard, PopTag } from '../components/Pop.jsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -111,7 +112,7 @@ export default function Shop() {
   // person's until phase 7, on a card recommending a stone for it.
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
   // `?cat=ebooks` opens on that tile: where /academy and a shared book land.
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const [cat, setCat] = useState(() => (marketOf(`:${params.get('cat')}`) ? `:${params.get('cat')}` : 'All'))
   // The header's box searches now (6 Oct 2026); nothing narrows here.
   const query = ''
@@ -206,6 +207,21 @@ export default function Shop() {
   // The chart-matched pick leads the page when no filter is narrowing things.
   const hero = cat === 'All' && !q ? list.find((p) => p.recommendedBy) : null
   const rest = hero ? list.filter((p) => p.id !== hero.id) : list
+
+  /* On All, unfiltered, the page is sections (15 Oct 2026, Rahul's
+     reference): each category's name, See all, and its first two. A
+     product on no console category is under More, so none drops out. */
+  const home = cat === 'All' && !sub && !q
+  const known = new Set(catList.map((c) => c.name))
+  const sections = [
+    ...catList.map((c) => ({ name: c.name, label: c.name, items: rest.filter((p) => p.categories.includes(c.name)) })),
+    { name: null, label: t('shop.more'), items: rest.filter((p) => !p.categories.some((c) => known.has(c))) },
+  ].filter((s) => s.items.length)
+  const openBook = (id) => {
+    setParams({ cat: 'ebooks', book: id })
+    setCat(':ebooks')
+    window.scrollTo({ top: 0 })
+  }
 
   return (
     <>
@@ -418,11 +434,37 @@ export default function Shop() {
         </section>
       )}
 
+      {/* ── Sections, on All ──────────────────────────────────────────── */}
+      {home && !loadingShop && !shopError && (
+        <>
+          {sections.map((s) => (
+            <MarketSection
+              key={s.label}
+              title={s.label}
+              seeAll={t('a.seeAll')}
+              onSeeAll={s.name ? () => { setCat(s.name); setSub(null) } : undefined}
+            >
+              {s.items.slice(0, s.name ? 2 : s.items.length).map((p) => (
+                <MarketCard
+                  key={p.id}
+                  id={`product-${p.id}`}
+                  art={<ProductArt product={p} className={`h-full w-full ${focusId === p.id ? focusRing : ''}`} />}
+                  name={p.name}
+                  lines={[p.brand || 'Namo', p.soldOut ? t('shop.soldOut') : `₹${p.price.toLocaleString('en-IN')}`]}
+                  onOpen={() => navigate(productHref(p))}
+                />
+              ))}
+            </MarketSection>
+          ))}
+          <Ebooks cards limit={2} onMore={() => setCat(':ebooks')} onOpen={openBook} />
+        </>
+      )}
+
       {/* ── Grid ──────────────────────────────────────────────────────── */}
       <section className="px-4 py-4">
-        <Kicker>{t(rest.length === 1 ? 'shop.item' : 'shop.items', { n: rest.length })}</Kicker>
+        {!home && <Kicker>{t(rest.length === 1 ? 'shop.item' : 'shop.items', { n: rest.length })}</Kicker>}
 
-        {loadingShop ? (
+        {home && !loadingShop && !shopError ? null : loadingShop ? (
           <Loader label={t('shop.opening')} className="py-12" />
         ) : shopError ? (
           /* Says it cannot reach the shop rather than showing an empty one.
@@ -534,8 +576,6 @@ export default function Shop() {
         </p>
       </section>
 
-      {/* On All, the first e-books under the products, with See all. */}
-      {cat === 'All' && !sub && <Ebooks limit={2} onMore={() => setCat(':ebooks')} />}
       </>
       )}
 

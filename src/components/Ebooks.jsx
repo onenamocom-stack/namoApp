@@ -5,6 +5,7 @@ import Paywall from './Paywall.jsx'
 import Plate from './Plate.jsx'
 import BhaktiActions from './BhaktiActions.jsx'
 import { Kicker, PopButton, PopCard } from './Pop.jsx'
+import { MarketCard, MarketSection } from './MarketCard.jsx'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -18,7 +19,7 @@ import { rupees, useStore } from '../store.jsx'
    credited, priceable catalogue as the Bhakti shelves, read in the same one
    request. A PDF opens in the browser's own viewer, which is also where it
    saves from. */
-export default function Ebooks({ limit = null, onMore = null }) {
+export default function Ebooks({ limit = null, onMore = null, cards = false, onOpen = null }) {
   const { t } = useStore()
   const [books, setBooks] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -44,6 +45,29 @@ export default function Ebooks({ limit = null, onMore = null }) {
   /* On the Market's All, the first few with See all (`onMore`); on the
      E-books tile, every one. */
   const shown = limit ? books.slice(0, limit) : books
+  /* `cards`: a section of the Market's home (15 Oct 2026); a card opens the
+     E-books tile with that book first. */
+  if (cards) {
+    return (
+      <MarketSection title={t('ac.tab.ebooks')} seeAll={t('a.seeAll')} onSeeAll={onMore}>
+        {shown.map((d) => (
+          <MarketCard
+            key={d.id}
+            art={
+              d.previewUrl ? (
+                <img src={d.previewUrl} alt={d.title} loading="lazy" className="h-full w-full bg-surface2 object-contain" />
+              ) : (
+                <Plate seed={`${d.id}-cover`} variant="contour" className="h-full w-full" />
+              )
+            }
+            name={d.title}
+            lines={[d.artist, `PDF · ${d.pricePaise ? `₹${rupees(d.pricePaise)}` : t('ac.free')}`]}
+            onOpen={() => onOpen?.(d.id)}
+          />
+        ))}
+      </MarketSection>
+    )
+  }
   return (
     <section className="px-4 py-4">
       <Kicker action={onMore && books.length > shown.length ? t('a.seeAll') : undefined} onAction={onMore || undefined}>
