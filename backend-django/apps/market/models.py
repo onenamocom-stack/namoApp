@@ -226,3 +226,37 @@ class ListingTag(models.Model):
         db_table = "market_listing_tags"
         constraints = [models.UniqueConstraint(fields=["content_id", "listing"], name="market_listing_tags_once")]
 
+
+class CommissionCategory(models.TextChoices):
+    CONSULTATION = "consultation", "Consultations (chat, call, video, booking)"
+    PRODUCT = "product", "Products"
+    DOWNLOAD = "download", "Downloads"
+    COURSE = "course", "Courses"
+    EVENT = "event", "Events"
+
+
+class CommissionRate(models.Model):
+    """Namo's share of a sale, one per category (15 Oct 2026, Rahul; owner's
+    yes): 30% wherever it is blank. Set in the console by Finance. Applies
+    to sales from the change on; every earnings row keeps the rate it was
+    written at."""
+
+    category = models.CharField(max_length=16, primary_key=True, choices=CommissionCategory.choices)
+    bps = models.IntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    updated_by = models.TextField(default="", db_default="", blank=True)
+
+    Category = CommissionCategory
+
+    class Meta:
+        db_table = "commission_rates"
+        constraints = [
+            models.CheckConstraint(condition=Q(bps__isnull=True) | Q(bps__gte=0, bps__lte=10000),
+                                   name="commission_rates_bps_check"),
+            models.CheckConstraint(condition=Q(category__in=CommissionCategory.values),
+                                   name="commission_rates_category_check"),
+        ]
+
+    def __str__(self):
+        return self.get_category_display()
+

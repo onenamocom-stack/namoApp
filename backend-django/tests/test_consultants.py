@@ -779,7 +779,7 @@ class TestBookSession:
         row = EarningsLedger.objects.get(booking_id=body["booking_id"])
         expected_fee = services.fee_paise(service.price_paise)
         assert row.gross_paise == service.price_paise
-        assert row.fee_bps == 4000  # 40% since 7 Oct 2026
+        assert row.fee_bps == 3000  # 30% since 15 Oct 2026 (the console's consultation rate, blank)
         assert row.fee_paise == expected_fee
         assert row.net_paise == service.price_paise - expected_fee
         assert row.kind == "Tara Verma · 20 min"  # 013 fix 4: the consultant's

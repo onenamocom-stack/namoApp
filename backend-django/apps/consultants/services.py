@@ -592,10 +592,13 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
 
 
 def fee_bps_for(consultant_id):
-    """Namo's share of this consultant's sessions: their own `fee_bps` if
-    the console set one, else FEE_BPS (13 Oct 2026)."""
-    own = Consultant.objects.filter(profile_id=consultant_id).values_list("fee_bps", flat=True).first()
-    return FEE_BPS if own is None else own
+    """Namo's share of a consultation: the console's rate for the
+    consultation category, 30% when blank (15 Oct 2026, Rahul; owner's yes)
+    — the same for every astrologer. The per-astrologer share built on 13
+    Oct is withdrawn; `consultants.fee_bps` stays as an unused column."""
+    from apps.market import services as market
+
+    return market.namo_bps("consultation")
 
 
 def fee_paise(amount_paise, bps=FEE_BPS):

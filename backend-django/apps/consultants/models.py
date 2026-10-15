@@ -121,11 +121,10 @@ class Consultant(models.Model):
     # of that first session are on Namo; the consultant is paid for them.
     free_first = models.BooleanField(default=False, db_default=False)
 
-    # Namo's share of THIS consultant's sessions, in basis points (13 Oct
-    # 2026, owner): blank uses FEE_BPS, the default in code (40%). Set in the
-    # console by Finance — 5000 for a 50:50 split, 6000 for 60:40. Applies to
-    # sessions settled from the change on; every earnings row keeps the
-    # fee_bps it was written with.
+    # UNUSED since 15 Oct 2026: Namo's share of a consultation is the
+    # console's consultation rate, the same for every astrologer (Rahul;
+    # owner's yes). A per-astrologer share was built 13 Oct and withdrawn;
+    # the column stays (it exists on production) and nothing reads it.
     fee_bps = models.IntegerField(null=True, blank=True)
 
     # The badge on the consultant's card and page (13 Oct 2026, Rahul):
@@ -413,9 +412,9 @@ class Booking(models.Model):
 # The platform's share of a session, in basis points, named once (01-PRD
 # §4.1; rule 1). 40% from 7 Oct 2026 (owner) — it was 18%. Applies to
 # earnings written from then on; rows already written keep their own fee_bps.
-# The DEFAULT since 13 Oct 2026: a consultant's own `fee_bps` overrides it
-# (services.fee_bps_for).
-FEE_BPS = 4000
+# 30% since 15 Oct 2026 (it was 40%): what a consultation pays Namo when
+# the console's consultation rate is blank (services.fee_bps_for).
+FEE_BPS = 3000
 
 
 class EarningsLedger(models.Model):

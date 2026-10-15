@@ -628,22 +628,23 @@ class TestSettle:
         assert _counts(SEEKER)["ledger"] == led0  # settle wrote nothing back
 
     def test_fee_rounds_half_away_from_zero(self, pro_user):
-        # The fee is rounded to whole paise like Postgres numeric round. At
-        # 40% (7 Oct 2026; it was 18%) a whole-paise gross never lands on a
-        # half, so these are exact: 225 -> 90, 5 -> 2, 25 -> 10.
+        # The fee is rounded to whole paise like Postgres numeric round,
+        # checked at 40% where a whole-paise gross never lands on a half:
+        # 225 -> 90, 5 -> 2, 25 -> 10.
         from apps.consultants.services import fee_paise
 
-        assert fee_paise(225) == 90
-        assert fee_paise(5) == 2
-        assert fee_paise(25) == 10
+        assert fee_paise(225, 4000) == 90
+        assert fee_paise(5, 4000) == 2
+        assert fee_paise(25, 4000) == 10
         session, _ = _live_session(pro_user, minutes=20, fund=RATE * 20)
         t0 = _t0()
         _stamp(session, started_at=t0 - 3 * MIN, expires_at=t0 + 17 * MIN)
         services.end_session(SEEKER, session.id, now=t0)
         row = EarningsLedger.objects.get(consultant_id=PRO)
-        # Three minutes at ₹75: gross ₹225, fee 40% ₹90, net ₹135, in paise.
-        assert row.gross_paise == 22500 and row.fee_paise == 9000
-        assert row.net_paise == 13500
+        # Three minutes at ₹75: gross ₹225, fee 30% (15 Oct 2026; the
+        # consultation rate's default) ₹67.50, net ₹157.50, in paise.
+        assert row.gross_paise == 22500 and row.fee_paise == 6750
+        assert row.net_paise == 15750
 
     def test_either_party_may_end(self, pro_user):
         session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)

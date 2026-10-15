@@ -1,13 +1,16 @@
-"""Namo's share per astrologer (13 Oct 2026, owner): FEE_BPS (40%) is the
-default in code; the console sets an astrologer's own share, and sessions
-settle at it from then on. Rows already written keep their own fee_bps."""
+"""Namo's share of a consultation is the console's consultation rate, 30%
+when blank, the same for every astrologer (15 Oct 2026, Rahul; owner's yes).
+The per-astrologer share built on 13 Oct is withdrawn: a value left in
+`consultants.fee_bps` changes nothing, and the console has no field for it."""
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.chat import services
-from apps.consultants import services as consultant_services
-from apps.consultants.models import FEE_BPS, Consultant, EarningsLedger
+from apps.console.models import Tier
+from apps.consultants.models import Consultant, EarningsLedger
+from apps.market.models import CommissionRate
 
 from .test_chat import MIN, PRO, RATE, SEEKER, _fund, money_tables, pro_user  # noqa: F401
 
@@ -23,53 +26,22 @@ def _talk(pro_user, minutes=2):
 
 
 @pytest.mark.django_db
-class TestTheShare:
-    def test_the_default_is_the_code_s(self, pro_user):
-        row = _talk(pro_user)
-        assert row.fee_bps == FEE_BPS == 4000
-        assert row.fee_paise == 2 * RATE * 40 // 100 and row.net_paise == 2 * RATE - row.fee_paise
+class TestOneRate:
+    def test_blank_is_thirty_percent(self, pro_user):
+        assert _talk(pro_user).fee_bps == 3000
 
-    def test_an_astrologer_s_own_share_is_used(self, pro_user):
+    def test_the_console_rate_is_used_for_everybody(self, pro_user):
+        CommissionRate.objects.update_or_create(category="consultation", defaults={"bps": 2500})
+        assert _talk(pro_user).fee_bps == 2500
+
+    def test_a_value_left_on_the_astrologer_changes_nothing(self, pro_user):
         Consultant.objects.filter(profile_id=PRO).update(fee_bps=5000)
-        row = _talk(pro_user)
-        assert row.fee_bps == 5000 and row.fee_paise == RATE and row.net_paise == RATE
+        assert _talk(pro_user).fee_bps == 3000
 
-    def test_a_change_leaves_rows_already_written(self, pro_user):
-        first = _talk(pro_user)
-        Consultant.objects.filter(profile_id=PRO).update(fee_bps=6000)
-        first.refresh_from_db()
-        assert first.fee_bps == 4000
-        assert consultant_services.fee_bps_for(PRO) == 6000
-
-    def test_blank_goes_back_to_the_default(self, pro_user):
-        Consultant.objects.filter(profile_id=PRO).update(fee_bps=None)
-        assert consultant_services.fee_bps_for(PRO) == FEE_BPS
-
-
-@pytest.mark.django_db
-class TestTheConsole:
-    def _page(self, tier):
-        from django.urls import reverse
-
-        from apps.console.models import Tier
-
+    def test_the_astrologer_page_has_no_share_field(self, pro_user):
         from .test_shop_console import _admin
 
-        client, _ = _admin(getattr(Tier, tier))
-        return client, reverse("namo:consultants_consultant_change", args=[PRO])
-
-    def test_finance_sets_it_as_a_percent(self, pro_user):
-        client, url = self._page("FINANCE")
-        page = client.get(url)
-        assert page.status_code == 200 and b"Namo&#x27;s share %" in page.content
-        form = page.context["adminform"].form
-        data = {k: v for k, v in form.initial.items() if v is not None and not isinstance(v, (list, dict))}
-        data.update({"namo_share": "50", "status": "approved", "category": "Astrologer"})
-        client.post(url, data)
-        assert Consultant.objects.get(profile_id=PRO).fee_bps == 5000
-
-    def test_support_only_sees_it(self, pro_user):
-        client, url = self._page("SUPPORT")
-        page = client.get(url)
+        client, _ = _admin(Tier.SUPERADMIN)
+        page = client.get(reverse("namo:consultants_consultant_change", args=[PRO]))
         assert page.status_code == 200
-        assert b'name="namo_share"' not in page.content and b"40 : 60" in page.content
+        assert b"namo_share" not in page.content and b"Namo&#x27;s share" not in page.content

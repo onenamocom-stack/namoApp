@@ -1,15 +1,18 @@
 """The Market's sellers in the console (15 Oct 2026, Phase 17).
 
+**Commission** — Namo's share per category (consultation, product,
+download, course, event); blank is 30%. Finance and Superadmin.
+
 **Listings** — the approval queue, waiting first. Open one, look at the
-picture, the file or lessons, the price; type Namo's commission if it is not
-the default (blank: 30%, or 20% + ₹100 a unit for a product); pick Approve
-or Reject (with the reason) and save. Support, Fulfilment and Superadmin.
+picture, the file or lessons, the price; pick Approve or Reject (with the
+reason) and save. Support, Fulfilment and Superadmin.
 
 **Seller payouts** — Finance. On and after the 7th, opening the list makes
 last month's rows (one per seller, everything earned before the 1st). Pay
 each by bank, then open it, type the bank's reference, tick Paid and save.
 
-**Seller earnings** — every sale, read only. Finance.
+**Seller earnings** — every sale. A product's delivery cost (₹100 a unit
+unless written) can be changed until its payout is made. Finance.
 """
 
 from decimal import Decimal
@@ -26,7 +29,7 @@ from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 
 from . import services
-from .models import Listing, ListingKind, ListingStatus, SellerBank, SellerEarning, SellerPayout
+from .models import CommissionRate, Listing, ListingKind, ListingStatus, SellerBank, SellerEarning, SellerPayout
 
 
 def _who(request):
@@ -49,11 +52,6 @@ class ListingForm(forms.ModelForm):
         choices=(("", "Leave as it is"), ("approve", "Approve — put it on the Market"),
                  ("reject", "Reject — send back with the note below")),
     )
-    commission_percent = forms.DecimalField(
-        label="Namo's commission %", required=False, min_value=0, max_value=100, decimal_places=2,
-        help_text="Blank takes the default: 30% for a download, course or event; 20% for a product, "
-                  "and ₹100 a unit for delivery on a product always comes from the seller's share.",
-    )
 
     class Meta:
         model = Listing
@@ -61,11 +59,6 @@ class ListingForm(forms.ModelForm):
         widgets = {"review_note": forms.Textarea(attrs={"rows": 3, "cols": 80})}
         labels = {"review_note": "Note to the seller"}
         help_texts = {"review_note": "Required to reject: the seller reads it."}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.commission_bps is not None:
-            self.fields["commission_percent"].initial = Decimal(self.instance.commission_bps) / 100
 
     def clean(self):
         data = super().clean()
@@ -92,8 +85,7 @@ class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
     fieldsets = (
         ("The listing", {"fields": ("seller", "kind", "status", "cover", "title", "price", "mrp",
                                     "description_text", "what")}),
-        ("Your decision", {"fields": ("commission_percent", "decision", "review_note",
-                                      "reviewed_at", "reviewed_by")}),
+        ("Your decision", {"fields": ("decision", "review_note", "reviewed_at", "reviewed_by")}),
     )
 
     def get_queryset(self, request):
@@ -133,10 +125,10 @@ class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
 
     @dj.display(description="Namo's commission")
     def commission(self, obj):
+        # The category's rate (Commission page); a product also carries delivery.
         bps = services.commission_bps(obj)
-        extra = " + ₹100/unit" if obj.kind == ListingKind.PRODUCT else ""
-        tag = "" if obj.commission_bps is not None else " (default)"
-        return f"{bps / 100:g}%{extra}{tag}"
+        extra = " + delivery" if obj.kind == ListingKind.PRODUCT else ""
+        return f"{bps / 100:g}%{extra}"
 
     @dj.display(description="Description")
     def description_text(self, obj):
@@ -165,15 +157,11 @@ class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
         return "—"
 
     def save_model(self, request, obj, form, change):
-        percent = form.cleaned_data.get("commission_percent")
-        bps = None if percent is None else int(round(percent * 100))
         decision = form.cleaned_data.get("decision")
         try:
             if decision == "approve":
-                services.approve(obj, _who(request), bps=bps)
-                if percent is None:
-                    Listing.objects.filter(pk=obj.pk).update(commission_bps=None)
-                record(request, "market_listing.approve", "market_listing", target_id=obj.pk, commission_bps=bps)
+                services.approve(obj, _who(request))
+                record(request, "market_listing.approve", "market_listing", target_id=obj.pk)
                 return
             if decision == "reject":
                 services.reject(obj, _who(request), form.cleaned_data["review_note"].strip())
@@ -181,7 +169,6 @@ class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
                 return
         except services.Refused as err:
             return self.message_user(request, err.message, messages.ERROR)
-        obj.commission_bps = bps
         super().save_model(request, obj, form, change)
 
     @dj.action(description="Approve at the default commission")
@@ -320,9 +307,26 @@ class SellerPayoutAdmin(AuditedAdmin, dj.ModelAdmin):
         return at_least(request, Tier.FINANCE)
 
 
+class EarningForm(forms.ModelForm):
+    delivery = forms.DecimalField(
+        label="Delivery cost (₹)", required=False, min_value=0, decimal_places=2,
+        help_text="This order's real delivery cost, taken from the seller's share. Blank keeps what is there "
+                  "(₹100 a unit by default). Only before the payout is made.",
+    )
+
+    class Meta:
+        model = SellerEarning
+        fields = ()
+
+
 @dj.register(SellerEarning, site=site)
-class SellerEarningAdmin(dj.ModelAdmin):
-    list_display = ("created_at", "seller", "what", "gross", "commission", "delivery", "net", "in_payout")
+class SellerEarningAdmin(AuditedAdmin, dj.ModelAdmin):
+    audit_target = "market_earning"
+    form = EarningForm
+    list_display = ("created_at", "seller", "what", "gross", "commission", "delivery_now", "net", "in_payout")
+    readonly_fields = ("seller", "what", "gross", "commission", "delivery_now", "net", "in_payout", "created_at")
+    # `delivery` is the form's box (a product sale not yet paid out).
+    fields = ("seller", "what", "gross", "commission", "delivery_now", "delivery", "net", "in_payout", "created_at")
     list_filter = ("listing__kind",)
     ordering = ("-created_at",)
 
@@ -343,7 +347,7 @@ class SellerEarningAdmin(dj.ModelAdmin):
         return f"{_rupees(obj.commission_paise)} ({obj.commission_bps / 100:g}%)"
 
     @dj.display(description="Delivery")
-    def delivery(self, obj):
+    def delivery_now(self, obj):
         return _rupees(obj.delivery_paise)
 
     @dj.display(description="Net to seller")
@@ -362,7 +366,69 @@ class SellerEarningAdmin(dj.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def save_model(self, request, obj, form, change):
+        value = form.cleaned_data.get("delivery")
+        if value is None:
+            return
+        try:
+            services.set_delivery(obj, int(round(value * 100)), _who(request))
+        except services.Refused as err:
+            return self.message_user(request, err.message, messages.ERROR)
+        record(request, "market_earning.delivery", "market_earning", target_id=obj.pk,
+               delivery_paise=int(round(value * 100)))
+
     def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+
+class RateForm(forms.ModelForm):
+    percent = forms.DecimalField(label="Namo's share %", required=False, min_value=0, max_value=100,
+                                 decimal_places=2, help_text="Blank is 30%. Applies to sales from now on.")
+
+    class Meta:
+        model = CommissionRate
+        fields = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.bps is not None:
+            self.fields["percent"].initial = Decimal(self.instance.bps) / 100
+
+
+@dj.register(CommissionRate, site=site)
+class CommissionRateAdmin(AuditedAdmin, dj.ModelAdmin):
+    """Namo's share, per category (15 Oct 2026, Rahul; owner's yes)."""
+
+    audit_target = "commission_rate"
+    form = RateForm
+    list_display = ("category", "share")
+    fields = ("category", "percent", "updated_at", "updated_by")
+    readonly_fields = ("category", "updated_at", "updated_by")
+
+    @dj.display(description="Namo's share")
+    def share(self, obj):
+        return f"{(obj.bps if obj.bps is not None else services.DEFAULT_BPS) / 100:g}%" + (
+            "" if obj.bps is not None else " (default)")
+
+    def save_model(self, request, obj, form, change):
+        percent = form.cleaned_data.get("percent")
+        was = obj.bps
+        obj.bps = None if percent is None else int(round(percent * 100))
+        obj.updated_at = timezone.now()
+        obj.updated_by = _who(request)
+        obj.save()
+        record(request, "commission_rate.change", "commission_rate", target_id=obj.pk, was=was, now=obj.bps)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False
 
     def has_module_permission(self, request):
@@ -370,3 +436,7 @@ class SellerEarningAdmin(dj.ModelAdmin):
 
     def has_view_permission(self, request, obj=None):
         return at_least(request, Tier.FINANCE)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+

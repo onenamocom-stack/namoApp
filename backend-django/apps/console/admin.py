@@ -15,7 +15,7 @@ from apps.consultants import payout_details as payout_crypto
 from apps.consultants import services as consultant_services
 from django import forms
 
-from apps.consultants.models import FEE_BPS, Consultant, PayoutDetails, PayoutDetailsStatus, ProfileReview
+from apps.consultants.models import Consultant, PayoutDetails, PayoutDetailsStatus, ProfileReview
 from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
@@ -25,37 +25,12 @@ from .models import AdminAction, AdminUser, Tier
 from .site import admin_row, at_least, site
 
 
-class ConsultantForm(dj.ModelAdmin.form):
-    """Namo's share typed as a percent (13 Oct 2026); stored as basis points."""
-
-    namo_share = forms.DecimalField(
-        label="Namo's share %", required=False, min_value=0, max_value=100, decimal_places=2,
-        help_text="Of this astrologer's session earnings. Blank uses the default "
-                  "(%(d)s%%). 50 is a 50:50 split. Applies to sessions from now on." % {"d": FEE_BPS // 100},
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.fee_bps is not None:
-            self.fields["namo_share"].initial = self.instance.fee_bps / 100
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        if "namo_share" in self.cleaned_data:
-            share = self.cleaned_data.get("namo_share")
-            obj.fee_bps = None if share is None else round(share * 100)
-        if commit:
-            obj.save()
-        return obj
-
-
 @dj.register(Consultant, site=site)
 class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
-    form = ConsultantForm
-    list_display = ("who", "category", "specialization", "rates", "namo_cut", "status", "verified", "badge", "free_first", "created_at")
+    list_display = ("who", "category", "specialization", "rates", "status", "verified", "badge", "free_first", "created_at")
     list_filter = ("status", "verified", "badge", "free_first", "category")
     # Ticked here, straight from the list: the in-house consultants a new
     # seeker sees free for their first session (7 Oct 2026), and the badge
@@ -78,34 +53,6 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         if p is None:
             return str(obj.profile_id)
         return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
-
-    @dj.display(description="Namo : astrologer")
-    def namo_cut(self, obj):
-        bps = FEE_BPS if obj.fee_bps is None else obj.fee_bps
-        split = f"{bps / 100:g} : {100 - bps / 100:g}"
-        return split if obj.fee_bps is not None else format_html("{}<br><small>default</small>", split)
-
-    def get_fields(self, request, obj=None):
-        """The share is set through `namo_share`, never as raw basis points."""
-        fields = [f for f in super().get_fields(request, obj) if f not in ("fee_bps", "namo_share")]
-        return fields + ["namo_share"] if at_least(request, Tier.FINANCE) else fields + ["namo_cut"]
-
-    def get_readonly_fields(self, request, obj=None):
-        """Finance changes Namo's share and nothing else here; Support and
-        Fulfilment run the queue and see the share. Superadmin does both."""
-        from apps.console.site import tier_of
-
-        ro = list(super().get_readonly_fields(request, obj))
-        if tier_of(request) == Tier.FINANCE:
-            return [f.name for f in Consultant._meta.fields] + ro
-        return ro if at_least(request, Tier.FINANCE) else ro + ["namo_cut"]
-
-    def get_actions(self, request):
-        """Approve, block and unblock are the queue's — not Finance's."""
-        from apps.console.site import tier_of
-
-        actions = super().get_actions(request)
-        return {} if tier_of(request) == Tier.FINANCE else actions
 
     @dj.display(description="Rates (₹/min)")
     def rates(self, obj):
@@ -159,8 +106,7 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
-        # Finance too, for Namo's share only (get_readonly_fields).
-        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT, Tier.FINANCE)
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
 
     # Without these two the queue does not appear in the menu AT ALL.
     # Django falls back to its own model permissions, which a console
@@ -168,10 +114,10 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
     # by way of auth_permission. The approval queue was invisible on the
     # first deploy for exactly this reason.
     def has_module_permission(self, request):
-        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT, Tier.FINANCE)
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
 
     def has_view_permission(self, request, obj=None):
-        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT, Tier.FINANCE)
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
 
     def _set_status(self, request, queryset, status, verb):
         """One place, so approve/block/unblock cannot drift apart. The audit

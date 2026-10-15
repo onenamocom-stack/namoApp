@@ -1,11 +1,15 @@
 """The Market's sellers, as functions (15 Oct 2026, docs/06 Phase 17).
 
 Money rules, docs/01 §4.7 (Rahul's terms, owner's yes 15 Oct):
-  - Namo's commission is 30% of a download, course or event, and 20% of a
-    product plus ₹100 a unit for delivery (from the seller's share; the
-    buyer pays no delivery). The admin may type another percentage on a
-    listing when approving it; blank takes the default.
-  - Payouts run monthly, on the 7th, for everything earned before the 1st.
+  - Namo's share is one rate per category — consultation, product,
+    download, course, event — set in the console (`commission_rates`),
+    30% where blank. A product's seller also pays its delivery: ₹100 a
+    unit unless the console writes that order's real cost; the buyer pays
+    none.
+  - A Pro or a Creator whose link or tag brought a customer's FIRST
+    purchase earns 6% of it, from Namo's share (`REFERRAL_SHARER_BPS`).
+  - Payouts run monthly, on the 7th, for everything delivered before the
+    1st: a product on delivery, an event once it has happened.
 """
 
 import logging
@@ -15,18 +19,13 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
-from .models import (Listing, ListingKind, ListingStatus, ListingTag, Purchase, SellerBank, SellerEarning,
-                     SellerPayout)
+from .models import (CommissionRate, Listing, ListingKind, ListingStatus, ListingTag, Purchase, SellerBank,
+                     SellerEarning, SellerPayout)
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BPS = {
-    ListingKind.DOWNLOAD: 3000,
-    ListingKind.COURSE: 3000,
-    ListingKind.EVENT: 3000,
-    ListingKind.PRODUCT: 2000,
-}
-DELIVERY_PAISE = 10_000  # ₹100 a unit, a product only
+DEFAULT_BPS = 3000  # 30%, wherever the console's rate is blank
+DELIVERY_PAISE = 10_000  # ₹100 a unit, a product only, unless the console writes the order's own
 MAX_PRICE_PAISE = 10_00_000_00  # ₹10,00,000
 MAX_LESSONS = 200
 
@@ -50,10 +49,17 @@ def is_seller(profile_id):
     return consultants.is_approved(profile_id) or profiles.is_creator(profile_id)
 
 
+def namo_bps(category):
+    """Namo's share for `category` (consultation, product, download,
+    course, event), in basis points: the console's, or 30%."""
+    bps = CommissionRate.objects.filter(pk=category).values_list("bps", flat=True).first()
+    return DEFAULT_BPS if bps is None else bps
+
+
 def commission_bps(listing):
-    if listing.commission_bps is not None:
-        return listing.commission_bps
-    return DEFAULT_BPS[listing.kind]
+    """A listing's rate is its category's (15 Oct 2026: one rate per
+    category; the per-listing override is withdrawn)."""
+    return namo_bps(listing.kind)
 
 
 def split(listing, gross_paise, units=1):
@@ -215,15 +221,13 @@ def withdraw(seller_id, listing_id):
 # ── the console's decision ──────────────────────────────────────────────────
 
 
-def approve(listing, who, bps=None):
+def approve(listing, who, bps=None):  # `bps` is ignored since 15 Oct 2026
     """Live from now. A product becomes a shop row, sold and shipped by the
     shop, branded with the seller's name."""
     listing.status = ListingStatus.APPROVED
     listing.review_note = ""
     listing.reviewed_at = timezone.now()
     listing.reviewed_by = who
-    if bps is not None:
-        listing.commission_bps = bps
     if listing.kind == ListingKind.PRODUCT:
         listing.product_id = _shelve(listing).pk
     listing.save()
@@ -363,6 +367,7 @@ def on_listing_paid(profile_id, ref, amount_paise):
         commission_bps=commission_bps(listing), commission_paise=commission,
         delivery_paise=delivery, net_paise=net,
     )
+    _pay_sharer(purchase)
     transaction.on_commit(lambda: _notify(
         listing.seller_id, "market.sale", "You made a sale",
         f"{listing.title} · ₹{amount_paise // 100:,} (yours ₹{net // 100:,})", listing))
@@ -566,14 +571,14 @@ def run_payouts(today=None):
     month = (first - timedelta(days=1)).replace(day=1)
     cutoff = timezone.make_aware(datetime.combine(first, time.min))
     made = []
-    sellers = (SellerEarning.objects.filter(payout__isnull=True, created_at__lt=cutoff)
-               .values_list("seller_id", flat=True).distinct())
+    due = _delivered(SellerEarning.objects.filter(payout__isnull=True, created_at__lt=cutoff), cutoff)
+    sellers = due.values_list("seller_id", flat=True).distinct()
     for seller_id in list(sellers):
         with transaction.atomic():
             if SellerPayout.objects.filter(seller_id=seller_id, month=month).exists():
                 continue
-            rows = SellerEarning.objects.select_for_update().filter(
-                seller_id=seller_id, payout__isnull=True, created_at__lt=cutoff)
+            rows = _delivered(SellerEarning.objects.select_for_update().filter(
+                seller_id=seller_id, payout__isnull=True, created_at__lt=cutoff), cutoff)
             amount = sum(r.net_paise for r in rows)
             if amount <= 0:
                 continue
@@ -581,6 +586,14 @@ def run_payouts(today=None):
             rows.update(payout=payout)
             made.append(payout)
     return made
+
+
+def _delivered(earnings, cutoff):
+    """Only what has been delivered (Rahul, 15 Oct 2026): a product's row is
+    written on delivery already; an event's waits until the event is over."""
+    # An event counts once it started a day before the cutoff (no event
+    # here runs longer than a day).
+    return earnings.exclude(Q(listing__kind=ListingKind.EVENT) & ~Q(listing__starts_at__lt=cutoff - timedelta(hours=24)))
 
 
 def mark_paid(payout, reference, who):
@@ -714,4 +727,41 @@ def remind_events(now=None):
                               dedupe_key=f"event-soon:{event.id}:{who}")
             sent += 1 if row else 0
     return sent
+
+
+def _pay_sharer(purchase):
+    """6% of a paid purchase to the Pro or Creator whose link or tag brought
+    the buyer — on that buyer's first such purchase only (Rahul, 15 Oct
+    2026: every new customer, once each). From Namo's share. An event's
+    waits until it has happened (it joins the payout then)."""
+    from django.conf import settings
+
+    from apps.referrals import services as referrals
+
+    if not purchase.referrer_id or not purchase.amount_paise:
+        return
+    earlier = (Purchase.objects.filter(buyer_id=purchase.buyer_id, referrer_id__isnull=False, amount_paise__gt=0)
+               .exclude(pk=purchase.pk).exists())
+    if earlier:
+        return
+    amount = purchase.amount_paise * settings.REFERRAL_SHARER_BPS // 10_000
+    if amount > 0:
+        referrals.credit_sharer(purchase.referrer_id, amount,
+                                f"Market · {purchase.listing.title}")
+
+
+def set_delivery(earning, paise, who):
+    """The console writes a product order's real delivery cost (15 Oct
+    2026, Rahul: "har order pe decide hogi"), before its payout is made;
+    the seller's net follows."""
+    if earning.payout_id:
+        raise Refused("That sale is already in a payout.")
+    if earning.listing.kind != ListingKind.PRODUCT:
+        raise Refused("Only a product carries a delivery cost.")
+    if paise < 0 or paise > earning.gross_paise - earning.commission_paise:
+        raise Refused("That delivery cost is more than the seller's share.")
+    SellerEarning.objects.filter(pk=earning.pk).update(
+        delivery_paise=paise, net_paise=earning.gross_paise - earning.commission_paise - paise)
+    earning.refresh_from_db()
+    return earning
 

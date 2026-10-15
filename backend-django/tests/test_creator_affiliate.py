@@ -17,6 +17,17 @@ from apps.shop.models import Shipment
 from .conftest import make_claims
 from .test_referrals import BUYER, PRICE, TENTH, _fund, people, product  # noqa: F401
 
+
+@pytest.fixture(autouse=True)
+def _old_rates(settings):
+    """These tests pin the referral mechanics at the rates they were written
+    for — 10% to each side. The rates are settings; since 15 Oct 2026 the
+    defaults are 6% to the sharer and 0 to the buyer (test_market.TestRates,
+    test_referral_offers.TestTodaysRates)."""
+    settings.REFERRAL_SHARER_BPS = 1000
+    settings.REFERRAL_BUYER_BPS = 1000
+
+
 CREATOR = "c7c7c7c7-1111-2222-3333-444444444444"
 
 

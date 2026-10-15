@@ -288,6 +288,13 @@ class TestCoupons:
 
 @pytest.mark.django_db(transaction=True)
 class TestOrderHistory:
+    @pytest.fixture(autouse=True)
+    def _old_rates(self, settings):
+        # Pinned at the 10% each side these were written for; today's
+        # defaults (6% and 0) are test_referral_offers.TestTodaysRates.
+        settings.REFERRAL_SHARER_BPS = 1000
+        settings.REFERRAL_BUYER_BPS = 1000
+
     """What somebody has bought, and what it earned them.
 
     There was no orders page at all until 26 Sep, so a refund was

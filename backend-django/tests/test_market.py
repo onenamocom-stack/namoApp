@@ -7,7 +7,7 @@ terms in docs/01 §4.7).
                    a product becomes a shop row
   buying        -> TestBuying: free is taken, paid goes through the gateway once,
                    the seller earns 30% less (or the admin's rate), only owners open it
-  products      -> TestProducts: earns on delivery, 20% + ₹100 a unit, once
+  products      -> TestProducts: earns on delivery, the category rate + ₹100 a unit, once
   payouts       -> TestPayouts: the 7th makes last month's rows, once; paid is paid
 """
 
@@ -184,8 +184,11 @@ class TestBuying:
         assert got["file_url"].endswith("guide.pdf")
         assert api_client.get(f"/v1/market/listings/{row.id}/", **auth(token)).json()["owned"] is True
 
-    def test_the_admins_rate_is_used(self, api_client, token, creator, keys):
-        row = services.approve(_download(price=10000), "admin", bps=1500)
+    def test_the_categorys_rate_is_used(self, api_client, token, creator, keys):
+        from apps.market.models import CommissionRate
+
+        CommissionRate.objects.update_or_create(category="download", defaults={"bps": 1500})
+        row = services.approve(_download(price=10000), "admin")
         order = _pay(api_client, token, row.id).json()["razorpay"]["order_id"]
         _confirm(api_client, token, order)
         assert SellerEarning.objects.get().net_paise == 8500
@@ -212,7 +215,7 @@ def _delivered(listing, qty=2):
 
 @pytest.mark.django_db
 class TestProducts:
-    def test_earns_on_delivery_twenty_percent_and_delivery(self, creator):
+    def test_earns_on_delivery_thirty_percent_and_delivery(self, creator):
         ShopCategory.objects.create(name="Maalas", sort=1)
         row = services.approve(services.create(CREATOR, {
             "kind": "product", "title": "Tulsi Mala", "cover_url": "https://x/c.jpg", "price_paise": 100000,
@@ -222,7 +225,7 @@ class TestProducts:
         assert services.on_shipment_status(order.pk, Shipment.Status.DELIVERED) == 1
         assert services.on_shipment_status(order.pk, Shipment.Status.DELIVERED) == 0
         e = SellerEarning.objects.get()
-        assert (e.gross_paise, e.commission_paise, e.delivery_paise, e.net_paise) == (200000, 40000, 20000, 140000)
+        assert (e.gross_paise, e.commission_paise, e.delivery_paise, e.net_paise) == (200000, 60000, 20000, 120000)
 
 
 @pytest.mark.django_db
@@ -350,3 +353,58 @@ class TestReminders:
         note = Notification.objects.get(profile_id=CREATOR, kind="market.approved")
         assert "Send the 10" in note.body and "address" in note.body
 
+
+
+@pytest.mark.django_db
+class TestRates:
+    """One rate per category, 30% blank; the sharer's 6% from Namo's share;
+    a product's delivery written per order (15 Oct 2026, owner's yes)."""
+
+    def test_every_kind_is_thirty_by_default_and_the_console_changes_one(self, creator):
+        from apps.market.models import CommissionRate
+
+        assert services.namo_bps("product") == services.namo_bps("event") == 3000
+        CommissionRate.objects.update_or_create(category="download", defaults={"bps": 2000})
+        assert services.commission_bps(_download()) == 2000
+
+    def test_a_product_pays_thirty_and_its_delivery(self, creator):
+        ShopCategory.objects.create(name="Maalas", sort=1)
+        row = services.approve(services.create(CREATOR, {
+            "kind": "product", "title": "Tulsi Mala", "cover_url": "https://x/c.jpg", "price_paise": 100000,
+            "stock": 10, "weight_grams": 150}), "admin")
+        order, _ = _delivered(row, qty=1)
+        services.on_shipment_status(order.pk, Shipment.Status.DELIVERED)
+        e = SellerEarning.objects.get()
+        assert (e.commission_paise, e.delivery_paise, e.net_paise) == (30000, 10000, 60000)
+        e = services.set_delivery(e, 6500, "finance")
+        assert (e.delivery_paise, e.net_paise) == (6500, 63500)
+
+    def test_the_sharer_gets_six_percent_of_a_first_purchase_once(self, api_client, token, creator, keys):
+        from apps.referrals.models import CreatorEarning
+
+        SHARER = uuid.UUID("00000000-0000-4000-8000-0000000000c9")
+        Profile.objects.create(id=SHARER, phone="9000000c9", name="Sharer", influencer=True)
+        row = _approved(price=10000)
+        with mock.patch("apps.market.services._referrer", return_value=SHARER):
+            order = _pay(api_client, token, row.id).json()["razorpay"]["order_id"]
+            _confirm(api_client, token, order)
+        [paid] = CreatorEarning.objects.filter(profile_id=SHARER)
+        assert paid.amount_paise == 600
+        # The seller's share is untouched: 6% comes out of Namo's.
+        assert SellerEarning.objects.get().net_paise == 7000
+        second = _approved(price=10000)
+        with mock.patch("apps.market.services._referrer", return_value=SHARER):
+            order = _pay(api_client, token, second.id, fake=FakeRazorpay()).json()["razorpay"]["order_id"]
+            _confirm(api_client, token, order, payment_id="pay_2")
+        assert CreatorEarning.objects.filter(profile_id=SHARER).count() == 1
+
+    def test_an_event_pays_out_only_once_it_has_happened(self, creator):
+        row = services.approve(services.create(CREATOR, {
+            "kind": "event", "title": "Live katha", "cover_url": "https://x/c.jpg", "price_paise": 0,
+            "starts_at": timezone.now() + timedelta(days=40), "duration_minutes": 60, "seats": 10,
+            "join_url": "https://meet.google.com/abc"}), "admin")
+        p = Purchase.objects.create(listing=row, buyer_id=TEST_USER, amount_paise=10000)
+        SellerEarning.objects.create(seller_id=CREATOR, listing=row, purchase=p, gross_paise=10000,
+                                     commission_bps=3000, commission_paise=3000, net_paise=7000,
+                                     created_at=timezone.now() - timedelta(days=40))
+        assert services.run_payouts() == []

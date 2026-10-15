@@ -408,13 +408,15 @@ def check_coupon(buyer_id, code, exclude_order_id=None):
     return {"ok": True, "referrer_id": str(row.profile_id), "code": row.code}
 
 
-def _cashback_paise(order_total_paise):
-    """10%, capped if a cap is set. **Zero cap means no cap**, which is
-    where it starts — the flag exists so a limit can be imposed without a
-    deploy, not because one is in force."""
+def _cashback_paise(order_total_paise, bps=None):
+    """`bps` of the amount (the sharer's by default), capped if a cap is
+    set. **Zero cap means no cap**, which is where it starts — the flag
+    exists so a limit can be imposed without a deploy, not because one is
+    in force."""
     from django.conf import settings
 
-    amount = (order_total_paise * settings.REFERRAL_CASHBACK_BPS) // 10_000
+    bps = settings.REFERRAL_SHARER_BPS if bps is None else bps
+    amount = (order_total_paise * bps) // 10_000
     cap = settings.REFERRAL_CASHBACK_CAP_PAISE
     return min(amount, cap) if cap > 0 else amount
 
@@ -442,7 +444,9 @@ def cashback_split(lines, prepaid):
     from django.conf import settings
     from apps.shop import offers
 
-    bps = settings.REFERRAL_CASHBACK_BPS
+    # The sharer's 6% and the buyer's default (0) since 15 Oct 2026; they
+    # were one 10% each.
+    bps = settings.REFERRAL_SHARER_BPS
     buyer = referrer = default_base = 0
     for product, unit, qty in lines:
         own = offers.buyer_cashback(product, unit, qty) if product is not None else None
@@ -452,10 +456,9 @@ def cashback_split(lines, prepaid):
         back = own if prepaid else 0
         buyer += back
         referrer += (unit * qty - back) * bps // 10_000
-    default = _cashback_paise(default_base)
-    referrer += default
+    referrer += _cashback_paise(default_base)
     if prepaid:
-        buyer += default
+        buyer += _cashback_paise(default_base, settings.REFERRAL_BUYER_BPS)
     return buyer, referrer
 
 
@@ -900,3 +903,20 @@ def creator_earnings(profile_id, now=None):
             for r in rows.order_by("-created_at")[:50]
         ],
     }
+
+
+def credit_sharer(profile_id, amount_paise, note):
+    """A sharer's money that waits for no return window (a Market download,
+    course or event bought through their link or tag, 15 Oct 2026): straight
+    into their book — a Creator's `creator_earnings`, a consultant's
+    `earnings_ledger` at fee 0 — as a matured referrer cashback is."""
+    from apps.consultants.models import Consultant, EarningsLedger
+
+    from .models import CreatorEarning
+
+    if not Consultant.objects.filter(profile_id=profile_id).exists():
+        return CreatorEarning.objects.create(profile_id=profile_id, cashback=None, amount_paise=amount_paise,
+                                             kind=f"Referral · {note}")
+    return EarningsLedger.objects.create(consultant_id=profile_id, booking=None, gross_paise=amount_paise,
+                                         fee_bps=0, fee_paise=0, net_paise=amount_paise, kind=f"Referral · {note}")
+

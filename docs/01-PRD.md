@@ -172,15 +172,15 @@ the booking discount was 5 Oct). On the switch each consultant's per-minute
 rate became their chat, video and audio rate, and their booking rate became
 their old 20-minute price over 20, to the nearest rupee (₹592 → ₹30 → ₹600).
 
-**Platform commission: 40%** (owner, 7 Oct 2026; it was 18%), expressed in
-basis points everywhere it is stored. A ₹1,499 session pays the consultant
-₹899 and the platform ₹600. **It is not stated anywhere in either app** —
-the consultant's earnings show what they take home, not the share taken;
-the console shows it. Earnings written before 7 Oct keep their 18% row.
-**40% is the default, set per astrologer since 13 Oct 2026** (owner: as
-Namo grows a split may go to 50:50 or 60:40): the console's astrologer page
-has "Namo's share %", changed by Finance or Superadmin only; blank means
-the default. A change applies to sessions settled from then on.
+**Platform commission: 30%** (15 Oct 2026, Rahul; owner's yes — it was 40%
+from 7 Oct, 18% before), expressed in basis points everywhere it is
+stored. A ₹1,499 session pays the consultant ₹1,049 and the platform ₹450.
+**It is not stated anywhere in either app** — the consultant's earnings
+show what they take home, not the share taken; the console shows it.
+**One rate for every astrologer**, the console's *Commission* page
+(Finance), the *Consultations* row; blank is 30%. A change applies to
+sessions settled from then on; every earnings row keeps the rate it was
+written at. The per-astrologer share (13 Oct) is withdrawn.
 
 **A free first session — decided 7 Oct 2026.** The console ticks "free
 first" on chosen consultants (the in-house ones, four or five). A seeker
@@ -394,10 +394,16 @@ list their own, each shown only after an admin approves it; an edit goes
 back for approval. Paid through the gateway, never the wallet; a free one is
 simply taken. The seller is paid out less Namo's commission:
 
-- **Commission:** Products **20%** plus **₹100** for delivery, taken from
-  the seller's share (delivery is free to the buyer); Downloads, Courses and
-  Events **30%**. The admin may type a different rate for a
-  listing when approving it; a blank rate takes the default.
+- **Commission:** **30%** on everything — products, downloads, courses and
+  events (15 Oct 2026, Rahul; owner's yes; products were 20%) — one rate
+  per category on the console's *Commission* page, blank 30%. The
+  per-listing rate is withdrawn. A product's seller also pays its delivery
+  from their share: **₹100 a unit** unless Finance writes that order's real
+  cost on the sale (Seller earnings) before its payout. Delivery is free to
+  the buyer.
+- **Referrals:** a Pro or a Creator whose link or tag brought a customer's
+  first purchase of a download, course or event earns **6%** of it, from
+  Namo's share (the seller's is untouched) — as on shop orders below.
 - **Delivery:** the seller sends the product to Namo; Namo delivers it to
   the buyer.
 - **Payouts:** monthly, every seller in one run, on the **7th** for the
@@ -407,7 +413,9 @@ simply taken. The seller is paid out less Namo's commission:
 - **Downloads and courses:** the file and the lessons are private; a buyer
   opens a ten-minute link. A course's first lesson is a free preview.
 - **Earnings:** written when a download, course or event is paid, and when a
-  product is **delivered** (so a return costs the seller nothing paid).
+  product is **delivered** (so a return costs the seller nothing paid). **A
+  payout is due only after delivery** (Rahul, 15 Oct 2026): a product's on
+  delivery, an event's once it has happened.
 
 Built: `docs/06` Phase 17.
 
@@ -975,7 +983,7 @@ typed at the till), the other a code typed at sign-up.
 |---|---|---|---|---|
 | Carried by | an affiliate **link** (`?ref=A…`) | the `N…` code | a link | the `N…` code |
 | Used | opening the link, any page | at sign-up | — | at sign-up |
-| Reward | **10% of the first order (after the buyer's cashback) to the consultant** — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
+| Reward | **6% of the first order (after the buyer's cashback) to the Pro or Creator** (15 Oct 2026; it was 10%) — below | **3 free AI questions a day for 3 days, both sides** | **nothing** | **nothing** |
 | Limit | the buyer's **first order, within the window** | once per account, ever | — | — |
 
 ### Affiliate links with a window — decided 11 Oct 2026
@@ -993,8 +1001,10 @@ The owner's rule, replacing the astrologer's code at checkout.
 - **Last link wins.** Another astrologer's link before the customer's
   first order replaces it, and the window starts again.
 - **First order only.** The first order inside the window pays the
-  astrologer 10% (of what is left after the buyer's cashback, per item —
-  below). After the window, or after the first order, links change
+  astrologer or Creator **6%** (15 Oct 2026, Rahul; owner's yes; it was 10%)
+  of what is left after the buyer's cashback, per item — below; from
+  Namo's share. Every new customer through the same link earns it again; a
+  customer's second order earns nobody. After the window, or after the first order, links change
   nothing. A cancelled or lapsed order does not use the first order up.
 - **The buyer's first-order cashback needs no link.** Every customer's
   first prepaid order gets each product's cashback.
@@ -1043,20 +1053,21 @@ product, what a customer's FIRST order gives the BUYER (since 11 Oct 2026
 every first order, astrologer's link or not; before, only through a code):
 **a flat amount per item** (₹500 back on a ₹700 item), **a percentage**,
 **a percentage capped per item** ("10% up to ₹100"), **nothing**, or the
-**platform default** (10%, which is every product until somebody changes
-it, and behaves exactly as before). The same rule is a column of the
+**platform default** — **nothing** since 15 Oct 2026 (Rahul; owner's yes;
+it was 10%), so a buyer gets cashback only where the console gives a
+product its own. The same rule is a column of the
 products spreadsheet ("flat 500", "10%", "10% upto 100", "none", blank).
 
 - **The buyer's cashback is for prepaid orders only.** Cash on delivery
   gets none — the cashback is the reason to pay first.
-- **The astrologer gets 10% of what is left after the buyer's cashback**,
-  per item: ₹700 − ₹500 → ₹20. On a default product, 10% of the goods, as
-  before; on cash on delivery, 10% of the goods.
+- **The sharer gets 6% of what is left after the buyer's cashback**, per
+  item: ₹700 − ₹500 → ₹12. On a default product, 6% of the goods; on cash on
+  delivery, 6% of the goods. (`REFERRAL_SHARER_BPS`, `REFERRAL_BUYER_BPS`.)
 - **Per item:** two ₹700 items at flat ₹500 are ₹1,000 back. Never more
   than the item cost.
 - **Why it pays:** the shop takes Razorpay, not the wallet, so the
   cashback can only be spent on consultations, Namo AI and the app's other
-  paid extras — the consultant keeps 60% of a consultation and Namo 40%.
+  paid extras — the consultant keeps 70% of a consultation and Namo 30%.
   It is the retention lever: the buyer's first session is pre-paid.
 - **When:** unchanged — seven days after delivery (below).
 

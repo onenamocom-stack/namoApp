@@ -25,7 +25,7 @@ from django.db import models
 
 
 class CashbackKind(models.TextChoices):
-    DEFAULT = "default", "Platform default (10% of the order)"
+    DEFAULT = "default", "Platform default (no cashback)"
     NONE = "none", "No cashback"
     FLAT = "flat", "Flat amount per item"
     PERCENT = "percent", "Percent of the price, optionally capped per item"

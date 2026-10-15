@@ -14,6 +14,17 @@ from apps.shop.models import Order, Product, ShopCategory
 
 from .test_referrals import BUYER, PRO, _code, _fund, people  # noqa: F401 — fixture by name
 
+
+@pytest.fixture(autouse=True)
+def _old_rates(settings):
+    """These tests pin the referral mechanics at the rates they were written
+    for — 10% to each side. The rates are settings; since 15 Oct 2026 the
+    defaults are 6% to the sharer and 0 to the buyer (test_market.TestRates,
+    test_referral_offers.TestTodaysRates)."""
+    settings.REFERRAL_SHARER_BPS = 1000
+    settings.REFERRAL_BUYER_BPS = 1000
+
+
 SEVEN_HUNDRED = 70_000
 
 
@@ -120,3 +131,16 @@ class TestTheRuleText:
     def test_nonsense_is_refused_with_the_form_to_use(self):
         with pytest.raises(ValueError, match="flat 500"):
             offers.parse("lots")
+
+
+@pytest.mark.django_db
+class TestTodaysRates:
+    """15 Oct 2026 (Rahul; owner's yes): the sharer earns 6% of a first order
+    and the buyer gets nothing unless the product's own rule says so."""
+
+    def test_six_to_the_sharer_nothing_to_the_buyer(self, settings):
+        from apps.referrals import services
+
+        settings.REFERRAL_SHARER_BPS = 600
+        settings.REFERRAL_BUYER_BPS = 0
+        assert services.cashback_split([(None, 100000, 1)], prepaid=True) == (0, 6000)

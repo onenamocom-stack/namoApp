@@ -2256,3 +2256,11 @@ a post, counted with `content_products` against the three-tag limit — and
 `market_purchases.referrer_id` (nullable): the Pro or Creator whose link or
 tag held the buyer (`referrals.live_visit`), recorded only.
 
+**`commission_rates`** (`market/0003`, 15 Oct 2026): one row per category —
+`consultation`, `product`, `download`, `course`, `event` (the primary key) —
+`bps` (null is 30%; 0–10000), `updated_at`, `updated_by`; RLS on, no
+policies. Read by `consultants.services.fee_bps_for` and
+`market.services.commission_bps`. `consultants.fee_bps` and
+`market_listings.commission_bps` are left unused. `products.referral_cashback_kind`'s
+default now means no cashback (`shop/0009`, a label only).
+

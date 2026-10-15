@@ -120,7 +120,7 @@ class Product(models.Model):
     # and basis points for PERCENT; `cap` is paise per item, PERCENT only.
     referral_cashback_kind = models.CharField(
         max_length=16, default="default", db_default="default",
-        choices=[("default", "Platform default (10% of the order)"), ("none", "No cashback"),
+        choices=[("default", "Platform default (no cashback)"), ("none", "No cashback"),
                  ("flat", "Flat amount per item"),
                  ("percent", "Percent of the price, optionally capped per item")],
     )

@@ -293,6 +293,12 @@ DAILY_ENABLE_RECORDING = os.environ.get("DAILY_ENABLE_RECORDING", "") == "1"
 # 10% back to the buyer and 10% to the consultant whose code it was, on the
 # buyer's FIRST order only.
 REFERRAL_CASHBACK_BPS = int(os.environ.get("REFERRAL_CASHBACK_BPS", "1000"))
+# 15 Oct 2026 (Rahul; owner's yes): the two sides split. A Pro or Creator
+# whose link or tag brought a customer's first order earns 6% of it, from
+# Namo's share; the buyer gets nothing by default — a product's own rule in
+# the console can still give them something.
+REFERRAL_SHARER_BPS = int(os.environ.get("REFERRAL_SHARER_BPS", "600"))
+REFERRAL_BUYER_BPS = int(os.environ.get("REFERRAL_BUYER_BPS", "0"))
 
 # The cap per side, per order. **Zero means no cap**, which is where it
 # starts on the owner's instruction — the flag exists so a limit can be
