@@ -558,6 +558,13 @@ def add_time_off(consultant_id, starts_at, ends_at, reason=None):
 # back-to-back cells are the windows again.
 
 MAX_WINDOWS = 2
+# Every Pro's week until they change it (16 Oct 2026, Rahul): 11 am to 2 pm
+# and 4 pm to 9 pm, every day.
+DEFAULT_WINDOWS = ((time(11, 0), time(14, 0)), (time(16, 0), time(21, 0)))
+
+
+def default_week():
+    return {d: list(DEFAULT_WINDOWS) for d in range(7)}
 REFUSAL_WINDOWS = "Each day takes up to two windows, each at least 20 minutes, not overlapping."
 
 
@@ -668,6 +675,8 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
                 degree_asset_id=degree_asset_id,
             )
             _write_rates(consultant.profile_id, clean)
+            # Every new Pro starts with the default week (16 Oct 2026, Rahul).
+            set_week(consultant.profile_id, default_week())
     except IntegrityError:
         raise AlreadyApplied(REFUSAL_ALREADY_APPLIED) from None
     return consultant

@@ -122,7 +122,7 @@ Status is honest: **UI** means the screen exists and is wired to mock data;
 |---|---|---|
 | Feed | UI | Renders the *seeker's* Home, including the free-tools row and shop cards |
 | Session requests — accept / decline | UI | Toggles a flag |
-| Booking calendar | `consultant_availability`, `consultant_time_off` (15 Oct 2026, Rahul) | Each day of the week on or off with up to two windows; a customer books **20 minutes** inside one. Blocked dates close whole days. It replaced the 7 × 6 grid of fixed times |
+| Booking calendar | `consultant_availability`, `consultant_time_off` (15 Oct 2026, Rahul) | Each day of the week on or off with up to two windows; a customer books **20 minutes** inside one. Blocked dates close whole days. It replaced the 7 × 6 grid of fixed times. **Default week: 11 am–2 pm and 4 pm–9 pm, every day** (16 Oct 2026, Rahul) — a new Pro starts on it; existing Pros are moved onto it by `manage.py default_week --yes`, production data, run on the owner's yes |
 | Channels — chat / live / call per booking | UI | Chat opens the panel; call toasts |
 | Studio — publish reel / article / go live | UI | Publishes to a toast. **No upload path exists anywhere in the app** |
 | Earnings | `earnings_ledger`, payouts P1 (3 Oct 2026) | Real totals by period: this month, last month, this and last financial year, lifetime; by source; the last seven days. No withdrawing |

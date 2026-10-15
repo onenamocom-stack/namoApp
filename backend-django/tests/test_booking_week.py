@@ -70,3 +70,17 @@ class TestBlockedDates:
                               {"first": (ist_today() - timedelta(days=1)).isoformat()}, format="json",
                               **auth(pro_token))
         assert got.status_code == 400
+
+
+@pytest.mark.django_db
+class TestTheDefault:
+    def test_the_command_puts_everybody_on_eleven_to_two_and_four_to_nine(self, roster):
+        from django.core.management import call_command
+
+        before = list(ConsultantAvailability.objects.filter(consultant_id=PRO).values_list("slot_time", flat=True))
+        call_command("default_week")  # a dry run writes nothing
+        assert list(ConsultantAvailability.objects.filter(consultant_id=PRO).values_list("slot_time", flat=True)) == before
+        call_command("default_week", "--yes")
+        assert services.week(PRO)[3] == [{"from": "11:00", "to": "14:00"}, {"from": "16:00", "to": "21:00"}]
+        assert ConsultantAvailability.objects.filter(consultant_id=PRO).count() == 7 * (9 + 15)
+

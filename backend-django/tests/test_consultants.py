@@ -547,6 +547,8 @@ class TestTagsAndDegree:
         assert row.tags == ["manglik", "kundli milan", "career"]
         assert row.degree.startswith("Jyotish Acharya")
         assert str(row.degree_asset_id) == str(asset)
+        # A new Pro starts on the default week (16 Oct 2026, Rahul).
+        assert services.week(SEEKER)[1] == [{"from": "11:00", "to": "14:00"}, {"from": "16:00", "to": "21:00"}]
 
     def test_they_are_optional(
         self, api_client, sign_hs256, hs256_mode, money_tables, catalogue
