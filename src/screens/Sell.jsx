@@ -3,12 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
-import { Kicker, PopButton, Stat } from '../components/Pop.jsx'
-import { Row } from '../components/Primitives.jsx'
+import { Kicker, PopButton } from '../components/Pop.jsx'
 import { fetchCategories } from '../lib/shop.js'
-import { bank, create, earnings, KINDS, mine, priceText, saveBank, update, withdraw } from '../lib/market.js'
+import { bank, create, KINDS, mine, priceText, saveBank, update, withdraw } from '../lib/market.js'
 import { uploadAsset } from '../lib/media.js'
-import { rupees, useStore } from '../store.jsx'
+import { useStore } from '../store.jsx'
 
 /**
  * Sell on the Market (15 Oct 2026, docs/06 Phase 17): a Pro's or a
@@ -31,21 +30,17 @@ export default function SellHome() {
   const navigate = useNavigate()
   const { showToast } = useStore()
   const [data, setData] = useState(null)
-  const [book, setBook] = useState(null)
-  const [account, setAccount] = useState(null)
 
   const load = () => {
     mine().then(setData).catch(() => setData(false))
-    earnings().then(setBook).catch(() => setBook(false))
-    bank().then(setAccount).catch(() => setAccount(false))
   }
   useEffect(load, [])
 
-  if (data === null) return (<><TopBar title="Sell on the Market" back backTo="/dashboard" /><Loader /></>)
+  if (data === null) return (<><TopBar title="Your listings" back backTo="/dashboard" /><Loader /></>)
   if (data === false) {
     return (
       <>
-        <TopBar title="Sell on the Market" back backTo="/dashboard" />
+        <TopBar title="Your listings" back backTo="/dashboard" />
         <p className="px-6 py-16 text-center text-meta t-body">Could not open your listings. Try again.</p>
       </>
     )
@@ -62,45 +57,30 @@ export default function SellHome() {
     }
   }
 
+  // Live, then the ones waiting on the admin — a rejection waits on you,
+  // with the admin's note (16 Oct 2026, Rahul).
+  const live = data.listings.filter((r) => r.status === 'approved')
+  const waiting = data.listings.filter((r) => r.status !== 'approved')
+
   return (
     <>
-      <TopBar title="Sell on the Market" back backTo="/dashboard" />
+      <TopBar title="Your listings" back backTo="/dashboard" />
 
-      {book && (
-        <section className="px-5 pt-5">
-          <Kicker>Your Market earnings</Kicker>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            <Stat label="Earned" value={`₹${rupees(book.net_paise)}`} />
-            <Stat label="Due" value={`₹${rupees(book.due_paise)}`} />
-            <Stat label="Paid" value={`₹${rupees(book.paid_paise)}`} />
-          </div>
-          <p className="mt-2 text-micro t-faint">
-            After Namo's share. Paid on the 7th of every month for the month before; next on{' '}
-            {new Date(book.next_payout).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}.
-          </p>
-          <div className="mt-2">
-            {/* By period and by listing (16 Oct 2026, Rahul). */}
-            <Row to="/dashboard/market/earnings" title="Market earnings and insights" note="By month and year, and what sold" />
-            {account?.pro ? (
-              <Row to="/dashboard/payout-details" title="Payout details" note="Your PAN and bank account" />
-            ) : (
-              <Row
-                to="/dashboard/market/bank"
-                title="Where we pay you"
-                note={account?.bank ? `${account.bank.account_holder} · ${account.bank.account_last4 ? `A/c …${account.bank.account_last4}` : account.bank.upi_id}` : 'Add your bank account or UPI'}
-              />
-            )}
-          </div>
-        </section>
-      )}
-
-      <section className="px-5 pt-6">
+      {/* Earnings, insights and payout details are the Dashboard's (16 Oct
+          2026, Rahul): this page is the listings. */}
+      <section className="px-5 pt-5">
         <Kicker>Add a listing</Kicker>
-        <div className="mt-3 grid grid-cols-4 gap-2">
+        <div className="mt-3 grid grid-cols-4 gap-2.5">
           {Object.entries(KINDS).map(([kind, k]) => (
-            <button key={kind} type="button" onClick={() => navigate(`/dashboard/market/new/${kind}`)}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-rule bg-surface py-3">
-              <span className="gold"><Icon name={KIND_ICON[kind]} size={20} /></span>
+            <button
+              key={kind}
+              type="button"
+              onClick={() => navigate(`/dashboard/market/new/${kind}`)}
+              className="pop-tap flex flex-col items-center gap-2 rounded-2xl bg-white py-3.5 shadow-sm ring-1 ring-rule"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--orange-hi)] to-[var(--orange-lo)] text-white shadow">
+                <Icon name={KIND_ICON[kind]} size={18} />
+              </span>
               <span className="text-micro font-semibold t-heading">{k.label}</span>
             </button>
           ))}
@@ -108,72 +88,93 @@ export default function SellHome() {
         <p className="mt-2 text-micro t-faint">An admin checks each one before it goes on the Market and your page.</p>
       </section>
 
-      <section className="px-5 pt-6">
-        <Kicker>Your listings</Kicker>
-        {data.listings.length === 0 ? (
-          <p className="mt-3 text-meta t-faint">Nothing yet. Add your first above.</p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {data.listings.map((row) => {
-              const [label, tone] = STATUS[row.status] || ['', '']
-              return (
-                <li key={row.id} className="rounded-2xl border border-rule bg-surface p-3">
-                  <div className="flex gap-3">
-                    {row.cover_url ? (
-                      <img src={row.cover_url} alt="" className="aspect-video w-28 flex-none rounded-lg bg-surface2 object-contain" />
-                    ) : (
-                      <span className="aspect-video w-28 flex-none rounded-lg bg-surface2" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-meta font-semibold t-heading">{row.title}</p>
-                      <p className="text-micro t-faint">{KINDS[row.kind].label} · {priceText(row.price_paise)} · {row.sold} sold</p>
-                      <p className={`mt-1 caps-sm ${tone}`}>{label}</p>
-                    </div>
-                  </div>
-                  {row.status === 'rejected' && row.review_note && (
-                    <p className="mt-2 rounded-lg bg-surface2 px-3 py-2 text-micro t-body">{row.review_note}</p>
-                  )}
-                  <div className="mt-3 flex gap-2">
-                    <PopButton size="sm" full={false} className="flex-1" onClick={() => navigate(`/dashboard/market/${row.id}`)}>
-                      Edit
-                    </PopButton>
-                    {row.status === 'approved' && (
-                      <PopButton size="sm" full={false} variant="ghost" className="flex-1"
-                        to={row.kind === 'product' && row.product_id ? `/shop/p/${row.product_id}` : `/shop/l/${row.id}`}>
-                        See it
-                      </PopButton>
-                    )}
-                    <PopButton size="sm" full={false} variant="ghost" onClick={() => drop(row)}>
-                      Remove
-                    </PopButton>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
-
-      {book?.recent?.length > 0 && (
-        <section className="px-5 pt-6">
-          <Kicker>Sales</Kicker>
-          <ul className="mt-2 divide-y divide-rule">
-            {book.recent.map((e, i) => (
-              <li key={i} className="flex items-baseline gap-3 py-2.5">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-meta t-heading">{e.title}</span>
-                  <span className="block text-micro t-faint">
-                    {new Date(e.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · ₹{rupees(e.gross_paise)} − ₹{rupees(e.commission_paise + e.delivery_paise)} Namo
-                  </span>
-                </span>
-                <span className="text-meta font-semibold t-heading tnum">₹{rupees(e.net_paise)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {data.listings.length === 0 ? (
+        <p className="px-5 pt-8 text-meta t-faint">Nothing listed yet. Add your first above.</p>
+      ) : (
+        <>
+          <Shelf title="Live" count={live.length} empty="Nothing live yet." rows={live} navigate={navigate} drop={drop} />
+          <Shelf
+            title="Waiting for approval"
+            count={waiting.length}
+            empty="Nothing waiting."
+            rows={waiting}
+            navigate={navigate}
+            drop={drop}
+          />
+        </>
       )}
       <div className="h-16" />
     </>
+  )
+}
+
+function Shelf({ title, count, empty, rows, navigate, drop }) {
+  return (
+    <section className="px-5 pt-7">
+      <div className="flex items-center gap-2">
+        <Kicker>{title}</Kicker>
+        <span className="rounded-full bg-surface2 px-2 py-0.5 text-micro font-semibold t-sub tnum">{count}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-meta t-faint">{empty}</p>
+      ) : (
+        <ul className="mt-3 space-y-3">
+          {rows.map((row) => (
+            <ListingCard key={row.id} row={row} navigate={navigate} drop={drop} />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function ListingCard({ row, navigate, drop }) {
+  const [label, tone] = STATUS[row.status] || ['', '']
+  const pill = { approved: 'bg-ok text-white', pending: 'bg-white/90 t-heading', rejected: 'bg-live text-white' }[row.status]
+  return (
+    <li className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule">
+      <div className="flex gap-3 p-3">
+        <div className="relative aspect-video w-32 flex-none overflow-hidden rounded-xl bg-surface2">
+          {row.cover_url && <img src={row.cover_url} alt="" className="h-full w-full object-cover" />}
+          <span className={`absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow ${pill}`}>
+            {label}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-meta font-semibold leading-snug t-heading">{row.title}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-micro t-faint">
+            <Icon name={KIND_ICON[row.kind]} size={12} />
+            {KINDS[row.kind].label}
+          </p>
+          <p className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-meta font-semibold t-heading tnum">{priceText(row.price_paise)}</span>
+            {row.status === 'approved' && <span className="text-micro t-faint tnum">{row.sold} sold</span>}
+          </p>
+        </div>
+      </div>
+      {row.status === 'rejected' && row.review_note && (
+        <p className={`mx-3 mb-3 rounded-xl bg-surface2 px-3 py-2 text-micro t-body ${tone}`}>
+          <span className="font-semibold">Admin: </span>
+          <span className="t-body">{row.review_note}</span>
+        </p>
+      )}
+      <div className="flex border-t border-rule text-micro font-semibold">
+        <button type="button" onClick={() => navigate(`/dashboard/market/${row.id}`)} className="flex-1 py-2.5 text-center t-heading active:bg-surface2">
+          Edit
+        </button>
+        {row.status === 'approved' && (
+          <Link
+            to={row.kind === 'product' && row.product_id ? `/shop/p/${row.product_id}` : `/shop/l/${row.id}`}
+            className="flex-1 border-l border-rule py-2.5 text-center t-heading active:bg-surface2"
+          >
+            See it
+          </Link>
+        )}
+        <button type="button" onClick={() => drop(row)} className="flex-1 border-l border-rule py-2.5 text-center t-faint active:bg-surface2">
+          Remove
+        </button>
+      </div>
+    </li>
   )
 }
 

@@ -2029,21 +2029,23 @@ conversation: **Delete message** deletes it for both people; each sees
 "This message was deleted" in its place (the other person on their next
 open of the conversation). Nobody deletes another person's message.
 
-### `/dashboard/market` — Sell on the Market (15 Oct 2026, Phase 17)
+### `/dashboard/market` — Your listings (15 Oct 2026, Phase 17)
 
-A Pro or a Creator (Dashboard → *Sell on the Market*, or *Add a listing* on
-their profile's Shop tab). Market earnings after Namo's share — earned, due,
-paid, the next 7th — and where the money goes (a Pro: Payout details; a
-Creator: `/dashboard/market/bank`, account or UPI and PAN). *Add a listing*:
+A Pro or a Creator (Dashboard → Market → *Your listings*, or *Add a listing*
+on their profile's Shop tab). Since 16 Oct 2026 (Rahul) the page is the
+listings only: the Market earnings, the insights link, the sales and the
+payout row went (they are the Dashboard's). *Add a listing* (four tiles) on
+top, then **Live · N** and **Waiting for approval · N** (a rejected one waits
+here too, with "Admin:" and the note). Each listing is a card: cover with a
+Live / Waiting for approval / Needs a change pill, title, kind, price and
+(live) how many sold; Edit, See it (live) and Remove along its foot.
+*Add a listing*:
 Download, Course, Event or Product → `/dashboard/market/new/:kind`: cover
 (16:9), name, price (0 free; not for a product), MRP, description, and the
 file; or the language and lessons (each a video or PDF, the first a free
 preview); or the start, length, seats and joining link; or the category,
 stock to send and packed weight. The form shows what Namo keeps and what the
-seller gets. *Send for approval*. Their listings, each Live, Waiting for
-approval or Needs a change (with the admin's note): Edit (back to approval),
-See it, Remove. Then their sales. Under the earnings, *Market earnings and
-insights* opens `/dashboard/market/earnings`.
+seller gets. *Send for approval*. Edit sends a listing back to approval.
 
 **`/dashboard/market/earnings` — Market earnings and insights (16 Oct 2026,
 Rahul).** The Earnings page's shape for the Market. Header back to Sell on
