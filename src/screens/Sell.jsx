@@ -57,8 +57,8 @@ export default function SellHome() {
     }
   }
 
-  // Live, then the ones waiting on the admin — a rejection waits on you,
-  // with the admin's note (16 Oct 2026, Rahul).
+  // Waiting for approval first, then live (16 Oct 2026, Rahul). A
+  // rejection waits there too, with the admin's note.
   const live = data.listings.filter((r) => r.status === 'approved')
   const waiting = data.listings.filter((r) => r.status !== 'approved')
 
@@ -92,7 +92,6 @@ export default function SellHome() {
         <p className="px-5 pt-8 text-meta t-faint">Nothing listed yet. Add your first above.</p>
       ) : (
         <>
-          <Shelf title="Live" count={live.length} empty="Nothing live yet." rows={live} navigate={navigate} drop={drop} />
           <Shelf
             title="Waiting for approval"
             count={waiting.length}
@@ -101,6 +100,7 @@ export default function SellHome() {
             navigate={navigate}
             drop={drop}
           />
+          <Shelf title="Live" count={live.length} empty="Nothing live yet." rows={live} navigate={navigate} drop={drop} />
         </>
       )}
       <div className="h-16" />

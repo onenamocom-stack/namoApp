@@ -2035,8 +2035,8 @@ A Pro or a Creator (Dashboard → Market → *Your listings*, or *Add a listing*
 on their profile's Shop tab). Since 16 Oct 2026 (Rahul) the page is the
 listings only: the Market earnings, the insights link, the sales and the
 payout row went (they are the Dashboard's). *Add a listing* (four tiles) on
-top, then **Live · N** and **Waiting for approval · N** (a rejected one waits
-here too, with "Admin:" and the note). Each listing is a card: cover with a
+top, then **Waiting for approval · N** (a rejected one waits here too, with
+"Admin:" and the note) and **Live · N** below it. Each listing is a card: cover with a
 Live / Waiting for approval / Needs a change pill, title, kind, price and
 (live) how many sold; Edit, See it (live) and Remove along its foot.
 *Add a listing*:
