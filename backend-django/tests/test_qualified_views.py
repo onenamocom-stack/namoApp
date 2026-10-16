@@ -129,6 +129,7 @@ class TestContentEarnings:
         last = api_client.get("/v1/content/me/earnings/?range=last_month", **auth(consultant_token)).json()
         assert last["views"] == 0 and last["views_all_time"] == 2
         assert got["posts"][0]["id"] == cid and got["posts"][0]["qualified_views"] == 2000
+        assert (got["posts"][0]["likes"], got["posts"][0]["comments"], got["posts"][0]["reposts"]) == (0, 0, 0)
         assert "views_paise" not in got                        # one figure (Rahul)
 
     def test_needs_a_session_and_a_range(self, api_client, consultant_token, roster):

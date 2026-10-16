@@ -574,6 +574,7 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
             "id": str(p.id), "kind": p.kind, "title": p.title, "caption": p.caption, "media_url": p.media_url,
             "published_at": p.published_at.isoformat() if p.published_at else None,
             "views": p.view_count or 0, "qualified_views": per_post.get(p.id, 0),
+            "likes": p.like_count, "comments": p.comment_count, "reposts": p.repost_count,
         } for p in posts],
     }
 

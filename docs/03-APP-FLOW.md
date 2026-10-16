@@ -1312,11 +1312,14 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
   When ads run between posts, they count too."; Views (for the period, up
   to yesterday — "Till yesterday" — so it moves once a day) and Qualified
   views (for the period), with what a qualified view is, and **Lifetime views**
-  in a band below them (16 Oct 2026, Rahul); then *Your
-  content · N*: every reel, photo, post and blog, each with its views and
-  qualified views, opening the reel or blog.
-- **Insights:** the last seven days (views, new followers, saves), your posts
-  with views, what sold with your code.
+  in a band below them (16 Oct 2026, Rahul).
+- **Insights:** the last seven days (views, new followers, saves); then
+  *Your content · N* (moved here from Earnings the same day, Rahul): a
+  two-column grid of cards, each piece in its own proportion (a reel's
+  first frame, a photo, a blog's cover; no square crop), with Reel / Post /
+  Blog and its all-time views on the picture, and under it the caption,
+  likes, comments, reshares and qualified views; a reel or blog opens.
+- Then *Sold with your code*.
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
 A chosen video is made smaller on the phone first, under the post as

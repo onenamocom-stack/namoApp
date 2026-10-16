@@ -336,8 +336,9 @@ export function Bars({ data, money = false }) {
    bought with their coupon. */
 
 /** Exported for a Creator's Dashboard (Phase 16), which has no affiliate
- *  links: `links` hides the way to them. */
-export function Insights({ links = true }) {
+ *  links: `links` hides the way to them. `posts`, when given, takes the
+ *  place of the post list (the main app's Content & Referrals grid). */
+export function Insights({ links = true, posts = null }) {
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
 
@@ -367,6 +368,7 @@ export function Insights({ links = true }) {
         </div>
       </section>
 
+      {posts ?? (
       <section className="border-b border-rule px-5 py-6">
         <Kicker action={pieces.length ? 'Post more' : null} to={proPath('/pro/studio')}>
           {`Your posts · ${pieces.length}`}
@@ -389,6 +391,7 @@ export function Insights({ links = true }) {
           </>
         )}
       </section>
+      )}
 
       <section className="px-5 py-6">
         <Kicker action={links ? 'Your links' : null} to={proPath('/pro/affiliate')}>
