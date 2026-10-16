@@ -54,7 +54,7 @@ export default function ProEarnings() {
    second time from money already net of it. Every row still carries gross,
    the platform's cut and net. */
 
-const RANGES = [
+export const RANGES = [
   { key: 'this_month', label: 'This month' },
   { key: 'last_month', label: 'Last month' },
   { key: 'fy', label: 'This FY' },
@@ -295,7 +295,7 @@ function Earnings() {
  * was Mon at ₹6" under a chart of minutes, and "Weekends carry this
  * practice" under any week at all.
  */
-function Bars({ data, money = false }) {
+export function Bars({ data, money = false }) {
   const max = Math.max(0, ...data.map((d) => d.value))
   const best = data.find((d) => d.value === max)
 

@@ -70,6 +70,12 @@ export default function Dashboard() {
                 (16 Oct 2026, Rahul). */}
             <Kicker>Your consulting setting</Kicker>
             <div className="mt-2">
+              {/* Consulting only, first (16 Oct 2026, Rahul). */}
+              <Row
+                to="/dashboard/consulting"
+                title="Consulting earnings and insights"
+                note="What chat, calls and bookings earned, and who you talked to"
+              />
               {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                   reviews" page went — reviews are on your page, the intro
                   and username in Edit profile, the slots in Namo Consult. */}

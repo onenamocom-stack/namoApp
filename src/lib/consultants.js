@@ -445,6 +445,22 @@ export async function earningsPage(consultantId, range, offset = 0) {
   return api(`/consultants/${consultantId}/earnings/?range=${range}&offset=${offset}&limit=30`, { token })
 }
 
+/** Every row of a period, 200 a page, stopping at `cap` (16 Oct 2026, the
+ *  Consulting page adds its own figures from the rows). `custom` takes
+ *  `from` and `to`, inclusive YYYY-MM-DD. */
+export async function earningsAll(consultantId, range, { from, to, cap = 2000 } = {}) {
+  const token = await accessToken()
+  const span = range === 'custom' ? `&from=${from}&to=${to}` : ''
+  const out = []
+  let offset = 0
+  while (offset !== null && out.length < cap) {
+    const page = await api(`/consultants/${consultantId}/earnings/?range=${range}${span}&offset=${offset}&limit=200`, { token })
+    out.push(...page.rows)
+    offset = page.next_offset
+  }
+  return out
+}
+
 /** The caller's Insights tab (4 Oct 2026): `{week: {views, new_followers,
  *  saves, comments}, totals, pieces: [...own posts with views], shop:
  *  {orders, units, products: [{name, image_url, units, buyers}]}}`. */
