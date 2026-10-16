@@ -109,7 +109,9 @@ export default function Profile() {
     const x = [...tabs, KUNDLI].find((y) => y.key === active)
     return (
       <>
-        <TopBar title={t(x.label)} back backTo="/profile/settings" hardBack />
+        {/* Back to wherever you came from — the Dashboard's Content card or
+            Profile settings (16 Oct 2026, Rahul: it always went to settings). */}
+        <TopBar title={t(x.label)} back backTo="/profile/settings" />
         <div className="animate-fade">
           {active === 'saved' && <SavedTab />}
           {active === 'kundli' && <KundliTab />}
