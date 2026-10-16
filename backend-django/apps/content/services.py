@@ -550,6 +550,13 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
     else:
         tags_pay = within(CreatorEarning.objects.filter(profile_id=author_id)).aggregate(n=Sum("amount_paise"))["n"] or 0
 
+    # Sign-ups with their code (16 Oct 2026, Rahul: "Add this income in
+    # content income"): ₹25 each, the console's figure, voided ones left out.
+    from apps.referrals.models import SignupBonus
+
+    joined = within(SignupBonus.objects.filter(referrer_id=author_id, status=SignupBonus.Status.EARNED))
+    signups = joined.aggregate(n=Count("id"), p=Sum("amount_paise"))
+
     per_post = dict(qualified.values("content_id").annotate(n=Count("id")).values_list("content_id", "n"))
     posts = list(public_content().filter(author_id=author_id).order_by("-published_at")[:200])
     # The period's views, every one (16 Oct 2026, Rahul): the days' rows,
@@ -565,7 +572,8 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
         "range": range_key,
         "from": lo.isoformat() if lo else None,
         "to": (hi - timezone.timedelta(days=1)).isoformat() if hi else None,
-        "earnings_paise": views_pay + tags_pay,
+        "earnings_paise": views_pay + tags_pay + (signups["p"] or 0),
+        "signups": {"count": signups["n"] or 0, "paise": signups["p"] or 0},
         "views": period_views,
         "views_all_time": sum(p.view_count or 0 for p in posts),
         "qualified_views": qualified.count(),

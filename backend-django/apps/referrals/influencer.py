@@ -67,18 +67,27 @@ def stats(profile_id, now=None):
         .values_list("profile_id", "first")
     )
 
+    # What the sign-ups earned (16 Oct 2026, Rahul: ₹25 per user).
+    from .models import SignupBonus
+    from .services import earns_on_signups, signup_bonus_paise
+
+    earned = list(SignupBonus.objects.filter(referrer_id=profile_id, status=SignupBonus.Status.EARNED)
+                  .values_list("created_at", "amount_paise"))
+
     periods = {}
     for key in ("this_month", "last_month", "lifetime"):
         lo, hi = period(key, today)
         periods[key] = {
             "signups": sum(1 for _, at in joined if _in(at, lo, hi)),
             "buyers": sum(1 for r, _ in joined if _in(first_paid.get(r), lo, hi)),
+            "earned_paise": sum(p for at, p in earned if _in(at, lo, hi)),
         }
 
     return {
         "code": code,
         "link": link_for(code),
         "periods": periods,
+        "per_signup_paise": signup_bonus_paise() if earns_on_signups(profile_id) else 0,
         "recent": [
             {
                 "joined_on": at.astimezone(IST).date().isoformat(),

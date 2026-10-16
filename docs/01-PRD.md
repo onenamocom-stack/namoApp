@@ -1149,9 +1149,19 @@ starts on the owner's instruction. The flag exists so a limit can be set
 without a deploy. The number to remember: an uncapped 10% on today's
 dearest item, a ₹26,400 gemstone, is ₹2,640 a side.
 
-### Sign-up referrals move no money
+### Sign-up referrals pay a Pro, a Creator or a Seller ₹25
 
 Three free AI questions a day for three days, to both sides. The welcome
 five on day one are untouched — those are constant for every account,
 referred or not, so the perk is about the days after. The referrer is
 told when somebody joins with their code.
+
+Since 16 Oct 2026 (Rahul: "If code is shared by pro creator or seller
+anybody - he will get ₹25 per user"; it moved no money before), a code
+holder with the Pro, Creator or Seller module also earns **₹25 for each
+person who joins with their code** — once per person, checked when the
+code is claimed. The console sets the figure (0 turns it off). It counts in
+the content earnings figure, on its own row, and is paid on the 7th in the
+statement's Commission line. Finance voids a fake sign-up before that
+month's statement is made. A plain seeker's code still earns AI questions
+only.

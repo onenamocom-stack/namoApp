@@ -95,7 +95,7 @@ function Earned() {
               <p className="caps-sm t-faint">Content earnings, {label}</p>
               <p className="mt-2 font-display text-huge leading-none tnum t-heading">₹{rupees(data.earnings_paise)}</p>
               <p className="mt-2 text-meta t-body">
-                Namo works out your content earnings from your views, qualified views and sales through your tags.
+                Namo works out your content earnings from your views, qualified views, sales through your tags and sign-ups with your code.
                 When ads run between posts, they count too.
               </p>
             </PopCard>
@@ -116,6 +116,20 @@ function Earned() {
               <span className="caps-sm t-faint">Lifetime views</span>
               <span className="text-lead font-semibold tnum t-heading">{(data.views_all_time ?? 0).toLocaleString('en-IN')}</span>
             </div>
+          </section>
+
+          {/* Sign-ups with your code, ₹25 each (16 Oct 2026, Rahul). */}
+          <section className="border-b border-rule px-5 py-6">
+            <div className="flex items-baseline justify-between gap-4">
+              <div>
+                <p className="caps-sm t-faint">Sign-ups with your code, {label}</p>
+                <p className="mt-1 text-meta t-body tnum">{(data.signups?.count ?? 0).toLocaleString('en-IN')} joined</p>
+              </div>
+              <span className="text-lead font-semibold tnum t-heading">₹{rupees(data.signups?.paise ?? 0)}</span>
+            </div>
+            <p className="mt-2 text-micro t-faint">
+              Each person who joins with your code or link adds to your content earnings. Find your code in Profile.
+            </p>
           </section>
 
         </>

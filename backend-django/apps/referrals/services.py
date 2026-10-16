@@ -183,12 +183,13 @@ def claim_signup(referee_id, code, now=None):
             )
             referee = _ai_boost(referee_id, now)
             referrer = _ai_boost(row.profile_id, now)
+            bonus = _signup_bonus(referral)
     except IntegrityError:
         # The unique index. One account collecting the new-seeker perk from
         # six friends' codes is the abuse this exists to stop.
         return {"ok": False, "reason": REFUSAL_ALREADY_REFERRED}
 
-    _notify_referrer(referral, referrer)
+    _notify_referrer(referral, referrer, bonus)
     # First touch, so "how many came by referral" has an answer. Nothing
     # wrote attribution before 3 Oct 2026; get_or_create keeps the first
     # source if anything ever recorded one earlier.
@@ -200,7 +201,58 @@ def claim_signup(referee_id, code, now=None):
             "them": referrer}
 
 
-def _notify_referrer(referral, grant):
+def signup_bonus_paise():
+    """What one sign-up pays the code's holder, from the console (0 = off)."""
+    from .models import AffiliateSettings
+
+    row = AffiliateSettings.objects.filter(pk=1).first()
+    return row.signup_bonus_paise if row else 2500
+
+
+def earns_on_signups(profile_id):
+    """A Pro, a Creator or a Seller (16 Oct 2026, Rahul: "pro creator or
+    seller anybody"). Read when the code is claimed; nothing reaches back."""
+    from apps.consultants import services as consultant_services
+    from apps.profiles import modules
+    from apps.profiles import services as profile_services
+
+    return (consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
+            or modules.is_seller(profile_id))
+
+
+def _signup_bonus(referral):
+    """₹25 (the console's figure) to the code's holder, when they earn on
+    sign-ups. None otherwise."""
+    from .models import SignupBonus
+
+    amount = signup_bonus_paise()
+    if amount <= 0 or not earns_on_signups(referral.referrer_id):
+        return None
+    return SignupBonus.objects.create(referral=referral, referrer_id=referral.referrer_id,
+                                      referee_id=referral.referee_id, amount_paise=amount)
+
+
+def void_signup_bonus(bonus, reason, who):
+    """Finance's Void, for a sign-up that is not a real person. Refused once
+    the month's payout statement holds it: that money is already counted."""
+    from apps.consultants.models import PayoutStatement
+    from apps.consultants.payouts import month_of
+
+    from .models import SignupBonus
+
+    if bonus.status == SignupBonus.Status.VOID:
+        return bonus
+    if PayoutStatement.objects.filter(profile_id=bonus.referrer_id, month=month_of(bonus.created_at)).exists():
+        raise ValueError("This month's payout statement already includes it.")
+    bonus.status = SignupBonus.Status.VOID
+    bonus.void_reason = (reason or "").strip()
+    bonus.voided_by = who or ""
+    bonus.voided_at = timezone.now()
+    bonus.save(update_fields=["status", "void_reason", "voided_by", "voided_at"])
+    return bonus
+
+
+def _notify_referrer(referral, grant, bonus=None):
     """Tell the person whose code it was. Written in the same transaction
     as nothing — a notification that fails must not undo a referral that
     succeeded, so this is deliberately outside the atomic block above.
@@ -225,6 +277,9 @@ def _notify_referrer(referral, grant):
     else:
         perk = (f"You both get {grant['daily']} free questions a day with NAMO AI "
                 f"for {grant['days']} days, once your welcome questions are used.")
+
+    if bonus is not None:
+        perk = f"₹{bonus.amount_paise / 100:g} added to your content earnings. " + perk
 
     notify.push(
         referral.referrer_id,

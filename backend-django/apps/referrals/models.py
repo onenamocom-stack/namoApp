@@ -231,12 +231,18 @@ class AffiliateSettings(models.Model):
     services.attribution_days(), which falls back to the setting."""
 
     attribution_days = models.PositiveSmallIntegerField(default=15)
+    # What a Pro, a Creator or a Seller is paid when somebody joins with their
+    # code (16 Oct 2026, Rahul: "he will get ₹25 per user"). 0 turns it off.
+    signup_bonus_paise = models.PositiveIntegerField(
+        "Paid per sign-up (paise)", default=2500,
+        help_text="2500 is ₹25, for each person who joins with a Pro's, a Creator's or a Seller's code. "
+                  "0 pays nothing.")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "affiliate_settings"
-        verbose_name = "Affiliate link window"
-        verbose_name_plural = "Affiliate link window"
+        verbose_name = "Link window and sign-up pay"
+        verbose_name_plural = "Link window and sign-up pay"
 
     def __str__(self):
         return f"{self.attribution_days} days"
@@ -307,3 +313,35 @@ class CreatorEarning(models.Model):
 
     def delete(self, *args, **kwargs):
         raise IntegrityError("creator_earnings is append-only: write a reversing row")
+
+
+class SignupBonus(models.Model):
+    """What a Pro, a Creator or a Seller earns when somebody joins with their
+    code (16 Oct 2026, Rahul: "₹25 per user"; counted in content earnings, the same
+    day). A plain seeker's code still earns AI questions only.
+
+    One per sign-up referral, so nobody is paid twice for one person. Its own
+    book rather than a ledger row, so a fake one can be voided before it is
+    paid. It counts in the content earnings figure and in the statement's
+    Commission line (Rahul, the same day). Finance voids a fake one in the console; a voided row is
+    not paid, and a row already on a statement cannot be voided."""
+
+    class Status(models.TextChoices):
+        EARNED = "earned", "Earned"
+        VOID = "void", "Voided"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    referral = models.OneToOneField(Referral, on_delete=models.CASCADE, related_name="bonus")
+    referrer_id = models.UUIDField()
+    referee_id = models.UUIDField()
+    amount_paise = models.PositiveIntegerField()
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.EARNED)
+    void_reason = models.TextField(blank=True, default="")
+    voided_by = models.TextField(blank=True, default="")
+    voided_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "referral_signup_bonuses"
+        verbose_name = "sign-up earning"
+        indexes = [models.Index(fields=["referrer_id", "-created_at"], name="signup_bonus_referrer_idx")]

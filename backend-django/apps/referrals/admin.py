@@ -24,7 +24,7 @@ from apps.console.site import at_least, site
 
 from apps.console.audit import AuditedAdmin
 
-from .models import AffiliateSettings, AffiliateVisit, Cashback, Referral, ReferralCode
+from .models import AffiliateSettings, AffiliateVisit, Cashback, Referral, ReferralCode, SignupBonus
 
 
 def _person(profile_id):
@@ -200,8 +200,8 @@ class AffiliateSettingsAdmin(AuditedAdmin, dj.ModelAdmin):
     """How many days an astrologer's link holds a customer. One row."""
 
     audit_target = "affiliate window"
-    list_display = ("attribution_days", "updated_at")
-    fields = ("attribution_days",)
+    list_display = ("attribution_days", "signup_bonus_paise", "updated_at")
+    fields = ("attribution_days", "signup_bonus_paise")
 
     def has_module_permission(self, request):
         return at_least(request, Tier.FINANCE)
@@ -221,3 +221,91 @@ class AffiliateSettingsAdmin(AuditedAdmin, dj.ModelAdmin):
     def save_model(self, request, obj, form, change):
         obj.pk = 1   # the one row
         super().save_model(request, obj, form, change)
+
+
+@dj.register(SignupBonus, site=site)
+class SignupBonusAdmin(AuditedAdmin, dj.ModelAdmin):
+    """What a Pro, a Creator or a Seller earned when somebody joined with
+    their code (16 Oct 2026, Rahul: ₹25 per user, in the Commission line). The
+    figure is set on *Link window and sign-up pay*. *Void* takes a fake sign-up out
+    of the pay (Finance), before that month's payout statement is made."""
+
+    change_list_template = "admin/summary_change_list.html"
+    audit_target = "signup bonus"
+    list_display = ("created_at", "earner", "joined", "amount", "status", "void_reason")
+    list_filter = ("status", "created_at")
+    date_hierarchy = "created_at"
+    list_per_page = 100
+    actions = ("void",)
+
+    @dj.display(description="Earns")
+    def earner(self, obj):
+        return _person(obj.referrer_id)
+
+    @dj.display(description="Joined")
+    def joined(self, obj):
+        return _person(obj.referee_id)
+
+    @dj.display(description="Amount", ordering="amount_paise")
+    def amount(self, obj):
+        return f"₹{obj.amount_paise / 100:,.2f}"
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FINANCE)
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @dj.action(description="Void — not a real person (take it out of the pay)")
+    def void(self, request, queryset):
+        from apps.console.audit import record
+
+        from . import services
+
+        if not at_least(request, Tier.FINANCE):
+            return self.message_user(request, "Finance only.", messages.ERROR)
+        who = getattr(request.user, "email", "") or str(request.user)
+        done, refused = 0, 0
+        for row in queryset.filter(status=SignupBonus.Status.EARNED):
+            try:
+                services.void_signup_bonus(row, "Voided in the console", who)
+            except ValueError:
+                refused += 1
+                continue
+            record(request, "signup_bonus.void", "signup_bonus", target_id=row.pk,
+                   referrer=str(row.referrer_id), referee=str(row.referee_id), amount_paise=row.amount_paise)
+            done += 1
+        self.message_user(request, f"{done} voided.", messages.SUCCESS)
+        if refused:
+            self.message_user(request, f"{refused} not voided: that month's payout statement already has them.",
+                              messages.WARNING)
+
+    def changelist_view(self, request, extra_context=None):
+        from apps.consultants.earnings import _midnight, ist_today
+
+        from .services import signup_bonus_paise
+
+        first = _midnight(ist_today().replace(day=1))
+        month = SignupBonus.objects.filter(created_at__gte=first, status=SignupBonus.Status.EARNED)
+        top = month.values("referrer_id").annotate(n=Count("id"), p=Sum("amount_paise")).order_by("-n")[:10]
+        extra_context = extra_context or {}
+        extra_context["summary_cards"] = [
+            ("Sign-ups paid this month", f"{month.count():,}", None),
+            ("They pay this month", f"₹{(month.aggregate(p=Sum('amount_paise'))['p'] or 0) / 100:,.2f}",
+             "in the Commission line on the 7th"),
+            ("Per sign-up now", f"₹{signup_bonus_paise() / 100:g}", "set on Link window and sign-up pay"),
+        ]
+        extra_context["summary_tables"] = [
+            ("Most sign-ups this month", ["Code holder", "Joined", "Earned"],
+             [[_person(t["referrer_id"]), t["n"], f"₹{t['p'] / 100:,.2f}"] for t in top]),
+        ]
+        return super().changelist_view(request, extra_context)
