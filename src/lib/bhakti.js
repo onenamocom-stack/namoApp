@@ -222,13 +222,28 @@ export async function shareFile(blob, filename, text) {
  *  never take the whole status down — it costs a corner, not the picture. */
 async function loadImage(src) {
   if (!src) return null
-  try {
+  const attempt = async (url) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.src = src
+    img.src = url
     await img.decode()
     return img
+  }
+  try {
+    return await attempt(src)
   } catch {
+    /* The card's own <img> fetched this URL first without CORS, and the
+       browser can answer the CORS request from that cached copy, which has
+       no Access-Control header — the load fails although the bucket allows
+       us (16 Oct 2026, Rahul: a new status showed no name, date or Share).
+       A second address skips that cache entry. */
+    if (/^https?:/.test(src)) {
+      try {
+        return await attempt(`${src}${src.includes('?') ? '&' : '?'}cors=1`)
+      } catch {
+        /* falls through */
+      }
+    }
     console.error('[bhakti] could not load an image for the status')
     return null
   }
