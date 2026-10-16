@@ -105,7 +105,8 @@ function Earned() {
 
           <section className="border-b border-rule px-5 py-6">
             <div className="grid grid-cols-2 gap-3">
-              <Stat label={`Views, ${label}`} value={data.views.toLocaleString('en-IN')} />
+              {/* Up to yesterday; the number moves once a day (16 Oct 2026, Rahul). */}
+              <Stat label={`Views, ${label}`} value={data.views.toLocaleString('en-IN')} sub="Till yesterday" />
               <Stat label={`Qualified views, ${label}`} value={data.qualified_views.toLocaleString('en-IN')} />
             </div>
             <p className="mt-3 text-micro t-faint">

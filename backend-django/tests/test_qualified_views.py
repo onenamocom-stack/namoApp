@@ -120,7 +120,12 @@ class TestContentEarnings:
 
         got = api_client.get("/v1/content/me/earnings/?range=this_month", **auth(consultant_token)).json()
         assert got["earnings_paise"] == 3000 + 2000 + 600      # ₹30 + ₹20 + the tag; never the chat
-        assert got["qualified_views"] == 2000 and got["views"] == 2 and got["views_all_time"] == 2
+        # Views count up to yesterday; today's show tomorrow.
+        assert got["qualified_views"] == 2000 and got["views"] == 0 and got["views_all_time"] == 2
+        ContentView.objects.filter(content_id=cid).update(day=services.ist_today() - timedelta(days=1))
+        if services.ist_today().day > 1:
+            assert api_client.get("/v1/content/me/earnings/?range=this_month",
+                                  **auth(consultant_token)).json()["views"] == 2
         last = api_client.get("/v1/content/me/earnings/?range=last_month", **auth(consultant_token)).json()
         assert last["views"] == 0 and last["views_all_time"] == 2
         assert got["posts"][0]["id"] == cid and got["posts"][0]["qualified_views"] == 2000

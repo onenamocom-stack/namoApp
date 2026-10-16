@@ -554,8 +554,9 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
     per_post = dict(qualified.values("content_id").annotate(n=Count("id")).values_list("content_id", "n"))
     posts = list(public_content().filter(author_id=author_id).order_by("-published_at")[:200])
     # The period's views, every one (16 Oct 2026, Rahul): the days' rows,
-    # by IST day, as the periods are IST.
-    seen = ContentView.objects.filter(content__author_id=author_id)
+    # by IST day, as the periods are IST — up to yesterday, so the number
+    # moves once a day ("yesterday tak ke view dikhayenge").
+    seen = ContentView.objects.filter(content__author_id=author_id, day__lt=ist_day(now))
     if lo is not None:
         seen = seen.filter(day__gte=lo)
     if hi is not None:
