@@ -53,6 +53,8 @@ def people():
     for pid, name in ((BUYER, "A Buyer"), (PRO, "An Astrologer"), (FRIEND, "A Friend")):
         Profile.objects.create(id=pid, phone=str(pid), name=name)
     Consultant.objects.create(profile_id=PRO, category="Astrologer", status="approved")
+    # The sharer holds the Creator module too (docs/06 Phase 18).
+    Profile.objects.filter(pk=PRO).update(influencer=True)
     yield
 
 
@@ -408,7 +410,7 @@ class TestEveryDirection:
 
     def _second_pro(self):
         pid = "dddddddd-9999-8888-7777-666666666666"
-        Profile.objects.create(id=pid, phone=pid, name="Another astrologer")
+        Profile.objects.create(id=pid, phone=pid, name="Another astrologer", influencer=True)  # Pro + Creator (docs/06 Phase 18)
         Consultant.objects.create(
             profile_id=pid, category="Astrologer", status="approved"
         )

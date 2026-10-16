@@ -1,25 +1,27 @@
 /**
- * The verified mark beside a consultant's name (11 Oct 2026, Rahul): a
- * white tick in a blue circle. It was a scalloped rosette until 13 Oct
- * 2026 (Rahul: "need to be round"). It is
- * the console's `verified`, nothing the consultant can set.
+ * The verified mark beside a name: a white tick in a blue circle. It was a
+ * scalloped rosette until 13 Oct 2026 (Rahul: "need to be round").
+ *
+ * One tick since 16 Oct 2026 (docs/06 Phase 18, Rahul): blue, for anybody
+ * holding any module — Creator, Pro or Seller. From 13 to 16 Oct a Pro's was
+ * orange and a Creator's blue. `tone` is still accepted and ignored, so the
+ * callers that pass it need not change.
  */
-/* Two ticks since 13 Oct 2026 (Rahul): orange for a Pro — every approved
-   astrologer or expert — and blue for a Creator. */
-const TONES = { pro: '#f5782c', creator: '#1d9bf0' }
+const BLUE = '#1d9bf0'
 
-export default function VerifiedMark({ size = 18, tone = 'pro', className = '' }) {
+// eslint-disable-next-line no-unused-vars
+export default function VerifiedMark({ size = 18, tone, className = '' }) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       role="img"
-      aria-label={tone === 'creator' ? 'Verified creator' : 'Verified'}
+      aria-label="Verified"
       className={`inline-block flex-none ${className}`}
     >
-      <title>{tone === 'creator' ? 'Verified creator' : 'Verified'}</title>
-      <circle cx="12" cy="12" r="10.5" fill={TONES[tone] ?? TONES.pro} />
+      <title>Verified</title>
+      <circle cx="12" cy="12" r="10.5" fill={BLUE} />
       <path d="m7.6 12.3 3 3 5.8-6.2" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )

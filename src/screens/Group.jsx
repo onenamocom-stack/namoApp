@@ -24,7 +24,7 @@ const initialsOf = (name) =>
  */
 export default function Group() {
   const { id } = useParams()
-  const { showToast, session, consultant, profile } = useStore()
+  const { showToast, session, profile } = useStore()
   const [group, setGroup] = useState(null)
   const [posts, setPosts] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -51,7 +51,7 @@ export default function Group() {
   const member = group.me?.status === 'active'
   const admin = member && group.me.role === 'admin'
   const removed = group.me?.status === 'removed'
-  const sharer = consultant?.status === 'approved' || Boolean(profile?.influencer)
+  const sharer = Boolean(profile?.influencer) // the Creator module (docs/06 Phase 18)
   const video = sharer || profile?.video_enabled
 
   async function toggle() {

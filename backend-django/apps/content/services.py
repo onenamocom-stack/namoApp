@@ -65,9 +65,9 @@ from .models import (
 GATE_REFUSAL = "You can only review a session you have completed"
 DUPLICATE_REFUSAL = "You have already reviewed this session"
 REEL_REFUSAL = "Only a consultant can post a reel"
-VIDEO_REFUSAL = "Video posting is not switched on for your account"
+VIDEO_REFUSAL = "Reels and video are for Creators. Ask for the Creator module in Profile settings"
 BLOCKED_REFUSAL = "Your account cannot post"
-TAG_REFUSAL = "Only an approved consultant or a Creator can tag products"
+TAG_REFUSAL = "Only a Creator can tag products. Ask for the Creator module in Profile settings"
 TAG_LIMIT_REFUSAL = f"Tag at most {MAX_TAGGED_PRODUCTS} products"
 TAG_MISSING_REFUSAL = "One of those products is not in the shop"
 SELF_REPORT_REFUSAL = "You cannot report your own post"
@@ -295,8 +295,8 @@ def _may_post_video(author_id, role):
     """
     if role == "admin":
         return True
-    if gateway.is_approved_consultant(author_id):
-        return True
+    # An approved consultant no longer posts video by being one (docs/06
+    # Phase 18, 16 Oct 2026): video is the Creator module's.
     # 4. A Creator posts every kind (13 Oct 2026, Rahul).
     if profile_services.is_creator(author_id):
         return True
@@ -321,9 +321,8 @@ def _checked_listings(author_id, role, listing_ids, n_products):
     products, and the same three-tag limit counting both."""
     if not listing_ids:
         return []
-    if role != "admin" and not (
-        gateway.is_approved_consultant(author_id) or profile_services.is_creator(author_id)
-    ):
+    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
+    if role != "admin" and not profile_services.is_creator(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     from apps.market import services as market
 
@@ -335,9 +334,8 @@ def _checked_ebooks(author_id, role, ebook_ids, n_other):
     products, and the same three-tag limit counting everything."""
     if not ebook_ids:
         return []
-    if role != "admin" and not (
-        gateway.is_approved_consultant(author_id) or profile_services.is_creator(author_id)
-    ):
+    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
+    if role != "admin" and not profile_services.is_creator(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     from apps.bhakti import services as bhakti
 
@@ -354,10 +352,8 @@ def _checked_products(author_id, role, product_ids):
     ids = list(dict.fromkeys(str(p) for p in product_ids))  # de-dup, keep order
     if not ids:
         return []
-    # An approved consultant or a Creator tags (14 Oct 2026, 01-PRD §12).
-    if role != "admin" and not (
-        gateway.is_approved_consultant(author_id) or profile_services.is_creator(author_id)
-    ):
+    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
+    if role != "admin" and not profile_services.is_creator(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     if len(ids) > MAX_TAGGED_PRODUCTS:
         raise ValidationError({"product_ids": TAG_LIMIT_REFUSAL})
@@ -503,6 +499,9 @@ def qualify(content_id, viewer_id, reason, now=None):
     if reason not in _REASON_FOR_KIND.get(row.kind, set()):
         return False
     if str(row.author_id).replace("-", "") == str(viewer_id).replace("-", ""):
+        return False
+    # Content earns for the Creator module only (docs/06 Phase 18).
+    if not profile_services.is_creator(row.author_id):
         return False
     if reason in ("watch", "read"):
         seen = ContentView.objects.filter(content_id=row.id, viewer_id=viewer_id, day=ist_today()).first()

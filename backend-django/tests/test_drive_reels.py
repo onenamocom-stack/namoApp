@@ -40,7 +40,7 @@ def drive(monkeypatch, settings):
     monkeypatch.setattr(drive_reels, "_token", lambda: "tok")
     monkeypatch.setattr(drive_reels, "_list", lambda parent, token: list(TREE.get(parent, [])))
     monkeypatch.setattr(drive_reels, "_download", lambda fid, token, into: (into.write(b"video"), into.seek(0)))
-    Profile.objects.create(id=AUTHOR, phone="rahul", name="Rahul Jain")
+    Profile.objects.create(id=AUTHOR, phone="rahul", name="Rahul Jain", influencer=True)  # Pro + Creator (docs/06 Phase 18)
     Consultant.objects.create(profile_id=AUTHOR, category="Astrologer", status="approved")
 
 

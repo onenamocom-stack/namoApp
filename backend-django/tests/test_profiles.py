@@ -153,6 +153,8 @@ class TestMeRead:
             "gender",
             # 3 Oct: the Influencer tab is drawn off it.
             "influencer",
+            # 16 Oct: the Seller module (docs/06 Phase 18).
+            "seller",
             # 4 Oct: the line under the picture.
             "bio",
             # 13 Oct: what they picked at sign-up (Phase 15a).

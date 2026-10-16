@@ -131,6 +131,14 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
             Consultant.objects.filter(pk=consultant.pk).update(status=status)
             record(request, f"consultant.{verb}", "consultant",
                    target_id=consultant.profile_id, was=was, now=status)
+            # The person hears it (docs/06 Phase 18, 16 Oct 2026): nothing
+            # told them before.
+            if verb == "approve" and was == Consultant.Status.PENDING:
+                from apps.notifications import services as notify
+
+                notify.push(consultant.profile_id, kind="module.pro.approved", title="You are a Pro now",
+                            body="People can book you. Set your price and hours on Dashboard, then go online.",
+                            ref_type="module", ref_id=str(consultant.profile_id))
             moved += 1
         self.message_user(
             request, f"{moved} {verb}.", messages.SUCCESS if moved else messages.WARNING

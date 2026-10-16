@@ -44,6 +44,8 @@ Deliberately NOT owned here: auth.users (Supabase Auth stays, docs/07 §1),
 consultants replicate them), the bucket bytes (the media app owns R2).
 """
 
+import uuid
+
 from django.db import models
 from django.utils import timezone
 
@@ -100,6 +102,11 @@ class Profile(models.Model):
     # it adds the Influencer tab and its numbers (apps/referrals/influencer.py)
     # and nothing else. Their code is their ordinary N invite code.
     influencer = models.BooleanField(default=False)
+
+    # The Seller module (docs/06 Phase 18, Rahul 16 Oct 2026): lists on the
+    # Market. Granted only by approving a request; Creator (`influencer`)
+    # and Pro (an approved consultants row) are the other two modules.
+    seller = models.BooleanField(default=False, db_default=False)
 
     # A line under the picture on the profile (4 Oct 2026). Nullable, not a
     # Django default: `handle_new_user` inserts only (id, phone, name), and
@@ -158,3 +165,40 @@ class Profile(models.Model):
                 name="profiles_email_shape",
             ),
         ]
+
+
+class ModuleRequest(models.Model):
+    """A request for the Creator or the Seller module (docs/06 Phase 18).
+    The Pro module's request is the consultant application. One pending
+    request per person per module; a rejection carries the admin's note."""
+
+    class Module(models.TextChoices):
+        CREATOR = "creator", "Creator"
+        SELLER = "seller", "Seller"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Waiting"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField()
+    module = models.CharField(max_length=8, choices=Module.choices)
+    answers = models.JSONField(default=dict)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
+    review_note = models.TextField(blank=True, default="")
+    submitted_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "module_requests"
+        constraints = [
+            models.UniqueConstraint(fields=["profile_id", "module"], condition=models.Q(status="pending"),
+                                    name="module_requests_one_pending"),
+        ]
+        indexes = [models.Index(fields=["status", "submitted_at"], name="module_requests_queue")]
+
+    def __str__(self):
+        return f"{self.get_module_display()} · {self.get_status_display()}"
+

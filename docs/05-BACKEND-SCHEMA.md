@@ -1415,8 +1415,36 @@ days of live `content` authors; blocked profiles excluded.
 
 **Creators** (13 Oct 2026, no new column): `profiles.influencer` is the
 Creator flag, named "Creator" everywhere a person reads it. Feed rows carry
-`author_is_creator`; `GET /v1/content/authors/<id>/` carries `is_creator`. A
-Creator passes the video gate (`content.services._may_post_video`).
+`author_is_creator` — since Phase 18 true for a Creator **or a Seller**, the
+blue tick; what a person may do reads the flags. A Creator passes the video
+gate (`content.services._may_post_video`); since Phase 18 an approved
+consultant does not by being one.
+
+**Modules** (Phase 18, migration `profiles/0008_modules`):
+
+```sql
+alter table profiles add column seller boolean not null default false;  -- the Seller module
+create table module_requests (
+  id            uuid primary key,
+  profile_id    uuid not null,
+  module        varchar(8) not null,      -- creator | seller (a Pro applies as a consultant)
+  answers       jsonb not null default '{}',
+  status        varchar(8) not null default 'pending',  -- pending | approved | rejected
+  review_note   text not null default '',
+  submitted_at  timestamptz not null,
+  reviewed_at   timestamptz,
+  reviewed_by   text not null default ''
+);
+create unique index module_requests_one_pending on module_requests (profile_id, module) where status = 'pending';
+create index module_requests_queue on module_requests (status, submitted_at);
+```
+
+Gates: video and tagging and `referrals.may_share` → `influencer`;
+`market.is_seller` → `seller`; `content.qualify` counts only a Creator's
+posts. `GET /v1/profiles/me/modules/`, `POST /v1/profiles/me/modules/<creator|seller>/`
+(`apps/profiles/modules.py`); approving in the console sets the flag and
+notifies (`module.<m>.approved` / `.rejected`); approving a consultant
+notifies too (`module.pro.approved`).
 
 **Tag** (13 Oct 2026, no table): `GET /v1/content/tag/<tag>/?sort=new|top`,
 anonymous, returns feed rows whose caption, body or title carries `#tag`

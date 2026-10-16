@@ -36,7 +36,8 @@ NOBODY = uuid.UUID("00000000-0000-4000-8000-0000000000c2")
 
 @pytest.fixture
 def creator(db):
-    return Profile.objects.create(id=CREATOR, phone="9000000c1", name="Asha Creator", influencer=True)
+    # A Creator who is also a Seller (docs/06 Phase 18: listing needs the module).
+    return Profile.objects.create(id=CREATOR, phone="9000000c1", name="Asha Creator", influencer=True, seller=True)
 
 
 @pytest.fixture

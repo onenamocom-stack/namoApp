@@ -250,12 +250,11 @@ REFUSAL_CONSULTANT_LINK_NOT_YOURS = (
 
 
 def may_share(profile_id):
-    """Who holds an A code, tags products and earns on a link: an approved
-    consultant, or a Creator (14 Oct 2026, 01-PRD §12)."""
-    from apps.consultants import services as consultant_services
+    """Who tags products and earns on a link: the Creator module (docs/06
+    Phase 18, 16 Oct 2026). It was an approved consultant or a Creator."""
     from apps.profiles import services as profile_services
 
-    return consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
+    return profile_services.is_creator(profile_id)
 
 
 def affiliate_link(consultant_id, product_id=None, listing_id=None, ebook_id=None):

@@ -133,6 +133,11 @@ def roster(content_tables):
     _consultant(APPROVED, "approved")
     _consultant(PENDING, "pending")
     _consultant(BLOCKED, "blocked")
+    # The approved Pro also holds the Creator module, as the Pros these tests
+    # were written for could post video and tag (docs/06 Phase 18).
+    from apps.profiles.models import Profile
+
+    Profile.objects.filter(pk=APPROVED).update(influencer=True)
     band = PriceBand.objects.create(
         tier=9, billing="fixed", duration_mins=20, price_paise=1000, sort=90
     )

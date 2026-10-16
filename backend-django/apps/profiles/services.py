@@ -49,7 +49,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import BooleanField, OuterRef, Subquery, TextField
+from django.db.models import Exists, OuterRef, Q, Subquery, TextField
 from django.utils import timezone
 
 from apps.media.models import MediaAsset
@@ -137,6 +137,7 @@ def serialize_profile(profile):
         # publish.
         "video_enabled": profile.video_enabled,
         "influencer": profile.influencer,
+        "seller": profile.seller,  # the Seller module (docs/06 Phase 18)
         "bio": profile.bio,
         "interests": profile.interests,
         "username": profile.username,
@@ -278,10 +279,12 @@ def is_creator(profile_id):
 
 
 def creator_subquery(outer_field):
-    """ORM annotation: is the row's <outer_field> a Creator."""
-    return Subquery(
-        Profile.objects.filter(id=OuterRef(outer_field)).values("influencer")[:1],
-        output_field=BooleanField(),
+    """ORM annotation: does the row's <outer_field> carry the blue tick
+    without being a Pro — the Creator or the Seller module (docs/06 Phase
+    18: one tick for anybody holding any module). Display only; what a
+    person may do reads `is_creator` and `modules.is_seller`."""
+    return Exists(
+        Profile.objects.filter(id=OuterRef(outer_field)).filter(Q(influencer=True) | Q(seller=True))
     )
 
 

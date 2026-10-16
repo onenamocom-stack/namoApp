@@ -70,7 +70,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const { session, t, profile, consultant, consultantLoading } = useStore()
   const me = session?.user?.id
-  const shopRows = useSellerListings(profile?.influencer ? me : null)
+  const shopRows = useSellerListings(profile?.seller ? me : null)
   const [posts, setPosts] = useState(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
 
@@ -90,10 +90,13 @@ export default function Profile() {
 
   if (tab === 'settings') return <SettingsPage pro={Boolean(consultant)} />
 
-  // A Creator sells on the Market (15 Oct 2026, Phase 17): a Shop tab.
-  const tabs = profile?.influencer
-    ? [...TABS, { key: 'shop', icon: 'cart', label: 'prof.tab.shop' }, { key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }]
-    : TABS
+  // A Seller's Shop tab, a Creator's code tab (docs/06 Phase 18, 16 Oct
+  // 2026; both were a Creator's).
+  const tabs = [
+    ...TABS,
+    ...(profile?.seller ? [{ key: 'shop', icon: 'cart', label: 'prof.tab.shop' }] : []),
+    ...(profile?.influencer ? [{ key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }] : []),
+  ]
   // Bare /profile opens on Posts, always (5 Oct 2026, owner's request) —
   // it used to open on the kundli when you had not posted yet.
   const active = tab ?? 'posts'
@@ -163,7 +166,7 @@ export default function Profile() {
           <PostsTab posts={posts} />
         )}
         {active === 'reshared' && <ResharedTab />}
-        {active === 'shop' && profile?.influencer && <SellerShop rows={shopRows} own />}
+        {active === 'shop' && profile?.seller && <SellerShop rows={shopRows} own />}
         {active === 'commented' && <CommentedTab />}
         {active === 'saved' && <SavedTab />}
         {active === 'kundli' && <KundliTab />}
@@ -192,7 +195,7 @@ export default function Profile() {
 /* ── The top: you ────────────────────────────────────────────────────────── */
 
 function Hero({ posts, counts }) {
-  const { t, session, showToast, profile } = useStore()
+  const { t, session, showToast, profile, consultant } = useStore()
   const [listing, setListing] = useState(null)
   const me = useProfileFields()
 
@@ -210,7 +213,7 @@ function Hero({ posts, counts }) {
         <AvatarPicker />
         <ProfileHead
           name={me.name}
-          mark={profile?.influencer && <VerifiedMark size={20} tone="creator" />}
+          mark={(profile?.influencer || profile?.seller || consultant?.status === 'approved') && <VerifiedMark size={20} />}
           stats={[
             { n: posts?.length ?? null, label: t('prof.posts') },
             { n: counts.followers, label: t('prof.followers'), onClick: () => setListing('followers') },
@@ -550,6 +553,14 @@ function SettingsPage({ pro }) {
         </section>
       )}
       {naming && <UsernameSheet onClose={() => setNaming(false)} />}
+
+      {/* The three modules, for everybody (docs/06 Phase 18, 16 Oct 2026). */}
+      <section className="border-b border-rule px-5 py-6">
+        <Kicker>Earn on Namo</Kicker>
+        <div className="mt-2">
+          <Row to="/earn" title="Become a Creator, Pro or Seller" note="Ask for a module; the team approves it" />
+        </div>
+      </section>
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>
