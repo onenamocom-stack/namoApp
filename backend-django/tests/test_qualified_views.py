@@ -136,3 +136,20 @@ class TestContentEarnings:
         assert api_client.get("/v1/content/me/earnings/").status_code == 401
         got = api_client.get("/v1/content/me/earnings/?range=week", **auth(consultant_token))
         assert got.status_code == 400
+
+
+@pytest.mark.django_db
+class TestInsightsMonth:
+    def test_this_month_views_till_yesterday(self, api_client, consultant_token, seeker_token, roster):
+        # The main app's Insights read this month (16 Oct 2026, Rahul).
+        cid = _post(api_client, consultant_token, "clip")
+        api_client.post(f"/v1/content/{cid}/view/", **auth(seeker_token))
+        api_client.post(f"/v1/content/{cid}/view/", **auth(seeker_token))
+        got = api_client.get("/v1/consultants/me/insights/?window=month", **auth(consultant_token)).json()
+        assert got["window"] == "month" and got["week"]["views"] == 0   # today's show tomorrow
+        if services.ist_today().day > 1:
+            ContentView.objects.filter(content_id=cid).update(day=services.ist_today() - timedelta(days=1))
+            got = api_client.get("/v1/consultants/me/insights/?window=month", **auth(consultant_token)).json()
+            assert got["week"]["views"] == 2
+        week = api_client.get("/v1/consultants/me/insights/", **auth(consultant_token)).json()
+        assert week["window"] == "week" and week["week"]["views"] == 1  # a person a day, as before

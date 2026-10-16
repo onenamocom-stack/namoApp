@@ -1313,8 +1313,9 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
   to yesterday — "Till yesterday" — so it moves once a day) and Qualified
   views (for the period), with what a qualified view is, and **Lifetime views**
   in a band below them (16 Oct 2026, Rahul).
-- **Insights:** the last seven days (views, new followers, saves); then
-  *Your content · N* (moved here from Earnings the same day, Rahul; laid
+- **Insights:** **this month** (16 Oct 2026, Rahul; the pro app keeps the
+  last seven days): views up to yesterday ("Till yesterday"), new
+  followers, saves and comments; then *Your content · N* (moved here from Earnings the same day, Rahul; laid
   out after YouTube Studio's Shorts list): a row per piece — a reel's first
   frame whole at 9:16 with its length, a photo's or blog's at a small 4:5 —
   then the title, Reel / Post / Blog · how long ago, views, likes, comments,

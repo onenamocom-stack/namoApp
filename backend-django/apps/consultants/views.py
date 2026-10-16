@@ -405,7 +405,8 @@ def my_insights(request):
         return Response(
             refusal_body("not_consultant", "No practice on this account."), status=404
         )
-    return Response(insights.insights(request.user.pk))
+    window = "month" if request.query_params.get("window") == "month" else "week"
+    return Response(insights.insights(request.user.pk, window=window))
 
 
 @api_view(["GET", "PUT"])

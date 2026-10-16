@@ -39,7 +39,7 @@ export default function ContentEarnings() {
         <Segmented items={TABS} value={tab} onChange={setTab} />
       </div>
       <div key={tab} className="animate-fade">
-        {tab === 'insights' ? <Insights links={false} posts={<ContentGrid />} /> : <Earned />}
+        {tab === 'insights' ? <Insights links={false} posts={<ContentGrid />} window="month" /> : <Earned />}
       </div>
       <div className="h-24" />
     </>

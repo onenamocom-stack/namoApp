@@ -338,19 +338,19 @@ export function Bars({ data, money = false }) {
 /** Exported for a Creator's Dashboard (Phase 16), which has no affiliate
  *  links: `links` hides the way to them. `posts`, when given, takes the
  *  place of the post list (the main app's Content & Referrals grid). */
-export function Insights({ links = true, posts = null }) {
+export function Insights({ links = true, posts = null, window = 'week' }) {
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let live = true
-    myInsights()
+    myInsights(window)
       .then((d) => live && setData(d))
       .catch(() => live && setFailed(true))
     return () => {
       live = false
     }
-  }, [])
+  }, [window])
 
   if (failed) return <p className="px-5 py-8 text-meta t-body">Could not load your insights. Open this tab again.</p>
   if (!data) return <Loader />
@@ -360,9 +360,13 @@ export function Insights({ links = true, posts = null }) {
   return (
     <>
       <section className="border-b border-rule px-5 py-6">
-        <Kicker>Last 7 days</Kicker>
+        <Kicker>{window === 'month' ? 'This month' : 'Last 7 days'}</Kicker>
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat label="Views" value={week.views.toLocaleString('en-IN')} />
+          <Stat
+            label="Views"
+            value={week.views.toLocaleString('en-IN')}
+            sub={window === 'month' ? 'Till yesterday' : undefined}
+          />
           <Stat label="New followers" value={`+${week.new_followers}`} />
           <Stat label="Saves" value={week.saves} sub={`${week.comments} comments`} />
         </div>

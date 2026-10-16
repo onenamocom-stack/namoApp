@@ -35,9 +35,18 @@ WINDOW_DAYS = 7
 PIECES = 100
 
 
-def insights(consultant_id, now=None):
+def insights(consultant_id, now=None, window="week"):
+    """`window` "week" is the last seven days (the pro app); "month" is this
+    IST month so far (16 Oct 2026, Rahul: the main app's Content &
+    Referrals), and its views are every view up to yesterday, as the
+    Earnings tab's are."""
     now = now or timezone.now()
     since = now - timedelta(days=WINDOW_DAYS)
+    if window == "month":
+        from apps.consultants.earnings import _midnight, ist_today
+
+        first = ist_today(now).replace(day=1)
+        since = _midnight(first)
 
     rows, _ = content_services.by_author_page(consultant_id, limit=PIECES)
     ids = [r.id for r in rows]
@@ -49,8 +58,14 @@ def insights(consultant_id, now=None):
         .values_list("content_id", "n")
     )
 
+    if window == "month":
+        views = ContentView.objects.filter(
+            content_id__in=ids, day__gte=first, day__lt=ist_today(now)
+        ).aggregate(n=Sum("views"))["n"] or 0
+    else:
+        views = sum(views_7d.values())
     week = {
-        "views": sum(views_7d.values()),
+        "views": views,
         "new_followers": Reaction.objects.filter(
             kind=Reaction.Kind.FOLLOW,
             target_type__in=[Reaction.TargetType.PROFILE, Reaction.TargetType.CONSULTANT],
@@ -87,6 +102,7 @@ def insights(consultant_id, now=None):
 
     return {
         "window_days": WINDOW_DAYS,
+        "window": window,
         "week": week,
         "totals": {
             "pieces": len(pieces),

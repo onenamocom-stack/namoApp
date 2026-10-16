@@ -464,9 +464,9 @@ export async function earningsAll(consultantId, range, { from, to, cap = 2000 } 
 /** The caller's Insights tab (4 Oct 2026): `{week: {views, new_followers,
  *  saves, comments}, totals, pieces: [...own posts with views], shop:
  *  {orders, units, products: [{name, image_url, units, buyers}]}}`. */
-export async function myInsights() {
+export async function myInsights(window = 'week') {
   const token = await accessToken()
-  return api('/consultants/me/insights/', { token })
+  return api(`/consultants/me/insights/${window === 'month' ? '?window=month' : ''}`, { token })
 }
 
 /** The caller's PAN and bank details (payouts P2, 3 Oct 2026). Never the
