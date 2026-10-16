@@ -562,7 +562,7 @@ Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
 
 **Progress (16 Oct 2026):** Dashboard and NAMO Desk live; Rahul tested a
 call through `/desk`. pro.1namo.com is a redirect to 1namo.com/desk,
-built and waiting for its deploy (HANDOFF).
+live (HANDOFF).
 
 **Done when:** a Pro with /desk open receives a call request, hears it ring
 and answers it, and the session meters exactly as before (the chat tests
