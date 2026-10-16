@@ -73,8 +73,8 @@ export default function Dashboard() {
               {/* Consulting only, first (16 Oct 2026, Rahul). */}
               <Row
                 to="/dashboard/consulting"
-                title="Consulting earnings and insights"
-                note="What chat, calls and bookings earned, and who you talked to"
+                title="Consulting earnings"
+                note="What chat, calls and bookings earned"
               />
               {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                   reviews" page went — reviews are on your page, the intro

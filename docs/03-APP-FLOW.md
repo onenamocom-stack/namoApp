@@ -69,7 +69,7 @@ In file order, which is also resolution order.
 | `/notifications` | Notifications | Plain |
 | `/dashboard` | Dashboard — a Pro's or a Creator's own screens (main app, 14 Oct 2026, Phase 16); anyone else goes to `/profile` | Plain |
 | `/dashboard/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
-| `/dashboard/consulting` | Consulting earnings and insights — chat, calls and bookings only (16 Oct 2026). A Pro | Plain |
+| `/dashboard/consulting` | Consulting earnings — chat, calls and bookings only (16 Oct 2026). A Pro | Plain |
 | `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
 | `/home?compose=1` | Home with the new-post sheet open (14 Oct 2026) | Tab |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
@@ -1276,7 +1276,7 @@ Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
 until this day) and on a Creator's Profile, under the five icons.
 
 - **A Pro:** Your work (Earnings and Insights, Your links, Sell on the
-  Market), Your consulting setting (**Consulting earnings and insights**,
+  Market), Your consulting setting (**Consulting earnings**,
   `/dashboard/consulting`, below; **Your consulting price**, which opens
   the rates sheet here; **Booking calendar**; **Go online**, `/desk`, a card that stands out from the rows), and
   Payout details last (16 Oct 2026, Rahul; the headings were Your practice
@@ -1309,25 +1309,21 @@ The screens are the pro app's own, at `/dashboard/...` and not `/pro/...`:
 a `/pro` path switches the online beat on, which would show a Pro as online
 where no call can ring. A Seeker downloads none of these screens.
 
-### `/dashboard/consulting` — Consulting earnings and insights (16 Oct 2026, Rahul)
+### `/dashboard/consulting` — Consulting earnings (16 Oct 2026, Rahul)
 
-A Pro only, main app. The Earnings page's shape, holding consulting alone:
+A Pro only, main app. The Earnings tab's shape, holding consulting alone:
 metered chat, audio and video, booked sessions and their reversals. Shop
-commission and its cancellations are left out, and so are posts.
+commission and its cancellations are left out.
 
-- Header: back to Dashboard, "Consulting". Tabs **Earnings · Insights**; under
-  them the period chips (This month, Last month, This FY, Last FY, Lifetime),
-  shared by both tabs.
-- **Earnings:** the period's consulting total ("Shop commission is not in
-  this"), what is booked ahead (this month and lifetime), Where it came from
-  (Chat, Audio call, Video call, Booked sessions, Reversals, each with count
-  and amount), Last 7 days bars, the entries, 30 at a time.
-- **Insights:** Sessions (booked ones apart; a declined booking is not one),
-  Minutes and minutes per session, People and how many came back, Rating
-  (all time); minutes by chat, audio and video; the five people who earned
-  the Pro most, with sessions and minutes.
-- Empty period: "No consulting earned in this period." / "No sessions in this
-  period. Go online to take calls and chats."
+- Header: back to Dashboard, "Consulting earnings". The period chips (This
+  month, Last month, This FY, Last FY, Lifetime).
+- The period's consulting total ("Shop commission is not in this"), what is
+  booked ahead (this month and lifetime), Where it came from (Chat, Audio
+  call, Video call, Booked sessions, Reversals, each with count and amount),
+  Last 7 days bars, the entries, 30 at a time.
+- Empty period: "No consulting earned in this period."
+- No Insights tab: one was built and taken out the same day (Rahul: insights
+  later).
 
 The pro app's Earnings tab is unchanged and keeps everything.
 

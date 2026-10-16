@@ -1,29 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
-import { Kicker, PopButton, PopCard, Stat } from '../components/Pop.jsx'
-import { Field, Segmented } from '../components/Primitives.jsx'
+import { Kicker, PopButton, PopCard } from '../components/Pop.jsx'
+import { Field } from '../components/Primitives.jsx'
 import { Bars, RANGES } from '../pro/ProEarnings.jsx'
 import { earningsAll, earningsSummary } from '../lib/consultants.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
- * Consulting earnings and insights (16 Oct 2026, Rahul): the Earnings page's
- * shape — Earnings | Insights, a period, the total — holding only what
- * consulting earned: metered chat, audio and video, booked sessions and
+ * Consulting earnings (16 Oct 2026, Rahul): the Earnings tab's shape — a
+ * period, the total, where it came from, the week, the entries — holding
+ * only what consulting earned: metered chat, audio and video, booked sessions and
  * their reversals. Shop commission ("Referral cashback · …", and its
  * cancellations) is left out, and so are posts.
  *
  * Front end only. The figures are added up here from the period's rows
  * (`earningsAll`), because the summary's reversals bucket cannot tell a
- * cancelled cashback from a declined booking. Who and how long come from
- * the row's label, "<name> · <n> min chat|audio call|video call", which the
- * session settle writes (`chat/services.py`).
+ * cancelled cashback from a declined booking. Chat, audio or video comes
+ * from the row's label, "<name> · <n> min chat|audio call|video call", which
+ * the session settle writes (`chat/services.py`). An Insights tab was built
+ * and taken out the same day (Rahul: "Insight ka baad me dekh lenge").
  */
-const TABS = [
-  { key: 'earnings', label: 'Earnings' },
-  { key: 'insights', label: 'Insights' },
-]
 
 const SHOP = /^Referral cashback/
 const METERED = /^(.*) · (\d+) min (chat|audio call|video call)$/
@@ -58,7 +55,6 @@ function money(paise) {
 export default function ConsultingEarnings() {
   const { consultant } = useStore()
   const id = consultant?.profile_id
-  const [tab, setTab] = useState('earnings')
   const [range, setRange] = useState('this_month')
   const [rows, setRows] = useState(null)
   const [upcoming, setUpcoming] = useState(0)
@@ -115,11 +111,7 @@ export default function ConsultingEarnings() {
 
   return (
     <>
-      <TopBar title="Consulting" back backTo="/dashboard" />
-
-      <div className="px-4 pt-4">
-        <Segmented items={TABS} value={tab} onChange={setTab} />
-      </div>
+      <TopBar title="Consulting earnings" back backTo="/dashboard" />
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pt-5">
         {RANGES.map((r) => (
@@ -140,13 +132,7 @@ export default function ConsultingEarnings() {
       ) : !rows ? (
         <Loader label="Adding it up" className="py-8" />
       ) : (
-        <div key={tab} className="animate-fade">
-          {tab === 'earnings' ? (
-            <Earned rows={rows} range={range} upcoming={upcoming} week={week} />
-          ) : (
-            <Insight rows={rows} range={range} rating={consultant?.rating_avg_cache} reviews={consultant?.rating_count_cache} />
-          )}
-        </div>
+        <Earned rows={rows} range={range} upcoming={upcoming} week={week} />
       )}
 
       <div className="h-24" />
@@ -236,81 +222,6 @@ function Earned({ rows, range, upcoming, week }) {
           </PopButton>
         )}
       </section>
-    </>
-  )
-}
-
-function Insight({ rows, range, rating, reviews }) {
-  const done = rows.filter((r) => r.net_paise > 0)
-  const metered = done.filter((r) => r.who !== null)
-  const minutes = metered.reduce((s, r) => s + r.minutes, 0)
-  // A declined booking reverses under the same booking: not a session.
-  const undone = new Set(rows.filter((r) => r.net_paise < 0 && r.booking_id).map((r) => r.booking_id))
-  const booked = done.filter((r) => r.source === 'bookings' && !undone.has(r.booking_id)).length
-
-  const people = {}
-  for (const r of metered) {
-    people[r.who] = people[r.who] ?? { n: 0, net: 0, minutes: 0 }
-    people[r.who].n += 1
-    people[r.who].net += r.net_paise
-    people[r.who].minutes += r.minutes
-  }
-  const names = Object.keys(people)
-  const back = names.filter((n) => people[n].n > 1).length
-  const top = names.sort((a, b) => people[b].net - people[a].net).slice(0, 5)
-
-  const modes = ['chat', 'audio call', 'video call']
-    .map((k) => {
-      const these = metered.filter((r) => r.what === k)
-      return { k, n: these.length, minutes: these.reduce((s, r) => s + r.minutes, 0) }
-    })
-    .filter((m) => m.n > 0)
-
-  if (done.length === 0) {
-    return <p className="px-5 py-8 text-meta t-faint">No sessions in this period. Go online to take calls and chats.</p>
-  }
-
-  return (
-    <>
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>{RANGES.find((r) => r.key === range)?.label}</Kicker>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <Stat label="Sessions" value={metered.length + booked} sub={booked ? `${booked} booked` : null} />
-          <Stat label="Minutes" value={minutes.toLocaleString('en-IN')} sub={metered.length ? `${Math.round(minutes / metered.length)} min each` : null} />
-          <Stat label="People" value={names.length} sub={`${back} came back`} />
-        </div>
-        {rating != null && (
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Stat label="Rating" value={Number(rating).toFixed(1)} sub={`${reviews ?? 0} reviews in all`} />
-          </div>
-        )}
-      </section>
-
-      {modes.length > 0 && (
-        <section className="border-b border-rule px-5 py-6">
-          <Kicker>Chat and calls</Kicker>
-          <div className="mt-3">
-            {modes.map((m) => (
-              <Field key={m.k} k={`${MODE_LABEL[m.k]} · ${m.n}`} v={`${m.minutes.toLocaleString('en-IN')} min`} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {top.length > 0 && (
-        <section className="px-5 py-6">
-          <Kicker>Who you talked to most</Kicker>
-          <div className="mt-3">
-            {top.map((n) => (
-              <Field
-                key={n}
-                k={`${n} · ${people[n].n} ${people[n].n === 1 ? 'session' : 'sessions'}, ${people[n].minutes} min`}
-                v={money(people[n].net)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
     </>
   )
 }
