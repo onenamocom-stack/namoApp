@@ -609,6 +609,72 @@ earnings with Namo's commission taken.
 
 ---
 
+## Phase 18 — Three modules: Creator, Pro, Seller (PROPOSED 16 Oct 2026, not started; waits for the owner's yes)
+
+Rahul's model, agreed on Telegram 16 Oct 2026. Each way of earning is a
+**module**, and a person holds any number of them:
+
+| Module | What it opens | Earns from |
+|---|---|---|
+| **Creator** | Posting video and reels; tags, links and the A code | Content earnings: qualified views + commission from tags and links |
+| **Pro** | Bookable consulting: chat, calls, bookings, the rate card, Namo Consult | Consulting |
+| **Seller** | Listing on the Market: products, downloads, courses, events | Market sales |
+
+A Seeker holds none. Today a Pro or a Creator gets all three kinds of
+earning at once; after this phase each is separate.
+
+**Decided (Rahul):**
+- Every module is **requested and approved**, no exceptions. Existing Pros
+  request Creator and Seller like anybody else.
+- **One badge: a blue tick** for anybody holding any module. The orange Pro
+  tick and the separate Creator tick go.
+- Payout details are **one**, for all three, paid together on the 7th.
+
+**Open (asked, not answered):** whether listings already live from somebody
+who is not a Seller stay up (proposed: they stay; only new listings need
+the module).
+
+**What it changes for people on the day it launches** — why it needs the
+owner's yes: an existing Pro keeps Consulting only, so until their Creator
+and Seller requests are approved they cannot post video, their tags and
+links stop earning, their new views stop qualifying, and they cannot list
+on the Market. An existing Creator keeps Content only. Money already
+earned is paid. Posts already up stay up.
+
+### Build
+
+1. **Grants.** Pro stays the approved `consultants` row. Creator stays
+   `profiles.influencer`. Seller is new: `profiles.seller` (boolean,
+   default false), granted only by approval.
+2. **Gates.** `content._may_post_video` → Creator (or admin, or the
+   `video_enabled` switch); `referrals.may_share` → Creator;
+   `market.is_seller` → Seller; `content.qualify` and `content_earnings`
+   count only for a Creator; consulting gates unchanged.
+3. **Requests.** One table, `module_requests` (profile, module, answers,
+   status pending / approved / rejected, review note, who and when); one
+   pending request per person per module. Creator asks: what you post
+   about, an Instagram or YouTube link, followers, one line on why. Seller
+   asks: what you will sell (kinds), a sample or link, one line. Pro is the
+   existing application (`ProApply`), brought into the main app; its row
+   is the request.
+4. **Console.** A *Module requests* queue (Creator, Seller): approve
+   switches the module on; reject needs a note. The consultant queue gains
+   *Reject with a note* (it has only Approve and Block today). Every
+   decision writes the audit log and **tells the person** (the bell; there
+   is no message on any approval today).
+5. **App.** Profile settings → *Earn on Namo*: the three modules, which the
+   person holds, and Request on the others (with *Waiting for approval* or
+   the admin's note). Dashboard shows the sections of the modules held;
+   the top table only their rows. Blue tick everywhere a tick is drawn
+   (about 20 places read the old two).
+6. **Launch.** A message to existing Pros and Creators a day before:
+   request the modules you use. Then the switch.
+
+Tests: each gate per module, a request's life (send, one pending, approve,
+reject with note, notify), the console actions. Docs: `01` §2 and §12
+(who earns what), `03` (Earn on Namo, Dashboard), `04` (one tick), `05`
+(`profiles.seller`, `module_requests`).
+
 ## Seed
 
 The largest single task, in phase 4.
