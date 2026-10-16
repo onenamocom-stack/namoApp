@@ -19,7 +19,7 @@ import { PresenceKeeper } from '../components/PresenceToggle.jsx'
 function useInstallAsNamoConsult() {
   useEffect(() => {
     const before = document.title
-    document.title = 'Namo Consult'
+    document.title = 'NAMO Desk'
     const made = []
     const add = (tag, attrs) => {
       const el = document.createElement(tag)
@@ -28,7 +28,7 @@ function useInstallAsNamoConsult() {
       made.push(el)
     }
     add('link', { rel: 'manifest', href: '/desk.webmanifest' })
-    add('meta', { name: 'apple-mobile-web-app-title', content: 'Namo Consult' })
+    add('meta', { name: 'apple-mobile-web-app-title', content: 'NAMO Desk' })
     add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
     return () => {
       document.title = before

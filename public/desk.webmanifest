@@ -1,7 +1,7 @@
 {
   "id": "/desk",
-  "name": "Namo Consult",
-  "short_name": "Namo Consult",
+  "name": "NAMO Desk",
+  "short_name": "NAMO Desk",
   "description": "Take calls and chats on Namo.",
   "start_url": "/desk",
   "scope": "/",

@@ -1,7 +1,6 @@
 import { isPro } from '../side.js'
 import { useNavigate } from 'react-router-dom'
 import { BackButton, TabHeader, TopBar } from './Chrome.jsx'
-import PresenceToggle from './PresenceToggle.jsx'
 
 /**
  * The header of a consultant screen. In the pro app it is a tab, with the
@@ -14,17 +13,16 @@ export default function ProHeader({ title }) {
 }
 
 /**
- * Namo Consult's header (`/desk`, Phase 16): its name, and the online
- * switch, which is the reason the screen exists.
+ * NAMO Desk's header (`/desk`; Namo Consult until 16 Oct 2026). The Online
+ * pill that sat here is the page's big Go live button now (Rahul).
  */
 export function DeskHeader() {
   const navigate = useNavigate()
-  // Not TopBar: its 72px sides clip the Online pill.
   return (
     <header className="topbar flex h-11 items-center gap-3 px-4">
       <BackButton onClick={() => navigate('/dashboard')} />
-      <p className="label min-w-0 flex-1 truncate font-bold !text-t1">Namo Consult</p>
-      <PresenceToggle />
+      <p className="label min-w-0 flex-1 truncate text-center font-bold !text-t1">NAMO Desk</p>
+      <span className="w-9 flex-none" aria-hidden="true" />
     </header>
   )
 }

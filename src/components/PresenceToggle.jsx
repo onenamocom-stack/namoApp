@@ -25,7 +25,7 @@ import { useStore } from '../store.jsx'
  */
 const BEAT_MS = 30_000
 
-export default function PresenceToggle() {
+export default function PresenceToggle({ big = false }) {
   const { isPro, session, showToast } = useStore()
   const [state, setState] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -86,6 +86,35 @@ export default function PresenceToggle() {
         : ring === 'denied'
           ? 'You are online, but notifications are blocked — calls ring only while the app is open. Allow notifications for this site in your browser settings.'
           : 'You are online. Calls ring while the app is open.',
+    )
+  }
+
+  // NAMO Desk's big button (16 Oct 2026, Rahul): Go live, green once live.
+  if (big) {
+    return (
+      <button
+        type="button"
+        onClick={flip}
+        disabled={busy}
+        aria-pressed={on}
+        className={`pop-tap flex w-full items-center gap-4 rounded-3xl px-5 py-5 text-left shadow-lg transition-colors disabled:opacity-70 ${
+          on ? 'bg-gradient-to-br from-btn to-btn-deep text-white' : 'bg-gradient-to-br from-gold-fill to-gold-dim text-white'
+        }`}
+      >
+        <span
+          className="relative flex h-12 w-12 flex-none items-center justify-center rounded-full bg-white/20"
+          aria-hidden="true"
+        >
+          {on && <span className="absolute inset-0 animate-ping rounded-full bg-white/30" />}
+          <span className={`block h-4 w-4 rounded-full ${on ? 'bg-white' : 'bg-white/60'}`} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lead font-semibold">{on ? 'You are live' : 'Go live'}</span>
+          <span className="mt-0.5 block text-meta text-white/85">
+            {on ? 'Visible to clients. Calls and chats ring here. Tap to go offline.' : 'Tap to take calls and chats. Clients see you as live.'}
+          </span>
+        </span>
+      </button>
     )
   }
 
