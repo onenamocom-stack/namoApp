@@ -67,7 +67,7 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your links" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
+      <TopBar title="Your product referral link" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
 
       {/* Said before the buttons, because both of these are what a
           consultant would otherwise learn from an angry message. */}

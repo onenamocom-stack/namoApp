@@ -111,7 +111,7 @@ export default function Profile() {
       <>
         {/* Back to wherever you came from — the Dashboard's Content card or
             Profile settings (16 Oct 2026, Rahul: it always went to settings). */}
-        <TopBar title={t(x.label)} back backTo="/profile/settings" />
+        <TopBar title={active === 'influencer' ? 'Your app referral link' : t(x.label)} back backTo="/profile/settings" />
         <div className="animate-fade">
           {active === 'saved' && <SavedTab />}
           {active === 'kundli' && <KundliTab />}

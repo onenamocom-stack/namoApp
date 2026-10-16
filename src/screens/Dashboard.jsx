@@ -79,8 +79,8 @@ export default function Dashboard() {
         <Kicker>Content &amp; Referrals</Kicker>
         <div className="mt-2">
           <Row to="/dashboard/content" title="Earnings and insights" note="Commission from your links and code, and who saw your posts" />
-          <Row to="/dashboard/affiliate" title="Your links" note="Share a product and earn" />
-          <Row to="/profile/influencer" title="Your code" note="Who joined with your code, and who paid" />
+          <Row to="/dashboard/affiliate" title="Your product referral link" note="Share a product and earn" />
+          <Row to="/profile/influencer" title="Your app referral link" note="Who joined with your code, and who paid" />
         </div>
       </section>
       )}
