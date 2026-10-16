@@ -6314,6 +6314,11 @@ The rules the bot works by are in `CLAUDE.md` ("Feedback from Telegram"):
 replies first, fixes and commits, deploys on "ship" from the owner or
 Rahul (Rahul's added 10 Oct), never money/auth/secrets without the owner. Bot `@namo_dev_bot`; both accounts paired, policy `allowlist`. It runs
 only while that window is open and the laptop is awake.
+**The plugin is off in every other Claude session** (16 Oct 2026; user
+settings `enabledPlugins`): with it on, each VS Code session started its own
+Telegram server, polled the bot and swallowed its messages, so the bot looked
+dead. The launcher turns it on for its window alone
+(`--settings scripts/namo-bot.settings.json`).
 
 ## 80. Affiliate links with a 15-day window; first-order cashback for all — 11 Oct 2026
 

@@ -9,4 +9,7 @@ rem window inherits its markers and runs as a CHILD session, where the
 rem Telegram channel does not start (seen 10 Oct 2026). Clear them.
 for %%V in (CLAUDECODE CLAUDE_PID CLAUDE_AGENT_SDK_VERSION CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION_ID CLAUDE_CODE_SESSION_ATTENDED CLAUDE_CODE_MESSAGING_SOCKET CLAUDE_CODE_MESSAGING_TOKEN CLAUDE_CODE_EMIT_STARTUP_TIMING CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING CLAUDE_CODE_ENABLE_TASKS CLAUDE_CODE_QUESTION_PREVIEW_FORMAT MCP_CONNECTION_NONBLOCKING) do set "%%V="
 cd /d "%~dp0.."
-claude --permission-mode acceptEdits --channels plugin:telegram@claude-plugins-official
+rem The Telegram plugin is OFF in every other Claude session (user settings,
+rem 16 Oct 2026): a session that loads it polls the bot too and swallows its
+rem messages. This window alone turns it on, with namo-bot.settings.json.
+claude --settings "%~dp0namo-bot.settings.json" --permission-mode acceptEdits --channels plugin:telegram@claude-plugins-official
