@@ -339,7 +339,7 @@ class TestOrderHistory:
         from apps.referrals.models import ReferralCode
 
         pro = uuid.UUID("abcdef00-1111-4222-8333-444444444444")
-        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer")
+        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer", influencer=True)  # Pro + Creator (docs/06 Phase 18)
         Consultant.objects.create(profile_id=pro, category="Astrologer",
                                   status="approved")
         code = ref.code_for(pro, ReferralCode.Kind.CONSULTANT).code
@@ -358,7 +358,7 @@ class TestOrderHistory:
         from apps.referrals.models import Cashback, ReferralCode
 
         pro = uuid.UUID("abcdef00-5555-4666-8777-888888888888")
-        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer")
+        Profile.objects.create(id=pro, phone=str(pro)[:15], name="An astrologer", influencer=True)  # Pro + Creator (docs/06 Phase 18)
         Consultant.objects.create(profile_id=pro, category="Astrologer",
                                   status="approved")
         self._bought(sapphire,

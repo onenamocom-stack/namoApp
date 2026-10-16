@@ -609,7 +609,7 @@ earnings with Namo's commission taken.
 
 ---
 
-## Phase 18 — Three modules: Creator, Pro, Seller (PROPOSED 16 Oct 2026, not started; waits for the owner's yes)
+## Phase 18 — Three modules: Creator, Pro, Seller (BUILT 16 Oct 2026 on branch `modules`, not merged; waits for the owner's yes)
 
 Rahul's model, agreed on Telegram 16 Oct 2026. Each way of earning is a
 **module**, and a person holds any number of them:
@@ -668,7 +668,11 @@ earned is paid. Posts already up stay up.
    the top table only their rows. Blue tick everywhere a tick is drawn
    (about 20 places read the old two).
 6. **Launch.** A message to existing Pros and Creators a day before:
-   request the modules you use. Then the switch.
+   request the modules you use. Then the switch: migrate `profiles/0008`,
+   deploy the API and the console, ship both apps.
+   **The Drive reels pipeline posts as `DRIVE_REELS_AUTHOR_ID`** (Rahul's
+   account, a Pro): without the Creator module it can no longer post video,
+   so that account's Creator request must be approved before the switch.
 
 Tests: each gate per module, a request's life (send, one pending, approve,
 reject with note, notify), the console actions. Docs: `01` §2 and §12

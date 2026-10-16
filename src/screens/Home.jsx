@@ -460,12 +460,12 @@ function NewPostButton({ onOpen }) {
  *  everyone; Reel only where the server's video flag is on — the tab grants
  *  nothing, the server decides what may be published. */
 function NewPostSheet({ onClose, onPublished }) {
-  const { profile, consultant, t } = useStore()
+  const { profile, t } = useStore()
   /* A Pro and a Creator post video and tag products (14 Oct 2026, Rahul:
      Studio went from Dashboard; posting is this sheet; a Creator's tag
      earns as a Pro's, owner's yes). A Seeker gets photo, text and blog.
      The server keeps the same rules. */
-  const sharer = consultant?.status === 'approved' || Boolean(profile?.influencer)
+  const sharer = Boolean(profile?.influencer) // the Creator module (docs/06 Phase 18)
   const video = sharer || profile?.video_enabled
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">

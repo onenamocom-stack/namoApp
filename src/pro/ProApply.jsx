@@ -9,6 +9,7 @@ import { applyAsConsultant } from '../lib/consultants.js'
 import RateFields, { rateErrors, rateNumbers } from '../components/RateFields.jsx'
 import { uploadAsset } from '../lib/media.js'
 import { SEEKER_APP_URL as SEEKER_URL } from '../lib/urls.js'
+import { isPro } from '../side.js'
 
 /**
  * The front door to the consultant side, and the thing that did not exist
@@ -34,7 +35,9 @@ export default function ProApply() {
   const { session, consultant, consultantLoading, consultantError, refreshConsultant, showToast } =
     useStore()
 
-  if (session && consultant?.status === 'approved') return <Navigate to="/pro/studio" replace />
+  // The main app serves this at /earn/pro too (docs/06 Phase 18): an
+  // approved Pro there goes to Dashboard, not the pro app's studio.
+  if (session && consultant?.status === 'approved') return <Navigate to={isPro ? '/pro/studio' : '/dashboard'} replace />
 
   return (
     <div className="flex min-h-full flex-col px-5 pb-16 pt-8">

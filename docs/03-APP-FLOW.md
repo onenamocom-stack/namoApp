@@ -1309,6 +1309,24 @@ profile (`/practice/edit`), slots in Namo Consult. `/dashboard/profile` opens
 the Dashboard. Edit and the public page are not here: Dashboard opens from
 that page, which carries Edit profile.
 
+### `/earn` — Earn on Namo (Phase 18, 16 Oct 2026, Rahul)
+
+Profile settings → *Earn on Namo* → *Become a Creator, Pro or Seller*, for
+everybody. Three cards — Creator, Pro, Seller — each saying what it opens;
+*You have this* (and Open Dashboard), *Waiting for approval*, or *Not
+approved* with "Team:" and the note and *Ask again*. Creator and Seller ask
+here, inline: Creator — what you post about, Instagram or YouTube,
+followers (all needed), why (optional); Seller — what you will sell, a
+sample or link (needed), anything else. *Send for approval*. Pro opens
+`/earn/pro`, the consultant application (the pro app's form, now in the main
+app too; an approved Pro there lands on Dashboard). A decision arrives in the
+bell.
+
+Dashboard shows a section per module held — Content & Referrals (Creator),
+Market (Seller), Consulting (Pro) — and the top table only their rows; its
+pages are gated by module. Profile: the Shop tab for a Seller, the code tab
+for a Creator; the blue tick for any module.
+
 ### `/dashboard/content` — Content & Referrals (16 Oct 2026, Rahul)
 
 A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.

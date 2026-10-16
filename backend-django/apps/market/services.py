@@ -41,12 +41,11 @@ class Refused(Exception):
 
 
 def is_seller(profile_id):
-    """A Pro (an approved consultant) or a Creator — the people who may
-    share for a commission already (referrals.may_share)."""
-    from apps.consultants import services as consultants
-    from apps.profiles import services as profiles
+    """The Seller module (docs/06 Phase 18, 16 Oct 2026), granted by
+    approving a request. It was any Pro or Creator."""
+    from apps.profiles import modules
 
-    return consultants.is_approved(profile_id) or profiles.is_creator(profile_id)
+    return modules.is_seller(profile_id)
 
 
 def namo_bps(category):
@@ -458,14 +457,14 @@ def _sellers(ids):
 
     ids = list({str(i) for i in ids})
     rows = {str(p["id"]): p for p in Profile.objects.filter(pk__in=ids).values(
-        "id", "name", "avatar_url", "influencer")}
+        "id", "name", "avatar_url", "influencer", "seller")}
     pros = {str(c) for c in Consultant.objects.filter(profile_id__in=ids, status="approved")
             .values_list("profile_id", flat=True)}
     out = {}
     for i in ids:
         p = rows.get(i, {})
         out[i] = {"id": i, "name": p.get("name") or "Namo", "avatar_url": p.get("avatar_url"),
-                  "is_pro": i in pros, "is_creator": bool(p.get("influencer"))}
+                  "is_pro": i in pros, "is_creator": bool(p.get("influencer") or p.get("seller"))}
     return out
 
 

@@ -153,3 +153,25 @@ export async function resolveUsername(name) {
 export function profileLink(username, fallbackPath) {
   return username ? `${SEEKER_ORIGIN}/${username}` : fallbackPath
 }
+
+/* ── the three modules (docs/06 Phase 18, 16 Oct 2026) ─────────────────────── */
+
+/** `{modules: {creator, pro, seller: {held, request}}, questions}`: what you
+ *  hold, what you have asked for (waiting, or turned down with a note), and
+ *  what each request asks. Throws on failure. */
+export async function myModules() {
+  const token = await getToken()
+  if (!token) throw new Error('Sign in to continue.')
+  const result = await call('/me/modules/', { token })
+  if (result.status !== 200 || !result.body) throw new Error(refusalMessage(result, 'Could not load this. Try again.'))
+  return result.body
+}
+
+/** Ask for the Creator or the Seller module. Throws the server's sentence. */
+export async function askModule(module, answers) {
+  const token = await getToken()
+  if (!token) throw new Error('Sign in to continue.')
+  const result = await call(`/me/modules/${module}/`, { method: 'POST', token, body: { answers } })
+  if (result.status !== 201) throw new Error(refusalMessage(result, 'Could not send that. Try again.'))
+  return result.body
+}

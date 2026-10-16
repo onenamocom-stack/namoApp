@@ -204,3 +204,83 @@ class ProfileAdmin(dj.ModelAdmin):
         blocking is a timestamp and not a delete."""
         self._switch(request, queryset, "unblocked",
                      lambda r: services.set_blocked(r.pk, False))
+
+
+# ── module requests (docs/06 Phase 18, 16 Oct 2026) ─────────────────────────
+
+
+def _register_module_requests():
+    from apps.console.audit import AuditedAdmin
+
+    from . import modules
+    from .models import ModuleRequest
+
+    @dj.register(ModuleRequest, site=site)
+    class ModuleRequestAdmin(AuditedAdmin, dj.ModelAdmin):
+        """Requests for the Creator and the Seller module. Approve switches
+        the module on; Reject needs the reason in the review note, which the
+        person sees. Either way they get a notification. A Pro applies with
+        the consultant form, in the consultant queue."""
+
+        audit_target = "module request"
+        list_display = ("submitted_at", "who", "module", "status", "summary")
+        list_filter = ("status", "module")
+        ordering = ("status", "-submitted_at")
+        readonly_fields = ("who", "module", "status", "answers_shown", "submitted_at", "reviewed_at", "reviewed_by")
+        fields = ("who", "module", "status", "answers_shown", "review_note", "submitted_at", "reviewed_at",
+                  "reviewed_by")
+        actions = ("approve", "reject")
+
+        @dj.display(description="Who")
+        def who(self, obj):
+            p = Profile.objects.filter(pk=obj.profile_id).values("name", "phone").first() or {}
+            return f"{p.get('name') or '—'} · {p.get('phone') or ''}"
+
+        @dj.display(description="Answers")
+        def summary(self, obj):
+            return " · ".join(v for v in obj.answers.values() if v)[:120]
+
+        @dj.display(description="Answers")
+        def answers_shown(self, obj):
+            labels = {k: label for k, label, _ in modules.QUESTIONS.get(obj.module, [])}
+            return "\n".join(f"{labels.get(k, k)}: {v}" for k, v in obj.answers.items())
+
+        def has_module_permission(self, request):
+            return at_least(request, Tier.SUPPORT)
+
+        def has_view_permission(self, request, obj=None):
+            return at_least(request, Tier.SUPPORT)
+
+        def has_change_permission(self, request, obj=None):
+            return at_least(request, Tier.SUPPORT)
+
+        def has_add_permission(self, request):
+            return False
+
+        def has_delete_permission(self, request, obj=None):
+            return False
+
+        def _decide(self, request, queryset, approve):
+            who = getattr(request.user, "email", "") or str(request.user)
+            done = 0
+            for row in queryset:
+                try:
+                    modules.decide(row, approve, who, row.review_note)
+                except modules.Refused as err:
+                    self.message_user(request, f"{row}: {err.message}", messages.ERROR)
+                    continue
+                record(request, f"module.{'approve' if approve else 'reject'}", "module_request", target_id=row.pk)
+                done += 1
+            if done:
+                self.message_user(request, f"{done} {'approved' if approve else 'turned down'}.", messages.SUCCESS)
+
+        @dj.action(description="Approve — switch the module on and tell them")
+        def approve(self, request, queryset):
+            self._decide(request, queryset, True)
+
+        @dj.action(description="Reject — with the reason saved in the review note")
+        def reject(self, request, queryset):
+            self._decide(request, queryset, False)
+
+
+_register_module_requests()

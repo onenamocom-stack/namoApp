@@ -12,9 +12,11 @@ const DRAFT_KEY = (mode) => `namo.draft.${mode}`
 const EMPTY = { caption: '', title: '', body: '', media: null, tagged: [] }
 export const MAX_TAGS = 3 // the composer's and the server's cap
 
-/** A Pro (approved) or a Creator: who may tag and share, and earn on it. */
+/** Who may tag and share, and earn on it: the Creator module (docs/06
+ *  Phase 18, 16 Oct 2026; it was any approved Pro or a Creator).
+ *  `consultant` is kept so the callers need not change. */
 export function isSharer(consultant, profile) {
-  return consultant?.status === 'approved' || Boolean(profile?.influencer)
+  return Boolean(profile?.influencer)
 }
 
 function readDraft(mode) {

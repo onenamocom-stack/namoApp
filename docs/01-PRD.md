@@ -38,12 +38,22 @@ nothing is copy that cannot overpromise.
 
 ## 2. Users
 
-**Three kinds since 13 Oct 2026 (Rahul):** a **Seeker**, a **Pro** (an
-approved astrologer or expert, bookable, paid) and a **Creator** (a person
-the console makes one; it replaced the name "Influencer"). A Pro carries an
-**orange tick**, every approved one; a Creator a **blue tick**; a Seeker
-none. A Creator posts every kind of content, reels included, and sees the
-reach of their posts and the people their code brought. Pros and Creators
+**Three modules since Phase 18 (Rahul, 16 Oct 2026; `06` Phase 18).** A
+person holds any number of them, each **asked for and approved by the team,
+no exceptions** — existing Pros included:
+
+- **Creator** — posts reels and video, tags products, shares links; earns
+  content earnings (qualified views + tag and link commission, §12).
+- **Pro** — an approved astrologer or expert: bookable, paid for chat,
+  calls and bookings. The request is the consultant application.
+- **Seller** — lists downloads, courses, events and products on the Market.
+
+Anybody holding any module carries **one blue tick**; a **Seeker** holds
+none. (13–16 Oct 2026 there were three kinds — Seeker, Pro with an orange
+tick, Creator with a blue one — and a Pro or a Creator had all three ways to
+earn.) Existing Pros keep only Consulting until their Creator and Seller
+requests are approved; listings already live stay up. Money earned is
+paid. Pros and Creators
 reach their own screens through **Dashboard** in the main app; a Pro takes
 calls in a separate calling app, Namo Consult at 1namo.com/desk (`06` Phase 16).
 Two kinds of profile, in Rahul's words (14 Oct 2026): a **Basic profile**

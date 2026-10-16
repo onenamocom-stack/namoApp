@@ -200,3 +200,30 @@ def by_username(request, username):
 def search(request):
     """Search's People tab (14 Oct 2026): `?q=` by name or username."""
     return Response({"items": services.search_people(request.query_params.get("q", ""))})
+
+
+# ── the three modules (docs/06 Phase 18, 16 Oct 2026) ───────────────────────
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_modules(request):
+    """Creator, Pro and Seller: which the caller holds, what they have asked
+    for (waiting, or turned down with the note), and the questions each
+    request asks."""
+    from . import modules
+
+    return Response(modules.status(request.user.pk))
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def ask_module(request, module):
+    """Ask for the Creator or the Seller module. `{answers: {key: text}}`."""
+    from . import modules
+
+    try:
+        row = modules.ask(request.user.pk, module, request.data.get("answers"))
+    except modules.Refused as err:
+        return Response(refusal_body("refused", err.message), status=err.status)
+    return Response({"ok": True, "id": str(row.id)}, status=201)

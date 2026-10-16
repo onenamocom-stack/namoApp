@@ -39,7 +39,7 @@ DAY = timezone.timedelta(days=1)
 
 @pytest.fixture
 def two_pros(people):
-    Profile.objects.create(id=PRO2, phone="e", name="Second Astrologer")
+    Profile.objects.create(id=PRO2, phone="e", name="Second Astrologer", influencer=True)  # Pro + Creator (docs/06 Phase 18)
     Consultant.objects.create(profile_id=PRO2, category="Astrologer", status="approved")
 
 

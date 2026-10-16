@@ -78,6 +78,7 @@ const DashboardGate = lazy(() =>
 const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
 const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
 const ContentEarnings = lazy(() => import('./screens/ContentEarnings.jsx'))
+const Earn = lazy(() => import('./screens/Earn.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
 const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
@@ -481,19 +482,22 @@ function Frame() {
                 <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
                 {/* The mixed page went into the Dashboard's three sections (16 Oct 2026, Rahul). */}
                 <Route path="/dashboard/earnings" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/content" element={<Dash need="any"><ContentEarnings /></Dash>} />
+                <Route path="/dashboard/content" element={<Dash need="creator"><ContentEarnings /></Dash>} />
+                {/* The three modules (docs/06 Phase 18): ask here; a Pro applies at /earn/pro. */}
+                <Route path="/earn" element={<Suspense fallback={<Loader />}><Earn /></Suspense>} />
+                <Route path="/earn/pro" element={<ProApply />} />
                 <Route path="/dashboard/consulting" element={<Dash><DashConsulting /></Dash>} />
                 {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/dashboard/profile" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard/profile/:tab" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/affiliate" element={<Dash need="any"><DashAffiliate /></Dash>} />
+                <Route path="/dashboard/affiliate" element={<Dash need="creator"><DashAffiliate /></Dash>} />
                 <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
                 <Route path="/dashboard/calendar" element={<Dash><ProCalendar /></Dash>} />
-                <Route path="/dashboard/market" element={<Dash need="any"><SellHome /></Dash>} />
+                <Route path="/dashboard/market" element={<Dash need="seller"><SellHome /></Dash>} />
                 <Route path="/dashboard/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
                 <Route path="/dashboard/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
-                <Route path="/dashboard/market/new/:kind" element={<Dash need="any"><SellForm /></Dash>} />
-                <Route path="/dashboard/market/:id" element={<Dash need="any"><SellForm /></Dash>} />
+                <Route path="/dashboard/market/new/:kind" element={<Dash need="seller"><SellForm /></Dash>} />
+                <Route path="/dashboard/market/:id" element={<Dash need="seller"><SellForm /></Dash>} />
 
               </>
             )}
