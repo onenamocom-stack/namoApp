@@ -28,6 +28,13 @@ def last_month(today=None):
     return (today.replace(day=1) - timedelta(days=1)).replace(day=1)
 
 
+def month_of(when):
+    """The IST month (its first day) a moment belongs to."""
+    from .services import IST
+
+    return when.astimezone(IST).date().replace(day=1)
+
+
 def _next_month(first):
     return (first + timedelta(days=32)).replace(day=1)
 
@@ -36,7 +43,7 @@ def lines(profile_id, month):
     """{consulting, market, content, commission} for one person, in paise."""
     from apps.content.models import QualifiedView
     from apps.market.models import SellerPayout
-    from apps.referrals.models import CreatorEarning
+    from apps.referrals.models import CreatorEarning, SignupBonus
 
     from . import earnings
 
@@ -58,6 +65,11 @@ def lines(profile_id, month):
     out["market"] = payout.amount_paise if payout else 0
     out["content"] = (QualifiedView.objects.filter(author_id=profile_id, created_at__gte=lo, created_at__lt=hi)
                       .aggregate(r=Sum("paise_per_thousand"))["r"] or 0) // 1000
+    # Sign-ups with their code: the Commission line (16 Oct 2026, Rahul:
+    # "Commission line me jod ke"), which the content earnings page counts.
+    out["commission"] += (SignupBonus.objects.filter(referrer_id=profile_id, status=SignupBonus.Status.EARNED,
+                                                  created_at__gte=lo, created_at__lt=hi)
+                       .aggregate(n=Sum("amount_paise"))["n"] or 0)
     return out
 
 
@@ -65,7 +77,7 @@ def earners(month):
     """Everybody with anything in any book that month."""
     from apps.content.models import QualifiedView
     from apps.market.models import SellerPayout
-    from apps.referrals.models import CreatorEarning
+    from apps.referrals.models import CreatorEarning, SignupBonus
 
     from . import earnings
 
@@ -79,6 +91,9 @@ def earners(month):
     people |= {str(p) for p in SellerPayout.objects.filter(month=month).values_list("seller_id", flat=True)}
     people |= {str(p) for p in QualifiedView.objects.filter(created_at__gte=lo, created_at__lt=hi)
                .values_list("author_id", flat=True).distinct()}
+    people |= {str(p) for p in SignupBonus.objects.filter(status=SignupBonus.Status.EARNED, created_at__gte=lo,
+                                                           created_at__lt=hi)
+               .values_list("referrer_id", flat=True).distinct()}
     return people
 
 

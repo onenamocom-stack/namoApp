@@ -2147,7 +2147,17 @@ until the first order it earned on), `created_at`; indexes on
 same link again refreshes its row; another astrologer's adds one; the
 newest unexpired unused row is the live one.
 
-`affiliate_settings`: one row, pk 1, `attribution_days` (default 15).
+`affiliate_settings`: one row, pk 1, `attribution_days` (default 15) and
+`signup_bonus_paise` (default 2500, 0 = off; `referrals/0004`, 16 Oct 2026).
+
+`referral_signup_bonuses` (`referrals/0004`, 16 Oct 2026): what a Pro, a
+Creator or a Seller earns when somebody joins with their code. `id uuid pk`;
+`referral_id → referrals` **unique**, cascade; `referrer_id uuid`;
+`referee_id uuid`; `amount_paise int ≥ 0` (the figure at claim time);
+`status` (`earned` | `void`); `void_reason`, `voided_by` text; `voided_at`
+(null); `created_at`. Index `(referrer_id, -created_at)`. Read by the
+content earnings figure and the payout statement's `commission_paise`; a
+`void` row is neither.
 
 `referral_cashback` gains `order_id` (null; backfilled from the referral)
 and its `referral_id` becomes nullable: a buyer's first-order cashback hangs

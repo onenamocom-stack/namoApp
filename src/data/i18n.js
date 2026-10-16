@@ -354,6 +354,7 @@ export const strings = {
   'inf.lifetime': { en: 'All time', hi: 'अब तक' },
   'inf.signups': { en: 'Joined with your code', hi: 'आपके कोड से जुड़े' },
   'inf.buyers': { en: 'Of them, paid', hi: 'इनमें से भुगतान किया' },
+  'inf.earned': { en: 'You earned, ₹{r} a sign-up', hi: 'आपकी कमाई, ₹{r} प्रति साइन-अप' },
   'inf.rate': { en: '{n}% of the people who joined have paid.', hi: 'जुड़ने वालों में से {n}% ने भुगतान किया है।' },
   'inf.noneYet': { en: 'Nobody has joined with your code in this period yet.', hi: 'इस अवधि में अभी तक कोई आपके कोड से नहीं जुड़ा।' },
   'inf.recent': { en: 'Latest people who joined', hi: 'हाल में जुड़े लोग' },
@@ -362,8 +363,8 @@ export const strings = {
   'inf.paidOn': { en: 'Paid {d}', hi: '{d} को भुगतान' },
   'inf.notYet': { en: 'Not paid yet', hi: 'अभी भुगतान नहीं' },
   'inf.terms': {
-    en: 'Paid means they added money to their wallet. Names are not shown. NAMO sets what each signup and each paying person is worth, and pays monthly into the bank account in your payout details.',
-    hi: 'भुगतान का मतलब है कि उन्होंने वॉलेट में पैसे जोड़े। नाम नहीं दिखाए जाते। हर साइन-अप और भुगतान करने वाले व्यक्ति की रकम NAMO तय करता है, और भुगतान हर महीने आपके बैंक खाते में होता है।',
+    en: 'Paid means they added money to their wallet. Names are not shown. Each sign-up adds to your content earnings, paid on the 7th of the next month into the bank account in your payout details.',
+    hi: 'भुगतान का मतलब है कि उन्होंने वॉलेट में पैसे जोड़े। नाम नहीं दिखाए जाते। हर साइन-अप आपकी कंटेंट कमाई में जुड़ता है, जिसका भुगतान अगले महीने की 7 तारीख को आपके बैंक खाते में होता है।',
   },
   'inf.failed': { en: 'Could not load your numbers. Open this tab again.', hi: 'आपके आंकड़े नहीं खुल सके। यह टैब फिर से खोलें।' },
 

@@ -92,6 +92,14 @@ export default function InfluencerTab() {
             <p className="mt-1.5 font-display text-display leading-none tnum text-ok">{p.buyers}</p>
           </PopCard>
         </div>
+        {data.per_signup_paise > 0 && (
+          <PopCard className="mt-3 flex items-baseline justify-between gap-4 p-4">
+            <p className="caps-sm t-faint">{t('inf.earned', { r: data.per_signup_paise / 100 })}</p>
+            <p className="font-display text-title leading-none tnum t-heading">
+              ₹{((p.earned_paise ?? 0) / 100).toLocaleString('en-IN')}
+            </p>
+          </PopCard>
+        )}
         <p className="mt-3 text-meta t-faint">
           {rate === null ? t('inf.noneYet') : t('inf.rate', { n: rate })}
         </p>

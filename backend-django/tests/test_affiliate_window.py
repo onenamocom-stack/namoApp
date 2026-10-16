@@ -204,6 +204,6 @@ class TestTheConsole:
         client, _ = _admin(Tier.FINANCE)
         page = client.get(reverse("namo:referrals_affiliatevisit_changelist"))
         assert page.status_code == 200 and b"Holding" in page.content
-        saved = client.post(reverse("namo:referrals_affiliatesettings_add"), {"attribution_days": 10})
+        saved = client.post(reverse("namo:referrals_affiliatesettings_add"), {"attribution_days": 10, "signup_bonus_paise": 2500})
         assert saved.status_code == 302
         assert services.attribution_days() == 10

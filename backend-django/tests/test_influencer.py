@@ -57,9 +57,9 @@ class TestStats:
         joined(at(2026, 10, 6), paid=at(2026, 10, 7), status=Payment.Status.CREATED)  # never completed
 
         p = influencer.stats(STAR, now=now)["periods"]
-        assert p["this_month"] == {"signups": 3, "buyers": 2}
-        assert p["last_month"] == {"signups": 2, "buyers": 1}
-        assert p["lifetime"] == {"signups": 5, "buyers": 3}
+        assert p["this_month"] == {"signups": 3, "buyers": 2, "earned_paise": 0}
+        assert p["last_month"] == {"signups": 2, "buyers": 1, "earned_paise": 0}
+        assert p["lifetime"] == {"signups": 5, "buyers": 3, "earned_paise": 0}
 
     def test_first_payment_only_counts_once(self, star):
         pid = joined(at(2026, 10, 2), paid=at(2026, 10, 3))
@@ -71,7 +71,7 @@ class TestStats:
         pid = uuid.uuid4()
         Profile.objects.create(id=pid, phone="9000000003", name="Other's friend")
         Referral.objects.create(kind=ReferralKind.SIGNUP, referrer_id=STRANGER, referee_id=pid, code="NOTHER23")
-        assert influencer.stats(STAR)["periods"]["lifetime"] == {"signups": 0, "buyers": 0}
+        assert influencer.stats(STAR)["periods"]["lifetime"] == {"signups": 0, "buyers": 0, "earned_paise": 0}
 
     def test_recent_carries_dates_and_nothing_that_identifies_anyone(self, star):
         joined(at(2026, 10, 2), paid=at(2026, 10, 3))
