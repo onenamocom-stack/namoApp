@@ -481,3 +481,166 @@ class AdminActionAdmin(dj.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# ── one payment on the 7th (16 Oct 2026, owner's yes) ───────────────────────
+
+
+def _register_statements():
+    from django.db.models import Count, Sum
+
+    from apps.consultants import payouts
+    from apps.consultants.models import PayoutStatement
+
+    def rupees(paise):
+        return f"₹{(paise or 0) / 100:,.2f}"
+
+    class StatementForm(forms.ModelForm):
+        tds = forms.DecimalField(label="TDS (₹)", min_value=0, max_digits=12, decimal_places=2, required=False,
+                                 help_text="What you deduct at payout. The CA sets the rate; nothing here works it out.")
+        mark_paid = forms.BooleanField(label="Mark paid", required=False,
+                                       help_text="Tick after the transfer, with the bank's reference above. The person is told.")
+
+        class Meta:
+            model = PayoutStatement
+            fields = ("reference",)
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.fields["tds"].initial = (self.instance.tds_paise or 0) / 100
+
+        def clean(self):
+            data = super().clean()
+            tds = int(round((data.get("tds") or 0) * 100))
+            if tds > self.instance.total_paise:
+                raise forms.ValidationError("TDS cannot be more than the total.")
+            if data.get("mark_paid") and not (data.get("reference") or "").strip():
+                raise forms.ValidationError("Type the bank's reference (UTR) before marking it paid.")
+            data["tds_paise"] = tds
+            return data
+
+    @dj.register(PayoutStatement, site=site)
+    class PayoutStatementAdmin(AuditedAdmin, dj.ModelAdmin):
+        """What each person is paid for a month, every book together —
+        consulting, Market, content and commission — paid in one transfer
+        on the 7th. Last month's statements are made the first time Finance
+        opens this page on or after the 7th. Enter TDS, pay from the bank,
+        then type the reference and tick *Mark paid*."""
+
+        form = StatementForm
+        change_list_template = "admin/summary_change_list.html"
+        audit_target = "payout_statement"
+        list_display = ("who", "month_label", "consulting", "market", "content", "commission", "total", "tds",
+                        "to_pay", "status", "pay_to")
+        list_filter = ("status", "month")
+        ordering = ("status", "-month")
+        readonly_fields = ("who", "month_label", "consulting", "market", "content", "commission", "total",
+                           "to_pay", "pay_to", "status", "paid_at", "paid_by")
+        fields = ("who", "month_label", "consulting", "market", "content", "commission", "total", "tds", "to_pay",
+                  "pay_to", "reference", "mark_paid", "status", "paid_at", "paid_by")
+        list_per_page = 100
+
+        @dj.display(description="Person")
+        def who(self, obj):
+            p = Profile.objects.filter(pk=obj.profile_id).values("name", "phone").first() or {}
+            return format_html("<strong>{}</strong><br><small>{}</small>", p.get("name") or "—", p.get("phone") or "")
+
+        @dj.display(description="For", ordering="month")
+        def month_label(self, obj):
+            return obj.month.strftime("%B %Y")
+
+        @dj.display(description="Consulting")
+        def consulting(self, obj):
+            return rupees(obj.consulting_paise)
+
+        @dj.display(description="Market")
+        def market(self, obj):
+            return rupees(obj.market_paise)
+
+        @dj.display(description="Content")
+        def content(self, obj):
+            return rupees(obj.content_paise)
+
+        @dj.display(description="Commission")
+        def commission(self, obj):
+            return rupees(obj.commission_paise)
+
+        @dj.display(description="Total", ordering="total_paise")
+        def total(self, obj):
+            return rupees(obj.total_paise)
+
+        @dj.display(description="TDS")
+        def tds(self, obj):
+            return rupees(obj.tds_paise)
+
+        @dj.display(description="To pay")
+        def to_pay(self, obj):
+            return format_html("<strong>{}</strong>", rupees(obj.to_pay_paise))
+
+        @dj.display(description="Pay to")
+        def pay_to(self, obj):
+            from apps.market.models import SellerBank
+
+            pro = PayoutDetails.objects.filter(consultant_id=obj.profile_id).first()
+            if pro is not None:
+                account = payout_crypto.decrypt(pro.account_cipher) or f"…{pro.account_last4}"
+                tone = "" if pro.status == PayoutDetailsStatus.VERIFIED else "color:#b91c1c"
+                return format_html("{}<br><small>A/c {} · {} · {} · UPI {}</small><br><small style='{}'>{}</small>",
+                                   pro.account_holder, account, pro.ifsc, pro.account_type or "type not given",
+                                   pro.upi_id or "—", tone, pro.get_status_display())
+            bank = SellerBank.objects.filter(pk=obj.profile_id).first()
+            if bank is not None:
+                account = payout_crypto.decrypt(bank.account_cipher) if bank.account_cipher else ""
+                return format_html("{}<br><small>A/c {} · {} · UPI {}</small><br><small>not checked by anyone</small>",
+                                   bank.account_holder, account or f"…{bank.account_last4}", bank.ifsc or "—",
+                                   bank.upi_id or "—")
+            return format_html("<strong style='color:#b91c1c'>No payout details yet</strong>")
+
+        def has_module_permission(self, request):
+            return at_least(request, Tier.FINANCE)
+
+        def has_view_permission(self, request, obj=None):
+            return at_least(request, Tier.FINANCE)
+
+        def has_change_permission(self, request, obj=None):
+            return at_least(request, Tier.FINANCE) and (obj is None or obj.status == PayoutStatement.Status.DUE)
+
+        def has_add_permission(self, request):
+            return False
+
+        def has_delete_permission(self, request, obj=None):
+            return False
+
+        def save_model(self, request, obj, form, change):
+            who = getattr(request.user, "email", "") or str(request.user)
+            was = PayoutStatement.objects.values_list("tds_paise", flat=True).get(pk=obj.pk)
+            PayoutStatement.objects.filter(pk=obj.pk).update(tds_paise=form.cleaned_data["tds_paise"],
+                                                             reference=form.cleaned_data.get("reference") or "")
+            obj.refresh_from_db()
+            if was != obj.tds_paise:
+                record(request, "payout_statement.tds", "payout_statement", target_id=obj.pk, was=was,
+                       now=obj.tds_paise)
+            if form.cleaned_data.get("mark_paid"):
+                payouts.mark_paid(obj, obj.reference, who)
+                record(request, "payout_statement.paid", "payout_statement", target_id=obj.pk,
+                       amount_paise=obj.to_pay_paise, reference=obj.reference)
+
+        def changelist_view(self, request, extra_context=None):
+            made = payouts.build()
+            if made:
+                record(request, "payout_statement.run", "payout_statement", count=len(made))
+                self.message_user(request, f"{len(made)} statements made for last month.", messages.INFO)
+            due = PayoutStatement.objects.filter(status=PayoutStatement.Status.DUE)
+            totals = due.aggregate(n=Count("id"), t=Sum("total_paise"), d=Sum("tds_paise"))
+            since = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            paid = PayoutStatement.objects.filter(status=PayoutStatement.Status.PAID, paid_at__gte=since)
+            extra_context = extra_context or {}
+            extra_context["summary_cards"] = [
+                ("Due now", rupees((totals["t"] or 0) - (totals["d"] or 0)), f"{totals['n']} people, after TDS"),
+                ("Paid this month", rupees(paid.aggregate(t=Sum("total_paise"))["t"]), f"{paid.count()} people"),
+                ("Next statements", "on the 7th of each month", "made when this page is opened, for the month before"),
+            ]
+            return super().changelist_view(request, extra_context)
+
+
+_register_statements()

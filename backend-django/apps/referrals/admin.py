@@ -120,6 +120,7 @@ class CashbackAdmin(ReadOnly, dj.ModelAdmin):
     question a seeker asks support is where their cashback is.
     """
 
+    change_list_template = "admin/summary_change_list.html"
     list_display = ("created_at", "owed_to", "side", "amount", "status",
                     "matures_at", "paid_at")
     list_filter = ("status", "side", "created_at")
@@ -149,8 +150,10 @@ class CashbackAdmin(ReadOnly, dj.ModelAdmin):
             row["status"]: (row["n"], row["paise"] or 0) for row in totals
         }
         extra_context = extra_context or {}
-        extra_context["cashback_summary"] = [
-            (label, summary.get(key, (0, 0))[0], f"₹{summary.get(key, (0, 0))[1] / 100:,.2f}")
+        # Shown since 16 Oct 2026: these were computed and never drawn —
+        # no template read `cashback_summary`.
+        extra_context["summary_cards"] = [
+            (label, f"₹{summary.get(key, (0, 0))[1] / 100:,.2f}", f"{summary.get(key, (0, 0))[0]} rows")
             for key, label in (
                 ("pending", "Owed, waiting out the return window"),
                 ("paid", "Paid"),

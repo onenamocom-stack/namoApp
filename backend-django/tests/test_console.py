@@ -134,9 +134,21 @@ class TestTheMenu:
     def test_the_front_page_links_the_jobs_somebody_opens_it_for(self):
         client, _ = _admin(Tier.FULFILMENT)
         body = client.get(CONSOLE).content.decode()
-        for fragment in ("Waiting for approval", "Parcels to send",
-                         "Reels and posts", "Audit trail"):
+        # By module since 16 Oct 2026 (Rahul): the queues on top, then a card each.
+        for fragment in ("Waiting for somebody", "Pros applying", "Creator and Seller requests",
+                         "To pay on the 7th", "Parcels to send", "Reels and posts", "Qualified views",
+                         "Payout statements", "Audit trail"):
             assert fragment in body, fragment
+
+    @pytest.mark.parametrize("url_name", [
+        "namo:consultants_payoutstatement_changelist",
+        "namo:content_qualifiedview_changelist",
+        "namo:profiles_modulerequest_changelist",
+        "namo:referrals_cashback_changelist",
+    ])
+    def test_the_pages_added_on_16_oct_open(self, url_name):
+        client, _ = _admin(Tier.SUPERADMIN)
+        assert client.get(reverse(url_name)).status_code == 200, url_name
 
     def test_the_index_lists_the_approval_queue(self):
         client, _ = _admin(Tier.SUPPORT)
@@ -320,3 +332,16 @@ class TestProfilePage:
         assert "Creator" in page
         only = client.get(reverse("namo:profiles_profile_changelist") + "?creator=yes").content.decode()
         assert "Rudra" in only
+
+
+@pytest.mark.django_db
+def test_every_link_on_the_front_page_opens():
+    """Each queue and module link resolves to a page that opens, not to the
+    admin's "unknown filter" bounce (16 Oct 2026)."""
+    client, _ = _admin(Tier.SUPERADMIN)
+    body = client.get(CONSOLE).content.decode()
+    links = sorted(set(re.findall(r'href="(/console/[^"#]*)"', body)))
+    assert len(links) > 30
+    for link in links:
+        got = client.get(link.replace("&amp;", "&"))
+        assert got.status_code == 200 and "?e=1" not in got.get("Location", ""), link

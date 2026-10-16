@@ -550,3 +550,129 @@ def _register_pay_rate():
 
 
 _register_pay_rate()
+
+
+# ── qualified views (16 Oct 2026, Rahul: the console audit) ─────────────────
+
+
+class _Suspicious(dj.SimpleListFilter):
+    """One person qualifying many of one author's posts on one day: the
+    shape of a friend farming views. Five or more is worth a look."""
+
+    title = "pattern"
+    parameter_name = "pattern"
+
+    def lookups(self, request, model_admin):
+        return (("burst", "One viewer, 5+ posts of one author in a day"),)
+
+    def queryset(self, request, queryset):
+        if self.value() != "burst":
+            return queryset
+        from django.db.models import Count
+
+        from apps.content.models import QualifiedView
+
+        pairs = (QualifiedView.objects.values("viewer_id", "author_id", "day").annotate(n=Count("id"))
+                 .filter(n__gte=5))
+        keys = {(str(p["viewer_id"]), str(p["author_id"]), p["day"]) for p in pairs}
+        ids = [r.id for r in queryset.only("id", "viewer_id", "author_id", "day")
+               if (str(r.viewer_id), str(r.author_id), r.day) in keys]
+        return queryset.filter(id__in=ids)
+
+
+def _register_qualified_views():
+    from django.db.models import Count, Sum
+
+    from apps.content.models import QualifiedView
+    from apps.profiles.models import Profile
+
+    def _name(pid):
+        p = Profile.objects.filter(pk=pid).values("name", "phone").first() or {}
+        return f"{p.get('name') or '—'} · {p.get('phone') or ''}"
+
+    @dj.register(QualifiedView, site=site)
+    class QualifiedViewAdmin(AuditedAdmin, dj.ModelAdmin):
+        """Every qualified view: a reel played 30 seconds, a blog read 30
+        seconds, a like, comment or reshare on a post. Once per person per
+        post per day. What a Creator is paid for, at the rate each was
+        counted at. *Void* takes fraud out of the pay (Finance)."""
+
+        change_list_template = "admin/summary_change_list.html"
+        audit_target = "qualified view"
+        list_display = ("created_at", "author", "viewer", "post", "reason", "rate")
+        list_filter = (_Suspicious, "reason", "day")
+        date_hierarchy = "created_at"
+        list_per_page = 100
+        actions = ("void",)
+
+        @dj.display(description="Creator")
+        def author(self, obj):
+            return _name(obj.author_id)
+
+        @dj.display(description="Viewer")
+        def viewer(self, obj):
+            return _name(obj.viewer_id)
+
+        @dj.display(description="Post")
+        def post(self, obj):
+            c = obj.content
+            return (c.title or c.caption or c.kind)[:60]
+
+        @dj.display(description="₹ per 1,000")
+        def rate(self, obj):
+            return f"₹{obj.paise_per_thousand / 100:g}"
+
+        def has_module_permission(self, request):
+            return at_least(request, Tier.FINANCE, Tier.SUPPORT)
+
+        def has_view_permission(self, request, obj=None):
+            return at_least(request, Tier.FINANCE, Tier.SUPPORT)
+
+        def has_change_permission(self, request, obj=None):
+            return False
+
+        def has_add_permission(self, request):
+            return False
+
+        def has_delete_permission(self, request, obj=None):
+            return False
+
+        @dj.action(description="Void — take these out of the pay (fraud)")
+        def void(self, request, queryset):
+            if not at_least(request, Tier.FINANCE):
+                return self.message_user(request, "Finance only.", messages.ERROR)
+            n = queryset.count()
+            for row in queryset:
+                record(request, "qualified_view.void", "qualified_view", target_id=row.pk,
+                       was={"author": str(row.author_id), "viewer": str(row.viewer_id), "content": str(row.content_id)})
+            queryset.delete()
+            self.message_user(request, f"{n} voided.", messages.SUCCESS)
+
+        def changelist_view(self, request, extra_context=None):
+            """This month's count, what it pays, the creators who earn most
+            and the viewer–creator pairs that look like farming."""
+            from apps.consultants.earnings import _midnight, ist_today
+
+            first = _midnight(ist_today().replace(day=1))
+            month = QualifiedView.objects.filter(created_at__gte=first)
+            paise = (month.aggregate(r=Sum("paise_per_thousand"))["r"] or 0) // 1000
+            top = (month.values("author_id").annotate(n=Count("id"), r=Sum("paise_per_thousand"))
+                   .order_by("-n")[:10])
+            pairs = (QualifiedView.objects.values("viewer_id", "author_id").annotate(n=Count("id"))
+                     .order_by("-n")[:10])
+            extra_context = extra_context or {}
+            extra_context["summary_cards"] = [
+                ("Qualified views this month", f"{month.count():,}", None),
+                ("They pay this month", f"₹{paise / 100:,.2f}", "before tags and links"),
+                ("Creators earning", f"{month.values('author_id').distinct().count()}", None),
+            ]
+            extra_context["summary_tables"] = [
+                ("Top creators this month", ["Creator", "Qualified", "Pays"],
+                 [[_name(t["author_id"]), f"{t['n']:,}", f"₹{t['r'] // 1000 / 100:,.2f}"] for t in top]),
+                ("Viewers who qualify one creator most (all time)", ["Viewer", "Creator", "Qualified"],
+                 [[_name(p["viewer_id"]), _name(p["author_id"]), p["n"]] for p in pairs]),
+            ]
+            return super().changelist_view(request, extra_context)
+
+
+_register_qualified_views()

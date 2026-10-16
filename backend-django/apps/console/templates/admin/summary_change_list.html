@@ -1,0 +1,47 @@
+{% extends "admin/change_list.html" %}
+{% comment %}
+  A list with its numbers above it (16 Oct 2026). A ModelAdmin sets
+  `change_list_template = "admin/summary_change_list.html"` and passes, in
+  `changelist_view`'s extra_context:
+    summary_cards  [(label, value, note)]       the few numbers the page is opened for
+    summary_tables [(title, [headers], [[cells]])]  short ranked tables
+  Values arrive already formatted as text.
+{% endcomment %}
+{% block content %}
+<style>
+  .sum-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; margin:4px 0 18px; }
+  .sum-card { border:1px solid #e6e6e6; border-radius:12px; padding:14px 16px; background:#fff; }
+  .sum-card small { display:block; color:#777; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .sum-card b { display:block; font-size:22px; margin-top:4px; }
+  .sum-card span { display:block; color:#888; font-size:12px; margin-top:2px; }
+  .sum-tables { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; margin:0 0 20px; }
+  .sum-table { border:1px solid #e6e6e6; border-radius:12px; padding:12px 14px; background:#fff; }
+  .sum-table h3 { margin:0 0 8px; font-size:13px; }
+  .sum-table table { width:100%; border-collapse:collapse; }
+  .sum-table th, .sum-table td { text-align:left; padding:5px 4px; font-size:12.5px; border-bottom:1px solid #f0f0f0; }
+  .sum-table th { color:#777; font-weight:600; }
+</style>
+{% if summary_cards %}
+<div class="sum-cards">
+  {% for label, value, note in summary_cards %}
+  <div class="sum-card"><small>{{ label }}</small><b>{{ value }}</b>{% if note %}<span>{{ note }}</span>{% endif %}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if summary_tables %}
+<div class="sum-tables">
+  {% for title, headers, rows in summary_tables %}
+  <div class="sum-table">
+    <h3>{{ title }}</h3>
+    {% if rows %}
+    <table>
+      <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+      {% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+    </table>
+    {% else %}<p style="color:#888;font-size:12.5px;margin:0">Nothing yet.</p>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

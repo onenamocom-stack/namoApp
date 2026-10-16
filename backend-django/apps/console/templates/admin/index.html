@@ -1,55 +1,126 @@
 {% extends "admin/index.html" %}
 {% comment %}
-  The console's front door.
+  The console's front door, by module (16 Oct 2026, Rahul: "module wise
+  bana sakte hai ... Make it modern").
 
-  The dashboard was built and then left with no link to it — reachable
-  only by typing its URL, which is the same as not existing. Django's
-  index lists MODELS, and the dashboard is not one, so nothing was ever
-  going to put it there on its own.
+  On top, what is waiting for somebody, each with its count — the reason
+  the console is opened. Then a card per part of Namo: Finance, Content
+  (the Creator module), Consulting (Pro), Market (Seller), Bhakti, Shop,
+  People, Look of the app. Django's own model list stays below, for
+  everything else.
 
-  It goes at the top because it is the page somebody opens the console to
-  look at. The model list below is what they use when something needs
-  doing.
+  The dashboard was built once with no link to it, reachable only by its
+  URL; it stays the first card.
 {% endcomment %}
 
 {% block content %}
 <style>
-  .front { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 26px; }
-  .front a { flex:1 1 210px; border:1px solid #ddd; border-radius:10px;
-    padding:16px 18px; text-decoration:none; color:inherit; }
-  .front a:hover { border-color:#ff8500; }
-  .front a b { display:block; font-size:16px; margin-bottom:4px; }
-  .front a span { color:#666; font-size:12.5px; line-height:1.45; }
-  .front a.lead { flex:1 1 100%; border-color:#ff8500; background:#fff7ee; }
+  .nc { --line:#e7e7e9; --ink:#1b1b1f; --soft:#6b6b75; --brand:#f5782c; --tint:#fff4ec; font-family:inherit; }
+  .nc h2 { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); margin:26px 0 10px; font-weight:700; background:none; padding:0; }
+  .nc .wait { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
+  .nc .wait a { display:block; border:1px solid var(--line); border-radius:14px; padding:12px 14px; text-decoration:none; color:var(--ink); background:#fff; transition:border-color .15s, transform .15s; }
+  .nc .wait a:hover { border-color:var(--brand); transform:translateY(-1px); }
+  .nc .wait b { display:block; font-size:24px; line-height:1.1; }
+  .nc .wait span { display:block; color:var(--soft); font-size:12px; margin-top:4px; }
+  .nc .wait a.hot { border-color:var(--brand); background:var(--tint); }
+  .nc .mods { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+  .nc .mod { border:1px solid var(--line); border-radius:16px; padding:14px 16px; background:#fff; }
+  .nc .mod h3 { margin:0 0 2px; font-size:15px; color:var(--ink); background:none; padding:0; text-transform:none; letter-spacing:0; }
+  .nc .mod p { margin:0 0 10px; color:var(--soft); font-size:12px; }
+  .nc .mod a { display:flex; justify-content:space-between; padding:7px 0; border-top:1px solid #f1f1f3; text-decoration:none; color:var(--ink); font-size:13px; }
+  .nc .mod a:hover { color:var(--brand); }
+  .nc .mod a:after { content:"→"; color:#b3b3bb; }
+  .nc .lead { display:block; border-radius:16px; padding:16px 18px; background:linear-gradient(135deg,#ff9a3c,#e8590c); color:#fff; text-decoration:none; margin-bottom:6px; }
+  .nc .lead b { display:block; font-size:17px; }
+  .nc .lead span { font-size:12.5px; opacity:.9; }
 </style>
 
-<div class="front">
+<div class="nc">
   <a class="lead" href="{% url 'namo:analytics_dashboard' %}">
     <b>Dashboard →</b>
-    <span>Sales, viewership and where people came from. This month against
-      last, this year against last year, with charts.</span>
+    <span>Sales, viewership and where people came from, this month against last, with charts.</span>
   </a>
-  <a href="{% url 'namo:consultants_consultant_changelist' %}?status__exact=pending">
-    <b>Waiting for approval</b>
-    <span>Astrologers who have applied. Until approved they are invisible
-      and cannot earn.</span>
-  </a>
-  <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready">
-    <b>Parcels to send</b>
-    <span>Paid and packed, waiting for a courier and an AWB.</span>
-  </a>
-  <a href="{% url 'namo:shop_product_changelist' %}">
-    <b>Shop</b>
-    <span>Products, prices, stock and coupons.</span>
-  </a>
-  <a href="{% url 'namo:content_content_changelist' %}">
-    <b>Reels and posts</b>
-    <span>Upload a video, publish it to the feed, take one down.</span>
-  </a>
-  <a href="{% url 'namo:console_adminaction_changelist' %}">
-    <b>Audit trail</b>
-    <span>Every action by every admin, and what it changed.</span>
-  </a>
+
+  <h2>Waiting for somebody</h2>
+  <div class="wait">
+    <a href="{% url 'namo:consultants_consultant_changelist' %}?status__exact=pending" {% if queues.pros %}class="hot"{% endif %}><b>{{ queues.pros }}</b><span>Pros applying</span></a>
+    <a href="{% url 'namo:profiles_modulerequest_changelist' %}?status__exact=pending" {% if queues.modules %}class="hot"{% endif %}><b>{{ queues.modules }}</b><span>Creator and Seller requests</span></a>
+    <a href="{% url 'namo:market_listing_changelist' %}?status__exact=pending" {% if queues.listings %}class="hot"{% endif %}><b>{{ queues.listings }}</b><span>Market listings to review</span></a>
+    <a href="{% url 'namo:consultants_profilereview_changelist' %}?status__exact=pending" {% if queues.reviews %}class="hot"{% endif %}><b>{{ queues.reviews }}</b><span>Pro profile changes</span></a>
+    <a href="{% url 'namo:consultants_payoutdetails_changelist' %}?status__exact=submitted" {% if queues.payout_details %}class="hot"{% endif %}><b>{{ queues.payout_details }}</b><span>Payout details to check</span></a>
+    <a href="{% url 'namo:consultants_payoutstatement_changelist' %}?status__exact=due" {% if queues.owed != "₹0" %}class="hot"{% endif %}><b>{{ queues.owed }}</b><span>To pay on the 7th</span></a>
+    <a href="{% url 'namo:content_report_changelist' %}?status__exact=open" {% if queues.reports %}class="hot"{% endif %}><b>{{ queues.reports }}</b><span>Reports</span></a>
+    <a href="{% url 'namo:content_moderationflag_changelist' %}?status=open" {% if queues.flags %}class="hot"{% endif %}><b>{{ queues.flags }}</b><span>Flagged by the daily check</span></a>
+    <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready" {% if queues.parcels %}class="hot"{% endif %}><b>{{ queues.parcels }}</b><span>Parcels to send</span></a>
+  </div>
+
+  <h2>By module</h2>
+  <div class="mods">
+    <div class="mod">
+      <h3>Finance</h3><p>One payment on the 7th, every book together.</p>
+      <a href="{% url 'namo:consultants_payoutstatement_changelist' %}">Payout statements</a>
+      <a href="{% url 'namo:consultants_payoutdetails_changelist' %}">Pro payout details</a>
+      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Market payouts</a>
+      <a href="{% url 'namo:referrals_cashback_changelist' %}">Cashback</a>
+      <a href="{% url 'namo:market_commissionrate_changelist' %}">Commission rates</a>
+    </div>
+    <div class="mod">
+      <h3>Content · Creators</h3><p>Posts, reels, what qualified, what it pays.</p>
+      <a href="{% url 'namo:content_content_changelist' %}">Reels and posts</a>
+      <a href="{% url 'namo:content_qualifiedview_changelist' %}">Qualified views</a>
+      <a href="{% url 'namo:content_contentpaysettings_changelist' %}">Pay per 1,000 qualified views</a>
+      <a href="{% url 'namo:content_report_changelist' %}">Reports</a>
+      <a href="{% url 'namo:content_moderationflag_changelist' %}">Daily check flags</a>
+      <a href="{% url 'namo:referrals_affiliatevisit_changelist' %}">Link visits</a>
+      <a href="{% url 'namo:referrals_affiliatesettings_changelist' %}">How long a link holds</a>
+    </div>
+    <div class="mod">
+      <h3>Consulting · Pros</h3><p>Who may take calls, and what they changed.</p>
+      <a href="{% url 'namo:consultants_consultant_changelist' %}">Pros</a>
+      <a href="{% url 'namo:consultants_profilereview_changelist' %}">Profile changes</a>
+    </div>
+    <div class="mod">
+      <h3>Market · Sellers</h3><p>Downloads, courses, events and products.</p>
+      <a href="{% url 'namo:market_listing_changelist' %}">Listings</a>
+      <a href="{% url 'namo:market_sellerearning_changelist' %}">Sales</a>
+      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Payouts</a>
+    </div>
+    <div class="mod">
+      <h3>Bhakti</h3><p>Status, wallpapers, bhajans, mantras, e-books, darshan.</p>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}">All Bhakti items</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=status">Status</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=wallpaper">Wallpapers</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=bhajan">Bhajans</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=mantra">Mantras</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=ebook">E-books</a>
+      <a href="{% url 'namo:bhakti_darshandeity_changelist' %}">Darshan deities</a>
+      <a href="{% url 'namo:bhakti_darshanimage_changelist' %}">Darshan pictures</a>
+    </div>
+    <div class="mod">
+      <h3>Shop</h3><p>Namo's own products and their orders.</p>
+      <a href="{% url 'namo:shop_product_changelist' %}">Products</a>
+      <a href="{% url 'namo:shop_order_changelist' %}">Orders</a>
+      <a href="{% url 'namo:shop_shipment_changelist' %}">Parcels</a>
+      <a href="{% url 'namo:shop_coupon_changelist' %}">Coupons</a>
+    </div>
+    <div class="mod">
+      <h3>People</h3><p>Accounts, modules, groups.</p>
+      <a href="{% url 'namo:profiles_profile_changelist' %}">Everybody</a>
+      <a href="{% url 'namo:profiles_modulerequest_changelist' %}">Module requests</a>
+      <a href="{% url 'namo:groups_group_changelist' %}">Groups</a>
+      <a href="{% url 'namo:referrals_referralcode_changelist' %}">Codes</a>
+    </div>
+    <div class="mod">
+      <h3>Look of the app</h3><p>Banners, themes, the link card, festival frames.</p>
+      <a href="{% url 'namo:appearance_banner_changelist' %}">Banners</a>
+      <a href="{% url 'namo:appearance_theme_changelist' %}">Themes</a>
+      <a href="{% url 'namo:appearance_linkcard_changelist' %}">Link card</a>
+      <a href="{% url 'namo:appearance_frame_changelist' %}">Frames</a>
+      <a href="{% url 'namo:console_adminaction_changelist' %}">Audit trail</a>
+    </div>
+  </div>
+
+  <h2>Everything</h2>
 </div>
 
 {{ block.super }}

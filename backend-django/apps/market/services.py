@@ -686,7 +686,9 @@ def _delivered(earnings, cutoff):
     return earnings.exclude(Q(listing__kind=ListingKind.EVENT) & ~Q(listing__starts_at__lt=cutoff - timedelta(hours=24)))
 
 
-def mark_paid(payout, reference, who):
+def mark_paid(payout, reference, who, quiet=False):
+    """`quiet`: the whole month's statement tells the person instead
+    (consultants.payouts, 16 Oct 2026)."""
     if payout.status == SellerPayout.Status.PAID:
         return payout
     payout.status = SellerPayout.Status.PAID
@@ -694,6 +696,8 @@ def mark_paid(payout, reference, who):
     payout.paid_at = timezone.now()
     payout.paid_by = who
     payout.save()
+    if quiet:
+        return payout
     _notify(payout.seller_id, "market.payout", "You have been paid",
             f"₹{payout.amount_paise // 100:,} for {payout.month:%B %Y} · {reference}", None)
     return payout

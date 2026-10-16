@@ -61,6 +61,14 @@ class NamoAdminSite(AdminSite):
         admin = getattr(user, "admin_profile", None)
         return bool(admin and admin.active)
 
+    def index(self, request, extra_context=None):
+        """The front page's numbers (16 Oct 2026, Rahul: the console by
+        module): what is waiting for somebody, and what is owed. A count
+        that fails reads as a dash; the page always opens."""
+        extra_context = extra_context or {}
+        extra_context["queues"] = waiting_counts()
+        return super().index(request, extra_context)
+
 
 def tier_of(request):
     """The acting admin's tier, or None. Everything the console refuses is
@@ -82,3 +90,39 @@ def at_least(request, *tiers):
 
 
 site = NamoAdminSite(name="namo")
+
+
+def waiting_counts():
+    def count(fn):
+        try:
+            return fn()
+        except Exception:  # noqa: BLE001 — a number, never a broken front page
+            logger.exception("console front page count failed")
+            return "—"
+
+    def owed():
+        from django.db.models import Sum
+
+        from apps.consultants.models import PayoutStatement
+
+        due = PayoutStatement.objects.filter(status="due").aggregate(t=Sum("total_paise"), d=Sum("tds_paise"))
+        return f"₹{((due['t'] or 0) - (due['d'] or 0)) / 100:,.0f}"
+
+    from apps.consultants.models import Consultant, PayoutDetails, ProfileReview
+    from apps.content.models import ModerationFlag, Report
+    from apps.market.models import Listing
+    from apps.profiles.models import ModuleRequest
+    from apps.shop.models import Shipment
+
+    return {
+        "pros": count(lambda: Consultant.objects.filter(status="pending").count()),
+        "modules": count(lambda: ModuleRequest.objects.filter(status="pending").count()),
+        "reviews": count(lambda: ProfileReview.objects.filter(status="pending").count()),
+        "payout_details": count(lambda: PayoutDetails.objects.filter(status="submitted").count()),
+        "listings": count(lambda: Listing.objects.filter(status="pending").count()),
+        "reports": count(lambda: Report.objects.filter(status="open").count()),
+        "flags": count(lambda: ModerationFlag.objects.filter(status="open").count()),
+        "parcels": count(lambda: Shipment.objects.filter(status="ready").count()),
+        "owed": count(owed),
+    }
+

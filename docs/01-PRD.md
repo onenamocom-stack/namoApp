@@ -893,9 +893,12 @@ consultants.
   **One payment on the 7th for everything** (16 Oct 2026, Rahul, under the
   owner's "jo Rahul bhaiya bol rhe hai vo krdo"): consulting, Market sales
   and commission from links and code are paid together, to the one set of
-  payout details. Today they are still kept in separate books (the
-  consultant's earnings, `market_earnings`, a Creator's `creator_earnings`)
-  and no combined payout run exists; the Dashboard says "Paid together".
+  payout details. The books stay separate (the consultant's earnings,
+  `market_earnings`, a Creator's `creator_earnings`, qualified views); since
+  16 Oct 2026 (owner's yes) a **payout statement** per person per month joins
+  them in the console — consulting, Market, content, commission, TDS
+  entered by Finance — and Finance marks it paid with the bank's reference.
+  No money moves by itself: Finance pays from the bank.
 - **Marketplace tax** (owner's call, 3 Oct 2026). **No GST is applied to
   consultant payouts for now; TDS is deducted at payout.** The rate and
   section are still the CA's to confirm before the first payout, which is

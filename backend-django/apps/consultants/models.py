@@ -575,3 +575,48 @@ class ProfileReview(models.Model):
                 name="profile_reviews_status_valid",
             ),
         ]
+
+
+class PayoutStatement(models.Model):
+    """One person's money for one month, every book together (16 Oct 2026,
+    owner's yes: one payment on the 7th). Made on or after the 7th for the
+    month before (`payouts.build`), frozen once made; Finance enters TDS,
+    pays, and marks it paid with the bank's reference.
+
+    consulting  `earnings_ledger` net, less commission rows
+    market      the Market's own `market_payouts` row for the month
+    content     qualified views in the month at their own rates
+    commission  tags, links and code: `earnings_ledger` rows starting
+                "Referral" (a Pro) or `creator_earnings` (anybody else)
+    """
+
+    class Status(models.TextChoices):
+        DUE = "due", "Due"
+        PAID = "paid", "Paid"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField(db_index=True)
+    month = models.DateField()  # the 1st of the month it pays for
+    consulting_paise = models.IntegerField(default=0)
+    market_paise = models.IntegerField(default=0)
+    content_paise = models.IntegerField(default=0)
+    commission_paise = models.IntegerField(default=0)
+    total_paise = models.IntegerField(default=0)
+    tds_paise = models.IntegerField(default=0)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.DUE)
+    reference = models.TextField(blank=True, default="")
+    paid_at = models.DateTimeField(null=True, blank=True)
+    paid_by = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "payout_statements"
+        ordering = ("-month", "status")
+        constraints = [
+            models.UniqueConstraint(fields=["profile_id", "month"], name="payout_statements_one_a_month"),
+            models.CheckConstraint(condition=models.Q(tds_paise__gte=0), name="payout_statements_tds_not_negative"),
+        ]
+
+    @property
+    def to_pay_paise(self):
+        return self.total_paise - self.tds_paise

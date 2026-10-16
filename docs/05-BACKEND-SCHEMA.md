@@ -1420,6 +1420,33 @@ blue tick; what a person may do reads the flags. A Creator passes the video
 gate (`content.services._may_post_video`); since Phase 18 an approved
 consultant does not by being one.
 
+**Payout statements** (16 Oct 2026, owner's yes; migration `consultants/0012`):
+
+```sql
+create table payout_statements (
+  id                uuid primary key,
+  profile_id        uuid not null,
+  month             date not null,            -- the 1st of the month it pays for
+  consulting_paise  integer not null default 0,   -- earnings_ledger net, less "Referral…" rows
+  market_paise      integer not null default 0,   -- that month's market_payouts row
+  content_paise     integer not null default 0,   -- qualified views × their rate ÷ 1000
+  commission_paise  integer not null default 0,   -- "Referral…" ledger rows, or creator_earnings
+  total_paise       integer not null default 0,
+  tds_paise         integer not null default 0 check (tds_paise >= 0),  -- entered by Finance
+  status            varchar(8) not null default 'due',  -- due | paid
+  reference         text not null default '',   -- the bank's UTR
+  paid_at           timestamptz, paid_by text not null default '',
+  created_at        timestamptz not null,
+  constraint payout_statements_one_a_month unique (profile_id, month)
+);
+```
+
+`consultants.payouts.build` makes them on or after the 7th for the month
+before (the Market's own run first), once per person, frozen once made;
+`mark_paid` needs the reference, marks the Market row paid too, and sends
+one `payout.paid` notification. Rows written into a book after its month's
+statement are not in it.
+
 **Modules** (Phase 18, migration `profiles/0008_modules`):
 
 ```sql
