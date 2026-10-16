@@ -253,9 +253,10 @@ function Hero({ posts, counts }) {
           )
         })}
       </div>
-      {/* A Creator's own screens, Studio and Insights (14 Oct 2026, Phase
-          16). A Pro reaches theirs from their own page. */}
-      {profile?.influencer && (
+      {/* The Dashboard, for everybody since 16 Oct 2026 (Rahul): your modules,
+          and the way to ask for the others. A Pro reaches it from their own
+          page as well. */}
+      {profile && (
         <Link
           to="/dashboard"
           className="mt-2 block rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
@@ -560,7 +561,7 @@ function SettingsPage({ pro }) {
       <section className="border-b border-rule px-5 py-6">
         <Kicker>Earn on Namo</Kicker>
         <div className="mt-2">
-          <Row to="/earn" title="Become a Creator, Pro or Seller" note="Ask for a module; the team approves it" />
+          <Row to="/dashboard" title="Become a Creator, Pro or Seller" note="On your Dashboard: ask for a module; the team approves it" />
         </div>
       </section>
 

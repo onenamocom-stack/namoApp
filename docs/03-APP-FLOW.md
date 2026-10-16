@@ -1309,23 +1309,24 @@ profile (`/practice/edit`), slots in Namo Consult. `/dashboard/profile` opens
 the Dashboard. Edit and the public page are not here: Dashboard opens from
 that page, which carries Edit profile.
 
-### `/earn` — Earn on Namo (Phase 18, 16 Oct 2026, Rahul)
+### The modules on the Dashboard (Phase 18, 16 Oct 2026, Rahul)
 
-Profile settings → *Earn on Namo* → *Become a Creator, Pro or Seller*, for
-everybody. Three cards — Creator, Pro, Seller — each saying what it opens;
-*You have this* (and Open Dashboard), *Waiting for approval*, or *Not
-approved* with "Team:" and the note and *Ask again*. Creator and Seller ask
-here, inline: Creator — what you post about, Instagram or YouTube,
-followers (all needed), why (optional); Seller — what you will sell, a
-sample or link (needed), anything else. *Send for approval*. Pro opens
-`/earn/pro`, the consultant application (the pro app's form, now in the main
-app too; an approved Pro there lands on Dashboard). A decision arrives in the
-bell.
-
-Dashboard shows a section per module held — Content & Referrals (Creator),
-Market (Seller), Consulting (Pro) — and the top table only their rows; its
-pages are gated by module. Profile: the Shop tab for a Seller, the code tab
-for a Creator; the blue tick for any module.
+`/dashboard` is open to everybody signed in (signed out goes to Profile).
+Each part — Content & Referrals (Creator), Market (Seller), Consulting
+(Pro) — is its section when the module is held, and otherwise that module's
+card: what it opens, and *Waiting for approval*, or *Not approved* with
+"Team:" and the note and *Ask again*, or the request. Creator and Seller ask
+inline: Creator — what you post about, Instagram or YouTube, followers (all
+needed), why (optional); Seller — what you will sell, a sample or link
+(needed), anything else. *Send for approval*. Pro opens `/earn/pro`, the
+consultant application (an approved Pro there lands on Dashboard). A
+decision arrives in the bell. The top table and Payout details show only to
+somebody holding a module; the top table has only their rows. The pages
+below the Dashboard are gated by module. `/earn` (Earn on Namo, its own page
+until the same day) redirects here; Profile settings → *Earn on Namo* and
+the Dashboard button on Profile, now shown to everybody, open it. Profile:
+the Shop tab for a Seller, the code tab for a Creator; the blue tick for any
+module.
 
 ### `/dashboard/content` — Content & Referrals (16 Oct 2026, Rahul)
 

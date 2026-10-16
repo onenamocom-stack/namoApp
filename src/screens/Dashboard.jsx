@@ -11,6 +11,8 @@ import { rupees, useStore } from '../store.jsx'
 import { earningsSummary } from '../lib/consultants.js'
 import { earningsPeriod } from '../lib/market.js'
 import { contentEarnings } from '../lib/content.js'
+import { myModules } from '../lib/profile.js'
+import { CARDS, ModuleCard } from './Earn.jsx'
 
 /**
  * Dashboard (Phase 16, 14 Oct 2026): the screens of whoever holds a module,
@@ -21,7 +23,9 @@ import { contentEarnings } from '../lib/content.js'
  * Home's +, where a Pro and a Creator also get video. Calls are not here: they ring only in
  * Namo Consult (`/desk`) and in the pro app.
  *
- * Anybody else reaching this address goes to their Profile.
+ * Everybody signed in sees all three (16 Oct 2026, Rahul: "Sab ko tino
+ * dikha do"): a module not held is its card from Earn on Namo, with the
+ * request to hold it. Signed out goes to Profile.
  */
 /** The modules this person holds (docs/06 Phase 18, 16 Oct 2026): `pro` a
  *  consultant row (pending shows as under review), `creator` the Creator
@@ -53,12 +57,50 @@ export function DashboardGate({ need = 'any', children }) {
 
 export default function Dashboard() {
   const m = useModules()
-  const { consultant } = useStore()
+  const { consultant, session, showToast } = useStore()
   const [rating, setRating] = useState(false)
+  // The modules' requests and questions, for the cards of those not held.
+  const [asks, setAsks] = useState(null)
+  const [open, setOpen] = useState(null)
+  const signedIn = Boolean(session)
+
+  const loadAsks = () => {
+    myModules()
+      .then(setAsks)
+      .catch(() => setAsks(false))
+  }
+  useEffect(() => {
+    if (signedIn) loadAsks()
+  }, [signedIn])
 
   if (m === 'loading') return <Loader />
-  if (!m.pro && !m.creator && !m.seller) return <Navigate to="/profile" replace />
+  if (!signedIn) return <Navigate to="/profile" replace />
   const pro = m.pro
+  const any = m.pro || m.creator || m.seller
+
+  /** The card for a module not held: ask for it, or where the ask stands. */
+  const ask = (key) => {
+    if (asks === null) return <Loader className="py-4" />
+    if (asks === false) return <p className="text-meta t-faint">Could not load this. Open the Dashboard again.</p>
+    const card = CARDS.find((c) => c.key === key)
+    return (
+      <ul>
+        <ModuleCard
+          card={card}
+          state={asks.modules[key]}
+          questions={asks.questions[key]}
+          open={open === key}
+          onOpen={() => setOpen(open === key ? null : key)}
+          onSent={() => {
+            setOpen(null)
+            showToast('Sent. The team will look at it.')
+            loadAsks()
+          }}
+          inDashboard
+        />
+      </ul>
+    )
+  }
 
   return (
     <>
@@ -70,10 +112,21 @@ export default function Dashboard() {
         </p>
       )}
 
-      <ThisMonth modules={m} consultantId={consultant?.profile_id} />
+      {any && <ThisMonth modules={m} consultantId={consultant?.profile_id} />}
+      {!any && (
+        <p className="px-5 pt-5 text-meta t-body">
+          Three ways to earn on Namo. Ask for any of them; the team approves each.
+        </p>
+      )}
 
-      {/* A section per module held (docs/06 Phase 18); the others are asked
-          for on Earn on Namo. */}
+      {/* A section per module held (docs/06 Phase 18); a card to ask for
+          each one not held (16 Oct 2026, Rahul). */}
+      {!m.creator && (
+        <section className="px-5 py-5">
+          <Kicker>Content &amp; Referrals</Kicker>
+          <div className="mt-3">{ask('creator')}</div>
+        </section>
+      )}
       {m.creator && (
       <section className="px-5 py-5">
         <Kicker>Content &amp; Referrals</Kicker>
@@ -85,6 +138,12 @@ export default function Dashboard() {
       </section>
       )}
 
+      {!m.seller && (
+        <section className="px-5 py-5">
+          <Kicker>Market</Kicker>
+          <div className="mt-3">{ask('seller')}</div>
+        </section>
+      )}
       {m.seller && (
       <section className="px-5 py-5">
         <Kicker>Market</Kicker>
@@ -95,6 +154,12 @@ export default function Dashboard() {
       </section>
       )}
 
+      {!pro && (
+        <section className="px-5 py-5">
+          <Kicker>Consulting</Kicker>
+          <div className="mt-3">{ask('pro')}</div>
+        </section>
+      )}
       {pro && (
         <section className="px-5 pb-5">
           <Kicker>Consulting</Kicker>
@@ -136,6 +201,7 @@ export default function Dashboard() {
 
       {/* One row for all three (16 Oct 2026, Rahul). A Pro's is payout
           details; a Creator's is still the Market's bank form. */}
+      {any && (
       <section className="px-5 pb-8">
         <Kicker>Payout details</Kicker>
         <div className="mt-2">
@@ -146,6 +212,7 @@ export default function Dashboard() {
           />
         </div>
       </section>
+      )}
 
       <div className="h-16" />
       {rating && (

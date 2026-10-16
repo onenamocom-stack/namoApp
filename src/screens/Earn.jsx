@@ -9,13 +9,18 @@ import { askModule, myModules } from '../lib/profile.js'
 import { useStore } from '../store.jsx'
 
 /**
+ * The three modules' cards (docs/06 Phase 18, Rahul 16 Oct 2026). Since the
+ * same day they live on the Dashboard (Rahul: "Is page ko dashboard me he
+ * merge kar do"), which shows a section for each module held and this card,
+ * with its request, for each one not held; `/earn` redirects there.
+ *
  * Earn on Namo (docs/06 Phase 18, Rahul 16 Oct 2026): the three modules —
  * Creator, Pro, Seller — which you hold, and a request for the others. Each
  * is approved by the team; anybody holding any module carries the blue
  * tick. Creator and Seller ask a few questions here; Pro is the consultant
  * application (`/earn/pro`).
  */
-const CARDS = [
+export const CARDS = [
   {
     key: 'creator',
     title: 'Creator',
@@ -85,7 +90,7 @@ export default function Earn() {
   )
 }
 
-function ModuleCard({ card, state, questions, open, onOpen, onSent }) {
+export function ModuleCard({ card, state, questions, open, onOpen, onSent, inDashboard = false }) {
   const req = state.request
   const badge = state.held
     ? ['You have this', 'bg-ok text-white']
@@ -131,7 +136,7 @@ function ModuleCard({ card, state, questions, open, onOpen, onSent }) {
           )}
         </div>
       )}
-      {state.held && (
+      {state.held && !inDashboard && (
         <Link to="/dashboard" className="block border-t border-rule px-4 py-3 text-center text-micro font-semibold t-heading">
           Open Dashboard →
         </Link>

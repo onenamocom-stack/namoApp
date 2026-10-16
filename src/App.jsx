@@ -78,7 +78,6 @@ const DashboardGate = lazy(() =>
 const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
 const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
 const ContentEarnings = lazy(() => import('./screens/ContentEarnings.jsx'))
-const Earn = lazy(() => import('./screens/Earn.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
 const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
@@ -484,7 +483,7 @@ function Frame() {
                 <Route path="/dashboard/earnings" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard/content" element={<Dash need="creator"><ContentEarnings /></Dash>} />
                 {/* The three modules (docs/06 Phase 18): ask here; a Pro applies at /earn/pro. */}
-                <Route path="/earn" element={<Suspense fallback={<Loader />}><Earn /></Suspense>} />
+                <Route path="/earn" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/earn/pro" element={<ProApply />} />
                 <Route path="/dashboard/consulting" element={<Dash><DashConsulting /></Dash>} />
                 {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
