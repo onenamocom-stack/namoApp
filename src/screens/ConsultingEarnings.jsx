@@ -22,7 +22,9 @@ import { rupees, useStore } from '../store.jsx'
  * and taken out the same day (Rahul: "Insight ka baad me dekh lenge").
  */
 
-const SHOP = /^Referral cashback/
+// Shop commission ("Referral cashback · …") and the Market or e-book
+// sharer's 6% ("Referral · Market · …").
+const SHOP = /^Referral\b/
 const METERED = /^(.*) · (\d+) min (chat|audio call|video call)$/
 const MODE_LABEL = { chat: 'Chat', 'audio call': 'Audio call', 'video call': 'Video call' }
 

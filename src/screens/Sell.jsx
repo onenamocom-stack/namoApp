@@ -79,6 +79,8 @@ export default function SellHome() {
             {new Date(book.next_payout).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}.
           </p>
           <div className="mt-2">
+            {/* By period and by listing (16 Oct 2026, Rahul). */}
+            <Row to="/dashboard/market/earnings" title="Market earnings and insights" note="By month and year, and what sold" />
             {account?.pro ? (
               <Row to="/dashboard/payout-details" title="Payout details" note="Your PAN and bank account" />
             ) : (

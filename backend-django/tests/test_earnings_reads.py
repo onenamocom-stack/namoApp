@@ -151,6 +151,15 @@ class TestSummary:
         shop = next(s for s in result["by_source"] if s["source"] == "shop")
         assert shop["fee_paise"] == 0
 
+    def test_a_market_sharers_cut_is_commission_not_chat(self, roster):
+        # credit_sharer writes "Referral · Market · …"; it read as metered
+        # chat until 16 Oct 2026.
+        row(410, at(2026, 10, 2))
+        row(6, at(2026, 10, 3), kind="Referral · Market · Navgraha Mantra Book", fee=False)
+        result = earnings.summary(PRO, "this_month", now=at(2026, 10, 15))
+        assert total(result, "sessions") == 41000
+        assert total(result, "shop") == 600
+
     def test_pay_day_is_the_7th_of_the_next_month(self, roster):
         now = at(2026, 10, 15)
         assert earnings.summary(PRO, "this_month", now=now)["pays_on"] == "2026-11-07"

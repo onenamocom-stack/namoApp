@@ -21,8 +21,10 @@ Rows whose effective time is still ahead are *upcoming*: booked, not yet
 earned. They are reported apart and kept out of every period total.
 
 **Sources** are derived, not stored, so old rows classify too: anything
-negative is a reversal; a row tied to a booking is a booking; the shop's 10%
-commission is written as "Referral cashback · …"; everything else is
+negative is a reversal; a row tied to a booking is a booking; commission
+from a link or tag is written as "Referral cashback · …" (the shop) or
+"Referral · …" (a Market listing or an e-book; until 16 Oct 2026 these read
+as metered chat); everything else is
 metered chat, call or video.
 """
 
@@ -100,7 +102,7 @@ def _rows(consultant_id):
         source=Case(
             When(net_paise__lt=0, then=Value("reversals")),
             When(booking__isnull=False, then=Value("bookings")),
-            When(kind__startswith="Referral cashback", then=Value("shop")),
+            When(kind__startswith="Referral", then=Value("shop")),
             default=Value("sessions"),
             output_field=CharField(),
         ),

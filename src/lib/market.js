@@ -116,6 +116,12 @@ export function earnings() {
   return call('/me/earnings/')
 }
 
+/** One period of your Market earnings (16 Oct 2026): totals, by kind, the
+ *  last seven days, the sales, and `listings` — the same period by listing. */
+export function earningsPeriod(range) {
+  return call(`/me/earnings/period/?range=${range}`)
+}
+
 export function bank() {
   return call('/me/bank/')
 }

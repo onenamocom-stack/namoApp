@@ -551,6 +551,92 @@ def earnings(seller_id):
             "paid_paise": paid, "recent": recent, "payouts": payouts, "next_payout": next_payout_day().isoformat()}
 
 
+
+def earnings_period(seller_id, range_key, start=None, end=None, now=None):
+    """A seller's Market earnings for one period (16 Oct 2026, Rahul: the
+    Earnings page's shape for the Market). Read-only. The periods are the
+    consultant Earnings page's own — IST months, Indian financial years — and
+    a sale counts when its row was written: a download, course or event on
+    payment, a product on delivery. `insights` is the same period by listing:
+    sales, units, buyers and what each earned."""
+    from apps.consultants.earnings import _midnight, ist_today, period
+    from apps.consultants.services import IST
+    from apps.shop.models import OrderItem
+
+    now = now or timezone.now()
+    today = ist_today(now)
+    lo, hi = period(range_key, today, start, end)
+    base = SellerEarning.objects.filter(seller_id=seller_id, created_at__lte=now)
+
+    def within(qs, first, after):
+        if first is not None:
+            qs = qs.filter(created_at__gte=_midnight(first))
+        if after is not None:
+            qs = qs.filter(created_at__lt=_midnight(after))
+        return qs
+
+    rows = list(within(base, lo, hi).select_related("listing", "payout", "purchase").order_by("-created_at", "-id"))
+    lines = {line.pk: line for line in OrderItem.objects.filter(
+        pk__in=[r.order_item_id for r in rows if r.order_item_id]).select_related("order")}
+
+    def units(r):
+        line = lines.get(r.order_item_id)
+        return line.qty if line else 1
+
+    def buyer(r):
+        if r.purchase_id:
+            return str(r.purchase.buyer_id)
+        line = lines.get(r.order_item_id)
+        return str(line.order.profile_id) if line else None
+
+    by_kind, by_listing, buyers = {}, {}, set()
+    for r in rows:
+        k = by_kind.setdefault(r.listing.kind, {"kind": r.listing.kind, "count": 0, "units": 0, "net_paise": 0})
+        k["count"] += 1
+        k["units"] += units(r)
+        k["net_paise"] += r.net_paise
+        item = by_listing.setdefault(r.listing_id, {
+            "listing_id": str(r.listing_id), "title": r.listing.title, "kind": r.listing.kind,
+            "cover_url": r.listing.cover_url, "sales": 0, "units": 0, "buyers": set(), "net_paise": 0})
+        item["sales"] += 1
+        item["units"] += units(r)
+        item["net_paise"] += r.net_paise
+        who = buyer(r)
+        if who:
+            item["buyers"].add(who)
+            buyers.add(who)
+    listings = sorted(by_listing.values(), key=lambda x: -x["net_paise"])
+    for item in listings:
+        item["buyers"] = len(item["buyers"])
+
+    week_lo = today - timedelta(days=6)
+    daily = {week_lo + timedelta(days=i): 0 for i in range(7)}
+    for at, net in within(base, week_lo, today + timedelta(days=1)).values_list("created_at", "net_paise"):
+        daily[at.astimezone(IST).date()] += net
+
+    due = base.filter(Q(payout__isnull=True) | Q(payout__status="due")).aggregate(n=Sum("net_paise"))["n"] or 0
+    return {
+        "range": range_key,
+        "from": lo.isoformat() if lo else None,
+        "to": (hi - timedelta(days=1)).isoformat() if hi else None,
+        "gross_paise": sum(r.gross_paise for r in rows),
+        "net_paise": sum(r.net_paise for r in rows),
+        "count": len(rows),
+        "units": sum(units(r) for r in rows),
+        "buyers": len(buyers),
+        "by_kind": sorted(by_kind.values(), key=lambda x: -x["net_paise"]),
+        "last_7_days": [{"date": d.isoformat(), "net_paise": v} for d, v in daily.items()],
+        "due_paise": due,
+        "next_payout": next_payout_day().isoformat(),
+        "rows": [{
+            "id": str(r.id), "title": r.listing.title, "kind": r.listing.kind, "units": units(r),
+            "gross_paise": r.gross_paise, "namo_paise": r.commission_paise + r.delivery_paise,
+            "net_paise": r.net_paise, "at": r.created_at.isoformat(),
+            "paid": bool(r.payout_id and r.payout.status == "paid"),
+        } for r in rows[:500]],
+        "listings": listings,
+    }
+
 # ── payouts ─────────────────────────────────────────────────────────────────
 
 

@@ -1312,8 +1312,11 @@ where no call can ring. A Seeker downloads none of these screens.
 ### `/dashboard/consulting` — Consulting earnings (16 Oct 2026, Rahul)
 
 A Pro only, main app. The Earnings tab's shape, holding consulting alone:
-metered chat, audio and video, booked sessions and their reversals. Shop
-commission and its cancellations are left out.
+metered chat, audio and video, booked sessions and their reversals.
+Commission is left out: the shop's ("Referral cashback · …") and, from 16
+Oct 2026, a Market listing's or e-book's 6% ("Referral · …"), which the
+Earnings tab files under **Shop and Market commission** (it read as Chat,
+call and video before).
 
 - Header: back to Dashboard, "Consulting earnings". The period chips (This
   month, Last month, This FY, Last FY, Lifetime).
@@ -2017,7 +2020,23 @@ preview); or the start, length, seats and joining link; or the category,
 stock to send and packed weight. The form shows what Namo keeps and what the
 seller gets. *Send for approval*. Their listings, each Live, Waiting for
 approval or Needs a change (with the admin's note): Edit (back to approval),
-See it, Remove. Then their sales.
+See it, Remove. Then their sales. Under the earnings, *Market earnings and
+insights* opens `/dashboard/market/earnings`.
+
+**`/dashboard/market/earnings` — Market earnings and insights (16 Oct 2026,
+Rahul).** The Earnings page's shape for the Market. Header back to Sell on
+the Market; tabs **Earnings · Insights**; the period chips (This month, Last
+month, This FY, Last FY, Lifetime), shared by both. A sale counts when it was
+paid for (download, course, event) or delivered (product).
+
+- **Earnings:** the period's total after Namo's share, what is due and the
+  next 7th, Where it came from (Downloads, Courses, Events, Products, each
+  with count and amount), Last 7 days bars, the sales (title × units, date,
+  price − Namo's share, Paid once paid out), 30 at a time.
+- **Insights:** Sales, Units, Buyers; then *Your listings · N*, what sold in
+  the period, most earned first: cover, title, kind · units sold · buyers,
+  amount.
+- Empty period: "Nothing sold in this period."
 
 **Shop tab on profiles:** a Pro's page (`ConsultantPage`) has *Shop* after
 Posts when they sell something, and always on their own page; a Creator's

@@ -142,6 +142,21 @@ def my_earnings(request):
     return Response(services.earnings(request.user.pk))
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_earnings_period(request):
+    """One period of the caller's Market earnings, with the same period by
+    listing (16 Oct 2026). `range` as the consultant Earnings page's."""
+    from apps.consultants.earnings import BadRange
+
+    q = request.query_params
+    try:
+        return Response(services.earnings_period(request.user.pk, q.get("range", "this_month"),
+                                                 q.get("from"), q.get("to")))
+    except BadRange as exc:
+        return Response(refusal_body("bad_range", str(exc)), status=400)
+
+
 class BankInput(serializers.Serializer):
     account_holder = serializers.CharField(max_length=120)
     account_number = serializers.CharField(required=False, allow_blank=True, default="", max_length=30)

@@ -77,6 +77,7 @@ const DashboardGate = lazy(() =>
 )
 const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
 const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
+const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
 const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
@@ -488,6 +489,7 @@ function Frame() {
                 <Route path="/dashboard/calendar" element={<Dash><ProCalendar /></Dash>} />
                 <Route path="/dashboard/market" element={<Dash need="any"><SellHome /></Dash>} />
                 <Route path="/dashboard/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
+                <Route path="/dashboard/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
                 <Route path="/dashboard/market/new/:kind" element={<Dash need="any"><SellForm /></Dash>} />
                 <Route path="/dashboard/market/:id" element={<Dash need="any"><SellForm /></Dash>} />
 

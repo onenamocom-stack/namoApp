@@ -11,5 +11,6 @@ urlpatterns = [
     path("me/listings/", views.my_listings, name="market-my-listings"),
     path("me/listings/<uuid:listing_id>/", views.my_listing, name="market-my-listing"),
     path("me/earnings/", views.my_earnings, name="market-my-earnings"),
+    path("me/earnings/period/", views.my_earnings_period, name="market-my-earnings-period"),
     path("me/bank/", views.my_bank, name="market-my-bank"),
 ]

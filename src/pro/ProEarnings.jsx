@@ -65,7 +65,7 @@ export const RANGES = [
 const SOURCE_LABEL = {
   sessions: 'Chat, call and video',
   bookings: 'Booked sessions',
-  shop: 'Shop commission',
+  shop: 'Shop and Market commission',
   reversals: 'Reversals',
 }
 

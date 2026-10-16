@@ -262,6 +262,50 @@ class TestPayouts:
 
 
 @pytest.mark.django_db
+class TestEarningsPeriod:
+    """The Market's Earnings page (16 Oct 2026): one period, by kind and by
+    listing, and the endpoint's own refusals."""
+
+    def _sale(self, listing, when, net=7000, buyer=None):
+        p = Purchase.objects.create(listing=listing, buyer_id=buyer or uuid.uuid4(), amount_paise=10000)
+        return SellerEarning.objects.create(seller_id=CREATOR, listing=listing, purchase=p, gross_paise=10000,
+                                            commission_bps=3000, commission_paise=10000 - net,
+                                            net_paise=net, created_at=when)
+
+    def test_a_period_by_kind_and_by_listing(self, creator):
+        ShopCategory.objects.create(name="Maalas", sort=1)
+        book = _approved()
+        mala = services.approve(services.create(CREATOR, {
+            "kind": "product", "title": "Tulsi Mala", "cover_url": "https://x/c.jpg", "price_paise": 100000,
+            "stock": 10, "weight_grams": 150}), "admin")
+        now = timezone.make_aware(timezone.datetime(2026, 10, 16, 12))
+        self._sale(book, timezone.make_aware(timezone.datetime(2026, 10, 15)))
+        self._sale(book, timezone.make_aware(timezone.datetime(2026, 10, 2)))
+        self._sale(book, timezone.make_aware(timezone.datetime(2026, 9, 20)))
+        order, line = _delivered(mala, qty=2)
+        services.on_shipment_status(order.pk, Shipment.Status.DELIVERED)
+        SellerEarning.objects.filter(order_item_id=line.pk).update(
+            created_at=timezone.make_aware(timezone.datetime(2026, 10, 10)))
+
+        got = services.earnings_period(CREATOR, "this_month", now=now)
+        assert got["count"] == 3 and got["units"] == 4 and got["buyers"] == 3
+        assert got["net_paise"] == 7000 * 2 + 120000
+        assert [(k["kind"], k["count"], k["units"]) for k in got["by_kind"]] == [("product", 1, 2), ("download", 2, 2)]
+        assert [(x["title"], x["sales"], x["units"], x["buyers"]) for x in got["listings"]] == [
+            ("Tulsi Mala", 1, 2, 1), ("Navgraha Mantra Book", 2, 2, 2)]
+        assert got["rows"][0]["title"] == "Navgraha Mantra Book" and got["rows"][0]["namo_paise"] == 3000
+        assert sum(d["net_paise"] for d in got["last_7_days"]) == 7000 + 120000
+        assert services.earnings_period(CREATOR, "last_month", now=now)["net_paise"] == 7000
+        assert services.earnings_period(CREATOR, "lifetime", now=now)["count"] == 4
+
+    def test_the_endpoint(self, api_client, token, creator):
+        got = api_client.get("/v1/market/me/earnings/period/?range=this_month", **auth(token))
+        assert got.status_code == 200 and got.json()["count"] == 0
+        assert api_client.get("/v1/market/me/earnings/period/?range=week", **auth(token)).status_code == 400
+        assert api_client.get("/v1/market/me/earnings/period/").status_code in (401, 403)
+
+
+@pytest.mark.django_db
 class TestBank:
     def test_a_creator_saves_an_account(self, settings, creator):
         from cryptography.fernet import Fernet
