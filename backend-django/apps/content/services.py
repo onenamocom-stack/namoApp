@@ -576,7 +576,36 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
             "views": p.view_count or 0, "qualified_views": per_post.get(p.id, 0),
             "likes": p.like_count, "comments": p.comment_count, "reposts": p.repost_count,
         } for p in posts],
+        "sales": tag_sales(author_id),
     }
+
+
+def tag_sales(person_id):
+    """What sold through this person's tags and links, together (16 Oct 2026,
+    Rahul: "Combine both tags and referrals sales"), most sold first: shop
+    products from every referred order (the sharer's cashback row, one per
+    order, not cancelled) and Market listings bought through them. All
+    time. `sales` is units for a product, purchases for a listing."""
+    from django.db.models import Count, Max, Sum
+
+    from apps.market.models import Purchase
+    from apps.referrals.models import Cashback, CashbackStatus
+    from apps.shop.models import OrderItem, Product
+
+    orders = (Cashback.objects.filter(profile_id=person_id, side=Cashback.Side.REFERRER, order__isnull=False)
+              .exclude(status=CashbackStatus.CANCELLED).values_list("order_id", flat=True))
+    lines = (OrderItem.objects.filter(order_id__in=list(orders), item_type="product").values("item_id")
+             .annotate(units=Sum("qty"), buyers=Count("order__profile_id", distinct=True),
+                       title=Max("title"), last=Max("order__created_at")))
+    images = dict(Product.objects.filter(id__in=[x["item_id"] for x in lines]).values_list("id", "image_url"))
+    out = [{"id": str(x["item_id"]), "kind": "product", "name": x["title"],
+            "image_url": images.get(x["item_id"]), "sales": x["units"], "buyers": x["buyers"]} for x in lines]
+    listings = (Purchase.objects.filter(referrer_id=person_id).values("listing_id", "listing__title",
+                                                                       "listing__cover_url", "listing__kind")
+                .annotate(n=Count("id"), buyers=Count("buyer_id", distinct=True)))
+    out += [{"id": str(x["listing_id"]), "kind": x["listing__kind"], "name": x["listing__title"],
+             "image_url": x["listing__cover_url"], "sales": x["n"], "buyers": x["buyers"]} for x in listings]
+    return sorted(out, key=lambda x: -x["sales"])
 
 
 # ── reposts ──────────────────────────────────────────────────────────────────

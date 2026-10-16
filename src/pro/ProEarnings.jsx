@@ -397,6 +397,8 @@ export function Insights({ links = true, posts = null, window = 'week' }) {
       </section>
       )}
 
+      {/* The main app's content view carries its own sales row (16 Oct 2026). */}
+      {!posts && (
       <section className="px-5 py-6">
         <Kicker action={links ? 'Your links' : null} to={proPath('/pro/affiliate')}>
           Sold with your code
@@ -441,6 +443,7 @@ export function Insights({ links = true, posts = null, window = 'week' }) {
           </>
         )}
       </section>
+      )}
     </>
   )
 }

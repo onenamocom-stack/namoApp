@@ -153,3 +153,31 @@ class TestInsightsMonth:
             assert got["week"]["views"] == 2
         week = api_client.get("/v1/consultants/me/insights/", **auth(consultant_token)).json()
         assert week["window"] == "week" and week["week"]["views"] == 1  # a person a day, as before
+
+
+@pytest.mark.django_db
+class TestTagSales:
+    def test_shop_orders_and_market_listings_together(self, roster):
+        # Sales through tags and links, combined (16 Oct 2026, Rahul).
+        from apps.market.models import Listing, Purchase
+        from apps.referrals.models import Cashback
+        from apps.shop.models import Order, OrderItem, Product
+
+        from apps.shop.models import ShopCategory
+
+        cat = ShopCategory.objects.create(name="Maalas", sort=1)
+        product = Product.objects.create(name="Tulsi Mala", category=cat, price_paise=49900, mrp_paise=59900,
+                                         stock=9, weight_grams=150, image_url="https://x/m.jpg")
+        for buyer, qty, status in ((SEEKER, 2, "pending"), (SECOND_SEEKER, 1, "paid"), (SEEKER, 5, "cancelled")):
+            order = Order.objects.create(profile_id=buyer, status="paid", total_paise=49900 * qty)
+            OrderItem.objects.create(order=order, item_type="product", item_id=product.id, title="Tulsi Mala",
+                                     qty=qty, unit_price_paise=49900)
+            Cashback.objects.create(order=order, profile_id=APPROVED, side="referrer", amount_paise=100,
+                                    status=status)
+        book = Listing.objects.create(seller_id=SECOND_SEEKER, kind="download", title="Mantra Book",
+                                      cover_url="https://x/b.jpg", price_paise=9900, status="approved")
+        Purchase.objects.create(listing=book, buyer_id=SEEKER, amount_paise=9900, referrer_id=APPROVED)
+
+        got = services.tag_sales(APPROVED)
+        assert [(x["name"], x["sales"], x["buyers"]) for x in got] == [("Tulsi Mala", 3, 2), ("Mantra Book", 1, 1)]
+        assert got[1]["kind"] == "download"

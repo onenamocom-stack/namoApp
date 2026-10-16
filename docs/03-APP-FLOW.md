@@ -1315,12 +1315,16 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
   in a band below them (16 Oct 2026, Rahul).
 - **Insights:** **this month** (16 Oct 2026, Rahul; the pro app keeps the
   last seven days): views up to yesterday ("Till yesterday"), new
-  followers, saves and comments; then *Your content · N* (moved here from Earnings the same day, Rahul; laid
-  out after YouTube Studio's Shorts list): a row per piece — a reel's first
-  frame whole at 9:16 with its length, a photo's or blog's at a small 4:5 —
-  then the title, Reel / Post / Blog · how long ago, views, likes, comments,
-  reshares (all time) and qualified views; a reel or blog opens.
-- Then *Sold with your code*.
+  followers, saves and comments. Then rows that slide left to right
+  (16 Oct 2026, Rahul), each headed with its count: **Reels** (first frame
+  whole at 9:16, length), **Images** (photos, and text posts as a saffron
+  tile with their words), **Blogs** (cover); each card carries views on the
+  picture and, under it, the caption, how long ago, likes, comments,
+  reshares and qualified views (all time); a reel or blog opens. Last,
+  **Sales from tags and referrals**: products and Market listings sold
+  through the person's tags and links together, most sold first, each with
+  its picture, name, number of sales and buyers; opens the product or
+  listing. (*Sold with your code* is not shown here; the pro app keeps it.)
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
 A chosen video is made smaller on the phone first, under the post as
