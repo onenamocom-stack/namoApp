@@ -1309,8 +1309,9 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
 - **Earnings** (since 16 Oct 2026, both): the period chips; **Content
   earnings** for the period, one figure, with "Namo works out your content
   earnings from your views, qualified views and sales through your tags.
-  When ads run between posts, they count too."; Views (all time) and
-  Qualified views (the period), with what a qualified view is; then *Your
+  When ads run between posts, they count too."; Views and Qualified views,
+  both for the period, with what a qualified view is, and **Lifetime views**
+  in a band below them (16 Oct 2026, Rahul); then *Your
   content · N*: every reel, photo, post and blog, each with its views and
   qualified views, opening the reel or blog.
 - **Insights:** the last seven days (views, new followers, saves), your posts

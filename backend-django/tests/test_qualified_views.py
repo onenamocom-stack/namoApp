@@ -120,7 +120,9 @@ class TestContentEarnings:
 
         got = api_client.get("/v1/content/me/earnings/?range=this_month", **auth(consultant_token)).json()
         assert got["earnings_paise"] == 3000 + 2000 + 600      # ₹30 + ₹20 + the tag; never the chat
-        assert got["qualified_views"] == 2000 and got["views"] == 2
+        assert got["qualified_views"] == 2000 and got["views"] == 2 and got["views_all_time"] == 2
+        last = api_client.get("/v1/content/me/earnings/?range=last_month", **auth(consultant_token)).json()
+        assert last["views"] == 0 and last["views_all_time"] == 2
         assert got["posts"][0]["id"] == cid and got["posts"][0]["qualified_views"] == 2000
         assert "views_paise" not in got                        # one figure (Rahul)
 

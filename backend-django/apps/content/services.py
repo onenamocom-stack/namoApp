@@ -459,7 +459,10 @@ def record_view(content_id, viewer_id):
         with transaction.atomic():
             ContentView.objects.create(content_id=row.id, viewer_id=viewer_id, day=ist_today())
     except IntegrityError:
-        pass  # seen today already
+        # Seen today already: one more view on the day's row, which is how
+        # a month's views are counted.
+        ContentView.objects.filter(content_id=row.id, viewer_id=viewer_id, day=ist_today()).update(
+            views=F("views") + 1)
     return Content.objects.values_list("view_count", flat=True).get(pk=row.id)
 
 
@@ -550,12 +553,21 @@ def content_earnings(author_id, range_key, start=None, end=None, now=None):
 
     per_post = dict(qualified.values("content_id").annotate(n=Count("id")).values_list("content_id", "n"))
     posts = list(public_content().filter(author_id=author_id).order_by("-published_at")[:200])
+    # The period's views, every one (16 Oct 2026, Rahul): the days' rows,
+    # by IST day, as the periods are IST.
+    seen = ContentView.objects.filter(content__author_id=author_id)
+    if lo is not None:
+        seen = seen.filter(day__gte=lo)
+    if hi is not None:
+        seen = seen.filter(day__lt=hi)
+    period_views = seen.filter(created_at__lte=now).aggregate(n=Sum("views"))["n"] or 0
     return {
         "range": range_key,
         "from": lo.isoformat() if lo else None,
         "to": (hi - timezone.timedelta(days=1)).isoformat() if hi else None,
         "earnings_paise": views_pay + tags_pay,
-        "views": sum(p.view_count or 0 for p in posts),
+        "views": period_views,
+        "views_all_time": sum(p.view_count or 0 for p in posts),
         "qualified_views": qualified.count(),
         "posts": [{
             "id": str(p.id), "kind": p.kind, "title": p.title, "caption": p.caption, "media_url": p.media_url,

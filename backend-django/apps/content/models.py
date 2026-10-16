@@ -175,6 +175,9 @@ class ContentView(models.Model):
     )
     viewer_id = models.UUIDField()
     day = models.DateField(default=ist_today)
+    # Every view that day, the same person again too (16 Oct 2026): a
+    # period's views are the sum. Rows before that are one view each.
+    views = models.PositiveIntegerField(default=1, db_default=1)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

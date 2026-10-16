@@ -105,13 +105,18 @@ function Earned() {
 
           <section className="border-b border-rule px-5 py-6">
             <div className="grid grid-cols-2 gap-3">
-              <Stat label="Views, all time" value={data.views.toLocaleString('en-IN')} />
+              <Stat label={`Views, ${label}`} value={data.views.toLocaleString('en-IN')} />
               <Stat label={`Qualified views, ${label}`} value={data.qualified_views.toLocaleString('en-IN')} />
             </div>
             <p className="mt-3 text-micro t-faint">
               A qualified view is a reel played 30 seconds, a blog read 30 seconds, or a like, comment or reshare
               on a post. Once per person per post a day; your own do not count.
             </p>
+            {/* Lifetime apart, below (16 Oct 2026, Rahul). */}
+            <div className="mt-4 flex items-baseline justify-between rounded-xl bg-surface2 px-4 py-3">
+              <span className="caps-sm t-faint">Lifetime views</span>
+              <span className="text-lead font-semibold tnum t-heading">{(data.views_all_time ?? 0).toLocaleString('en-IN')}</span>
+            </div>
           </section>
 
           <section className="px-5 py-6">

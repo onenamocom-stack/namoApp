@@ -1234,6 +1234,7 @@ create table content_views (
   content_id  uuid not null references content(id) on delete cascade,
   viewer_id   uuid not null,
   day         date not null,          -- the IST calendar day of the view
+  views       integer not null default 1,  -- every view that day (16 Oct 2026)
   created_at  timestamptz not null default now(),
   constraint content_views_once_a_day unique (content_id, viewer_id, day)
 );
@@ -1247,7 +1248,8 @@ Migrations `content/0004_content_views`, then `0006_content_views_per_day`
 the owner's "jo Rahul bhaiya bol rhe hai vo krdo"): `view_count` goes up on
 each call, the same person again too; the row is still one per person per
 post per IST day and is what the 7-day insights and the 30-second check
-read. (3 Oct to 16 Oct the count was one per person per day, the owner's
+read; its `views` (migration `content/0012`) counts every view that day, so
+a period's views are the sum (rows from before hold 1). (3 Oct to 16 Oct the count was one per person per day, the owner's
 call; before that once per person ever.) The author is not counted,
 anonymous viewers are not counted, hidden content is a 404. The app sends it
 after two seconds on screen (a reel) or five on the page (a blog).

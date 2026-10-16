@@ -230,7 +230,8 @@ class TestViews:
         cid = self._reel(api_client, consultant_token)
         self._view(api_client, seeker_token, cid)
         self._view(api_client, seeker_token, cid)
-        assert ContentView.objects.filter(content_id=cid).count() == 1
+        [row] = ContentView.objects.filter(content_id=cid)
+        assert row.views == 2  # and it holds the day's every view
 
     def test_the_day_is_ist(self, monkeypatch):
         from datetime import datetime, timezone as dt_tz
