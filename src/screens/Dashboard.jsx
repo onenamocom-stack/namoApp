@@ -78,6 +78,16 @@ export default function Dashboard() {
   const pro = m.pro
   const any = m.pro || m.creator || m.seller
 
+  /** A held module's card, its links inside (16 Oct 2026, Rahul: the same
+   *  design as the cards to ask for one). */
+  const held = (key, rows) => (
+    <ul>
+      <ModuleCard card={CARDS.find((c) => c.key === key)} state={{ held: true, request: null }} inDashboard>
+        {rows}
+      </ModuleCard>
+    </ul>
+  )
+
   /** The card for a module not held: ask for it, or where the ask stands. */
   const ask = (key) => {
     if (asks === null) return <Loader className="py-4" />
@@ -130,10 +140,12 @@ export default function Dashboard() {
       {m.creator && (
       <section className="px-5 py-5">
         <Kicker>Content &amp; Referrals</Kicker>
-        <div className="mt-2">
-          <Row to="/dashboard/content" title="Earnings and insights" note="Commission from your links and code, and who saw your posts" />
-          <Row to="/dashboard/affiliate" title="Your product referral link" note="Share a product and earn" />
-          <Row to="/profile/influencer" title="Your app download referral code" note="Who joined with your code, and who paid" />
+        <div className="mt-3">
+          {held('creator', <>
+            <Row to="/dashboard/content" title="Earnings and insights" note="Commission from your links and code, and who saw your posts" />
+            <Row to="/dashboard/affiliate" title="Your product referral link" note="Share a product and earn" />
+            <Row to="/profile/influencer" title="Your app download referral code" note="Who joined with your code, and who paid" />
+          </>)}
         </div>
       </section>
       )}
@@ -147,9 +159,11 @@ export default function Dashboard() {
       {m.seller && (
       <section className="px-5 py-5">
         <Kicker>Market</Kicker>
-        <div className="mt-2">
-          <Row to="/dashboard/market/earnings" title="Earnings and insights" note="By month and year, and what sold" />
-          <Row to="/dashboard/market" title="Your listings" note="Add, edit or remove downloads, courses, events and products" />
+        <div className="mt-3">
+          {held('seller', <>
+            <Row to="/dashboard/market/earnings" title="Earnings and insights" note="By month and year, and what sold" />
+            <Row to="/dashboard/market" title="Your listings" note="Add, edit or remove downloads, courses, events and products" />
+          </>)}
         </div>
       </section>
       )}
@@ -161,9 +175,10 @@ export default function Dashboard() {
         </section>
       )}
       {pro && (
-        <section className="px-5 pb-5">
+        <section className="px-5 py-5">
           <Kicker>Consulting</Kicker>
-          <div className="mt-2">
+          <div className="mt-3">
+            {held('pro', <>
             <Row to="/dashboard/consulting" title="Earnings" note="What chat, calls and bookings earned" />
             {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                 reviews" page went — reviews are on your page, the intro
@@ -195,6 +210,8 @@ export default function Dashboard() {
               </span>
               <span aria-hidden="true" className="text-lead">→</span>
             </Link>
+            <div className="h-3" />
+            </>)}
           </div>
         </section>
       )}

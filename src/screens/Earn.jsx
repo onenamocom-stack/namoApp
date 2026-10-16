@@ -90,7 +90,9 @@ export default function Earn() {
   )
 }
 
-export function ModuleCard({ card, state, questions, open, onOpen, onSent, inDashboard = false }) {
+/** A module's card. On the Dashboard a held module's links go inside it
+ *  (`children`), so held and not held look the same (16 Oct 2026, Rahul). */
+export function ModuleCard({ card, state, questions, open, onOpen, onSent, inDashboard = false, children = null }) {
   const req = state.request
   const badge = state.held
     ? ['You have this', 'bg-ok text-white']
@@ -136,6 +138,7 @@ export function ModuleCard({ card, state, questions, open, onOpen, onSent, inDas
           )}
         </div>
       )}
+      {state.held && children && <div className="border-t border-rule px-4 pb-1">{children}</div>}
       {state.held && !inDashboard && (
         <Link to="/dashboard" className="block border-t border-rule px-4 py-3 text-center text-micro font-semibold t-heading">
           Open Dashboard →
