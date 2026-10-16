@@ -609,7 +609,7 @@ earnings with Namo's commission taken.
 
 ---
 
-## Phase 18 — Three modules: Creator, Pro, Seller (BUILT 16 Oct 2026 on branch `modules`, not merged; waits for the owner's yes)
+## Phase 18 — Three modules: Creator, Pro, Seller (LIVE 16 Oct 2026, owner's yes)
 
 Rahul's model, agreed on Telegram 16 Oct 2026. Each way of earning is a
 **module**, and a person holds any number of them:
