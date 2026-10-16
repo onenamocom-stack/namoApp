@@ -179,12 +179,25 @@ export function looksLikeReferral(code) {
 const VISIT_KEY = 'namo.aff'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-/** Note an astrologer's link from the address, if there is one. */
-export function catchAffiliateLink(search) {
+const RETURN_KEY = 'namo.affReturn'
+const RETURN_HOURS = 24
+
+/** Note an astrologer's link from the address, if there is one. A link to a
+ *  Market page (`/shop/...`: a product, download, course or event) also
+ *  notes the page, so a visitor who has to sign up first is brought back to
+ *  it rather than to Home (16 Oct 2026, Rahul). */
+export function catchAffiliateLink(search, pathname = '') {
   const params = new URLSearchParams(search)
   const code = (params.get('ref') || '').trim().toUpperCase()
   if (!looksLikeReferral(code) || !code.startsWith('A')) return false
   const product = params.get('p')
+  if (pathname.startsWith('/shop')) {
+    try {
+      localStorage.setItem(RETURN_KEY, JSON.stringify({ path: `${pathname}${search}`, at: Date.now() }))
+    } catch {
+      /* no storage: they land on Home, as before */
+    }
+  }
   try {
     localStorage.setItem(VISIT_KEY, JSON.stringify({
       code,
@@ -195,6 +208,19 @@ export function catchAffiliateLink(search) {
     return false
   }
   return true
+}
+
+/** Where a link brought somebody who then had to sign in, once: the page,
+ *  or null (none, older than a day, or not a Market page). Cleared on read. */
+export function takeReturnPath() {
+  try {
+    const note = JSON.parse(localStorage.getItem(RETURN_KEY) || 'null')
+    localStorage.removeItem(RETURN_KEY)
+    if (!note?.path?.startsWith('/shop') || Date.now() - note.at > RETURN_HOURS * 3600_000) return null
+    return note.path
+  } catch {
+    return null
+  }
 }
 
 /** Send a noted link once signed in. The note is cleared once the server

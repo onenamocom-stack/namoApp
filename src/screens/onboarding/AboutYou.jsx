@@ -12,7 +12,7 @@ import {
 } from '../../components/BirthInputs.jsx'
 import { Button } from '../../components/Primitives.jsx'
 import { clearAstroCache } from '../../lib/astro.js'
-import { SIGNUP_REF_KEY, claimCode } from '../../lib/referrals.js'
+import { SIGNUP_REF_KEY, claimCode, takeReturnPath } from '../../lib/referrals.js'
 import { clearBirthDraft, useStore } from '../../store.jsx'
 import { birthFields, warmCharts } from './Computing.jsx'
 
@@ -199,7 +199,8 @@ export default function AboutYou() {
           }
         })
     }
-    navigate('/home', { replace: true })
+    // A new account from a shared link goes back to that page (16 Oct 2026).
+    navigate(takeReturnPath() ?? '/home', { replace: true })
   }
 
   const toggleInterest = (key) =>

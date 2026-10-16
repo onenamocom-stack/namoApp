@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon.jsx'
 import { Button } from '../../components/Primitives.jsx'
 import { LANGS } from '../../data/i18n.js'
-import { SIGNUP_REF_KEY, looksLikeReferral } from '../../lib/referrals.js'
+import { SIGNUP_REF_KEY, looksLikeReferral, takeReturnPath } from '../../lib/referrals.js'
 import { supabase } from '../../lib/supabase.js'
 import { PRO_APP_URL } from '../../lib/urls.js'
 import { useStore } from '../../store.jsx'
@@ -88,7 +88,8 @@ export default function Welcome() {
     if (!verified) return
     if (signedUp(profile)) {
       if (profile?.birth_date) warmCharts(session.user.id)
-      navigate('/home', { replace: true })
+      // Back to the Market page a shared link opened, if one did (16 Oct 2026).
+      navigate(takeReturnPath() ?? '/home', { replace: true })
     } else {
       navigate('/onboarding/details', { replace: true })
     }

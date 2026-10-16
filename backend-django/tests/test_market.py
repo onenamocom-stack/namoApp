@@ -373,14 +373,31 @@ class TestTagsAndLinks:
         code = referrals.code_for(NOBODY, CodeKind.CONSULTANT).code
         with mock.patch("apps.referrals.services.may_share", return_value=True):
             referrals.record_visit(TEST_USER, code)
-        row = _approved(price=0)
-        services.take_free(TEST_USER, row.id)
+            row = _approved(price=0)
+            services.take_free(TEST_USER, row.id)
         assert Purchase.objects.get(buyer_id=TEST_USER).referrer_id == NOBODY
         # A free one does not use the link up; a paid one does.
         assert referrals.live_visit(TEST_USER) is not None
         paid = _approved(price=10000)
         Purchase.objects.create(listing=paid, buyer_id=TEST_USER, amount_paise=10000, referrer_id=NOBODY)
         assert referrals.live_visit(TEST_USER) is None
+
+    def test_a_link_switched_off_after_the_click_earns_nothing(self, creator):
+        # Checked when buying, as the shop does (16 Oct 2026).
+        from apps.referrals import services as referrals
+        from apps.referrals.models import CodeKind, ReferralCode
+
+        Profile.objects.create(id=NOBODY, phone="9000000c2", name="A Pro")
+        code = referrals.code_for(NOBODY, CodeKind.CONSULTANT).code
+        with mock.patch("apps.referrals.services.may_share", return_value=True):
+            referrals.record_visit(TEST_USER, code)
+            ReferralCode.objects.filter(code=code).update(active=False)
+            row = _approved(price=0)
+            services.take_free(TEST_USER, row.id)
+        assert Purchase.objects.get(buyer_id=TEST_USER).referrer_id is None
+        # And a sharer who is no longer a Pro or Creator, likewise.
+        ReferralCode.objects.filter(code=code).update(active=True)
+        assert services._referrer(TEST_USER, _approved(price=0)) is None
 
 
 @pytest.mark.django_db

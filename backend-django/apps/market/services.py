@@ -349,6 +349,11 @@ def _referrer(buyer_id, listing):
     visit = referrals.live_visit(buyer_id)
     if visit is None or str(visit.consultant_id) in (str(listing.seller_id), str(buyer_id)):
         return None
+    # The shop's check, at the moment of buying (16 Oct 2026, Rahul): the
+    # code still active, the sharer still a Pro or Creator, the buyer not a
+    # Pro. It was checked only at the click.
+    if not referrals._may_earn(referrals.resolve(visit.code), buyer_id):
+        return None
     return visit.consultant_id
 
 

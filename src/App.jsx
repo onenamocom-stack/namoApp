@@ -1,5 +1,5 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
-import { catchAffiliateLink, sendAffiliateVisit } from './lib/referrals.js'
+import { catchAffiliateLink, sendAffiliateVisit, takeReturnPath } from './lib/referrals.js'
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
@@ -181,11 +181,11 @@ function NotificationRouter() {
  * keeps the astrologer who brought them.
  */
 function AffiliateCatcher() {
-  const { search } = useLocation()
+  const { search, pathname } = useLocation()
   const { session } = useStore()
   useEffect(() => {
-    catchAffiliateLink(search)
-  }, [search])
+    catchAffiliateLink(search, pathname)
+  }, [search, pathname])
   useEffect(() => {
     if (session) sendAffiliateVisit()
   }, [session, search])
@@ -318,7 +318,7 @@ function SessionGate() {
          sign-up stopped before the birth details still needs them, and
          Welcome forwards it to /onboarding/details. */
       if (pathname === '/onboarding' && !profileLoading && signedUp(profile)) {
-        navigate('/home', { replace: true })
+        navigate(takeReturnPath() ?? '/home', { replace: true })
       }
       return
     }

@@ -1097,6 +1097,13 @@ day, with no picker for the other eleven (4 Oct 2026; they remain on
 referral field already filled, and claims it on submit. Only N (invite) codes —
 an A code is a shop coupon and belongs to the cart.
 
+**A Pro's or Creator's Market link opened signed out** (16 Oct 2026, Rahul):
+the app notes the page (`/shop/p/…`, `/shop/l/…`, `/shop/d/…`, with its
+`?ref=`) and goes to sign-in; after the OTP — a new account once *About you*
+is saved, an existing one at once — it opens that page, not Home. The note
+lasts a day and is used once. The link's code reaches the server the moment
+there is a session, as before.
+
 ### `/wallet`
 Balance and history, both read from the server. Since phase 3 *Add money* opens
 a sheet: four presets and a custom amount, then Razorpay's own checkout in an
