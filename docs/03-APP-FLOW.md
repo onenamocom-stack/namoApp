@@ -1314,11 +1314,11 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
   views (for the period), with what a qualified view is, and **Lifetime views**
   in a band below them (16 Oct 2026, Rahul).
 - **Insights:** the last seven days (views, new followers, saves); then
-  *Your content · N* (moved here from Earnings the same day, Rahul): a
-  two-column grid of cards, each piece in its own proportion (a reel's
-  first frame, a photo, a blog's cover; no square crop), with Reel / Post /
-  Blog and its all-time views on the picture, and under it the caption,
-  likes, comments, reshares and qualified views; a reel or blog opens.
+  *Your content · N* (moved here from Earnings the same day, Rahul; laid
+  out after YouTube Studio's Shorts list): a row per piece — a reel's first
+  frame whole at 9:16 with its length, a photo's or blog's at a small 4:5 —
+  then the title, Reel / Post / Blog · how long ago, views, likes, comments,
+  reshares (all time) and qualified views; a reel or blog opens.
 - Then *Sold with your code*.
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.

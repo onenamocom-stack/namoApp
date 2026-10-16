@@ -4,15 +4,16 @@ import { Loader } from './Cosmos.jsx'
 import Icon from './Icon.jsx'
 import { Kicker } from './Pop.jsx'
 import Plate from './Plate.jsx'
-import { contentEarnings } from '../lib/content.js'
+import { ago, contentEarnings } from '../lib/content.js'
 
 /**
- * Every reel, photo, post and blog a Pro or a Creator made, as a two-column
- * masonry of cards (16 Oct 2026, Rahul: in Insights, the thumbnail in the
- * piece's own proportion — a square crop cut the reels — and the post's
- * likes, comments and reshares). The media takes its natural height: a
- * reel's first frame, a photo, a blog's cover. Views and qualified views are
- * all time here; the Earnings tab has the period.
+ * Every reel, photo, post and blog a Pro or a Creator made (16 Oct 2026,
+ * Rahul, after YouTube Studio's Shorts list): one row each — the thumbnail
+ * on the left, then the title, how long ago and its numbers: views, likes,
+ * comments, reshares and qualified views. A reel's thumbnail is its own
+ * first frame at 9:16, whole, with its length; a photo's or a blog's is a
+ * small 4:5. Views and qualified views are all time here; the Earnings tab
+ * has the period.
  */
 export default function ContentGrid() {
   const [data, setData] = useState(null)
@@ -40,11 +41,11 @@ export default function ContentGrid() {
           Nothing posted yet. Reels, photos and blogs you post from Home&apos;s + show here.
         </p>
       ) : (
-        <div className="mt-3 columns-2 gap-3">
+        <ul className="mt-3 space-y-4">
           {data.posts.map((p) => (
-            <Card key={p.id} p={p} />
+            <Row key={p.id} p={p} />
           ))}
-        </div>
+        </ul>
       )}
     </section>
   )
@@ -53,59 +54,75 @@ export default function ContentGrid() {
 const KIND = { clip: 'Reel', article: 'Blog', post: 'Post', live_session: 'Live' }
 const VIDEO = /\.(mp4|webm|mov)$/i
 
-function Card({ p }) {
-  const to = p.kind === 'clip' ? `/reels/${p.id}` : p.kind === 'article' ? `/read/${p.id}` : null
-  const words = p.title || p.caption || ''
-  const media = !p.media_url ? (
-    <Plate seed={p.id} className="aspect-[4/5] w-full !rounded-none !shadow-none" />
-  ) : VIDEO.test(p.media_url) ? (
-    <video src={`${p.media_url}#t=0.5`} preload="metadata" muted playsInline className="block h-auto w-full bg-black" />
-  ) : (
-    <img src={p.media_url} alt="" loading="lazy" className="block h-auto w-full" />
-  )
+function length(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null
+  const s = Math.round(seconds)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
 
+function Thumb({ p }) {
+  const [secs, setSecs] = useState(null)
+  const video = p.media_url && VIDEO.test(p.media_url)
+  const reel = p.kind === 'clip' || video
+  return (
+    <div className={`relative w-[76px] flex-none overflow-hidden rounded-xl bg-black/5 ${reel ? 'aspect-[9/16]' : 'aspect-[4/5]'}`}>
+      {video ? (
+        <video
+          src={`${p.media_url}#t=0.5`}
+          preload="metadata"
+          muted
+          playsInline
+          onLoadedMetadata={(e) => setSecs(e.currentTarget.duration)}
+          className="h-full w-full bg-black object-cover"
+        />
+      ) : p.media_url ? (
+        <img src={p.media_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+      ) : (
+        <Plate seed={p.id} className="h-full w-full !rounded-none !shadow-none" />
+      )}
+      {length(secs) && (
+        <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1 py-px text-[10px] font-semibold text-white tnum">
+          {length(secs)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function Stat({ icon, n, tone = '' }) {
+  return (
+    <span className={`inline-flex items-center gap-1 ${tone}`}>
+      <Icon name={icon} size={14} />
+      {(n ?? 0).toLocaleString('en-IN')}
+    </span>
+  )
+}
+
+function Row({ p }) {
+  const to = p.kind === 'clip' ? `/reels/${p.id}` : p.kind === 'article' ? `/read/${p.id}` : null
+  const words = p.title || p.caption || KIND[p.kind] || 'Post'
   const inner = (
     <>
-      <div className="relative overflow-hidden bg-surface2">
-        {media}
-        <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-          {p.kind === 'clip' && <Icon name="play" size={10} />}
+      <Thumb p={p} />
+      <div className="min-w-0 flex-1 py-0.5">
+        <p className="line-clamp-2 text-meta font-semibold leading-snug t-heading">{words}</p>
+        <p className="mt-1 text-[12px] t-faint">
           {KIND[p.kind] ?? 'Post'}
-        </span>
-        <span className="absolute inset-x-0 bottom-0 flex items-center gap-1 bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2 pt-6 text-[12px] font-semibold text-white tnum">
-          <Icon name="eye" size={13} />
-          {p.views.toLocaleString('en-IN')}
-        </span>
-      </div>
-      <div className="px-2.5 pb-2.5 pt-2">
-        {words && <p className="line-clamp-2 text-[13px] leading-snug t-heading">{words}</p>}
-        <p className="mt-1.5 flex items-center gap-2.5 text-[12px] t-faint tnum">
-          <span className="inline-flex items-center gap-0.5">
-            <Icon name="heart" size={12} />
-            {p.likes ?? 0}
-          </span>
-          <span className="inline-flex items-center gap-0.5">
-            <Icon name="chat" size={12} />
-            {p.comments ?? 0}
-          </span>
-          <span className="inline-flex items-center gap-0.5">
-            <Icon name="repost" size={12} />
-            {p.reposts ?? 0}
-          </span>
+          {p.published_at ? ` · ${ago(p.published_at)}` : ''}
         </p>
-        <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-ok tnum">
+        <p className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[12px] t-sub tnum">
+          <Stat icon="eye" n={p.views} />
+          <Stat icon="heart" n={p.likes} />
+          <Stat icon="chat" n={p.comments} />
+          <Stat icon="repost" n={p.reposts} />
+        </p>
+        <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-ok/10 px-2 py-0.5 text-[11px] font-semibold text-ok tnum">
           <Icon name="check" size={11} />
           {p.qualified_views.toLocaleString('en-IN')} qualified
         </p>
       </div>
     </>
   )
-  const cls = 'mb-3 block break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule'
-  return to ? (
-    <Link to={to} className={cls}>
-      {inner}
-    </Link>
-  ) : (
-    <div className={cls}>{inner}</div>
-  )
+  const cls = 'flex items-start gap-3.5'
+  return <li>{to ? <Link to={to} className={cls}>{inner}</Link> : <div className={cls}>{inner}</div>}</li>
 }
