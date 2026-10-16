@@ -5,7 +5,6 @@ import { Button } from '../../components/Primitives.jsx'
 import { LANGS } from '../../data/i18n.js'
 import { SIGNUP_REF_KEY, looksLikeReferral, takeReturnPath } from '../../lib/referrals.js'
 import { supabase } from '../../lib/supabase.js'
-import { PRO_APP_URL } from '../../lib/urls.js'
 import { useStore } from '../../store.jsx'
 import { warmCharts } from './Computing.jsx'
 
@@ -304,9 +303,9 @@ export default function Welcome() {
             </span>
           ))}
         </p>
-        <a href={PRO_APP_URL} className="mt-3 inline-block text-[12px] text-t3 underline">
+        <Link to="/onboarding/name?next=pro" className="mt-3 inline-block text-[12px] text-t3 underline">
           {t('w.consultant')}
-        </a>
+        </Link>
         {/* Before an account exists is when a phone number helps most. */}
         <Link to="/support" className="mt-2 block text-[12px] text-t3 underline">
           {t('sup.title')}

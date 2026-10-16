@@ -1402,8 +1402,11 @@ Open, the app beats and the Pro can be online; leaving it stops the beat,
 so the Pro drops offline as they would by closing the pro app. On this
 screen the page names itself Namo Consult and offers `desk.webmanifest`
 (start `/desk`), so Add to Home Screen installs it as its own icon.
-pro.1namo.com keeps working beside it until Namo Consult has carried a
-real paid call end to end.
+pro.1namo.com closed on 16 Oct 2026 (Rahul, after a call through
+`/desk`): every path on it redirects to 1namo.com/desk, and a tapped call
+notification from an old subscription, `/pro/ring/<id>`, to
+`/desk/ring/<id>`. The main app's consultant links (Welcome, Consult's
+empty state, `?next=pro` sign-in) land on the Dashboard.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
 

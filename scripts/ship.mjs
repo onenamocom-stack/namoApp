@@ -5,9 +5,10 @@
  * The domain stays at GoDaddy; Firebase serves it (firebase.json,
  * .firebaserc — sites namo-web and namo-pro in the API's own Google project).
  *
- *   npm run ship            both apps: 1namo.com and pro.1namo.com
- *   npm run ship -- web     the seeker app only
- *   npm run ship -- pro     the consultant app only
+ *   npm run ship            the app: 1namo.com
+ *   npm run ship -- pro     pro.1namo.com, which since 16 Oct 2026 only
+ *                           redirects to 1namo.com/desk (pro-redirect/;
+ *                           the consultant app closed, Rahul)
  *   npm run ship -- --dirty allow uncommitted changes (a hotfix you will commit)
  *
  * What it does, in order, stopping at the first failure:
@@ -31,14 +32,14 @@ import { join } from 'node:path'
 const ROOT = join(import.meta.dirname, '..')
 const APPS = {
   web: { build: 'npm run build', domain: '1namo.com', site: 'namo-web' },
-  pro: { build: 'npm run build:pro', domain: 'pro.1namo.com', site: 'namo-pro' },
+  pro: { build: null, domain: 'pro.1namo.com', site: 'namo-pro' },
 }
 
 const args = process.argv.slice(2)
 const dirty = args.includes('--dirty')
 const only = args.filter((a) => !a.startsWith('--'))
-const targets = only.length ? only : Object.keys(APPS)
-for (const t of targets) if (!APPS[t]) fail(`Unknown app "${t}". Use web, pro, or nothing for both.`)
+const targets = only.length ? only : ['web']
+for (const t of targets) if (!APPS[t]) fail(`Unknown app "${t}". Use web, pro, or nothing for the app.`)
 
 function fail(msg) {
   console.error(`\n✗ ${msg}\n`)
@@ -76,7 +77,7 @@ if (!/\/v1$/.test(vite.VITE_DJANGO_API_URL)) fail('VITE_DJANGO_API_URL must end 
 
 // 3. lint once, then each build
 run('npm run lint')
-for (const t of targets) run(APPS[t].build)
+for (const t of targets) if (APPS[t].build) run(APPS[t].build)
 if (targets.includes('web')) renameSync(join(ROOT, 'dist', 'index.html'), join(ROOT, 'dist', 'app.html'))
 
 // 4. deploy

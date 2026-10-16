@@ -10,7 +10,6 @@ import { Kicker, PopButton } from '../components/Pop.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
-import { PRO_APP_URL } from '../lib/urls.js'
 import { toolStyle } from '../lib/tiles.js'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 
@@ -489,9 +488,9 @@ function NobodyYet() {
         <Kicker>{t('con.empty.title')}</Kicker>
         <p className="mt-3 text-meta t-sub">{t('con.empty.p1')}</p>
         <p className="mt-3 text-meta t-sub">{t('con.empty.p2')}</p>
-        {/* The consultant app is a separate deployment — an absolute link,
-            not a route this build carries. */}
-        <PopButton variant="gold" className="mt-5" href={PRO_APP_URL}>
+        {/* The Dashboard's Consulting card is where you apply (since
+            16 Oct 2026, when pro.1namo.com closed). */}
+        <PopButton variant="gold" className="mt-5" to="/dashboard">
           {t('con.empty.apply')}
         </PopButton>
         <p className="mt-3 caps-sm t-faint">{t('con.empty.for')}</p>

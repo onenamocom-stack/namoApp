@@ -4,7 +4,6 @@ import QuestionFrame from './QuestionFrame.jsx'
 import { useStore } from '../../store.jsx'
 import { isPro } from '../../side.js'
 import { supabase } from '../../lib/supabase.js'
-import { PRO_APP_URL } from '../../lib/urls.js'
 import { claimCode } from '../../lib/referrals.js'
 
 export default function VerifyOtp() {
@@ -75,11 +74,11 @@ export default function VerifyOtp() {
       return
     }
 
-    // `next=pro` lands in the consultant app — a separate deployment, not a
-    // route this build carries. A seeker bookmarked through an old pro link
-    // still ends up in the right place.
+    // `next=pro` skips the birth steps and lands on the Dashboard, where
+    // the Consulting card is the application (pro.1namo.com closed on
+    // 16 Oct 2026). The consultant build stays on its own home.
     if (pro) {
-      window.location.href = PRO_APP_URL
+      navigate(isPro ? '/' : '/dashboard')
       return
     }
     /* The referral code was typed on the phone screen, beside the number,

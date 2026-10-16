@@ -4,4 +4,5 @@
    were live; the github.io addresses still redirect, but a link that goes
    through a redirect drops the session's first paint. */
 export const SEEKER_APP_URL = 'https://1namo.com/'
+// Since 16 Oct 2026 only a redirect to 1namo.com/desk; nothing links to it.
 export const PRO_APP_URL = 'https://pro.1namo.com/'

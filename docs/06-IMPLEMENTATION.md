@@ -557,11 +557,12 @@ Today a consultant runs a second app, pro.1namo.com (`--mode pro`,
   The ringing and heartbeat code moves there unchanged; the main app carries
   none of it.
 - One sign-in: both are on 1namo.com, so they share it.
-- pro.1namo.com keeps working, unchanged, until /desk has carried a real
-  paid call end to end. Then it forwards to 1namo.com, path and all.
+- pro.1namo.com forwards to 1namo.com/desk once /desk has carried a real
+  call end to end.
 
-**Progress (14 Oct 2026):** Dashboard live; Namo Consult at `/desk` built.
-Left: a real paid call through `/desk`, then the pro.1namo.com forward.
+**Progress (16 Oct 2026):** Dashboard and NAMO Desk live; Rahul tested a
+call through `/desk`. pro.1namo.com is a redirect to 1namo.com/desk,
+built and waiting for its deploy (HANDOFF).
 
 **Done when:** a Pro with /desk open receives a call request, hears it ring
 and answers it, and the session meters exactly as before (the chat tests

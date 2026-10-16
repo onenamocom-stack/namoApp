@@ -10,8 +10,8 @@ import { PresenceKeeper } from '../components/PresenceToggle.jsx'
  * requests, the queue and the slots — the pro app's own components, unchanged.
  *
  * Open, a Pro beats and can be online; anywhere else in the main app they
- * do not, because only here does a call ring. pro.1namo.com keeps working
- * alongside until this has carried a real paid call.
+ * do not, because only here does a call ring. pro.1namo.com redirects here
+ * since 16 Oct 2026 (firebase.json, pro-redirect/).
  *
  * It installs as its own app: on this screen the page names itself
  * Namo Consult and offers a manifest whose start is `/desk`.
