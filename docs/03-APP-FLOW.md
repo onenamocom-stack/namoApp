@@ -1275,22 +1275,44 @@ what is asked or booked afterwards.
 Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
 until this day) and on a Creator's Profile, under the five icons.
 
-- **A Pro:** Your work (Earnings and Insights, Your links, Sell on the
-  Market), Your consulting setting (**Consulting earnings**,
-  `/dashboard/consulting`, below; **Your consulting price**, which opens
-  the rates sheet here; **Booking calendar**; **Go online**, `/desk`, a card that stands out from the rows), and
-  Payout details last (16 Oct 2026, Rahul; the headings were Your practice
-  and Calls and chats, the rows Your rates and Namo Consult). "Practice and reviews" went
-  on 14 Oct 2026 (Rahul): reviews are on the Pro's page, Intro video and
-  Username moved to Edit profile (`/practice/edit`, main app), slots are in
-  Namo Consult, and its Languages row only ever said "prototype only" (the
-  languages a seeker sees are edited in Edit profile). `/dashboard/profile`
-  opens the Dashboard. The pro app keeps its Practice tab. Edit and the public page are not here (14 Oct 2026,
-  Rahul): Dashboard opens from that page, which carries Edit profile.
-- **A Creator:** Your earnings (this month, in all, waiting out the seven
-  days after delivery), Your links (`/dashboard/affiliate`, the same screen
-  a Pro has), Your code, then Insights (the last seven days, every post
-  with its views, products sold with their code).
+Since 16 Oct 2026 (Rahul) it is one layout for both, in this order. It
+replaced *Your work* / *Your consulting setting* for a Pro and the Creator's
+earnings-and-Insights page.
+
+- **Earned this month so far** (a card): the total after Namo's share, then
+  Content & Referrals, Market and (a Pro) Consulting, each this month to
+  date; "Paid together on the 7th of next month". A part that does not load
+  shows a dash.
+- **Content & Referrals:** *Earnings and insights* (`/dashboard/content`,
+  below), *Your links* (`/dashboard/affiliate`), *Your code* (a Creator, the
+  Profile's Influencer tab).
+- **Market:** *Earnings and insights* (`/dashboard/market/earnings`), *Your
+  listings* (`/dashboard/market`).
+- **Consulting** (a Pro): *Earnings* (`/dashboard/consulting`), *Your
+  consulting price* (the rates sheet here), *Booking calendar*, *Go online*
+  (`/desk`, the green card).
+- **Payout details**, last: one row; a Pro's opens payout details, a
+  Creator's the Market's bank form.
+
+The mixed *Earnings and Insights* page went: `/dashboard/earnings` opens the
+Dashboard, and Namo Consult's *Earnings* link opens Consulting earnings. The
+pro app keeps its own Earnings tab. "Practice and reviews" went on 14 Oct
+2026 (Rahul): reviews are on the Pro's page, Intro video and Username in Edit
+profile (`/practice/edit`), slots in Namo Consult. `/dashboard/profile` opens
+the Dashboard. Edit and the public page are not here: Dashboard opens from
+that page, which carries Edit profile.
+
+### `/dashboard/content` — Content & Referrals (16 Oct 2026, Rahul)
+
+A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
+
+- **Earnings, a Pro:** the period chips; commission in the period (shop,
+  and Market and e-books), Where it came from, the entries.
+- **Earnings, a Creator:** This month, In all, Waiting (7 days after
+  delivery); the latest fifty entries. No period chips: the Creator's book
+  has none.
+- **Insights:** the last seven days (views, new followers, saves), your posts
+  with views, what sold with your code.
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
 A chosen video is made smaller on the phone first, under the post as

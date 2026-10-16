@@ -75,9 +75,9 @@ const Dashboard = lazy(() => import('./screens/Dashboard.jsx'))
 const DashboardGate = lazy(() =>
   import('./screens/Dashboard.jsx').then((m) => ({ default: m.DashboardGate })),
 )
-const DashEarnings = lazy(() => import('./pro/ProEarnings.jsx'))
 const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
 const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
+const ContentEarnings = lazy(() => import('./screens/ContentEarnings.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
 const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
 const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
@@ -479,7 +479,9 @@ function Frame() {
                 />
                 {/* Studio went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
-                <Route path="/dashboard/earnings" element={<Dash><DashEarnings /></Dash>} />
+                {/* The mixed page went into the Dashboard's three sections (16 Oct 2026, Rahul). */}
+                <Route path="/dashboard/earnings" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard/content" element={<Dash need="any"><ContentEarnings /></Dash>} />
                 <Route path="/dashboard/consulting" element={<Dash><DashConsulting /></Dash>} />
                 {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/dashboard/profile" element={<Navigate to="/dashboard" replace />} />

@@ -880,6 +880,12 @@ consultants.
   earns in an IST calendar month is paid on the 7th of the next month. There
   is no withdraw-on-demand. A booking's earning belongs to the month of the
   session, not the month it was booked.
+  **One payment on the 7th for everything** (16 Oct 2026, Rahul, under the
+  owner's "jo Rahul bhaiya bol rhe hai vo krdo"): consulting, Market sales
+  and commission from links and code are paid together, to the one set of
+  payout details. Today they are still kept in separate books (the
+  consultant's earnings, `market_earnings`, a Creator's `creator_earnings`)
+  and no combined payout run exists; the Dashboard says "Paid together".
 - **Marketplace tax** (owner's call, 3 Oct 2026). **No GST is applied to
   consultant payouts for now; TDS is deducted at payout.** The rate and
   section are still the CA's to confirm before the first payout, which is
