@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { affiliateLink, myCodes } from '../lib/referrals.js'
-import { fetchProducts } from '../lib/shop.js'
+import { SEEKER_APP_URL } from '../lib/urls.js'
 import { TopBar } from '../components/Chrome.jsx'
+import Icon from '../components/Icon.jsx'
 import { isPro } from '../side.js'
-import { Kicker, PopButton } from '../components/Pop.jsx'
-import { Section } from '../components/Primitives.jsx'
-import { rupees, useStore } from '../store.jsx'
+import { Kicker } from '../components/Pop.jsx'
+import { useStore } from '../store.jsx'
 
 /**
- * Links a consultant can share, with their code already in them.
+ * Links a consultant or a Creator can share, with their code already in them.
  *
  * WHY THE SERVER BUILDS THE URL. These get pasted into WhatsApp and live
  * for months. The shape of one is a contract with every link already
@@ -17,127 +18,144 @@ import { rupees, useStore } from '../store.jsx'
  * everything shared before the fix.
  *
  * ONE CODE, NOT ONE PER PRODUCT. The code IS the coupon: the buyer types
- * or arrives with the same string that credits the consultant. A link
- * that attributed through one identifier and paid through another would
- * be a link that can attribute and not pay, which is the failure nobody
- * notices until a month of commission is missing.
+ * or arrives with the same string that credits the sharer. A link that
+ * attributed through one identifier and paid through another would be a
+ * link that can attribute and not pay.
  *
- * The screen is deliberately honest about the two things a consultant
- * gets wrong here: one click pays on one order, and the money arrives
- * after delivery rather than at checkout. Both are said before the copy
- * button, not in a help page.
+ * Two cards and the terms (16 Oct 2026, Rahul): the whole store's link on
+ * top, then the way into the Market — every product page carries its own
+ * "My Referral Link" button, so the product list that lived here is gone.
+ * The rules sit below as numbered terms.
  */
 export default function ProAffiliate() {
   const { showToast } = useStore()
   // The days a link holds a customer, as set in the console.
   const [days, setDays] = useState(null)
-  const [products, setProducts] = useState(null)
-  const [links, setLinks] = useState({})
+  const [store, setStore] = useState(null)
 
   useEffect(() => {
     let alive = true
     myCodes().then((row) => alive && setDays(row?.affiliate_days ?? null))
-    fetchProducts()
-      .then((rows) => alive && setProducts(rows))
-      .catch(() => alive && setProducts([]))
+    affiliateLink().then((built) => alive && setStore(built))
     return () => {
       alive = false
     }
   }, [])
 
-  /* Copied through the clipboard API with a textarea fallback: this app is
-     served over https so the API is available, but an older in-app browser
-     (people open WhatsApp links inside WhatsApp) can still refuse it. */
-  async function copy(text, what) {
+  /* The clipboard API can be refused by an older in-app browser (WhatsApp's). */
+  async function copy(text) {
     try {
       await navigator.clipboard.writeText(text)
-      showToast(`${what} copied`)
+      showToast('Store link copied')
     } catch {
       showToast('Could not copy. Long-press the link to copy it.')
     }
   }
 
-  async function makeLink(product) {
-    if (links[product.id]) return copy(links[product.id].url, 'Link')
-    const built = await affiliateLink(product.id)
-    if (!built) return showToast('Could not build that link')
-    setLinks((prev) => ({ ...prev, [product.id]: built }))
-    copy(built.url, 'Link')
+  async function share() {
+    if (!store?.url) return showToast('Could not make your link. Try again.')
+    if (!navigator.share) return copy(store.url)
+    try {
+      await navigator.share({ title: 'NAMO Shop', text: store.share_text, url: store.url })
+    } catch {
+      /* dismissed */
+    }
   }
+
+  // The Market lives in the main app; the pro app opens it there.
+  const marketClass =
+    'pop-tap mt-5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-btn to-btn-deep py-3.5 caps-sm text-white shadow'
+  const openMarket = isPro ? (
+    <a href={`${SEEKER_APP_URL}shop`} target="_blank" rel="noreferrer" className={marketClass}>
+      Open the Market →
+    </a>
+  ) : (
+    <Link to="/shop" className={marketClass}>
+      Open the Market →
+    </Link>
+  )
 
   return (
     <>
       <TopBar title="Your product referral link" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
 
-      {/* Said before the buttons, because both of these are what a
-          consultant would otherwise learn from an angry message. */}
-      {/* The rules as they are since 15 Oct 2026 (Rahul): a link, not a
-          code; a window; new customer or old; one click, one order; the
-          last link wins. */}
-      <Section label="How it pays" tight>
-        <p className="horoscope">
-          Someone who opens your link is yours for {days ?? 15} days, for the whole
-          shop — not just the product you linked. If they order in that time, you
-          earn on it, into your earnings, with your next payout.
-        </p>
-        <ul className="mt-4 space-y-2 text-meta t-sub">
-          <li>• <b>New or old customer</b>, it pays. One click pays on one order; they open your link again for the next.</li>
-          <li>• If they open <b>somebody else's link</b> before buying, it is theirs from then.</li>
-          <li>• The money lands <b>seven days after delivery</b>, not at checkout — a returned parcel cancels it.</li>
-          <li>• Put a product on your post or reel and it carries your link too.</li>
-        </ul>
-      </Section>
+      <div className="space-y-4 px-5 pt-5">
+        {/* 1. The whole store, on top. */}
+        <section className="rounded-3xl bg-gradient-to-br from-gold-fill to-gold-dim p-5 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-white/20">
+              <Icon name="cart" size={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="caps-sm text-white/80">Whole store link</p>
+              <p className="text-lead font-semibold leading-snug">Earn on anything they buy</p>
+            </div>
+          </div>
+          <p className="mt-4 break-all rounded-xl bg-white/15 px-3 py-2.5 text-meta select-all">
+            {store?.url ?? 'Making your link'}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={!store}
+              onClick={() => copy(store.url)}
+              className="flex items-center justify-center rounded-xl bg-white py-3 caps-sm text-ink disabled:opacity-60"
+            >
+              Copy link
+            </button>
+            <button
+              type="button"
+              disabled={!store}
+              onClick={share}
+              className="flex items-center justify-center gap-2 rounded-xl border border-white/70 py-3 caps-sm text-white disabled:opacity-60"
+            >
+              <Icon name="share" size={15} /> Share
+            </button>
+          </div>
+        </section>
 
-      <Section label="Link to a product" last>
-        {products === null && <p className="prose-c">Loading the shop.</p>}
-        {products?.length === 0 && (
-          <p className="prose-c">Nothing in the shop to link to yet.</p>
-        )}
-        <ul className="space-y-3">
-          {(products ?? []).map((p) => (
-            <li key={p.id} className="pop-card flex items-center gap-3 p-3">
-              {p.image ? (
-                <img
-                  src={p.image}
-                  alt=""
-                  className="h-14 w-14 flex-none rounded-lg object-cover"
-                />
-              ) : (
-                <span className="h-14 w-14 flex-none rounded-lg bg-surface-2" />
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-body text-t1">{p.name}</span>
-                <span className="mt-0.5 block caps-sm t-faint tnum">
-                  ₹{rupees(Math.round(p.price * 100))} · you earn ₹{rupees(Math.floor((p.price * 100 * 6) / 100))}
+        {/* 2. One product: from its own page. */}
+        <section className="pop-card p-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-gold-wash gold">
+              <Icon name="gem" size={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="caps-sm t-faint">Link to a product</p>
+              <p className="text-lead font-semibold leading-snug t-heading">Share one product</p>
+            </div>
+          </div>
+          <ol className="mt-4 space-y-3">
+            {[
+              'Open the Market.',
+              'Open any product.',
+              'Tap My Referral Link on its page. Your link to that product is copied or shared.',
+            ].map((step, i) => (
+              <li key={step} className="flex items-start gap-3 text-meta t-body">
+                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gold-fill text-micro font-semibold text-white tnum">
+                  {i + 1}
                 </span>
-              </span>
-              <PopButton
-                size="sm"
-                variant={links[p.id] ? 'ghost' : 'gold'}
-                full={false}
-                className="flex-none"
-                onClick={() => makeLink(p)}
-              >
-                {links[p.id] ? 'Copy again' : 'Get link'}
-              </PopButton>
-            </li>
-          ))}
-        </ul>
+                <span className="pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+          {openMarket}
+        </section>
+      </div>
 
-        <Kicker className="mt-8">Or the whole shop</Kicker>
-        <PopButton
-          variant="ghost"
-          className="mt-3"
-          onClick={async () => {
-            const built = await affiliateLink()
-            if (built) copy(built.url, 'Shop link')
-          }}
-        >
-          Copy a link to the shop
-        </PopButton>
-      </Section>
-
-      <div className="h-8" />
+      {/* 3. The rules as terms (the rules since 15 Oct 2026, Rahul). */}
+      <section className="px-5 pb-10 pt-8">
+        <Kicker>Terms and conditions</Kicker>
+        <ol className="mt-3 list-decimal space-y-2.5 pl-5 text-meta t-sub">
+          <li>Someone who opens your link is yours for {days ?? 15} days, for the whole store, not just the product you linked.</li>
+          <li>If they order in that time, you earn on it. It goes into your earnings and is paid with your next payout.</li>
+          <li>New or old customer, it pays.</li>
+          <li>One click pays on one order. They open your link again for the next.</li>
+          <li>If they open somebody else&apos;s link before buying, the order is theirs from then.</li>
+          <li>The money lands seven days after delivery, not at checkout. A returned parcel cancels it.</li>
+          <li>A product tagged on your post or reel carries your link too.</li>
+        </ol>
+      </section>
     </>
   )
 }
