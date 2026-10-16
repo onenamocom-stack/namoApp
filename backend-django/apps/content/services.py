@@ -451,13 +451,118 @@ def record_view(content_id, viewer_id):
         raise NotFound("That post is not available.")
     if str(row.author_id).replace("-", "") == str(viewer_id).replace("-", ""):
         return row.view_count
+    # Every view counts, the same person again too (16 Oct 2026, Rahul: "like
+    # Instagram"); it was once per person per day. The day's ContentView row
+    # stays — the 7-day insights and the 30-second check read it.
+    Content.objects.filter(pk=row.id).update(view_count=F("view_count") + 1)
     try:
         with transaction.atomic():
             ContentView.objects.create(content_id=row.id, viewer_id=viewer_id, day=ist_today())
-            Content.objects.filter(pk=row.id).update(view_count=F("view_count") + 1)
     except IntegrityError:
-        pass  # already counted
+        pass  # seen today already
     return Content.objects.values_list("view_count", flat=True).get(pk=row.id)
+
+
+# ── qualified views (16 Oct 2026, Rahul) ────────────────────────────────────
+# A view that earns: a reel played 30 seconds, a blog open 30 seconds, a
+# like, comment or reshare on a post. Once per person per post per IST day,
+# never the author's own. A reel's or a blog's is claimed by the app after
+# 30 seconds, and the server checks the person's first view today is at
+# least that old; a post's comes from the like, comment or reshare itself.
+# Shares are not counted: the app only knows the sheet opened.
+
+QUALIFY_AFTER_SECONDS = 25   # the app waits 30; a little slack for clocks
+DEFAULT_PAISE_PER_THOUSAND = 2000
+_REASON_FOR_KIND = {
+    "clip": {"watch"},
+    "article": {"read"},
+    "post": {"like", "comment", "repost"},
+}
+
+
+def pay_rate():
+    from .models import ContentPaySettings
+
+    row = ContentPaySettings.objects.filter(pk=1).first()
+    return row.paise_per_thousand if row else DEFAULT_PAISE_PER_THOUSAND
+
+
+def qualify(content_id, viewer_id, reason, now=None):
+    """Count a qualified view if this one is. Returns True when it counted.
+    Never raises for a view that does not qualify: the caller is a like or a
+    comment that has already succeeded, or a timer in the app."""
+    from .models import QualifiedView
+
+    now = now or timezone.now()
+    row = public_content().filter(pk=content_id).only("id", "author_id", "kind").first()
+    if row is None or viewer_id is None:
+        return False
+    if reason not in _REASON_FOR_KIND.get(row.kind, set()):
+        return False
+    if str(row.author_id).replace("-", "") == str(viewer_id).replace("-", ""):
+        return False
+    if reason in ("watch", "read"):
+        seen = ContentView.objects.filter(content_id=row.id, viewer_id=viewer_id, day=ist_today()).first()
+        if seen is None or (now - seen.created_at).total_seconds() < QUALIFY_AFTER_SECONDS:
+            return False
+    try:
+        with transaction.atomic():
+            QualifiedView.objects.create(content_id=row.id, author_id=row.author_id, viewer_id=viewer_id,
+                                         day=ist_today(), reason=reason, paise_per_thousand=pay_rate(),
+                                         created_at=now)
+    except IntegrityError:
+        return False  # counted today already
+    return True
+
+
+def content_earnings(author_id, range_key, start=None, end=None, now=None):
+    """A Pro's or a Creator's content earnings for one period: what their
+    qualified views earned at the rate each was counted at, plus commission
+    from their links, tags and code. One figure, not the two (Rahul: "We
+    will not show both earning separately"). Their posts with all-time views
+    and the period's qualified views, newest first."""
+    from django.db.models import Count, Sum
+
+    from apps.consultants.earnings import _midnight, ist_today as ist_day, period
+    from apps.consultants.models import Consultant, EarningsLedger
+    from apps.referrals.models import CreatorEarning
+
+    from .models import QualifiedView
+
+    now = now or timezone.now()
+    lo, hi = period(range_key, ist_day(now), start, end)
+
+    def within(qs):
+        qs = qs.filter(created_at__lte=now)
+        if lo is not None:
+            qs = qs.filter(created_at__gte=_midnight(lo))
+        if hi is not None:
+            qs = qs.filter(created_at__lt=_midnight(hi))
+        return qs
+
+    qualified = within(QualifiedView.objects.filter(author_id=author_id))
+    views_pay = (qualified.aggregate(r=Sum("paise_per_thousand"))["r"] or 0) // 1000
+    if Consultant.objects.filter(profile_id=author_id).exists():
+        tags_pay = within(EarningsLedger.objects.filter(consultant_id=author_id, kind__startswith="Referral")
+                          ).aggregate(n=Sum("net_paise"))["n"] or 0
+    else:
+        tags_pay = within(CreatorEarning.objects.filter(profile_id=author_id)).aggregate(n=Sum("amount_paise"))["n"] or 0
+
+    per_post = dict(qualified.values("content_id").annotate(n=Count("id")).values_list("content_id", "n"))
+    posts = list(public_content().filter(author_id=author_id).order_by("-published_at")[:200])
+    return {
+        "range": range_key,
+        "from": lo.isoformat() if lo else None,
+        "to": (hi - timezone.timedelta(days=1)).isoformat() if hi else None,
+        "earnings_paise": views_pay + tags_pay,
+        "views": sum(p.view_count or 0 for p in posts),
+        "qualified_views": qualified.count(),
+        "posts": [{
+            "id": str(p.id), "kind": p.kind, "title": p.title, "caption": p.caption, "media_url": p.media_url,
+            "published_at": p.published_at.isoformat() if p.published_at else None,
+            "views": p.view_count or 0, "qualified_views": per_post.get(p.id, 0),
+        } for p in posts],
+    }
 
 
 # ── reposts ──────────────────────────────────────────────────────────────────
@@ -623,6 +728,7 @@ def add_comment(content_id, author_id, body):
         raise NotFound("That post is not available.")
     limits.check(Comment.objects.filter(author_id=author_id), limits.COMMENTS)
     row = _with_name(Comment.objects.create(content_id=post.id, author_id=author_id, body=text))
+    qualify(post.id, author_id, "comment")  # a comment on a post earns its author (16 Oct 2026)
     from . import moderation
 
     moderation.scan_comment(row)  # the daily queue's finders (Phase 15d)

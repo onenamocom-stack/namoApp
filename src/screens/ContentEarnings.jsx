@@ -1,43 +1,37 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
-import { Kicker, PopButton, PopCard, Stat } from '../components/Pop.jsx'
-import { Field, Segmented } from '../components/Primitives.jsx'
+import Icon from '../components/Icon.jsx'
+import { Kicker, PopCard, Stat } from '../components/Pop.jsx'
+import { Segmented } from '../components/Primitives.jsx'
+import { kindLabel, Thumb } from '../components/Pieces.jsx'
 import { Insights, RANGES } from '../pro/ProEarnings.jsx'
-import { useDashboardRole } from './Dashboard.jsx'
-import { earningsAll } from '../lib/consultants.js'
-import { creatorEarnings } from '../lib/referrals.js'
-import { rupees, useStore } from '../store.jsx'
+import { contentEarnings } from '../lib/content.js'
+import { rupees } from '../store.jsx'
 
 /**
- * Content & Referrals: earnings and insights (16 Oct 2026, Rahul: the
- * Dashboard's first section). Earnings is commission from your links and
- * code — the shop's ("Referral cashback · …") and a Market listing's or an
- * e-book's ("Referral · …"). Insights is the Insights tab that was on the
- * mixed Earnings page: your posts and their views, and what sold with your
- * code.
+ * Content & Referrals: earnings and insights (16 Oct 2026, Rahul).
  *
- * A Pro's commission is in their earnings book, so it has the periods; a
- * Creator's is their own book, which has this month, in all and waiting,
- * and the latest fifty rows.
+ * Earnings is one figure, "Content earnings": what the period's qualified
+ * views earned (₹20 per 1,000 by default, the console's) plus commission from
+ * links, tags and code. The two are never shown apart (Rahul). Then every
+ * reel, photo, post and blog the person made, with its views — every view,
+ * the same person again too — and the period's qualified views: a reel
+ * played 30 seconds, a blog read 30 seconds, a like, comment or reshare on a
+ * post, once per person per post per day.
+ *
+ * The line under the figure is Rahul's intent in words that are true today:
+ * no ads run yet, and nothing but the views and the tags decides the sum.
+ * When ads run, the code changes and the line stays. Insights is the tab
+ * that was on the mixed Earnings page.
  */
 const TABS = [
   { key: 'earnings', label: 'Earnings' },
   { key: 'insights', label: 'Insights' },
 ]
 
-const COMMISSION = /^Referral\b/
-
-function money(paise) {
-  return `${paise < 0 ? '−' : ''}₹${rupees(Math.abs(paise))}`
-}
-
-function day(iso) {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })
-}
-
 export default function ContentEarnings() {
-  const role = useDashboardRole()
   const [tab, setTab] = useState('earnings')
 
   return (
@@ -47,70 +41,24 @@ export default function ContentEarnings() {
         <Segmented items={TABS} value={tab} onChange={setTab} />
       </div>
       <div key={tab} className="animate-fade">
-        {tab === 'insights' ? (
-          <Insights links={false} />
-        ) : role === 'pro' ? (
-          <ProCommission />
-        ) : role === 'creator' ? (
-          <CreatorCommission />
-        ) : (
-          <Loader />
-        )}
+        {tab === 'insights' ? <Insights links={false} /> : <Earned />}
       </div>
       <div className="h-24" />
     </>
   )
 }
 
-function Entries({ rows }) {
-  const [shown, setShown] = useState(30)
-  return (
-    <section className="px-5 py-6">
-      <Kicker>Entries</Kicker>
-      <ul className="mt-3">
-        {rows.slice(0, shown).map((r) => (
-          <li key={r.id} className="flex items-baseline justify-between gap-4 border-b border-rule py-3.5 last:border-b-0">
-            <span className="min-w-0">
-              <span className="block truncate text-meta t-sub">{r.kind}</span>
-              <span className="mt-0.5 block caps-sm t-faint tnum">{day(r.at)}</span>
-            </span>
-            <span className={`flex-none text-meta tnum ${r.net < 0 ? 't-faint' : 'text-ok'}`}>
-              {r.net < 0 ? '−' : '+'}₹{rupees(Math.abs(r.net))}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {rows.length === 0 && <p className="mt-3 text-meta t-faint">No commission in this period.</p>}
-      {rows.length > shown && (
-        <PopButton variant="ghost" size="sm" className="mt-4" onClick={() => setShown((n) => n + 30)}>
-          Show more
-        </PopButton>
-      )}
-    </section>
-  )
-}
-
-function ProCommission() {
-  const { consultant } = useStore()
-  const id = consultant?.profile_id
+function Earned() {
   const [range, setRange] = useState('this_month')
-  const [rows, setRows] = useState(null)
+  const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    if (!id) return undefined
     let live = true
-    setRows(null)
+    setData(null)
     setFailed(false)
-    earningsAll(id, range)
-      .then((all) => {
-        if (!live) return
-        setRows(
-          all
-            .filter((r) => COMMISSION.test(r.kind))
-            .map((r) => ({ id: r.id, kind: r.kind, net: r.net_paise, at: r.effective_at, shop: r.kind.startsWith('Referral cashback') })),
-        )
-      })
+    contentEarnings(range)
+      .then((d) => live && setData(d))
       .catch((err) => {
         console.error('[content earnings] load failed:', err?.message)
         if (live) setFailed(true)
@@ -118,11 +66,9 @@ function ProCommission() {
     return () => {
       live = false
     }
-  }, [id, range])
+  }, [range])
 
-  const total = (rows ?? []).reduce((s, r) => s + r.net, 0)
-  const shop = (rows ?? []).filter((r) => r.shop)
-  const market = (rows ?? []).filter((r) => !r.shop)
+  const label = RANGES.find((r) => r.key === range)?.label.toLowerCase()
 
   return (
     <>
@@ -139,63 +85,78 @@ function ProCommission() {
           </button>
         ))}
       </div>
+
       {failed ? (
-        <p className="px-5 py-8 text-meta t-body">Could not load your commission. Open this page again to retry.</p>
-      ) : !rows ? (
+        <p className="px-5 py-8 text-meta t-body">Could not load your content earnings. Open this page again to retry.</p>
+      ) : !data ? (
         <Loader label="Adding it up" className="py-8" />
       ) : (
         <>
           <section className="px-5 pb-2 pt-4">
             <PopCard raised className="p-5">
-              <p className="caps-sm t-faint">Commission, {RANGES.find((r) => r.key === range)?.label.toLowerCase()}</p>
-              <p className="mt-2 font-display text-huge leading-none tnum t-heading">{money(total)}</p>
-              <p className="mt-2 text-meta t-body">From products, downloads, courses and events bought through your links and code.</p>
+              <p className="caps-sm t-faint">Content earnings, {label}</p>
+              <p className="mt-2 font-display text-huge leading-none tnum t-heading">₹{rupees(data.earnings_paise)}</p>
+              <p className="mt-2 text-meta t-body">
+                Namo works out your content earnings from your views, qualified views and sales through your tags.
+                When ads run between posts, they count too.
+              </p>
             </PopCard>
           </section>
-          {rows.length > 0 && (
-            <section className="border-b border-rule px-5 py-6">
-              <Kicker>Where it came from</Kicker>
-              <div className="mt-3">
-                {shop.length > 0 && <Field k={`Shop · ${shop.length}`} v={money(shop.reduce((s, r) => s + r.net, 0))} />}
-                {market.length > 0 && (
-                  <Field k={`Market and e-books · ${market.length}`} v={money(market.reduce((s, r) => s + r.net, 0))} />
-                )}
-              </div>
-            </section>
-          )}
-          <Entries rows={rows} />
+
+          <section className="border-b border-rule px-5 py-6">
+            <div className="grid grid-cols-2 gap-3">
+              <Stat label="Views, all time" value={data.views.toLocaleString('en-IN')} />
+              <Stat label={`Qualified views, ${label}`} value={data.qualified_views.toLocaleString('en-IN')} />
+            </div>
+            <p className="mt-3 text-micro t-faint">
+              A qualified view is a reel played 30 seconds, a blog read 30 seconds, or a like, comment or reshare
+              on a post. Once per person per post a day; your own do not count.
+            </p>
+          </section>
+
+          <section className="px-5 py-6">
+            <Kicker>{`Your content · ${data.posts.length}`}</Kicker>
+            {data.posts.length === 0 ? (
+              <p className="mt-3 text-meta t-faint">
+                Nothing posted yet. Reels, photos and blogs you post from Home&apos;s + show here with their views.
+              </p>
+            ) : (
+              <ul className="mt-2">
+                {data.posts.map((p) => (
+                  <PostRow key={p.id} p={p} />
+                ))}
+              </ul>
+            )}
+          </section>
         </>
       )}
     </>
   )
 }
 
-function CreatorCommission() {
-  const [book, setBook] = useState(null)
-  const [failed, setFailed] = useState(false)
-
-  useEffect(() => {
-    let live = true
-    creatorEarnings()
-      .then((d) => live && setBook(d))
-      .catch(() => live && setFailed(true))
-    return () => {
-      live = false
-    }
-  }, [])
-
-  if (failed) return <p className="px-5 py-8 text-meta t-body">Could not load your commission. Open this page again to retry.</p>
-  if (!book) return <Loader label="Adding it up" className="py-8" />
-  return (
+function PostRow({ p }) {
+  const piece = { id: p.id, kind: p.kind, title: p.title, caption: p.caption, mediaUrl: p.media_url }
+  const title = p.title || p.caption || kindLabel(piece) || 'Post'
+  const to = p.kind === 'clip' ? `/reels/${p.id}` : p.kind === 'article' ? `/read/${p.id}` : null
+  const body = (
     <>
-      <section className="border-b border-rule px-5 py-6">
-        <div className="grid grid-cols-3 gap-3">
-          <Stat label="This month" value={`₹${rupees(book.this_month_paise)}`} />
-          <Stat label="In all" value={`₹${rupees(book.lifetime_paise)}`} />
-          <Stat label="Waiting" value={`₹${rupees(book.pending_paise)}`} sub="7 days after delivery" />
-        </div>
-      </section>
-      <Entries rows={book.rows.map((r) => ({ id: r.id, kind: r.kind, net: r.amount_paise, at: r.created_at }))} />
+      <Thumb piece={piece} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-meta t-heading">{title}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] t-faint tnum">
+          <span className="inline-flex items-center gap-1 font-semibold t-sub">
+            <Icon name="eye" size={13} />
+            {p.views.toLocaleString('en-IN')}
+          </span>
+          <span className="inline-flex items-center gap-1 font-semibold text-ok">
+            <Icon name="check" size={13} />
+            {p.qualified_views.toLocaleString('en-IN')} qualified
+          </span>
+          <span>{kindLabel(piece)}</span>
+        </span>
+      </span>
     </>
   )
+  const cls = 'flex w-full items-center gap-3 border-b border-rule py-3 last:border-b-0'
+  return <li>{to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>}</li>
 }

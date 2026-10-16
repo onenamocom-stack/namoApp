@@ -8,9 +8,9 @@ import { RatesSheet } from '../pro/ProProfile.jsx'
 import { RATE_FIELDS } from '../components/RateFields.jsx'
 import { useEffect, useState } from 'react'
 import { rupees, useStore } from '../store.jsx'
-import { creatorEarnings } from '../lib/referrals.js'
 import { earningsSummary } from '../lib/consultants.js'
 import { earningsPeriod } from '../lib/market.js'
+import { contentEarnings } from '../lib/content.js'
 
 /**
  * Dashboard (Phase 16, 14 Oct 2026): a Pro's and a Creator's own screens,
@@ -143,31 +143,30 @@ export default function Dashboard() {
 
 /**
  * This month so far, by section (16 Oct 2026, Rahul: "Top table me sirf
- * earning due this month till date"). Consulting is the Pro's earnings book
- * less commission; Content & Referrals is that commission (a Pro's) or the
- * Creator's own book; Market is the seller's. A part that fails to load
- * shows a dash; the total counts what arrived.
+ * earning due this month till date"). Content & Referrals is the content
+ * earnings figure (qualified views plus link and tag commission); Market is
+ * the seller's; Consulting is the Pro's earnings book less that commission.
+ * A part that fails to load shows a dash; the total counts what arrived.
  */
 function ThisMonth({ pro, consultantId }) {
   const [parts, setParts] = useState(null)
 
   useEffect(() => {
     let live = true
-    const content = pro
-      ? earningsSummary(consultantId, 'this_month')
-      : creatorEarnings().then((b) => ({ content: b.this_month_paise }))
-    Promise.allSettled([content, earningsPeriod('this_month')]).then(([c, m]) => {
+    Promise.allSettled([
+      contentEarnings('this_month'),
+      earningsPeriod('this_month'),
+      pro ? earningsSummary(consultantId, 'this_month') : Promise.resolve(null),
+    ]).then(([c, m, s]) => {
       if (!live) return
-      const out = { market: m.status === 'fulfilled' ? m.value.net_paise : null }
-      if (c.status !== 'fulfilled') {
-        out.content = null
-        out.consulting = null
-      } else if (pro) {
-        const shop = c.value.by_source.find((x) => x.source === 'shop')?.net_paise ?? 0
-        out.content = shop
-        out.consulting = c.value.net_paise - shop
-      } else {
-        out.content = c.value.content
+      const out = {
+        content: c.status === 'fulfilled' ? c.value.earnings_paise : null,
+        market: m.status === 'fulfilled' ? m.value.net_paise : null,
+      }
+      if (pro) {
+        const book = s.status === 'fulfilled' ? s.value : null
+        const shop = book?.by_source.find((x) => x.source === 'shop')?.net_paise ?? 0
+        out.consulting = book ? book.net_paise - shop : null
       }
       setParts(out)
     })

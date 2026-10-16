@@ -427,9 +427,9 @@ export async function removeComment(commentId) {
 }
 
 /**
- * This person watched this reel. Counted once per person ever, server-side
- * (ContentView); returns the new count, or null when there is no session or
- * the API predates view counting — a failed count must not interrupt a reel.
+ * This person opened this post. Every view counts, the same person again
+ * too (16 Oct 2026); returns the new count, or null when there is no session
+ * — a failed count must not interrupt a reel.
  */
 export async function recordView(contentId) {
   const token = await accessToken()
@@ -440,6 +440,29 @@ export async function recordView(contentId) {
   } catch {
     return null
   }
+}
+
+/**
+ * A qualified view (16 Oct 2026): `watch` after 30 seconds of a reel playing,
+ * `read` after 30 seconds on a blog. The server checks the person opened it
+ * that long ago, counts once a day and never the author; likes, comments and
+ * reshares qualify a post on the server by themselves. Fire and forget.
+ */
+export async function qualifyView(contentId, reason) {
+  const token = await accessToken()
+  if (!token) return
+  try {
+    await api(`/content/${contentId}/qualify/`, { method: 'POST', body: { reason }, token })
+  } catch {
+    /* a missed claim costs the author one view, never the viewer anything */
+  }
+}
+
+/** A Pro's or Creator's content earnings for a period, with their posts,
+ *  views and qualified views (16 Oct 2026). */
+export async function contentEarnings(range) {
+  const token = await accessToken()
+  return api(`/content/me/earnings/?range=${range}`, { token })
 }
 
 /** One person's published work — their profile tab and the studio list. */

@@ -1044,6 +1044,27 @@ before it is paid, cancelled by a return.
 - A Creator whose flag is removed keeps what was already earned; new
   links and tags stop earning.
 
+### Content earnings — decided 16 Oct 2026 (Rahul, owner's "jo Rahul bhaiya bol rhe hai vo krdo")
+
+A Pro or a Creator earns on their content as well as on their tags.
+
+- **Views:** every view counts, the same person again too.
+- **Qualified views:** a reel played 30 seconds; a blog open 30 seconds; a
+  like, comment or reshare on a photo or text post. Once per person per
+  post per IST day. The author's own and signed-out views never count; a
+  share is not counted (the app cannot know it was sent).
+- **VE (view earnings):** **₹20 per 1,000 qualified views**, editable in
+  the console (Finance). A change applies to qualified views counted after
+  it. Counting started on 16 Oct 2026; nothing before is paid.
+- **TE (tag earnings):** the commission from links, tags and code (§12).
+- **Content earnings = VE + TE**, shown as one figure; the two are not
+  shown apart. The line under it: "Namo works out your content earnings
+  from your views, qualified views and sales through your tags. When ads
+  run between posts, they count too." Rahul asked for "an AI algorithm …
+  advertisements shown in between content"; it was not written, because
+  neither is true yet, and he agreed to this line.
+- Paid with everything else on the 7th (§8). No payout run exists yet.
+
 **Both directions into a consultant pay nothing**, and for one reason:
 this programme exists to bring SEEKERS into the product. A practitioner
 arriving is a different event with its own queue — they apply, and

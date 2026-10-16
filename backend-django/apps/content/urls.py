@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path("feed/", views.feed, name="content-feed"),
+    path("me/earnings/", views.my_content_earnings, name="content-my-earnings"),
+    path("<uuid:content_id>/qualify/", views.qualify, name="content-qualify"),
     path("feed/for-you/", views.for_you, name="content-feed-for-you"),
     path("by-author/", views.by_author, name="content-by-author"),
     path("tag/<str:tag>/", views.by_tag, name="content-by-tag"),

@@ -356,10 +356,36 @@ def remove_comment(request, comment_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def record_view(request, content_id):
-    """The reel on screen was watched by this person. Once per person per
-    reel, ever (ContentView); returns the post's view count."""
+    """This person opened the post: every view counts (16 Oct 2026);
+    returns the post's view count."""
     views = services.record_view(content_id, request.user.pk)
     return Response({"views": views})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def qualify(request, content_id):
+    """The app's 30-second claim for a reel (`watch`) or a blog (`read`).
+    `{counted}`: false when it does not qualify or was counted today."""
+    reason = request.data.get("reason")
+    if reason not in ("watch", "read"):
+        return Response(refusal_body("bad_reason", "Say watch or read."), status=400)
+    return Response({"counted": services.qualify(content_id, request.user.pk, reason)})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_content_earnings(request):
+    """The caller's content earnings for one period and their posts with
+    views and qualified views (16 Oct 2026)."""
+    from apps.consultants.earnings import BadRange
+
+    q = request.query_params
+    try:
+        return Response(services.content_earnings(request.user.pk, q.get("range", "this_month"),
+                                                  q.get("from"), q.get("to")))
+    except BadRange as exc:
+        return Response(refusal_body("bad_range", str(exc)), status=400)
 
 
 @api_view(["POST"])

@@ -194,7 +194,7 @@ class TestReading:
         assert api_client.get("/v1/content/feed/").json()["results"] == []
 
 
-# ── views (ContentView, once per person per IST day) ───────────────────────────────────────────
+# ── views (every view counts; ContentView once per person per IST day) ───────────────────────────────────────────
 
 
 @pytest.mark.django_db
@@ -209,31 +209,28 @@ class TestViews:
     def _view(self, api_client, token, cid):
         return api_client.post(f"/v1/content/{cid}/view/", **auth(token))
 
-    def test_one_person_counts_once(
+    def test_every_view_counts(
         self, api_client, consultant_token, seeker_token, second_seeker_token, roster
     ):
+        # Every view, the same person again too (16 Oct 2026, Rahul); it was
+        # once per person per day.
         cid = self._reel(api_client, consultant_token)
         assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
-        # Replaying, scrolling back, a second tab: still one person.
-        assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
-        assert self._view(api_client, second_seeker_token, cid).json() == {"views": 2}
+        assert self._view(api_client, seeker_token, cid).json() == {"views": 2}
+        assert self._view(api_client, second_seeker_token, cid).json() == {"views": 3}
         row = api_client.get("/v1/content/feed/").json()["results"][0]
-        assert row["view_count"] == 2
+        assert row["view_count"] == 3
 
-    def test_the_same_person_counts_again_the_next_day(
+    def test_the_days_first_view_is_kept_once(
         self, api_client, consultant_token, seeker_token, roster
     ):
+        # The 7-day insights and the 30-second check read one row a day.
         from apps.content.models import ContentView
 
         cid = self._reel(api_client, consultant_token)
-        assert self._view(api_client, seeker_token, cid).json() == {"views": 1}
-        # Yesterday's view, as if this one had been made then.
-        row = ContentView.objects.get(content_id=cid)
-        row.day = row.day - timedelta(days=1)
-        row.save(update_fields=["day"])
-        assert self._view(api_client, seeker_token, cid).json() == {"views": 2}
-        # And today's is still counted once.
-        assert self._view(api_client, seeker_token, cid).json() == {"views": 2}
+        self._view(api_client, seeker_token, cid)
+        self._view(api_client, seeker_token, cid)
+        assert ContentView.objects.filter(content_id=cid).count() == 1
 
     def test_the_day_is_ist(self, monkeypatch):
         from datetime import datetime, timezone as dt_tz

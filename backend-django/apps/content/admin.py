@@ -487,3 +487,66 @@ def _profile_label(profile_id):
     if not p:
         return str(profile_id)[:8]
     return f"{p.name or '—'} · {p.phone}"
+
+
+# ── what a qualified view pays (16 Oct 2026, Rahul) ─────────────────────────
+
+
+class PayRateForm(forms.ModelForm):
+    rupees = forms.DecimalField(label="₹ per 1,000 qualified views", min_value=0, max_digits=7, decimal_places=2,
+                                help_text="₹20 by default. A change counts from the next qualified view; "
+                                          "views already counted keep their rate.")
+
+    class Meta:
+        from apps.content.models import ContentPaySettings
+
+        model = ContentPaySettings
+        fields = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["rupees"].initial = (self.instance.paise_per_thousand or 2000) / 100
+
+    def save(self, commit=True):
+        self.instance.paise_per_thousand = int(round(self.cleaned_data["rupees"] * 100))
+        return super().save(commit)
+
+
+def _register_pay_rate():
+    from apps.content.models import ContentPaySettings
+
+    @dj.register(ContentPaySettings, site=site)
+    class ContentPaySettingsAdmin(AuditedAdmin, dj.ModelAdmin):
+        """What Namo pays for 1,000 qualified views: a reel played 30
+        seconds, a blog open 30 seconds, a like, comment or reshare on a
+        post. One row."""
+
+        form = PayRateForm
+        audit_target = "content pay rate"
+        list_display = ("rate", "updated_at")
+
+        @dj.display(description="₹ per 1,000 qualified views")
+        def rate(self, obj):
+            return f"₹{obj.paise_per_thousand / 100:g}"
+
+        def has_module_permission(self, request):
+            return at_least(request, Tier.FINANCE)
+
+        def has_view_permission(self, request, obj=None):
+            return at_least(request, Tier.FINANCE)
+
+        def has_change_permission(self, request, obj=None):
+            return at_least(request, Tier.FINANCE)
+
+        def has_add_permission(self, request):
+            return at_least(request, Tier.FINANCE) and not ContentPaySettings.objects.exists()
+
+        def has_delete_permission(self, request, obj=None):
+            return False
+
+        def save_model(self, request, obj, form, change):
+            obj.pk = 1   # the one row
+            super().save_model(request, obj, form, change)
+
+
+_register_pay_rate()

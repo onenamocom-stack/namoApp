@@ -5,6 +5,7 @@ import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, fetchSuggestions, isMine, productHref, recordView, reshareToLead } from '../lib/content.js'
+import useWatchQualify from '../components/useWatchQualify.js'
 import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
 import { TabHeader } from '../components/Chrome.jsx'
@@ -1266,6 +1267,8 @@ function ReelCard({ reel, resharedBy }) {
   // Two seconds playing in the feed is a view too (11 Oct 2026, Rahul), as
   // two seconds in the reel viewer is.
   useCountView(frame, r.id) // counted, not shown (12 Oct 2026)
+  // Thirty seconds played in the feed qualifies, as in the reel viewer.
+  useWatchQualify(video, r.id, isVideo && near)
 
   useEffect(() => {
     const v = video.current

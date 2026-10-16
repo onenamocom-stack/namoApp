@@ -1,7 +1,7 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { fetchByAuthor, fetchFeed, fetchOne, isMine, recordView } from '../lib/content.js'
+import { fetchByAuthor, fetchFeed, fetchOne, isMine, qualifyView, recordView } from '../lib/content.js'
 import EditSheet from '../components/EditSheet.jsx'
 import { isPro } from '../side.js'
 import { ActionRow, Cover, ProductStrip, authorHref, readMins } from './Home.jsx'
@@ -77,6 +77,25 @@ export default function Article() {
       recordView(id).then((n) => n != null && setViews(n))
     }, 5000)
     return () => clearTimeout(timer)
+  }, [id, loaded])
+
+  /* Thirty seconds on the page is a qualified read (16 Oct 2026, Rahul).
+     Only while the page is in front: a blog left in a background tab is
+     not being read. */
+  const read = useRef(null)
+  useEffect(() => {
+    if (!loaded || read.current === id) return undefined
+    let spent = 0
+    const step = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      spent += 1
+      if (spent >= 30) {
+        read.current = id
+        clearInterval(step)
+        qualifyView(id, 'read')
+      }
+    }, 1000)
+    return () => clearInterval(step)
   }, [id, loaded])
 
   /* Nothing is rendered against a half-loaded list: `null` means still asking,

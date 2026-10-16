@@ -58,6 +58,12 @@ def add_reaction(actor_id, target_type, target_id, kind, note=""):
         reaction.save(update_fields=["note"])
     if created and kind == Reaction.Kind.REPOST and not bhakti:
         content_services.notify_repost(target_id, actor_id)
+    # A like or a reshare on a post is a qualified view for its author (16
+    # Oct 2026, Rahul); `qualify` ignores what does not qualify.
+    if created and kind in (Reaction.Kind.LIKE, Reaction.Kind.REPOST) and target_type == Reaction.TargetType.CONTENT:
+        from apps.content import services as content_services
+
+        content_services.qualify(target_id, actor_id, "like" if kind == Reaction.Kind.LIKE else "repost")
     # Likes and follows tell the person too (13 Oct 2026, Rahul; docs/06
     # Phase 15a), as comments and reshares already did.
     if created and kind == Reaction.Kind.LIKE and target_type == Reaction.TargetType.CONTENT:

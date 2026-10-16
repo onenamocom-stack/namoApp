@@ -505,3 +505,48 @@ class ModerationFlag(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()}: {self.excerpt[:40]}"
+
+
+class ContentPaySettings(models.Model):
+    """What Namo pays a Pro or a Creator for 1,000 qualified views (16 Oct
+    2026, Rahul: ₹20, editable in the console). One row; each qualified view
+    stores the rate it was counted at, so a change never reprices the past."""
+
+    id = models.SmallIntegerField(primary_key=True, default=1)
+    paise_per_thousand = models.PositiveIntegerField(default=2000, db_default=2000)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "content_pay_settings"
+        verbose_name = "content pay rate"
+        verbose_name_plural = "content pay rate"
+
+
+class QualifiedView(models.Model):
+    """A view that earns (16 Oct 2026, Rahul): a reel played 30 seconds, a
+    blog open 30 seconds, or a like, comment or reshare on a post. Once per
+    person per post per IST day; never the author's own, never signed out.
+    `author_id` is the post's, so a period's count is one indexed read."""
+
+    class Reason(models.TextChoices):
+        WATCH = "watch", "Watched 30 seconds"
+        READ = "read", "Read 30 seconds"
+        LIKE = "like", "Liked"
+        COMMENT = "comment", "Commented"
+        REPOST = "repost", "Reshared"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, db_column="content_id", related_name="qualified")
+    author_id = models.UUIDField()
+    viewer_id = models.UUIDField()
+    day = models.DateField(default=ist_today)
+    reason = models.CharField(max_length=8, choices=Reason.choices)
+    paise_per_thousand = models.PositiveIntegerField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "content_qualified_views"
+        constraints = [
+            models.UniqueConstraint(fields=["content", "viewer_id", "day"], name="qualified_views_once_a_day"),
+        ]
+        indexes = [models.Index(fields=["author_id", "created_at"], name="qualified_views_author_at")]

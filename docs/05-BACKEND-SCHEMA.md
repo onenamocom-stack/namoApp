@@ -1243,12 +1243,49 @@ alter table content_views enable row level security;  -- no policies
 Migrations `content/0004_content_views`, then `0006_content_views_per_day`
 (adds `day`, backfilled from `created_at` in IST, and swaps the unique rule).
 `POST /v1/content/<id>/view/` (signed in) inserts a row and bumps
-`content.view_count` in one transaction — the owner that column was waiting
-for. **One per person per reel per IST day** since 3 Oct 2026, owner's call;
-it was once per person ever, which grew too slowly to read as alive. Within
-a day a replay or reload is not a new view. The author is not counted, anonymous viewers are
-not counted, hidden content is a 404. The app sends it after a reel has been
-on screen for two seconds.
+`content.view_count`. **Every view counts since 16 Oct 2026** (Rahul, under
+the owner's "jo Rahul bhaiya bol rhe hai vo krdo"): `view_count` goes up on
+each call, the same person again too; the row is still one per person per
+post per IST day and is what the 7-day insights and the 30-second check
+read. (3 Oct to 16 Oct the count was one per person per day, the owner's
+call; before that once per person ever.) The author is not counted,
+anonymous viewers are not counted, hidden content is a 404. The app sends it
+after two seconds on screen (a reel) or five on the page (a blog).
+
+### 5.2b′ `content_qualified_views` and `content_pay_settings` (16 Oct 2026)
+
+```sql
+create table content_pay_settings (     -- one row, id 1; the console's
+  id                  smallint primary key default 1,
+  paise_per_thousand  integer not null default 2000 check (paise_per_thousand >= 0),
+  updated_at          timestamptz not null
+);
+create table content_qualified_views (
+  id                  uuid primary key,
+  content_id          uuid not null references content(id) on delete cascade,
+  author_id           uuid not null,     -- the post's, copied for the period read
+  viewer_id           uuid not null,
+  day                 date not null,     -- IST
+  reason              varchar(8) not null,  -- watch | read | like | comment | repost
+  paise_per_thousand  integer not null,  -- the rate when it was counted
+  created_at          timestamptz not null,
+  constraint qualified_views_once_a_day unique (content_id, viewer_id, day)
+);
+create index qualified_views_author_at on content_qualified_views (author_id, created_at);
+```
+
+Migration `content/0011_qualified_views`. A qualified view: a reel (`clip`)
+played 30 seconds (`watch`), a blog (`article`) open 30 seconds (`read`),
+or a like, comment or reshare on a post (`post`). The app claims `watch` and
+`read` at `POST /v1/content/<id>/qualify/`; the server takes it only if the
+person's `content_views` row for today is at least 25 seconds old. Likes,
+reshares (`reactions.services.add_reaction`) and comments
+(`content.services.add_comment`) write theirs. Never the author, never
+signed out; shares are not counted. No row means ₹20 per 1,000 (2000
+paise). `GET /v1/content/me/earnings/?range=` adds the period's rows at
+their own rate (sum ÷ 1000, floored) to the person's link and tag
+commission (`earnings_ledger` rows starting "Referral" for a Pro,
+`creator_earnings` for a Creator) and returns one figure.
 
 ### 5.2c `entitlements` — things bought from the wallet and kept (30 Sep 2026)
 

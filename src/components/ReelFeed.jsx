@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Hashtags from './Hashtags.jsx'
 import { fetchByAuthor, fetchFeed, productHref, recordView } from '../lib/content.js'
+import useWatchQualify from './useWatchQualify.js'
 import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
@@ -189,9 +190,8 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
   /* A view is two seconds on screen, not a frame. Opening a reel link makes
      the FIRST reel active for an instant before the scroll lands on the
      tapped one, and a swipe passes through reels nobody watched — counting
-     on `active` alone recorded both. The server counts a person once per
-     reel per day, so a re-send the same day is harmless; the ref saves the request while
-     the reel stays mounted. */
+     on `active` alone recorded both. Every view counts on the server (16
+     Oct 2026), so the ref keeps it to one per time the reel is opened. */
   const counted = useRef(false)
   useEffect(() => {
     if (!active || counted.current) return undefined
@@ -201,6 +201,8 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
     }, 2000)
     return () => clearTimeout(t)
   }, [active, c.id])
+  // Thirty seconds played is a qualified view (16 Oct 2026, Rahul).
+  useWatchQualify(video, c.id)
 
   return (
     <section className="relative h-full snap-start snap-always overflow-hidden">

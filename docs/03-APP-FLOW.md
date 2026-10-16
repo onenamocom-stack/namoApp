@@ -1306,11 +1306,13 @@ that page, which carries Edit profile.
 
 A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
 
-- **Earnings, a Pro:** the period chips; commission in the period (shop,
-  and Market and e-books), Where it came from, the entries.
-- **Earnings, a Creator:** This month, In all, Waiting (7 days after
-  delivery); the latest fifty entries. No period chips: the Creator's book
-  has none.
+- **Earnings** (since 16 Oct 2026, both): the period chips; **Content
+  earnings** for the period, one figure, with "Namo works out your content
+  earnings from your views, qualified views and sales through your tags.
+  When ads run between posts, they count too."; Views (all time) and
+  Qualified views (the period), with what a qualified view is; then *Your
+  content · N*: every reel, photo, post and blog, each with its views and
+  qualified views, opening the reel or blog.
 - **Insights:** the last seven days (views, new followers, saves), your posts
   with views, what sold with your code.
 
