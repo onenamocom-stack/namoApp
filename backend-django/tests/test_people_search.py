@@ -24,15 +24,13 @@ URL = "/v1/profiles/search/"
 
 @pytest.mark.django_db
 class TestPeopleSearch:
-    def test_finds_posters_and_pros_not_silent_seekers(self, api_client, seeker_token, second_seeker_token, roster):
+    def test_finds_everybody_by_name_posts_or_not(self, api_client, seeker_token, second_seeker_token, roster):
+        # 17 Oct 2026, Rahul: "Search me सबका naam dikhe. We are social network."
         Profile.objects.filter(pk=SEEKER).update(name="Tara Verma", username="taraverma")
         Profile.objects.filter(pk=SECOND_SEEKER).update(name="Tara Silent")
-        # Before posting, Tara Verma is not findable.
-        assert api_client.get(f"{URL}?q=tara", **auth(second_seeker_token)).json()["items"] == []
-        _publish(api_client, seeker_token, kind="post", caption="hello")
         got = api_client.get(f"{URL}?q=tara", **auth(second_seeker_token)).json()["items"]
-        assert [g["id"] for g in got] == [SEEKER]
-        assert got[0]["username"] == "taraverma" and "phone" not in got[0]
+        assert [g["id"] for g in got] == [SECOND_SEEKER, SEEKER]  # by name: Silent, Verma
+        assert got[1]["username"] == "taraverma" and "phone" not in got[1]
         by_handle = api_client.get(f"{URL}?q=@taraver", **auth(second_seeker_token)).json()["items"]
         assert [g["id"] for g in by_handle] == [SEEKER]
 

@@ -1324,23 +1324,14 @@ def _follow_between(a, b):
 
 
 def fetch_author(profile_id, viewer_id=None):
-    """authors_public (025): the public name of a seeker whose posts are in
-    the feed — publishing a post is what puts a name on a screen; only people
-    who have published are listed, and nothing but the name is exposed.
-
-    One more way onto a screen (12 Oct 2026, Rahul): a follow between the
-    viewer and this person, either way. Your follow list already shows their
-    name and picture, and a tap on it must open their page, posts or not."""
+    """A person's public page header: name, username, picture, ticks.
+    Anybody who is not blocked (17 Oct 2026, Rahul: "We are social network";
+    before that only people with a live post, or a follow between you).
+    Nothing private: no birth details, phone or email."""
     from apps.profiles.models import Profile
 
-    has_live = Content.objects.filter(
-        author_id=profile_id, status=Content.Status.LIVE
-    ).exists()
-    if not has_live:
-        if not _follow_between(viewer_id, profile_id):
-            return None
-        if not Profile.objects.filter(id=profile_id, blocked_at=None).exists():
-            return None
+    if not Profile.objects.filter(id=profile_id, blocked_at=None).exists():
+        return None
     name = gateway.profile_name(profile_id)
     if name is None:
         return None

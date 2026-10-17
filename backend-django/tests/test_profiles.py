@@ -371,19 +371,20 @@ class TestPublicRead:
     a stranger's read of a private profile is a 404 so ids do not leak
     existence, and no shape but the owner's carries birth details."""
 
-    def test_private_profile_is_invisible_to_anonymous(self, api_client,
-                                                        clean_profiles):
+    def test_anybody_not_blocked_is_public_named(self, api_client, authed_client,
+                                                 clean_profiles):
+        # 17 Oct 2026, Rahul: everybody's name and picture, posts or not.
         full_profile()
+        assert api_client.get(f"/v1/profiles/{TEST_USER}/").json()["name"] == "Tara Verma"
+        assert authed_client.get(f"/v1/profiles/{TEST_USER}/").status_code == 200
+
+    def test_a_blocked_profile_is_invisible(self, api_client, clean_profiles):
+        from django.utils import timezone
+
+        full_profile(blocked_at=timezone.now())
         response = api_client.get(f"/v1/profiles/{TEST_USER}/")
         assert response.status_code == 404
         assert response.json()["reason"] == "not_found"
-
-    def test_private_profile_is_invisible_to_a_signed_in_stranger(
-        self, authed_client, clean_profiles
-    ):
-        full_profile()
-        response = authed_client.get(f"/v1/profiles/{TEST_USER}/")
-        assert response.status_code == 404
 
     def test_nonexistent_id_is_also_404(self, api_client, clean_profiles):
         response = api_client.get(f"/v1/profiles/{OTHER_USER}/")
@@ -403,12 +404,6 @@ class TestPublicRead:
         assert body["name"] == "Tara Verma"
         assert body["avatar_url"] == "https://media.example/faces/tara.jpg?v=1"
 
-    def test_author_with_only_a_draft_is_not_public(self, api_client,
-                                                    clean_profiles):
-        full_profile()
-        Content.objects.create(author_id=TEST_USER, kind="post",
-                               status="draft", caption="quiet")
-        assert api_client.get(f"/v1/profiles/{TEST_USER}/").status_code == 404
 
     def test_approved_consultant_is_public_named(self, api_client, clean_profiles):
         full_profile()
@@ -418,11 +413,6 @@ class TestPublicRead:
         assert response.status_code == 200
         assert response.json()["name"] == "Tara Verma"
 
-    def test_pending_consultant_is_not_public(self, api_client, clean_profiles):
-        full_profile()
-        Consultant.objects.create(profile_id=TEST_USER, category="Astrologer",
-                                  status="pending")
-        assert api_client.get(f"/v1/profiles/{TEST_USER}/").status_code == 404
 
     def test_public_shape_carries_no_birth_details(self, api_client, clean_profiles):
         full_profile()
@@ -785,10 +775,9 @@ class TestUsername:
         body = api_client.get("/v1/profiles/by-username/Tara.Verma/").json()
         assert body == {"id": TEST_USER, "username": "tara.verma", "is_consultant": True}
 
-    def test_resolve_a_seeker_only_once_they_have_posted(self, api_client, clean_profiles):
+    def test_resolve_a_seeker_who_never_posted(self, api_client, clean_profiles):
+        # 17 Oct 2026: everybody not blocked resolves.
         full_profile(username="tara.verma")
-        assert api_client.get("/v1/profiles/by-username/tara.verma/").status_code == 404
-        Content.objects.create(author_id=TEST_USER, kind="post", caption="hi")
         assert api_client.get("/v1/profiles/by-username/tara.verma/").json()["is_consultant"] is False
 
     def test_a_blocked_person_does_not_resolve(self, api_client, clean_profiles):

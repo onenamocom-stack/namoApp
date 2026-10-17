@@ -371,25 +371,14 @@ def birth_subquery(outer_field, column):
 
 
 def public_profile(profile_id):
-    """The narrow public row: id, name, avatar_url — and ONLY for a profile
-    the existing public surfaces already expose (authors_public: has live
-    content, 025; consultants_public: an approved practice, 007). Anything
-    else answers None (the view's 404) so ids do not leak existence. No
+    """The narrow public row: id, name, avatar_url, bio — for anybody who
+    is not blocked (17 Oct 2026, Rahul: "Search me सबका naam dikhe. We are
+    social network." Before that, only somebody with a live post or an
+    approved practice). A blocked account answers None, the view's 404. No
     birth details, no phone, no email, no admin — the 027 header's rule:
     other people's faces come from a narrow projection, never a wider
-    policy on the table. avatar_url rides along as 027's documented
-    follow-up for authors_public."""
-    from apps.consultants.models import Consultant, ConsultantStatus
-    from apps.content.models import Content
-
-    visible = Content.objects.filter(
-        author_id=profile_id, status=Content.Status.LIVE
-    ).exists() or Consultant.objects.filter(
-        profile_id=profile_id, status=ConsultantStatus.APPROVED
-    ).exists()
-    if not visible:
-        return None
-    profile = Profile.objects.filter(pk=profile_id).first()
+    policy on the table."""
+    profile = Profile.objects.filter(pk=profile_id, blocked_at__isnull=True).first()
     if profile is None:
         return None
     return {
@@ -402,24 +391,20 @@ def public_profile(profile_id):
 
 def search_people(q, limit=30):
     """People by name or username, for Search's People tab (14 Oct 2026,
-    Rahul). The same rule as `public_profile`: only somebody the public
-    surfaces already show — live content, or an approved practice — so a
-    seeker who has never posted is no more findable by name here than by
-    id. Blocked accounts never. Two characters at least."""
+    Rahul). Everybody with a name who is not blocked (17 Oct 2026, Rahul:
+    "We are social network"; before that only people with a live post or an
+    approved practice). Two characters at least."""
     from django.db.models import Q
 
     from apps.consultants.models import Consultant, ConsultantStatus
-    from apps.content.models import Content
 
     q = (q or "").strip().lstrip("@")
     if len(q) < 2:
         return []
-    authors = Content.objects.filter(status=Content.Status.LIVE).values("author_id")
-    approved = Consultant.objects.filter(status=ConsultantStatus.APPROVED).values("profile_id")
     rows = (
         Profile.objects.filter(Q(name__icontains=q) | Q(username__istartswith=q))
         .filter(blocked_at__isnull=True)
-        .filter(Q(id__in=authors) | Q(id__in=approved))
+        .exclude(name__isnull=True).exclude(name="")
         .order_by("name")[:limit]
     )
     approved_ids = set(
@@ -546,12 +531,10 @@ def set_username(user_id, raw):
 
 
 def resolve_username(raw):
-    """{id, is_consultant} for the profile behind a username — only when the
-    public surfaces already show that person (an approved consultant, or
-    somebody with a live post; the public_profile rule) and they are not
-    blocked. Anything else is None, the view's 404."""
+    """{id, is_consultant} for the profile behind a username, for anybody
+    not blocked (17 Oct 2026, the public_profile rule). Anything else is
+    None, the view's 404."""
     from apps.consultants.models import Consultant, ConsultantStatus
-    from apps.content.models import Content
 
     name = username_rules.normalize(raw)
     profile = Profile.objects.filter(username=name, blocked_at__isnull=True).first()
@@ -560,10 +543,6 @@ def resolve_username(raw):
     pro = Consultant.objects.filter(
         profile_id=profile.pk, status=ConsultantStatus.APPROVED
     ).exists()
-    if not pro and not Content.objects.filter(
-        author_id=profile.pk, status=Content.Status.LIVE
-    ).exists():
-        return None
     return {"id": str(profile.pk), "username": profile.username, "is_consultant": pro}
 
 

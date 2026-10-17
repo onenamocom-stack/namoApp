@@ -197,11 +197,11 @@ class TestProfile:
         assert response["Content-Type"] == "image/jpeg"
         assert Image.open(io.BytesIO(response.content)).size == (600, 600)
 
-    def test_a_seeker_with_no_posts_previews_as_namo(self, client, network):
+    def test_a_seeker_with_no_posts_previews_with_their_name(self, client, network):
+        # 17 Oct 2026: everybody's page is public, so is its preview.
         self._person(avatar_url="https://cdn.example/face.png")
         page = client.get("/rahulvjain").content.decode()
-        assert 'og:title" content="NAMO"' in page and "Rahul Jain" not in page
-        assert client.get(f"/og/profile/{self.PID}.jpg").status_code == 302
+        assert 'og:title" content="Rahul Jain on NAMO"' in page
 
     def test_a_seeker_who_posted_previews_with_their_bio(self, client, network):
         self._person(bio="Seeker of the stars.")

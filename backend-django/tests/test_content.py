@@ -879,13 +879,9 @@ class TestFollowCountsAndAuthors:
         assert response.json() == {"followers": 1, "following": 0}
         assert "actor" not in json.dumps(response.json())
 
-    def test_authors_public_lists_only_publishers(self, api_client, seeker_token, roster):
-        # 025 check point 6b: publishing is what puts a name on a screen.
-        unpublished = api_client.get(f"/v1/content/authors/{SEEKER}/")
-        assert unpublished.status_code == 404
-        assert unpublished.json()["reason"] == "not_found"
-
-        _publish(api_client, seeker_token, kind="post", caption="a photo")
+    def test_authors_public_lists_everybody_not_blocked(self, api_client, seeker_token, roster):
+        # 17 Oct 2026, Rahul ("We are social network"): a name is on a
+        # screen whether or not they have posted. Was 025 check point 6b.
         published = api_client.get(f"/v1/content/authors/{SEEKER}/")
         assert published.status_code == 200
         # is_consultant: the app forwards a consultant to /consult/:id (6 Oct 2026).
@@ -894,29 +890,23 @@ class TestFollowCountsAndAuthors:
             "is_consultant": False, "is_creator": False, "avatar_url": None,
         }
 
-        # A draft does not make an author.
-        draft_author = str(uuid.uuid4())
-        from django.db import connection
+        # A blocked person is not, and nobody is an id that does not exist.
+        from apps.profiles.models import Profile
+        from django.utils import timezone
 
-        with connection.cursor() as cursor:
-            _profile(cursor, draft_author, "Quiet Person")
-        # publish a draft directly through the service — no live content.
-        services.publish_content(draft_author, "authenticated", kind="post",
-                                 caption="d", status=Content.Status.DRAFT)
-        assert api_client.get(f"/v1/content/authors/{draft_author}/").status_code == 404
+        Profile.objects.filter(pk=SEEKER).update(blocked_at=timezone.now())
+        assert api_client.get(f"/v1/content/authors/{SEEKER}/").status_code == 404
+        assert api_client.get(f"/v1/content/authors/{uuid.uuid4()}/").status_code == 404
 
-    def test_a_follow_opens_the_page_of_somebody_who_never_posted(
+    def test_the_page_of_somebody_who_never_posted_opens(
         self, api_client, seeker_token, sign_hs256, roster
     ):
-        # 12 Oct 2026, Rahul: a name in your follow list opens their page.
+        # 17 Oct 2026, Rahul: everybody's page opens, follow or not.
         URL = f"/v1/content/authors/{SECOND_SEEKER}/"
         stranger = sign_hs256(claims=make_claims(sub=APPROVED))
-        assert api_client.get(URL, **auth(seeker_token)).status_code == 404
-        Reaction.objects.create(actor_id=SECOND_SEEKER, target_type="profile", target_id=SEEKER, kind="follow")
-        mine = api_client.get(URL, **auth(seeker_token))
-        assert mine.status_code == 200 and mine.json()["id"] == SECOND_SEEKER
-        assert api_client.get(URL).status_code == 404
-        assert api_client.get(URL, **auth(stranger)).status_code == 404
+        assert api_client.get(URL, **auth(seeker_token)).json()["id"] == SECOND_SEEKER
+        assert api_client.get(URL, **auth(stranger)).status_code == 200
+        assert api_client.get(URL).status_code == 200
 
 
 # ── media wiring: presign -> PUT -> confirm -> publish ───────────────────────

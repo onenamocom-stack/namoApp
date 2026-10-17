@@ -700,21 +700,22 @@ Astrologers · Products · **Groups** · Posts · Bhakti. People and Groups are
 asked of the server as you type (two characters at least, a quarter second
 after typing stops): **People** by name or `@username`, each with their
 tick, opening `/consult/:id` for a Pro and `/u/:id` for anyone else;
-**Groups** by name, city or about, opening the group. Only people the app
-already shows publicly are found — somebody who has posted, or an approved
-Pro — so a seeker who has never posted is not findable by name, the same
-rule as their profile link. The Chat tab's box opens on People.
+**Groups** by name, city or about, opening the group. **Everybody is found
+by name** (17 Oct 2026, Rahul: "Search me सबका naam dikhe. We are social
+network."), posts or not; a blocked account never. It replaced the rule of
+14 Oct, under which only somebody who had posted or an approved Pro was
+findable. The Chat tab's box opens on People.
 
 **`1namo.com/<username>`** (11 Oct 2026, Rahul) forwards to `/consult/:id`
 for a consultant and `/u/:id` for anybody else, signed out too (a seeker's
 page still asks a signed-out visitor to sign in). A name nobody has, or a
-seeker with no posts, shows *Nobody by that name*. Share profile shares this
+blocked account, shows *Nobody by that name*. Share profile shares this
 address whenever the person has a username, from either app.
 
-**A name in your follow list always opens** (12 Oct 2026, Rahul): `/u/:id`
-for somebody who has never posted exists for you when either of you follows
-the other; with no posts it says "Nothing published yet". To anybody else,
-somebody who has never posted still has no page, and the app goes to Home.
+**Everybody's page opens** (17 Oct 2026, Rahul; it replaced 12 Oct's "only
+when one of you follows the other"): `/u/:id` for anybody not blocked, with
+"Nothing published yet" when they have no posts. It shows the name, picture,
+bio and posts; birth details, phone and email are never on it.
 
 **One public page per consultant** (6 Oct 2026): `/u/:id` forwards to
 `/consult/:id` when the person is an approved consultant (the author lookup
