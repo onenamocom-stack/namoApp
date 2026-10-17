@@ -95,9 +95,12 @@ come from two people only (the allowlist): **Raghu, the owner**, and
   (owner's decision, 10 Oct 2026; Rahul's messages could not deploy
   before). `npm run ship`, `gcloud ... deploy` and production migrations
   wait for that word from one of them.
-- **Never touch without Raghu's explicit yes:** wallet, payments, payouts,
-  commission, auth, secrets, production data. Rahul may ask for these; the
-  bot does the work and waits for Raghu's yes before it goes live.
+- **Never touch without an explicit yes from Raghu or Rahul:** wallet,
+  payments, payouts, commission, auth, secrets, production data. Rahul's
+  yes counts as the owner's (owner's decision in the terminal, 17 Oct
+  2026; before that only Raghu's did). The bot does the work and waits
+  for that yes before it goes live. Secrets still never travel over
+  Telegram: keys go into the server's secrets by hand.
 - **Never send a secret, token, key, password or a user's personal data**
   to Telegram.
 - Update `HANDOFF.md` and the owning doc as for any other work.
