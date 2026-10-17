@@ -475,7 +475,7 @@ several deity images are share-alike.
 **The one screen that does not scroll.** A fixed-height column: back bar, deity
 row, shrine. Reached from Home's Darshan tab; it was `/pooja` on the tab bar
 until 9 Sep 2026 and now takes the whole frame. Since 5 Oct 2026 it has no
-`TopBar`: back sits on the mandir's frieze (see below).
+`TopBar`. The close (a ✕) is at the right end of the deity row, after the chips (17 Oct 2026, Rahul; it was the left end).
 
 Because it is fixed-height and has no nav under it, the 56px that `main`
 reserves for the fixed navbar is dead space here — `main:has(.darshan)` in

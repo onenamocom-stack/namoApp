@@ -408,9 +408,6 @@ export default function Pooja() {
           boxShadow: 'inset 0 -1px 0 rgba(110,64,8,.55)',
         }}
       >
-        {/* A cross, not an arrow (10 Oct 2026, Rahul): an arrow at the start
-            of the chip row read as a button that scrolls the chips. */}
-        <BackButton onClick={goBack} icon="close" label="Close" />
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
           {deities.map((d) => {
             const on = d.id === deity.id
@@ -437,6 +434,10 @@ export default function Pooja() {
             )
           })}
         </ul>
+        {/* A cross, not an arrow (10 Oct 2026, Rahul): an arrow at the start
+            of the chip row read as a button that scrolls the chips. At the
+            right end since 17 Oct 2026 (Rahul). */}
+        <BackButton onClick={goBack} icon="close" label="Close" />
       </div>
 
       {/* ── The shrine ────────────────────────────────────────────────── */}
