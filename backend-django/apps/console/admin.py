@@ -137,7 +137,7 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
                 from apps.notifications import services as notify
 
                 notify.push(consultant.profile_id, kind="module.pro.approved", title="You are a Pro now",
-                            body="People can book you. Set your price and hours on Dashboard, then go online.",
+                            body="People can book you. Set your price and hours in Studio, then go online.",
                             ref_type="module", ref_id=str(consultant.profile_id))
             moved += 1
         self.message_user(

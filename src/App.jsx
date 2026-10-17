@@ -91,6 +91,13 @@ const DeskLayout = lazy(() => import('./screens/Desk.jsx'))
 const DeskQueue = lazy(() => import('./pro/ProConsult.jsx'))
 const DeskRing = lazy(() => import('./pro/ProRing.jsx'))
 
+/** `/dashboard/...` became `/studio/...` (17 Oct 2026): old links,
+ *  notifications and bookmarks land on the same screen. */
+function OldDashboard() {
+  const { pathname, search } = useLocation()
+  return <Navigate to={pathname.replace(/^\/dashboard/, '/studio') + search} replace />
+}
+
 function Dash({ need = 'pro', children }) {
   return (
     <Suspense fallback={<Loader />}>
@@ -467,37 +474,39 @@ function Frame() {
                 <Route path="/reports" element={<Navigate to="/home" replace />} />
                 <Route path="/tarot" element={<Tarot />} />
 
-                {/* Dashboard (14 Oct 2026, Phase 16): a Pro's and a
-                    Creator's own screens. Not under /pro — see
-                    lib/dashboard.js. */}
+                {/* Studio (Rahul, 17 Oct 2026; it was Dashboard, /dashboard,
+                    from 14 Oct): a Pro's, a Creator's and a Seller's own
+                    screens. Not under /pro — see lib/dashboard.js. Old
+                    /dashboard links land on the same screen here. */}
                 <Route
-                  path="/dashboard"
+                  path="/studio"
                   element={
                     <Suspense fallback={<Loader />}>
                       <Dashboard />
                     </Suspense>
                   }
                 />
-                {/* Studio went from the Dashboard (14 Oct 2026, Rahul). */}
+                {/* The posting screen went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
+                <Route path="/dashboard/*" element={<OldDashboard />} />
                 {/* The mixed page went into the Dashboard's three sections (16 Oct 2026, Rahul). */}
-                <Route path="/dashboard/earnings" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/content" element={<Dash need="creator"><ContentEarnings /></Dash>} />
+                <Route path="/studio/earnings" element={<Navigate to="/studio" replace />} />
+                <Route path="/studio/content" element={<Dash need="referrer"><ContentEarnings /></Dash>} />
                 {/* The three modules (docs/06 Phase 18): ask here; a Pro applies at /earn/pro. */}
-                <Route path="/earn" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/earn" element={<Navigate to="/studio" replace />} />
                 <Route path="/earn/pro" element={<ProApply />} />
-                <Route path="/dashboard/consulting" element={<Dash><DashConsulting /></Dash>} />
+                <Route path="/studio/consulting" element={<Dash><DashConsulting /></Dash>} />
                 {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
-                <Route path="/dashboard/profile" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/profile/:tab" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/affiliate" element={<Dash need="creator"><DashAffiliate /></Dash>} />
-                <Route path="/dashboard/payout-details" element={<Dash><DashPayout /></Dash>} />
-                <Route path="/dashboard/calendar" element={<Dash><ProCalendar /></Dash>} />
-                <Route path="/dashboard/market" element={<Dash need="seller"><SellHome /></Dash>} />
-                <Route path="/dashboard/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
-                <Route path="/dashboard/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
-                <Route path="/dashboard/market/new/:kind" element={<Dash need="seller"><SellForm /></Dash>} />
-                <Route path="/dashboard/market/:id" element={<Dash need="seller"><SellForm /></Dash>} />
+                <Route path="/studio/profile" element={<Navigate to="/studio" replace />} />
+                <Route path="/studio/profile/:tab" element={<Navigate to="/studio" replace />} />
+                <Route path="/studio/affiliate" element={<Dash need="referrer"><DashAffiliate /></Dash>} />
+                <Route path="/studio/payout-details" element={<Dash><DashPayout /></Dash>} />
+                <Route path="/studio/calendar" element={<Dash><ProCalendar /></Dash>} />
+                <Route path="/studio/market" element={<Dash need="seller"><SellHome /></Dash>} />
+                <Route path="/studio/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
+                <Route path="/studio/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
+                <Route path="/studio/market/new/:kind" element={<Dash need="seller"><SellForm /></Dash>} />
+                <Route path="/studio/market/:id" element={<Dash need="seller"><SellForm /></Dash>} />
 
               </>
             )}

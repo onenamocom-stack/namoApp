@@ -37,7 +37,7 @@ export default function ProApply() {
 
   // The main app serves this at /earn/pro too (docs/06 Phase 18): an
   // approved Pro there goes to Dashboard, not the pro app's studio.
-  if (session && consultant?.status === 'approved') return <Navigate to={isPro ? '/pro/studio' : '/dashboard'} replace />
+  if (session && consultant?.status === 'approved') return <Navigate to={isPro ? '/pro/studio' : '/studio'} replace />
 
   return (
     <div className="flex min-h-full flex-col px-5 pb-16 pt-8">

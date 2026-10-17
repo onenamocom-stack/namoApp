@@ -14,14 +14,14 @@ from .models import Cashback, ReferralCode
 def influencer_stats(request):
     """The Influencer tab: the caller's code and link, signups and buyers
     this month, last month and in all, and the latest joins (dates only).
-    Refused unless the console has made the caller an influencer."""
-    from apps.profiles.models import Profile
+    Refused below Content step 1."""
+    from apps.profiles import services as profile_services
 
     from . import influencer
 
-    if not Profile.objects.filter(pk=request.user.pk, influencer=True).exists():
+    if not profile_services.may_refer(request.user.pk):
         return Response(
-            refusal_body("not_influencer", "This account is not set up as a creator."),
+            refusal_body("not_influencer", "Your invite code earns from Content step 1. See Studio."),
             status=403,
         )
     return Response(influencer.stats(request.user.pk))
@@ -227,9 +227,10 @@ def first_order(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def creator_earnings(request):
-    """A Creator's 10% book for their Dashboard (14 Oct 2026)."""
+    """The referral book for Studio (14 Oct 2026): Content step 1 or 2
+    since 17 Oct."""
     from apps.profiles import services as profile_services
 
-    if not profile_services.is_creator(request.user.pk):
-        return Response(refusal_body("not_creator", "Only a Creator has this book."), status=404)
+    if not profile_services.may_refer(request.user.pk):
+        return Response(refusal_body("not_creator", "Only Content step 1 has this book."), status=404)
     return Response(services.creator_earnings(request.user.pk))

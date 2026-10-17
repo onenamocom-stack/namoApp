@@ -37,7 +37,7 @@ Three layers live here:
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, F, OuterRef, Subquery
+from django.db.models import Avg, Count, F, OuterRef, Q, Subquery
 from django.db.models.expressions import RawSQL
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
@@ -67,7 +67,7 @@ DUPLICATE_REFUSAL = "You have already reviewed this session"
 REEL_REFUSAL = "Only a consultant can post a reel"
 VIDEO_REFUSAL = "Reels and video are for Creators. Ask for the Creator module in Profile settings"
 BLOCKED_REFUSAL = "Your account cannot post"
-TAG_REFUSAL = "Only a Creator can tag products. Ask for the Creator module in Profile settings"
+TAG_REFUSAL = "Tagging products opens with Content step 1. See Studio"
 TAG_LIMIT_REFUSAL = f"Tag at most {MAX_TAGGED_PRODUCTS} products"
 TAG_MISSING_REFUSAL = "One of those products is not in the shop"
 SELF_REPORT_REFUSAL = "You cannot report your own post"
@@ -324,8 +324,9 @@ def _checked_listings(author_id, role, listing_ids, n_products):
     products, and the same three-tag limit counting both."""
     if not listing_ids:
         return []
-    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
-    if role != "admin" and not profile_services.is_creator(author_id):
+    # Tagging is Content step 1's (Rahul, 17 Oct 2026; the Creator module's
+    # from 16 Oct).
+    if role != "admin" and not profile_services.may_refer(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     from apps.market import services as market
 
@@ -337,8 +338,9 @@ def _checked_ebooks(author_id, role, ebook_ids, n_other):
     products, and the same three-tag limit counting everything."""
     if not ebook_ids:
         return []
-    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
-    if role != "admin" and not profile_services.is_creator(author_id):
+    # Tagging is Content step 1's (Rahul, 17 Oct 2026; the Creator module's
+    # from 16 Oct).
+    if role != "admin" and not profile_services.may_refer(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     from apps.bhakti import services as bhakti
 
@@ -355,8 +357,9 @@ def _checked_products(author_id, role, product_ids):
     ids = list(dict.fromkeys(str(p) for p in product_ids))  # de-dup, keep order
     if not ids:
         return []
-    # Tagging is the Creator module's (docs/06 Phase 18, 16 Oct 2026).
-    if role != "admin" and not profile_services.is_creator(author_id):
+    # Tagging is Content step 1's (Rahul, 17 Oct 2026; the Creator module's
+    # from 16 Oct).
+    if role != "admin" and not profile_services.may_refer(author_id):
         raise PermissionDenied(TAG_REFUSAL)
     if len(ids) > MAX_TAGGED_PRODUCTS:
         raise ValidationError({"product_ids": TAG_LIMIT_REFUSAL})
@@ -892,16 +895,18 @@ def attach_products(rows):
     }
     from apps.profiles.models import Profile
 
-    creators = set(
-        Profile.objects.filter(id__in=tagged_authors, influencer=True, blocked_at__isnull=True)
+    referrers = set(
+        Profile.objects.filter(Q(referrer=True) | Q(influencer=True), id__in=tagged_authors,
+                               blocked_at__isnull=True)
         .values_list("id", flat=True)
     )
     for r in rows:
         r._products = by_content.get(r.id, [])
-        # Only an approved consultant's or a Creator's code is worth
-        # carrying (Creators since 14 Oct 2026). An admin-authored tag has
-        # nobody behind it.
-        earns = r._approved or r.author_id in creators
+        # Only a code that earns is worth carrying: Content step 1 or 2
+        # (17 Oct 2026; an approved consultant's still rides along, though
+        # the visit pays only step 1). An admin-authored tag has nobody
+        # behind it.
+        earns = r._approved or r.author_id in referrers
         r._shop_ref = codes.get(r.author_id) if (r._products or r._listings or r._ebooks) and earns else None
     return rows
 

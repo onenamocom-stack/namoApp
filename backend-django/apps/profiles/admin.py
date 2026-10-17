@@ -39,8 +39,9 @@ class ProfileForm(forms.ModelForm):
         model = Profile
         fields = "__all__"
         # The column is `influencer`; the word on every screen is Creator
-        # (13 Oct in the app, 14 Oct here, Rahul).
-        labels = {"influencer": "Creator"}
+        # (13 Oct in the app, 14 Oct here, Rahul). Since 17 Oct it is
+        # Content step 2, and `referrer` is step 1.
+        labels = {"influencer": "Creator (Content, step 2)", "referrer": "Content, step 1"}
 
     def clean_username(self):
         return self.cleaned_data.get("username") or None

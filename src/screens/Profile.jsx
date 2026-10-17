@@ -95,7 +95,7 @@ export default function Profile() {
   const tabs = [
     ...TABS,
     ...(profile?.seller ? [{ key: 'shop', icon: 'cart', label: 'prof.tab.shop' }] : []),
-    ...(profile?.influencer ? [{ key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }] : []),
+    ...(profile?.referrer ? [{ key: 'influencer', icon: 'award', label: 'prof.tab.influencer' }] : []),
   ]
   // Bare /profile opens on Posts, always (5 Oct 2026, owner's request) —
   // it used to open on the kundli when you had not posted yet.
@@ -115,7 +115,7 @@ export default function Profile() {
         <div className="animate-fade">
           {active === 'saved' && <SavedTab />}
           {active === 'kundli' && <KundliTab />}
-          {active === 'influencer' && profile?.influencer && <InfluencerTab />}
+          {active === 'influencer' && profile?.referrer && <InfluencerTab />}
         </div>
         <div className="h-24" />
       </>
@@ -172,7 +172,7 @@ export default function Profile() {
         {active === 'commented' && <CommentedTab />}
         {active === 'saved' && <SavedTab />}
         {active === 'kundli' && <KundliTab />}
-        {active === 'influencer' && profile?.influencer && <InfluencerTab />}
+        {active === 'influencer' && profile?.referrer && <InfluencerTab />}
       </div>
 
       <div className="h-24" />
@@ -215,7 +215,7 @@ function Hero({ posts, counts }) {
         <AvatarPicker />
         <ProfileHead
           name={me.name}
-          mark={(profile?.influencer || profile?.seller || consultant?.status === 'approved') && <VerifiedMark size={20} />}
+          mark={(profile?.influencer || consultant?.status === 'approved') && <VerifiedMark size={20} />}
           stats={[
             { n: posts?.length ?? null, label: t('prof.posts') },
             { n: counts.followers, label: t('prof.followers'), onClick: () => setListing('followers') },
@@ -258,10 +258,10 @@ function Hero({ posts, counts }) {
           page as well. */}
       {profile && (
         <Link
-          to="/dashboard"
+          to="/studio"
           className="mt-2 block rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
         >
-          Dashboard
+          Studio
         </Link>
       )}
       <FollowSheet which={listing} onClose={() => setListing(null)} />
@@ -546,7 +546,7 @@ function SettingsPage({ pro }) {
       {/* A pro's profile is their consultant page; what was in its tabs is
           here (10 Oct 2026). The intro went to Edit profile (14 Oct 2026,
           Rahul), so this is only a Creator's tab now. */}
-      {pro && profile?.influencer && (
+      {pro && profile?.referrer && (
         <section className="border-b border-rule px-5 py-6">
           <Kicker>{t('nav.profile')}</Kicker>
           <div className="mt-2">
@@ -562,7 +562,7 @@ function SettingsPage({ pro }) {
       <section className="border-b border-rule px-5 py-6">
         <Kicker>Earn on Namo</Kicker>
         <div className="mt-2">
-          <Row to="/dashboard" title="Become a Creator, Pro or Seller" note="On your Dashboard: ask for a module; the team approves it" />
+          <Row to="/studio" title="Studio" note="Earn from content, consulting or selling" />
         </div>
       </section>
 

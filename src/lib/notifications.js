@@ -55,9 +55,9 @@ export function alertHref(n) {
   // A Market listing (15 Oct 2026): a seller's news opens their listings,
   // an event's reminder its page.
   if (n?.ref_type === 'listing' && n.ref_id) {
-    return n.kind === 'market.event_soon' ? `/shop/l/${n.ref_id}` : '/dashboard/market'
+    return n.kind === 'market.event_soon' ? `/shop/l/${n.ref_id}` : '/studio/market'
   }
-  if (n?.kind === 'market.payout') return '/dashboard/market'
+  if (n?.kind === 'market.payout') return '/studio/market'
   return null
 }
 

@@ -136,7 +136,7 @@ class TestTheMenu:
         body = client.get(CONSOLE).content.decode()
         # By module since 16 Oct 2026 (Rahul): the queues on top, then a card each.
         for fragment in ("Waiting for somebody", "Pros applying", "Creator and Seller requests",
-                         "To pay on the 7th", "Parcels to send", "Reels and posts", "Qualified views",
+                         "To pay on the 7th", "Parcels to send", "Reels and posts", "Engagement",
                          "Payout statements", "Audit trail"):
             assert fragment in body, fragment
 

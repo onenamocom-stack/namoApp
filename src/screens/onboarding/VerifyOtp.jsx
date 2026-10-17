@@ -78,7 +78,7 @@ export default function VerifyOtp() {
     // the Consulting card is the application (pro.1namo.com closed on
     // 16 Oct 2026). The consultant build stays on its own home.
     if (pro) {
-      navigate(isPro ? '/' : '/dashboard')
+      navigate(isPro ? '/' : '/studio')
       return
     }
     /* The referral code was typed on the phone screen, beside the number,

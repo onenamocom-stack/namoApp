@@ -9,24 +9,16 @@ import { askModule, myModules } from '../lib/profile.js'
 import { useStore } from '../store.jsx'
 
 /**
- * The three modules' cards (docs/06 Phase 18, Rahul 16 Oct 2026). Since the
- * same day they live on the Dashboard (Rahul: "Is page ko dashboard me he
- * merge kar do"), which shows a section for each module held and this card,
- * with its request, for each one not held; `/earn` redirects there.
- *
- * Earn on Namo (docs/06 Phase 18, Rahul 16 Oct 2026): the three modules —
- * Creator, Pro, Seller — which you hold, and a request for the others. Each
- * is approved by the team; anybody holding any module carries the blue
- * tick. Creator and Seller ask a few questions here; Pro is the consultant
- * application (`/earn/pro`).
+ * The modules' cards (docs/06 Phase 18, Rahul 16 Oct 2026). Since the same
+ * day they live in Studio (the Dashboard until 17 Oct; Rahul: "Is page ko
+ * dashboard me he merge kar do"), which shows a section for each module and
+ * this card, with its request, for each one not held; `/earn` redirects
+ * there. Content has its own card with two steps (`ContentCard`, 17 Oct
+ * 2026); Pro and Seller use `ModuleCard`. Seller asks a few questions here;
+ * Pro is the consultant application (`/earn/pro`). The blue tick is a Pro's
+ * and Content step 2's only (17 Oct 2026, Rahul).
  */
 export const CARDS = [
-  {
-    key: 'creator',
-    title: 'Creator',
-    icon: 'play',
-    line: 'Post reels and videos, tag products, and earn on your views and on what sells through your tags.',
-  },
   {
     key: 'pro',
     title: 'Pro',
@@ -59,7 +51,7 @@ export default function Earn() {
     <>
       <TopBar title="Earn on Namo" back backTo="/profile/settings" />
       <p className="px-5 pt-5 text-meta t-body">
-        Three ways to earn. Ask for any of them; the team approves each. Anybody holding one carries the blue tick{' '}
+        Ways to earn. Ask for any of them; the team approves each. A Pro carries the blue tick{' '}
         <VerifiedMark size={14} className="align-[-2px]" />.
       </p>
 
@@ -140,8 +132,8 @@ export function ModuleCard({ card, state, questions, open, onOpen, onSent, inDas
       )}
       {state.held && children && <div className="border-t border-rule px-4 pb-1">{children}</div>}
       {state.held && !inDashboard && (
-        <Link to="/dashboard" className="block border-t border-rule px-4 py-3 text-center text-micro font-semibold t-heading">
-          Open Dashboard →
+        <Link to="/studio" className="block border-t border-rule px-4 py-3 text-center text-micro font-semibold t-heading">
+          Open Studio →
         </Link>
       )}
     </li>
@@ -188,5 +180,136 @@ function AskForm({ module, questions, onSent }) {
         {busy ? 'Sending…' : 'Send for approval'}
       </PopButton>
     </div>
+  )
+}
+
+/** One condition's bar (Rahul, 17 Oct 2026: "completion bar, like YT"):
+ *  what it needs, what you have. */
+function ConditionBar({ row }) {
+  const share = Math.min(1, row.need ? row.have / row.need : 0)
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-3 text-micro">
+        <span className="t-body">{row.label}</span>
+        <span className={`tabular-nums font-semibold ${row.done ? 'text-ok' : 't-heading'}`}>
+          {row.have.toLocaleString('en-IN')} / {row.need.toLocaleString('en-IN')}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface2">
+        <div className={`h-full rounded-full ${row.done ? 'bg-ok' : 'bg-gold-fill'}`} style={{ width: `${share * 100}%` }} />
+      </div>
+    </li>
+  )
+}
+
+/** A step's conditions as bars. */
+export function StepBars({ step }) {
+  if (!step) return null
+  return <ul className="mt-3 space-y-2.5">{step.conditions.map((r) => <ConditionBar key={r.key} row={r} />)}</ul>
+}
+
+/**
+ * The Content card (Rahul, 17 Oct 2026; docs/01 §12): two steps.
+ * Step 1 (100 followers, 10 videos, 30 days) is yours the moment you ask
+ * with all three met: tags, product links and your invite code earn.
+ * Step 2 (500 followers, and 10 videos and 1,00,000 views in 90 days)
+ * opens the request; the team approves it, and your views earn too.
+ * `asks` is `myModules()`: modules, progress, questions. `children` are
+ * the links once step 1 is held.
+ */
+export function ContentCard({ asks, onChanged, children = null }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [asking, setAsking] = useState(false)
+  const { showToast } = useStore()
+  const one = asks.modules.referrer
+  const two = asks.modules.creator
+  const progress = asks.progress
+  const req = two.request
+
+  const startOne = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await askModule('referrer', {})
+      showToast('Step 1 is yours. Tag products and share your links.')
+      onChanged()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const badge = two.held ? 'Step 2' : one.held ? 'Step 1' : null
+
+  return (
+    <li className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule">
+      <div className="flex gap-3.5 p-4">
+        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[var(--orange-hi)] to-[var(--orange-lo)] text-white shadow">
+          <Icon name="play" size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-lead font-semibold t-heading">Content</p>
+            {badge && <span className="rounded-full bg-ok px-2 py-0.5 text-[11px] font-semibold text-white">{badge}</span>}
+          </div>
+          <p className="mt-1 text-meta t-body">
+            Post, tag products and share your invite code. Step 1 earns on referrals. Step 2 earns on your views too.
+          </p>
+        </div>
+      </div>
+
+      {!one.held && (
+        <div className="border-t border-rule px-4 py-3">
+          <p className="text-meta font-semibold t-heading">Step 1 · Earn on referrals</p>
+          <StepBars step={progress.step1} />
+          {error && <p className="mt-3 text-micro text-live">{error}</p>}
+          {progress.step1.met ? (
+            <PopButton size="sm" className="mt-3" disabled={busy} onClick={startOne}>
+              {busy ? 'Starting…' : 'Start step 1'}
+            </PopButton>
+          ) : (
+            <p className="mt-3 text-micro t-sub">Meet all three and step 1 opens at once. No approval needed.</p>
+          )}
+        </div>
+      )}
+
+      {one.held && children && <div className="border-t border-rule px-4 pb-1">{children}</div>}
+
+      {!two.held && (
+        <div className={`border-t border-rule px-4 py-3 ${one.held ? '' : 'opacity-60'}`}>
+          <p className="text-meta font-semibold t-heading">Step 2 · Earn on your views</p>
+          <StepBars step={progress.step2} />
+          {!one.held ? (
+            <p className="mt-3 text-micro t-sub">Opens after step 1.</p>
+          ) : req?.status === 'pending' ? (
+            <p className="mt-3 rounded-xl bg-surface2 px-3 py-2 text-micro t-body">Sent. The team is looking at it.</p>
+          ) : !progress.step2.met ? (
+            <p className="mt-3 text-micro t-sub">Meet all three, then apply. The team approves it.</p>
+          ) : asking ? (
+            <div className="mt-3">
+              <AskForm module="creator" questions={asks.questions.creator} onSent={() => {
+                setAsking(false)
+                showToast('Sent. The team will look at it.')
+                onChanged()
+              }} />
+            </div>
+          ) : (
+            <>
+              {req?.status === 'rejected' && req.note && (
+                <p className="mt-3 rounded-xl bg-surface2 px-3 py-2 text-micro t-body">
+                  <span className="font-semibold text-live">Team: </span>
+                  {req.note}
+                </p>
+              )}
+              <PopButton size="sm" className="mt-3" onClick={() => setAsking(true)}>
+                {req ? 'Apply again' : 'Apply for step 2'}
+              </PopButton>
+            </>
+          )}
+        </div>
+      )}
+    </li>
   )
 }

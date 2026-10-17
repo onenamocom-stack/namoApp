@@ -2,15 +2,19 @@
 
 A person holds any of them, each granted by approval, no exceptions:
 
-  creator -> `profiles.influencer`: posting video, tags, links and the A
-             code; content earnings
+  referrer -> `profiles.referrer`, Content step 1 (Rahul, 17 Oct 2026):
+             tags, product links and the A code with their earnings, the
+             sign-up money, insights. Granted on its own when the
+             conditions in milestones.py are met, no console
+  creator -> `profiles.influencer`, Content step 2: step 1 and pay on
+             views. Asked for only once step 2's conditions are met; the
+             console approves
   pro     -> an approved `consultants` row: bookable consulting (its request
              is the consultant application, apps/consultants)
   seller  -> `profiles.seller`: listing on the Market
 
-Here: what a person holds and has asked for, asking for the Creator or the
-Seller module, and the console's decision on such a request, which tells
-the person either way.
+Here: what a person holds and has asked for, asking for a module, and the
+console's decision on such a request, which tells the person either way.
 """
 
 from django.db import IntegrityError, transaction
@@ -18,11 +22,12 @@ from django.utils import timezone
 
 from .models import ModuleRequest, Profile
 
-MODULES = ("creator", "pro", "seller")
+MODULES = ("referrer", "creator", "pro", "seller")
 
 # What each request asks (Rahul, 16 Oct 2026). Every answer is text; the
 # first three of a Creator's and the first two of a Seller's are needed.
 QUESTIONS = {
+    "referrer": [],
     "creator": [("topic", "What you post about", True), ("link", "Your Instagram or YouTube", True),
                 ("followers", "How many follow you there", True), ("why", "Why Namo, in a line", False)],
     "seller": [("what", "What you will sell", True), ("sample", "A sample or a link to your work", True),
@@ -39,11 +44,13 @@ class Refused(Exception):
 
 
 def holds(profile_id):
-    """{'creator': bool, 'pro': bool, 'seller': bool}."""
+    """{'referrer': bool, 'creator': bool, 'pro': bool, 'seller': bool}.
+    Step 2 includes step 1."""
     from apps.consultants import services as consultants
 
-    row = Profile.objects.filter(pk=profile_id).values("influencer", "seller").first() or {}
+    row = Profile.objects.filter(pk=profile_id).values("referrer", "influencer", "seller").first() or {}
     return {
+        "referrer": bool(row.get("referrer") or row.get("influencer")),
         "creator": bool(row.get("influencer")),
         "pro": consultants.is_approved(profile_id),
         "seller": bool(row.get("seller")),
@@ -74,19 +81,42 @@ def status(profile_id):
                 entry["request"] = {"status": last.status, "note": last.review_note,
                                     "submitted_at": last.submitted_at.isoformat()}
         out[module] = entry
-    return {"modules": out, "questions": {k: [{"key": a, "label": b, "required": c} for a, b, c in v]
-                                          for k, v in QUESTIONS.items()}}
+    from . import milestones
+
+    return {"modules": out, "progress": milestones.progress(profile_id),
+            "questions": {k: [{"key": a, "label": b, "required": c} for a, b, c in v]
+                          for k, v in QUESTIONS.items()}}
+
+
+def _not_yet(step):
+    left = [f"{r['label'].lower()} {r['have']:,} of {r['need']:,}" for r in step["conditions"] if not r["done"]]
+    return "Not yet: " + "; ".join(left) + "."
 
 
 def ask(profile_id, module, answers):
-    """Send a request for the Creator or the Seller module."""
+    """Ask for a module. Content step 1 is granted here and now when its
+    conditions are met; step 2 can be asked for only once its own are."""
+    from . import milestones
+
     if module not in QUESTIONS:
-        raise Refused("Ask for creator or seller here. A Pro applies with the consultant form.")
+        raise Refused("Ask for content or seller here. A Pro applies with the consultant form.")
     profile = Profile.objects.filter(pk=profile_id).first()
     if profile is None or profile.blocked_at is not None:
         raise Refused("This account cannot ask for a module.", 403)
-    if holds(profile_id)[module]:
+    have = holds(profile_id)
+    if have[module]:
         raise Refused("You have this already.", 409)
+    if module == "referrer":
+        step = milestones.progress(profile_id)["step1"]
+        if not step["met"]:
+            raise Refused(_not_yet(step), 409)
+        return _grant_step1(profile_id)
+    if module == "creator":
+        if not have["referrer"]:
+            raise Refused("Finish step 1 first.", 409)
+        step = milestones.progress(profile_id)["step2"]
+        if not step["met"]:
+            raise Refused(_not_yet(step), 409)
     clean = {}
     for key, label, needed in QUESTIONS[module]:
         value = str((answers or {}).get(key) or "").strip()[:MAX_ANSWER]
@@ -98,6 +128,22 @@ def ask(profile_id, module, answers):
             row = ModuleRequest.objects.create(profile_id=profile_id, module=module, answers=clean)
     except IntegrityError:
         raise Refused("Your request is already waiting for approval.", 409) from None
+    return row
+
+
+def _grant_step1(profile_id):
+    """Step 1 needs no console: the conditions are the approval. Recorded
+    as an approved request so the history shows when and why."""
+    from apps.notifications import services as notify
+
+    now = timezone.now()
+    with transaction.atomic():
+        Profile.objects.filter(pk=profile_id).update(referrer=True)
+        row = ModuleRequest.objects.create(profile_id=profile_id, module="referrer", answers={},
+                                           status=ModuleRequest.Status.APPROVED, reviewed_at=now,
+                                           reviewed_by="automatic: step 1 conditions met")
+    notify.push(profile_id, kind="module.referrer.approved", title="Content step 1 is yours",
+                body=_opens("referrer"), ref_type="module", ref_id=str(row.id))
     return row
 
 
@@ -133,6 +179,7 @@ def decide(request, approve, who, note=""):
 
 def _opens(module):
     return {
-        "creator": "Post reels, tag products and earn on your views. Open Dashboard to start.",
-        "seller": "List downloads, courses, events and products on the Market. Open Dashboard to start.",
+        "referrer": "Tag products, share product links and your invite code, and earn on them. Open Studio to start.",
+        "creator": "You earn on your views now, with a blue tick. Open Studio to start.",
+        "seller": "List downloads, courses, events and products on the Market. Open Studio to start.",
     }[module]

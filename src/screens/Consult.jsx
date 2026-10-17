@@ -494,7 +494,7 @@ function NobodyYet() {
         <p className="mt-3 text-meta t-sub">{t('con.empty.p2')}</p>
         {/* The Dashboard's Consulting card is where you apply (since
             16 Oct 2026, when pro.1namo.com closed). */}
-        <PopButton variant="gold" className="mt-5" to="/dashboard">
+        <PopButton variant="gold" className="mt-5" to="/studio">
           {t('con.empty.apply')}
         </PopButton>
         <p className="mt-3 caps-sm t-faint">{t('con.empty.for')}</p>

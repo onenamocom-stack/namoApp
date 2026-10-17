@@ -77,7 +77,7 @@ export default function ProAffiliate() {
 
   return (
     <>
-      <TopBar title="Your product referral link" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/dashboard'} />
+      <TopBar title="Your product referral link" sub="Share a link, earn on the order" back backTo={isPro ? '/pro/studio' : '/studio'} />
 
       <div className="space-y-4 px-5 pt-5">
         {/* 1. The whole store, on top. */}

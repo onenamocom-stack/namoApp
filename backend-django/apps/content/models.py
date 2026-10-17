@@ -559,6 +559,10 @@ class QualifiedView(models.Model):
 
     class Meta:
         db_table = "content_qualified_views"
+        # Shown as "Engagement" everywhere (Rahul, 17 Oct 2026); the table
+        # and the code keep the old name.
+        verbose_name = "engagement"
+        verbose_name_plural = "engagement"
         constraints = [
             models.UniqueConstraint(fields=["content", "viewer_id", "day"], name="qualified_views_once_a_day"),
         ]

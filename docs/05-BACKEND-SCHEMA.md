@@ -1280,6 +1280,10 @@ after two seconds on screen (a reel) or five on the page (a blog).
 
 ### 5.2b′ `content_qualified_views` and `content_pay_settings` (16 Oct 2026)
 
+Shown as **Engagement** in the app and the console since 17 Oct 2026
+(Rahul; `content/0015` changes only the model's display name). Counted for
+Content step 2's posts only.
+
 ```sql
 create table content_pay_settings (     -- one row, id 1; the console's
   id                  smallint primary key default 1,
@@ -1471,14 +1475,16 @@ before (the Market's own run first), once per person, frozen once made;
 one `payout.paid` notification. Rows written into a book after its month's
 statement are not in it.
 
-**Modules** (Phase 18, migration `profiles/0008_modules`):
+**Modules** (Phase 18, migrations `profiles/0008_modules` and
+`profiles/0009_content_step1`, 17 Oct 2026):
 
 ```sql
 alter table profiles add column seller boolean not null default false;  -- the Seller module
+alter table profiles add column referrer boolean not null default false;  -- Content step 1 (0009); `influencer` is step 2
 create table module_requests (
   id            uuid primary key,
   profile_id    uuid not null,
-  module        varchar(8) not null,      -- creator | seller (a Pro applies as a consultant)
+  module        varchar(8) not null,      -- referrer | creator | seller (a Pro applies as a consultant)
   answers       jsonb not null default '{}',
   status        varchar(8) not null default 'pending',  -- pending | approved | rejected
   review_note   text not null default '',
@@ -1490,12 +1496,22 @@ create unique index module_requests_one_pending on module_requests (profile_id, 
 create index module_requests_queue on module_requests (status, submitted_at);
 ```
 
-Gates: video and tagging and `referrals.may_share` → `influencer`;
-`market.is_seller` → `seller`; `content.qualify` counts only a Creator's
-posts. `GET /v1/profiles/me/modules/`, `POST /v1/profiles/me/modules/<creator|seller>/`
-(`apps/profiles/modules.py`); approving in the console sets the flag and
-notifies (`module.<m>.approved` / `.rejected`); approving a consultant
-notifies too (`module.pro.approved`).
+Gates (17 Oct 2026): tagging, `referrals.may_share`, the A code, the
+sign-up money (`earns_on_signups`), the referral book and insights →
+`profiles_services.may_refer` (`referrer` or `influencer`); `content.qualify`
+(pay on views), the tick (`creator_subquery`), a live room and the clip
+daily limit of 50 → `influencer` only; `market.is_seller` → `seller`.
+`GET /v1/profiles/me/modules/` returns `progress` too: `step1` and `step2`,
+each `{conditions: [{key, label, need, have, done}], met}`, counted live
+(`apps/profiles/milestones.py`: followers from `reactions` follows; live
+`clip` rows; `content_views.views` summed over 90 IST days;
+`profiles.created_at`). `POST /v1/profiles/me/modules/<referrer|creator|seller>/`
+(`apps/profiles/modules.py`): `referrer` with step 1 met writes
+`referrer = true` and an already-approved row (`reviewed_by` "automatic: step
+1 conditions met") and notifies; short of it, 409 "Not yet: …". `creator`
+needs step 1 held and step 2 met, then waits for the console. Approving in
+the console sets the flag and notifies (`module.<m>.approved` /
+`.rejected`); approving a consultant notifies too (`module.pro.approved`).
 
 **Tag** (13 Oct 2026, no table): `GET /v1/content/tag/<tag>/?sort=new|top`,
 anonymous, returns feed rows whose caption, body or title carries `#tag`

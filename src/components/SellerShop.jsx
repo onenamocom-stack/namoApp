@@ -34,7 +34,7 @@ export default function SellerShop({ rows, own = false }) {
     <div className="pb-4">
       {own && (
         <div className="px-4 pt-4">
-          <button type="button" onClick={() => navigate('/dashboard/market')}
+          <button type="button" onClick={() => navigate('/studio/market')}
             className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-gold-fill px-4 py-3 text-left">
             <span className="gold"><Icon name="plus" size={18} /></span>
             <span className="min-w-0 flex-1">

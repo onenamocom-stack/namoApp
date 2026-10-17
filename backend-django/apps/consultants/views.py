@@ -399,7 +399,8 @@ def my_insights(request):
 
     from . import insights
 
-    if services.my_consultant(request.user.pk) is None and not profile_services.is_creator(
+    # Content step 1 sees insights too (Rahul, 17 Oct 2026).
+    if services.my_consultant(request.user.pk) is None and not profile_services.may_refer(
         request.user.pk
     ):
         return Response(

@@ -466,8 +466,8 @@ function NewPostSheet({ onClose, onPublished }) {
      Studio went from Dashboard; posting is this sheet; a Creator's tag
      earns as a Pro's, owner's yes). Everybody posts video since 17 Oct
      2026 (Rahul). The server keeps the same rules. */
-  const sharer = Boolean(profile?.influencer) // the Creator module (docs/06 Phase 18)
-  // Everybody posts video (17 Oct 2026, Rahul); only a Creator earns on it.
+  const sharer = Boolean(profile?.referrer) // Content step 1 or 2 (17 Oct 2026, Rahul)
+  // Everybody posts video (17 Oct 2026, Rahul); only step 2 earns on views.
   const video = true
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">

@@ -11,7 +11,7 @@ import { useStore } from '../store.jsx'
 
 /**
  * Sell on the Market (15 Oct 2026, docs/06 Phase 17): a Pro's or a
- * Creator's own listings — `/dashboard/market`.
+ * Creator's own listings — `/studio/market`.
  *
  * Add a download, a course, an event or a product; an admin approves it
  * before anybody sees it, and an edit goes back for approval. What you
@@ -36,11 +36,11 @@ export default function SellHome() {
   }
   useEffect(load, [])
 
-  if (data === null) return (<><TopBar title="Your listings" back backTo="/dashboard" /><Loader /></>)
+  if (data === null) return (<><TopBar title="Your listings" back backTo="/studio" /><Loader /></>)
   if (data === false) {
     return (
       <>
-        <TopBar title="Your listings" back backTo="/dashboard" />
+        <TopBar title="Your listings" back backTo="/studio" />
         <p className="px-6 py-16 text-center text-meta t-body">Could not open your listings. Try again.</p>
       </>
     )
@@ -64,7 +64,7 @@ export default function SellHome() {
 
   return (
     <>
-      <TopBar title="Your listings" back backTo="/dashboard" />
+      <TopBar title="Your listings" back backTo="/studio" />
 
       {/* Earnings, insights and payout details are the Dashboard's (16 Oct
           2026, Rahul): this page is the listings. */}
@@ -75,7 +75,7 @@ export default function SellHome() {
             <button
               key={kind}
               type="button"
-              onClick={() => navigate(`/dashboard/market/new/${kind}`)}
+              onClick={() => navigate(`/studio/market/new/${kind}`)}
               className="pop-tap flex flex-col items-center gap-2 rounded-2xl bg-white py-3.5 shadow-sm ring-1 ring-rule"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--orange-hi)] to-[var(--orange-lo)] text-white shadow">
@@ -159,7 +159,7 @@ function ListingCard({ row, navigate, drop }) {
         </p>
       )}
       <div className="flex border-t border-rule text-micro font-semibold">
-        <button type="button" onClick={() => navigate(`/dashboard/market/${row.id}`)} className="flex-1 py-2.5 text-center t-heading active:bg-surface2">
+        <button type="button" onClick={() => navigate(`/studio/market/${row.id}`)} className="flex-1 py-2.5 text-center t-heading active:bg-surface2">
           Edit
         </button>
         {row.status === 'approved' && (
@@ -296,11 +296,11 @@ export function SellForm() {
     fetchCategories().then(setCats).catch(() => {})
   }, [])
 
-  if (row === null) return (<><TopBar title="Listing" back backTo="/dashboard/market" /><Loader /></>)
+  if (row === null) return (<><TopBar title="Listing" back backTo="/studio/market" /><Loader /></>)
   if (row === false || !KINDS[row.kind]) {
     return (
       <>
-        <TopBar title="Listing" back backTo="/dashboard/market" />
+        <TopBar title="Listing" back backTo="/studio/market" />
         <p className="px-6 py-16 text-center text-meta t-body">That listing is not yours, or it is gone.</p>
       </>
     )
@@ -344,7 +344,7 @@ export function SellForm() {
       if (id) await update(id, body)
       else await create(body)
       showToast('Sent for approval. We tell you when it is live.')
-      navigate('/dashboard/market')
+      navigate('/studio/market')
     } catch (err) {
       showToast(err.message)
     }
@@ -355,7 +355,7 @@ export function SellForm() {
 
   return (
     <>
-      <TopBar title={`${id ? 'Edit' : 'New'} ${KINDS[kind].label.toLowerCase()}`} back backTo="/dashboard/market" />
+      <TopBar title={`${id ? 'Edit' : 'New'} ${KINDS[kind].label.toLowerCase()}`} back backTo="/studio/market" />
       <div className="space-y-6 px-5 py-5">
         <Field label="Cover picture" note="16:9, like a YouTube thumbnail: 1280 × 720.">
           {row.cover_url && <img src={row.cover_url} alt="" className="mb-2 aspect-video w-full rounded-xl bg-surface2 object-contain" />}
@@ -497,7 +497,7 @@ export function SellBank() {
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     bank().then((d) => {
-      if (d.pro) return navigate('/dashboard/payout-details', { replace: true })
+      if (d.pro) return navigate('/studio/payout-details', { replace: true })
       setCurrent(d.bank)
       if (d.bank) setForm((f) => ({ ...f, account_holder: d.bank.account_holder, ifsc: d.bank.ifsc, upi_id: d.bank.upi_id,
         account_type: d.bank.account_type || '', firm_name: d.bank.firm_name || '', gst_number: d.bank.gst_number || '' }))
@@ -509,7 +509,7 @@ export function SellBank() {
     try {
       await saveBank(form)
       showToast('Saved.')
-      navigate('/dashboard/market')
+      navigate('/studio/market')
     } catch (err) {
       showToast(err.message)
     }
@@ -517,7 +517,7 @@ export function SellBank() {
   }
   return (
     <>
-      <TopBar title="Where we pay you" back backTo="/dashboard/market" />
+      <TopBar title="Where we pay you" back backTo="/studio/market" />
       <div className="space-y-6 px-5 py-5">
         <p className="text-meta t-body">Your Market earnings go here on the 7th of every month. The account number and PAN are stored encrypted; only Namo's finance team can read them.</p>
         <Field label="Account holder's name"><input className="field-line" value={form.account_holder} onChange={set('account_holder')} /></Field>

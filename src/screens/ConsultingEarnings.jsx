@@ -113,7 +113,7 @@ export default function ConsultingEarnings() {
 
   return (
     <>
-      <TopBar title="Consulting earnings" back backTo="/dashboard" />
+      <TopBar title="Consulting earnings" back backTo="/studio" />
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pt-5">
         {RANGES.map((r) => (

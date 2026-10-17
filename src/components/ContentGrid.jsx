@@ -150,7 +150,7 @@ function PieceCard({ p, width, aspect, to }) {
       </p>
       <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-ok/10 px-1.5 py-0.5 text-[10px] font-semibold text-ok tnum">
         <Icon name="check" size={10} />
-        {p.qualified_views.toLocaleString('en-IN')} qualified
+        {p.qualified_views.toLocaleString('en-IN')} engagement
       </p>
     </>
   )

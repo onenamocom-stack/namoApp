@@ -38,26 +38,34 @@ nothing is copy that cannot overpromise.
 
 ## 2. Users
 
-**Three modules since Phase 18 (Rahul, 16 Oct 2026; `06` Phase 18).** A
-person holds any number of them, each **asked for and approved by the team,
-no exceptions** — existing Pros included:
+**Three ways to earn since Phase 18 (Rahul, 16 Oct 2026; `06` Phase 18):
+Content, Pro, Market.** A person holds any number of them. Pro and Seller
+are **asked for and approved by the team**, existing Pros included;
+Content has two steps (Rahul, 17 Oct 2026; §12):
 
-- **Creator** — tags products, shares links; earns content earnings
-  (qualified views + tag and link commission, §12). Posting reels and video
-  was the Creator's until 17 Oct 2026; since then everybody posts video
-  (Rahul), and only a Creator earns on its views.
+- **Content, step 1** — 100 followers, 10 live videos, an account 30 days
+  old. **Granted automatically** the moment the person asks with all three
+  met, no console. Tags products, shares product links and the invite code,
+  and earns on all three (§12); sees views and insights. **No pay on
+  views.**
+- **Content, step 2 (Creator)** — 500 followers, and in the last 90 days 10
+  videos and 1,00,000 views (every view, not only engagement). Meeting them
+  opens the request; **the team approves it**. Step 1 plus pay on views.
+  Everybody who was a Creator on 17 Oct holds step 2. Posting video is
+  everybody's since 17 Oct 2026 (Rahul).
 - **Pro** — an approved astrologer or expert: bookable, paid for chat,
   calls and bookings. The request is the consultant application.
 - **Seller** — lists downloads, courses, events and products on the Market.
 
-Anybody holding any module carries **one blue tick**; a **Seeker** holds
-none. (13–16 Oct 2026 there were three kinds — Seeker, Pro with an orange
-tick, Creator with a blue one — and a Pro or a Creator had all three ways to
-earn.) Existing Pros keep only Consulting until their Creator and Seller
-requests are approved; listings already live stay up. Money earned is
-paid. Pros and Creators
-reach their own screens through **Dashboard** in the main app; a Pro takes
-calls in a separate calling app, Namo Consult at 1namo.com/desk (`06` Phase 16).
+**The blue tick is a Pro's and Content step 2's only** (Rahul, 17 Oct
+2026; it replaced one tick for anybody holding any module, 16 Oct, and an
+orange Pro tick before that). A Seller or a step 1 carries none; a
+**Seeker** holds nothing. Existing Pros keep only Consulting until they
+hold Content or Seller; listings already live stay up. Money earned is
+paid. Everybody reaches their own screens through **Studio** (`/studio`;
+it was Dashboard, `/dashboard`, until 17 Oct 2026, Rahul) in the main app;
+a Pro takes calls in a separate calling app, Namo Consult at 1namo.com/desk
+(`06` Phase 16).
 Two kinds of profile, in Rahul's words (14 Oct 2026): a **Basic profile**
 (Seeker and Creator, `/profile`, `/u/:id`) and a **Pro profile** (the
 astrologer's page, `/consult/:id`).
@@ -1038,18 +1046,19 @@ The owner's rule, replacing the astrologer's code at checkout.
   carry the link through the Play Store with Google's Install Referrer
   when there is one; an iPhone app cannot without a paid service.
 
-### Creators earn as astrologers do — decided 14 Oct 2026 (owner)
+### Content step 1 earns as astrologers do — decided 14 Oct 2026 (owner), moved to step 1 on 17 Oct (Rahul)
 
-Rahul's request, the owner's yes. A **Creator** (§2) tags shop products on
-their posts and shares product and shop links exactly as an approved
-astrologer does, with an `A…` code of their own, and earns the same: **6%
+Rahul's request, the owner's yes. Anybody holding **Content step 1** (§2;
+it was the Creator, and before 16 Oct an approved astrologer too) tags shop
+products on their posts and shares product and shop links, with an `A…`
+code of their own, and earns: **6%
 of the order inside the window, after the buyer's cashback** (15 Oct 2026;
 it was 10% of the first order). Every rule above holds unchanged: the
 window, last link wins, one click one order, seven days after delivery
 before it is paid, cancelled by a return.
 
-- **Their book.** A Creator's share, once paid, is written to their own
-  earnings book (`creator_earnings`), which they read on Dashboard. An
+- **Their book.** Their share, once paid, is written to their own
+  earnings book (`creator_earnings`), which they read in Studio. An
   astrologer's stays in `earnings_ledger`.
 - **Paid out like an astrologer's**, when payouts exist (§8: monthly on
   the 7th, designed, not built). PAN and bank details are collected from a
@@ -1061,16 +1070,20 @@ before it is paid, cancelled by a return.
 
 ### Content earnings — decided 16 Oct 2026 (Rahul, owner's "jo Rahul bhaiya bol rhe hai vo krdo")
 
-A Pro or a Creator earns on their content as well as on their tags.
+**Content step 2** earns on their content as well as on their tags; **step
+1 earns on the tags, links and code only** (Rahul, 17 Oct 2026: step 1 sees
+the views, lifetime views and insights, but no pay on views). Studio's
+Content earnings page shows step 1 the step 2 completion bar.
 
 - **Views:** every view counts, the same person again too.
-- **Qualified views:** a reel played 30 seconds; a blog open 30 seconds; a
+- **Engagement** (called *qualified views* until 17 Oct 2026, Rahul; the
+  code keeps that name): a reel played 30 seconds; a blog open 30 seconds; a
   like, comment or reshare on a photo or text post. Once per person per
   post per IST day. The author's own and signed-out views never count; a
   share is not counted (the app cannot know it was sent).
-- **VE (view earnings):** **₹20 per 1,000 qualified views**, editable in
-  the console (Finance). A change applies to qualified views counted after
-  it. Counting started on 16 Oct 2026; nothing before is paid.
+- **VE (view earnings):** **₹20 per 1,000 engagements**, step 2 only,
+  editable in the console (Finance). A change applies to engagement counted
+  after it. Counting started on 16 Oct 2026; nothing before is paid.
 - **TE (tag earnings):** the commission from links, tags and code (§12).
 - **Content earnings = VE + TE**, shown as one figure; the two are not
   shown apart. The line under it: "Namo works out your content earnings
@@ -1151,18 +1164,19 @@ starts on the owner's instruction. The flag exists so a limit can be set
 without a deploy. The number to remember: an uncapped 10% on today's
 dearest item, a ₹26,400 gemstone, is ₹2,640 a side.
 
-### Sign-up referrals pay a Pro, a Creator or a Seller ₹25
+### Sign-up referrals pay Content step 1 ₹25
 
 Three free AI questions a day for three days, to both sides. The welcome
 five on day one are untouched — those are constant for every account,
 referred or not, so the perk is about the days after. The referrer is
 told when somebody joins with their code.
 
-Since 16 Oct 2026 (Rahul: "If code is shared by pro creator or seller
-anybody - he will get ₹25 per user"; it moved no money before), a code
-holder with the Pro, Creator or Seller module also earns **₹25 for each
-person who joins with their code** — once per person, checked when the
-code is claimed. The console sets the figure (0 turns it off). It counts in
+Since 17 Oct 2026 (Rahul: "Pro aur seller ka 25 band. Agar wo step 1 ho
+jaate hai tabhi milega"), a code holder with **Content step 1 or 2** also
+earns **₹25 for each person who joins with their code** — once per
+person, checked when the code is claimed. From 16 to 17 Oct any Pro,
+Creator or Seller earned it; before 16 Oct nobody did. A Pro or a Seller
+without step 1 gets the AI questions only. The console sets the figure (0 turns it off). It counts in
 the content earnings figure, on its own row, and is paid on the 7th in the
 statement's Commission line. Finance voids a fake sign-up before that
 month's statement is made. A plain seeker's code still earns AI questions
