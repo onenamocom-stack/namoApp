@@ -46,11 +46,14 @@ export default function useStartSession() {
         return showToast(`${consultant.name} is offline right now.`)
       }
       const via = to === 'call' ? 'video' : to
-      /* Date and time of birth before the first call (17 Oct 2026, Rahul):
-         the astrologer reads from them. The details page brings you
-         straight on to the call once they are saved. A time marked
-         unknown counts as given. */
-      if (profile && (!profile.birth_date || (!profile.birth_time && profile.birth_time_known !== false))) {
+      /* Date and time of birth before calling an Astrologer (17 Oct 2026,
+         Rahul; other categories need none): the astrologer reads from them.
+         The details page brings you straight on to the call once they are
+         saved. A time marked unknown counts as given. */
+      const astrologer = String(consultant.category ?? '')
+        .split(',')
+        .some((x) => x.trim().toLowerCase() === 'astrologer')
+      if (astrologer && profile && (!profile.birth_date || (!profile.birth_time && profile.birth_time_known !== false))) {
         showToast('Add your date and time of birth first. The astrologer reads from them.')
         return navigate(
           `/onboarding/details?edit=1&need=1&next=${encodeURIComponent(`/connect/${consultant.id}?via=${via}`)}`,

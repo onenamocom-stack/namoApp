@@ -1419,7 +1419,7 @@ a history back from it returned to the Desk, which led to the Dashboard
 again.
 
 **Birth details before a call (17 Oct 2026, Rahul).** Pressing video,
-audio or chat on any Pro, a seeker with no date of birth, or no time of
+audio or chat on a Pro whose categories include Astrologer (others need none), a seeker with no date of birth, or no time of
 birth and not marked unknown, gets a toast and the details page
 (`need=1`); saving goes straight on to `/connect` for that Pro and channel.
 
