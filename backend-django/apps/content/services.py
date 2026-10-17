@@ -363,9 +363,32 @@ def _checked_products(author_id, role, product_ids):
     return [found[i] for i in ids]
 
 
+# Photos on one post or listing (17 Oct 2026, Rahul): the cover and nine more.
+MAX_PHOTOS = 10
+
+
+def clean_gallery(urls, cover):
+    """The photos after the cover: https URLs, in order, duplicates and
+    blanks dropped, at most MAX_PHOTOS - 1, and only with a cover."""
+    out = []
+    for url in urls or []:
+        url = str(url or "").strip()
+        if not url:
+            continue
+        if not url.startswith("https://") or len(url) > 1000:
+            raise ValidationError({"gallery": "A photo did not upload. Add it again."})
+        if url != cover and url not in out:
+            out.append(url)
+    if out and not cover:
+        raise ValidationError({"gallery": "Add the first photo."})
+    if len(out) > MAX_PHOTOS - 1:
+        raise ValidationError({"gallery": f"Up to {MAX_PHOTOS} photos."})
+    return out
+
+
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
                     media_url=None, status=Content.Status.LIVE, product_ids=(), group_id=None,
-                    listing_ids=(), ebook_ids=()):
+                    listing_ids=(), ebook_ids=(), gallery=()):
     """Insert one content row as the caller. author_id is forced (rule 3);
     published_at is the server's clock, never the client's (rule 3 again —
     a timestamp the client picks is a number the user benefits from).
@@ -375,6 +398,7 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
     and its tags are one write: a post that published and then lost its
     tags would be a different post from the one the author sent."""
     _assert_kind_allowed(author_id, role, kind)
+    gallery = clean_gallery(gallery, media_url) if kind == Content.Kind.POST else []
     if status not in (Content.Status.LIVE, Content.Status.DRAFT):
         raise PermissionDenied("Removed content cannot be republished.")
     if role != "admin":
@@ -400,6 +424,7 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
             body=body,
             caption=caption,
             media_url=media_url,
+            gallery=gallery,
             status=status,
             published_at=timezone.now() if status == Content.Status.LIVE else None,
         )
@@ -882,7 +907,8 @@ _UNSET = object()
 
 
 def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, caption=_UNSET,
-                 media_url=_UNSET, product_ids=None, listing_ids=None, ebook_ids=None):
+                 media_url=_UNSET, product_ids=None, listing_ids=None, ebook_ids=None,
+                 gallery=_UNSET):
     """The author changes their own post, reel or blog (6 Oct 2026, Rahul:
     "edit button in blog and all posts"). Owner-scoped like remove, admin
     excepted. The kind never changes — a reel is not edited into a blog —
@@ -901,6 +927,9 @@ def edit_content(content_id, actor_id, role, *, title=_UNSET, body=_UNSET, capti
         raise ValidationError({"body": "A blog needs a title and a body."})
     if row.kind == Content.Kind.CLIP and not after["media_url"]:
         raise ValidationError({"media_url": "A reel needs its video."})
+    if row.kind == Content.Kind.POST and (gallery is not _UNSET or "media_url" in changes):
+        changes["gallery"] = clean_gallery(row.gallery if gallery is _UNSET else gallery,
+                                           after["media_url"])
     products = None if product_ids is None else _checked_products(row.author_id, role, product_ids)
     n = len(products) if products is not None else ContentProduct.objects.filter(content=row).count()
     if listing_ids is not None:

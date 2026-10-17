@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import Icon from './Icon.jsx'
@@ -124,13 +124,72 @@ function PieceRowInner({ piece }) {
       <button type="button" className={cls} onClick={() => piece.mediaUrl && setPhoto(true)}>
         {body}
       </button>
-      {photo && <PhotoViewer src={piece.mediaUrl} caption={piece.caption} onClose={() => setPhoto(false)} />}
+      {photo && <PhotoViewer src={piece.mediaUrl} photos={[piece.mediaUrl, ...(piece.gallery ?? [])]} caption={piece.caption} onClose={() => setPhoto(false)} />}
     </>
   )
 }
 
 /** A photo, full screen, over everything; tap ✕ to close. */
-export function PhotoViewer({ src, caption, onClose }) {
+/** The photos of one post or listing, swiped sideways, one at a time, with
+ *  the count and dots over them (17 Oct 2026, Rahul: up to ten, as
+ *  Instagram shows them). One photo is just the photo. */
+export function PhotoSwiper({ photos, alt = '', className = '', imgClassName = 'w-full object-cover', onOpen }) {
+  const [at, setAt] = useState(0)
+  const strip = useRef(null)
+  const list = (photos || []).filter(Boolean)
+  if (!list.length) return null
+  const Frame = onOpen ? 'button' : 'div'
+  if (list.length === 1) {
+    return (
+      <Frame type={onOpen ? 'button' : undefined} onClick={onOpen ? () => onOpen(0) : undefined} className={`block w-full ${className}`}>
+        <img src={list[0]} alt={alt} className={imgClassName} />
+      </Frame>
+    )
+  }
+  const onScroll = (e) => {
+    const el = e.currentTarget
+    setAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)))
+  }
+  return (
+    <div className={`relative ${className}`}>
+      <div ref={strip} onScroll={onScroll} className="no-scrollbar flex snap-x snap-mandatory items-center overflow-x-auto">
+        {list.map((src, i) => (
+          <Frame
+            key={`${src}-${i}`}
+            type={onOpen ? 'button' : undefined}
+            onClick={onOpen ? () => onOpen(i) : undefined}
+            className="block w-full flex-none snap-center"
+          >
+            <img src={src} alt={i === 0 ? alt : ''} loading={i ? 'lazy' : undefined} className={imgClassName} />
+          </Frame>
+        ))}
+      </div>
+      <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white tnum">
+        {Math.min(at, list.length - 1) + 1}/{list.length}
+      </span>
+      <span className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
+        {list.map((src, i) => (
+          <span key={`${src}-dot-${i}`} className={`block h-1.5 w-1.5 rounded-full ${i === at ? 'bg-white' : 'bg-white/50'}`} />
+        ))}
+      </span>
+    </div>
+  )
+}
+
+/** Two squares, one over the other: "more than one photo", on a grid tile. */
+export function ManyMark() {
+  return (
+    <span className="pointer-events-none absolute right-1.5 top-1.5 text-white drop-shadow" aria-label="More than one photo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+        <rect x="8" y="8" width="13" height="13" rx="2.5" />
+        <path d="M16 4H6a2 2 0 0 0-2 2v10" />
+      </svg>
+    </span>
+  )
+}
+
+export function PhotoViewer({ src, photos, caption, onClose }) {
+  const list = photos?.length ? photos : [src]
   return createPortal(
     <div className="fixed inset-0 z-[70] mx-auto flex w-full max-w-[420px] flex-col bg-black">
       <button
@@ -141,7 +200,7 @@ export function PhotoViewer({ src, caption, onClose }) {
       >
         <Icon name="close" size={18} />
       </button>
-      <img src={src} alt="" className="m-auto max-h-full w-full object-contain" />
+      <PhotoSwiper photos={list} className="m-auto w-full" imgClassName="m-auto max-h-[85vh] w-full object-contain" />
       {caption && <p className="px-5 pb-6 text-meta text-white/85">{caption}</p>}
     </div>,
     document.body,
@@ -156,6 +215,7 @@ export function fromInsights(p) {
     title: p.title,
     caption: p.caption,
     mediaUrl: p.media_url,
+    gallery: p.gallery ?? [],
     views: p.views,
     views7d: p.views_7d,
     likes: p.likes,

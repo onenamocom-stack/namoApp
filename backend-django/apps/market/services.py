@@ -72,7 +72,7 @@ def split(listing, gross_paise, units=1):
 # ── a seller's listings ─────────────────────────────────────────────────────
 
 FIELDS = (
-    "kind", "title", "description", "cover_url", "price_paise", "mrp_paise",
+    "kind", "title", "description", "cover_url", "gallery", "price_paise", "mrp_paise",
     "file_asset_id", "lessons", "language", "starts_at", "duration_minutes",
     "seats", "join_url", "category_name", "stock", "weight_grams",
 )
@@ -104,6 +104,13 @@ def _clean(seller_id, data, current=None):
     out["cover_url"] = (data.get("cover_url") or "").strip()
     if not out["cover_url"]:
         raise Refused("Add a cover picture, 16:9.")
+    from apps.content.services import clean_gallery
+    from rest_framework.exceptions import ValidationError
+
+    try:
+        out["gallery"] = clean_gallery(data.get("gallery") or [], out["cover_url"])
+    except ValidationError as err:
+        raise Refused(str(err.detail["gallery"])) from None
     price = int(data.get("price_paise") or 0)
     if price < 0 or price > MAX_PRICE_PAISE:
         raise Refused("That price is not one we can take.")
@@ -268,7 +275,8 @@ def _shelve(listing):
     if category is None:
         raise Refused("Add a shop category in the console first.")
     fields = dict(
-        name=listing.title, image_url=listing.cover_url, price_paise=listing.price_paise,
+        name=listing.title, image_url=listing.cover_url, gallery=list(listing.gallery or []),
+        price_paise=listing.price_paise,
         mrp_paise=listing.mrp_paise, stock=listing.stock or 0, weight_grams=listing.weight_grams or 500,
         category=category, brand=seller, description=listing.description, active=True,
     )
@@ -474,6 +482,7 @@ def card(listing, seller=None, viewer=None, detail=False):
         "kind": listing.kind,
         "title": listing.title,
         "cover_url": listing.cover_url,
+        "gallery": list(listing.gallery or []),
         "price_paise": listing.price_paise,
         "mrp_paise": listing.mrp_paise,
         "seller": seller,

@@ -1152,6 +1152,7 @@ create table content (
   title         text,
   body          text,
   media_url     text,
+  gallery       jsonb not null default '[]', -- 17 Oct 2026 (content/0014): a post's photos after media_url, in order, up to nine
   caption       text,
   status        text not null default 'live' check (status in ('live','removed','draft')),
   view_count    integer not null default 0,
@@ -2359,7 +2360,9 @@ Migration `market/0001`, RLS on with no policies (API only). Rules in
 `docs/01` §4.7.
 
 - **`market_listings`** — `seller_id` (profiles), `kind` (download · course ·
-  event · product), `title`, `description`, `cover_url` (16:9),
+  event · product), `title`, `description`, `cover_url` (16:9), `gallery`
+  (jsonb, default `[]`; up to nine more photo URLs after the cover, in order,
+  copied to the shop product's `gallery` on approval; `market/0005`, 17 Oct 2026),
   `price_paise` (≥ 0; 0 is free, never for a product), `mrp_paise` (null or
   above the price), `status` (pending · approved · rejected · withdrawn),
   `review_note`, `commission_bps` (null takes the kind's default; 0–10000),

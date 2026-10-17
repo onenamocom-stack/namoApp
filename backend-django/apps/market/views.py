@@ -93,6 +93,8 @@ class ListingInput(serializers.Serializer):
     title = serializers.CharField(max_length=200)
     description = serializers.CharField(required=False, allow_blank=True, default="", max_length=20000)
     cover_url = serializers.CharField(required=False, allow_blank=True, default="")
+    gallery = serializers.ListField(child=serializers.CharField(max_length=1000), required=False,
+                                    default=list, max_length=20)
     price_paise = serializers.IntegerField(required=False, default=0, min_value=0)
     mrp_paise = serializers.IntegerField(required=False, allow_null=True, default=None)
     file_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)

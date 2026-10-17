@@ -43,6 +43,8 @@ class Listing(models.Model):
     description = models.TextField(default="", db_default="", blank=True)
     # 16:9, public (an `image` media asset's URL).
     cover_url = models.TextField(default="", db_default="", blank=True)
+    # More photos after the cover, in order, up to nine (17 Oct 2026, Rahul).
+    gallery = models.JSONField(default=list, db_default=[], blank=True)
     # 0 is free; a free product is refused (a parcel is never free).
     price_paise = models.IntegerField(default=0, db_default=0)
     mrp_paise = models.IntegerField(null=True, blank=True)

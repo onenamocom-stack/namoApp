@@ -41,7 +41,10 @@ import { isPro } from '../side.js'
 /** Must match MAX_TAGGED_PRODUCTS in backend-django/apps/content/models.py. */
 const MAX_TAGS = 3
 
-const EMPTY = { caption: '', title: '', body: '', media: null, tagged: [] }
+const EMPTY = { caption: '', title: '', body: '', media: null, more: [], tagged: [] }
+/** Photos on one post: the first and nine more (17 Oct 2026, Rahul). Must
+ *  match MAX_PHOTOS in backend-django/apps/content/services.py. */
+const MAX_PHOTOS = 10
 const DRAFT_KEY = (mode) => `namo.draft.${mode}`
 
 function loadDraft(mode) {
@@ -65,6 +68,7 @@ function fromPiece(piece) {
     media: piece.mediaUrl
       ? { url: piece.mediaUrl, type: piece.kind === 'clip' ? 'video/mp4' : 'image/*' }
       : null,
+    more: piece.kind === 'post' ? piece.gallery ?? [] : [],
     tagged: piece.products ?? [],
   }
 }
@@ -89,6 +93,8 @@ export default function Composer({
   const [title, setTitle] = useState(first.title)
   const [body, setBody] = useState(first.body)
   const [media, setMedia] = useState(first.media)
+  // The photos after the first, in order (17 Oct 2026).
+  const [more, setMore] = useState(first.more ?? [])
   const [tagged, setTagged] = useState(first.tagged)
   const [tagging, setTagging] = useState(first.tagged.length > 0)
   const [busy, setBusy] = useState(false)
@@ -117,20 +123,20 @@ export default function Composer({
   }, [])
   const openTags = () => {
     if (!pickFromMarket) return setTagging((v) => !v)
-    startPick({ mode, back: '/home?compose=1', draft: { caption, title, body, media, tagged } })
+    startPick({ mode, back: '/home?compose=1', draft: { caption, title, body, media, more, tagged } })
     onClose?.()
     navigate('/shop')
   }
 
   /* The draft of the screen you are on, saved a moment after typing stops. */
-  const draft = { caption, title, body, media, tagged }
+  const draft = { caption, title, body, media, more, tagged }
   const saving = useRef(null)
   useEffect(() => {
     if (editing) return undefined
     clearTimeout(saving.current)
     saving.current = setTimeout(() => {
       try {
-        const empty = !caption && !title && !body && !media && !tagged.length
+        const empty = !caption && !title && !body && !media && !more.length && !tagged.length
         if (empty) localStorage.removeItem(DRAFT_KEY(mode))
         else localStorage.setItem(DRAFT_KEY(mode), JSON.stringify(draft))
       } catch {
@@ -139,7 +145,7 @@ export default function Composer({
     }, 400)
     return () => clearTimeout(saving.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, caption, title, body, media, tagged])
+  }, [mode, caption, title, body, media, more, tagged])
 
   /** Between Create post and Write a blog, each keeping its own draft. */
   function switchTo(next) {
@@ -154,16 +160,26 @@ export default function Composer({
     setTitle(d.title)
     setBody(d.body)
     setMedia(d.media)
+    setMore(d.more ?? [])
     setTagged(d.tagged)
     setTagging(d.tagged.length > 0)
   }
 
   async function onFile(e) {
-    const file = e.target.files?.[0]
+    const files = Array.from(e.target.files ?? [])
     // Cleared either way, so the same file chosen again still fires.
     e.target.value = ''
-    if (!file) return
+    if (!files.length) return
+    const photos = files.filter((f) => !f.type.startsWith('video/'))
+    /* Several photos (17 Oct 2026): a photo post takes up to ten. The first
+       is the cover, as before; the rest go after it in the order chosen. */
+    if (!blog && !editing?.kind?.startsWith('clip') && (photos.length > 1 || (media && !isVideo(media) && photos.length))) {
+      if (photos.length !== files.length) return showToast('A post is photos or one video, not both.')
+      return addPhotos(photos)
+    }
+    const file = files[0]
     const video = file.type.startsWith('video/')
+    if (video && more.length) return showToast('A post is photos or one video, not both.')
     if (video && (!canVideo || blog)) {
       return showToast(blog ? 'A blog cover is a photo.' : 'Video posts are for Pros and Creators. Choose a photo.')
     }
@@ -181,6 +197,45 @@ export default function Composer({
       setUploading(false)
       setShrinking(null)
     }
+  }
+
+  async function addPhotos(files) {
+    const room = MAX_PHOTOS - (media ? 1 : 0) - more.length
+    if (room <= 0) return showToast(`Up to ${MAX_PHOTOS} photos.`)
+    if (files.length > room) showToast(`Up to ${MAX_PHOTOS} photos. The first ${room} are added.`)
+    setUploading(true)
+    try {
+      let cover = media
+      for (const file of files.slice(0, room)) {
+        const url = await uploadMedia(file)
+        if (!cover) {
+          cover = { url, type: file.type }
+          setMedia(cover)
+          photo.current = file
+          setPlainUrl(url)
+          setFrameId(null)
+        } else {
+          setMore((m) => [...m, url])
+        }
+      }
+    } catch (err) {
+      showToast(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  /** Remove one photo; removing the first makes the next one the cover. */
+  function dropPhoto(i) {
+    if (i === 0) {
+      const [next, ...rest] = more
+      setMedia(next ? { url: next, type: 'image/jpeg' } : null)
+      setMore(rest)
+      photo.current = null
+      setFrameId(null)
+      return
+    }
+    setMore((m) => m.filter((_, j) => j !== i - 1))
   }
 
   async function chooseFrame(frame) {
@@ -213,16 +268,18 @@ export default function Composer({
         const changes = {
           ...fields,
           mediaUrl: media?.url ?? null,
+          ...(editing.kind === 'post' ? { gallery: more } : {}),
           ...(tagProducts ? { productIds: tagged.filter((p) => !p.listing && !p.ebook).map((p) => p.id), listingIds: tagged.filter((p) => p.listing).map((p) => p.id), ebookIds: tagged.filter((p) => p.ebook).map((p) => p.id) } : {}),
         }
         await editContent(editing.id, changes)
         showToast('Saved')
-        onPublished?.({ ...fields, mediaUrl: media?.url ?? null, products: tagged })
+        onPublished?.({ ...fields, mediaUrl: media?.url ?? null, gallery: more, products: tagged })
         return
       }
       await publish({
         kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
         mediaUrl: media?.url,
+        gallery: blog || isVideo(media) ? [] : more,
         productIds: tagProducts ? tagged.filter((p) => !p.listing && !p.ebook).map((p) => p.id) : [],
         listingIds: tagProducts ? tagged.filter((p) => p.listing).map((p) => p.id) : [],
         ebookIds: tagProducts ? tagged.filter((p) => p.ebook).map((p) => p.id) : [],
@@ -233,6 +290,7 @@ export default function Composer({
       setTitle('')
       setBody('')
       setMedia(null)
+      setMore([])
       setTagged([])
       try {
         localStorage.removeItem(DRAFT_KEY(mode))
@@ -252,7 +310,9 @@ export default function Composer({
   const back = blog && !editing ? () => switchTo('post') : onClose
   const heading = editing ? 'Edit' : blog ? 'Write a blog' : 'Create post'
   const action = busy ? (editing ? 'Saving' : 'Posting') : uploading ? 'Uploading' : editing ? 'Save' : blog ? 'Publish' : 'Post'
-  const accept = blog || !canVideo ? 'image/*' : editing?.kind === 'clip' ? 'video/*' : 'image/*,video/*'
+  const accept = blog || !canVideo || more.length || (media && !isVideo(media)) ? 'image/*' : editing?.kind === 'clip' ? 'video/*' : 'image/*,video/*'
+  // More photos can go on a photo post until there are ten.
+  const canMore = !blog && editing?.kind !== 'clip' && (!media || !isVideo(media)) && (media ? 1 : 0) + more.length < MAX_PHOTOS
   const sheet = Boolean(onClose)
 
   return (
@@ -341,14 +401,38 @@ export default function Composer({
                 ) : (
                   <img src={media.url} alt="What you are about to post" className="max-h-[60vh] w-full object-contain" />
                 )}
-                <RemoveMark
-                  onClick={() => {
-                    setMedia(null)
-                    photo.current = null
-                    setFrameId(null)
-                  }}
-                  label="Remove"
-                />
+                <RemoveMark onClick={() => dropPhoto(0)} label="Remove" />
+              </div>
+            )}
+            {/* Every photo, small, in order, each with its own remove, and
+                room for more up to ten (17 Oct 2026). */}
+            {media && !isVideo(media) && (more.length > 0 || canMore) && (
+              <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1">
+                {[media.url, ...more].map((url, i) => (
+                  <span key={`${url}-${i}`} className="relative block h-16 w-16 flex-none overflow-hidden rounded-lg bg-surface-2">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    {i === 0 && <span className="absolute inset-x-0 bottom-0 bg-black/55 text-center text-[9px] font-semibold text-white">Cover</span>}
+                    <button
+                      type="button"
+                      onClick={() => dropPhoto(i)}
+                      aria-label={`Remove photo ${i + 1}`}
+                      className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-[11px] text-white"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                {canMore && (
+                  <button
+                    type="button"
+                    onClick={() => gallery.current?.click()}
+                    disabled={uploading}
+                    aria-label="Add photos"
+                    className="grid h-16 w-16 flex-none place-items-center rounded-lg border-2 border-dashed border-gold-fill/40 text-gold disabled:opacity-50"
+                  >
+                    {uploading ? <span className="text-[10px]">…</span> : <Icon name="plus" size={18} />}
+                  </button>
+                )}
               </div>
             )}
             {/* Today's festival frames under a photo (Phase 15c). */}
@@ -411,7 +495,7 @@ export default function Composer({
         )}
       </div>
 
-      <input ref={gallery} type="file" accept={accept} className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
+      <input ref={gallery} type="file" accept={accept} multiple={canMore} className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
     </div>
   )

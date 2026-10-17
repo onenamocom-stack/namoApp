@@ -223,6 +223,31 @@ class TestPublication:
         assert row.status == "live"
         assert row.published_at is not None  # the server's clock, not the client's
 
+    def test_a_post_carries_up_to_ten_photos(self, api_client, seeker_token, roster):
+        # 17 Oct 2026, Rahul: the cover and nine more, swiped.
+        photos = [f"https://media.test/p{i}.jpg" for i in range(10)]
+        response = _publish(api_client, seeker_token, kind="post", media_url=photos[0], gallery=photos)
+        assert response.status_code == 201, response.content
+        row = Content.objects.get()
+        assert row.gallery == photos[1:]  # the cover is not repeated
+        detail = api_client.get(f"/v1/content/{row.id}/").json()
+        assert detail["media_url"] == photos[0] and detail["gallery"] == photos[1:]
+        too_many = photos + ["https://media.test/p10.jpg"]
+        refused = _publish(api_client, seeker_token, kind="post", media_url=photos[0], gallery=too_many)
+        assert refused.status_code == 400
+        not_ours = _publish(api_client, seeker_token, kind="post", media_url=photos[0], gallery=["javascript:x"])
+        assert not_ours.status_code == 400
+
+    def test_photos_can_be_edited_and_only_posts_carry_them(self, api_client, seeker_token, roster):
+        cover = "https://media.test/c.jpg"
+        pid = _publish(api_client, seeker_token, kind="post", media_url=cover).json()["id"]
+        api_client.post(f"/v1/content/{pid}/edit/", {"gallery": ["https://media.test/2.jpg"]},
+                        format="json", **auth(seeker_token))
+        assert Content.objects.get(pk=pid).gallery == ["https://media.test/2.jpg"]
+        blog = _publish(api_client, seeker_token, kind="article", title="t", body="b",
+                        gallery=["https://media.test/2.jpg"]).json()["id"]
+        assert Content.objects.get(pk=blog).gallery == []
+
     def test_seeker_publishes_article(self, api_client, seeker_token, roster):
         response = _publish(api_client, seeker_token, kind="article", title="t", body="b")
         assert response.status_code == 201

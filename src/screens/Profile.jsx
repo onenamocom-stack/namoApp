@@ -6,7 +6,7 @@ import { CommentedTab, ResharedTab } from '../components/ProfileActivity.jsx'
 import { FeedCard } from './Home.jsx'
 import ReferralCard from '../components/ReferralCard.jsx'
 import { Loader, Orbit } from '../components/Cosmos.jsx'
-import { PhotoViewer, Thumb } from '../components/Pieces.jsx'
+import { ManyMark, PhotoViewer, Thumb } from '../components/Pieces.jsx'
 import AvatarCropper from '../components/AvatarCropper.jsx'
 import { signOut } from '../lib/signout.js'
 import { fetchByAuthor, fetchOne, followCounts } from '../lib/content.js'
@@ -382,8 +382,9 @@ function Tile({ post }) {
     <>
       <button type="button" onClick={() => setOpen(true)} className={`${cls} w-full`}>
         {inner}
+        {post.gallery?.length > 0 && <ManyMark />}
       </button>
-      {open && <PhotoViewer src={post.mediaUrl} caption={post.caption} onClose={() => setOpen(false)} />}
+      {open && <PhotoViewer src={post.mediaUrl} photos={[post.mediaUrl, ...(post.gallery ?? [])]} caption={post.caption} onClose={() => setOpen(false)} />}
     </>
   )
 }

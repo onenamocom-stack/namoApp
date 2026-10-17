@@ -227,6 +227,55 @@ function FilePick({ label, accept, kind, onDone, current }) {
   )
 }
 
+/** The photos after the cover (17 Oct 2026, Rahul): up to nine more, in
+ *  order, each removable; several can be chosen at once. */
+function MorePhotos({ photos, onChange }) {
+  const ref = useRef(null)
+  const [busy, setBusy] = useState(false)
+  const { showToast } = useStore()
+  const room = 9 - photos.length
+  const pick = async (e) => {
+    const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'))
+    e.target.value = ''
+    if (!files.length) return
+    if (files.length > room) showToast(`Up to 10 photos with the cover. The first ${room} are added.`)
+    setBusy(true)
+    let added = [...photos]
+    try {
+      for (const file of files.slice(0, room)) {
+        const got = await uploadAsset(typed(file), 'image')
+        added = [...added, got.publicUrl]
+        onChange(added)
+      }
+    } catch (err) {
+      showToast(err.message)
+    }
+    setBusy(false)
+  }
+  return (
+    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+      {photos.map((url, i) => (
+        <span key={`${url}-${i}`} className="relative block h-16 w-24 flex-none overflow-hidden rounded-lg bg-surface2">
+          <img src={url} alt="" className="h-full w-full object-cover" />
+          <button type="button" onClick={() => onChange(photos.filter((_, j) => j !== i))} aria-label={`Remove photo ${i + 2}`}
+            className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-[11px] text-white">
+            ✕
+          </button>
+        </span>
+      ))}
+      {room > 0 && (
+        <>
+          <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={pick} />
+          <button type="button" onClick={() => ref.current?.click()} disabled={busy} aria-label="Add photos"
+            className="grid h-16 w-24 flex-none place-items-center rounded-lg border border-dashed border-rule gold disabled:opacity-50">
+            {busy ? <span className="text-micro">Uploading</span> : <Icon name="plus" size={18} />}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 const toRupees = (paise) => (paise ? String(paise / 100) : '')
 const toPaise = (text) => Math.round(Number(String(text).replace(/[^\d.]/g, '') || 0) * 100)
 
@@ -270,6 +319,7 @@ export function SellForm() {
       title: row.title || '',
       description: row.description || '',
       cover_url: row.cover_url || '',
+      gallery: row.gallery || [],
       price_paise: price,
       mrp_paise: toPaise(row.mrp ?? toRupees(row.mrp_paise)) || null,
     }
@@ -312,6 +362,11 @@ export function SellForm() {
           <FilePick label="Choose a picture" accept="image/*" kind="image" current={row.cover_url ? 'Change the picture' : null}
             onDone={(got) => setRow((r) => ({ ...r, cover_url: got.publicUrl }))} />
         </Field>
+        {row.cover_url && (
+          <Field label="More photos" note="Up to 9 more, shown after the cover. Swiped on the listing.">
+            <MorePhotos photos={row.gallery || []} onChange={(gallery) => setRow((r) => ({ ...r, gallery }))} />
+          </Field>
+        )}
         <Field label="Name">
           <input className="field-line" value={row.title || ''} onChange={set('title')} maxLength={200}
             placeholder={kind === 'event' ? 'Sharad Purnima Lakshmi Sadhana, live' : kind === 'course' ? 'Read your own kundli in 7 days' : ''} />

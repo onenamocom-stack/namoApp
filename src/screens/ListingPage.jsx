@@ -11,6 +11,7 @@ import VerifiedMark from '../components/VerifiedMark.jsx'
 import { access, get, listing as fetchListing, previewLesson } from '../lib/market.js'
 import { useStore } from '../store.jsx'
 import { PickBar, SharerBar } from '../components/TagPick.jsx'
+import { PhotoSwiper } from '../components/Pieces.jsx'
 
 /**
  * A seller's listing, `/shop/l/:id` (15 Oct 2026, Phase 17): a download, a
@@ -89,7 +90,7 @@ function Cover({ l, children }) {
   return (
     <div className="relative">
       {l.cover_url ? (
-        <img src={l.cover_url} alt={l.title} className="aspect-video w-full bg-surface2 object-contain" />
+        <PhotoSwiper photos={[l.cover_url, ...(l.gallery ?? [])]} alt={l.title} imgClassName="aspect-video w-full bg-surface2 object-contain" />
       ) : (
         <Plate seed={l.id} variant="contour" className="aspect-video w-full" />
       )}

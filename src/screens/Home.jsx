@@ -24,6 +24,7 @@ import VerifiedMark from '../components/VerifiedMark.jsx'
 import { BackButton } from '../components/Chrome.jsx'
 import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
+import { PhotoSwiper } from '../components/Pieces.jsx'
 import { useStore } from '../store.jsx'
 import { longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
 
@@ -1068,7 +1069,12 @@ function PostCard({ post, resharedBy }) {
         onEdit={mine ? () => setEditing(true) : undefined}
       />
 
-      {p.mediaUrl && <img src={p.mediaUrl} alt="" className="max-h-[32rem] w-full object-cover" />}
+      {p.mediaUrl &&
+        (p.gallery?.length ? (
+          <PhotoSwiper photos={[p.mediaUrl, ...p.gallery]} imgClassName="aspect-[4/5] w-full bg-surface object-cover" />
+        ) : (
+          <img src={p.mediaUrl} alt="" className="max-h-[32rem] w-full object-cover" />
+        ))}
       {tile && (
         <div
           className="flex aspect-square w-full items-center justify-center px-8 text-center"

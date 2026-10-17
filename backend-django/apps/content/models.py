@@ -44,6 +44,9 @@ class Content(models.Model):
     title = models.TextField(null=True, blank=True)
     body = models.TextField(null=True, blank=True)
     media_url = models.TextField(null=True, blank=True)
+    # More photos after `media_url` on a post, in order, up to nine (17 Oct
+    # 2026, Rahul: ten photos a post, swiped). Empty for everything else.
+    gallery = models.JSONField(default=list, db_default=[], blank=True)
     caption = models.TextField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=ContentStatus.choices, default=ContentStatus.LIVE

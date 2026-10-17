@@ -269,7 +269,14 @@ weeks ("Active this week"); never you or anyone you follow. Each card opens
 **Create post — 12 Oct 2026 (Rahul: "like Facebook"; it replaced the tabs
 Text · Photo · Video · Blog).** One screen: Back, *Create post* and **Post**
 (top right, live once there are words or a picture); your photo and name; one
-box for the words; a picked photo or video under it with ✕. The toolbar
+box for the words; a picked photo or video under it with ✕. **Up to ten
+photos** (17 Oct 2026, Rahul): the gallery picks several at once; the first is
+the cover; a row of small photos under it, each with ✕ and a **+** while there
+is room; a post is photos or one video, never both. In the feed a post with
+more than one photo swipes sideways with *1/4* and dots; its tile on a profile
+carries a two-squares mark, and the full-screen view swipes too. A Market
+listing takes the same: the cover, then *More photos* (up to nine) in the
+Sell form, swiped on the listing page. The toolbar
 pinned under it, one row of pills, icon beside name (lowered the same day,
 Rahul: "more modern"): **Photo/Video** (gallery; *Photo* where the account may not
 post video, and a video picked there is refused with a sentence), **Camera**,

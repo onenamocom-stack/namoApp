@@ -120,6 +120,8 @@ function shape(row) {
     body: row.body,
     caption: row.caption,
     mediaUrl: row.media_url,
+    // The photos after the first on a post (17 Oct 2026); [] for the rest.
+    gallery: row.gallery ?? [],
     views: row.view_count,
     likes: row.like_count,
     saves: row.save_count,
@@ -477,7 +479,7 @@ export async function fetchOne(contentId) {
 
 /** Change your own post, reel or blog (6 Oct 2026). Only the fields given
  *  are sent; `productIds`, when given, replaces the tags. */
-export async function editContent(id, { title, body, caption, mediaUrl, productIds, listingIds, ebookIds } = {}) {
+export async function editContent(id, { title, body, caption, mediaUrl, gallery, productIds, listingIds, ebookIds } = {}) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in first')
   const payload = {}
@@ -485,6 +487,7 @@ export async function editContent(id, { title, body, caption, mediaUrl, productI
   if (body !== undefined) payload.body = body
   if (caption !== undefined) payload.caption = caption
   if (mediaUrl !== undefined) payload.media_url = mediaUrl
+  if (gallery !== undefined) payload.gallery = gallery
   if (productIds !== undefined) payload.product_ids = productIds
   if (listingIds !== undefined) payload.listing_ids = listingIds
   if (ebookIds !== undefined) payload.ebook_ids = ebookIds
@@ -526,7 +529,7 @@ export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
  * an identity at all (rule 3). The kind gate's refusal arrives with the
  * same sentence the old 42501 mapping produced.
  */
-export async function publish({ kind, title, body, caption, mediaUrl, productIds = [], listingIds = [], ebookIds = [], groupId = null }) {
+export async function publish({ kind, title, body, caption, mediaUrl, gallery = [], productIds = [], listingIds = [], ebookIds = [], groupId = null }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to publish')
 
@@ -538,6 +541,8 @@ export async function publish({ kind, title, body, caption, mediaUrl, productIds
       body: body ?? null,
       caption: caption ?? null,
       media_url: mediaUrl ?? null,
+      // The photos after the first (17 Oct 2026), only when there are some.
+      ...(gallery.length ? { gallery } : {}),
       // Only sent when there are some, so a post from an ordinary account
       // is byte-identical to the request it made before tagging existed.
       ...(productIds.length ? { product_ids: productIds } : {}),

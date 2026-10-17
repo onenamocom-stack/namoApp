@@ -151,6 +151,20 @@ class TestReview:
         product = Product.objects.get(pk=row.product_id)
         assert product.brand == "Asha Creator" and product.category.name == "Maalas" and product.stock == 10
 
+    def test_a_listing_carries_its_photos_to_the_shop(self, creator):
+        # 17 Oct 2026, Rahul: up to ten photos on a listing, the cover first.
+        ShopCategory.objects.create(name="Maalas", sort=1)
+        more = ["https://x/2.jpg", "https://x/3.jpg"]
+        row = services.create(CREATOR, {"kind": "product", "title": "Tulsi Mala", "cover_url": "https://x/c.jpg",
+                                        "gallery": more, "price_paise": 89000, "stock": 10,
+                                        "weight_grams": 150, "category_name": "maalas"})
+        assert row.gallery == more and services.card(row, detail=True)["gallery"] == more
+        services.approve(row, "admin")
+        assert Product.objects.get(pk=row.product_id).gallery == more
+        with pytest.raises(services.Refused):
+            services.create(CREATOR, {"kind": "download", "title": "x", "cover_url": "https://x/c.jpg",
+                                      "gallery": [f"https://x/{i}.jpg" for i in range(10)]})
+
 
 def _pay(api_client, token, ref, fake=None):
     with mock.patch("apps.wallet.services.PhonePeClient", return_value=fake or FakePhonePe()):

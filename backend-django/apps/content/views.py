@@ -23,6 +23,9 @@ class PublishInput(serializers.Serializer):
     body = serializers.CharField(required=False, allow_null=True, default=None)
     caption = serializers.CharField(required=False, allow_null=True, default=None)
     media_url = serializers.CharField(required=False, allow_null=True, default=None)
+    # The photos after media_url on a post (17 Oct 2026), up to nine.
+    gallery = serializers.ListField(child=serializers.CharField(max_length=1000), required=False,
+                                    default=list, max_length=20)
     status = serializers.ChoiceField(
         choices=[Content.Status.LIVE, Content.Status.DRAFT],
         required=False,
@@ -49,6 +52,8 @@ class EditInput(serializers.Serializer):
     body = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     caption = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     media_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    gallery = serializers.ListField(child=serializers.CharField(max_length=1000), required=False,
+                                    max_length=20)
     product_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
     listing_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
     ebook_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
@@ -79,6 +84,7 @@ def _public_row(row):
         "title": row.title,
         "body": row.body,
         "media_url": row.media_url,
+        "gallery": list(getattr(row, "gallery", None) or []),
         "caption": row.caption,
         "view_count": row.view_count,
         "published_at": row.published_at,
@@ -252,6 +258,7 @@ def publish(request):
         listing_ids=data["listing_ids"],
         ebook_ids=data["ebook_ids"],
         group_id=data["group_id"],
+        gallery=data["gallery"],
     )
     return Response({"id": str(row.id)}, status=201)
 
