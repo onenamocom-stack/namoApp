@@ -711,9 +711,13 @@ Order, each part shipped on its own:
   `v/{id}/` in the public bucket, deletes the upload and posts the result
   back; `processing` → `in_review`. A smaller source is never enlarged.
   Over 90 seconds by the file's own length is refused there too.
-- **E — moderation.** The thumbnail and a frame every 3 seconds through
-  Google Cloud Vision SafeSearch (Rahul, 17 Oct; about 4 paise a
-  90-second video). An approved Pro or Creator whose frames are clear goes
+- **E — moderation.** Google Cloud Vision SafeSearch (Rahul, 17 Oct), at
+  $1.50 per 1,000 images after the first 1,000 a month: a frame every 3
+  seconds sent one by one is about ₹3.8 a 90-second video (an earlier
+  figure of 4 paise was wrong). Proposed to Rahul: a frame every 5
+  seconds, tiled 3×3, two images a video, about ₹0.25; checking only the
+  first seconds was refused, since the rest would go unseen. Awaiting his
+  answer. An approved Pro or Creator whose frames are clear goes
   `live` at once; anyone else whose frames are clear goes `live` too,
   except a new account's first 3 videos, which wait in the console's
   review queue; doubtful → the queue; clear violation → `rejected` and
