@@ -234,4 +234,8 @@ def sweep(request):
     from apps.market.services import remind_events
 
     result["event_reminders"] = remind_events()
+    # Video uploads never completed, after 24 hours (17 Oct 2026).
+    from apps.clips.services import sweep_stale
+
+    result["video_uploads_dropped"] = sweep_stale()
     return JsonResponse({"ok": True, **result})

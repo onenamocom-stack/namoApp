@@ -680,6 +680,44 @@ reject with note, notify), the console actions. Docs: `01` §2 and §12
 (who earns what), `03` (Earn on Namo, Dashboard), `04` (one tick), `05`
 (`profiles.seller`, `module_requests`).
 
+## Phase 19 — The video pipeline (Rahul's spec, 17 Oct 2026, in progress)
+
+Source: *NAMO Video Pipeline – Technical Spec* (Rahul, 17 Oct 2026, PDF on
+Telegram). User videos up to 90 seconds, compressed on the phone, stored
+once in R2, played as HLS through Cloudflare's CDN; under ₹5,000 a month at
+the end of Q1; playback starting in under a second on 4G. **The Android app
+is the priority** (Rahul, 17 Oct: "in 2 days we will be on android app
+too"), so everything server-side is one API for the web app and the
+Android app, and the phone-side work is specified for both.
+
+Order, each part shipped on its own:
+
+- **C — upload API (built 17 Oct, branch `video-pipeline`).** `videos`
+  table; `init` (hash, size, length, daily limit, duplicate link),
+  multipart parts of 5 MB with resume, `complete`, the 24-hour sweep.
+- **A — `media.1namo.com`.** The public bucket behind Cloudflare's cache
+  instead of the `r2.dev` address (no CDN, no guarantee). Needs the
+  domain's DNS on Cloudflare (owner).
+- **B — compression to the spec** on the web (WebCodecs): 720p, 2 Mbps,
+  30 fps, AAC 128 kbps, faststart, location stripped, 30 MB.
+- **D — the worker.** A separate Cloud Run service with FFmpeg: HLS 720p
+  (~2 Mbps) and 480p (~0.8 Mbps), 4-second segments, a WebP thumbnail,
+  the original deleted; `processing` → `in_review`.
+- **E — moderation.** Frames every 5 seconds and the caption through an
+  image safety model; clear → `live`, doubtful → the console's review
+  queue, clear violation → `rejected` and deleted. Provider undecided.
+- **F — playback.** Thumbnail first, 480p muted autoplay, 720p on Wi-Fi
+  or strong bandwidth, only the first segment of the next one or two
+  preloaded, a Data saver setting. Web: hls.js. Android: ExoPlayer.
+- **Later (first month after launch):** lifecycle rules (Infrequent
+  Access, soft delete), cost and playback dashboard; Cloudflare Stream
+  for Academy and puja.
+
+Open, for Rahul and the owner: the DNS of 1namo.com; the moderation
+provider; whether verified Pros and Creators skip pre-publish review; the
+daily limits (10, and 50 for an approved Pro or Creator, as built); the
+retention policy for the privacy page.
+
 ## Seed
 
 The largest single task, in phase 4.
