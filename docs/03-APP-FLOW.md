@@ -1398,6 +1398,16 @@ name, the **Online** switch. Under it the ringing requests (Decline,
 Answer), then the pro app's Consult screen as it is: approval state,
 Sessions · Chat · Call, the slots. No tab bar.
 
+**Chats on the Desk (17 Oct 2026, Rahul).** The chat panel opened from
+`/desk` (Join, Open your inbox) is the client chats alone: no Messages or
+Alerts tabs, titled Chats, full screen with a ✕, smaller text, and its
+height is what the keyboard leaves, so the typing box stays in sight. In a
+live session the consultant gets four openers above the box until they
+write: *Namaste. Welcome to your session.*, *Please tell me your
+question.*, *Share your date, time and place of birth.*, *Give me a moment
+to look at your chart.* A tap puts one in the box to edit or send. The
+openers show in the pro app's chat too; the rest is the Desk's only.
+
 Open, the app beats and the Pro can be online; leaving it stops the beat,
 so the Pro drops offline as they would by closing the pro app. On this
 screen the page names itself Namo Consult and offers `desk.webmanifest`

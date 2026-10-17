@@ -1,7 +1,7 @@
 import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { markConsultReturn } from '../lib/consultReturn.js'
 import AddMoneySheet from './AddMoneySheet.jsx'
 import Icon from './Icon.jsx'
@@ -44,6 +44,10 @@ export default function ChatPanel() {
   const unreadAlerts = useUnreadAlerts()
   const { isPro, chatOpen, setChatOpen, chatTab, setChatTab } =
     useStore()
+  /* NAMO Desk opens its chats alone, full screen with a ✕, in smaller text
+     and above the keyboard (17 Oct 2026, Rahul). */
+  const desk = useLocation().pathname.startsWith('/desk')
+  const deskHeight = useKeyboardSafeHeight(desk && chatOpen)
 
   if (!chatOpen) return null
 
@@ -55,10 +59,11 @@ export default function ChatPanel() {
      still ahead on top ("remember to attend"), then the people you have
      talked to. */
   const oneList = !isPro && !alertsOnly
-  const title = isPro ? 'Messages' : alertsOnly ? 'Notifications' : 'Consult'
+  const title = desk ? 'Chats' : isPro ? 'Messages' : alertsOnly ? 'Notifications' : 'Consult'
+  const sidePanel = isPro && !desk
 
   return (
-    <div className="absolute inset-0 z-50 flex justify-end">
+    <div className="absolute inset-x-0 top-0 z-50 flex justify-end" style={{ height: deskHeight ?? '100%' }}>
       <button
         type="button"
         aria-label="Close chat"
@@ -75,13 +80,13 @@ export default function ChatPanel() {
           The pro app keeps the side panel. */}
       <aside
         className={`relative flex h-full animate-slide-in flex-col bg-white ${
-          isPro ? 'w-[88%] max-w-[380px] border-l border-stroke shadow-xl' : 'w-full'
+          sidePanel ? 'w-[88%] max-w-[380px] border-l border-stroke shadow-xl' : 'w-full'
         }`}
       >
         <header className="flex-none border-b border-stroke">
           <div className="flex items-center justify-between px-4 py-3">
             <p className="caps t-heading">{title}</p>
-            {isPro ? (
+            {sidePanel ? (
               <button
                 type="button"
                 onClick={() => setChatOpen(false)}
@@ -108,7 +113,7 @@ export default function ChatPanel() {
               "Clients" because she is not messaging one. */}
           {/* Padded and centred (4 Oct 2026): the labels sat flush on the
               panel's left edge. Same row on both sides of the app. */}
-          {!alertsOnly && !oneList && (
+          {!alertsOnly && !oneList && !desk && (
           <div className="flex gap-2 px-4" role="tablist">
             {(isPro
               ? [
@@ -159,13 +164,14 @@ export default function ChatPanel() {
             bottom={<MySessions calls={false} pastOnly />}
           />
         )}
-        {isPro && chatTab === 'live' && <LiveConsultant isPro={isPro} />}
-        {chatTab === 'messages' && (
+        {desk && <LiveConsultant isPro small />}
+        {!desk && isPro && chatTab === 'live' && <LiveConsultant isPro={isPro} />}
+        {!desk && chatTab === 'messages' && (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <MessagesList onOpen={() => setChatOpen(false)} />
           </div>
         )}
-        {chatTab === 'alerts' && <Alerts />}
+        {!desk && chatTab === 'alerts' && <Alerts />}
       </aside>
     </div>
   )
@@ -185,7 +191,7 @@ export default function ChatPanel() {
    `m.sender_id === myId` and cannot be backwards. That was the bug the mock
    made unavoidable. */
 
-function LiveConsultant({ isPro, top = null, bottom = null }) {
+function LiveConsultant({ isPro, small = false, top = null, bottom = null }) {
   const { session, chatFocus, setChatFocus } = useStore()
   const myId = session?.user?.id
   const [threads, setThreads] = useState(null)
@@ -233,6 +239,7 @@ function LiveConsultant({ isPro, top = null, bottom = null }) {
         <Thread
           thread={t}
           myId={myId}
+          small={small}
           onBack={() => {
             setActiveId(null)
             load()
@@ -242,10 +249,10 @@ function LiveConsultant({ isPro, top = null, bottom = null }) {
     }
   }
 
-  return <ThreadList threads={threads} isPro={isPro} onOpen={setActiveId} top={top} bottom={bottom} />
+  return <ThreadList threads={threads} isPro={isPro} small={small} onOpen={setActiveId} top={top} bottom={bottom} />
 }
 
-function ThreadList({ threads, isPro, onOpen, top = null, bottom = null }) {
+function ThreadList({ threads, isPro, small = false, onOpen, top = null, bottom = null }) {
   if (threads === null) {
     return <p className="px-4 py-6 text-meta t-faint">Loading your conversations.</p>
   }
@@ -289,23 +296,23 @@ function ThreadList({ threads, isPro, onOpen, top = null, bottom = null }) {
               <button
                 type="button"
                 onClick={() => onOpen(t.id)}
-                className="flex w-full items-start gap-3 border-b border-rule px-4 py-4 text-left transition-opacity hover:opacity-70"
+                className={`flex w-full items-start gap-3 border-b border-rule px-4 text-left transition-opacity hover:opacity-70 ${small ? 'py-3' : 'py-4'}`}
               >
-                <PopAvatar initials={initialsOf(other)} size={40} online={!!t.live_session_id} />
+                <PopAvatar initials={initialsOf(other)} size={small ? 34 : 40} online={!!t.live_session_id} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
-                    <span className="truncate text-body t-heading">{other}</span>
+                    <span className={`truncate t-heading ${small ? 'text-meta font-semibold' : 'text-body'}`}>{other}</span>
                     {t.live_session_id && (
                       <span className="ml-auto flex-none caps-sm text-ok">Live</span>
                     )}
                   </span>
                   {last && (
-                    <span className="mt-1 flex items-center gap-1.5 text-[12px] gold">
+                    <span className={`mt-1 flex items-center gap-1.5 gold ${small ? 'text-[11px]' : 'text-[12px]'}`}>
                       <Icon name={last.kind === 'chat' ? 'chat' : last.kind === 'audio' ? 'phone' : 'video'} size={13} />
                       {lastLine(last)}
                     </span>
                   )}
-                  <span className="mt-1 block truncate text-meta t-body">
+                  <span className={`mt-1 block truncate t-body ${small ? 'text-[12px]' : 'text-meta'}`}>
                     {t.last_preview ?? (last && last.kind !== 'chat' ? 'No messages — calls only.' : 'No messages yet.')}
                   </span>
                 </span>
@@ -380,7 +387,7 @@ function useUnreadAlerts() {
  * and nothing else. The heartbeat says "still here" and asks how long is left;
  * it cannot extend anything.
  */
-function Thread({ thread, myId, onBack }) {
+function Thread({ thread, myId, small = false, onBack }) {
   const { refreshWallet, session, showToast } = useStore()
   const [messages, setMessages] = useState(() => loadOutbox(thread.id, myId))
   const [live, setLive] = useState(thread.live_session_id ?? null)
@@ -390,6 +397,7 @@ function Thread({ thread, myId, onBack }) {
   const [resumeBy, setResumeBy] = useState(null)
   const [topup, setTopup] = useState(false)
   const endRef = useRef(null)
+  const [openedAt] = useState(() => new Date().toISOString())
 
   useEffect(() => {
     setLive(thread.live_session_id ?? null)
@@ -598,6 +606,7 @@ function Thread({ thread, myId, onBack }) {
               key={m.key ?? m.id}
               mine={m.sender_id === myId}
               text={m.body}
+              small={small}
               time={last || m.state ? time : null}
               state={m.state}
               onRetry={m.state === 'failed' && live ? () => deliver(m.key, m.body) : undefined}
@@ -612,7 +621,14 @@ function Thread({ thread, myId, onBack }) {
           <p className="text-meta t-faint">Paused until the balance is recharged.</p>
         </div>
       ) : live ? (
-        <Composer onSend={send} placeholder="Type a message" />
+        <Composer
+          onSend={send}
+          placeholder="Type a message"
+          /* Openers for the consultant, until they have written in this
+             sitting (17 Oct 2026, Rahul). A tap puts one in the box, to edit
+             or send. */
+          suggestions={thread.seeker_id !== myId && !messages.some((m) => m.sender_id === myId && m.created_at >= openedAt) ? OPENERS : null}
+        />
       ) : (
         <div className="flex-none border-t border-rule px-4 py-4">
           <p className="text-meta t-faint">
@@ -759,12 +775,12 @@ function Alerts() {
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
-function Bubble({ mine, text, time, state, onRetry }) {
+function Bubble({ mine, text, time, state, onRetry, small = false }) {
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>
       <div className="max-w-[85%]">
         <div
-          className={`whitespace-pre-wrap break-words px-3 py-2.5 text-meta transition-opacity ${
+          className={`whitespace-pre-wrap break-words px-3 transition-opacity ${small ? 'py-2 text-[12.5px] leading-snug' : 'py-2.5 text-meta'} ${
             mine ? 'bubble-mine rounded-2xl rounded-br-md' : 'bubble-theirs rounded-2xl rounded-bl-md'
           } ${state === 'sending' ? 'opacity-70' : ''}`}
         >
@@ -802,7 +818,7 @@ function Bubble({ mine, text, time, state, onRetry }) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
-function Composer({ onSend, placeholder, disabled = false }) {
+function Composer({ onSend, placeholder, disabled = false, suggestions = null }) {
   const [value, setValue] = useState('')
   const box = useRef(null)
   const composing = useRef(false)
@@ -822,8 +838,27 @@ function Composer({ onSend, placeholder, disabled = false }) {
   }
 
   return (
+    <div className="flex-none border-t border-stroke bg-white">
+    {suggestions && (
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
+        {suggestions.map((text) => (
+          <button
+            key={text}
+            type="button"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => {
+              setValue(text)
+              box.current?.focus()
+            }}
+            className="flex-none rounded-full bg-gold-wash px-3 py-1.5 text-[12px] gold ring-1 ring-gold-fill/30"
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+    )}
     <form
-      className="flex flex-none items-center gap-3 border-t border-stroke px-4 py-3"
+      className="flex items-center gap-3 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]"
       onSubmit={(e) => {
         e.preventDefault()
         submit()
@@ -854,7 +889,37 @@ function Composer({ onSend, placeholder, disabled = false }) {
         </PopButton>
       </span>
     </form>
+    </div>
   )
+}
+
+/** A consultant's openers (17 Oct 2026, Rahul). */
+const OPENERS = [
+  'Namaste. Welcome to your session.',
+  'Please tell me your question.',
+  'Share your date, time and place of birth.',
+  'Give me a moment to look at your chart.',
+]
+
+/**
+ * The height the screen has above the on-screen keyboard. Chrome on Android
+ * lays the page out at full height and lets the keyboard cover its bottom,
+ * the composer with it; the visual viewport is what is left. Null when off.
+ */
+function useKeyboardSafeHeight(on) {
+  const [h, setH] = useState(null)
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null
+    if (!on || !vv) {
+      setH(null)
+      return undefined
+    }
+    const fit = () => setH(vv.height)
+    fit()
+    vv.addEventListener('resize', fit)
+    return () => vv.removeEventListener('resize', fit)
+  }, [on])
+  return h
 }
 
 /** The wallet at the top of the Consult page (14 Oct 2026, Rahul): the
