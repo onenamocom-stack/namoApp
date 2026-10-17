@@ -11,10 +11,12 @@ service runs with CPU always allocated, so work after the response is not
 starved), one at a time:
 
   1. the upload is read from the private uploads bucket
-  2. encode.build: HLS 720p and 480p, the thumbnail
-  3. every file goes to the public bucket under v/{id}/
-  4. the upload is deleted (the spec keeps no original)
-  5. POST VIDEO_CALLBACK_URL with the result, same token
+  2. encode.build: HLS 720p and 480p, the thumbnail, the moderation sheets
+  3. moderate.check: the sheets through SafeSearch (part E)
+  4. every file goes to the public bucket under v/{id}/, the sheets too,
+     for the console's review queue
+  5. the upload is deleted (the spec keeps no original)
+  6. POST VIDEO_CALLBACK_URL with the result and the verdict, same token
 
 A job lost to a restart is not lost: the API's minute sweep hands any
 video still at `processing` over again, up to three times.
@@ -33,6 +35,7 @@ import time
 import urllib.request
 
 import encode
+import moderate
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger("namo-video")
@@ -42,7 +45,8 @@ CALLBACK_URL = os.environ.get("VIDEO_CALLBACK_URL", "")
 WAITING_MAX = 4
 # Encoded files never change once written: cache them for a year.
 IMMUTABLE = "public, max-age=31536000, immutable"
-TYPES = {".m3u8": "application/vnd.apple.mpegurl", ".ts": "video/mp2t", ".webp": "image/webp"}
+TYPES = {".m3u8": "application/vnd.apple.mpegurl", ".ts": "video/mp2t", ".webp": "image/webp",
+         ".jpg": "image/jpeg"}
 
 jobs = queue.Queue()
 held = set()
@@ -92,8 +96,9 @@ def report(body):
         time.sleep(2 ** attempt)
 
 
-def process(job, s3=None):
+def process(job, s3=None, check=None):
     video_id = job["video_id"]
+    check = check or moderate.check
     s3 = s3 or _s3()
     work = tempfile.mkdtemp(prefix=f"v-{video_id}-")
     try:
@@ -103,11 +108,14 @@ def process(job, s3=None):
         os.makedirs(out)
         started = time.monotonic()
         result = encode.build(src, out)
+        sheets = result.pop("sheets")
+        verdict = check(sheets)
         prefix = job["output"]["prefix"]
+        verdict["sheets"] = [prefix + os.path.basename(p) for p in sheets]
         upload_dir(s3, out, job["output"]["bucket"], prefix)
         s3.delete_object(Bucket=job["source"]["bucket"], Key=job["source"]["key"])
         log.info("%s encoded in %.1fs: %s", video_id, time.monotonic() - started, result["versions"])
-        return {"video_id": video_id, "ok": True, **result,
+        return {"video_id": video_id, "ok": True, **result, "moderation": verdict,
                 "hls_path": f"{prefix}master.m3u8", "thumb_path": f"{prefix}thumb.webp"}
     except encode.Unusable as err:
         # Nothing to retry: drop the upload, tell the API why.

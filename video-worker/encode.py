@@ -8,6 +8,8 @@
   thumb     one WebP frame, shorter side 480
   master    the playlist that lists the versions, 480p first so a player
             starts small and climbs
+  sheets    the moderation images (part E): a frame every 10 seconds,
+            nine to a 3×3 sheet, so a 90-second video is one image
 
 `main.py` fetches the upload, calls these, and sends the files to R2.
 """
@@ -24,6 +26,11 @@ SEGMENT_SECONDS = 4
 # (shorter side, video kbps, audio kbps): the spec's ~2 Mbps and ~0.8 Mbps.
 RUNGS = ((720, 2000, 128), (480, 800, 96))
 THUMB_SIDE = 480
+# Moderation (Rahul, 17 Oct): a frame every 10 seconds, nine to a sheet.
+# What happens between two frames is not seen; reports cover that.
+FRAME_EVERY = 10
+TILE = 3
+CELL_SIDE = 320
 
 
 class Unusable(Exception):
@@ -144,6 +151,43 @@ def thumb_command(src, out_path, info):
     ]
 
 
+def frame_times(duration):
+    """Where the moderation frames fall: the middle of each 10-second
+    stretch, so a video under 10 seconds still gets its middle frame."""
+    times, t = [], min(FRAME_EVERY / 2, duration / 2)
+    while t < duration:
+        times.append(round(t, 2))
+        t += FRAME_EVERY
+    return times
+
+
+def sheet_count(duration):
+    return -(-len(frame_times(duration)) // (TILE * TILE))
+
+
+def sheet_command(src, out_pattern, info):
+    """Every frame 10 seconds after the last one picked, from the first
+    frame time on, tiled 3×3 (a last sheet that is not full is padded
+    black)."""
+    side = min(CELL_SIDE, info["width"], info["height"])
+    w, h = size_for(info["width"], info["height"], side)
+    first = frame_times(info["duration"])[0]
+    return [
+        FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{first:.2f}", "-i", src, "-an",
+        "-vf", (f"select='isnan(prev_selected_t)+gte(t-prev_selected_t,{FRAME_EVERY})',"
+                f"scale={w}:{h},setsar=1,tile={TILE}x{TILE}"),
+        "-fps_mode", "vfr", "-q:v", "4", "-map_metadata", "-1", out_pattern,
+    ]
+
+
+def sheets(src, out_dir, info):
+    """The moderation sheets as JPEG files in `out_dir`, in order."""
+    _run(sheet_command(src, os.path.join(out_dir, "sheet_%d.jpg"), info), timeout=120)
+    found = sorted((n for n in os.listdir(out_dir) if n.startswith("sheet_") and n.endswith(".jpg")),
+                   key=lambda n: int(n[6:-4]))
+    return [os.path.join(out_dir, n) for n in found]
+
+
 def _run(cmd, timeout=600):
     out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if out.returncode != 0:
@@ -163,7 +207,8 @@ def master(variants):
 
 def build(src, out_dir):
     """Everything for one upload, into `out_dir`: master.m3u8, one folder
-    per version, thumb.webp. Returns what the API stores."""
+    per version, thumb.webp, the moderation sheets. Returns what the API
+    stores, and the sheets' local paths under `sheets`."""
     info = probe(src)
     variants = []
     for side, v_kbps, a_kbps in ladder(info["width"], info["height"]):
@@ -177,4 +222,4 @@ def build(src, out_dir):
     _run(thumb_command(src, os.path.join(out_dir, "thumb.webp"), info), timeout=120)
     top = variants[0]
     return {"duration_s": info["duration"], "width": top[1], "height": top[2],
-            "versions": [v[0] for v in variants]}
+            "versions": [v[0] for v in variants], "sheets": sheets(src, out_dir, info)}

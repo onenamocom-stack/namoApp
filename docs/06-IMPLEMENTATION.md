@@ -697,9 +697,9 @@ Order, each part shipped on its own:
   multipart parts of 5 MB with resume, `complete`, the 24-hour sweep.
 - **A — `media.1namo.com`.** The public bucket behind Cloudflare's cache
   instead of the `r2.dev` address (no CDN, no guarantee). Needs the
-  domain's DNS on Cloudflare (owner). The DNS is at GoDaddy today
-  (nameservers `domaincontrol.com`, checked 17 Oct); moving it is the
-  owner's or Rahul's step.
+  domain's DNS on Cloudflare. The zone exists (Free plan, pending, 17
+  Oct); it goes live when GoDaddy's nameservers change to Cloudflare's,
+  the owner's or Rahul's step (HANDOFF §83).
 - **B — compression to the spec** on the web (WebCodecs): 720p, 2 Mbps,
   30 fps, AAC 128 kbps, faststart, location stripped, 30 MB.
 - **D — the worker (built 17 Oct, branch `video-pipeline`).** Cloud Run
@@ -711,18 +711,27 @@ Order, each part shipped on its own:
   `v/{id}/` in the public bucket, deletes the upload and posts the result
   back; `processing` → `in_review`. A smaller source is never enlarged.
   Over 90 seconds by the file's own length is refused there too.
-- **E — moderation.** Google Cloud Vision SafeSearch (Rahul, 17 Oct), at
-  $1.50 per 1,000 images after the first 1,000 a month: a frame every 3
-  seconds sent one by one is about ₹3.8 a 90-second video (an earlier
-  figure of 4 paise was wrong). Proposed to Rahul: a frame every 5
-  seconds, tiled 3×3, two images a video, about ₹0.25; checking only the
-  first seconds was refused, since the rest would go unseen. Awaiting his
-  answer. An approved Pro or Creator whose frames are clear goes
-  `live` at once; anyone else whose frames are clear goes `live` too,
-  except a new account's first 3 videos, which wait in the console's
-  review queue; doubtful → the queue; clear violation → `rejected` and
-  deleted. SafeSearch does not hear audio or read hate speech: the report
-  button and the queue cover that.
+- **E — moderation (built 17 Oct, branch `video-pipeline`).** Google
+  Cloud Vision SafeSearch (Rahul, 17 Oct), $1.50 per 1,000 images after
+  the first 1,000 a month. **A frame every 10 seconds, nine frames tiled
+  3×3 into one image** (Rahul, 17 Oct, replacing a frame every 3 seconds
+  one by one, about ₹3.8 a video, and the proposed frame every 5
+  seconds, two images): a 90-second video is one image, about ₹0.13.
+  Frames fall at the middle of each 10-second stretch (5, 15 … 85 s; a
+  video under 10 seconds gets its middle). Whatever happens between two
+  frames is not seen, and SafeSearch does not hear audio or read hate
+  speech: the report button and the queue cover that. The worker
+  (`encode.sheets`, `moderate.py`) sends the sheets and keeps them at
+  `v/{id}/sheet_n.jpg` for the queue; the API (`apps/clips/moderation.py`)
+  decides: adult or violence VERY_LIKELY → `rejected`, files deleted, the
+  same file refused at `init` for good; adult POSSIBLE or more, violence
+  or racy LIKELY or more, or no verdict (Vision failed) → the console's
+  **Videos to review** queue; clear → `live` for an approved Pro or
+  Creator, and for anybody else once they have 3 live videos (their first
+  3 wait in the queue). The queue shows the sheet and the verdict;
+  Approve puts the file and its copies live, Reject deletes them. Needs
+  the Vision API enabled on the project; the worker's service account is
+  the credential.
 - **F — playback.** Thumbnail first, 480p muted autoplay, 720p on Wi-Fi
   or strong bandwidth, only the first segment of the next one or two
   preloaded, a Data saver setting. Web: hls.js. Android: ExoPlayer.

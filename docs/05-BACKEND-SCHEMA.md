@@ -1663,8 +1663,12 @@ upload in the private uploads bucket, `uploads/{id}/source`);
 `preview_path` (relative to the public media base, `v/{id}/...`, set by the
 worker); `width`, `height` (the encoded top version, after the phone's
 rotation); `category` (content · puja · darshan · yoga · ayurveda ·
-astrology); `moderation` (jsonb verdict); `error` (for a deleted video,
-starts with the reason: `too_long`, `not_a_video`, `failed`); `claimed_at`,
+astrology); `moderation` (jsonb: SafeSearch's worst `adult`, `violence`,
+`racy`, `medical`, `spoof` over the sheets, `images`, `sheets` (their paths,
+`v/{id}/sheet_n.jpg`), `outcome` clear · doubt · violation, or `error`; after
+the console, `reviewed` approved · rejected and `by`); `error` (for a deleted
+or rejected video, starts with the reason: `too_long`, `not_a_video`,
+`failed`, `safesearch`, `rejected by a moderator`); `claimed_at`,
 `attempts` (handed to the worker when, and how often; three at most);
 `view_count`,
 `last_viewed_at` (the lifecycle rules); `created_at`, `completed_at`,

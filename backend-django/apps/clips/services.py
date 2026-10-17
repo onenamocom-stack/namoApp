@@ -11,7 +11,11 @@
   sweep     an upload not completed in 24 hours is aborted and deleted;
             a video the worker never answered for is handed over again,
             three times at most.
-  done      the worker's answer: the HLS and thumbnail paths, or why not.
+  done      the worker's answer: the HLS and thumbnail paths and the
+            SafeSearch verdict (moderation.py decides live, the review
+            queue or rejected), or why not.
+  approve   the console's review queue: live, or rejected with its files
+  reject    deleted.
 
 The same calls serve the web app and the Android app.
 """
@@ -26,6 +30,7 @@ from django.db.models import F, Q
 from django.db import transaction
 from django.utils import timezone
 
+from . import moderation
 from .models import Video, VideoStatus
 from .storage import get_store, part_count
 
@@ -102,6 +107,8 @@ def init(user_id, *, sha256, size_bytes, duration_s, mime="video/mp4", original=
     cap = MAX_ORIGINAL_BYTES if original else MAX_BYTES
     if not size_bytes or size_bytes <= 0 or size_bytes > cap:
         raise Refused(f"Videos can be up to {cap // (1024 * 1024)} MB.", reason="too_big")
+    if Video.objects.filter(source_hash=sha256, status=VideoStatus.REJECTED).exists():
+        raise Refused("This video breaks the rules and cannot be posted.", status=403, reason="rejected")
     category = category if category in CATEGORIES else "content"
     limit = daily_limit(user_id)
     if _today_count(user_id, now) >= limit:
@@ -214,32 +221,74 @@ def _with_copies(video):
     return Video.objects.filter(Q(pk=video.pk) | Q(source_video=video))
 
 
+def _why(verdict):
+    flagged = [f"{k} {verdict[k]}" for k in ("adult", "violence", "racy") if verdict.get(k)]
+    return "safesearch: " + ", ".join(flagged)
+
+
 def worker_done(body, now=None):
     """The worker's answer. Idempotent: only a video still at
-    `processing` changes. A clean encode goes to `in_review`, where the
-    moderation step (part E) takes it; a final refusal (not a video, too
-    long) deletes it; a failure waits for the sweep to send it again."""
+    `processing` changes. A clean encode is judged on its SafeSearch
+    verdict (moderation.py): each row of the file goes live or to the
+    review queue by its owner, or every row is rejected and the files
+    deleted. A final refusal (not a video, too long) deletes it; a
+    failure waits for the sweep to send it again."""
     now = now or timezone.now()
+    rejected = None
     with transaction.atomic():
         video = (Video.objects.select_for_update()
                  .filter(pk=body.get("video_id"), source_video__isnull=True).first())
         if video is None or video.status != VideoStatus.PROCESSING:
             return False
         if body.get("ok"):
+            verdict = body.get("moderation") if isinstance(body.get("moderation"), dict) else {}
+            outcome = moderation.judge(verdict)
             _with_copies(video).update(
-                status=VideoStatus.IN_REVIEW, hls_path=str(body.get("hls_path") or ""),
+                hls_path=str(body.get("hls_path") or ""),
                 thumb_path=str(body.get("thumb_path") or ""),
                 duration_s=float(body.get("duration_s") or video.duration_s),
                 width=int(body.get("width") or 0), height=int(body.get("height") or 0),
-                processed_at=now, error="",
+                moderation={**verdict, "outcome": outcome}, processed_at=now,
+                error=_why(verdict)[:500] if outcome == moderation.VIOLATION else "",
             )
+            for row in _with_copies(video).order_by("created_at"):
+                Video.objects.filter(pk=row.pk).update(status=moderation.status_for(row, outcome))
+            if outcome == moderation.VIOLATION:
+                rejected = video
         elif body.get("final"):
             reason = str(body.get("reason") or "failed")
             _with_copies(video).update(status=VideoStatus.DELETED,
                                        error=f"{reason}: {str(body.get('error') or '')}"[:500])
         else:
             Video.objects.filter(pk=video.pk).update(claimed_at=None, error=str(body.get("error") or "")[:500])
+    if rejected is not None:
+        get_store().delete_outputs(f"v/{rejected.id}/")
     return True
+
+
+def _root(video):
+    return video.source_video if video.source_video_id else video
+
+
+def approve(video, by=""):
+    """The review queue's yes: the file and every copy of it go live."""
+    root = _root(video)
+    review = {**(root.moderation or {}), "reviewed": "approved", "by": by}
+    return _with_copies(root).filter(status=VideoStatus.IN_REVIEW).update(
+        status=VideoStatus.LIVE, moderation=review)
+
+
+def reject(video, by="", why="rejected by a moderator"):
+    """The review queue's no, or a take-down of a live one: every row of
+    the file is rejected, its encoded files deleted, and the same file
+    can never be posted again (init refuses its hash)."""
+    root = _root(video)
+    review = {**(root.moderation or {}), "reviewed": "rejected", "by": by}
+    n = _with_copies(root).filter(status__in=(VideoStatus.IN_REVIEW, VideoStatus.LIVE)).update(
+        status=VideoStatus.REJECTED, moderation=review, error=why[:500])
+    if n:
+        get_store().delete_outputs(f"v/{root.id}/")
+    return n
 
 
 def redispatch(now=None):
@@ -272,8 +321,10 @@ def state(user_id, video_id):
         hls_url=public_url(video.hls_path) if video.hls_path else None,
         thumb_url=public_url(video.thumb_path) if video.thumb_path else None,
         width=video.width, height=video.height, duration_s=video.duration_s,
-        # Why a video went: "too_long", "not_a_video", "failed".
-        reason=(video.error.split(":", 1)[0] or None) if video.status == VideoStatus.DELETED else None,
+        # Why a video went: "too_long", "not_a_video", "failed"; for a
+        # rejected one "safesearch" or "rejected by a moderator".
+        reason=(video.error.split(":", 1)[0] or None)
+        if video.status in (VideoStatus.DELETED, VideoStatus.REJECTED) else None,
     )
 
 

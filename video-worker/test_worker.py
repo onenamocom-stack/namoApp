@@ -13,6 +13,7 @@ import pytest
 
 import encode
 import main
+import moderate
 
 HAVE_FFMPEG = bool(shutil.which(encode.FFMPEG) and shutil.which(encode.FFPROBE))
 
@@ -61,6 +62,63 @@ class TestRules:
         assert "0:a:0" not in cmd and "-c:a" not in cmd
 
 
+class TestSheets:
+    """Part E (Rahul, 17 Oct): a frame every 10 seconds, nine to a sheet."""
+
+    def test_a_frame_in_the_middle_of_every_ten_seconds(self):
+        assert encode.frame_times(90) == [5, 15, 25, 35, 45, 55, 65, 75, 85]
+        assert encode.frame_times(90.5) == encode.frame_times(90)
+        assert encode.frame_times(6) == [3]
+        assert encode.frame_times(31) == [5, 15, 25]
+
+    def test_a_ninety_second_video_is_one_image(self):
+        assert encode.sheet_count(90.5) == 1 and encode.sheet_count(4) == 1
+
+    def test_the_sheet_starts_at_the_first_frame_and_tiles_three_by_three(self):
+        cmd = encode.sheet_command("in", "sheet_%d.jpg", {"width": 1080, "height": 1920, "duration": 42.0})
+        assert cmd[cmd.index("-ss") + 1] == "5.00"
+        vf = cmd[cmd.index("-vf") + 1]
+        assert "gte(t-prev_selected_t,10)" in vf and "scale=320:568" in vf and vf.endswith("tile=3x3")
+
+
+class FakeVision:
+    def __init__(self, answers):
+        self.answers, self.bodies = answers, []
+
+    def __call__(self, body):
+        self.bodies.append(body)
+        return {"responses": self.answers}
+
+
+class TestModerate:
+    def _sheet(self, tmp_path):
+        path = tmp_path / "sheet_1.jpg"
+        path.write_bytes(b"not really a jpeg")
+        return [str(path)]
+
+    def test_the_worst_answer_per_category(self, tmp_path):
+        paths = self._sheet(tmp_path) * 2
+        vision = FakeVision([
+            {"safeSearchAnnotation": {"adult": "UNLIKELY", "violence": "POSSIBLE", "racy": "VERY_UNLIKELY"}},
+            {"safeSearchAnnotation": {"adult": "VERY_UNLIKELY", "violence": "UNLIKELY", "racy": "LIKELY"}},
+        ])
+        got = moderate.check(paths, post=vision)
+        assert got["images"] == 2 and got["adult"] == "UNLIKELY"
+        assert got["violence"] == "POSSIBLE" and got["racy"] == "LIKELY"
+        [body] = vision.bodies
+        assert body["requests"][0]["features"] == [{"type": "SAFE_SEARCH_DETECTION"}]
+
+    def test_a_failed_call_is_an_error_not_a_pass(self, tmp_path):
+        got = moderate.check(self._sheet(tmp_path), post=FakeVision([{"error": {"code": 403}}]))
+        assert "error" in got and "images" not in got
+
+        def down(body):
+            raise OSError("no route to host")
+
+        assert "error" in moderate.check(self._sheet(tmp_path), post=down)
+        assert "error" in moderate.check([], post=down)
+
+
 class FakeS3:
     def __init__(self, src):
         self.src, self.put, self.deleted = src, {}, []
@@ -101,7 +159,8 @@ class TestEncode:
         src = str(tmp_path / "in.mp4")
         _make(src, 1080, 1920, 9)
         s3 = FakeS3(src)
-        got = main.process(JOB, s3=s3)
+        seen = []
+        got = main.process(JOB, s3=s3, check=lambda p: seen.extend(p) or {"engine": "safesearch", "images": len(p)})
         assert got["ok"] and got["hls_path"] == "v/abc/master.m3u8" and got["thumb_path"] == "v/abc/thumb.webp"
         assert (got["width"], got["height"], got["versions"]) == (720, 1280, ["720p", "480p"])
         assert 8.5 < got["duration_s"] < 9.5
@@ -112,6 +171,20 @@ class TestEncode:
         assert s3.put["v/abc/480p/seg_000.ts"]["ContentType"] == "video/mp2t"
         assert "immutable" in s3.put["v/abc/master.m3u8"]["CacheControl"]
         assert s3.deleted == ["uploads/abc/source"]
+        # 9 seconds: one frame, one sheet, checked and kept for the queue.
+        assert len(seen) == 1 and "sheets" not in got
+        assert got["moderation"] == {"engine": "safesearch", "images": 1, "sheets": ["v/abc/sheet_1.jpg"]}
+        assert s3.put["v/abc/sheet_1.jpg"]["ContentType"] == "image/jpeg"
+
+    def test_a_long_video_is_one_sheet_of_nine(self, tmp_path):
+        src = str(tmp_path / "in.mp4")
+        _make(src, 360, 640, 88)
+        out = tmp_path / "out"
+        out.mkdir()
+        info = encode.probe(src)
+        [sheet] = encode.sheets(src, str(out), info)
+        meta = _meta(sheet)["streams"][0]
+        assert (meta["width"], meta["height"]) == (3 * 320, 3 * 568)
 
     def test_the_output_has_no_location_and_at_most_30_fps(self, tmp_path):
         src = str(tmp_path / "in.mp4")
@@ -131,7 +204,7 @@ class TestEncode:
         src = str(tmp_path / "in.mp4")
         _make(src, 320, 240, 92)
         s3 = FakeS3(src)
-        got = main.process(JOB, s3=s3)
+        got = main.process(JOB, s3=s3, check=lambda p: {})
         assert got["ok"] is False and got["final"] is True and got["reason"] == "too_long"
         assert s3.deleted == ["uploads/abc/source"] and s3.put == {}
 

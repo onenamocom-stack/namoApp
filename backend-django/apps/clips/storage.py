@@ -90,11 +90,24 @@ class R2Store:
         except Exception:  # noqa: BLE001 — already gone is fine
             pass
 
+    def delete_outputs(self, prefix):
+        """Every encoded file of a video (`v/{id}/`) in the public bucket,
+        for a rejected one. Returns how many went."""
+        client, gone = self._client(), 0
+        while True:
+            page = client.list_objects_v2(Bucket=settings.R2_BUCKET, Prefix=prefix)
+            keys = [{"Key": o["Key"]} for o in page.get("Contents", [])]
+            if not keys:
+                return gone
+            client.delete_objects(Bucket=settings.R2_BUCKET, Delete={"Objects": keys, "Quiet": True})
+            gone += len(keys)
+
 
 class LocalStore:
     """Dev and tests: an upload is a dict in memory."""
 
     uploads = {}
+    deleted = []
 
     def start(self, key, mime):
         upload_id = f"local-{len(self.uploads) + 1}"
@@ -115,3 +128,7 @@ class LocalStore:
 
     def abort(self, key, upload_id):
         LocalStore.uploads.pop(upload_id, None)
+
+    def delete_outputs(self, prefix):
+        LocalStore.deleted.append(prefix)
+        return 0
