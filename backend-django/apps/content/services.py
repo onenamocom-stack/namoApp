@@ -1022,18 +1022,48 @@ def _recompute_rating_cache(consultant_id):
     return avg, n
 
 
-def leave_review(seeker_id, *, booking_id, consultant_id, rating, body=None):
+# How long after a call or chat it can still be reviewed (17 Oct 2026).
+SESSION_REVIEW_DAYS = 7
+
+
+def _session_reviewable(session, seeker_id, consultant_id):
+    return (
+        session is not None
+        and session["seeker_id"] == str(seeker_id)
+        and session["consultant_id"] == str(consultant_id)
+        and session["status"] == "ended"
+        and session["recent"]
+    )
+
+
+def leave_review(seeker_id, *, consultant_id, rating, body=None, booking_id=None, session_id=None):
     """THE ANTI-FRAUD RULE, re-expressed. A review requires a booking that is
     the caller's own and COMPLETED — not pending, not confirmed — and names
     the same consultant as the booking. booking_id is unique: one booking
     buys one review, and the unique index (not a read-before-write) decides
-    the race. The rating cache recomputes in this same transaction."""
-    booking = gateway.booking_for_review(booking_id)
-    if (
-        booking is None
-        or booking["seeker_id"] != str(seeker_id)
-        or booking["consultant_id"] != str(consultant_id)
-        or booking["status"] != "completed"
+    the race.
+
+    Or a call or chat (17 Oct 2026, Rahul): the caller's own, ENDED after
+    it connected, within SESSION_REVIEW_DAYS, same consultant; session_id
+    is unique the same way.
+
+    Every review arrives PENDING and waits for the console (17 Oct 2026,
+    Rahul). It is not public and not in the rating until approved, so the
+    cache does not move here."""
+    if (booking_id is None) == (session_id is None):
+        raise PermissionDenied(GATE_REFUSAL)
+    if booking_id is not None:
+        booking = gateway.booking_for_review(booking_id)
+        if (
+            booking is None
+            or booking["seeker_id"] != str(seeker_id)
+            or booking["consultant_id"] != str(consultant_id)
+            or booking["status"] != "completed"
+        ):
+            raise PermissionDenied(GATE_REFUSAL)
+    elif not _session_reviewable(
+        gateway.session_for_review(session_id, timezone.now() - timezone.timedelta(days=SESSION_REVIEW_DAYS)),
+        seeker_id, consultant_id,
     ):
         raise PermissionDenied(GATE_REFUSAL)
     with transaction.atomic():
@@ -1041,16 +1071,17 @@ def leave_review(seeker_id, *, booking_id, consultant_id, rating, body=None):
             with transaction.atomic():  # savepoint: the lost race only rolls back the insert
                 review = Review.objects.create(
                     booking_id=booking_id,
+                    session_id=session_id,
                     seeker_id=seeker_id,
                     consultant_id=consultant_id,
                     rating=rating,
                     body=body,
+                    status=Review.Status.PENDING,
                 )
         except IntegrityError:
             # 23505 on reviews_booking_id_key — the check's "one booking,
             # one review", answered with its own sentence.
             raise DuplicateReview(DUPLICATE_REFUSAL) from None
-        _recompute_rating_cache(consultant_id)
     return review
 
 
@@ -1124,7 +1155,7 @@ def list_reviews(consultant_id, *, limit=20):
             "rating": r.rating,
             "body": r.body,
             "created_at": r.created_at,
-            "verified": r.booking_id is not None,
+            "verified": r.booking_id is not None or r.session_id is not None,
             "reviewer_name": _reviewer_name(names.get(str(r.seeker_id), "")),
         }
         for r in rows
@@ -1134,6 +1165,12 @@ def list_reviews(consultant_id, *, limit=20):
 def reviewable_bookings(seeker_id):
     """The 020 gate's positive half, for the client's Review affordance."""
     return gateway.reviewable_bookings(seeker_id)
+
+
+def reviewable_sessions(seeker_id, now=None):
+    """The session gate's positive half: what the after-call ask may offer."""
+    now = now or timezone.now()
+    return gateway.reviewable_sessions(seeker_id, now - timezone.timedelta(days=SESSION_REVIEW_DAYS))
 
 
 # ── follow counts and authors ────────────────────────────────────────────────

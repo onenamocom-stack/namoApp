@@ -127,6 +127,64 @@ def booking_for_review(booking_id):
     }
 
 
+def session_for_review(session_id, since):
+    """The call or chat a review claims (17 Oct 2026). `recent`: it
+    connected and ended at or after `since`, compared in SQL so both
+    backends read the timestamps the same way."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"select id, seeker_id, consultant_id, status,"
+            f" case when started_at is not null and ended_at >= %s then 1 else 0 end"
+            f" from sessions where {_xid('id', '%s')}",
+            [since, str(session_id)],
+        )
+        row = cursor.fetchone()
+    if row is None:
+        return None
+    sid, seeker_id, consultant_id, status, recent = row
+    return {
+        "id": _canon(sid),
+        "seeker_id": _canon(seeker_id),
+        "consultant_id": _canon(consultant_id),
+        "status": status,
+        "recent": bool(recent),
+    }
+
+
+def reviewable_sessions(seeker_id, since):
+    """Calls and chats this seeker finished since `since`, that connected
+    and that they have not reviewed, newest first (17 Oct 2026)."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"""
+            select s.id, s.consultant_id, s.mode, s.audio_only, s.ended_at
+              from sessions s
+             where {_xid('s.seeker_id', '%s')}
+               and s.status = 'ended'
+               and s.started_at is not null
+               and s.ended_at >= %s
+               and not exists (select 1 from reviews r
+                                where replace(cast(r.session_id as text), '-', '')
+                                    = replace(cast(s.id as text), '-', ''))
+             order by s.ended_at desc
+            """,
+            [str(seeker_id), since],
+        )
+        rows = cursor.fetchall()
+    names = profile_names([cid for _, cid, _, _, _ in rows])
+    return [
+        {
+            "id": _canon(sid),
+            "consultant_id": _canon(cid),
+            "consultant_name": names.get(_canon(cid), ""),
+            "mode": mode,
+            "audio_only": bool(audio_only),
+            "ended_at": ended_at,
+        }
+        for sid, cid, mode, audio_only, ended_at in rows
+    ]
+
+
 def reviewable_bookings(seeker_id):
     """Bookings this seeker completed and has not reviewed — the 020 gate's
     positive half, in the order the client renders (starts_at desc)."""

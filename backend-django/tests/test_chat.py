@@ -1171,6 +1171,56 @@ class TestClientKundli:
 
 
 @pytest.mark.django_db
+class TestSessionReview:
+    """17 Oct 2026, Rahul: the seeker is asked for a review when a call or
+    chat ends, and every review waits for the console before it shows."""
+
+    def _post(self, api_client, token, session, rating=5, body="Clear and kind."):
+        return api_client.post(
+            "/v1/content/reviews/",
+            data={"session_id": str(session.id), "consultant_id": PRO, "rating": rating, "body": body},
+            format="json",
+            **auth(token),
+        )
+
+    def test_after_the_session_it_waits_for_approval(self, pro_user, api_client, seeker_token):
+        from apps.content import services as content_services
+        from apps.content.models import Review
+
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        assert self._post(api_client, seeker_token, session).status_code == 403  # still live
+        services.end_session(SEEKER, session.id)
+
+        offered = api_client.get("/v1/content/reviews/reviewable-sessions/", **auth(seeker_token)).json()
+        assert [r["id"] for r in offered] == [str(session.id)]
+        assert offered[0]["consultant_id"] == PRO
+
+        assert self._post(api_client, seeker_token, session).status_code == 201
+        assert self._post(api_client, seeker_token, session).status_code == 409  # one per session
+        assert api_client.get("/v1/content/reviews/reviewable-sessions/", **auth(seeker_token)).json() == []
+
+        review = Review.objects.get(session_id=session.id)
+        assert review.status == Review.Status.PENDING
+        assert api_client.get(f"/v1/content/reviews/?consultant_id={PRO}").json() == []
+
+        content_services.set_review_status(review.id, Review.Status.LIVE)
+        (row,) = api_client.get(f"/v1/content/reviews/?consultant_id={PRO}").json()
+        assert row["verified"] is True and row["rating"] == 5
+
+    def test_only_the_seeker_of_that_session(self, pro_user, api_client, stranger_token, pro_token):
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        services.end_session(SEEKER, session.id)
+        assert self._post(api_client, stranger_token, session).status_code == 403
+        assert self._post(api_client, pro_token, session).status_code == 403
+
+    def test_not_after_a_week(self, pro_user, api_client, seeker_token):
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        services.end_session(SEEKER, session.id)
+        Session.objects.filter(pk=session.id).update(ended_at=timezone.now() - timezone.timedelta(days=8))
+        assert self._post(api_client, seeker_token, session).status_code == 403
+
+
+@pytest.mark.django_db
 class TestEndpoints:
     def test_full_walk_and_shapes(self, hs256_mode, sign_hs256, api_client,
                                   pro_user):

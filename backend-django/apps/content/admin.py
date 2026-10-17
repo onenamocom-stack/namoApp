@@ -23,7 +23,7 @@ from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 from apps.content import services
 from apps.content.models import (
-    Content, ContentKind, ContentStatus, ModerationFlag, Report,
+    Content, ContentKind, ContentStatus, ModerationFlag, Report, Review,
 )
 from apps.profiles import services as profile_services
 from apps.media import providers as media
@@ -479,6 +479,107 @@ def _remove_flagged(flag):
             bhakti_services.remove_comment(flag.target_id, None, "admin")
     except NotFound:
         pass
+
+class PendingFirst(dj.SimpleListFilter):
+    """The review queue opens on what is waiting."""
+
+    title = "status"
+    parameter_name = "status"
+
+    def lookups(self, request, model_admin):
+        return [("all", "All")] + list(Review.Status.choices)
+
+    def choices(self, changelist):
+        for value, label in self.lookup_choices:
+            yield {
+                "selected": (self.value() or "pending") == value,
+                "query_string": changelist.get_query_string({self.parameter_name: value}),
+                "display": label,
+            }
+
+    def queryset(self, request, queryset):
+        value = self.value() or "pending"
+        return queryset if value == "all" else queryset.filter(status=value)
+
+
+@dj.register(Review, site=site)
+class ReviewAdmin(AuditedAdmin, dj.ModelAdmin):
+    """Reviews of Pros, held for approval (17 Oct 2026, Rahul: "all review
+    before live should go to admin to approve"). Every review a seeker
+    leaves lands here as pending: not on the Pro's page, not in their
+    rating. Approve puts it on both at once; Reject keeps it off for good.
+    Oldest first, so nobody waits longest."""
+
+    audit_target = "review"
+    list_display = ("stars", "words", "pro", "seeker", "source", "status", "created_at")
+    list_filter = (PendingFirst,)
+    fields = ("pro", "seeker", "source", "rating", "body", "status", "created_at")
+    readonly_fields = fields
+    actions = ("approve", "reject")
+    list_per_page = 50
+    ordering = ("created_at",)
+
+    @dj.display(description="Rating")
+    def stars(self, obj):
+        return f"{obj.rating} / 5"
+
+    @dj.display(description="Review")
+    def words(self, obj):
+        return (obj.body or "—")[:120]
+
+    @dj.display(description="Pro")
+    def pro(self, obj):
+        return _profile_label(obj.consultant_id)
+
+    @dj.display(description="Written by")
+    def seeker(self, obj):
+        return _profile_label(obj.seeker_id)
+
+    @dj.display(description="After")
+    def source(self, obj):
+        if obj.session_id:
+            return "a call or chat"
+        if obj.booking_id:
+            return "a booking"
+        return "seeded"
+
+    def _decide(self, request, queryset, status):
+        # An action runs whatever has_change_permission says; check here.
+        if not at_least(request, Tier.FULFILMENT):
+            return self.message_user(request, "Not your tier.", messages.ERROR)
+        done = 0
+        for review in queryset.exclude(status=status):
+            services.set_review_status(review.pk, status)
+            record(request, f"review.{'approve' if status == Review.Status.LIVE else 'reject'}",
+                   "review", target_id=review.pk, consultant=str(review.consultant_id),
+                   rating=review.rating)
+            done += 1
+        verb = "approved" if status == Review.Status.LIVE else "rejected"
+        self.message_user(request, f"{done} {verb}.", messages.SUCCESS if done else messages.WARNING)
+
+    @dj.action(description="Approve — show it on the Pro's page and count it")
+    def approve(self, request, queryset):
+        self._decide(request, queryset, Review.Status.LIVE)
+
+    @dj.action(description="Reject — never shown, not counted")
+    def reject(self, request, queryset):
+        self._decide(request, queryset, Review.Status.REMOVED)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FULFILMENT)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
 
 def _profile_label(profile_id):
     from apps.profiles.models import Profile

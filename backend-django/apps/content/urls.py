@@ -14,6 +14,7 @@ urlpatterns = [
     path("publish/", views.publish, name="content-publish"),
     path("reviews/", views.reviews, name="content-reviews"),
     path("reviews/reviewable/", views.reviewable, name="content-reviewable"),
+    path("reviews/reviewable-sessions/", views.reviewable_sessions, name="content-reviewable-sessions"),
     path("follow-counts/", views.follow_counts, name="content-follow-counts"),
     path("suggestions/", views.suggestions, name="content-suggestions"),
     path("follows/<str:which>/", views.follow_list, name="content-follow-list"),

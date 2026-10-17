@@ -5,6 +5,7 @@ import { cancelRequest, endChat, heartbeat } from '../lib/chat.js'
 import { useStore } from '../store.jsx'
 import SessionRecharge from '../components/SessionRecharge.jsx'
 import ClientKundli from '../components/ClientKundli.jsx'
+import { askReview } from '../lib/reviewAsk.js'
 
 /** Where hanging up lands: Namo Consult for a consultant who answered
  *  there (`?from=desk`, Phase 16), the Consult tab otherwise. */
@@ -137,6 +138,7 @@ export default function Call() {
         showToast('The call has ended.')
         await refreshWallet(session?.user?.id)
         navigate(afterCall(), { replace: true })
+        if (!call.isOwner) askReview(id)
         return
       }
       setResumeBy(h.resume_by ?? null)
@@ -230,9 +232,10 @@ export default function Call() {
         showToast('The call has ended.')
         await refreshWallet(session?.user?.id)
         navigate(afterCall(), { replace: true })
+        if (!call?.isOwner) askReview(id)
       }
     })
-  }, [dropped, id, navigate, refreshWallet, session, showToast])
+  }, [dropped, id, navigate, refreshWallet, session, showToast, call?.isOwner])
 
   const rejoin = () => {
     setDropped(false)
@@ -253,7 +256,9 @@ export default function Call() {
          not the thing that must not fail. */
     }
     navigate(afterCall(), { replace: true })
-  }, [id, leaving, navigate, refreshWallet, session])
+    // The seeker is asked for a review (17 Oct 2026, Rahul).
+    if (!call?.isOwner) askReview(id)
+  }, [call, id, leaving, navigate, refreshWallet, session])
 
   if (call === null) {
     return (

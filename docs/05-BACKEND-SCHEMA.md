@@ -1507,22 +1507,27 @@ Two things the phase learned that the block below does not say.
 its source reproduces it; an increment cannot be checked and drifts under
 concurrency, which is the exact failure that section exists to prevent.
 
-**A review needs a booking, and metered chat does not create one.** The RLS
-policy requires `bookings.status = 'completed'`, so a seeker whose only contact
-was a phase 6 chat session cannot review the consultant they spoke to. That is
-a real gap, not an oversight in the policy — `sessions` and `bookings` are
-different tables and the done-condition names bookings. Widening it to sessions
-is a decision, and it belongs to whoever wants chat reviews.
+**A review needs a completed booking or an ended call or chat** (17 Oct 2026,
+Rahul; `content/0013`). Before that only bookings could be reviewed, so a
+seeker whose only contact was a metered call or chat could not review the
+consultant they spoke to. A session counts when it is the seeker's own, ended
+after it connected (`started_at` set), and ended within the last seven days.
+
+**Every review arrives `pending`** (17 Oct 2026, Rahul). A pending review is
+not in `reviews_public` and not in the rating caches; the console's Approve
+moves it to `live`, Reject to `removed`. Seeded reviews still go in `live`.
 
 ```sql
 create table reviews (
   id            uuid primary key default gen_random_uuid(),
   booking_id    uuid unique references bookings(id),
+  session_id    uuid unique,          -- sessions.id; one session, one review
   seeker_id     uuid not null references profiles(id),
   consultant_id uuid not null references consultants(profile_id),
   rating        smallint not null check (rating between 1 and 5),
   body          text,
-  status        text not null default 'live' check (status in ('live','removed')),
+  status        text not null default 'live'
+                check (status in ('pending','live','removed')),
   created_at    timestamptz not null default now()
 );
 ```
@@ -1531,7 +1536,8 @@ create table reviews (
 index. Keying a review to a completed booking is the whole anti-fraud story, but
 the three seeded reviews per consultant have no matching bookings, and `NOT NULL`
 would force the seed to fabricate them. A `verified` badge derives from
-`booking_id is not null`, which is what real marketplaces show anyway.
+`booking_id is not null or session_id is not null`, which is what real
+marketplaces show anyway.
 
 ### 5.5 Media and licensing
 

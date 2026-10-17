@@ -5,7 +5,7 @@ import { firstName } from './Primitives.jsx'
 import { listMyBookings } from '../lib/consultants.js'
 import { listSessions } from '../lib/chat.js'
 import Icon from './Icon.jsx'
-import { leaveReview, reviewableBookings } from '../lib/content.js'
+import { leaveReview, reviewableBookings, reviewableSessions } from '../lib/content.js'
 import { rupees, useStore } from '../store.jsx'
 
 /**
@@ -19,6 +19,8 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
   const [mine, setMine] = useState(null)
   const [calls, setCalls] = useState(null)
   const [reviewable, setReviewable] = useState([])
+  // Calls and chats that can still be reviewed (17 Oct 2026).
+  const [reviewableCalls, setReviewableCalls] = useState([])
   const [reviewing, setReviewing] = useState(null)
 
   useEffect(() => {
@@ -49,10 +51,16 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
     reviewableBookings()
       .then(setReviewable)
       .catch((err) => console.error('[reviews] load failed:', err.message))
+    reviewableSessions()
+      .then((rows) => setReviewableCalls(rows ?? []))
+      .catch((err) => console.error('[reviews] sessions load failed:', err.message))
   }, [])
 
   useEffect(() => {
-    if (!session) return setReviewable([])
+    if (!session) {
+      setReviewableCalls([])
+      return setReviewable([])
+    }
     reloadReviewable()
   }, [session, reloadReviewable])
 
@@ -105,6 +113,15 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
                   ) : (
                     <span className="block caps-sm tnum t-heading">₹{rupees(r.charged_paise ?? 0)}</span>
                   )}
+                  {reviewableCalls.some((x) => x.id === r.id) && (
+                    <button
+                      type="button"
+                      onClick={() => setReviewing({ ...r, kind: 'session' })}
+                      className="act-link mt-0.5 block caps-sm"
+                    >
+                      {t('con.review')}
+                    </button>
+                  )}
                 </span>
               </li>
             ))}
@@ -131,7 +148,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
             <span className="flex-none text-right">
               <span className="block caps-sm tnum t-heading">₹{rupees(b.amount_paise)}</span>
               {reviewable.some((r) => r.id === b.id) ? (
-                <button type="button" onClick={() => setReviewing(b)} className="act-link mt-0.5 block caps-sm">
+                <button type="button" onClick={() => setReviewing({ ...b, kind: 'booking' })} className="act-link mt-0.5 block caps-sm">
                   {t('con.review')}
                 </button>
               ) : (
@@ -144,7 +161,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
         ))}
       </ul>
       <ReviewSheet
-        booking={reviewing}
+        item={reviewing}
         onClose={() => setReviewing(null)}
         onDone={() => {
           setReviewing(null)
@@ -166,7 +183,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
  * copy of the rule here would be a second thing to keep in step. What this does
  * instead is show the server's refusal in the app's voice.
  */
-function ReviewSheet({ booking, onClose, onDone }) {
+export function ReviewSheet({ item, onClose, onDone }) {
   const { showToast, t } = useStore()
   const [rating, setRating] = useState(0)
   const [body, setBody] = useState('')
@@ -177,16 +194,17 @@ function ReviewSheet({ booking, onClose, onDone }) {
   useEffect(() => {
     setRating(0)
     setBody('')
-  }, [booking?.id])
+  }, [item?.id])
 
-  if (!booking) return null
+  if (!item) return null
 
   async function submit() {
     setBusy(true)
     try {
       await leaveReview({
-        bookingId: booking.id,
-        consultantId: booking.consultant_id,
+        bookingId: item.kind === 'session' ? null : item.id,
+        sessionId: item.kind === 'session' ? item.id : null,
+        consultantId: item.consultant_id,
         rating,
         body: body.trim() || null,
       })
@@ -200,7 +218,7 @@ function ReviewSheet({ booking, onClose, onDone }) {
   }
 
   return (
-    <Sheet open onClose={onClose} title={t('con.reviewTitle', { name: firstName(booking.consultant_name) })}>
+    <Sheet open onClose={onClose} title={t('con.reviewTitle', { name: firstName(item.consultant_name) })}>
       <div className="px-5 pb-6">
         <p className="prose-c">{t('con.rateNote')}</p>
 
@@ -238,6 +256,10 @@ function ReviewSheet({ booking, onClose, onDone }) {
         >
           {busy ? t('con.posting') : rating ? t('con.postReview') : t('con.pickRating')}
         </PopButton>
+        <button type="button" onClick={onClose} className="mt-4 block w-full text-center caps-sm t-faint">
+          {t('con.notNow')}
+        </button>
+        <p className="mt-3 text-center text-micro t-faint">{t('con.reviewChecked')}</p>
       </div>
     </Sheet>
   )

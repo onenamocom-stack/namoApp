@@ -23,6 +23,7 @@ import { MessagesList } from '../screens/Messages.jsx'
 import SessionRecharge from './SessionRecharge.jsx'
 import { uploadAsset } from '../lib/media.js'
 import ClientKundli from './ClientKundli.jsx'
+import { askReview } from '../lib/reviewAsk.js'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -476,6 +477,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
           setLive(null)
           setLeft(0)
           refreshWallet(session?.user?.id)
+          // Ended by the Pro or the clock: the seeker is asked for a review.
+          if (thread.seeker_id === myId) askReview(live)
           return
         }
         setLeft(h.seconds_left)
@@ -492,7 +495,7 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
       alive = false
       clearInterval(id)
     }
-  }, [live, refreshWallet, session])
+  }, [live, refreshWallet, session, thread.seeker_id, myId])
 
   /* A message is on screen the instant it is sent, marked as sending, and
      carries its own idempotency key from then on: every retry, even after a
@@ -568,6 +571,7 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
   }, [live, deliver])
 
   const hangUp = async () => {
+    const ending = live
     const res = await endChat(live)
     setLive(null)
     setLeft(0)
@@ -576,6 +580,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
       showToast(`Session ended · ${res.minutes} min · ₹${rupees(res.charged_paise)}`)
     }
     onEnded?.()
+    // The seeker is asked for a review (17 Oct 2026, Rahul).
+    if (thread.seeker_id === myId) askReview(ending)
   }
 
   const other = thread.seeker_id === myId ? thread.consultant_name : thread.seeker_name

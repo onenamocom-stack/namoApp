@@ -164,3 +164,47 @@ class TestModeration:
                     {"action": "publish", "_selected_action": [str(row.pk)]}, follow=True)
         row.refresh_from_db()
         assert row.status == ContentStatus.DRAFT
+
+
+@pytest.mark.django_db
+class TestReviewQueue:
+    """17 Oct 2026, Rahul: every review waits here before it is public."""
+
+    def _review(self):
+        from apps.content.models import Review
+
+        return Review.objects.create(
+            seeker_id=uuid.uuid4(), consultant_id=uuid.uuid4(), session_id=uuid.uuid4(),
+            rating=4, body="Helpful.", status=Review.Status.PENDING,
+        )
+
+    def test_the_queue_opens_on_pending_and_is_on_the_front_page(self):
+        client, _ = _admin(Tier.SUPPORT)
+        self._review()
+        page = client.get(reverse("namo:content_review_changelist")).content.decode()
+        assert "Helpful." in page
+        assert "Reviews to approve" in client.get(reverse("namo:index")).content.decode()
+
+    def test_approve_and_reject_are_audited(self):
+        from apps.content.models import Review
+
+        client, _ = _admin(Tier.FULFILMENT)
+        keep, drop = self._review(), self._review()
+        url = reverse("namo:content_review_changelist")
+        client.post(url, {"action": "approve", "_selected_action": [str(keep.pk)]}, follow=True)
+        client.post(url, {"action": "reject", "_selected_action": [str(drop.pk)]}, follow=True)
+        keep.refresh_from_db()
+        drop.refresh_from_db()
+        assert keep.status == Review.Status.LIVE
+        assert drop.status == Review.Status.REMOVED
+        assert set(AdminAction.objects.values_list("action", flat=True)) >= {"review.approve", "review.reject"}
+
+    def test_support_can_read_but_not_decide(self):
+        from apps.content.models import Review
+
+        client, _ = _admin(Tier.SUPPORT)
+        row = self._review()
+        client.post(reverse("namo:content_review_changelist"),
+                    {"action": "approve", "_selected_action": [str(row.pk)]}, follow=True)
+        row.refresh_from_db()
+        assert row.status == Review.Status.PENDING

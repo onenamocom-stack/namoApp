@@ -241,6 +241,10 @@ class Comment(models.Model):
 
 
 class ReviewStatus(models.TextChoices):
+    # A seeker's review waits here for the console (17 Oct 2026, Rahul:
+    # "all review before live should go to admin to approve"). Pending
+    # rows are not public and do not count in the rating.
+    PENDING = "pending", "Waiting for approval"
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"
 
@@ -262,6 +266,9 @@ class Review(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking_id = models.UUIDField(null=True, blank=True, unique=True)
+    # Or the call or chat it reviews (17 Oct 2026): unique the same way,
+    # one session buys one review.
+    session_id = models.UUIDField(null=True, blank=True, unique=True)
     seeker_id = models.UUIDField()  # profiles id; FK deferred to the profile module
     consultant_id = models.UUIDField()  # consultants.profile_id; FK deferred likewise
     rating = models.SmallIntegerField()

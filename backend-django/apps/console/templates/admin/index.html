@@ -49,6 +49,7 @@
     <a href="{% url 'namo:consultants_profilereview_changelist' %}?status__exact=pending" {% if queues.reviews %}class="hot"{% endif %}><b>{{ queues.reviews }}</b><span>Pro profile changes</span></a>
     <a href="{% url 'namo:consultants_payoutdetails_changelist' %}?status__exact=submitted" {% if queues.payout_details %}class="hot"{% endif %}><b>{{ queues.payout_details }}</b><span>Payout details to check</span></a>
     <a href="{% url 'namo:consultants_payoutstatement_changelist' %}?status__exact=due" {% if queues.owed != "₹0" %}class="hot"{% endif %}><b>{{ queues.owed }}</b><span>To pay on the 7th</span></a>
+    <a href="{% url 'namo:content_review_changelist' %}?status=pending" {% if queues.pro_reviews %}class="hot"{% endif %}><b>{{ queues.pro_reviews }}</b><span>Reviews to approve</span></a>
     <a href="{% url 'namo:content_report_changelist' %}?status__exact=open" {% if queues.reports %}class="hot"{% endif %}><b>{{ queues.reports }}</b><span>Reports</span></a>
     <a href="{% url 'namo:content_moderationflag_changelist' %}?status=open" {% if queues.flags %}class="hot"{% endif %}><b>{{ queues.flags }}</b><span>Flagged by the daily check</span></a>
     <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready" {% if queues.parcels %}class="hot"{% endif %}><b>{{ queues.parcels }}</b><span>Parcels to send</span></a>
@@ -79,6 +80,7 @@
       <h3>Consulting · Pros</h3><p>Who may take calls, and what they changed.</p>
       <a href="{% url 'namo:consultants_consultant_changelist' %}">Pros</a>
       <a href="{% url 'namo:consultants_profilereview_changelist' %}">Profile changes</a>
+      <a href="{% url 'namo:content_review_changelist' %}">Reviews</a>
     </div>
     <div class="mod">
       <h3>Market · Sellers</h3><p>Downloads, courses, events and products.</p>

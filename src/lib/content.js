@@ -675,20 +675,31 @@ export async function fetchReviews(consultantId, { limit = 20 } = {}) {
  * RLS policy: the booking must be yours and COMPLETED, and one booking buys
  * one review. The two refusal sentences are byte-identical to the old ones.
  */
-export async function leaveReview({ bookingId, consultantId, rating, body }) {
+export async function leaveReview({ bookingId = null, sessionId = null, consultantId, rating, body }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to review')
 
+  // A booking, or a call or chat (17 Oct 2026). Either way it waits for the
+  // console before it shows.
   await api('/content/reviews/', {
     method: 'POST',
     body: {
       booking_id: bookingId,
+      session_id: sessionId,
       consultant_id: consultantId,
       rating,
       body: body ?? null,
     },
     token,
   })
+}
+
+/** Calls and chats this seeker finished in the last week, connected and
+ *  not yet reviewed (17 Oct 2026). */
+export async function reviewableSessions() {
+  const token = await accessToken()
+  if (!token) return []
+  return api('/content/reviews/reviewable-sessions/', { token })
 }
 
 /** Bookings this seeker has completed and not yet reviewed. */

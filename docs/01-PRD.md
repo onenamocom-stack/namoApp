@@ -669,7 +669,7 @@ separate application.
 | 4 | **Reschedule a session** | Money does not move — the original charge stands |
 | 5 | **Approve consultant signups** | A queue. Until approved: invisible, unbookable, cannot earn |
 | 6 | **Remove posts, block anybody** | **Soft delete only.** A removed post in a dispute is evidence. Widened 23 Sep 2026 from consultants to every account, because the people reported are mostly not consultants — see §6.1. Blocking a consultant with confirmed bookings and a pending balance needs a policy — see below |
-| 7 | **Reviews, with admin audit and consultant analytics** | Reviews tied to completed bookings carry a verified badge |
+| 7 | **Reviews, with admin audit and consultant analytics** | Reviews tied to a completed booking or an ended call or chat carry a verified badge. **Every review waits for approval** (17 Oct 2026, Rahul): it shows on the Pro's page and counts in the rating only once an operator approves it in the console; a rejected review never shows |
 | 8 | **Search users and consultants, spend history, analytics** | The most privacy-sensitive capability. Every lookup is audited |
 | 9 | **Detect consultants gaming calls and messages** | Flags for human review — never automatic penalties |
 | 11 | **Bhakti catalogue** — built 4 Oct 2026 | Every status, wallpaper, tune, bhajan and mantra: replace the picture or audio, edit the caption and the artist · licence line, reorder, hide. Fulfilment tier and superadmin |

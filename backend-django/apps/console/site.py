@@ -109,7 +109,7 @@ def waiting_counts():
         return f"₹{((due['t'] or 0) - (due['d'] or 0)) / 100:,.0f}"
 
     from apps.consultants.models import Consultant, PayoutDetails, ProfileReview
-    from apps.content.models import ModerationFlag, Report
+    from apps.content.models import ModerationFlag, Report, Review
     from apps.market.models import Listing
     from apps.profiles.models import ModuleRequest
     from apps.shop.models import Shipment
@@ -121,6 +121,7 @@ def waiting_counts():
         "payout_details": count(lambda: PayoutDetails.objects.filter(status="submitted").count()),
         "listings": count(lambda: Listing.objects.filter(status="pending").count()),
         "reports": count(lambda: Report.objects.filter(status="open").count()),
+        "pro_reviews": count(lambda: Review.objects.filter(status="pending").count()),
         "flags": count(lambda: ModerationFlag.objects.filter(status="open").count()),
         "parcels": count(lambda: Shipment.objects.filter(status="ready").count()),
         "owed": count(owed),

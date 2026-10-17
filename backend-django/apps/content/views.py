@@ -408,13 +408,19 @@ def publish_draft(request, content_id):
 class ReviewInput(serializers.Serializer):
     """The 020 insert grant's column list (booking_id, seeker_id,
     consultant_id, rating, body) minus seeker_id, filled from the JWT. There
-    is deliberately no `status` field: a review arrives live or not at all,
-    and only moderation moves it."""
+    is deliberately no `status` field: a review arrives pending and only
+    moderation moves it (17 Oct 2026). A booking or a session, not both."""
 
-    booking_id = serializers.UUIDField()
+    booking_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    session_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     consultant_id = serializers.UUIDField()
     rating = serializers.IntegerField(min_value=1, max_value=5)
-    body = serializers.CharField(required=False, allow_null=True, default=None)
+    body = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None, max_length=1000)
+
+    def validate(self, attrs):
+        if (attrs["booking_id"] is None) == (attrs["session_id"] is None):
+            raise serializers.ValidationError("Review a booking or a session.")
+        return attrs
 
 
 class ReviewsQuery(serializers.Serializer):
@@ -445,9 +451,10 @@ def reviews(request):
         review = services.leave_review(
             request.user.pk,
             booking_id=data["booking_id"],
+            session_id=data["session_id"],
             consultant_id=data["consultant_id"],
             rating=data["rating"],
-            body=data["body"],
+            body=data["body"] or None,
         )
     except DuplicateReview as exc:
         return Response(refusal_body("duplicate", str(exc)), status=HTTP_409_CONFLICT)
@@ -461,6 +468,14 @@ def reviewable(request):
     positive half, so the Review button never appears on something the server
     would refuse."""
     return Response(services.reviewable_bookings(request.user.pk))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def reviewable_sessions(request):
+    """Calls and chats this seeker finished in the last week and has not
+    reviewed: what the ask after a call may offer (17 Oct 2026)."""
+    return Response(services.reviewable_sessions(request.user.pk))
 
 
 class FollowCountsQuery(serializers.Serializer):

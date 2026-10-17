@@ -10,6 +10,7 @@ import { BottomNav, PRO_TABS, Toast } from './components/Chrome.jsx'
 import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
+import ReviewAsk from './components/ReviewAsk.jsx'
 import ShareSheet from './components/ShareSheet.jsx'
 
 import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
@@ -624,6 +625,7 @@ function Frame() {
             share sheet is every Share button's, in both. */}
         <ChatPanel />
         {!isPro && <CartSheet />}
+        {!isPro && <ReviewAsk />}
         <ShareSheet />
         <Toast message={toast} />
       </div>

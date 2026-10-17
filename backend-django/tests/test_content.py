@@ -187,6 +187,13 @@ def _rating_cache(pid):
         return cursor.fetchone()
 
 
+def _approve_all():
+    """The console's Approve, for every pending review (17 Oct 2026: a
+    review waits for it before it is public or counted)."""
+    for review in Review.objects.filter(status=Review.Status.PENDING):
+        services.set_review_status(review.id, Review.Status.LIVE)
+
+
 def _complete_booking(seeker_id, consultant_id, **kwargs):
     bid = uuid.uuid4()
     from django.db import connection
@@ -593,10 +600,15 @@ class TestReviewGate:
             **auth(seeker_token),
         )
         assert response.status_code == 201
+        # Held for the console: not public, not counted, until approved.
+        assert api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json() == []
+        assert _rating_cache(APPROVED) == (None, 0)
+        _approve_all()
         rows = api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json()
         assert len(rows) == 1
         assert rows[0]["verified"] is True
         assert rows[0]["rating"] == 4
+        assert _rating_cache(APPROVED) == (4.0, 1)
 
     def test_one_booking_buys_one_review(self, api_client, seeker_token, roster):
         # 020 check point 3, case four: the unique index, not a read.
@@ -719,6 +731,7 @@ class TestConcurrentReviews:
         assert all(r.status_code == 201 for r in results)
 
         assert Review.objects.count() == 4
+        _approve_all()
         # The cache reproduces its source (020 check point 5's invariant).
         assert _rating_cache(APPROVED) == (5.0, 4)
 
@@ -739,6 +752,7 @@ class TestReviewsPublicAndCache:
             **auth(seeker_token),
         )
         services.seed_review(seeker_id=SECOND_SEEKER, consultant_id=APPROVED, rating=5, body="Seeded.")
+        _approve_all()
 
         rows = api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json()
         by_verified = {r["verified"] for r in rows}
@@ -753,6 +767,7 @@ class TestReviewsPublicAndCache:
             format="json",
             **auth(seeker_token),
         )
+        _approve_all()
         (row,) = api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json()
         assert row["reviewer_name"] == "Tara V."
 
@@ -763,6 +778,7 @@ class TestReviewsPublicAndCache:
             _profile(cursor, lone, "Madonna")
         bid2 = _complete_booking(lone, APPROVED)
         services.leave_review(lone, booking_id=bid2, consultant_id=APPROVED, rating=3)
+        _approve_all()
         rows = api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json()
         assert any(r["reviewer_name"] == "Madonna" for r in rows)
 
@@ -776,6 +792,8 @@ class TestReviewsPublicAndCache:
             **auth(seeker_token),
         )
         services.seed_review(seeker_id=SECOND_SEEKER, consultant_id=APPROVED, rating=5, body="Seeded.")
+        assert _rating_cache(APPROVED) == (5.0, 1)  # the 4 waits for the console
+        _approve_all()
         assert _rating_cache(APPROVED) == (4.5, 2)
 
         # Removing one moves the cache; the count never counts removed rows.
