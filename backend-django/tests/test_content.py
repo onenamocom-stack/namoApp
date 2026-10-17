@@ -252,11 +252,18 @@ class TestPublication:
         response = _publish(api_client, seeker_token, kind="article", title="t", body="b")
         assert response.status_code == 201
 
-    def test_seeker_reel_is_refused_with_the_interface_sentence(
+    def test_a_seeker_posts_a_reel(self, api_client, seeker_token, roster):
+        # 17 Oct 2026, Rahul: video is open to everybody.
+        response = _publish(api_client, seeker_token, kind="clip", caption="a reel",
+                            media_url="https://media.test/r.mp4")
+        assert response.status_code == 201
+        assert Content.objects.get().kind == "clip"
+
+    def test_seeker_live_room_is_refused_with_the_interface_sentence(
         self, api_client, seeker_token, roster
     ):
-        # 025 check point 2: the one refusal a seeker can earn.
-        response = _publish(api_client, seeker_token, kind="clip", caption="a reel")
+        # 025 check point 2: a live room still needs video permission.
+        response = _publish(api_client, seeker_token, kind="live_session", title="live")
         assert response.status_code == 403
         assert response.json()["reason"] == "forbidden"
         assert response.json()["message"] == VIDEO_REFUSAL
@@ -274,7 +281,7 @@ class TestPublication:
 
     def test_pending_consultant_reel_refused(self, api_client, sign_hs256, hs256_mode, roster):
         token = sign_hs256(claims=make_claims(sub=PENDING, role="consultant"))
-        response = _publish(api_client, token, kind="clip", caption="a reel")
+        response = _publish(api_client, token, kind="live_session", title="live")
         assert response.status_code == 403
         assert response.json()["message"] == VIDEO_REFUSAL
 
@@ -284,9 +291,11 @@ class TestPublication:
         token = sign_hs256(claims=make_claims(sub=BLOCKED, role="consultant"))
         # Policy parity (025): a blocked consultant's post/article INSERT is
         # permitted — the policy only gates the KIND — but nothing they write
-        # reaches the feed. Their reel is refused outright.
+        # reaches the feed. A reel too, since 17 Oct 2026; a live room is
+        # refused outright.
+        assert _publish(api_client, token, kind="live_session", title="live").status_code == 403
         reel = _publish(api_client, token, kind="clip", caption="a reel")
-        assert reel.status_code == 403
+        assert reel.status_code == 201
         post = _publish(api_client, token, kind="post", caption="still posting")
         assert post.status_code == 201
         feed = api_client.get("/v1/content/feed/")
@@ -341,7 +350,7 @@ class TestApprovedConsultantKinds:
         # The claims say consultant; the consultants table says no row. The
         # table wins, per docs/05 §7's own rule.
         token = sign_hs256(claims=make_claims(sub=SEEKER, role="consultant"))
-        response = _publish(api_client, token, kind="clip", caption="a reel")
+        response = _publish(api_client, token, kind="live_session", title="live")
         assert response.status_code == 403
         assert response.json()["message"] == VIDEO_REFUSAL
 

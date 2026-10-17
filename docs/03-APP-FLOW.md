@@ -278,8 +278,8 @@ carries a two-squares mark, and the full-screen view swipes too. A Market
 listing takes the same: the cover, then *More photos* (up to nine) in the
 Sell form, swiped on the listing page. The toolbar
 pinned under it, one row of pills, icon beside name (lowered the same day,
-Rahul: "more modern"): **Photo/Video** (gallery; *Photo* where the account may not
-post video, and a video picked there is refused with a sentence), **Camera**,
+Rahul: "more modern"): **Photo/Video** (gallery; everybody may post video since
+17 Oct 2026, Rahul; a live room still needs permission), **Camera**,
 **Tag** (Tag product; consultants only) and **Blog**. Words alone publish a `post`
 with no media, a photo a `post`, a video a `clip`. **Blog** opens *Write a
 blog*: a cover box, the title large, the body, and under them Tag product

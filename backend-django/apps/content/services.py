@@ -74,8 +74,11 @@ SELF_REPORT_REFUSAL = "You cannot report your own post"
 DUPLICATE_REPORT_REFUSAL = "You have already reported this"
 
 # Kinds anyone signed in may publish (025: the kind gate is an RLS predicate
-# because it depends on another table — a CHECK cannot see one).
-OPEN_KINDS = (Content.Kind.POST, Content.Kind.ARTICLE)
+# because it depends on another table — a CHECK cannot see one). A video
+# (clip) joined them on 17 Oct 2026 (Rahul: "allow video post for all
+# seekers"); before, it was the Creator module's. Earning on views stays
+# the Creator's. `live_session` still needs video permission.
+OPEN_KINDS = (Content.Kind.POST, Content.Kind.ARTICLE, Content.Kind.CLIP)
 
 
 class DuplicateReview(Exception):

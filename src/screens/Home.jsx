@@ -464,10 +464,11 @@ function NewPostSheet({ onClose, onPublished }) {
   const { profile, t } = useStore()
   /* A Pro and a Creator post video and tag products (14 Oct 2026, Rahul:
      Studio went from Dashboard; posting is this sheet; a Creator's tag
-     earns as a Pro's, owner's yes). A Seeker gets photo, text and blog.
-     The server keeps the same rules. */
+     earns as a Pro's, owner's yes). Everybody posts video since 17 Oct
+     2026 (Rahul). The server keeps the same rules. */
   const sharer = Boolean(profile?.influencer) // the Creator module (docs/06 Phase 18)
-  const video = sharer || profile?.video_enabled
+  // Everybody posts video (17 Oct 2026, Rahul); only a Creator earns on it.
+  const video = true
   return (
     <div role="dialog" aria-modal="true" aria-label="New post" className="fixed inset-0 z-50 flex justify-center bg-black/40">
       <div className="no-scrollbar h-full w-full max-w-[420px] overflow-y-auto bg-white">

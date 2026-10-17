@@ -83,14 +83,20 @@ class TestWhoMayPost:
             )
             assert response.status_code == 201, kind
 
-    def test_an_ordinary_seeker_cannot_post_video(self, people, client, seeker_token):
-        response = client.post(
+    def test_an_ordinary_seeker_posts_video_not_a_live_room(self, people, client, seeker_token):
+        # 17 Oct 2026, Rahul: a reel is open to everybody; a live room is not.
+        reel = client.post(
             "/v1/content/publish/",
             data={"kind": "clip", "media_url": "https://example.test/x.mp4"},
             content_type="application/json", **auth(seeker_token),
         )
-        assert response.status_code == 403
-        assert response.json()["message"] == VIDEO_REFUSAL
+        assert reel.status_code == 201
+        live = client.post(
+            "/v1/content/publish/", data={"kind": "live_session", "title": "live"},
+            content_type="application/json", **auth(seeker_token),
+        )
+        assert live.status_code == 403
+        assert live.json()["message"] == VIDEO_REFUSAL
 
     def test_the_flag_grants_video_without_making_them_a_consultant(
         self, people, client, seeker_token
@@ -116,8 +122,7 @@ class TestWhoMayPost:
         profile_services.set_video_enabled(SEEKER, True)
         profile_services.set_video_enabled(SEEKER, False)
         response = client.post(
-            "/v1/content/publish/",
-            data={"kind": "clip", "media_url": "https://example.test/x.mp4"},
+            "/v1/content/publish/", data={"kind": "live_session", "title": "live"},
             content_type="application/json", **auth(seeker_token),
         )
         assert response.status_code == 403

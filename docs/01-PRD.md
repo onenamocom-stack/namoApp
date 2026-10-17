@@ -42,8 +42,10 @@ nothing is copy that cannot overpromise.
 person holds any number of them, each **asked for and approved by the team,
 no exceptions** — existing Pros included:
 
-- **Creator** — posts reels and video, tags products, shares links; earns
-  content earnings (qualified views + tag and link commission, §12).
+- **Creator** — tags products, shares links; earns content earnings
+  (qualified views + tag and link commission, §12). Posting reels and video
+  was the Creator's until 17 Oct 2026; since then everybody posts video
+  (Rahul), and only a Creator earns on its views.
 - **Pro** — an approved astrologer or expert: bookable, paid for chat,
   calls and bookings. The request is the consultant application.
 - **Seller** — lists downloads, courses, events and products on the Market.

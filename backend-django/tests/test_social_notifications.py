@@ -146,8 +146,7 @@ class TestCreators:
     def test_a_creator_may_post_a_reel_and_carries_the_flag(self, api_client, seeker_token, roster):
         from apps.profiles.models import Profile
 
-        refused = _publish(api_client, seeker_token, kind="clip", caption="r", media_url="https://x/r.mp4")
-        assert refused.status_code == 403
+        # Everybody posts a reel since 17 Oct 2026; the flag is the Creator's tick.
         Profile.objects.filter(id=SEEKER).update(influencer=True)
         made = _publish(api_client, seeker_token, kind="clip", caption="r", media_url="https://x/r.mp4")
         assert made.status_code == 201
