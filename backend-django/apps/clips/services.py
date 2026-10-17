@@ -8,13 +8,20 @@
             rest (after the app was closed, or the URLs ran out).
   complete  joins the parts, checks the stored size, and moves the row to
             `processing`, which is where the worker picks it up.
-  sweep     an upload not completed in 24 hours is aborted and deleted.
+  sweep     an upload not completed in 24 hours is aborted and deleted;
+            a video the worker never answered for is handed over again,
+            three times at most.
+  done      the worker's answer: the HLS and thumbnail paths, or why not.
 
 The same calls serve the web app and the Android app.
 """
 
 import logging
 import re
+
+import requests
+from django.conf import settings
+from django.db.models import F, Q
 
 from django.db import transaction
 from django.utils import timezone
@@ -32,6 +39,9 @@ MAX_ORIGINAL_BYTES = 150 * 1024 * 1024
 DAILY_LIMIT = 10
 DAILY_LIMIT_VERIFIED = 50
 STALE_HOURS = 24
+# The worker's answer is overdue after this; then the job goes again.
+WORKER_MINUTES = 10
+WORKER_ATTEMPTS = 3
 MIMES = ("video/mp4", "video/quicktime", "video/webm", "video/3gpp", "video/x-matroska")
 CATEGORIES = ("content", "puja", "darshan", "yoga", "ayurveda", "astrology")
 # Rows whose file is (or is becoming) a usable copy for a duplicate.
@@ -172,11 +182,85 @@ def complete(user_id, video_id, sent=None, now=None):
     return _row(video)
 
 
-def enqueue(video):
-    """Hand the video to the worker. The worker (spec §"Server
-    processing") is the next step; until it is deployed the row waits at
-    `processing`, which is what the worker will pick up."""
-    logger.info("[clips] %s ready for processing", video.id)
+def enqueue(video, now=None):
+    """Hand the video to the worker (namo-video). Counted as an attempt
+    whether or not the post arrives: the sweep sends it again later, and
+    gives up after three. Without VIDEO_WORKER_URL the row waits."""
+    url = settings.VIDEO_WORKER_URL
+    if not url:
+        logger.info("[clips] %s ready; no worker configured", video.id)
+        return False
+    from .storage import uploads_bucket
+
+    Video.objects.filter(pk=video.pk).update(claimed_at=now or timezone.now(), attempts=F("attempts") + 1)
+    job = {
+        "video_id": str(video.id),
+        "source": {"bucket": uploads_bucket(), "key": video.upload_key},
+        "output": {"bucket": settings.R2_BUCKET, "prefix": f"v/{video.id}/"},
+    }
+    try:
+        got = requests.post(url.rstrip("/") + "/process", json=job, timeout=8,
+                            headers={"x-worker-token": settings.VIDEO_WORKER_TOKEN})
+    except requests.RequestException as err:
+        logger.warning("[clips] worker unreachable for %s: %s", video.id, err)
+        return False
+    if got.status_code != 202:
+        logger.warning("[clips] worker refused %s: %s", video.id, got.status_code)
+    return got.status_code == 202
+
+
+def _with_copies(video):
+    """The video and every duplicate linked to it, which share its files."""
+    return Video.objects.filter(Q(pk=video.pk) | Q(source_video=video))
+
+
+def worker_done(body, now=None):
+    """The worker's answer. Idempotent: only a video still at
+    `processing` changes. A clean encode goes to `in_review`, where the
+    moderation step (part E) takes it; a final refusal (not a video, too
+    long) deletes it; a failure waits for the sweep to send it again."""
+    now = now or timezone.now()
+    with transaction.atomic():
+        video = (Video.objects.select_for_update()
+                 .filter(pk=body.get("video_id"), source_video__isnull=True).first())
+        if video is None or video.status != VideoStatus.PROCESSING:
+            return False
+        if body.get("ok"):
+            _with_copies(video).update(
+                status=VideoStatus.IN_REVIEW, hls_path=str(body.get("hls_path") or ""),
+                thumb_path=str(body.get("thumb_path") or ""),
+                duration_s=float(body.get("duration_s") or video.duration_s),
+                width=int(body.get("width") or 0), height=int(body.get("height") or 0),
+                processed_at=now, error="",
+            )
+        elif body.get("final"):
+            reason = str(body.get("reason") or "failed")
+            _with_copies(video).update(status=VideoStatus.DELETED,
+                                       error=f"{reason}: {str(body.get('error') or '')}"[:500])
+        else:
+            Video.objects.filter(pk=video.pk).update(claimed_at=None, error=str(body.get("error") or "")[:500])
+    return True
+
+
+def redispatch(now=None):
+    """Videos the worker has not answered for: sent again, or, after the
+    third try, deleted with the reason. Runs in the minute sweep."""
+    if not settings.VIDEO_WORKER_URL:
+        return 0
+    now = now or timezone.now()
+    waiting = Q(claimed_at__isnull=True, completed_at__lt=now - timezone.timedelta(minutes=1))
+    overdue = Q(claimed_at__lt=now - timezone.timedelta(minutes=WORKER_MINUTES))
+    stuck = Video.objects.filter(waiting | overdue, status=VideoStatus.PROCESSING, source_video__isnull=True)
+    n = 0
+    for video in stuck.order_by("completed_at")[:20]:
+        if video.attempts >= WORKER_ATTEMPTS:
+            _with_copies(video).update(
+                status=VideoStatus.DELETED,
+                error=f"failed: not processed after {video.attempts} tries. {video.error}"[:500])
+        else:
+            enqueue(video, now)
+        n += 1
+    return n
 
 
 def state(user_id, video_id):
@@ -187,6 +271,9 @@ def state(user_id, video_id):
         video,
         hls_url=public_url(video.hls_path) if video.hls_path else None,
         thumb_url=public_url(video.thumb_path) if video.thumb_path else None,
+        width=video.width, height=video.height, duration_s=video.duration_s,
+        # Why a video went: "too_long", "not_a_video", "failed".
+        reason=(video.error.split(":", 1)[0] or None) if video.status == VideoStatus.DELETED else None,
     )
 
 

@@ -238,4 +238,8 @@ def sweep(request):
     from apps.clips.services import sweep_stale
 
     result["video_uploads_dropped"] = sweep_stale()
+    # Videos the worker never answered for: sent again (17 Oct 2026).
+    from apps.clips.services import redispatch
+
+    result["videos_redispatched"] = redispatch()
     return JsonResponse({"ok": True, **result})

@@ -125,3 +125,89 @@ class TestGuardrails:
         assert services.sweep_stale(timezone.now() + timezone.timedelta(hours=25)) == 1
         row.refresh_from_db()
         assert row.status == "deleted" and row.upload_id not in LocalStore.uploads
+
+
+class _Posted:
+    def __init__(self, status=202):
+        self.calls, self.status = [], status
+
+    def __call__(self, url, json=None, timeout=None, headers=None):
+        self.calls.append({"url": url, "json": json, "headers": headers})
+        return type("R", (), {"status_code": self.status})()
+
+
+def _processing(api_client, token):
+    row = Video.objects.get(pk=_init(api_client, token).json()["id"])
+    _arrive(row.upload_id, 3, 12 * MB)
+    return row
+
+
+@pytest.mark.django_db
+class TestWorker:
+    @pytest.fixture(autouse=True)
+    def worker(self, settings, monkeypatch):
+        settings.VIDEO_WORKER_URL, settings.VIDEO_WORKER_TOKEN = "https://worker.test", "wt"
+        settings.R2_BUCKET = "namo-media"
+        self.post = _Posted()
+        monkeypatch.setattr(services.requests, "post", self.post)
+
+    def _done(self, api_client, body, token="wt"):
+        return api_client.post("/v1/videos/worker/done/", body, format="json", HTTP_X_WORKER_TOKEN=token)
+
+    def test_complete_hands_the_job_to_the_worker(self, api_client, token, me):
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        [call] = self.post.calls
+        assert call["url"] == "https://worker.test/process" and call["headers"]["x-worker-token"] == "wt"
+        assert call["json"]["source"]["key"] == row.upload_key
+        assert call["json"]["output"] == {"bucket": "namo-media", "prefix": f"v/{row.id}/"}
+        row.refresh_from_db()
+        assert row.attempts == 1 and row.claimed_at is not None
+
+    def test_the_answer_fills_the_video_and_its_duplicates(self, api_client, token, me):
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        twin = Video.objects.get(pk=_init(api_client, token).json()["id"])
+        assert twin.source_video_id == row.id and twin.status == "processing"
+        body = {"video_id": str(row.id), "ok": True, "hls_path": f"v/{row.id}/master.m3u8",
+                "thumb_path": f"v/{row.id}/thumb.webp", "duration_s": 41.9, "width": 720, "height": 1280}
+        assert self._done(api_client, body, token="wrong").status_code == 401
+        assert self._done(api_client, body).json()["changed"] is True
+        for v in (row, twin):
+            v.refresh_from_db()
+            assert v.status == "in_review" and v.hls_path.endswith("master.m3u8") and v.height == 1280
+        # A second answer for the same video changes nothing.
+        assert self._done(api_client, body).json()["changed"] is False
+        got = api_client.get(f"/v1/videos/{twin.id}/", **auth(token)).json()
+        assert got["thumb_url"].endswith("thumb.webp") and got["width"] == 720
+
+    def test_a_refused_file_is_deleted_with_its_reason(self, api_client, token, me):
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        self._done(api_client, {"video_id": str(row.id), "ok": False, "final": True,
+                                "reason": "too_long", "error": "too_long: 95.0s"})
+        got = api_client.get(f"/v1/videos/{row.id}/", **auth(token)).json()
+        assert got["status"] == "deleted" and got["reason"] == "too_long"
+
+    def test_the_sweep_sends_it_again_then_gives_up(self, api_client, token, me):
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        self._done(api_client, {"video_id": str(row.id), "ok": False, "final": False, "error": "disk full"})
+        later = timezone.now() + timezone.timedelta(minutes=2)
+        assert services.redispatch(later) == 1 and len(self.post.calls) == 2
+        # Claimed again: nothing more until it is overdue.
+        assert services.redispatch(later) == 0
+        services.redispatch(later + timezone.timedelta(minutes=11))
+        row.refresh_from_db()
+        assert row.attempts == 3 and row.status == "processing"
+        services.redispatch(later + timezone.timedelta(minutes=30))
+        row.refresh_from_db()
+        assert row.status == "deleted" and row.error.startswith("failed:")
+
+    def test_without_a_worker_nothing_is_retried(self, api_client, token, me, settings):
+        settings.VIDEO_WORKER_URL = ""
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        assert self.post.calls == [] and services.redispatch(timezone.now() + timezone.timedelta(hours=2)) == 0
+        row.refresh_from_db()
+        assert row.status == "processing" and row.attempts == 0

@@ -2,6 +2,13 @@
 the web app and the Android app. Every call is the signed-in person's own;
 refusals are {ok: false, reason, message}."""
 
+import hmac
+import json
+
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
@@ -84,3 +91,21 @@ def complete(request, video_id):
         return Response({"ok": True, **services.complete(request.user.pk, video_id, sent)})
     except services.Refused as err:
         return _refused(err)
+
+
+@csrf_exempt
+@require_POST
+def worker_done(request):
+    """The worker's answer (namo-video). The shared token is the credential;
+    without VIDEO_WORKER_TOKEN set nothing is accepted."""
+    expected = settings.VIDEO_WORKER_TOKEN
+    given = request.headers.get("x-worker-token", "")
+    if not expected or not hmac.compare_digest(given.encode(), expected.encode()):
+        return JsonResponse({"ok": False}, status=401)
+    try:
+        body = json.loads(request.body or b"{}")
+    except ValueError:
+        return JsonResponse({"ok": False}, status=400)
+    if not isinstance(body, dict):
+        return JsonResponse({"ok": False}, status=400)
+    return JsonResponse({"ok": True, "changed": services.worker_done(body)})

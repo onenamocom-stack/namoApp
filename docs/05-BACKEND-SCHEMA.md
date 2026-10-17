@@ -1661,8 +1661,12 @@ uploaded nothing); `upload_key`, `upload_id`, `parts` (the R2 multipart
 upload in the private uploads bucket, `uploads/{id}/source`);
 `storage_tier` standard · infrequent; `hls_path`, `thumb_path`,
 `preview_path` (relative to the public media base, `v/{id}/...`, set by the
-worker); `category` (content · puja · darshan · yoga · ayurveda ·
-astrology); `moderation` (jsonb verdict); `error`; `view_count`,
+worker); `width`, `height` (the encoded top version, after the phone's
+rotation); `category` (content · puja · darshan · yoga · ayurveda ·
+astrology); `moderation` (jsonb verdict); `error` (for a deleted video,
+starts with the reason: `too_long`, `not_a_video`, `failed`); `claimed_at`,
+`attempts` (handed to the worker when, and how often; three at most);
+`view_count`,
 `last_viewed_at` (the lifecycle rules); `created_at`, `completed_at`,
 `processed_at`. Indexes `(user_id, created_at)`, `(status, created_at)`.
 

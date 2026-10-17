@@ -185,6 +185,11 @@ R2_PRIVATE_BUCKET = os.environ.get("R2_PRIVATE_BUCKET", "")
 # Raw video uploads (17 Oct 2026, the video pipeline): a private bucket
 # whose objects the worker deletes after encoding. Empty uses R2_PRIVATE_BUCKET.
 VIDEO_UPLOADS_BUCKET = os.environ.get("VIDEO_UPLOADS_BUCKET", "")
+# The worker service (namo-video, `video-worker/`): where a completed upload
+# is posted, and the token both sides check. Unset, a completed upload waits
+# at `processing` and nothing is retried or given up on.
+VIDEO_WORKER_URL = os.environ.get("VIDEO_WORKER_URL", "")
+VIDEO_WORKER_TOKEN = os.environ.get("VIDEO_WORKER_TOKEN", "")
 # "r2" in prod, "local" in dev (fake URLs, nothing leaves the machine)
 MEDIA_PROVIDER = os.environ.get("MEDIA_PROVIDER", "local")
 MEDIA_PUBLIC_BASE_URL = os.environ.get("MEDIA_PUBLIC_BASE_URL", "https://media.example.com")

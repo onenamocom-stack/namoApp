@@ -697,15 +697,28 @@ Order, each part shipped on its own:
   multipart parts of 5 MB with resume, `complete`, the 24-hour sweep.
 - **A — `media.1namo.com`.** The public bucket behind Cloudflare's cache
   instead of the `r2.dev` address (no CDN, no guarantee). Needs the
-  domain's DNS on Cloudflare (owner).
+  domain's DNS on Cloudflare (owner). The DNS is at GoDaddy today
+  (nameservers `domaincontrol.com`, checked 17 Oct); moving it is the
+  owner's or Rahul's step.
 - **B — compression to the spec** on the web (WebCodecs): 720p, 2 Mbps,
   30 fps, AAC 128 kbps, faststart, location stripped, 30 MB.
-- **D — the worker.** A separate Cloud Run service with FFmpeg: HLS 720p
-  (~2 Mbps) and 480p (~0.8 Mbps), 4-second segments, a WebP thumbnail,
-  the original deleted; `processing` → `in_review`.
-- **E — moderation.** Frames every 5 seconds and the caption through an
-  image safety model; clear → `live`, doubtful → the console's review
-  queue, clear violation → `rejected` and deleted. Provider undecided.
+- **D — the worker (built 17 Oct, branch `video-pipeline`).** Cloud Run
+  service `namo-video` from `video-worker/` (FFmpeg, its own Dockerfile;
+  the deploy line is in it). The API posts the job on `complete`; the
+  worker answers 202, encodes on its own thread (CPU always allocated),
+  writes HLS 720p (~2 Mbps) and 480p (~0.8 Mbps, listed first), 4-second
+  segments, at most 30 fps, every tag stripped, and a WebP thumbnail to
+  `v/{id}/` in the public bucket, deletes the upload and posts the result
+  back; `processing` → `in_review`. A smaller source is never enlarged.
+  Over 90 seconds by the file's own length is refused there too.
+- **E — moderation.** The thumbnail and a frame every 3 seconds through
+  Google Cloud Vision SafeSearch (Rahul, 17 Oct; about 4 paise a
+  90-second video). An approved Pro or Creator whose frames are clear goes
+  `live` at once; anyone else whose frames are clear goes `live` too,
+  except a new account's first 3 videos, which wait in the console's
+  review queue; doubtful → the queue; clear violation → `rejected` and
+  deleted. SafeSearch does not hear audio or read hate speech: the report
+  button and the queue cover that.
 - **F — playback.** Thumbnail first, 480p muted autoplay, 720p on Wi-Fi
   or strong bandwidth, only the first segment of the next one or two
   preloaded, a Data saver setting. Web: hls.js. Android: ExoPlayer.
@@ -713,10 +726,15 @@ Order, each part shipped on its own:
   Access, soft delete), cost and playback dashboard; Cloudflare Stream
   for Academy and puja.
 
-Open, for Rahul and the owner: the DNS of 1namo.com; the moderation
-provider; whether verified Pros and Creators skip pre-publish review; the
-daily limits (10, and 50 for an approved Pro or Creator, as built); the
-retention policy for the privacy page.
+The Android app is a Capacitor wrapper of this web app (Rahul, 17 Oct),
+so B and F are written once, for the WebView: WebCodecs and hls.js both
+run there. Native Media3 or ExoPlayer comes later as a Capacitor plugin if
+the WebView falls short.
+
+Open, for Rahul and the owner: moving the DNS of 1namo.com to Cloudflare;
+the daily limits (10, and 50 for an approved Pro or Creator, as built);
+the retention policy for the privacy page; Play Store payment policy for
+wallet top-ups before the app is submitted.
 
 ## Seed
 

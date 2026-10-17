@@ -54,6 +54,9 @@ class Video(models.Model):
     hls_path = models.TextField(default="", blank=True)
     thumb_path = models.TextField(default="", blank=True)
     preview_path = models.TextField(default="", blank=True)
+    # The encoded size, after the phone's rotation, for the player's frame.
+    width = models.IntegerField(default=0)
+    height = models.IntegerField(default=0)
     category = models.CharField(max_length=24, default="content", blank=True)
     moderation = models.JSONField(default=dict, blank=True)
     error = models.TextField(default="", blank=True)
@@ -62,6 +65,10 @@ class Video(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     completed_at = models.DateTimeField(null=True, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
+    # The worker's hold: when it was last handed to the worker, and how many
+    # times. The sweep hands a stuck one over again, up to three times.
+    claimed_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.IntegerField(default=0)
 
     Status = VideoStatus
 

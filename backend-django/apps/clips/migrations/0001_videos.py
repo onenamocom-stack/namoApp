@@ -32,6 +32,8 @@ class Migration(migrations.Migration):
                 ('hls_path', models.TextField(blank=True, default='')),
                 ('thumb_path', models.TextField(blank=True, default='')),
                 ('preview_path', models.TextField(blank=True, default='')),
+                ('width', models.IntegerField(default=0)),
+                ('height', models.IntegerField(default=0)),
                 ('category', models.CharField(blank=True, default='content', max_length=24)),
                 ('moderation', models.JSONField(blank=True, default=dict)),
                 ('error', models.TextField(blank=True, default='')),
@@ -40,6 +42,8 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now)),
                 ('completed_at', models.DateTimeField(blank=True, null=True)),
                 ('processed_at', models.DateTimeField(blank=True, null=True)),
+                ('claimed_at', models.DateTimeField(blank=True, null=True)),
+                ('attempts', models.IntegerField(default=0)),
                 ('source_video', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='copies', to='clips.video')),
             ],
             options={
