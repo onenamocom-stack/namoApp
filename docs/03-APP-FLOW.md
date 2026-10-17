@@ -1405,7 +1405,7 @@ height is what the keyboard leaves, so the typing box stays in sight. In a
 live session the consultant gets four openers above the box until they
 write: *Namaste. Welcome to your session.*, *Please tell me your
 question.*, *Share your date, time and place of birth.*, *Give me a moment
-to look at your chart.* A tap puts one in the box to edit or send. The
+to look at your chart.* A tap puts one in the box to edit or send. In every live chat, both sides, **End session** is a red button in the header beside the other person's name (17 Oct 2026, Rahul; it was small text in the meter bar). The
 openers show in the pro app's chat too; the rest is the Desk's only.
 
 Open, the app beats and the Pro can be online; leaving it stops the beat,

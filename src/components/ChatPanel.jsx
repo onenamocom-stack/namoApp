@@ -546,6 +546,17 @@ function Thread({ thread, myId, small = false, onBack }) {
           <span className="block truncate text-meta t-heading">{other}</span>
           <span className="block caps-sm t-faint">{live ? 'In session' : 'Not in session'}</span>
         </span>
+        {/* Up here and red (17 Oct 2026, Rahul): it sat small in the meter
+            bar below. */}
+        {live && (
+          <button
+            type="button"
+            onClick={hangUp}
+            className="flex-none rounded-full bg-live px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-white shadow-sm"
+          >
+            End session
+          </button>
+        )}
       </div>
 
       {/* The meter. A charge nobody can see accruing is a charge that gets
@@ -569,9 +580,6 @@ function Thread({ thread, myId, small = false, onBack }) {
                 Recharge
               </button>
             )}
-            <button type="button" onClick={hangUp} className="caps-sm text-bad">
-              End session
-            </button>
           </span>
         </div>
       )}
