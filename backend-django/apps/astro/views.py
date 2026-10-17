@@ -132,6 +132,54 @@ def chart(request):
     })
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def client_chart(request):
+    """A client's kundli for their consultant (17 Oct 2026, Rahul): the
+    birth chart of the seeker in `?session=`, to the consultant of that
+    session, while it is LIVE and only then. Anyone else, or after the
+    session, is a 404, so session ids do not leak whose they are."""
+    import uuid as uuid_mod
+
+    from apps.chat.models import Session
+    from apps.profiles import services as profile_services
+
+    try:
+        session_id = uuid_mod.UUID(str(request.query_params.get("session") or ""))
+    except ValueError:
+        return _refusal(400, "invalid", "Which session?")
+    session = Session.objects.filter(
+        pk=session_id, consultant_id=request.user.pk, status=Session.Status.LIVE
+    ).first()
+    if session is None:
+        return _refusal(404, "not_found", "The kundli opens during a live session with that client.")
+    seeker = session.seeker_id
+    try:
+        birth = services.get_birth_details(seeker)
+    except Exception:
+        logger.exception("astro: could not read client birth for session %s", session_id)
+        return _refusal(500, "unavailable", "Could not load their birth details. Try again.")
+    client = {
+        "name": profile_services.profile_name(seeker),
+        "birth_date": birth["birth_date"] if birth else None,
+        "birth_time": birth["birth_time"] if birth and birth["birth_time_known"] else None,
+        "birth_place": profile_services.birth_place(seeker),
+    }
+    if birth is None or not birth["birth_date"] or birth["birth_lat"] is None or birth["birth_lon"] is None:
+        return Response(
+            {"ok": False, "reason": "no_birth", "message": "They have not added their birth details.", "client": client},
+            status=409,
+        )
+    try:
+        payload, cached = services.user_chart(seeker, birth)
+    except (UpstreamError, services.ProviderNotConfigured) as exc:
+        return _upstream_failure(exc, "chart")
+    return Response({
+        "ok": True, "data": payload, "time_known": services.time_known(birth),
+        "client": client, "cached": cached,
+    })
+
+
 def _needs_purchase(request, sku, ref, message):
     """402 with the price, when the caller has not bought `sku`/`ref`. The
     screen offers the purchase from `price_paise` rather than knowing it."""

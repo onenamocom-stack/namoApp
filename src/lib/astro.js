@@ -85,6 +85,8 @@ const OP_PATH = {
   geo: '/astro/geo/',
   match: '/astro/match/',
   muhurat: '/astro/muhurat/',
+  // A client's kundli, for their consultant in a live session (17 Oct 2026).
+  clientChart: '/astro/client-chart/',
 }
 
 /**

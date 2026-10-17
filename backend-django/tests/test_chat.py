@@ -1120,6 +1120,57 @@ def test_send_is_a_few_database_trips(api_client, seeker_token, pro_user, django
 
 
 @pytest.mark.django_db
+class TestClientKundli:
+    """17 Oct 2026, Rahul: the consultant opens the client's kundli, in a
+    live session with them and only then."""
+
+    @pytest.fixture
+    def charted(self, monkeypatch):
+        from datetime import date, time
+
+        from apps.astro import services as astro_services
+        from apps.profiles.models import Profile
+
+        Profile.objects.filter(pk=SEEKER).update(
+            birth_date=date(1995, 3, 14), birth_time=time(6, 30), birth_time_known=True,
+            birth_lat=23.0225, birth_lon=72.5714, birth_zone="Asia/Kolkata", birth_place="Ahmedabad",
+        )
+        seen = []
+
+        def fake_chart(user_id, birth):
+            seen.append(str(user_id))
+            return {"planets": []}, False
+
+        monkeypatch.setattr(astro_services, "user_chart", fake_chart)
+        return seen
+
+    def test_the_consultant_sees_it_in_a_live_session(self, pro_user, charted, api_client, pro_token):
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        response = api_client.get(f"/v1/astro/client-chart/?session={session.id}", **auth(pro_token))
+        assert response.status_code == 200, response.content
+        body = response.json()
+        assert body["ok"] is True and body["data"] == {"planets": []}
+        assert body["client"]["birth_place"] == "Ahmedabad"
+        assert body["client"]["birth_date"] == "1995-03-14"
+        assert charted == [str(SEEKER)]  # the client's chart, not the caller's
+
+    def test_nobody_else_and_not_after(self, pro_user, charted, api_client, seeker_token, stranger_token, pro_token):
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        url = f"/v1/astro/client-chart/?session={session.id}"
+        assert api_client.get(url, **auth(seeker_token)).status_code == 404
+        assert api_client.get(url, **auth(stranger_token)).status_code == 404
+        services.end_session(PRO, session.id)
+        assert api_client.get(url, **auth(pro_token)).status_code == 404
+        assert charted == []
+
+    def test_no_birth_details_says_so(self, pro_user, api_client, pro_token):
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        response = api_client.get(f"/v1/astro/client-chart/?session={session.id}", **auth(pro_token))
+        assert response.status_code == 409
+        assert response.json()["reason"] == "no_birth"
+
+
+@pytest.mark.django_db
 class TestEndpoints:
     def test_full_walk_and_shapes(self, hs256_mode, sign_hs256, api_client,
                                   pro_user):

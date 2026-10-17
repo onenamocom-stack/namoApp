@@ -22,6 +22,7 @@ import MySessions, { UpcomingSessions } from './MySessions.jsx'
 import { MessagesList } from '../screens/Messages.jsx'
 import SessionRecharge from './SessionRecharge.jsx'
 import { uploadAsset } from '../lib/media.js'
+import ClientKundli from './ClientKundli.jsx'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -403,6 +404,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
   // When the pause for a recharge ends, if the money runs out (7 Oct 2026).
   const [resumeBy, setResumeBy] = useState(null)
   const [topup, setTopup] = useState(false)
+  // The client's kundli, the consultant's only (17 Oct 2026, Rahul).
+  const [kundli, setKundli] = useState(false)
   const endRef = useRef(null)
   const [openedAt] = useState(() => new Date().toISOString())
 
@@ -589,6 +592,15 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
         </span>
         {/* Up here and red (17 Oct 2026, Rahul): it sat small in the meter
             bar below. */}
+        {live && thread.seeker_id !== myId && (
+          <button
+            type="button"
+            onClick={() => setKundli(true)}
+            className="flex-none rounded-full border border-gold-fill/50 bg-gold-wash px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] gold"
+          >
+            Kundli
+          </button>
+        )}
         {live && (
           <button
             type="button"
@@ -624,6 +636,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
           </span>
         </div>
       )}
+
+      {kundli && live && <ClientKundli sessionId={live} onClose={() => setKundli(false)} />}
 
       {live && (
         <SessionRecharge

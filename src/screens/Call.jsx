@@ -4,6 +4,7 @@ import { embedUrl, joinCall, timeLeft } from '../lib/video.js'
 import { cancelRequest, endChat, heartbeat } from '../lib/chat.js'
 import { useStore } from '../store.jsx'
 import SessionRecharge from '../components/SessionRecharge.jsx'
+import ClientKundli from '../components/ClientKundli.jsx'
 
 /** Where hanging up lands: Namo Consult for a consultant who answered
  *  there (`?from=desk`, Phase 16), the Consult tab otherwise. */
@@ -43,6 +44,8 @@ export default function Call() {
   const [leaving, setLeaving] = useState(false)
   // The recharge panel, opened from the bar in the last minute.
   const [topup, setTopup] = useState(false)
+  // The client's kundli, over the call, for the consultant (17 Oct 2026).
+  const [kundli, setKundli] = useState(false)
   // Out of the meeting while the session is still live: a rejoin offer.
   const [dropped, setDropped] = useState(false)
   const ended = useRef(false)
@@ -361,6 +364,15 @@ export default function Call() {
             Recharge
           </button>
         )}
+        {call.isOwner && !call.connecting && (
+          <button
+            type="button"
+            onClick={() => setKundli(true)}
+            className="rounded-full bg-white/90 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink shadow-lg active:scale-95"
+          >
+            Kundli
+          </button>
+        )}
         <button
           type="button"
           onClick={finish}
@@ -370,6 +382,8 @@ export default function Call() {
           {leaving ? 'Ending…' : 'End call'}
         </button>
       </div>
+
+      {kundli && <ClientKundli sessionId={id} onClose={() => setKundli(false)} />}
 
       {/* The amounts, under the bar, when Recharge is pressed. */}
       {topup && !paused && (

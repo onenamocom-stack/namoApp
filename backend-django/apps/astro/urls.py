@@ -6,6 +6,7 @@ urlpatterns = [
     path("geo/", views.geo, name="astro-geo"),
     path("panchang/", views.panchang, name="astro-panchang"),
     path("chart/", views.chart, name="astro-chart"),
+    path("client-chart/", views.client_chart, name="astro-client-chart"),
     path("horoscope/", views.horoscope, name="astro-horoscope"),
     path("vargas/", views.vargas, name="astro-vargas"),
     path("dasha/", views.dasha, name="astro-dasha"),

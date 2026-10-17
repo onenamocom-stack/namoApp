@@ -1423,6 +1423,13 @@ audio or chat on a Pro whose categories include Astrologer (others need none), a
 birth and not marked unknown, gets a toast and the details page
 (`need=1`); saving goes straight on to `/connect` for that Pro and channel.
 
+**The client's kundli (17 Oct 2026, Rahul).** In a live chat (beside End
+session) and on a call (in the bar), the consultant has **Kundli**: a full
+sheet over the session with the client's name, birth date, time and place
+and their North Indian chart, ✕ to close. Only during the live session;
+a client with no birth details reads "They have not added their birth
+details."
+
 **Chats on the Desk (17 Oct 2026, Rahul).** The chat panel opened from
 `/desk` (Join, Open your inbox) is the client chats alone: no Messages or
 Alerts tabs, titled Chats, full screen with a ✕, smaller text, and its

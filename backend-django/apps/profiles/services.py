@@ -223,7 +223,9 @@ def save_onboarding(user_id, phone, fields):
 def get_birth_details(user_id):
     """The astro seam: the CALLER'S OWN six birth columns, for the chart
     computation only — the client sends nothing that decides the answer
-    (rule 3) and no endpoint exposes these for anyone else. A query ERROR
+    (rule 3). One endpoint shows them to somebody else: the consultant of a
+    LIVE session with this person, for their kundli (astro client_chart,
+    17 Oct 2026). A query ERROR
     propagates on purpose: the caller must not conflate a failed read with
     an absent row (that conflation once sent a working consultant to a
     signup form). Returns the dict astro builds its cache key and upstream
@@ -239,6 +241,11 @@ def get_birth_details(user_id):
         "birth_lon": float(profile.birth_lon) if profile.birth_lon is not None else None,
         "birth_zone": profile.birth_zone or None,
     }
+
+
+def birth_place(profile_id):
+    """The birth place as typed, for the consultant's kundli header."""
+    return Profile.objects.filter(pk=profile_id).values_list("birth_place", flat=True).first()
 
 
 def profile_name(profile_id):
