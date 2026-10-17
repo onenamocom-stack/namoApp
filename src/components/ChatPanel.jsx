@@ -48,6 +48,10 @@ export default function ChatPanel() {
      and above the keyboard (17 Oct 2026, Rahul). */
   const desk = useLocation().pathname.startsWith('/desk')
   const deskHeight = useKeyboardSafeHeight(desk && chatOpen)
+  /* In a live chat on the Desk there is no ✕ and no back: End session is
+     the way out, and it closes the panel (17 Oct 2026, Rahul). */
+  const [inLive, setInLive] = useState(false)
+  const locked = desk && inLive
 
   if (!chatOpen) return null
 
@@ -86,7 +90,7 @@ export default function ChatPanel() {
         <header className="flex-none border-b border-stroke">
           <div className="flex items-center justify-between px-4 py-3">
             <p className="caps t-heading">{title}</p>
-            {sidePanel ? (
+            {locked ? null : sidePanel ? (
               <button
                 type="button"
                 onClick={() => setChatOpen(false)}
@@ -164,7 +168,7 @@ export default function ChatPanel() {
             bottom={<MySessions calls={false} pastOnly />}
           />
         )}
-        {desk && <LiveConsultant isPro small />}
+        {desk && <LiveConsultant isPro small onLive={setInLive} onEnded={() => setChatOpen(false)} />}
         {!desk && isPro && chatTab === 'live' && <LiveConsultant isPro={isPro} />}
         {!desk && chatTab === 'messages' && (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -191,7 +195,7 @@ export default function ChatPanel() {
    `m.sender_id === myId` and cannot be backwards. That was the bug the mock
    made unavoidable. */
 
-function LiveConsultant({ isPro, small = false, top = null, bottom = null }) {
+function LiveConsultant({ isPro, small = false, onLive, onEnded, top = null, bottom = null }) {
   const { session, chatFocus, setChatFocus } = useStore()
   const myId = session?.user?.id
   const [threads, setThreads] = useState(null)
@@ -240,6 +244,8 @@ function LiveConsultant({ isPro, small = false, top = null, bottom = null }) {
           thread={t}
           myId={myId}
           small={small}
+          onLive={onLive}
+          onEnded={onEnded}
           onBack={() => {
             setActiveId(null)
             load()
@@ -387,7 +393,7 @@ function useUnreadAlerts() {
  * and nothing else. The heartbeat says "still here" and asks how long is left;
  * it cannot extend anything.
  */
-function Thread({ thread, myId, small = false, onBack }) {
+function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
   const { refreshWallet, session, showToast } = useStore()
   const [messages, setMessages] = useState(() => loadOutbox(thread.id, myId))
   const [live, setLive] = useState(thread.live_session_id ?? null)
@@ -402,6 +408,12 @@ function Thread({ thread, myId, small = false, onBack }) {
   useEffect(() => {
     setLive(thread.live_session_id ?? null)
   }, [thread.live_session_id])
+
+  useEffect(() => {
+    if (!onLive) return undefined
+    onLive(!!live)
+    return () => onLive(false)
+  }, [live, onLive])
 
   useEffect(() => {
     /* MERGE rather than replace. The subscription is registered in this same
@@ -532,6 +544,7 @@ function Thread({ thread, myId, small = false, onBack }) {
     if (res?.ok && !res.already_ended) {
       showToast(`Session ended · ${res.minutes} min · ₹${rupees(res.charged_paise)}`)
     }
+    onEnded?.()
   }
 
   const other = thread.seeker_id === myId ? thread.consultant_name : thread.seeker_name
@@ -540,7 +553,7 @@ function Thread({ thread, myId, small = false, onBack }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-none items-center gap-3 border-b border-rule px-4 py-3">
-        <BackButton onClick={onBack} />
+        {!(onLive && live) && <BackButton onClick={onBack} />}
         <PopAvatar initials={initialsOf(other)} size={30} online={!!live} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-meta t-heading">{other}</span>
