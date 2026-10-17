@@ -49,7 +49,10 @@ class SendInput(serializers.Serializer):
     3); the live-session gate, not the client, decides if the write is
     allowed."""
 
-    body = serializers.CharField()
+    body = serializers.CharField(required=False, allow_blank=True, default="")
+    # A READY image upload of the sender's own (POST /v1/media/presign/,
+    # kind image). The consultant only (17 Oct 2026, Rahul).
+    image_asset_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
 class MessagesQuery(serializers.Serializer):
@@ -163,8 +166,11 @@ def send(request, thread_id):
     refusal reason is the server's own sentence."""
     serializer = SendInput(data=request.data)
     serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
     return Response(
-        services.send_message(request.user.pk, thread_id, serializer.validated_data["body"])
+        services.send_message(
+            request.user.pk, thread_id, data["body"], image_asset_id=data["image_asset_id"]
+        )
     )
 
 

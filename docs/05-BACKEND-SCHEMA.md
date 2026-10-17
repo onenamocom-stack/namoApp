@@ -968,10 +968,17 @@ create table messages (
   thread_id   uuid not null references threads(id) on delete cascade,
   sender_id   uuid not null references profiles(id),
   body        text not null check (btrim(body) <> ''),
+  image_url   text,   -- chat/0006, 17 Oct 2026
   created_at  timestamptz not null default now(),
   read_at     timestamptz
 );
 ```
+
+**`image_url` (17 Oct 2026, `chat/0006`):** a photo in a live chat, the
+public URL of a READY `image` upload owned by the sender. Only the session's
+consultant may send one; the API refuses a seeker's. `body` is the caption,
+or `Photo` when there is none, so the body check and the thread preview
+hold unchanged.
 
 **A thread is the transcript and outlives every session.** One per pair,
 forever: a second session between the same two people continues the same

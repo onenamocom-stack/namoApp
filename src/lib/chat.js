@@ -294,16 +294,18 @@ export async function listMessages(threadId) {
  */
 const SEND_BACKOFF_MS = [0, 800, 2000, 4000]
 
-export async function sendMessage(threadId, body, key = crypto.randomUUID()) {
+/* `imageAssetId`: a READY image upload (lib/media.js uploadAsset), the
+   consultant's only (17 Oct 2026); the server refuses a seeker's. */
+export async function sendMessage(threadId, body, key = crypto.randomUUID(), imageAssetId = null) {
   const text = body.trim()
-  if (!text) return { ok: false, reason: '' }
+  if (!text && !imageAssetId) return { ok: false, reason: '' }
   let last = null
   for (const wait of SEND_BACKOFF_MS) {
     if (wait) await new Promise((r) => setTimeout(r, wait))
     try {
       return await api(`/chat/threads/${threadId}/messages/send/`, {
         method: 'POST',
-        body: { body: text },
+        body: imageAssetId ? { body: text, image_asset_id: imageAssetId } : { body: text },
         idempotencyKey: key,
       })
     } catch (err) {

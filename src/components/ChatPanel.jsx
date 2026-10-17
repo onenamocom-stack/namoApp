@@ -21,6 +21,7 @@ import {
 import MySessions, { UpcomingSessions } from './MySessions.jsx'
 import { MessagesList } from '../screens/Messages.jsx'
 import SessionRecharge from './SessionRecharge.jsx'
+import { uploadAsset } from '../lib/media.js'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -526,13 +527,40 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
     deliver(key, text)
   }
 
+  /* A photo, the consultant's only (17 Oct 2026, Rahul): on screen at once
+     from the phone's own copy, then uploaded and sent. A photo that fails
+     is taken off with a toast rather than kept to retry: the outbox keeps
+     text, not files. */
+  const sendPhoto = async (file) => {
+    const key = crypto.randomUUID()
+    const local = URL.createObjectURL(file)
+    setMessages((prev) => [
+      ...prev,
+      { id: `local-${key}`, key, body: '', image_url: local, sender_id: myId, created_at: new Date().toISOString(), state: 'sending', photo: true },
+    ])
+    const drop = (reason) => {
+      setMessages((prev) => prev.filter((m) => m.key !== key))
+      URL.revokeObjectURL(local)
+      showToast(reason || 'The photo did not send. Try again.')
+    }
+    let asset
+    try {
+      asset = await uploadAsset(file, 'image')
+    } catch (err) {
+      return drop(err?.message)
+    }
+    const res = await sendMessage(thread.id, '', key, asset.assetId)
+    if (!res.ok || !res.message) return drop(res.reason)
+    setMessages((prev) => settle(prev, res.message, myId, key))
+  }
+
   /* Messages a reload left unsent go out again on their own once the
      session is live; a refusal leaves them marked, to tap and retry. */
   const resumed = useRef(false)
   useEffect(() => {
     if (!live || resumed.current) return
     resumed.current = true
-    for (const m of messages) if (m.key && m.state === 'failed') deliver(m.key, m.body)
+    for (const m of messages) if (m.key && m.state === 'failed' && !m.photo) deliver(m.key, m.body)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, deliver])
 
@@ -626,7 +654,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
             <Bubble
               key={m.key ?? m.id}
               mine={m.sender_id === myId}
-              text={m.body}
+              text={m.image_url && m.body === 'Photo' ? '' : m.body}
+              image={m.image_url}
               small={small}
               time={last || m.state ? time : null}
               state={m.state}
@@ -645,6 +674,7 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
         <Composer
           onSend={send}
           placeholder="Type a message"
+          onPhoto={thread.seeker_id !== myId ? sendPhoto : null}
           /* Openers for the consultant, until they have written in this
              sitting (17 Oct 2026, Rahul). A tap puts one in the box, to edit
              or send. */
@@ -796,16 +826,21 @@ function Alerts() {
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
-function Bubble({ mine, text, time, state, onRetry, small = false }) {
+function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>
       <div className="max-w-[85%]">
         <div
           className={`whitespace-pre-wrap break-words px-3 transition-opacity ${small ? 'py-2 text-[12.5px] leading-snug' : 'py-2.5 text-meta'} ${
             mine ? 'bubble-mine rounded-2xl rounded-br-md' : 'bubble-theirs rounded-2xl rounded-bl-md'
-          } ${state === 'sending' ? 'opacity-70' : ''}`}
+          } ${state === 'sending' ? 'opacity-70' : ''} ${image ? '!p-1.5' : ''}`}
         >
-          {text}
+          {image && (
+            <a href={state ? undefined : image} target="_blank" rel="noreferrer" className="block">
+              <img src={image} alt="Photo" className="max-h-64 w-full rounded-xl object-cover" />
+            </a>
+          )}
+          {text && <span className={image ? 'block px-1.5 pb-1 pt-1.5' : ''}>{text}</span>}
         </div>
         {state === 'failed' ? (
           <button
@@ -839,9 +874,10 @@ function Bubble({ mine, text, time, state, onRetry, small = false }) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
-function Composer({ onSend, placeholder, disabled = false, suggestions = null }) {
+function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null }) {
   const [value, setValue] = useState('')
   const box = useRef(null)
+  const picker = useRef(null)
   const composing = useRef(false)
 
   const submit = () => {
@@ -885,6 +921,30 @@ function Composer({ onSend, placeholder, disabled = false, suggestions = null })
         submit()
       }}
     >
+      {onPhoto && (
+        <>
+          <button
+            type="button"
+            aria-label="Send a photo"
+            disabled={disabled}
+            onClick={() => picker.current?.click()}
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-wash gold disabled:opacity-40"
+          >
+            <Icon name="image" size={18} />
+          </button>
+          <input
+            ref={picker}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) onPhoto(file)
+            }}
+          />
+        </>
+      )}
       <input
         ref={box}
         value={value}

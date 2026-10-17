@@ -243,6 +243,10 @@ class Message(models.Model):
     )
     sender_id = models.UUIDField()  # profiles id; FK deferred to module 9
     body = models.TextField()
+    # A photo the consultant sent (17 Oct 2026, Rahul: the Pro may, the
+    # seeker may not). Its public URL; `body` is then the caption, or
+    # PHOTO_BODY when there is none, so the preview and the check hold.
+    image_url = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     read_at = models.DateTimeField(null=True, blank=True)
 

@@ -79,7 +79,7 @@ RATE = 7500  # ₹75/min — the rate the 1 Sep walk metered at
 MIN = timedelta(minutes=1)
 SEC = timedelta(seconds=1)
 
-MESSAGE_KEYS = {"id", "thread_id", "sender_id", "body", "created_at", "read_at"}
+MESSAGE_KEYS = {"id", "thread_id", "sender_id", "body", "image_url", "created_at", "read_at"}
 THREAD_KEYS = {
     "id", "seeker_id", "consultant_id", "last_message_at", "last_preview",
     "created_at", "seeker_name", "consultant_name", "unread", "live_session_id",
@@ -779,6 +779,52 @@ class TestMessageGate:
         _, thread_id = self._live_thread(pro_user)
         assert services.send_message(SEEKER, thread_id, "   ")["ok"] is False
         assert Message.objects.count() == 0  # prod's btrim check, in the service
+
+    @staticmethod
+    def _image(owner, *, kind="image", status="ready"):
+        from apps.media.models import MediaAsset
+
+        return MediaAsset.objects.create(
+            owner=str(owner), kind=kind, bucket_key=f"images/{owner}/k/chart.jpg",
+            mime="image/jpeg", size_bytes=1000, status=status,
+        )
+
+    def test_the_pro_sends_a_photo(self, pro_user, settings):
+        # 17 Oct 2026, Rahul: the consultant may send a photo in a live chat.
+        settings.MEDIA_PUBLIC_BASE_URL = "https://media.example/"
+        _, thread_id = self._live_thread(pro_user)
+        asset = self._image(PRO)
+        sent = services.send_message(PRO, thread_id, "", image_asset_id=asset.pk)
+        assert sent["ok"] is True, sent
+        assert sent["message"]["image_url"] == f"https://media.example/{asset.bucket_key}"
+        assert sent["message"]["body"] == services.PHOTO_BODY
+        assert Thread.objects.get(pk=thread_id).last_preview == services.PHOTO_BODY
+        captioned = services.send_message(PRO, thread_id, "Your chart", image_asset_id=asset.pk)
+        assert captioned["message"]["body"] == "Your chart"
+
+    def test_the_seeker_cannot_send_a_photo(self, pro_user):
+        _, thread_id = self._live_thread(pro_user)
+        asset = self._image(SEEKER)
+        sent = services.send_message(SEEKER, thread_id, "look", image_asset_id=asset.pk)
+        assert sent == {"ok": False, "reason": services.REFUSAL_PHOTO_PRO_ONLY}
+        assert Message.objects.count() == 0
+
+    def test_a_photo_must_be_a_ready_image_of_ones_own(self, pro_user):
+        _, thread_id = self._live_thread(pro_user)
+        for asset in (
+            self._image(SEEKER),  # someone else's
+            self._image(PRO, status="processing"),
+            self._image(PRO, kind="document"),
+        ):
+            sent = services.send_message(PRO, thread_id, "", image_asset_id=asset.pk)
+            assert sent == {"ok": False, "reason": services.REFUSAL_PHOTO_NOT_READY}
+        assert Message.objects.count() == 0
+
+    def test_a_photo_outside_a_live_session_is_refused(self, pro_user):
+        session, thread_id = self._live_thread(pro_user)
+        Session.objects.filter(pk=session.id).update(status="ended")
+        sent = services.send_message(PRO, thread_id, "", image_asset_id=self._image(PRO).pk)
+        assert sent["ok"] is False and Message.objects.count() == 0
 
     def test_preview_cache_follows_the_insert(self, pro_user):
         # 016: last_message_at / last_preview track the newest message; the

@@ -137,6 +137,10 @@ REFUSAL_NOT_PARTICIPANT = "You are not part of that conversation."
 REFUSAL_BUSY = "They are with another seeker right now. We will keep trying."
 REFUSAL_RING_OVER = "That call stopped ringing."
 REFUSAL_NOT_LIVE = "That session has ended."
+REFUSAL_PHOTO_PRO_ONLY = "Only the astrologer can send a photo."
+REFUSAL_PHOTO_NOT_READY = "That photo did not upload. Try again."
+# The body of a photo sent without a caption: the thread's preview reads it.
+PHOTO_BODY = "Photo"
 
 SESSION_ROW_FIELDS = (
     "id", "seeker_id", "consultant_id", "service_id", "thread_id", "order_id",
@@ -890,7 +894,7 @@ def _participant_check(actor_id, thread):
     return None
 
 
-def send_message(sender_id, thread_id, body, now=None):
+def send_message(sender_id, thread_id, body, now=None, image_asset_id=None):
     """THE ONE DIRECT CLIENT WRITE IN V1 (014), and the meter is what bounds
     it — a message is accepted only into a thread with a live, UNEXPIRED
     session on it, and only as yourself. Outside a paid window the
@@ -901,7 +905,7 @@ def send_message(sender_id, thread_id, body, now=None):
     immediately rather than waiting for a poll echo) or the refusal."""
     now = now or timezone.now()
     text = (body or "").strip()
-    if not text:
+    if not text and image_asset_id is None:
         return {"ok": False, "reason": REFUSAL_SESSION_ENDED}
     # The common case in ONE read: a live, unexpired session on this thread
     # with the sender as one of its two people (a session's pair is its
@@ -911,7 +915,7 @@ def send_message(sender_id, thread_id, body, now=None):
     live = Session.objects.filter(
         Q(seeker_id=sender_id) | Q(consultant_id=sender_id),
         thread_id=thread_id, status=Session.Status.LIVE, expires_at__gt=now,
-    ).exists()
+    ).values_list("consultant_id", flat=True).first()
     if not live:
         thread = Thread.objects.filter(pk=thread_id).first()
         if thread is None or _participant_check(sender_id, thread) is not None:
@@ -920,9 +924,39 @@ def send_message(sender_id, thread_id, body, now=None):
     # A single insert is atomic on its own; on Postgres the touch_thread
     # trigger updates the thread inside the same statement, so no
     # transaction is opened around it.
-    message = Message.objects.create(thread_id=thread_id, sender_id=sender_id, body=text)
+    image_url = None
+    if image_asset_id is not None:
+        # A photo: the session's consultant only (17 Oct 2026, Rahul), and
+        # only a READY image of their own — someone else's id reads as not
+        # uploaded, so ids do not leak.
+        if str(live).replace("-", "") != str(sender_id).replace("-", ""):
+            return {"ok": False, "reason": REFUSAL_PHOTO_PRO_ONLY}
+        image_url = _own_image_url(sender_id, image_asset_id)
+        if image_url is None:
+            return {"ok": False, "reason": REFUSAL_PHOTO_NOT_READY}
+        text = text or PHOTO_BODY
+    message = Message.objects.create(
+        thread_id=thread_id, sender_id=sender_id, body=text, image_url=image_url
+    )
     _touch_thread(thread_id, message.created_at, text)
     return {"ok": True, "message": _message_row(message)}
+
+
+def _own_image_url(owner_id, asset_id):
+    """The public URL of a READY image upload owned by `owner_id`, or None."""
+    from django.conf import settings
+
+    from apps.media.models import MediaAsset
+
+    asset = MediaAsset.objects.filter(pk=asset_id).first()
+    if (
+        asset is None
+        or str(asset.owner).replace("-", "") != str(owner_id).replace("-", "")
+        or asset.kind != MediaAsset.Kind.IMAGE
+        or asset.status != MediaAsset.Status.READY
+    ):
+        return None
+    return f"{settings.MEDIA_PUBLIC_BASE_URL.rstrip('/')}/{asset.bucket_key}"
 
 
 def _message_row(message):
@@ -934,6 +968,7 @@ def _message_row(message):
         "thread_id": str(message.thread_id),
         "sender_id": str(message.sender_id),
         "body": message.body,
+        "image_url": message.image_url,
         "created_at": message.created_at,
         "read_at": message.read_at,
     }

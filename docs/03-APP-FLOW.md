@@ -1405,7 +1405,7 @@ height is what the keyboard leaves, so the typing box stays in sight. In a
 live session the consultant gets four openers above the box until they
 write: *Namaste. Welcome to your session.*, *Please tell me your
 question.*, *Share your date, time and place of birth.*, *Give me a moment
-to look at your chart.* A tap puts one in the box to edit or send. In every live chat, both sides, **End session** is a red button in the header beside the other person's name (17 Oct 2026, Rahul; it was small text in the meter bar). On the Desk a live chat has no ✕ and no back: End session is the way out, and it closes the panel back onto the Desk. The ✕ returns once nothing is live. The
+to look at your chart.* A tap puts one in the box to edit or send. In every live chat, both sides, **End session** is a red button in the header beside the other person's name (17 Oct 2026, Rahul; it was small text in the meter bar). On the Desk a live chat has no ✕ and no back: End session is the way out, and it closes the panel back onto the Desk. The ✕ returns once nothing is live. In a live chat the consultant has a photo button left of the box (both apps' panels; the seeker has none): the photo shows at once, uploads, and sends; one that fails is removed with a toast, not kept to retry. Both sides see it in the thread; a tap opens it full size. The
 openers show in the pro app's chat too; the rest is the Desk's only.
 
 Open, the app beats and the Pro can be online; leaving it stops the beat,
