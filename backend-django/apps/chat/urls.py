@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("sessions/request/", views.request, name="chat-request"),
     path("sessions/", views.my_sessions, name="chat-sessions"),
+    path("missed/", views.missed, name="chat-missed"),
     path("sessions/<uuid:session_id>/accept/", views.accept, name="chat-accept"),
     path("sessions/<uuid:session_id>/end/", views.end, name="chat-end"),
     path("sessions/<uuid:session_id>/cancel/", views.cancel, name="chat-cancel"),

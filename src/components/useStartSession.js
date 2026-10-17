@@ -23,7 +23,7 @@ import { useStore } from '../store.jsx'
  */
 export default function useStartSession() {
   const navigate = useNavigate()
-  const { showToast, session } = useStore()
+  const { showToast, session, profile } = useStore()
   const [asking, setAsking] = useState(false)
 
   /**
@@ -45,6 +45,17 @@ export default function useStartSession() {
       if (!consultant.online) {
         return showToast(`${consultant.name} is offline right now.`)
       }
+      const via = to === 'call' ? 'video' : to
+      /* Date and time of birth before the first call (17 Oct 2026, Rahul):
+         the astrologer reads from them. The details page brings you
+         straight on to the call once they are saved. A time marked
+         unknown counts as given. */
+      if (profile && (!profile.birth_date || (!profile.birth_time && profile.birth_time_known !== false))) {
+        showToast('Add your date and time of birth first. The astrologer reads from them.')
+        return navigate(
+          `/onboarding/details?edit=1&need=1&next=${encodeURIComponent(`/connect/${consultant.id}?via=${via}`)}`,
+        )
+      }
 
       /* Everything after this — asking, busy and retrying, ringing, the
          chat opening on accept — lives on /connect (5 Oct 2026). A
@@ -52,14 +63,14 @@ export default function useStartSession() {
          asks again instead of failing. */
       setAsking(true)
       try {
-        navigate(`/connect/${consultant.id}?via=${to === 'call' ? 'video' : to}`, {
+        navigate(`/connect/${consultant.id}?via=${via}`, {
           state: { consultant },
         })
       } finally {
         setAsking(false)
       }
     },
-    [asking, navigate, session, showToast],
+    [asking, navigate, profile, session, showToast],
   )
 
   return { start, asking }

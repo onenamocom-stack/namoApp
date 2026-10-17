@@ -193,7 +193,7 @@ export default function Connect() {
 
         {phase === 'busy' && (
           <>
-            <p className="mt-8 text-body font-semibold text-gold-fill">Busy with another seeker</p>
+            <p className="mt-8 text-body font-semibold text-gold-fill">{who?.name ? `${who.name} is busy right now` : 'Busy right now'}</p>
             <p className="mt-2 max-w-measure text-meta text-white/70">
               We will keep trying for you{retryIn > 0 ? ` — next try in ${retryIn}s` : '…'}.
               Nothing is charged.
@@ -306,7 +306,7 @@ function ChatWaiting({ name, rate, phase, retryIn, ringStart, onCancel }) {
 
   const title =
     phase === 'busy'
-      ? `${name} is guiding another seeker`
+      ? `${name} is busy right now`
       : phase === 'ringing'
         ? `Request sent to ${name}`
         : `Reaching ${name}`

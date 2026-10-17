@@ -171,7 +171,7 @@ export default function SearchScreen() {
             <Group title="Astrologers" more={tab === 'all' && found.people.length > cap} onMore={() => setTab('people')}>
               {found.people.slice(0, cap).map((c) => (
                 <Link key={c.id} to={`/consult/${c.id}`} className="flex items-center gap-3 px-4 py-2.5">
-                  <PopAvatar initials={c.initials} size={40} online={c.online} />
+                  <PopAvatar initials={c.initials} size={40} online={c.online} busy={c.busy} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-meta font-semibold t-heading">{c.name}</span>
                     <span className="block truncate text-micro t-faint">

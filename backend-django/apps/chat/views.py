@@ -127,6 +127,14 @@ def my_sessions(request):
     return Response(services.list_sessions(request.user.pk))
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def missed(request):
+    """The caller's missed calls as a consultant: people who reached for
+    them while they were busy, the last day (17 Oct 2026)."""
+    return Response(services.list_missed(request.user.pk))
+
+
 # ── threads and messages (014's read side; 016's preview) ────────────────────
 
 

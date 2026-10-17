@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TabHeader } from '../components/Chrome.jsx'
 import { DeskHeader } from '../components/ProHeader.jsx'
@@ -7,41 +7,40 @@ import { isPro } from '../side.js'
 import { callPath } from '../lib/dashboard.js'
 import Icon from '../components/Icon.jsx'
 import { Kicker, PopAvatar, PopButton, PopTag } from '../components/Pop.jsx'
-import { Segmented, firstName } from '../components/Primitives.jsx'
+import { firstName } from '../components/Primitives.jsx'
 import { rupees, useStore } from '../store.jsx'
 import {
   decideBooking,
   listBookings,
 } from '../lib/consultants.js'
-import { acceptChat, listSessions, subscribeToRequests } from '../lib/chat.js'
+import { acceptChat, listMissed, listSessions, subscribeToRequests } from '../lib/chat.js'
 
 /**
  * NAMO Desk (`/desk`; Namo Consult until 16 Oct 2026) — everything that runs
- * today's practice: the big Go live button, then four tabs (Rahul, 16 Oct
- * 2026): Audio call, Video call, Chat — each with whoever is waiting on that
- * channel right now — and Booking, the booked sessions to accept and the
- * ones confirmed. The calendar and earnings links left the page; the
- * Dashboard has both.
+ * today's practice: the big Go live button, then one list, In line: every
+ * call and chat waiting, the first to ask on top, each with its type (17 Oct
+ * 2026, Rahul: no Audio, Video and Chat tabs). Bookings under it. The
+ * calendar and earnings links left the page; the Dashboard has both.
  */
-const TABS = [
-  { key: 'audio', label: 'Audio call' },
-  { key: 'video', label: 'Video call' },
-  { key: 'chat', label: 'Chat' },
-  { key: 'booking', label: 'Booking' },
-]
-
 const channelOf = (s) => (s.mode === 'chat' ? 'chat' : s.audio_only ? 'audio' : 'video')
+const CHANNEL = {
+  audio: { icon: 'phone', label: 'Audio call', verb: 'Answer' },
+  video: { icon: 'video', label: 'Video call', verb: 'Answer' },
+  chat: { icon: 'chat', label: 'Chat', verb: 'Join' },
+}
 
 export default function ProConsult() {
   const { consultant, consultantError, openChat, showToast } = useStore()
   const navigate = useNavigate()
-  const [tab, setTab] = useState('audio')
   const [rows, setRows] = useState(null)
   /* People waiting right now, on any channel. Nothing has been charged: the
      hold is taken and the clock starts when this is accepted. Realtime
      rather than polling, because a request nobody sees for thirty seconds
      is a seeker who has left. */
   const [requests, setRequests] = useState([])
+  // Who reached for you while you were busy, the last day (17 Oct 2026).
+  const [missed, setMissed] = useState([])
+  const missedAt = useRef(0)
 
   const me = consultant?.profile_id
 
@@ -55,6 +54,11 @@ export default function ProConsult() {
     listSessions().then((all) =>
       setRequests(all.filter((s) => s.consultant_id === me && s.status === 'requested')),
     )
+    // The queue polls every 2 s; missed calls need not, so every 15 s.
+    if (Date.now() - missedAt.current > 15000) {
+      missedAt.current = Date.now()
+      listMissed().then(setMissed)
+    }
   }, [me])
 
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function ProConsult() {
   const bookings = rows ?? []
   const pending = bookings.filter((b) => b.status === 'pending')
   const approved = consultant?.status === 'approved'
-  const waiting = (key) => requests.filter((r) => channelOf(r) === key)
+  const inLine = [...requests].sort((a, b) => (a.requested_at < b.requested_at ? -1 : 1))
 
   return (
     <>
@@ -116,70 +120,92 @@ export default function ProConsult() {
         )}
       </section>
 
-      <div className="px-4 pt-4">
-        <Segmented items={TABS} value={tab} onChange={setTab} />
-      </div>
-
-      <div key={tab} className="animate-fade">
-        {tab === 'booking' && <Bookings rows={rows} bookings={bookings} reload={reload} />}
-        {tab !== 'booking' && (
-          <Waiting channel={tab} requests={waiting(tab)} onTake={take} onInbox={() => openChat('live')} />
-        )}
-      </div>
+      <InLine requests={inLine} onTake={take} onInbox={() => openChat('live')} />
+      <Missed rows={missed} />
+      <Bookings rows={rows} bookings={bookings} reload={reload} />
 
       <div className="h-24" />
     </>
   )
 }
 
-const CHANNEL_COPY = {
-  audio: { icon: 'phone', title: 'Audio calls', empty: 'Nobody is waiting. While you are live, an audio call rings at the top of the screen.' },
-  video: { icon: 'video', title: 'Video calls', empty: 'Nobody is waiting. While you are live, a video call rings at the top of the screen.' },
-  chat: { icon: 'chat', title: 'Chats', empty: 'Nobody is waiting to chat. While you are live, a chat request appears here.' },
-}
-
-/** One channel's waiting list, and how that channel reaches you. */
-function Waiting({ channel, requests, onTake, onInbox }) {
-  const copy = CHANNEL_COPY[channel]
+/** Everyone waiting, on any channel, in the order they asked. */
+function InLine({ requests, onTake, onInbox }) {
   return (
-    <section className="px-5 py-6">
-      <Kicker>{requests.length ? `${requests.length} waiting` : copy.title}</Kicker>
+    <section className="px-5 pt-6">
+      <Kicker>{requests.length ? `In line · ${requests.length}` : 'In line'}</Kicker>
       {requests.length === 0 ? (
         <div className="pop-card mt-4 flex items-center gap-3 p-4">
           <span className="pill knob !h-10 !w-10 flex-none justify-center">
-            <Icon name={copy.icon} size={18} />
+            <Icon name="phone" size={18} />
           </span>
-          <span className="min-w-0 flex-1 text-meta t-body">{copy.empty}</span>
+          <span className="min-w-0 flex-1 text-meta t-body">
+            Nobody is waiting. While you are live, a call rings at the top of the screen and a chat appears here.
+          </span>
         </div>
       ) : (
-        <ul className="mt-4 space-y-2">
-          {requests.map((r) => (
-            <li key={r.id} className="pop-card flex items-center gap-3 p-3">
-              <PopAvatar initials={initials(r.seeker_name ?? '')} size={38} />
+        <ol className="mt-4 space-y-2">
+          {requests.map((r, i) => {
+            const ch = CHANNEL[channelOf(r)]
+            return (
+              <li key={r.id} className="pop-card flex items-center gap-3 p-3">
+                <span className="w-4 flex-none text-center text-meta font-semibold t-faint tnum">{i + 1}</span>
+                <PopAvatar initials={initials(r.seeker_name ?? '')} size={38} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta t-heading">{r.seeker_name ?? 'A client'}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[12px] gold">
+                    <Icon name={ch.icon} size={13} />
+                    {ch.label}
+                    <span className="t-faint tnum">· ₹{rupees(r.rate_paise)}/min · {hhmm(r.requested_at)}</span>
+                  </span>
+                </span>
+                <PopButton size="sm" variant="gold" full={false} onClick={() => onTake(r)}>
+                  {ch.verb}
+                </PopButton>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+      <button type="button" onClick={onInbox} className="pop-card pop-tap mt-3 flex w-full items-center gap-3 p-4">
+        <span className="pill knob !h-10 !w-10 flex-none justify-center">
+          <Icon name="chat" size={18} />
+        </span>
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block text-meta t-heading">Open your chats</span>
+          <span className="mt-0.5 block caps-sm t-faint">Every client thread</span>
+        </span>
+      </button>
+    </section>
+  )
+}
+
+/** Missed calls (17 Oct 2026, Rahul): somebody reached for you while you
+ *  were on another call or chat. Nothing to press: they can be reached
+ *  again only by calling you, so this says someone was in line. */
+function Missed({ rows }) {
+  if (!rows.length) return null
+  return (
+    <section className="px-5 pt-6">
+      <Kicker>{`Missed while busy · ${rows.length}`}</Kicker>
+      <ul className="mt-4 space-y-2">
+        {rows.map((m) => {
+          const ch = CHANNEL[m.mode === 'chat' ? 'chat' : m.audio_only ? 'audio' : 'video']
+          return (
+            <li key={m.id} className="pop-card flex items-center gap-3 p-3">
+              <PopAvatar initials={initials(m.seeker_name ?? '')} size={38} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-meta t-heading">{r.seeker_name ?? 'A client'}</span>
-                <span className="mt-0.5 block caps-sm t-faint tnum">
-                  ₹{rupees(r.rate_paise)}/min · asked {hhmm(r.requested_at)}
+                <span className="block truncate text-meta t-heading">{m.seeker_name ?? 'A client'}</span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-live">
+                  <Icon name={ch.icon} size={13} />
+                  Missed {ch.label.toLowerCase()}
+                  <span className="t-faint tnum">· {dayLabel(m.created_at)}</span>
                 </span>
               </span>
-              <PopButton size="sm" variant="gold" full={false} onClick={() => onTake(r)}>
-                {channel === 'chat' ? 'Join' : 'Answer'}
-              </PopButton>
             </li>
-          ))}
-        </ul>
-      )}
-      {channel === 'chat' && (
-        <button type="button" onClick={onInbox} className="pop-card pop-tap mt-3 flex w-full items-center gap-3 p-4">
-          <span className="pill knob !h-10 !w-10 flex-none justify-center">
-            <Icon name="chat" size={18} />
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block text-meta t-heading">Open your inbox</span>
-            <span className="mt-0.5 block caps-sm t-faint">Every client thread, in one panel</span>
-          </span>
-        </button>
-      )}
+          )
+        })}
+      </ul>
     </section>
   )
 }
@@ -249,15 +275,15 @@ function Bookings({ rows, bookings, reload }) {
       <section className="border-b border-rule px-5 py-6">
         <Kicker>
           {rows === null
-            ? 'Reading the queue'
+            ? 'Bookings'
             : pending.length === 0
-              ? 'No requests waiting'
-              : `${pending.length} requests`}
+              ? 'Bookings · none to accept'
+              : `Bookings · ${pending.length} to accept`}
         </Kicker>
 
         {pending.length === 0 ? (
           <p className="mt-3 text-meta t-faint">
-            Everything is answered. The queue fills again when someone books.
+            No booking is waiting for your yes.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">

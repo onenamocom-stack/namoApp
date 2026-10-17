@@ -354,8 +354,12 @@ export default function Consult() {
                       c.initials
                     )}
                   </span>
+                  {/* Red while they are with someone (17 Oct 2026, Rahul). */}
                   {c.online && (
-                    <span className="absolute -bottom-1 -right-1 block h-3.5 w-3.5 rounded-full bg-ok ring-2 ring-surface" aria-label="Online" />
+                    <span
+                      className={`absolute -bottom-1 -right-1 block h-3.5 w-3.5 rounded-full ring-2 ring-surface ${c.busy ? 'bg-live' : 'bg-ok'}`}
+                      aria-label={c.busy ? 'Busy' : 'Online'}
+                    />
                   )}
                 </span>
 
@@ -366,7 +370,7 @@ export default function Consult() {
                         (13 Oct 2026, Rahul; it was blue, for `verified` only). */}
                     <VerifiedMark size={16} tone="pro" />
                     {c.online && c.busy && (
-                      <span className="flex-none rounded-full bg-gold-fill/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-gold">
+                      <span className="flex-none rounded-full bg-live/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-live">
                         Busy
                       </span>
                     )}

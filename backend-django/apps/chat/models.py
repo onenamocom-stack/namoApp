@@ -269,3 +269,24 @@ class Message(models.Model):
                 name="messages_unread_idx",
             ),
         ]
+
+
+class MissedCall(models.Model):
+    """Somebody reached for a consultant who was busy (17 Oct 2026, Rahul):
+    the consultant sees it on NAMO Desk, so they know someone was in line.
+    One row per seeker and consultant per MISSED_WINDOW, however many times
+    the seeker's screen asked again meanwhile. Plain ids, like `sender_id`:
+    nothing here moves money or gates anything."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultant_id = models.UUIDField()
+    seeker_id = models.UUIDField()
+    mode = models.CharField(max_length=10)  # chat | call
+    audio_only = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "missed_calls"
+        indexes = [
+            models.Index(fields=["consultant_id", "-created_at"], name="missed_calls_consultant_idx"),
+        ]

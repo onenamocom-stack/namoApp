@@ -974,6 +974,13 @@ create table messages (
 );
 ```
 
+**`missed_calls` (17 Oct 2026, `chat/0007`):** `id uuid pk`, `consultant_id
+uuid`, `seeker_id uuid`, `mode text` (chat or call), `audio_only bool`,
+`created_at`; index `(consultant_id, created_at desc)`. Written when a
+request finds the consultant busy, once per seeker and consultant per five
+minutes (the seeker's screen asks again every few seconds). Read by the
+consultant, the last day: `GET /v1/chat/missed/`. Plain ids, no money.
+
 **`image_url` (17 Oct 2026, `chat/0006`):** a photo in a live chat, the
 public URL of a READY `image` upload owned by the sender. Only the session's
 consultant may send one; the API refuses a seeker's. `body` is the caption,

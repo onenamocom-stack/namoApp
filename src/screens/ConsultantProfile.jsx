@@ -403,9 +403,12 @@ export function ConsultantPage({
             </p>
           )}
           {!own && c.online && c.busy && (
-            <p className="mt-3 text-micro font-semibold text-gold">
-              Busy — {firstName(c.name)} is with someone right now. Press call or chat and we
-              will keep trying until they are free. Nothing is charged while you wait.
+            <p className="mt-3 flex items-start gap-2 text-micro font-semibold text-live">
+              <span className="mt-1 block h-2 w-2 flex-none rounded-full bg-live" aria-hidden="true" />
+              <span>
+                {firstName(c.name)} is busy right now, on another call. Press call or chat and we
+                will keep trying until they are free. Nothing is charged while you wait.
+              </span>
             </p>
           )}
 

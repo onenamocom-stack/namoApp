@@ -114,7 +114,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <TopBar title="Dashboard" back backTo="/profile" />
+      {/* Always Profile (17 Oct 2026, Rahul): a history back went to the
+          Desk, whose button came here, a loop. */}
+      <TopBar title="Dashboard" back backTo="/profile" hardBack />
 
       {pro && consultant.status !== 'approved' && (
         <p className="mx-5 mt-4 rounded-lg border border-rule px-4 py-3 text-meta t-body">

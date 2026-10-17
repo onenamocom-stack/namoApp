@@ -1,5 +1,5 @@
 import { isPro } from '../side.js'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BackButton, TabHeader, TopBar } from './Chrome.jsx'
 
 /**
@@ -14,15 +14,19 @@ export default function ProHeader({ title }) {
 
 /**
  * NAMO Desk's header (`/desk`; Namo Consult until 16 Oct 2026). The Online
- * pill that sat here is the page's big Go live button now (Rahul).
+ * pill that sat here is the page's big Go live button now (Rahul). Home on
+ * the left and Dashboard on the right, not a back (17 Oct 2026, Rahul):
+ * back from the Dashboard came here again, a loop.
  */
 export function DeskHeader() {
   const navigate = useNavigate()
   return (
     <header className="topbar flex h-11 items-center gap-3 px-4">
-      <BackButton onClick={() => navigate('/dashboard')} />
+      <BackButton onClick={() => navigate('/home')} icon="home" label="Home" />
       <p className="label min-w-0 flex-1 truncate text-center font-bold !text-t1">NAMO Desk</p>
-      <span className="w-9 flex-none" aria-hidden="true" />
+      <Link to="/dashboard" className="flex-none rounded-full border border-rule bg-white px-3 py-1.5 caps-sm t-heading shadow-sm">
+        Dashboard
+      </Link>
     </header>
   )
 }

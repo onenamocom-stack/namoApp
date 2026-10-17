@@ -403,6 +403,7 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
             consultant_id=consultant_id,
             status__in=(Session.Status.LIVE, Session.Status.REQUESTED),
         ).exists():
+            _note_missed(seeker_id, consultant_id, mode, audio_only, now)
             return {"ok": False, "busy": True, "reason": REFUSAL_BUSY, "retry_after": 5}
         try:
             with transaction.atomic():  # savepoint: a lost race rolls back only the insert
@@ -419,6 +420,7 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
                 )
         except IntegrityError:
             # The unique indexes are the last word: somebody else is ringing.
+            _note_missed(seeker_id, consultant_id, mode, audio_only, now)
             return {"ok": False, "busy": True, "reason": REFUSAL_BUSY, "retry_after": 5}
         # The consultant's phone rings (6 Oct 2026) — after the commit, so a
         # rolled-back request never rings anybody, and best-effort, so a
@@ -1103,6 +1105,53 @@ def list_threads(actor_id):
             "last_session": last_by_thread.get(str(thread.id)),
         }
         for thread in threads
+    ]
+
+
+# A seeker's screen asks a busy consultant again every few seconds for three
+# minutes; that is one missed call, not thirty-six.
+MISSED_WINDOW = timezone.timedelta(minutes=5)
+MISSED_SHOWN = timezone.timedelta(hours=24)
+
+
+def _note_missed(seeker_id, consultant_id, mode, audio_only, now):
+    """Record that this seeker found the consultant busy (17 Oct 2026),
+    once per MISSED_WINDOW."""
+    from .models import MissedCall
+
+    if MissedCall.objects.filter(
+        seeker_id=seeker_id, consultant_id=consultant_id, created_at__gte=now - MISSED_WINDOW
+    ).exists():
+        return
+    MissedCall.objects.create(
+        seeker_id=seeker_id, consultant_id=consultant_id, mode=mode,
+        audio_only=bool(audio_only) and mode == Session.Mode.CALL, created_at=now,
+    )
+
+
+def list_missed(actor_id, now=None):
+    """The caller's missed calls as a consultant, the last day, newest
+    first, each with who it was. A seeker has none, so gets an empty list."""
+    from apps.profiles import services as profile_services
+
+    from .models import MissedCall
+
+    now = now or timezone.now()
+    rows = list(
+        MissedCall.objects.filter(consultant_id=actor_id, created_at__gte=now - MISSED_SHOWN)
+        .order_by("-created_at")[:30]
+    )
+    names = profile_services.profile_names([r.seeker_id for r in rows])
+    return [
+        {
+            "id": str(r.id),
+            "seeker_id": str(r.seeker_id),
+            "seeker_name": names.get(str(uuid.UUID(str(r.seeker_id)))),
+            "mode": r.mode,
+            "audio_only": r.audio_only,
+            "created_at": r.created_at,
+        }
+        for r in rows
     ]
 
 

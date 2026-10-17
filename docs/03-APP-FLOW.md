@@ -1398,6 +1398,31 @@ name, the **Online** switch. Under it the ringing requests (Decline,
 Answer), then the pro app's Consult screen as it is: approval state,
 Sessions · Chat · Call, the slots. No tab bar.
 
+**Since 17 Oct 2026 (Rahul)** the page under the Go live button is one
+list, **In line**: every call and chat waiting, the first to ask on top,
+numbered, each with its type (Audio call, Video call, Chat), rate and time,
+and Answer or Join; then Open your chats. No Audio, Video, Chat or Booking
+tabs. The server lets one request ring a consultant at a time, so In line
+holds one at most; whoever reaches for them meanwhile is told they are busy
+and lands in **Missed while busy** (the last day: name, type, time; nothing
+to press). Bookings follow (to accept, then confirmed).
+
+**Busy, for the seeker (17 Oct 2026, Rahul).** A Pro in a session or
+ringing has a red dot, not green: Consult's cards (and a red Busy tag),
+search, every presence avatar. Their page says *X is busy right now, on
+another call* in red. Pressing call or chat then shows *X is busy right
+now* while the app keeps asking, as before.
+
+**The Desk's header (17 Oct 2026, Rahul):** Home on the left, **Dashboard**
+on the right, no back. The Dashboard's own back always goes to Profile:
+a history back from it returned to the Desk, which led to the Dashboard
+again.
+
+**Birth details before a call (17 Oct 2026, Rahul).** Pressing video,
+audio or chat on any Pro, a seeker with no date of birth, or no time of
+birth and not marked unknown, gets a toast and the details page
+(`need=1`); saving goes straight on to `/connect` for that Pro and channel.
+
 **Chats on the Desk (17 Oct 2026, Rahul).** The chat panel opened from
 `/desk` (Join, Open your inbox) is the client chats alone: no Messages or
 Alerts tabs, titled Chats, full screen with a ✕, smaller text, and its

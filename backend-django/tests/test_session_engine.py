@@ -134,6 +134,27 @@ class TestOneCallerAtATime:
         assert services.is_busy(PRO) is False
         assert services.request_chat(SECOND_SEEKER, PRO, service.id)["ok"] is True
 
+    def test_a_busy_answer_is_one_missed_call_for_the_consultant(self, pro_user):
+        # 17 Oct 2026, Rahul: the busy consultant sees who reached for them;
+        # the seeker's screen asking again and again is one missed call.
+        from apps.chat.models import MissedCall
+
+        _, service = pro_user
+        _call_session(pro_user, channel="chat")
+        _fund(SECOND_SEEKER, RATE * 5)
+        for _ in range(3):
+            assert services.request_chat(SECOND_SEEKER, PRO, service.id, channel="audio")["busy"] is True
+        assert MissedCall.objects.count() == 1
+        missed = services.list_missed(PRO)
+        assert len(missed) == 1
+        assert missed[0]["seeker_id"] == str(SECOND_SEEKER)
+        assert missed[0]["mode"] == "call" and missed[0]["audio_only"] is True
+        assert services.list_missed(SECOND_SEEKER) == []
+        later = timezone.now() + services.MISSED_WINDOW + SEC
+        services._note_missed(SECOND_SEEKER, PRO, "call", True, later)
+        assert MissedCall.objects.count() == 2
+        assert services.list_missed(PRO, now=later + services.MISSED_SHOWN + SEC) == []
+
     def test_a_stale_ring_frees_the_consultant_without_a_sweeper(self, pro_user):
         _, service = pro_user
         _fund(SEEKER, RATE * 5)

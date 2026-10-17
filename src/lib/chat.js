@@ -244,6 +244,17 @@ export async function heartbeat(sessionId) {
 
 /** My sessions, either side of them, newest first — the seeker's history
  *  and the consultant's queue (filtered client-side, as today) in one read. */
+/** A consultant's missed calls: people who reached for them while they
+ *  were busy, the last day, newest first (17 Oct 2026). */
+export async function listMissed() {
+  try {
+    return await api('/chat/missed/')
+  } catch (err) {
+    console.error('[chat] missed load failed:', err.message)
+    return []
+  }
+}
+
 export async function listSessions() {
   try {
     return await api('/chat/sessions/')

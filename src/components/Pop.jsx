@@ -154,7 +154,7 @@ export function PopBar({ value, className = '' }) {
  * Initials remain the fallback and are not a placeholder to be replaced — a
  * signed-in person with no picture is the normal case, not a loading state.
  */
-export function PopAvatar({ initials, src = null, size = 36, online = false, className = '' }) {
+export function PopAvatar({ initials, src = null, size = 36, online = false, busy = false, className = '' }) {
   return (
     // inline-flex, not inline-block (13 Oct 2026): an inline-block kept a
     // line box under the face, so a ringed avatar with a photo drew oval.
@@ -169,11 +169,12 @@ export function PopAvatar({ initials, src = null, size = 36, online = false, cla
           initials
         )}
       </span>
+      {/* Red while in a session or ringing (17 Oct 2026, Rahul). */}
       {online && (
         <span
-          className="absolute -bottom-0.5 -right-0.5 block rounded-full bg-ok ring-2 ring-bg"
+          className={`absolute -bottom-0.5 -right-0.5 block rounded-full ring-2 ring-bg ${busy ? 'bg-live' : 'bg-ok'}`}
           style={{ width: 9, height: 9 }}
-          aria-label="Online"
+          aria-label={busy ? 'Busy' : 'Online'}
         />
       )}
     </span>
