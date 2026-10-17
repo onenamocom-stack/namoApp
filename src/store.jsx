@@ -237,9 +237,8 @@ export function AppProvider({ children }) {
      fine, and left `balance` at null with nothing to bring it back, which
      disables every Buy button for the life of the tab.
 
-     `prefill` and `getUserId` are passed as getters rather than values so
-     the api reads the current profile and session on each call; capturing
-     them would freeze the checkout prefill at whatever was mounted first. */
+     `getUserId` is passed as a getter rather than a value so the api reads
+     the current session on each call. */
   const walletApi = useMemo(
     () =>
       createWalletApi({
@@ -247,11 +246,6 @@ export function AppProvider({ children }) {
         setBalance,
         setLedger,
         balanceRef,
-        prefill: () => ({
-          name: profileRef.current?.name ?? '',
-          email: profileRef.current?.email ?? '',
-          contact: sessionRef.current?.user?.phone ?? '',
-        }),
         getUserId: () => sessionRef.current?.user?.id ?? null,
       }),
     [showToast, setBalance],
@@ -576,8 +570,8 @@ export function AppProvider({ children }) {
 
   /**
    * Add money. The mirror of `spend`, and deliberately not its equal: nothing
-   * here credits anything. This opens a Razorpay order, hands the browser to
-   * Razorpay's checkout, and stops. The wallet moves when Razorpay's webhook
+   * here credits anything. This opens a PhonePe checkout, hands the browser to
+   * PhonePe's page, and asks the server to confirm. The wallet moves when the server
    * reaches the server and the signature verifies, which is the only path a
    * rupee has into `ledger`.
    *
@@ -596,10 +590,9 @@ export function AppProvider({ children }) {
       setToppingUp(true)
       try {
         /* Still true, and the reason this is not `spend`'s mirror: nothing
-           here credits anything. It opens an order, hands the browser to
-           Razorpay's checkout and stops. The wallet moves when the webhook
-           reaches the server and the signature verifies — the only path a
-           rupee has into `ledger`.
+           here credits anything. It opens a checkout, hands the browser to
+           PhonePe's page, then asks the server to confirm with PhonePe —
+           that, or the webhook, is the only path a rupee has into `ledger`.
 
            So the api cannot await the balance. It polls, and says so on
            screen rather than freezing a spinner over a number it does not
@@ -698,17 +691,11 @@ export function AppProvider({ children }) {
           return result
         }
         const back = result.cashback_paise ? ` · ₹${rupees(result.cashback_paise)} back after delivery` : ''
-        /* Online (6 Oct 2026): the order holds its stock while Razorpay is
-           open; it is the seeker's only once paid. A closed sheet gives it
-           up and nothing is charged. */
-        if (result.razorpay) {
-          const paid = await payOrder(result.order_id, result.razorpay, {
-            prefill: {
-              name: profileRef.current?.name ?? '',
-              email: profileRef.current?.email ?? '',
-              contact: sessionRef.current?.user?.phone ?? '',
-            },
-          })
+        /* Online (6 Oct 2026): the order holds its stock while PhonePe's
+           page is open; it is the seeker's only once paid. A closed page
+           gives it up and nothing is charged. */
+        if (result.checkout) {
+          const paid = await payOrder(result.order_id, result.checkout)
           if (paid === 'closed') {
             showToast('Payment not completed. Nothing was charged.')
             return { ok: false, reason: 'closed' }

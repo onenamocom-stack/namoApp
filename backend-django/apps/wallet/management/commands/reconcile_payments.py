@@ -8,10 +8,10 @@ logger = logging.getLogger("apps.wallet.reconcile")
 
 
 class Command(BaseCommand):
-    """Ask Razorpay what actually happened to every payment we never
+    """Ask PhonePe what actually happened to every payment we never
     resolved. READ ONLY — it credits nothing: a script that mints undoes
     the reason the webhook is the only credit path. Run after re-saving a
-    webhook secret, after any Razorpay config change, and before
+    webhook secret, after any PhonePe config change, and before
     believing the first live payment worked; on a schedule later
     (Celery wraps apps.wallet.services.reconcile, never reimplements it —
     tasks/README). Exits non-zero and names the people owed."""
@@ -21,7 +21,7 @@ class Command(BaseCommand):
         self.stdout.write(
             f"{report['orders']} unresolved order(s): "
             f"{len(report['owed'])} owed, {len(report['failed'])} failed at"
-            f" Razorpay, {len(report['abandoned'])} abandoned,"
+            f" PhonePe, {len(report['abandoned'])} abandoned,"
             f" {len(report['unknown'])} unknown"
         )
         for order_id in report["abandoned"]:
@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 f" all failed — {row['reason']}"
             )
         for order_id in report["unknown"]:
-            self.stdout.write(f"  ?   {order_id}  Razorpay could not say — check by hand")
+            self.stdout.write(f"  ?   {order_id}  PhonePe could not say — check by hand")
         for row in report["owed"]:
             for payment in row["payments"]:
                 self.stdout.write(
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         if not report["owed"]:
             self.stdout.write(
                 "\nNothing owed. Every unresolved order was abandoned or failed"
-                " at Razorpay."
+                " at PhonePe."
             )
             return
         total = sum(

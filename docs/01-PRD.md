@@ -350,7 +350,7 @@ computed discount badge. Two products are sold out.
 **Delivery — decided 5 Oct 2026; cash on delivery added 6 Oct 2026** (it was
 prepaid only). Two ways to pay at checkout:
 
-- **Online** — Razorpay's checkout for that order: UPI, card or netbanking,
+- **Online** — PhonePe's checkout for that order: UPI, card or netbanking,
   goods and delivery together. **The wallet is not used in the shop** (owner
   and Rahul, 6 Oct 2026: "wallet will be for chat"; it replaced paying shop
   orders from the wallet). The items are held for 15 minutes while checkout
@@ -442,7 +442,7 @@ money can move both ways. The top-up presets are **₹500 · ₹1,000 · ₹2,00
 the server; the copy of it in the browser only exists so the refusal arrives
 before the card form does.
 
-Money is credited on Razorpay's word, never the browser's — the amount that
+Money is credited on PhonePe's word, never the browser's — the amount that
 reaches the wallet is the amount the provider reports it captured.
 
 The **"+2% cashback" label is deleted**, not deferred. It appeared on ₹2,000
@@ -641,7 +641,7 @@ too long and a seeker's money is held for a week. **Decide it before the first
 consultant who is not the founder takes bookings.**
 
 **Two things this obliges before launch, both outside the code.** A published
-cancellation and refund policy page is a Razorpay activation requirement, so it
+cancellation and refund policy page is a payment gateway activation requirement (Razorpay then, PhonePe since 17 Oct 2026), so it
 has to exist on the domain either way — §8. And a blanket no-refund term does
 not override a service that was not delivered, which is exactly why the table
 above exists; **get it read by someone qualified** rather than taking this
@@ -1113,7 +1113,7 @@ products spreadsheet ("flat 500", "10%", "10% upto 100", "none", blank).
   delivery, 6% of the goods. (`REFERRAL_SHARER_BPS`, `REFERRAL_BUYER_BPS`.)
 - **Per item:** two ₹700 items at flat ₹500 are ₹1,000 back. Never more
   than the item cost.
-- **Why it pays:** the shop takes Razorpay, not the wallet, so the
+- **Why it pays:** the shop takes PhonePe, not the wallet, so the
   cashback can only be spent on consultations, Namo AI and the app's other
   paid extras — the consultant keeps 70% of a consultation and Namo 30%.
   It is the retention lever: the buyer's first session is pre-paid.

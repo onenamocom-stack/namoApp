@@ -139,7 +139,7 @@ signature.
 |---|---|
 | Create a booking | One transaction across six tables: price lookup, availability check, slot claim, wallet debit, both ledgers, thread open |
 | Wallet credit | A credit is a ledger insert plus a balance update, and only after a verified payment |
-| Razorpay webhook | The provider calls a public URL; the signature must be verified before anything is trusted |
+| PhonePe webhook (Razorpay before 17 Oct 2026) | The provider calls a public URL; its `Authorization` header (SHA-256 of the dashboard's username and password) must match before anything is trusted |
 | Booking status change | A decline writes a **reversing** ledger entry, never edits the debit |
 | Slot availability | A three-way subtraction (rule − time off − bookings) that all three callers must compute identically |
 | Chart computation | Calls the ephemeris service |
@@ -196,8 +196,10 @@ moves money or claims a resource is an explicit endpoint.
 
 | Endpoint | Sends | Returns | Notes |
 |---|---|---|---|
-| `POST /functions/v1/razorpay-order` | a validated amount in paise | `{ order_id, amount_paise, key_id }` | The client chooses what to **pay**; the server decides what to **credit**, from the webhook |
-| `POST /functions/v1/razorpay-webhook` | — | 200 | `verify_jwt = false` — the signature is the authentication. Idempotent by unique index, not by an application check |
+| `POST /wallet/topup/order/` · `POST /wallet/pay/` · shop `POST /shop/buy/` (online) | a validated amount in paise · `{sku, ref}` · the cart | `{ order_id, amount_paise, url }` (`checkout` inside `pay` and `buy`) | PhonePe since 17 Oct 2026 (the Razorpay edge function before). The server opens a PhonePe checkout and writes the `created` row; the client opens `url` in PhonePe's iframe. On close the client calls `POST /wallet/pay/confirm/ {order_id}` (or `POST /shop/orders/<id>/confirm/`), and the server asks PhonePe's order status and settles a COMPLETED order. |
+| `POST /functions/v1/razorpay-order` (retired 17 Oct 2026) | a validated amount in paise | `{ order_id, amount_paise, key_id }` | The client chooses what to **pay**; the server decides what to **credit**, from the webhook |
+| `POST /wallet/webhook/phonepe/` | — | 200 | 17 Oct 2026. The `Authorization` header is the credential. `checkout.order.completed` / `.failed`; the status is `payload.state`. Idempotent on the merchant order id by unique index. Replaced `/wallet/webhook/razorpay/` |
+| `POST /functions/v1/razorpay-webhook` (retired) | — | 200 | `verify_jwt = false` — the signature is the authentication. Idempotent by unique index, not by an application check |
 | `POST /bookings` | `{ consultantId, serviceId, startsAt }` | booking, or a named refusal | One transaction. See below |
 | `POST /bookings/:id/status` | `{ status }` | booking | Consultant only. Decline writes a reversing ledger entry |
 | `GET /consultants/:id/slots?date=` | — | open slots | The single source for every caller. Built as `consultant_open_slots(uuid, date)`, a `security definer` Postgres function over RPC rather than an Edge Function: the three-way subtraction is pure SQL over tables next to it, and nothing it decides needs a secret. Definer because it subtracts other people's bookings, which RLS hides from the caller — it returns times, never rows. **Horizon 14 days, times IST**, both named in that function and nowhere else |
@@ -278,7 +280,7 @@ bulk actions. See `04-UI-UX.md`.
 
 | Need | Choice | Why not the obvious alternative |
 |---|---|---|
-| Payments in | **Razorpay** (Cashfree equivalent) | Stripe is awkward for domestic UPI, and UPI is most of the volume |
+| Payments in | **PhonePe PG** (17 Oct 2026, Rahul; Razorpay before) | Stripe is awkward for domestic UPI, and UPI is most of the volume |
 | Payouts | RazorpayX / Cashfree Payouts | Paying out is a different product from taking in, with its own KYC gate |
 | Video / voice | 100ms or Agora — **TBD** | Raw WebRTC is a team, not a task |
 | Namo AI | **Gemini Flash**, behind the API — *reversed from Claude, 21 Sep 2026* | The key cannot ship to a browser and the quota is money. Gemini won on cost at this shape: short answers over structured chart data, ~₹0.02 a question against ~₹0.06. `AI_PROVIDER` selects it, so the reversal costs one env var, not a rewrite |

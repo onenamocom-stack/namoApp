@@ -13,7 +13,7 @@ import { rupees, useStore } from '../store.jsx'
  * refetches whatever was refused.
  *
  * `pay="online"` (15 Oct 2026, a priced e-book once the owner switches it
- * on): Razorpay's checkout instead of the wallet. The server decides which
+ * on): PhonePe's checkout instead of the wallet. The server decides which
  * and says so on the refusal; this only follows it.
  */
 export default function Paywall({ title, note, sku, refKey = '', pricePaise, pay = 'wallet', onBought, className = '' }) {

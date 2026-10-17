@@ -887,8 +887,8 @@ export const strings = {
   'wal.opening': { en: 'Opening checkout…', hi: 'भुगतान पेज खुल रहा है…' },
   'wal.continue': { en: 'Continue', hi: 'आगे बढ़ें' },
   'wal.razorpay': {
-    en: 'Payment is handled by Razorpay. Your balance updates when they confirm it, which is a moment after you pay.',
-    hi: 'भुगतान Razorpay से होता है। उनके पुष्टि करते ही आपका बैलेंस अपडेट होगा, यानी भुगतान के एक पल बाद।',
+    en: 'Payment is handled by PhonePe. Your balance updates when they confirm it, which is a moment after you pay.',
+    hi: 'भुगतान PhonePe से होता है। उनके पुष्टि करते ही आपका बैलेंस अपडेट होगा, यानी भुगतान के एक पल बाद।',
   },
 
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────

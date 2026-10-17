@@ -826,9 +826,9 @@ its `item_id` is the order's own id — the shipment's key.
 | `orders.payment_method` | `wallet` (default, database-level) or `cod`. Raw-SQL inserts (bookings, the chat meter) need not name it |
 | `orders.cod_fee_paise` | The COD fee inside `total_paise`; 0 (database default) for every other order. Not an `order_items` row: production's `item_type` CHECK would refuse a new kind |
 | `shipping_quotes.cod_available` | Whether any courier at the pincode takes cash, from Shiprocket's serviceability with `cod=1` |
-| `orders.payment_method = 'online'` | Razorpay checkout per order (migration `shop/0006`, a choice only). `pending` with `expires_at` = 15 minutes; `paid` on capture; `cancelled` past it (the minute's sweep, `lapse_unpaid`) |
-| `payments.entitlement_sku`, `payments.entitlement_ref` | Nullable (migration `wallet/0004`, 15 Oct 2026). Set on the `created` row of a Razorpay order opened for something kept (an e-book, behind `EBOOK_PAY_ONLINE`); the capture writes the `entitlements` row instead of crediting the wallet — or credits the wallet when the person already owns it |
-| `payments.shop_order_id` | Nullable (migration `wallet/0003`). Set on the `created` row of a Razorpay order opened for a shop order; the capture settles that order instead of crediting the wallet — or credits the wallet when the order had already lapsed |
+| `orders.payment_method = 'online'` | PhonePe checkout per order (migration `shop/0006`, a choice only). `pending` with `expires_at` = 15 minutes; `paid` on capture; `cancelled` past it (the minute's sweep, `lapse_unpaid`) |
+| `payments.entitlement_sku`, `payments.entitlement_ref` | Nullable (migration `wallet/0004`, 15 Oct 2026). Set on the `created` row of a PhonePe order opened for something kept (an e-book, behind `EBOOK_PAY_ONLINE`); the capture writes the `entitlements` row instead of crediting the wallet — or credits the wallet when the person already owns it |
+| `payments.shop_order_id` | Nullable (migration `wallet/0003`). Set on the `created` row of a PhonePe order opened for a shop order; the capture settles that order instead of crediting the wallet — or credits the wallet when the order had already lapsed |
 
 A COD order's `status`: `pending` at checkout → `paid` when its shipment is
 delivered, or → `cancelled` (stock put back) when returned or cancelled first
@@ -854,8 +854,17 @@ create table payments (
 ```
 
 **`provider_payment_id unique` is the idempotency mechanism**, not an application
-check. Razorpay retries webhooks; the second delivery hits the unique index, the
-insert fails, and no second credit is written. An application-level "have I seen
+check. PhonePe retries webhooks; the second delivery hits the unique index, the
+insert fails, and no second credit is written.
+
+**PhonePe since 17 Oct 2026** (Razorpay before; no migration). New rows carry
+`provider = 'phonepe'` (the column default still reads `razorpay` and every
+write names the provider). `provider_order_id` is OUR merchant order id
+(`N` + 32 hex), and the terminal row's `provider_payment_id` is that same id:
+a PhonePe order is paid at most once, so the status check on close and the
+webhook write the same key and the unique index lets one through. PhonePe's
+own order id is kept in `raw`. `provider_event_id` stays empty (PhonePe sends
+no event id). Razorpay's rows stay as history. An application-level "have I seen
 this?" check has a race between the read and the write. The index does not.
 
 `ledger` cannot serve this role — the event and the credit have different

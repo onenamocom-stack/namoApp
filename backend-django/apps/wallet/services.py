@@ -101,7 +101,7 @@ from django.conf import settings
 from django.db import IntegrityError, connection, transaction
 
 from .models import Payment, PaymentStatus, RefType
-from .razorpay import RazorpayClient, RazorpayError, signature_hex, signatures_match
+from .phonepe import PhonePeClient, PhonePeError, webhook_authorized
 
 logger = logging.getLogger("apps.wallet")
 
@@ -133,12 +133,15 @@ WEBHOOK_BAD_PAYLOAD = "Bad payload."
 WEBHOOK_IGNORED = "Ignored."
 WEBHOOK_CAPTURE_FAILED = "Could not record that payment."
 
-# The edge function's event map — payment.captured and payment.failed are
-# the only outcomes that move money or record a terminal row.
-HANDLED_EVENTS = {
-    "payment.captured": PaymentStatus.CAPTURED,
-    "payment.failed": PaymentStatus.FAILED,
-}
+# PhonePe's order events (17 Oct 2026). The status is read from
+# `payload.state`, never from the event's name (PhonePe's own rule).
+HANDLED_EVENTS = {"checkout.order.completed", "checkout.order.failed"}
+PHONEPE_STATES = {"COMPLETED": PaymentStatus.CAPTURED, "FAILED": PaymentStatus.FAILED}
+
+PROVIDER = "phonepe"
+REFUSAL_NOT_PAID = "That payment did not go through."
+REFUSAL_PENDING = "Your payment is still being processed. It lands on its own once your bank confirms."
+REFUSAL_UNCONFIRMED = "That payment could not be confirmed."
 
 
 class Refusal(Exception):
@@ -325,19 +328,72 @@ def list_ledger(profile_id, after=None, limit=50):
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
-# ── Razorpay order creation (razorpay-order/index.ts) ────────────────────────
+# ── PhonePe checkout (17 Oct 2026; Razorpay before) ─────────────────────────
 
 
-def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
-    """Opens a Razorpay order so the browser can start checkout. This
-    function does NOT credit anything: it writes the 'created' row, the
-    only record tying a Razorpay order id to one of our profiles.
+def _client(client=None):
+    """The PhonePe client from settings, or Refusal(500) naming (in the
+    log only) which setting is missing."""
+    if client is not None:
+        return client
+    values = {
+        "PHONEPE_CLIENT_ID": getattr(settings, "PHONEPE_CLIENT_ID", ""),
+        "PHONEPE_CLIENT_SECRET": getattr(settings, "PHONEPE_CLIENT_SECRET", ""),
+        "PHONEPE_CLIENT_VERSION": getattr(settings, "PHONEPE_CLIENT_VERSION", ""),
+    }
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        logger.error("[pay] not configured: %s", " and ".join(missing))
+        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
+    return PhonePeClient(
+        values["PHONEPE_CLIENT_ID"], values["PHONEPE_CLIENT_SECRET"], values["PHONEPE_CLIENT_VERSION"],
+        env=getattr(settings, "PHONEPE_ENV", "production") or "production",
+    )
 
-    Idempotency: the module-1 Idempotency-Key middleware replays a
-    retried POST without re-executing it, and on Postgres a racing
-    double-submit of the same key meets the (key, user) unique index —
-    two checkouts cannot open from one tap (the client's toppingUpRef
-    guard is the first line, as today).
+
+def _new_order_id():
+    """Our merchant order id: N + 32 hex, inside PhonePe's 63 characters."""
+    return f"N{uuid.uuid4().hex}"
+
+
+def _open_checkout(profile_id, amount_paise, client=None, **purpose):
+    """Opens one PhonePe checkout and writes its 'created' row, the only
+    record tying the order to one of our profiles (and, through `purpose`,
+    to a shop order or something kept). Our own id is the merchant order
+    id, so the status check and the webhook both find the row by it.
+    Nothing is credited here. Returns {order_id, amount_paise, url}.
+
+    A PhonePe order is paid at most once, so its terminal row's
+    `provider_payment_id` is the merchant order id too: the status check
+    and the webhook write the same key, and the unique index lets only
+    one of them through."""
+    client = _client(client)
+    merchant_order_id = _new_order_id()
+    try:
+        opened = client.create_payment(
+            merchant_order_id, amount_paise,
+            redirect_url=getattr(settings, "PHONEPE_REDIRECT_URL", "") or "https://1namo.com/wallet",
+            meta={"udf1": str(profile_id)},
+        )
+    except PhonePeError as exc:
+        logger.error("[pay] phonepe refused: %s %s", exc.status, exc.code)
+        raise Refusal(502, REFUSAL_PROVIDER) from None
+    try:
+        Payment.objects.create(
+            profile_id=profile_id, provider=PROVIDER, provider_order_id=merchant_order_id,
+            amount_paise=amount_paise, status=PaymentStatus.CREATED, **purpose,
+        )
+    except Exception:
+        # Fail before checkout opens rather than after: a payment whose
+        # order row is missing cannot be attributed.
+        logger.exception("[pay] could not record order")
+        raise Refusal(500, REFUSAL_RECORD) from None
+    return {"order_id": merchant_order_id, "amount_paise": amount_paise, "url": opened["url"]}
+
+
+def create_topup_order(profile_id, amount_paise, client=None):
+    """Opens a checkout to add money. Credits nothing: the capture does,
+    once PhonePe says the order is COMPLETED.
 
     The band below is the PRD's, enforced here because the browser's copy
     of it is a convenience. Amount in paise, both directions (rule 1).
@@ -349,76 +405,15 @@ def create_topup_order(profile_id, amount_paise, client=None, key_id=None):
         or amount_paise > MAX_PAISE
     ):
         raise Refusal(400, REFUSAL_BAND)
-    key_id = key_id or getattr(settings, "RAZORPAY_KEY_ID", "")
-    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-    if not key_id or not key_secret:
-        # Named individually — "one of these two is missing" sent someone
-        # to the wrong dashboard page once already.
-        logger.error(
-            "[order] not configured: %s",
-            " and ".join(
-                name for name, value in (("RAZORPAY_KEY_ID", key_id),
-                                         ("RAZORPAY_KEY_SECRET", key_secret))
-                if not value
-            ),
-        )
-        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
-    client = client or RazorpayClient(
-        key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
-    )
-    try:
-        order = client.create_order(
-            amount_paise, notes={"profile_id": str(profile_id)}
-        )
-    except RazorpayError as exc:
-        logger.error("[order] razorpay refused: %s", exc.status)
-        raise Refusal(502, REFUSAL_PROVIDER) from None
-    try:
-        Payment.objects.create(
-            profile_id=profile_id,
-            provider_order_id=order["id"],
-            amount_paise=amount_paise,
-            status=PaymentStatus.CREATED,
-        )
-    except Exception:
-        # Fail before checkout opens rather than after: a payment whose
-        # order row is missing cannot be attributed, and the webhook will
-        # refuse to credit it — better the person never reaches the card
-        # form than pays into nothing.
-        logger.exception("[order] could not record order")
-        raise Refusal(500, REFUSAL_RECORD) from None
-    return {
-        "ok": True,
-        "order_id": order["id"],
-        "amount_paise": amount_paise,
-        "key_id": key_id,
-    }
+    return {"ok": True, **_open_checkout(profile_id, amount_paise, client)}
 
 
 def open_shop_payment(profile_id, amount_paise, shop_order_id, client=None):
-    """A Razorpay order for one shop order (6 Oct 2026). The 'created' row
+    """A checkout for one shop order (6 Oct 2026). The 'created' row
     carries `shop_order_id`, so the capture settles that order instead of
     crediting the wallet. No top-up band: the amount is the order's own.
-    Returns {order_id, amount_paise, key_id} or raises Refusal."""
-    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
-    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-    if not key_id or not key_secret:
-        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
-    client = client or RazorpayClient(
-        key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
-    )
-    try:
-        order = client.create_order(
-            amount_paise, notes={"profile_id": str(profile_id), "shop_order_id": str(shop_order_id)}
-        )
-    except RazorpayError as exc:
-        logger.error("[shop-pay] razorpay refused: %s", exc.status)
-        raise Refusal(502, REFUSAL_PROVIDER) from None
-    Payment.objects.create(
-        profile_id=profile_id, provider_order_id=order["id"], amount_paise=amount_paise,
-        status=PaymentStatus.CREATED, shop_order_id=shop_order_id,
-    )
-    return {"order_id": order["id"], "amount_paise": amount_paise, "key_id": key_id}
+    Returns {order_id, amount_paise, url} or raises Refusal."""
+    return _open_checkout(profile_id, amount_paise, client, shop_order_id=shop_order_id)
 
 
 def ebook_pay_online():
@@ -426,7 +421,7 @@ def ebook_pay_online():
 
 
 def pay_mode(sku):
-    """How `sku` is paid for: 'online' (Razorpay) or 'wallet'."""
+    """How `sku` is paid for: 'online' (PhonePe) or 'wallet'."""
     from .models import Sku
 
     if sku == Sku.LISTING:
@@ -435,7 +430,7 @@ def pay_mode(sku):
 
 
 def open_entitlement_payment(profile_id, sku, ref="", client=None):
-    """A Razorpay order for something kept (15 Oct 2026: an e-book, when
+    """A PhonePe checkout for something kept (15 Oct 2026: an e-book, when
     EBOOK_PAY_ONLINE is on). The price is the server's; the 'created' row
     names what it buys, so the capture grants it rather than crediting the
     wallet. Already owned: {already: True} and no order. Returns
@@ -448,25 +443,8 @@ def open_entitlement_payment(profile_id, sku, ref="", client=None):
         raise Refusal(400, REFUSAL_UNKNOWN_SKU)
     if owns(profile_id, sku, ref):
         return {"already": True}
-    key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
-    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-    if not key_id or not key_secret:
-        raise Refusal(500, REFUSAL_NOT_CONFIGURED)
-    client = client or RazorpayClient(
-        key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
-    )
-    try:
-        order = client.create_order(
-            price, notes={"profile_id": str(profile_id), "sku": sku, "ref": ref}
-        )
-    except RazorpayError as exc:
-        logger.error("[sku-pay] razorpay refused: %s", exc.status)
-        raise Refusal(502, REFUSAL_PROVIDER) from None
-    Payment.objects.create(
-        profile_id=profile_id, provider_order_id=order["id"], amount_paise=price,
-        status=PaymentStatus.CREATED, entitlement_sku=sku, entitlement_ref=ref,
-    )
-    return {"already": False, "order_id": order["id"], "amount_paise": price, "key_id": key_id}
+    opened = _open_checkout(profile_id, price, client, entitlement_sku=sku, entitlement_ref=ref)
+    return {"already": False, **opened}
 
 
 def _grant_paid(profile_id, sku, ref, amount_paise):
@@ -495,27 +473,47 @@ def _grant_paid(profile_id, sku, ref, amount_paise):
         credit(profile_id, amount_paise, f"{_sku_label(sku)} already yours", ref_type=RefType.PAYMENT)
 
 
-def confirm_checkout(profile_id, provider_order_id, provider_payment_id, signature):
-    """The checkout's own proof of payment, so the order is settled the
-    moment Razorpay's sheet closes rather than when the webhook lands.
-    Razorpay signs `order_id|payment_id` with the key secret; a match is a
-    captured payment for that order. The webhook, arriving later with the
-    same payment id, finds it recorded and changes nothing."""
-    secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-    expected = signature_hex(secret, f"{provider_order_id}|{provider_payment_id}".encode("utf-8"))
-    if not secret or not signatures_match(signature or "", expected):
-        return {"ok": False, "reason": "That payment could not be confirmed."}
+def confirm_checkout(profile_id, provider_order_id, client=None):
+    """The checkout closed: ask PhonePe what happened to the order and
+    settle it now, rather than when the webhook lands. Only the caller's
+    own 'created' row can be confirmed. COMPLETED is captured through
+    payment_capture (the webhook, arriving later with the same PhonePe
+    order id, finds it recorded and changes nothing); FAILED is recorded;
+    PENDING is left for the webhook."""
     created = Payment.objects.filter(
         provider_order_id=str(provider_order_id), status=PaymentStatus.CREATED, profile_id=profile_id,
     ).first()
     if created is None:
-        return {"ok": False, "reason": "That payment could not be confirmed."}
-    result = payment_capture(
-        event_id=None, order_id=provider_order_id, payment_id=provider_payment_id,
-        amount_paise=created.amount_paise, status=PaymentStatus.CAPTURED,
-        raw={"source": "checkout"},
-    )
+        return {"ok": False, "reason": REFUSAL_UNCONFIRMED}
+    try:
+        state = _client(client).order_status(provider_order_id)
+    except (PhonePeError, Refusal) as exc:
+        logger.error("[confirm] status lookup failed: %s", getattr(exc, "status", exc))
+        return {"ok": False, "pending": True, "reason": REFUSAL_PENDING}
+    status = PHONEPE_STATES.get(state.get("state"))
+    if status is None:
+        return {"ok": False, "pending": True, "reason": REFUSAL_PENDING}
+    try:
+        result = payment_capture(
+            event_id=None, order_id=provider_order_id,
+            payment_id=provider_order_id,
+            amount_paise=_paise(state.get("amount"), created.amount_paise) if status == PaymentStatus.CAPTURED
+            else created.amount_paise,
+            status=status, raw={"source": "status", **state},
+        )
+    except CaptureFailed as exc:
+        logger.error("[confirm] capture refused: %s", exc.detail)
+        return {"ok": False, "reason": REFUSAL_UNCONFIRMED}
+    if status == PaymentStatus.FAILED:
+        return {"ok": False, "reason": REFUSAL_NOT_PAID}
     return {"ok": True, **{k: v for k, v in result.items() if k != "ok"}}
+
+
+def _paise(value, fallback):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
 
 
 def topup_status(profile_id, order_id):
@@ -551,8 +549,8 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
     retried delivery returns {ok: True, duplicate: True} because the
     unique index — never a check — caught it and rolled the block back.
 
-    The amount credited is Razorpay's, from a payload whose signature was
-    verified before this ran; the wallet is found through the 'created'
+    The amount credited is the provider's, from a payload that was
+    authenticated (or a status PhonePe answered) before this ran; the wallet is found through the 'created'
     row matching the order id, never the payload's notes. A capture whose
     amount differs from the order it attributes through is refused
     (see the module header's amount-must-match-order)."""
@@ -585,6 +583,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
         with transaction.atomic():
             Payment.objects.create(
                 profile_id=profile_id,
+                provider=PROVIDER,
                 provider_order_id=str(order_id),
                 provider_payment_id=str(payment_id),
                 provider_event_id=(str(event_id) if event_id is not None else None),
@@ -634,57 +633,52 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
     }
 
 
-def handle_webhook(raw_body: bytes, signature: str, event_id):
-    """The edge function's Deno.serve handler as a service. VERIFY, THEN
-    PARSE: nothing in the body is worth reading until the HMAC of the
-    raw bytes matches the header — the signature IS the authentication
-    (verify_jwt = false on the function, because Razorpay cannot present
-    a Supabase JWT).
-
-    Returns {"status", "body", "json"} — the view answers it verbatim.
+def handle_webhook(raw_body: bytes, authorization: str):
+    """PhonePe's callback. VERIFY, THEN PARSE: the Authorization header
+    must be SHA-256 of the username and password set on PhonePe's
+    dashboard; nothing in the body is read until it matches. The status
+    comes from `payload.state`. Returns {"status", "body", "json"}.
     """
-    secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", "")
-    if not secret:
-        logger.error("[webhook] RAZORPAY_WEBHOOK_SECRET is not set")
+    username = getattr(settings, "PHONEPE_WEBHOOK_USER", "")
+    password = getattr(settings, "PHONEPE_WEBHOOK_PASSWORD", "")
+    if not username or not password:
+        logger.error("[webhook] PHONEPE_WEBHOOK_USER or PHONEPE_WEBHOOK_PASSWORD is not set")
         return {"status": 500, "body": WEBHOOK_NOT_CONFIGURED, "json": None}
+    if not webhook_authorized(authorization or "", username, password):
+        logger.error("[webhook] authorization did not match; body ignored")
+        return {"status": 401, "body": WEBHOOK_BAD_SIGNATURE, "json": None}
     if isinstance(raw_body, str):
         raw_body = raw_body.encode("utf-8")
-    if not signatures_match(signature or "", signature_hex(secret, raw_body)):
-        logger.error("[webhook] signature did not match; body ignored")
-        return {"status": 401, "body": WEBHOOK_BAD_SIGNATURE, "json": None}
     try:
         event = json.loads(raw_body.decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
         return {"status": 400, "body": WEBHOOK_BAD_PAYLOAD, "json": None}
-    status = HANDLED_EVENTS.get(event.get("event"))
-    # 200, deliberately: an event we do not handle is not a failure, and
-    # a non-2xx would have Razorpay retrying it until it gave up.
-    if status is None:
+    payload = event.get("payload") or {}
+    status = PHONEPE_STATES.get(payload.get("state"))
+    # 200, deliberately: an event we do not handle (refunds, a pending
+    # state) is not a failure, and a non-2xx would have PhonePe retrying.
+    if event.get("event") not in HANDLED_EVENTS or status is None:
         return {"status": 200, "body": WEBHOOK_IGNORED, "json": None}
-    payment = (event.get("payload") or {}).get("payment", {}).get("entity") or {}
-    if not payment.get("id") or not payment.get("order_id"):
-        logger.error("[webhook] %s carried no payment entity", event.get("event"))
+    merchant_order_id = payload.get("merchantOrderId")
+    if not merchant_order_id:
+        logger.error("[webhook] %s carried no order ids", event.get("event"))
         return {"status": 400, "body": WEBHOOK_BAD_PAYLOAD, "json": None}
+    amount = _paise(payload.get("amount"), None)
+    if status == PaymentStatus.FAILED and not amount:
+        amount = Payment.objects.filter(
+            provider_order_id=merchant_order_id, status=PaymentStatus.CREATED
+        ).values_list("amount_paise", flat=True).first()
     try:
         result = payment_capture(
-            event_id=event_id,
-            order_id=payment["order_id"],
-            payment_id=payment["id"],
-            # Razorpay denominates in paise, which is what this stores.
-            amount_paise=payment.get("amount"),
-            status=status,
-            raw=event,
+            event_id=None, order_id=merchant_order_id, payment_id=merchant_order_id,
+            amount_paise=amount, status=status, raw=event,
         )
     except CaptureFailed as exc:
-        # 500 so Razorpay retries. The failure modes are an unattributable
-        # order, an amount that does not match it, or a database that is
-        # down — all worth another delivery.
+        # 500 so PhonePe retries: an unattributable order, an amount that
+        # does not match it, or a database that is down.
         logger.error("[webhook] payment_capture failed: %s", exc.detail)
         return {"status": 500, "body": WEBHOOK_CAPTURE_FAILED, "json": None}
-    logger.info(
-        "[webhook] %s %s duplicate=%s",
-        status, payment["id"], result.get("duplicate"),
-    )
+    logger.info("[webhook] %s %s duplicate=%s", status, merchant_order_id, result.get("duplicate"))
     return {"status": 200, "body": None, "json": result}
 
 
@@ -713,60 +707,45 @@ def find_unresolved_orders():
 def reconcile(client=None):
     """READ ONLY, deliberately: it credits nothing, because a script that
     mints undoes the reason the webhook is the only credit path. Asks
-    Razorpay what actually happened to every unresolved order and returns
+    PhonePe what actually happened to every unresolved order and returns
     the report the management command prints:
 
       owed        — captured/authorized payments with no credit here; the
                     people who paid and received nothing (exit non-zero)
-      failed      — attempts exist, all failed at Razorpay
+      failed      — PhonePe says the order FAILED
       abandoned   — no payment attempts at all
-      unknown     — Razorpay could not say (check by hand)
+      unknown     — still PENDING, or PhonePe could not say (check by hand)
 
     `client` is injectable; without one it is built from settings and a
-    missing key id/secret raises Refusal(500, REFUSAL_NOT_CONFIGURED).
+    missing client id/secret/version raises Refusal(500, REFUSAL_NOT_CONFIGURED).
     """
-    if client is None:
-        key_id = getattr(settings, "RAZORPAY_KEY_ID", "")
-        key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-        if not key_id or not key_secret:
-            raise Refusal(500, REFUSAL_NOT_CONFIGURED)
-        client = RazorpayClient(
-            key_id, key_secret, base_url=getattr(settings, "RAZORPAY_BASE_URL", "")
-        )
+    client = _client(client)
     unresolved = find_unresolved_orders()
     report = {"orders": 0, "owed": [], "failed": [], "abandoned": [], "unknown": []}
     for order_id in unresolved:
         report["orders"] += 1
         try:
-            payload = client.order_payments(order_id)
-        except RazorpayError:
-            report["unknown"].append(order_id)
+            state = client.order_status(order_id)
+        except PhonePeError as exc:
+            # An order PhonePe never heard of was never paid.
+            if exc.code in ("INVALID_MERCHANT_ORDER_ID", "ORDER_NOT_FOUND"):
+                report["abandoned"].append(order_id)
+            else:
+                report["unknown"].append(order_id)
             continue
-        items = payload.get("items") or []
-        captured = [p for p in items if p.get("status") in ("captured", "authorized")]
-        if captured:
+        if state.get("state") == "COMPLETED":
             # The case this sweep exists for: their money left, ours
             # never arrived.
-            report["owed"].append(
-                {
-                    "order_id": order_id,
-                    "payments": [
-                        {"id": p.get("id"), "status": p.get("status"),
-                         "amount_paise": p.get("amount")}
-                        for p in captured
-                    ],
-                }
-            )
-        elif items:
-            report["failed"].append(
-                {
-                    "order_id": order_id,
-                    "attempts": len(items),
-                    "reason": items[-1].get("error_description") or "failed",
-                }
-            )
+            report["owed"].append({
+                "order_id": order_id,
+                "payments": [{"id": state.get("orderId"), "status": "COMPLETED",
+                              "amount_paise": _paise(state.get("amount"), None)}],
+            })
+        elif state.get("state") == "FAILED":
+            report["failed"].append({"order_id": order_id, "attempts": 1,
+                                     "reason": state.get("errorCode") or "failed"})
         else:
-            report["abandoned"].append(order_id)
+            report["unknown"].append(order_id)
     return report
 
 

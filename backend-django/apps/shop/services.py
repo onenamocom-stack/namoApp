@@ -351,7 +351,7 @@ def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet", cl
         return {"ok": False, "reason": refusal.reason}
 
     # Paying online (6 Oct 2026): the order and the held stock are
-    # committed; now Razorpay opens an order for the total. Outside the
+    # committed; now PhonePe opens a checkout for the total. Outside the
     # transaction, so a slow payment provider holds no row locks. If it
     # cannot open one, the order lapses at once and nothing is held.
     if result.get("payment_method") == Order.PaymentMethod.ONLINE:
@@ -360,7 +360,7 @@ def buy(profile_id, lines, coupon_code=None, delivery=None, payment="wallet", cl
             result["paid"] = True
             return result
         try:
-            result["razorpay"] = wallet_services.open_shop_payment(
+            result["checkout"] = wallet_services.open_shop_payment(
                 profile_id, result["total_paise"], result["order_id"], client=client
             )
         except wallet_services.Refusal as refusal:

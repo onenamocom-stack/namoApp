@@ -58,7 +58,7 @@ export default function CartSheet() {
   // Clear asks first (6 Oct 2026): one tap emptied a cart somebody built.
   const [confirmClear, setConfirmClear] = useState(false)
   const [nonce, setNonce] = useState(0)
-  /* How it is paid (6 Oct 2026): online — Razorpay's checkout for this
+  /* How it is paid (6 Oct 2026): online — PhonePe's checkout for this
      order, UPI, card or netbanking; the wallet is for chat, not the shop —
      or cash on delivery, 2% more, where a courier at that pincode takes
      cash. */
@@ -306,7 +306,7 @@ export default function CartSheet() {
           <p className="mt-4 text-center text-meta t-faint">
             {cod
               ? 'Pay the courier in cash when the parcel arrives. Nothing is taken from your wallet. Stock is claimed when you place the order.'
-              : 'Pay securely through Razorpay, delivery included. Your items are held for 15 minutes while you pay; close the payment and nothing is charged.'}
+              : 'Pay securely through PhonePe, delivery included. Your items are held for 15 minutes while you pay; close the payment and nothing is charged.'}
           </p>
         </>
       )}

@@ -16,7 +16,7 @@ import { rupees, useStore } from '../store.jsx'
  * flat.
  *
  * Since phase 2 the balance and the history are real, read back from the
- * server. Since phase 3 so is adding to it: the sheet below opens a Razorpay
+ * server. Since phase 3 so is adding to it: the sheet below opens a PhonePe
  * order and hands off to their checkout, and the money appears when the
  * webhook lands — not when this screen says so. Nothing here credits anything.
  *

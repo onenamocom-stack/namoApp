@@ -66,7 +66,7 @@ class TestTheSharersShare:
                                                                      online):
         code = referrals.code_for(CREATOR, CodeKind.CONSULTANT).code
         assert _arrive(code)["recorded"] is True
-        order = _pay(api_client, token, str(book.id)).json()["razorpay"]["order_id"]
+        order = _pay(api_client, token, str(book.id)).json()["checkout"]["order_id"]
         _confirm(api_client, token, order)
         [paid] = CreatorEarning.objects.filter(profile_id=CREATOR)
         assert paid.amount_paise == 9900 * 6 // 100
@@ -75,7 +75,7 @@ class TestTheSharersShare:
         assert referrals.live_visit(TEST_USER) is None
 
     def test_no_link_pays_nobody(self, api_client, token, creator, book, online):
-        order = _pay(api_client, token, str(book.id)).json()["razorpay"]["order_id"]
+        order = _pay(api_client, token, str(book.id)).json()["checkout"]["order_id"]
         _confirm(api_client, token, order)
         assert not CreatorEarning.objects.exists()
         assert Entitlement.objects.get(profile_id=TEST_USER).referrer_id is None

@@ -3,7 +3,7 @@
  *
  * A Pro or a Creator lists a download, a course, an event or a product; an
  * admin approves it; it shows on the Market and on the seller's profile.
- * A paid one is bought at Razorpay through the wallet's `payOnline('listing',
+ * A paid one is bought at PhonePe through the wallet's `payOnline('listing',
  * id)`; a free one is taken here. The price is never sent — the server
  * reads it off the listing.
  */
@@ -79,7 +79,7 @@ export async function previewLesson(id, index) {
 }
 
 /**
- * Get it: free is taken; paid opens Razorpay. Resolves {ok, closed?,
+ * Get it: free is taken; paid opens PhonePe. Resolves {ok, closed?,
  * unconfirmed?, reason?} as `payOnline` does.
  */
 export async function get(row, { prefill } = {}) {

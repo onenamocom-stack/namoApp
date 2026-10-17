@@ -5,7 +5,7 @@ import { topUpAmounts } from '../data/mock.js'
 import { useStore } from '../store.jsx'
 
 /**
- * Add money: the amounts, your own amount, and Razorpay (lifted out of the
+ * Add money: the amounts, your own amount, and PhonePe (lifted out of the
  * wallet page on 14 Oct 2026 so the Consult page's wallet card opens it in
  * place — Rahul: after a recharge you stay where you were). `onDone` runs
  * after a payment that went through.

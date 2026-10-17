@@ -123,7 +123,7 @@ def spend(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def topup_order(request):
-    """Opens a Razorpay order for checkout. Refusal bodies are {ok:false,
+    """Opens a PhonePe checkout: {ok, order_id, amount_paise, url}. Refusal bodies are {ok:false,
     reason} byte-identical to the edge function's, so the top-up sheet
     toasts the same sentence it does today."""
     serializer = TopupInput(data=request.data)
@@ -155,15 +155,13 @@ def topup_state(request, order_id):
 
 @csrf_exempt
 @require_POST
-def razorpay_webhook(request):
-    """The razorpay-webhook Edge Function's handler. AllowAny on purpose:
-    the signature over the RAW body is the credential (rule 6). The raw
-    bytes go to the service untouched by any parser; the answers are
-    plain text with the function's exact statuses."""
+def phonepe_webhook(request):
+    """PhonePe's callback (17 Oct 2026). AllowAny on purpose: the
+    Authorization header is the credential (rule 6). The raw bytes go to
+    the service untouched by any parser."""
     outcome = services.handle_webhook(
         raw_body=request.body,
-        signature=request.headers.get("x-razorpay-signature", ""),
-        event_id=request.headers.get("x-razorpay-event-id"),
+        authorization=request.headers.get("Authorization", ""),
     )
     if outcome["json"] is not None:
         return JsonResponse(outcome["json"], status=outcome["status"])
@@ -204,10 +202,10 @@ def buy(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def pay(request):
-    """A Razorpay order for something kept (15 Oct 2026: an e-book, when
-    EBOOK_PAY_ONLINE is on). {sku, ref} in, never a price. Out:
-    {already: True}, or {already: False, razorpay: {order_id, amount_paise,
-    key_id}} for the checkout sheet."""
+    """A PhonePe checkout for something kept (an e-book when
+    EBOOK_PAY_ONLINE is on, a Market listing). {sku, ref} in, never a
+    price. Out: {already: True}, or {already: False, checkout: {order_id,
+    amount_paise, url}} for the checkout page."""
     form = BuyInput(data=request.data)
     form.is_valid(raise_exception=True)
     try:
@@ -217,24 +215,21 @@ def pay(request):
         return Response({"ok": False, "reason": refusal.reason}, status=refusal.status)
     if opened["already"]:
         return Response({"ok": True, "already": True})
-    return Response({"ok": True, "already": False, "razorpay": {
+    return Response({"ok": True, "already": False, "checkout": {
         "order_id": opened["order_id"], "amount_paise": opened["amount_paise"],
-        "key_id": opened["key_id"]}})
+        "url": opened["url"]}})
 
 
 class PayConfirmInput(serializers.Serializer):
-    razorpay_order_id = serializers.CharField(max_length=64)
-    razorpay_payment_id = serializers.CharField(max_length=64)
-    razorpay_signature = serializers.CharField(max_length=256)
+    order_id = serializers.CharField(max_length=64)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def pay_confirm(request):
-    """The checkout's proof of payment for `pay`: the thing is granted now
-    rather than when the webhook lands."""
+    """The checkout closed, for any checkout (top-up, e-book, listing):
+    the server asks PhonePe what happened and settles it now rather than
+    when the webhook lands."""
     form = PayConfirmInput(data=request.data)
     form.is_valid(raise_exception=True)
-    d = form.validated_data
-    return Response(services.confirm_checkout(
-        request.user.pk, d["razorpay_order_id"], d["razorpay_payment_id"], d["razorpay_signature"]))
+    return Response(services.confirm_checkout(request.user.pk, form.validated_data["order_id"]))

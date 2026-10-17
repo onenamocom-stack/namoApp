@@ -44,7 +44,7 @@ export default function SessionRecharge({
   const amount = amounts[Math.min(pick, amounts.length - 1)]
   const canUseWallet = rate && (balance ?? 0) >= rate
 
-  /* Pay first, then hold. The credit lands by Razorpay's webhook on another
+  /* Pay first, then hold. The credit lands by PhonePe's webhook on another
      connection, so the hold is asked for a few times while it arrives. */
   const recharge = async (paise) => {
     if (busy) return

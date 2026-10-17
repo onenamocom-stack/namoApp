@@ -21,7 +21,7 @@ All three passed lint, build and the unit suite. None would have survived
 this script. `npm run build` proves almost nothing (CLAUDE.md trap 1) and
 neither does a green pytest run against SQLite.
 
-WHAT IT WILL NOT DO: it never sends money anywhere. The Razorpay order it
+WHAT IT WILL NOT DO: it never sends money anywhere. The PhonePe checkout it
 creates is a test-mode order that nobody pays, the AI session it starts is
 ended immediately, and the ledger assertion at the end is what catches it
 if either of those was wrong.
@@ -135,15 +135,13 @@ def main():
     status, order = call(api, "/wallet/topup/order/", token, "POST",
                          {"amount_paise": 10000})
     made = status == 200 and (order or {}).get("ok")
-    check("a test-mode order is created", made,
+    check("a checkout is opened (nothing is paid)", made,
           (order or {}).get("order_id") or (order or {}).get("reason", ""))
     if made:
-        check("the order carries a test key, not a live one",
-              str(order.get("key_id", "")).startswith("rzp_test_"),
-              order.get("key_id", ""))
+        check("the checkout has a PhonePe page", bool(order.get("url")), "url present")
 
-    status, hook = call(api, "/wallet/webhook/razorpay/", None, "POST", {"event": "x"})
-    # 500 = no secret set; 401 = set and the signature was refused. Either
+    status, hook = call(api, "/wallet/webhook/phonepe/", None, "POST", {"event": "x"})
+    # 500 = no webhook user set; 401 = set and the header was refused. Either
     # is safe. 200 would mean an unsigned body was accepted.
     check("the webhook refuses an unsigned body", status in (401, 500), str(status))
 

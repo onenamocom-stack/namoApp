@@ -54,25 +54,23 @@ def product(request, key):
     return Response(services.product_detail(found))
 
 
-class ConfirmInput(serializers.Serializer):
-    razorpay_order_id = serializers.CharField(max_length=64)
-    razorpay_payment_id = serializers.CharField(max_length=64)
-    razorpay_signature = serializers.CharField(max_length=256)
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def confirm_payment(request, order_id):
-    """Razorpay's checkout succeeded: its signed answer settles the order
-    now (the webhook confirms it again later, harmlessly)."""
+    """The PhonePe checkout closed: the server asks PhonePe about this
+    order's payment and settles it now (the webhook confirms it again
+    later, harmlessly)."""
     from apps.wallet import services as wallet_services
+    from apps.wallet.models import Payment, PaymentStatus
 
-    form = ConfirmInput(data=request.data)
-    form.is_valid(raise_exception=True)
-    d = form.validated_data
-    result = wallet_services.confirm_checkout(
-        request.user.id, d["razorpay_order_id"], d["razorpay_payment_id"], d["razorpay_signature"],
+    created = (
+        Payment.objects.filter(shop_order_id=order_id, profile_id=request.user.id,
+                               status=PaymentStatus.CREATED)
+        .order_by("-created_at").values_list("provider_order_id", flat=True).first()
     )
+    if created is None:
+        return Response({"ok": False, "reason": wallet_services.REFUSAL_UNCONFIRMED})
+    result = wallet_services.confirm_checkout(request.user.id, created)
     if not result.get("ok"):
         return Response(result)
     order = Order.objects.filter(pk=order_id, profile_id=request.user.id).first()
@@ -82,7 +80,7 @@ def confirm_payment(request, order_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def abandon_payment(request, order_id):
-    """The buyer closed Razorpay without paying: the order lapses now and
+    """The buyer closed the checkout without paying: the order lapses now and
     the stock goes back, rather than in fifteen minutes."""
     return Response({"ok": True, "lapsed": services.lapse(order_id, profile_id=request.user.id)})
 

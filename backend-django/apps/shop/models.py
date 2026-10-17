@@ -168,7 +168,7 @@ class Order(models.Model):
         CANCELLED = "cancelled"
 
     class PaymentMethod(models.TextChoices):
-        # Razorpay checkout for this order (6 Oct 2026; the shop's default —
+        # PhonePe checkout for this order (6 Oct 2026; the shop's default —
         # the wallet is for chat). PENDING with `expires_at` until the
         # payment is captured, then PAID; unpaid past it, CANCELLED.
         ONLINE = "online"

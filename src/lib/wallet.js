@@ -57,10 +57,10 @@
  *
  * ── WHAT THE UI SEES ────────────────────────────────────────────────────────
  * Byte-parity is the contract (backend/INSTRUCTIONS.md §2): the refusal
- * sentences below are the server's own, and the top-up flow is unchanged —
- * order -> Razorpay checkout.js in the browser -> webhook credits -> the
- * balance poll (8 x 1.5s) -> "Payment is still settling. Pull down in a
- * moment." The browser still never sees the key secret; key_id is public.
+ * sentences below are the server's own. The top-up flow since 17 Oct 2026:
+ * checkout opened on the server -> PhonePe's page in an iframe -> on close,
+ * /pay/confirm/ asks PhonePe and credits (the webhook does the same, once)
+ * -> the balance refreshes. The browser never sees a PhonePe credential.
  */
 
 import { supabase } from './supabase.js'
@@ -133,15 +133,9 @@ export function createWalletApi({
   setBalance,
   setLedger,
   balanceRef,
-  /* store.jsx has the profile and session; it passes these at wiring
-     time so the checkout prefill and the poll's userId need no second
-     source of truth.
-
-     `prefill` is a FUNCTION, not an object. The api is built once, and a
-     person who signs in afterwards would otherwise reach checkout with the
-     name and phone that were mounted before them — empty, on a first
-     visit. Called at open time it reads whatever is current. */
-  prefill = () => ({}),
+  /* store.jsx has the session; it passes this at wiring time so the
+     poll's userId needs no second source of truth. A getter, read at call
+     time, so a person who signs in afterwards is the one polled. */
   getUserId = () => null,
 }) {
   /* store.jsx's refreshWallet. Balance and ledger apply independently: a
@@ -218,67 +212,54 @@ export function createWalletApi({
       showToast(order.body?.reason ?? 'Could not start that payment. Try again.')
       return false
     }
-    const { order_id, key_id } = order.body
+    const { order_id, url } = order.body
 
-    try {
-      await loadCheckout()
-    } catch (err) {
-      console.error('[topup] checkout script:', err.message)
+    const closed = await openCheckout(url)
+    if (closed === null) {
       showToast('Could not load checkout. Check your connection.')
       return false
     }
+    if (closed !== 'CONCLUDED') return false
 
-    const paid = await new Promise((resolve) => {
-      const rzp = new window.Razorpay({
-        key: key_id,
-        order_id,
-        amount: amountPaise,
-        currency: 'INR',
-        name: 'Namo',
-        description: 'Wallet top-up',
-        prefill: prefill(),
-        theme: { color: '#1a1a1a' },
-        handler: () => resolve(true),
-        modal: { ondismiss: () => resolve(false) },
-      })
-      /* A card declined at the bank is not a dismissal and not a success —
-         without this the promise never settles and the button stays dead. */
-      rzp.on('payment.failed', () => resolve(false))
-      rzp.open()
-    })
-
-    if (!paid) return false
-
-    showToast('Payment received. Adding it to your wallet.')
-    /* The webhook is a separate request on a separate connection and it may
-       land after this line. Poll rather than guess a delay: stop the moment
-       the balance moves, give up after about twelve seconds — the money is
-       in `ledger` either way, and a reload shows it. */
-    const before = balanceRef.current
-    for (let i = 0; i < 8; i++) {
-      await new Promise((r) => setTimeout(r, 1500))
+    /* The page closed on a finished payment: the server asks PhonePe what
+       happened and credits it now (the webhook would, a moment later). */
+    const { body: done } = await call('/pay/confirm/', { method: 'POST', token, body: { order_id } })
+    if (done?.ok) {
       await refreshWallet(getUserId())
-      if (balanceRef.current !== before) return true
+      showToast('Added to your wallet.')
+      return true
     }
-    showToast('Payment is still settling. Pull down in a moment.')
-    return true
+    if (done?.pending) {
+      showToast(done.reason)
+      /* Settling at the bank: poll rather than guess, about twelve seconds;
+         the webhook credits it either way and a reload shows it. */
+      const before = balanceRef.current
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 1500))
+        await refreshWallet(getUserId())
+        if (balanceRef.current !== before) return true
+      }
+      return true
+    }
+    showToast(done?.reason ?? 'That payment did not go through.')
+    return false
   }
 
   return { refreshWallet, spend, topup }
 }
 
-/* Razorpay's checkout script, fetched the first time somebody adds money and
-   never again. Not in index.html: a third-party script on every route, for a
-   sheet most sessions never open, is a tax on every other screen. Same
-   promise-cache as store.jsx — a failed load clears it so a retry actually
-   retries. */
+/* PhonePe's checkout script (17 Oct 2026; Razorpay's before), fetched the
+   first time somebody pays and never again. Not in index.html: a
+   third-party script on every route, for a page most sessions never open,
+   is a tax on every other screen. A failed load clears the cache so a
+   retry actually retries. */
 let checkoutLoad = null
 export function loadCheckout() {
-  if (window.Razorpay) return Promise.resolve()
+  if (window.PhonePeCheckout) return Promise.resolve()
   if (!checkoutLoad) {
     checkoutLoad = new Promise((resolve, reject) => {
       const el = document.createElement('script')
-      el.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      el.src = 'https://mercury.phonepe.com/web/bundle/checkout.js'
       el.onload = resolve
       el.onerror = () => {
         checkoutLoad = null
@@ -288,6 +269,30 @@ export function loadCheckout() {
     })
   }
   return checkoutLoad
+}
+
+/**
+ * The one way every payment opens (17 Oct 2026): PhonePe's page over the
+ * app, in its iframe, for the `url` the server opened. Resolves when it
+ * closes: 'CONCLUDED' (the payment reached an end, paid or failed: ask the
+ * server which), 'USER_CANCEL', or null when the script would not load.
+ * Nothing here decides that money moved; the server's confirm does.
+ */
+export async function openCheckout(url) {
+  try {
+    await loadCheckout()
+  } catch (err) {
+    console.error('[checkout] script:', err.message)
+    return null
+  }
+  return new Promise((resolve) => {
+    try {
+      window.PhonePeCheckout.transact({ tokenUrl: url, type: 'IFRAME', callback: (r) => resolve(r) })
+    } catch (err) {
+      console.error('[checkout] open:', err?.message)
+      resolve(null)
+    }
+  })
 }
 
 /* ── things bought once and kept (30 Sep 2026) ───────────────────────────────
@@ -309,50 +314,27 @@ export async function buy(sku, ref = '') {
 }
 
 /**
- * Pay for something kept in Razorpay's checkout, not from the wallet (15
- * Oct 2026: a priced e-book, when the server says `pay: 'online'`).
- * Resolves {ok: true, already?} once the server has checked Razorpay's
- * signature and granted it; {ok: false, reason} on a refusal; {ok: false,
- * closed: true} when the sheet was dismissed; {ok: false, unconfirmed:
- * true} when Razorpay said paid but the confirmation did not get through
- * (the webhook grants it).
+ * Pay for something kept at PhonePe, not from the wallet (a priced e-book
+ * when the server says `pay: 'online'`, a Market listing). Resolves
+ * {ok: true, already?} once the server has asked PhonePe and granted it;
+ * {ok: false, reason} on a refusal or a failed payment; {ok: false,
+ * closed: true} when the page was cancelled; {ok: false, unconfirmed:
+ * true} while the bank is still settling it (the webhook grants it).
  */
-export async function payOnline(sku, ref = '', { prefill = {}, description = 'Namo' } = {}) {
+export async function payOnline(sku, ref = '') {
   const token = await getToken()
   const { body } = await call('/pay/', { method: 'POST', token, body: { sku, ref } })
   if (!body?.ok) return { ok: false, reason: body?.reason ?? 'Could not start that payment. Try again.' }
   if (body.already) return { ok: true, already: true }
-  const razorpay = body.razorpay
-  try {
-    await loadCheckout()
-  } catch {
-    return { ok: false, reason: 'Could not open the payment page. Try again.' }
-  }
-  const answer = await new Promise((resolve) => {
-    const rzp = new window.Razorpay({
-      key: razorpay.key_id,
-      order_id: razorpay.order_id,
-      amount: razorpay.amount_paise,
-      currency: 'INR',
-      name: 'Namo',
-      description,
-      prefill,
-      theme: { color: '#1a1a1a' },
-      handler: (response) => resolve(response),
-      modal: { ondismiss: () => resolve(null) },
-    })
-    rzp.on('payment.failed', () => resolve(null))
-    rzp.open()
-  })
-  if (!answer) return { ok: false, closed: true }
+  const closed = await openCheckout(body.checkout.url)
+  if (closed === null) return { ok: false, reason: 'Could not open the payment page. Try again.' }
+  if (closed !== 'CONCLUDED') return { ok: false, closed: true }
   const { body: done } = await call('/pay/confirm/', {
     method: 'POST',
     token,
-    body: {
-      razorpay_order_id: answer.razorpay_order_id,
-      razorpay_payment_id: answer.razorpay_payment_id,
-      razorpay_signature: answer.razorpay_signature,
-    },
+    body: { order_id: body.checkout.order_id },
   })
-  return done?.ok ? { ok: true } : { ok: false, unconfirmed: true }
+  if (done?.ok) return { ok: true }
+  if (done?.pending) return { ok: false, unconfirmed: true }
+  return { ok: false, reason: done?.reason ?? 'That payment did not go through.' }
 }

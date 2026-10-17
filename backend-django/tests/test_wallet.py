@@ -1,6 +1,7 @@
 """Module 8 — wallet + payments (docs/07 §6 step 8): the pytest port of
 backend/schema/003_wallets_ledger_check.sql and 006_payments_check.sql,
-the two Razorpay edge functions' contract (order + webhook), and the
+the payment provider's contract (PhonePe since 17 Oct 2026: checkout,
+status and webhook), and the
 module's endpoint surface. THE MONEY CORE's checks: every assertion in
 both check files is relative (they can run against any wallet, twice),
 so these are too — each test funds its own wallet from zero and measures
@@ -16,26 +17,26 @@ Matrix under test:
                    layer; replay == balance; no client write path)
   013's index    -> one refund per order, the insert is the check
   006 check 1-4  -> TestWebhookCapture (capture credits exactly once;
-                   redelivery credits nothing; a repeated EVENT id under a
-                   different payment id is refused too; a failure leaves a
+                   redelivery credits nothing; the status check and the
+                   webhook credit one order once; a failure leaves a
                    payments row and no ledger row; unattributable raises)
   edge functions -> TestTopupOrder*, TestWebhook* (MIN/MAX band with the
-                   exact refusal sentence, order lifecycle, HMAC over the
-                   raw body, bad signature 401, unhandled events 200,
+                   exact refusal sentence, order lifecycle, the
+                   Authorization hash, a wrong one 401, unhandled events 200,
                    verify-then-parse, amount-must-match-order)
   races          -> TestRaces (concurrent debits serialise on the lock;
                    double top-up confirm credits once; a refund racing a
                    reversal credits once)
   reconciliation -> TestReconcile (the HANDOFF story: a lone 'created'
-                   row is abandoned-or-lost and only Razorpay knows;
+                   row is abandoned-or-lost and only PhonePe knows;
                    read-only; exits non-zero naming the people owed)
 """
 
 import hashlib
-import hmac
 import json
 import threading
 import uuid
+from unittest import mock
 
 import pytest
 from django.core.management import call_command
@@ -43,16 +44,15 @@ from django.db import IntegrityError, connection
 
 from apps.wallet import services
 from apps.wallet.models import Ledger, Payment
-from apps.wallet.razorpay import RazorpayError
+from apps.wallet.phonepe import PhonePeError
 
 from .conftest import OTHER_USER, TEST_USER, make_claims
 
 SEEKER = TEST_USER
 OTHER = OTHER_USER
 
-WEBHOOK_SECRET = "whsec-test-secret"
-KEY_ID = "rzp_test_123"
-KEY_SECRET = "secret_456"
+WEBHOOK_USER = "namo-hook"
+WEBHOOK_PASSWORD = "hook-password-123"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -85,64 +85,80 @@ def _ledger_rows(pid):
         return cursor.fetchall()
 
 
-def _sign(body: bytes, secret: str = WEBHOOK_SECRET) -> str:
-    """The real HMAC Razorpay's header carries — recomputed here with the
-    stdlib, independent of the module under test."""
-    return hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+def _auth(user=WEBHOOK_USER, password=WEBHOOK_PASSWORD) -> str:
+    """The header PhonePe sends: SHA-256 of `user:password`, recomputed
+    here with the stdlib, independent of the module under test."""
+    return hashlib.sha256(f"{user}:{password}".encode("utf-8")).hexdigest()
 
 
-def _event(event, order_id, payment_id, amount_paise, event_id="evt_1"):
+EVENTS = {
+    "payment.captured": ("checkout.order.completed", "COMPLETED"),
+    "payment.failed": ("checkout.order.failed", "FAILED"),
+}
+
+
+def _event(event, order_id, phonepe_id, amount_paise):
+    """A PhonePe order event. `event` is the old outcome name, mapped."""
+    name, state = EVENTS[event]
     return json.dumps(
         {
-            "event": event,
+            "event": name,
             "payload": {
-                "payment": {
-                    "entity": {
-                        "id": payment_id,
-                        "order_id": order_id,
-                        "amount": amount_paise,
-                    }
-                }
+                "merchantOrderId": order_id,
+                "orderId": phonepe_id,
+                "state": state,
+                "amount": amount_paise,
+                "paymentDetails": [],
             },
         }
     ).encode("utf-8")
 
 
-def _webhook(client, body: bytes, secret=WEBHOOK_SECRET, event_id="evt_1",
-             extra_headers=None):
-    headers = {
-        "HTTP_X_RAZORPAY_SIGNATURE": _sign(body, secret),
-        "HTTP_X_RAZORPAY_EVENT_ID": event_id,
-        "content_type": "application/json",
-    }
-    headers.update(extra_headers or {})
-    return client.post("/v1/wallet/webhook/razorpay/", data=body, **headers)
+def _webhook(client, body: bytes, user=WEBHOOK_USER, password=WEBHOOK_PASSWORD):
+    return client.post("/v1/wallet/webhook/phonepe/", data=body,
+                       content_type="application/json",
+                       HTTP_AUTHORIZATION=_auth(user, password))
 
 
 class StubOrderClient:
-    """The Razorpay seam, stubbed — no network, ever, in money tests."""
+    """The PhonePe seam, stubbed — no network, ever, in money tests."""
 
-    def __init__(self, order_id="order_TESTSTUB", fail=False):
-        self.order_id = order_id
+    def __init__(self, fail=False, state="COMPLETED"):
         self.fail = fail
+        self.state = state
         self.calls = []
-        self.payments_payload = {"items": []}
+        self.statuses = {}
 
-    def create_order(self, amount_paise, notes):
+    def create_payment(self, merchant_order_id, amount_paise, redirect_url, meta=None, expire_after=1200):
         if self.fail:
-            raise RazorpayError("order refused", status=400)
-        self.calls.append({"amount_paise": amount_paise, "notes": notes})
-        return {"id": self.order_id}
+            raise PhonePeError("payment refused", status=400)
+        self.calls.append({"order_id": merchant_order_id, "amount_paise": amount_paise, "meta": meta})
+        return {"order_id": f"OMO{len(self.calls)}", "url": f"https://pay.test/{merchant_order_id}"}
 
-    def order_payments(self, order_id):
-        return self.payments_payload
+    def order_status(self, merchant_order_id):
+        if merchant_order_id in self.statuses:
+            found = self.statuses[merchant_order_id]
+            if isinstance(found, Exception):
+                raise found
+            return found
+        amount = (Payment.objects.filter(provider_order_id=merchant_order_id, status="created")
+                  .values_list("amount_paise", flat=True).first())
+        return {"orderId": "OMO", "state": self.state, "amount": amount}
+
+
+def _topup(amount, order_id="order_TESTSTUB", stub=None, pid=SEEKER):
+    """A checkout opened under a known merchant order id."""
+    with mock.patch("apps.wallet.services._new_order_id", return_value=order_id):
+        return services.create_topup_order(pid, amount, client=stub or StubOrderClient())
 
 
 @pytest.fixture
 def configured(settings, monkeypatch):
-    settings.RAZORPAY_KEY_ID = KEY_ID
-    settings.RAZORPAY_KEY_SECRET = KEY_SECRET
-    settings.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET
+    settings.PHONEPE_CLIENT_ID = "TEST-CLIENT"
+    settings.PHONEPE_CLIENT_SECRET = "test-secret"
+    settings.PHONEPE_CLIENT_VERSION = "1"
+    settings.PHONEPE_WEBHOOK_USER = WEBHOOK_USER
+    settings.PHONEPE_WEBHOOK_PASSWORD = WEBHOOK_PASSWORD
     return settings
 
 
@@ -406,7 +422,7 @@ class TestBalanceAndLedgerEndpoints:
         assert client.get("/v1/wallet/ledger/").json() == []
 
 
-# ── razorpay-order parity ────────────────────────────────────────────────────
+# ── checkout opening ─────────────────────────────────────────────────────────────
 
 
 @pytest.mark.django_db
@@ -424,7 +440,7 @@ class TestTopupOrderService:
         for amount in (services.MIN_PAISE, services.MAX_PAISE):
             result = services.create_topup_order(SEEKER, amount, client=stub)
             assert result["amount_paise"] == amount
-        assert len(stub.calls) == 2  # the two refusals never reached Razorpay
+        assert len(stub.calls) == 2  # the two refusals never reached PhonePe
         assert [c["amount_paise"] for c in stub.calls] == [
             services.MIN_PAISE, services.MAX_PAISE,
         ]
@@ -437,11 +453,10 @@ class TestTopupOrderService:
 
     def test_not_configured_names_nothing_to_the_client(self, seeker_wallet,
                                                         settings):
-        settings.RAZORPAY_KEY_ID = ""
-        settings.RAZORPAY_KEY_SECRET = ""
+        settings.PHONEPE_CLIENT_ID = ""
+        settings.PHONEPE_CLIENT_SECRET = ""
         with pytest.raises(services.Refusal) as exc:
-            services.create_topup_order(SEEKER, services.MIN_PAISE,
-                                        client=StubOrderClient())
+            services.create_topup_order(SEEKER, services.MIN_PAISE)
         assert exc.value.status == 500
         assert exc.value.reason == "Payments are not configured yet."
 
@@ -472,21 +487,25 @@ class TestTopupOrderService:
         assert exc.value.reason == "Could not start that payment. Try again."
 
     def test_success_writes_the_created_row(self, seeker_wallet, configured):
-        stub = StubOrderClient(order_id="order_TEST123")
-        result = services.create_topup_order(SEEKER, 25000, client=stub)
+        stub = StubOrderClient()
+        result = _topup(25000, order_id="order_TEST123", stub=stub)
         assert result == {
             "ok": True,
             "order_id": "order_TEST123",
             "amount_paise": 25000,
-            "key_id": KEY_ID,
+            "url": "https://pay.test/order_TEST123",
         }
-        # The notes carry the profile id for a person reconciling in the
-        # Razorpay dashboard — and are never the attribution path.
-        assert stub.calls[0]["notes"] == {"profile_id": str(SEEKER)}
+        # The udf carries the profile id for a person reconciling in the
+        # PhonePe dashboard — and is never the attribution path.
+        assert stub.calls[0]["meta"] == {"udf1": str(SEEKER)}
         row = Payment.objects.get(provider_order_id="order_TEST123")
-        assert row.status == "created"
+        assert row.status == "created" and row.provider == "phonepe"
         assert row.amount_paise == 25000
         assert row.provider_payment_id is None and row.provider_event_id is None
+
+    def test_merchant_order_ids_fit_phonepe(self):
+        made = services._new_order_id()
+        assert len(made) <= 63 and made.isalnum() and made != services._new_order_id()
 
 
 @pytest.mark.django_db
@@ -494,7 +513,7 @@ class TestTopupOrderEndpoint:
     @pytest.fixture(autouse=True)
     def stub_client(self, monkeypatch):
         monkeypatch.setattr(
-            "apps.wallet.services.RazorpayClient",
+            "apps.wallet.services.PhonePeClient",
             lambda *args, **kwargs: StubOrderClient(),
         )
 
@@ -507,8 +526,9 @@ class TestTopupOrderEndpoint:
         body = response.json()
         assert body["ok"] is True
         assert body["amount_paise"] == 25000
-        assert body["key_id"] == KEY_ID
-        assert body["order_id"].startswith("order_")
+        assert body["order_id"].startswith("N")
+        assert body["url"] == f"https://pay.test/{body['order_id']}"
+        assert "key_id" not in body
 
     def test_band_refusal_body_matches_the_edge_function(self, authed_client,
                                                          seeker_wallet,
@@ -535,13 +555,13 @@ class TestTopupStatus:
     @pytest.fixture(autouse=True)
     def stub_client(self, monkeypatch):
         monkeypatch.setattr(
-            "apps.wallet.services.RazorpayClient",
+            "apps.wallet.services.PhonePeClient",
             lambda *args, **kwargs: StubOrderClient(),
         )
 
     def test_capture_is_visible_to_the_owner(self, client, authed_client,
                                              seeker_wallet, configured):
-        services.create_topup_order(SEEKER, 12300, client=StubOrderClient())
+        _topup(12300)
         body = _event("payment.captured", "order_TESTSTUB", "pay_1", 12300)
         response = _webhook(client, body)
         assert response.status_code == 200
@@ -553,14 +573,14 @@ class TestTopupStatus:
     def test_pending_topup_is_a_404_so_ids_do_not_leak(self, authed_client,
                                                        seeker_wallet,
                                                        configured):
-        services.create_topup_order(SEEKER, 12300, client=StubOrderClient())
+        _topup(12300)
         response = authed_client.get("/v1/wallet/topup/order_TESTSTUB/")
         assert response.status_code == 404
 
     def test_someone_elses_order_is_a_404(self, client, authed_client,
                                           seeker_wallet, configured,
                                           sign_hs256, hs256_mode):
-        services.create_topup_order(SEEKER, 12300, client=StubOrderClient())
+        _topup(12300)
         body = _event("payment.captured", "order_TESTSTUB", "pay_1", 12300)
         _webhook(client, body)
         from rest_framework.test import APIClient
@@ -576,25 +596,24 @@ class TestTopupStatus:
 
 @pytest.mark.django_db
 class TestWebhookSignature:
-    def test_hmac_vectors_recomputed_independently(self):
-        body = (
-            b'{"event":"payment.captured","payload":{"payment":{"entity":'
-            b'{"id":"pay_1","order_id":"order_1","amount":12300}}}}'
-        )
-        digest = hmac.new(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
-        assert len(digest) == 64
-        assert services.signature_hex(WEBHOOK_SECRET, body) == digest
-        assert services.signatures_match(digest, digest)
-        # One byte wrong anywhere -> no match, whatever the prefix.
-        assert not services.signatures_match(digest[:-1] + "0", digest)
-        assert not services.signatures_match("", digest)
-        assert not services.signatures_match(digest, "")
+    def test_the_hash_recomputed_independently(self):
+        from apps.wallet import phonepe
+
+        digest = hashlib.sha256(b"namo-hook:hook-password-123").hexdigest()
+        assert phonepe.webhook_hash(WEBHOOK_USER, WEBHOOK_PASSWORD) == digest
+        assert phonepe.webhook_authorized(digest, WEBHOOK_USER, WEBHOOK_PASSWORD)
+        assert phonepe.webhook_authorized(f"SHA256 {digest}", WEBHOOK_USER, WEBHOOK_PASSWORD)
+        assert phonepe.webhook_authorized(digest.upper(), WEBHOOK_USER, WEBHOOK_PASSWORD)
+        # One character wrong anywhere -> no match.
+        assert not phonepe.webhook_authorized(digest[:-1] + "0", WEBHOOK_USER, WEBHOOK_PASSWORD)
+        assert not phonepe.webhook_authorized("", WEBHOOK_USER, WEBHOOK_PASSWORD)
+        assert not phonepe.webhook_authorized(digest, WEBHOOK_USER, "")
 
     def test_bad_signature_rejected_without_parsing(self, client,
                                                     seeker_wallet, configured):
-        services.create_topup_order(SEEKER, 12300, client=StubOrderClient())
+        _topup(12300)
         body = _event("payment.captured", "order_TESTSTUB", "pay_1", 12300)
-        response = _webhook(client, body, secret="whsec-WRONG-secret")
+        response = _webhook(client, body, password="WRONG-password")
         assert response.status_code == 401
         assert response.content.decode() == "Bad signature."
         # Nothing was read, nothing was written.
@@ -602,7 +621,7 @@ class TestWebhookSignature:
         assert _balance(SEEKER) == 0
 
     def test_missing_secret_answers_not_configured(self, client, settings):
-        settings.RAZORPAY_WEBHOOK_SECRET = ""
+        settings.PHONEPE_WEBHOOK_USER = ""
         body = _event("payment.captured", "order_x", "pay_1", 100)
         response = _webhook(client, body)
         assert response.status_code == 500
@@ -615,29 +634,30 @@ class TestWebhookSignature:
         assert response.content.decode() == "Bad payload."
 
     def test_unhandled_events_are_ignored_with_200(self, client, configured):
-        body = json.dumps(
-            {"event": "payment.authorized", "payload": {"payment": {"entity": {}}}}
-        ).encode()
-        response = _webhook(client, body)
-        assert response.status_code == 200
-        assert response.content.decode() == "Ignored."
+        for event in (
+            {"event": "pg.refund.completed", "payload": {"state": "COMPLETED"}},
+            {"event": "checkout.order.completed", "payload": {"state": "PENDING"}},
+        ):
+            response = _webhook(client, json.dumps(event).encode())
+            assert response.status_code == 200
+            assert response.content.decode() == "Ignored."
 
     def test_payment_entity_required(self, client, configured):
         body = json.dumps(
-            {"event": "payment.captured", "payload": {"payment": {"entity": {}}}}
+            {"event": "checkout.order.completed", "payload": {"state": "COMPLETED"}}
         ).encode()
         response = _webhook(client, body)
         assert response.status_code == 400
 
     def test_get_is_a_405(self, client, configured):
-        assert client.get("/v1/wallet/webhook/razorpay/").status_code == 405
+        assert client.get("/v1/wallet/webhook/phonepe/").status_code == 405
 
     def test_no_auth_token_needed_the_signature_is_the_credential(
         self, client, seeker_wallet, configured
     ):
         # verify_jwt = false on the edge function, for the same reason:
-        # Razorpay is not a signed-in user.
-        services.create_topup_order(SEEKER, 12300, client=StubOrderClient())
+        # PhonePe is not a signed-in user.
+        _topup(12300)
         body = _event("payment.captured", "order_TESTSTUB", "pay_1", 12300)
         response = _webhook(client, body)
         assert response.status_code == 200
@@ -650,9 +670,7 @@ class TestWebhookCapture:
     every delivery signed, the balance measured relative to zero."""
 
     def _order(self, seeker_wallet, amount=12300, order_id="order_TESTSTUB"):
-        services.create_topup_order(
-            SEEKER, amount, client=StubOrderClient(order_id=order_id)
-        )
+        _topup(amount, order_id=order_id)
 
     def test_capture_credits_exactly_once(self, client, seeker_wallet,
                                           configured):
@@ -671,30 +689,71 @@ class TestWebhookCapture:
 
     def test_redelivery_credits_nothing(self, client, seeker_wallet,
                                         configured):
-        # Assertion 2, the ordinary case: Razorpay retries until a 2xx.
+        # Assertion 2, the ordinary case: PhonePe retries until a 2xx.
         self._order(seeker_wallet)
         first = _webhook(client, _event("payment.captured", "order_TESTSTUB",
-                                        "pay_1", 12300, "evt_1"))
+                                        "pay_1", 12300))
         assert first.json()["duplicate"] is False
         second = _webhook(client, _event("payment.captured", "order_TESTSTUB",
-                                         "pay_1", 12300, "evt_2"))
+                                         "pay_1", 12300))
         assert second.status_code == 200
         assert second.json() == {"ok": True, "duplicate": True}
         credits = [r for r in _ledger_rows(SEEKER) if r[2] == "payment"]
         assert len(credits) == 1
         assert _balance(SEEKER) == 12300
 
-    def test_repeated_event_id_under_a_different_payment_is_refused(
+    def test_one_order_is_paid_once_whatever_phonepe_id_it_carries(
         self, client, seeker_wallet, configured
     ):
-        # The second unique index doing its job (006's own line).
+        # The merchant order id is the payment key: one order, one credit.
         self._order(seeker_wallet)
         assert _webhook(client, _event("payment.captured", "order_TESTSTUB",
-                                       "pay_1", 12300, "evt_1")).json()["ok"]
+                                       "OMO1", 12300)).json()["ok"]
         replay = _webhook(client, _event("payment.captured", "order_TESTSTUB",
-                                         "pay_2", 12300, "evt_1"))
+                                         "OMO2", 12300))
         assert replay.json()["duplicate"] is True
         assert len([r for r in _ledger_rows(SEEKER) if r[2] == "payment"]) == 1
+
+    def test_the_status_check_and_the_webhook_credit_once(
+        self, client, authed_client, seeker_wallet, configured, monkeypatch
+    ):
+        self._order(seeker_wallet)
+        monkeypatch.setattr("apps.wallet.services.PhonePeClient", lambda *a, **k: StubOrderClient())
+        confirmed = authed_client.post("/v1/wallet/pay/confirm/", {"order_id": "order_TESTSTUB"},
+                                       format="json").json()
+        assert confirmed["ok"] is True and confirmed["duplicate"] is False
+        late = _webhook(client, _event("payment.captured", "order_TESTSTUB", "OMO1", 12300))
+        assert late.json() == {"ok": True, "duplicate": True}
+        assert _balance(SEEKER) == 12300
+
+    def test_confirm_waits_on_pending_and_records_failed(
+        self, authed_client, seeker_wallet, configured, monkeypatch
+    ):
+        self._order(seeker_wallet)
+        stub = StubOrderClient(state="PENDING")
+        monkeypatch.setattr("apps.wallet.services.PhonePeClient", lambda *a, **k: stub)
+        url = "/v1/wallet/pay/confirm/"
+        pending = authed_client.post(url, {"order_id": "order_TESTSTUB"}, format="json").json()
+        assert pending["ok"] is False and pending["pending"] is True
+        assert Payment.objects.filter(provider_order_id="order_TESTSTUB").count() == 1
+        stub.state = "FAILED"
+        failed = authed_client.post(url, {"order_id": "order_TESTSTUB"}, format="json").json()
+        assert failed == {"ok": False, "reason": "That payment did not go through."}
+        assert Payment.objects.get(provider_order_id="order_TESTSTUB", status="failed")
+        assert _balance(SEEKER) == 0
+
+    def test_confirm_is_the_callers_own_order_only(
+        self, seeker_wallet, configured, monkeypatch, sign_hs256, hs256_mode
+    ):
+        from rest_framework.test import APIClient
+
+        self._order(seeker_wallet)
+        monkeypatch.setattr("apps.wallet.services.PhonePeClient", lambda *a, **k: StubOrderClient())
+        other = APIClient()
+        other.credentials(HTTP_AUTHORIZATION=f"Bearer {sign_hs256(claims=make_claims(sub=OTHER))}")
+        got = other.post("/v1/wallet/pay/confirm/", {"order_id": "order_TESTSTUB"}, format="json").json()
+        assert got["ok"] is False
+        assert _balance(SEEKER) == 0
 
     def test_failed_payment_records_a_row_and_no_credit(self, client,
                                                         seeker_wallet,
@@ -702,10 +761,10 @@ class TestWebhookCapture:
         # Assertion 3: a failure leaves a payments row and no ledger row.
         self._order(seeker_wallet, amount=10000, order_id="order_FAIL")
         response = _webhook(
-            client, _event("payment.failed", "order_FAIL", "pay_9", 10000, "evt_3")
+            client, _event("payment.failed", "order_FAIL", "pay_9", 10000)
         )
         assert response.status_code == 200
-        row = Payment.objects.get(provider_payment_id="pay_9")
+        row = Payment.objects.get(provider_payment_id="order_FAIL")
         assert row.status == "failed"
         assert len(_ledger_rows(SEEKER)) == 0  # only the created row in payments
         assert _balance(SEEKER) == 0
@@ -714,7 +773,7 @@ class TestWebhookCapture:
                                                           seeker_wallet,
                                                           configured):
         # Assertion 4: a payment matching no order is refused, not guessed
-        # — 500, so Razorpay retries the loud half of the mistake.
+        # — 500, so PhonePe retries the loud half of the mistake.
         body = _event("payment.captured", "order_that_never_existed",
                       "pay_orphan", 100)
         response = _webhook(client, body)
@@ -737,13 +796,13 @@ class TestWebhookCapture:
         assert len(_ledger_rows(SEEKER)) == 0
         # No terminal row either: the event did not happen as far as this
         # system is concerned, and reconciliation names the order.
-        assert Payment.objects.filter(provider_payment_id="pay_1").count() == 0
+        assert Payment.objects.filter(provider_payment_id="order_TESTSTUB").count() == 0
 
-    def test_capture_uses_razorpays_amount_not_the_browsers(self, client,
+    def test_capture_uses_phonepes_amount_not_the_browsers(self, client,
                                                             seeker_wallet,
                                                             configured):
-        # Rule 3's money half: what is credited is what Razorpay reports,
-        # from the signature-verified payload. The order row amount is the
+        # Rule 3's money half: what is credited is what PhonePe reports,
+        # from the authenticated payload. The order row amount is the
         # guard rail, the payload is the source — they agree here.
         self._order(seeker_wallet, amount=10000)
         body = _event("payment.captured", "order_TESTSTUB", "pay_1", 10000)
@@ -754,13 +813,13 @@ class TestWebhookCapture:
 @pytest.mark.django_db
 class TestPaymentCaptureService:
     def test_only_captured_and_failed_exist(self, seeker_wallet, configured):
-        services.create_topup_order(SEEKER, 10000, client=StubOrderClient())
+        _topup(10000)
         with pytest.raises(services.CaptureFailed, match="not authorized"):
             services.payment_capture("evt", "order_TESTSTUB", "pay_1", 1000,
                                      "authorized", {})
 
     def test_non_positive_amount_raises(self, seeker_wallet, configured):
-        services.create_topup_order(SEEKER, 10000, client=StubOrderClient())
+        _topup(10000)
         with pytest.raises(services.CaptureFailed, match="no positive amount"):
             services.payment_capture("evt", "order_TESTSTUB", "pay_1", 0,
                                      "captured", {})
@@ -811,7 +870,7 @@ class TestRaces:
         # index catches the loser and the whole block rolls back with the
         # credit inside it. No window between checking and crediting —
         # there is no check.
-        services.create_topup_order(SEEKER, 10000, client=StubOrderClient())
+        _topup(10000)
         barrier = threading.Barrier(2)
         results = []
 
@@ -897,39 +956,24 @@ class TestReconcile:
         self._created("order_FAILED")
         self._created("order_GONE")
         self._created("order_UNKNOWN")
+        self._created("order_WAITING")
         stub = StubOrderClient()
-        stub.payments_payload = {
-            "items": [
-                {"id": "pay_o1", "status": "captured", "amount": 5000},
-                {"id": "pay_o2", "status": "authorized", "amount": 5000},
-            ]
+        stub.statuses = {
+            "order_OWED": {"orderId": "OMO1", "state": "COMPLETED", "amount": 5000},
+            "order_FAILED": {"orderId": "OMO2", "state": "FAILED", "amount": 5000,
+                             "errorCode": "PAYMENT_DECLINED"},
+            "order_GONE": PhonePeError("status refused", status=400, code="INVALID_MERCHANT_ORDER_ID"),
+            "order_UNKNOWN": PhonePeError("status refused", status=500),
+            "order_WAITING": {"orderId": "OMO5", "state": "PENDING", "amount": 5000},
         }
-        by_order = {
-            "order_OWED": {"items": [
-                {"id": "pay_o1", "status": "captured", "amount": 5000},
-                {"id": "pay_o2", "status": "authorized", "amount": 5000},
-            ]},
-            "order_FAILED": {"items": [
-                {"id": "pay_f1", "status": "failed", "amount": 5000,
-                 "error_description": "Card declined"},
-            ]},
-            "order_GONE": {"items": []},
-        }
-
-        def order_payments(order_id):
-            if order_id == "order_UNKNOWN":
-                raise RazorpayError("lookup refused", status=500)
-            return by_order[order_id]
-
-        stub.order_payments = order_payments
         report = services.reconcile(client=stub)
-        assert report["orders"] == 4
+        assert report["orders"] == 5
         assert [o["order_id"] for o in report["owed"]] == ["order_OWED"]
-        assert [p["id"] for p in report["owed"][0]["payments"]] == ["pay_o1", "pay_o2"]
+        assert [p["id"] for p in report["owed"][0]["payments"]] == ["OMO1"]
         assert report["failed"][0]["attempts"] == 1
-        assert report["failed"][0]["reason"] == "Card declined"
+        assert report["failed"][0]["reason"] == "PAYMENT_DECLINED"
         assert report["abandoned"] == ["order_GONE"]
-        assert report["unknown"] == ["order_UNKNOWN"]
+        assert report["unknown"] == ["order_UNKNOWN", "order_WAITING"]
         # READ ONLY: the sweep moved nothing — no credit landed anywhere.
         assert _balance(SEEKER) == 0
         assert Payment.objects.filter(status="captured").count() == 0
@@ -939,9 +983,7 @@ class TestReconcile:
                                                       monkeypatch):
         self._created("order_OWED", amount=7000)
         stub = StubOrderClient()
-        stub.payments_payload = {
-            "items": [{"id": "pay_o1", "status": "captured", "amount": 7000}]
-        }
+        stub.statuses = {"order_OWED": {"orderId": "pay_o1", "state": "COMPLETED", "amount": 7000}}
         monkeypatch.setattr(
             "apps.wallet.management.commands.reconcile_payments.reconcile",
             lambda: services.reconcile(client=stub),
@@ -956,7 +998,8 @@ class TestReconcile:
                                                      configured, capsys,
                                                      monkeypatch):
         self._created("order_GONE")
-        stub = StubOrderClient()  # empty items: abandoned checkout
+        stub = StubOrderClient()  # PhonePe never heard of it: abandoned checkout
+        stub.statuses = {"order_GONE": PhonePeError("x", status=400, code="INVALID_MERCHANT_ORDER_ID")}
         monkeypatch.setattr(
             "apps.wallet.management.commands.reconcile_payments.reconcile",
             lambda: services.reconcile(client=stub),

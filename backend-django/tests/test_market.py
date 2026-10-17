@@ -24,11 +24,10 @@ from apps.media.models import MediaAsset
 from apps.profiles.models import Profile
 from apps.shop.models import Order, OrderItem, Product, Shipment, ShopCategory
 from apps.wallet import services as wallet
-from apps.wallet.razorpay import signature_hex
 
 from .conftest import TEST_USER, make_claims
 from .test_astro import auth
-from .test_shop_pay_online import SECRET, FakeRazorpay
+from .test_shop_pay_online import FakePhonePe, install
 
 CREATOR = uuid.UUID("00000000-0000-4000-8000-0000000000c1")
 NOBODY = uuid.UUID("00000000-0000-4000-8000-0000000000c2")
@@ -46,9 +45,11 @@ def token(sign_hs256, hs256_mode):
 
 
 @pytest.fixture
-def keys(settings):
-    settings.RAZORPAY_KEY_ID = "rzp_test_key"
-    settings.RAZORPAY_KEY_SECRET = SECRET
+def keys(settings, monkeypatch):
+    settings.PHONEPE_CLIENT_ID = "TEST-CLIENT"
+    settings.PHONEPE_CLIENT_SECRET = "test-secret"
+    settings.PHONEPE_CLIENT_VERSION = "1"
+    install(monkeypatch)
     settings.MEDIA_PROVIDER = "local"
     settings.R2_PRIVATE_BUCKET = "namo-docs"
 
@@ -152,15 +153,13 @@ class TestReview:
 
 
 def _pay(api_client, token, ref, fake=None):
-    with mock.patch("apps.wallet.services.RazorpayClient", return_value=fake or FakeRazorpay()):
+    with mock.patch("apps.wallet.services.PhonePeClient", return_value=fake or FakePhonePe()):
         return api_client.post("/v1/wallet/pay/", {"sku": "listing", "ref": str(ref)}, format="json", **auth(token))
 
 
-def _confirm(api_client, token, order_id, payment_id="pay_1"):
-    sig = signature_hex(SECRET, f"{order_id}|{payment_id}".encode())
-    return api_client.post("/v1/wallet/pay/confirm/", {
-        "razorpay_order_id": order_id, "razorpay_payment_id": payment_id, "razorpay_signature": sig,
-    }, format="json", **auth(token)).json()
+def _confirm(api_client, token, order_id):
+    return api_client.post("/v1/wallet/pay/confirm/", {"order_id": order_id},
+                           format="json", **auth(token)).json()
 
 
 @pytest.mark.django_db
@@ -174,7 +173,7 @@ class TestBuying:
     def test_paid_goes_through_the_gateway_once(self, api_client, token, creator, keys):
         row = _approved(price=9900)
         assert api_client.post(f"/v1/market/listings/{row.id}/take/", **auth(token)).status_code == 402
-        order = _pay(api_client, token, row.id).json()["razorpay"]
+        order = _pay(api_client, token, row.id).json()["checkout"]
         assert order["amount_paise"] == 9900
         assert api_client.get(f"/v1/market/listings/{row.id}/access/", **auth(token)).status_code == 402
         assert _confirm(api_client, token, order["order_id"])["ok"] is True
@@ -190,7 +189,7 @@ class TestBuying:
 
         CommissionRate.objects.update_or_create(category="download", defaults={"bps": 1500})
         row = services.approve(_download(price=10000), "admin")
-        order = _pay(api_client, token, row.id).json()["razorpay"]["order_id"]
+        order = _pay(api_client, token, row.id).json()["checkout"]["order_id"]
         _confirm(api_client, token, order)
         assert SellerEarning.objects.get().net_paise == 8500
 
@@ -460,7 +459,7 @@ class TestRates:
         Profile.objects.create(id=SHARER, phone="9000000c9", name="Sharer", influencer=True)
         row = _approved(price=10000)
         with mock.patch("apps.market.services._referrer", return_value=SHARER):
-            order = _pay(api_client, token, row.id).json()["razorpay"]["order_id"]
+            order = _pay(api_client, token, row.id).json()["checkout"]["order_id"]
             _confirm(api_client, token, order)
         [paid] = CreatorEarning.objects.filter(profile_id=SHARER)
         assert paid.amount_paise == 600
@@ -468,8 +467,8 @@ class TestRates:
         assert SellerEarning.objects.get().net_paise == 7000
         second = _approved(price=10000)
         with mock.patch("apps.market.services._referrer", return_value=SHARER):
-            order = _pay(api_client, token, second.id, fake=FakeRazorpay()).json()["razorpay"]["order_id"]
-            _confirm(api_client, token, order, payment_id="pay_2")
+            order = _pay(api_client, token, second.id, fake=FakePhonePe()).json()["checkout"]["order_id"]
+            _confirm(api_client, token, order)
         assert CreatorEarning.objects.filter(profile_id=SHARER).count() == 2  # old customer too (15 Oct)
 
     def test_an_event_pays_out_only_once_it_has_happened(self, creator):

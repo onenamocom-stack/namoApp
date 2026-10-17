@@ -12,5 +12,5 @@ urlpatterns = [
     path("pay/confirm/", views.pay_confirm, name="wallet-pay-confirm"),
     path("topup/order/", views.topup_order, name="wallet-topup-order"),
     path("topup/<str:order_id>/", views.topup_state, name="wallet-topup-state"),
-    path("webhook/razorpay/", views.razorpay_webhook, name="wallet-razorpay-webhook"),
+    path("webhook/phonepe/", views.phonepe_webhook, name="wallet-phonepe-webhook"),
 ]

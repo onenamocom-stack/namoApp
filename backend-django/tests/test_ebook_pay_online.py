@@ -1,4 +1,4 @@
-"""A priced e-book paid at Razorpay, not from the wallet (15 Oct 2026,
+"""A priced e-book paid at the gateway (PhonePe since 17 Oct 2026), not from the wallet (15 Oct 2026,
 Rahul: "payment will be direct from payment gateway. No wallet will be
 used"). Behind EBOOK_PAY_ONLINE, off until the owner says yes.
 
@@ -16,12 +16,11 @@ import pytest
 from apps.bhakti.models import BhaktiAsset
 from apps.wallet import services as wallet
 from apps.wallet.models import Entitlement, Payment, PaymentStatus
-from apps.wallet.razorpay import signature_hex
 
 from .conftest import TEST_USER, make_claims
 from .test_astro import auth
 from .test_entitlements import _ledger, _wallet
-from .test_shop_pay_online import SECRET, FakeRazorpay
+from .test_shop_pay_online import FakePhonePe, install
 
 
 @pytest.fixture
@@ -30,16 +29,19 @@ def token(sign_hs256, hs256_mode):
 
 
 @pytest.fixture
-def keys(settings):
-    settings.RAZORPAY_KEY_ID = "rzp_test_key"
-    settings.RAZORPAY_KEY_SECRET = SECRET
+def keys(settings, monkeypatch):
+    settings.PHONEPE_CLIENT_ID = "TEST-CLIENT"
+    settings.PHONEPE_CLIENT_SECRET = "test-secret"
+    settings.PHONEPE_CLIENT_VERSION = "1"
     settings.MEDIA_PROVIDER = "local"
     settings.R2_PRIVATE_BUCKET = "namo-docs"
+    return install(monkeypatch)
 
 
 @pytest.fixture
 def online(settings, keys):
     settings.EBOOK_PAY_ONLINE = True
+    return keys
 
 
 @pytest.fixture
@@ -51,17 +53,14 @@ def book(db):
 
 
 def _pay(api_client, token, ref, sku="ebook", fake=None):
-    with mock.patch("apps.wallet.services.RazorpayClient", return_value=fake or FakeRazorpay()):
+    with mock.patch("apps.wallet.services.PhonePeClient", return_value=fake or FakePhonePe()):
         return api_client.post("/v1/wallet/pay/", {"sku": sku, "ref": ref, "price_paise": 1},
                                format="json", **auth(token))
 
 
-def _confirm(api_client, token, order_id, payment_id="pay_1", signature=None):
-    signature = signature or signature_hex(SECRET, f"{order_id}|{payment_id}".encode())
-    return api_client.post("/v1/wallet/pay/confirm/", {
-        "razorpay_order_id": order_id, "razorpay_payment_id": payment_id,
-        "razorpay_signature": signature,
-    }, format="json", **auth(token)).json()
+def _confirm(api_client, token, order_id):
+    return api_client.post("/v1/wallet/pay/confirm/", {"order_id": order_id},
+                           format="json", **auth(token)).json()
 
 
 def _file(api_client, token, book):
@@ -93,14 +92,14 @@ class TestOn:
 
     def test_the_price_is_the_servers(self, api_client, token, book, online):
         got = _pay(api_client, token, str(book.id)).json()
-        assert got["razorpay"] == {"order_id": "order_rzp1", "amount_paise": 9900, "key_id": "rzp_test_key"}
-        row = Payment.objects.get(provider_order_id="order_rzp1")
+        assert got["checkout"]["amount_paise"] == 9900 and got["checkout"]["url"]
+        row = Payment.objects.get(provider_order_id=got["checkout"]["order_id"])
         assert row.status == "created" and row.entitlement_sku == "ebook"
         assert row.entitlement_ref == str(book.id) and row.shop_order_id is None
 
-    def test_the_signed_answer_unlocks_it_once(self, api_client, token, book, online):
+    def test_the_status_answer_unlocks_it_once(self, api_client, token, book, online):
         _wallet(500)
-        order = _pay(api_client, token, str(book.id)).json()["razorpay"]["order_id"]
+        order = _pay(api_client, token, str(book.id)).json()["checkout"]["order_id"]
         assert _file(api_client, token, book).status_code == 402
         assert _confirm(api_client, token, order)["ok"] is True
         assert _confirm(api_client, token, order)["duplicate"] is True
@@ -109,14 +108,15 @@ class TestOn:
         assert wallet.balance_of(TEST_USER) == 500 and _ledger() == []
 
     def test_the_webhook_unlocks_it_too(self, api_client, token, book, online):
-        order = _pay(api_client, token, str(book.id)).json()["razorpay"]["order_id"]
-        wallet.payment_capture(event_id="evt_1", order_id=order, payment_id="pay_9",
+        order = _pay(api_client, token, str(book.id)).json()["checkout"]["order_id"]
+        wallet.payment_capture(event_id=None, order_id=order, payment_id="OMO-9",
                                amount_paise=9900, status=PaymentStatus.CAPTURED, raw={})
         assert wallet.owns(TEST_USER, "ebook", str(book.id))
 
-    def test_a_forged_answer_unlocks_nothing(self, api_client, token, book, online):
-        order = _pay(api_client, token, str(book.id)).json()["razorpay"]["order_id"]
-        assert _confirm(api_client, token, order, signature="0" * 64)["ok"] is False
+    def test_a_failed_payment_unlocks_nothing(self, api_client, token, book, online):
+        order = _pay(api_client, token, str(book.id)).json()["checkout"]["order_id"]
+        online.state = "FAILED"
+        assert _confirm(api_client, token, order)["ok"] is False
         assert not wallet.owns(TEST_USER, "ebook", str(book.id))
 
     def test_owned_opens_no_order(self, api_client, token, book, online):
@@ -126,11 +126,11 @@ class TestOn:
 
     def test_paid_twice_the_second_goes_to_the_wallet(self, api_client, token, book, online):
         _wallet(0)
-        fake = FakeRazorpay()
-        first = _pay(api_client, token, str(book.id), fake=fake).json()["razorpay"]["order_id"]
-        second = _pay(api_client, token, str(book.id), fake=fake).json()["razorpay"]["order_id"]
-        assert _confirm(api_client, token, first, "pay_1")["ok"] is True
-        assert _confirm(api_client, token, second, "pay_2")["ok"] is True
+        fake = FakePhonePe()
+        first = _pay(api_client, token, str(book.id), fake=fake).json()["checkout"]["order_id"]
+        second = _pay(api_client, token, str(book.id), fake=fake).json()["checkout"]["order_id"]
+        assert _confirm(api_client, token, first)["ok"] is True
+        assert _confirm(api_client, token, second)["ok"] is True
         assert Entitlement.objects.filter(profile_id=TEST_USER, sku="ebook").count() == 1
         assert wallet.balance_of(TEST_USER) == 9900
 

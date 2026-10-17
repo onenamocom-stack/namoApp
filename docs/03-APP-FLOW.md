@@ -650,7 +650,7 @@ has ONE timer and ONE end button, the same row for both people (9 Oct 2026,
 Rahul: the call showed three timers and Daily's own Leave behind ours —
 Daily's Leave is hidden now). In the last minute a **Recharge** button
 appears in that row for the seeker, and nowhere else; it opens up to four amounts — ₹100 when that buys a
-minute (10 Oct 2026), then about 5, 10 and 20 minutes at this rate — and Razorpay over the conversation; the minutes
+minute (10 Oct 2026), then about 5, 10 and 20 minutes at this rate — and PhonePe over the conversation; the minutes
 are added and the clock runs on. At 0:00 the session **pauses**: the call is
 muted for both people and covered, the chat's composer is replaced by
 "Paused until the balance is recharged", and the seeker sees "Your balance
@@ -781,7 +781,7 @@ Creator listed and an admin approved (a product listing opens its shop
 product page). The Market's Downloads tile and strip carry sellers'
 downloads beside Namo's books; Events and Courses stop saying *Soon* once
 one is listed, and show theirs as a strip on All and a grid on the tile.
-One button at the foot: free is taken, paid opens Razorpay; once yours,
+One button at the foot: free is taken, paid opens PhonePe; once yours,
 *Start* (the lessons play in place), *Join* (the link shows on the page),
 or *Download* (a ten-minute link). Not live yet: an unknown id says it is
 no longer on the Market.
@@ -825,7 +825,7 @@ book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
   Paywall's *Unlock*). Built and switched off (15 Oct 2026, Rahul's ask,
   waiting for the owner's yes): with `EBOOK_PAY_ONLINE` on, the server's
   402 says `pay: online`, the Paywall's button reads *Pay · ₹99* and opens
-  Razorpay's checkout, the signed answer (or the webhook) unlocks the book,
+  PhonePe's checkout, the status check (or the webhook) unlocks the book,
   and the wallet refuses to sell e-books. A closed sheet charges nothing.
 - **Courses** and **Events**: a *Soon* under the tile and a coming-soon
   panel. Academy's Courses and Events tabs were mock data and went with it.
@@ -1106,7 +1106,7 @@ there is a session, as before.
 
 ### `/wallet`
 Balance and history, both read from the server. Since phase 3 *Add money* opens
-a sheet: four presets and a custom amount, then Razorpay's own checkout in an
+a sheet: four presets and a custom amount, then PhonePe's own checkout in an
 overlay this app does not draw.
 
 **Nothing on this screen credits anything.** The sheet opens an order and
@@ -1114,7 +1114,7 @@ hands off; the balance moves when the provider's webhook reaches the server and
 its signature verifies. So the screen cannot await the credit — it polls for a
 few seconds, and if the credit has not landed it says the payment is settling
 rather than holding a spinner over a number it does not control. Dismissing
-Razorpay's overlay, or a card the bank declines, both return to the sheet with
+PhonePe's overlay, or a card the bank declines, both return to the sheet with
 the balance untouched.
 
 The payment-method tags are still gone, and so is the cashback label, which is
@@ -1556,7 +1556,7 @@ Nothing is said when no product in the basket carries a cashback. The code box
 is for shop coupons; an astrologer's code is a link now, caught from
 `?ref=A…` on any page and held by the server (`docs/01-PRD.md` §12).
 Then **Pay**: **Pay online** or **Cash on delivery** (6 Oct 2026). Pay online
-— the default — reads "Pay ₹X" and opens Razorpay's checkout for the order
+— the default — reads "Pay ₹X" and opens PhonePe's checkout for the order
 (the name, email and phone filled in). Paid: "Paid · ordered", the cart
 clears. Closed or failed: "Payment not completed. Nothing was charged.", the
 cart stays and the items are released at once. The wallet plays no part in
@@ -1586,7 +1586,7 @@ arithmetic in the browser any more.
 
 | # | Path | Effect |
 |---|---|---|
-| 1 | Cart checkout, online | Writes a `pending` order holding the stock for 15 minutes and opens Razorpay for its total; the checkout's signed answer (or the webhook) makes it `paid` and sends the parcel; closed or lapsed → `cancelled`, stock back, nothing charged |
+| 1 | Cart checkout, online | Writes a `pending` order holding the stock for 15 minutes and opens PhonePe for its total; the status check when the page closes (or the webhook) makes it `paid` and sends the parcel; closed or lapsed → `cancelled`, stock back, nothing charged |
 | 1a | Cart checkout, cash on delivery | Debits nothing; claims the stock and writes a `pending` order whose total carries the 2% fee; delivered → `paid`, returned or cancelled → `cancelled` and restocked |
 | 2 | Shop *Buy now* | Debits the product price |
 | 3 | Reports *Buy now* | Debits the report price |
@@ -1598,7 +1598,7 @@ arithmetic in the browser any more.
 Paths 5 and 7 are the ones that run backwards. Paths 1–4 and 6 begin and end
 inside a tap: the person presses Buy, the server decides, the balance moves. A
 top-up begins with a tap and ends somewhere else entirely — in a request
-Razorpay makes to a public URL, minutes later if it has to retry. Nothing the
+PhonePe makes to a public URL, minutes later if it has to retry. Nothing the
 browser does credits a wallet, including reporting that the payment succeeded.
 §8.2 is the state machine. A decline is a third party's tap moving somebody
 else's balance, which is why it is a trigger rather than a call the consultant's

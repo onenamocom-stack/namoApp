@@ -22,7 +22,7 @@ import { PickBar, SharerBar } from '../components/TagPick.jsx'
  * first a free preview), who teaches it. An event sells a seat at a time:
  * when, how long, online, seats left, who hosts it. A download sells a
  * file. One button at the thumb: Enroll, Book seat or Get it — free is
- * taken, paid opens Razorpay — and once yours, Start, Join or Download.
+ * taken, paid opens PhonePe — and once yours, Start, Join or Download.
  */
 export default function ListingRoute() {
   const { id } = useParams()
