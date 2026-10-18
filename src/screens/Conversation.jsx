@@ -7,6 +7,7 @@ import ReportSheet from '../components/ReportSheet.jsx'
 import { DM_POLL_MS, acceptDm, blockPerson, declineDm, deleteDm, fetchDmMessages, markDmRead, sendDm } from '../lib/dms.js'
 import { useLongPress } from '../lib/longpress.js'
 import { KIND_LABEL, parseShare } from '../lib/share.js'
+import { posterOf } from '../lib/hls.js'
 import { useStore } from '../store.jsx'
 
 /**
@@ -275,6 +276,8 @@ function ShareCard({ s, mine, hold }) {
         <span className="block aspect-[4/5] w-full overflow-hidden bg-ink/[0.06]">
           {video ? (
             <video src={`${s.media}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+          ) : posterOf(s.media) ? (
+            <img src={posterOf(s.media)} alt="" loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <img src={s.media} alt="" loading="lazy" className="h-full w-full object-cover" />
           )}

@@ -43,6 +43,9 @@ class PublishInput(serializers.Serializer):
     ebook_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
     # Post into a group you are a member of (Phase 15c).
     group_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    # A reel from the video pipeline (/v1/videos/, 18 Oct 2026), in place
+    # of media_url: the post waits until the video is live.
+    video_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
 class EditInput(serializers.Serializer):
@@ -259,8 +262,9 @@ def publish(request):
         ebook_ids=data["ebook_ids"],
         group_id=data["group_id"],
         gallery=data["gallery"],
+        video_id=data["video_id"],
     )
-    return Response({"id": str(row.id)}, status=201)
+    return Response({"id": str(row.id), "status": row.status}, status=201)
 
 
 @api_view(["POST"])

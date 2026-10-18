@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
+import { posterOf } from '../lib/hls.js'
 
 /**
  * A consultant's own post as one row (4 Oct 2026): a small thumbnail, the
@@ -27,16 +28,21 @@ export function kindLabel(piece) {
 
 export function Thumb({ piece, size = 56 }) {
   const style = { width: size, height: size }
-  if (piece.mediaUrl && VIDEO.test(piece.mediaUrl)) {
+  const poster = posterOf(piece.mediaUrl)
+  if (piece.mediaUrl && (poster || VIDEO.test(piece.mediaUrl))) {
     return (
       <span className="relative flex-none overflow-hidden rounded-xl bg-ink" style={style}>
-        <video
-          src={`${piece.mediaUrl}#t=0.5`}
-          preload="metadata"
-          muted
-          playsInline
-          className="h-full w-full object-cover"
-        />
+        {poster ? (
+          <img src={poster} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <video
+            src={`${piece.mediaUrl}#t=0.5`}
+            preload="metadata"
+            muted
+            playsInline
+            className="h-full w-full object-cover"
+          />
+        )}
         <span className="absolute inset-0 flex items-center justify-center text-white/90">
           <Icon name="play" size={16} filled />
         </span>

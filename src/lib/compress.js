@@ -2,8 +2,11 @@
  * A video made small on the phone, before it uploads (14 Oct 2026, docs/06
  * Phase 15d). Reels were stored as shot: a 100 MB phone video cost 100 MB of
  * the person's data to upload, 100 MB of storage, and 100 MB of bandwidth
- * on every full view. Here it becomes H.264 at most 1280 px on its long
- * side, about 1.2 Mbit/s, with AAC sound — about 9 MB a minute.
+ * on every full view. Here it becomes Rahul's video spec (part B, 18 Oct
+ * 2026): H.264 720p (at most 1280 px on its long side), 2 Mbit/s, 30 fps,
+ * AAC 128 kbit/s, the index at the front (faststart), and no metadata
+ * tags, so the phone's location never leaves it — about 16 MB a minute,
+ * under the server's 30 MB.
  *
  * Done in the browser with WebCodecs (the `mediabunny` library, loaded only
  * when a video is chosen), so no server transcodes anything and the upload
@@ -13,8 +16,12 @@
  */
 
 const MAX_SIDE = 1280
-const VIDEO_BPS = 1_200_000
-const AUDIO_BPS = 96_000
+const VIDEO_BPS = 2_000_000
+const AUDIO_BPS = 128_000
+const FPS = 30
+/* The server's cap on a compressed video; above it the file goes up as an
+   original (up to 150 MB) and the worker compresses it. */
+export const MAX_COMPRESSED_BYTES = 30 * 1024 * 1024
 // Small enough already: a short clip is not worth a minute of the phone's time.
 const LEAVE_UNDER = 8 * 1024 * 1024
 
@@ -85,11 +92,14 @@ export async function compressVideo(file, onProgress = null) {
         width: even(w * scale),
         height: even(h * scale),
         fit: 'fill',
+        frameRate: FPS,
         codec: 'avc',
         quality: new mb.Quality({ bitrate: VIDEO_BPS }),
         forceTranscode: true,
       },
       audio: { codec: 'aac', quality: new mb.Quality({ bitrate: AUDIO_BPS }) },
+      // No tags: the phone's location and the camera's name stay behind.
+      tags: {},
     })
     // A track it would have to drop (the sound, say) is a worse post than a
     // bigger file.

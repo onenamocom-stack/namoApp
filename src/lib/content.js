@@ -529,7 +529,7 @@ export async function fetchByAuthor(authorId, { limit = 40 } = {}) {
  * an identity at all (rule 3). The kind gate's refusal arrives with the
  * same sentence the old 42501 mapping produced.
  */
-export async function publish({ kind, title, body, caption, mediaUrl, gallery = [], productIds = [], listingIds = [], ebookIds = [], groupId = null }) {
+export async function publish({ kind, title, body, caption, mediaUrl, videoId = null, gallery = [], productIds = [], listingIds = [], ebookIds = [], groupId = null }) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to publish')
 
@@ -541,6 +541,8 @@ export async function publish({ kind, title, body, caption, mediaUrl, gallery = 
       body: body ?? null,
       caption: caption ?? null,
       media_url: mediaUrl ?? null,
+      // A reel from the video pipeline (lib/clips.js): hidden until live.
+      ...(videoId ? { video_id: videoId } : {}),
       // The photos after the first (17 Oct 2026), only when there are some.
       ...(gallery.length ? { gallery } : {}),
       // Only sent when there are some, so a post from an ordinary account
@@ -556,7 +558,8 @@ export async function publish({ kind, title, body, caption, mediaUrl, gallery = 
   feedCache.clear() // the new post must show at once
   forYouCache.clear()
   justPosted = { id: data.id, at: Date.now() }
-  return data.id
+  // 'draft' for a reel waiting for its video (18 Oct 2026).
+  return { id: data.id, status: data.status || 'live' }
 }
 
 /**

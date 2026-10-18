@@ -1154,6 +1154,7 @@ create table content (
   media_url     text,
   gallery       jsonb not null default '[]', -- 17 Oct 2026 (content/0014): a post's photos after media_url, in order, up to nine
   caption       text,
+  video_id      uuid,                        -- 18 Oct 2026 (content/0016), indexed: a reel from the video pipeline (videos.id, §5.5b). The row is 'draft' until that video is live, then media_url is its HLS playlist; a rejected or deleted video makes it 'removed'
   status        text not null default 'live' check (status in ('live','removed','draft')),
   view_count    integer not null default 0,
   published_at  timestamptz,
@@ -1664,6 +1665,31 @@ window (either end may be open). RLS on, no policies; read through
 `image_url`, `updated_at`. At most one row (the console allows no second add).
 The card a chat app draws for 1namo.com itself; read only by `share.home_page`.
 RLS on, no policies.
+
+### 5.5b `videos` — the video pipeline (17 Oct 2026, `clips/0001`)
+
+One row per uploaded video (app `apps.clips`; `apps.video` is the calls'
+rooms). `user_id`; `status` uploading · processing · in_review · live ·
+rejected · deleted (check `videos_status_valid`); `source_hash` (SHA-256
+hex, indexed: the duplicate check); `duration_s`, `size_bytes` (> 0),
+`mime`; `needs_compress` (the phone sent the original, up to 150 MB);
+`source_video` (self, null: a duplicate shares that row's outputs and
+uploaded nothing); `upload_key`, `upload_id`, `parts` (the R2 multipart
+upload in the private uploads bucket, `uploads/{id}/source`);
+`storage_tier` standard · infrequent; `hls_path`, `thumb_path`,
+`preview_path` (relative to the public media base, `v/{id}/...`, set by the
+worker); `width`, `height` (the encoded top version, after the phone's
+rotation); `category` (content · puja · darshan · yoga · ayurveda ·
+astrology); `moderation` (jsonb: SafeSearch's worst `adult`, `violence`,
+`racy`, `medical`, `spoof` over the sheets, `images`, `sheets` (their paths,
+`v/{id}/sheet_n.jpg`), `outcome` clear · doubt · violation, or `error`; after
+the console, `reviewed` approved · rejected and `by`); `error` (for a deleted
+or rejected video, starts with the reason: `too_long`, `not_a_video`,
+`failed`, `safesearch`, `rejected by a moderator`); `claimed_at`,
+`attempts` (handed to the worker when, and how often; three at most);
+`view_count`,
+`last_viewed_at` (the lifecycle rules); `created_at`, `completed_at`,
+`processed_at`. Indexes `(user_id, created_at)`, `(status, created_at)`.
 
 ### 5.6 Remaining
 

@@ -52,6 +52,7 @@
     <a href="{% url 'namo:content_review_changelist' %}?status=pending" {% if queues.pro_reviews %}class="hot"{% endif %}><b>{{ queues.pro_reviews }}</b><span>Reviews to approve</span></a>
     <a href="{% url 'namo:content_report_changelist' %}?status__exact=open" {% if queues.reports %}class="hot"{% endif %}><b>{{ queues.reports }}</b><span>Reports</span></a>
     <a href="{% url 'namo:content_moderationflag_changelist' %}?status=open" {% if queues.flags %}class="hot"{% endif %}><b>{{ queues.flags }}</b><span>Flagged by the daily check</span></a>
+    <a href="{% url 'namo:clips_video_changelist' %}?status=in_review" {% if queues.videos %}class="hot"{% endif %}><b>{{ queues.videos }}</b><span>Videos to review</span></a>
     <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready" {% if queues.parcels %}class="hot"{% endif %}><b>{{ queues.parcels }}</b><span>Parcels to send</span></a>
   </div>
 
@@ -72,6 +73,7 @@
       <a href="{% url 'namo:content_contentpaysettings_changelist' %}">Pay per 1,000 engagements</a>
       <a href="{% url 'namo:content_report_changelist' %}">Reports</a>
       <a href="{% url 'namo:content_moderationflag_changelist' %}">Daily check flags</a>
+      <a href="{% url 'namo:clips_video_changelist' %}">Uploaded videos</a>
       <a href="{% url 'namo:referrals_signupbonus_changelist' %}">Sign-ups with their code (₹ each)</a>
       <a href="{% url 'namo:referrals_affiliatevisit_changelist' %}">Link visits</a>
       <a href="{% url 'namo:referrals_affiliatesettings_changelist' %}">Link window and sign-up pay</a>

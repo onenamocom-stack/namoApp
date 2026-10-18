@@ -707,6 +707,85 @@ Seller who is not a Creator stops earning ₹25 a sign-up; a Seller loses
 the tick; nobody new can tag products until they reach step 1. Money
 already earned is paid.
 
+## Phase 19 — The video pipeline (Rahul's spec, 17 Oct 2026, in progress)
+
+Source: *NAMO Video Pipeline – Technical Spec* (Rahul, 17 Oct 2026, PDF on
+Telegram). User videos up to 90 seconds, compressed on the phone, stored
+once in R2, played as HLS through Cloudflare's CDN; under ₹5,000 a month at
+the end of Q1; playback starting in under a second on 4G. **The Android app
+is the priority** (Rahul, 17 Oct: "in 2 days we will be on android app
+too"), so everything server-side is one API for the web app and the
+Android app, and the phone-side work is specified for both.
+
+Order, each part shipped on its own:
+
+- **C — upload API (built 17 Oct, branch `video-pipeline`).** `videos`
+  table; `init` (hash, size, length, daily limit, duplicate link),
+  multipart parts of 5 MB with resume, `complete`, the 24-hour sweep.
+- **A — `media.1namo.com` (LIVE 18 Oct).** The public bucket behind
+  Cloudflare's cache instead of the `r2.dev` address (no CDN, no
+  guarantee). 1namo.com's DNS moved to Cloudflare (Rahul changed GoDaddy's
+  nameservers, 18 Oct); state in HANDOFF.
+- **B — compression to the spec (built 18 Oct, branch `video-pipeline`)**
+  on the web (WebCodecs, `src/lib/compress.js`): 720p, 2 Mbps, 30 fps, AAC
+  128 kbps, faststart, no metadata tags (location stripped). Over 30 MB
+  uncompressed goes up as an original (150 MB) for the worker to shrink.
+  The upload is `src/lib/clips.js` (init, 5 MB parts, three tries each,
+  fresh URLs when they run out, complete); the post carries `video_id`
+  and waits as a draft until the video is live (`content.video_settled`).
+- **D — the worker (built 17 Oct, branch `video-pipeline`).** Cloud Run
+  service `namo-video` from `video-worker/` (FFmpeg, its own Dockerfile;
+  the deploy line is in it). The API posts the job on `complete`; the
+  worker answers 202, encodes on its own thread (CPU always allocated),
+  writes HLS 720p (~2 Mbps) and 480p (~0.8 Mbps, listed first), 4-second
+  segments, at most 30 fps, every tag stripped, and a WebP thumbnail to
+  `v/{id}/` in the public bucket, deletes the upload and posts the result
+  back; `processing` → `in_review`. A smaller source is never enlarged.
+  Over 90 seconds by the file's own length is refused there too.
+- **E — moderation (built 17 Oct, branch `video-pipeline`).** Google
+  Cloud Vision SafeSearch (Rahul, 17 Oct), $1.50 per 1,000 images after
+  the first 1,000 a month. **A frame every 10 seconds, nine frames tiled
+  3×3 into one image** (Rahul, 17 Oct, replacing a frame every 3 seconds
+  one by one, about ₹3.8 a video, and the proposed frame every 5
+  seconds, two images): a 90-second video is one image, about ₹0.13.
+  Frames fall at the middle of each 10-second stretch (5, 15 … 85 s; a
+  video under 10 seconds gets its middle). Whatever happens between two
+  frames is not seen, and SafeSearch does not hear audio or read hate
+  speech: the report button and the queue cover that. The worker
+  (`encode.sheets`, `moderate.py`) sends the sheets and keeps them at
+  `v/{id}/sheet_n.jpg` for the queue; the API (`apps/clips/moderation.py`)
+  decides: adult or violence VERY_LIKELY → `rejected`, files deleted, the
+  same file refused at `init` for good; adult POSSIBLE or more, violence
+  or racy LIKELY or more, or no verdict (Vision failed) → the console's
+  **Videos to review** queue; clear → `live` for an approved Pro or
+  Creator, and for anybody else once they have 3 live videos (their first
+  3 wait in the queue). The queue shows the sheet and the verdict;
+  Approve puts the file and its copies live, Reject deletes them. The
+  Vision API is enabled on the project (18 Oct 2026); the worker's
+  service account is the credential.
+- **F — playback (built 18 Oct, branch `video-pipeline`).** Thumbnail
+  first, 480p muted autoplay, 720p on Wi-Fi or strong bandwidth, only the
+  first segment of the next one or two preloaded, a Data saver setting.
+  Web: hls.js 1.7.3, light build, loaded with the first HLS reel
+  (`src/lib/hls.js`, `src/components/Video.jsx`); Safari plays the
+  playlist itself. Checked in headless Chrome against a real worker
+  encode: playback at 480p with the thumbnail as poster, a waiting reel
+  buffered 4 seconds (hls.js ignored the target alone and loaded all of
+  it until its cap moved too). Grids and shared cards show the thumbnail.
+  MP4 reels play as before. Android: the WebView runs the same code.
+- **Later (first month after launch):** lifecycle rules (Infrequent
+  Access, soft delete), cost and playback dashboard; Cloudflare Stream
+  for Academy and puja.
+
+The Android app is a Capacitor wrapper of this web app (Rahul, 17 Oct),
+so B and F are written once, for the WebView: WebCodecs and hls.js both
+run there. Native Media3 or ExoPlayer comes later as a Capacitor plugin if
+the WebView falls short.
+
+Open, for Rahul and the owner: the daily limits (10, and 50 for an approved Pro or Creator, as built);
+the retention policy for the privacy page; Play Store payment policy for
+wallet top-ups before the app is submitted.
+
 ## Seed
 
 The largest single task, in phase 4.

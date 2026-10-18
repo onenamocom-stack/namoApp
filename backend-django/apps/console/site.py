@@ -108,6 +108,7 @@ def waiting_counts():
         due = PayoutStatement.objects.filter(status="due").aggregate(t=Sum("total_paise"), d=Sum("tds_paise"))
         return f"₹{((due['t'] or 0) - (due['d'] or 0)) / 100:,.0f}"
 
+    from apps.clips.models import Video
     from apps.consultants.models import Consultant, PayoutDetails, ProfileReview
     from apps.content.models import ModerationFlag, Report, Review
     from apps.market.models import Listing
@@ -123,6 +124,7 @@ def waiting_counts():
         "reports": count(lambda: Report.objects.filter(status="open").count()),
         "pro_reviews": count(lambda: Review.objects.filter(status="pending").count()),
         "flags": count(lambda: ModerationFlag.objects.filter(status="open").count()),
+        "videos": count(lambda: Video.objects.filter(status="in_review").count()),
         "parcels": count(lambda: Shipment.objects.filter(status="ready").count()),
         "owed": count(owed),
     }

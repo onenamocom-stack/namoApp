@@ -48,6 +48,10 @@ class Content(models.Model):
     # 2026, Rahul: ten photos a post, swiped). Empty for everything else.
     gallery = models.JSONField(default=list, db_default=[], blank=True)
     caption = models.TextField(null=True, blank=True)
+    # A reel uploaded through the video pipeline (`apps.clips`, 18 Oct 2026):
+    # the row is a draft until that video is live, then `media_url` is its
+    # HLS playlist; a rejected or deleted video removes the row.
+    video_id = models.UUIDField(null=True, blank=True, db_index=True)
     status = models.CharField(
         max_length=16, choices=ContentStatus.choices, default=ContentStatus.LIVE
     )
