@@ -626,7 +626,10 @@ be edited.
 **Sharing a blog or a product** shows its own card — title, a line of the
 text, and the cover (or product photo) as the thumbnail — in WhatsApp and
 anywhere else that previews links (6 Oct 2026; every link previewed as
-Namo's front page). **So does a Bhakti item** (8 Oct 2026): its share
+Namo's front page). **So does a reel** (18 Oct 2026, Rahul): `/reels/<id>`
+previews as "<Name>'s reel on NAMO", the caption, and a frame from a second
+into the video, whole, over a blur of itself, with a play mark. **So does a
+Bhakti item** (8 Oct 2026): its share
 message links to `/bhakti/s/<id>?ref=<code>`, which previews with its title
 and, for a status or wallpaper, its picture (a priced one shows only its
 public preview); opened, it is the Bhakti screen, or sign-up with the code

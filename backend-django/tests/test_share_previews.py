@@ -249,3 +249,55 @@ class TestHome:
 
         LinkCard.objects.create(title="NAMO", description="d")
         assert 'og:image" content="https://1namo.com/og.png"' in client.get("/").content.decode()
+
+
+@pytest.fixture
+def reel(db, tmp_path):
+    """A real 3-second portrait video on disk; FFmpeg reads a path as it
+    reads a URL."""
+    import subprocess
+
+    import imageio_ffmpeg
+
+    from apps.profiles.models import Profile
+
+    path = tmp_path / "reel.mp4"
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-loglevel", "error", "-y", "-f", "lavfi",
+                    "-i", "testsrc2=size=360x640:rate=30:duration=3", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    str(path)], check=True)
+    Profile.objects.create(id="11111111-2222-3333-4444-555555555555", phone="9000000001", name="Meera Joshi")
+    return Content.objects.create(
+        author_id="11111111-2222-3333-4444-555555555555", kind="clip", status="live",
+        caption="Ganga aarti at Har ki Pauri", media_url=str(path),
+    )
+
+
+@pytest.mark.django_db
+class TestReel:
+    """18 Oct 2026, Rahul: a reel shared on WhatsApp shows its thumbnail."""
+
+    def test_the_page_carries_the_reels_card(self, client, network, reel):
+        page = client.get(f"/reels/{reel.id}").content.decode()
+        assert '<div id="root"></div>' in page
+        assert 'og:title" content="Meera Joshi&#x27;s reel on NAMO"' in page
+        assert f'og:image" content="https://1namo.com/og/reel/{reel.id}.jpg"' in page
+        assert "Ganga aarti at Har ki Pauri" in page and 'og:type" content="video.other"' in page
+
+    def test_the_thumbnail_is_a_frame_of_the_video(self, client, network, reel):
+        response = client.get(f"/og/reel/{reel.id}.jpg")
+        assert response.status_code == 200 and response["Content-Type"] == "image/jpeg"
+        image = Image.open(io.BytesIO(response.content))
+        assert image.size == (1200, 630) and len(response.content) < 300_000
+        # The frame sits whole in the middle: the test pattern's colours,
+        # not the dark blur, at the centre column.
+        assert max(image.getpixel((600, 100))) > 60
+
+    def test_a_removed_reel_previews_as_namo(self, client, network, reel):
+        Content.objects.filter(pk=reel.id).update(status="removed")
+        page = client.get(f"/reels/{reel.id}").content.decode()
+        assert 'og:title" content="NAMO"' in page
+
+    def test_a_video_that_will_not_open_falls_back(self, client, network, reel):
+        Content.objects.filter(pk=reel.id).update(media_url="https://cdn.example/missing.mp4")
+        response = client.get(f"/og/reel/{reel.id}.jpg")
+        assert response.status_code == 302 and response["Location"].endswith("/og.png")
