@@ -82,3 +82,37 @@ def _is_uuid(value):
         return True
     except (ValueError, TypeError, AttributeError):
         return False
+
+
+class DecideButtons:
+    """Mixin: a queue's decisions as buttons on the row's own page (18 Oct
+    2026, Rahul: approving a Seller or a Pro could not be found — the
+    actions sat in the list's dropdown, hidden on a phone). Each button
+    runs the existing list action on this one row, after the page's own
+    save, so a reason typed in the review note is saved first. Subclasses
+    list `decide_buttons` as (label, action name, "go" or "stop") and say
+    in `decide_shown` when they apply."""
+
+    change_form_template = "admin/decide_change_form.html"
+    decide_buttons = ()
+    # A line under the buttons, when turning down needs a reason first.
+    decide_note = ""
+
+    def decide_shown(self, obj):
+        return True
+
+    def render_change_form(self, request, context, add=False, change=False, form_url="", obj=None):
+        if obj is not None and self.decide_shown(obj):
+            context["decide_buttons"] = [(f"_decide_{name}", label, tone)
+                                         for label, name, tone in self.decide_buttons]
+            context["decide_note"] = self.decide_note
+        return super().render_change_form(request, context, add, change, form_url, obj)
+
+    def response_change(self, request, obj):
+        from django.http import HttpResponseRedirect
+
+        for _, name, _ in self.decide_buttons:
+            if f"_decide_{name}" in request.POST:
+                getattr(self, name)(request, type(obj).objects.filter(pk=obj.pk))
+                return HttpResponseRedirect(request.path)
+        return super().response_change(request, obj)

@@ -20,13 +20,13 @@ from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
 
-from .audit import AuditedAdmin, record
+from .audit import AuditedAdmin, DecideButtons, record
 from .models import AdminAction, AdminUser, Tier
 from .site import admin_row, at_least, site
 
 
 @dj.register(Consultant, site=site)
-class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
+class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
@@ -45,6 +45,11 @@ class ConsultantAdmin(AuditedAdmin, dj.ModelAdmin):
         "rank_score_cache", "legacy_id", "who", "certificate", "rates",
     )
     actions = ("approve", "block", "unblock")
+    # Approve on the applicant's own page (18 Oct 2026, Rahul could not find it).
+    decide_buttons = (("Approve", "approve", "go"),)
+
+    def decide_shown(self, obj):
+        return obj.status == Consultant.Status.PENDING
     list_per_page = 50
 
     @dj.display(description="Applicant")

@@ -345,3 +345,43 @@ def test_every_link_on_the_front_page_opens():
     for link in links:
         got = client.get(link.replace("&amp;", "&"))
         assert got.status_code == 200 and "?e=1" not in got.get("Location", ""), link
+
+
+@pytest.mark.django_db
+class TestDecideButtons:
+    """18 Oct 2026, Rahul could not find how to approve a Seller or a Pro:
+    the actions sat in the list's dropdown. The row's own page has them."""
+
+    def _request(self):
+        from apps.profiles.models import ModuleRequest
+
+        pid = uuid.uuid4()
+        Profile.objects.create(id=pid, phone=str(pid)[:15], name="Would-be seller")
+        return ModuleRequest.objects.create(profile_id=pid, module="seller", answers={"what": "Rudraksha"})
+
+    def test_a_seller_request_is_approved_from_its_page(self):
+        client, _ = _admin(Tier.SUPERADMIN)
+        row = self._request()
+        url = reverse("namo:profiles_modulerequest_change", args=[row.pk])
+        page = client.get(url).content.decode()
+        assert 'name="_decide_approve"' in page and 'name="_decide_reject"' in page
+        got = client.post(url, {"review_note": "", "_decide_approve": "1"})
+        assert got.status_code == 302
+        row.refresh_from_db()
+        assert row.status == "approved" and Profile.objects.get(pk=row.profile_id).seller is True
+        # Decided: the buttons go.
+        assert 'name="_decide_approve"' not in client.get(url).content.decode()
+
+    def test_turning_down_takes_the_reason_typed_on_the_page(self):
+        client, _ = _admin(Tier.SUPERADMIN)
+        row = self._request()
+        url = reverse("namo:profiles_modulerequest_change", args=[row.pk])
+        client.post(url, {"review_note": "Add photos of what you sell.", "_decide_reject": "1"})
+        row.refresh_from_db()
+        assert row.status == "rejected" and row.review_note == "Add photos of what you sell."
+
+    def test_a_pending_pro_has_approve_on_their_page(self):
+        client, _ = _admin(Tier.SUPERADMIN)
+        pro = _pending_consultant()
+        page = client.get(reverse("namo:consultants_consultant_change", args=[pro.pk])).content.decode()
+        assert 'name="_decide_approve"' in page

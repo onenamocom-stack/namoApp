@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 
 from apps.console.admin import _signed_document
-from apps.console.audit import AuditedAdmin, record
+from apps.console.audit import AuditedAdmin, DecideButtons, record
 from apps.console.models import Tier
 from apps.console.site import admin_row, at_least, site
 
@@ -68,7 +68,7 @@ class ListingForm(forms.ModelForm):
 
 
 @dj.register(Listing, site=site)
-class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
+class ListingAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     audit_target = "market_listing"
     form = ListingForm
     list_display = ("thumb", "title", "kind", "seller", "price", "commission", "status", "created_at")
@@ -78,6 +78,12 @@ class ListingAdmin(AuditedAdmin, dj.ModelAdmin):
     ordering = ("status", "-created_at")
     list_per_page = 50
     actions = ("approve_default", "reject_with_note")
+    # On the listing's own page too (18 Oct 2026).
+    decide_buttons = (("Approve", "approve_default", "go"), ("Reject", "reject_with_note", "stop"))
+    decide_note = "To turn down, write the reason in the review note first; the person sees it."
+
+    def decide_shown(self, obj):
+        return obj.status == ListingStatus.PENDING
     readonly_fields = (
         "seller", "kind", "status", "cover", "title", "price", "mrp", "description_text",
         "what", "reviewed_at", "reviewed_by",

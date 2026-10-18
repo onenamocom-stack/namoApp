@@ -1,0 +1,21 @@
+{% extends "admin/change_form.html" %}
+{% comment %}
+  A queue row's decisions as buttons (audit.DecideButtons, 18 Oct 2026):
+  on top, where a phone sees them first, and again by Save.
+{% endcomment %}
+{% block field_sets %}
+{% if decide_buttons %}
+<style>
+  .decide { display:flex; gap:10px; flex-wrap:wrap; margin:6px 0 18px; }
+  .decide button { border:0; border-radius:10px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; color:#fff; }
+  .decide .go { background:#1f8a4c; }
+  .decide .stop { background:#c0392b; }
+  .decide small { flex-basis:100%; color:#6b6b75; }
+</style>
+<div class="decide">
+  {% for key, label, tone in decide_buttons %}<button type="submit" name="{{ key }}" class="{{ tone }}">{{ label }}</button>{% endfor %}
+  {% if decide_note %}<small>{{ decide_note }}</small>{% endif %}
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

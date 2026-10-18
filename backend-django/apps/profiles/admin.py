@@ -211,13 +211,13 @@ class ProfileAdmin(dj.ModelAdmin):
 
 
 def _register_module_requests():
-    from apps.console.audit import AuditedAdmin
+    from apps.console.audit import AuditedAdmin, DecideButtons
 
     from . import modules
     from .models import ModuleRequest
 
     @dj.register(ModuleRequest, site=site)
-    class ModuleRequestAdmin(AuditedAdmin, dj.ModelAdmin):
+    class ModuleRequestAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
         """Requests for the Creator and the Seller module. Approve switches
         the module on; Reject needs the reason in the review note, which the
         person sees. Either way they get a notification. A Pro applies with
@@ -231,6 +231,12 @@ def _register_module_requests():
         fields = ("who", "module", "status", "answers_shown", "review_note", "submitted_at", "reviewed_at",
                   "reviewed_by")
         actions = ("approve", "reject")
+        # On the request's own page too (18 Oct 2026, Rahul could not find them).
+        decide_buttons = (("Approve", "approve", "go"), ("Reject", "reject", "stop"))
+        decide_note = "To turn down, write the reason in the review note first; the person sees it."
+
+        def decide_shown(self, obj):
+            return obj.status == ModuleRequest.Status.PENDING
 
         @dj.display(description="Who")
         def who(self, obj):
