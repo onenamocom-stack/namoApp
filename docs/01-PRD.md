@@ -407,6 +407,10 @@ Consultant-uploaded course material — PDFs and video links, free or paid — i
 requested capability with **no upload path in the app today**.
 
 E-books are free unless priced; the first priced one is **₹99** (§4.11).
+**Since 18 Oct 2026 (Rahul) Namo lists no downloads of its own:** every
+download goes through a seller's account. The six Namo e-books are now the
+Market downloads of the seller Rahul Jain, at the same prices (five free,
+*A Complete Guide to Beej Mantra* ₹99), paid out to him like any seller.
 
 **Pros and Creators sell (owner's yes 15 Oct 2026, on Rahul's terms):** the
 Market sells four kinds — Downloads (any file: a PDF, an e-book, a tool in a
@@ -491,7 +495,7 @@ Three things the wallet buys that stay bought. The price is the server's
 |---|---|---|
 | **Your own predictions** — yesterday, today, tomorrow, read from your birth (`/chart`, Prediction tab) | **₹99** | 30 days; buying again early starts where the last ends. No auto-renewal |
 | **Muhurat judged against your zodiac** | **₹49** | One purpose for one month, forever — reopening it is free, another purpose or month is another ₹49. Shows only the best quarter of that month's windows for the reader's chart (5 Oct 2026) |
-| **A priced e-book** — the first is *A Complete Guide to Beej Mantra* | **₹99** | Forever, on any device the account signs in on |
+| **A priced e-book** — the first is *A Complete Guide to Beej Mantra* (a Market download of the seller Rahul Jain since 18 Oct 2026) | **₹99** | Forever, on any device the account signs in on |
 
 **What stays free:** the natal chart and every divisional chart (D1–D60),
 the daily reading **by sign** (twelve a day, the same for everyone with the
