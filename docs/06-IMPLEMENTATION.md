@@ -729,9 +729,9 @@ Order, each part shipped on its own:
   **Videos to review** queue; clear → `live` for an approved Pro or
   Creator, and for anybody else once they have 3 live videos (their first
   3 wait in the queue). The queue shows the sheet and the verdict;
-  Approve puts the file and its copies live, Reject deletes them. Needs
-  the Vision API enabled on the project; the worker's service account is
-  the credential.
+  Approve puts the file and its copies live, Reject deletes them. The
+  Vision API is enabled on the project (18 Oct 2026); the worker's
+  service account is the credential.
 - **F — playback.** Thumbnail first, 480p muted autoplay, 720p on Wi-Fi
   or strong bandwidth, only the first segment of the next one or two
   preloaded, a Data saver setting. Web: hls.js. Android: ExoPlayer.
