@@ -48,8 +48,9 @@ Content has two steps (Rahul, 17 Oct 2026; §12):
   met, no console. Tags products, shares product links and the invite code,
   and earns on all three (§12); sees views and insights. **No pay on
   views.**
-- **Content, step 2 (Creator)** — 500 followers, and in the last 90 days 10
-  videos and 1,00,000 views (every view, not only engagement). Meeting them
+- **Content, step 2 (Creator)** — 500 followers, and in the last 90 days 3
+  videos (Rahul, 17 Oct; 10 the same day before) and 1,00,000 views (every
+  view, not only engagement). Meeting them
   opens the request; **the team approves it**. Step 1 plus pay on views.
   Everybody who was a Creator on 17 Oct holds step 2. Posting video is
   everybody's since 17 Oct 2026 (Rahul).

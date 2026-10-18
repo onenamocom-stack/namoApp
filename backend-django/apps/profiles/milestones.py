@@ -3,7 +3,8 @@
   step 1  100 followers, 10 live videos, an account 30 days old. Granted
           on its own the moment the person asks with all three met
           (`profiles.referrer`): referral earnings, no pay on views.
-  step 2  500 followers, and in the last 90 days 10 videos and 100,000
+  step 2  500 followers, and in the last 90 days 3 videos (Rahul, 17 Oct;
+          it was 10 the same day) and 100,000
           views (every view, not only engaged ones). Opens the request;
           the console approves (`profiles.influencer`): pay on views.
 
@@ -15,7 +16,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 STEP1 = {"followers": 100, "videos": 10, "days": 30}
-STEP2 = {"followers": 500, "videos_90d": 10, "views_90d": 100_000}
+STEP2 = {"followers": 500, "videos_90d": 3, "views_90d": 100_000}
 WINDOW_DAYS = 90
 
 

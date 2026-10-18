@@ -2,7 +2,7 @@
 
   step 1  100 followers, 10 live videos, 30 days: granted on asking, no
           console; tags, links and the A code earn, sign-ups pay
-  step 2  500 followers, 10 videos and 100,000 views in 90 days: then the
+  step 2  500 followers, 3 videos and 100,000 views in 90 days: then the
           request, which the console approves; pay on views, the tick
 """
 
@@ -106,7 +106,7 @@ class TestStepTwo:
     def test_met_opens_the_request_the_console_decides(self, roster):
         Profile.objects.filter(pk=SEEKER).update(referrer=True)
         _followers(500)
-        _videos(10, days_ago=5, views=10_000)
+        _videos(3, days_ago=5, views=34_000)  # 3 videos are enough (17 Oct)
         row = modules.ask(SEEKER, "creator", {"topic": "Bhajans", "link": "https://x", "followers": "1"})
         assert row.status == "pending" and Profile.objects.get(pk=SEEKER).influencer is False
         modules.decide(row, True, "admin@namo")

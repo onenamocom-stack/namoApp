@@ -191,12 +191,14 @@ function ConditionBar({ row }) {
     <li>
       <div className="flex items-baseline justify-between gap-3 text-micro">
         <span className="t-body">{row.label}</span>
-        <span className={`tabular-nums font-semibold ${row.done ? 'text-ok' : 't-heading'}`}>
+        <span className="tabular-nums font-semibold t-heading">
           {row.have.toLocaleString('en-IN')} / {row.need.toLocaleString('en-IN')}
         </span>
       </div>
+      {/* One quiet colour, full when met (17 Oct 2026, Rahul: orange and
+          green were too much). */}
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface2">
-        <div className={`h-full rounded-full ${row.done ? 'bg-ok' : 'bg-gold-fill'}`} style={{ width: `${share * 100}%` }} />
+        <div className="h-full rounded-full bg-ink/70" style={{ width: `${share * 100}%` }} />
       </div>
     </li>
   )
@@ -212,7 +214,7 @@ export function StepBars({ step }) {
  * The Content card (Rahul, 17 Oct 2026; docs/01 §12): two steps.
  * Step 1 (100 followers, 10 videos, 30 days) is yours the moment you ask
  * with all three met: tags, product links and your invite code earn.
- * Step 2 (500 followers, and 10 videos and 1,00,000 views in 90 days)
+ * Step 2 (500 followers, and 3 videos and 1,00,000 views in 90 days)
  * opens the request; the team approves it, and your views earn too.
  * `asks` is `myModules()`: modules, progress, questions. `children` are
  * the links once step 1 is held.
@@ -252,7 +254,7 @@ export function ContentCard({ asks, onChanged, children = null }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-lead font-semibold t-heading">Content</p>
-            {badge && <span className="rounded-full bg-ok px-2 py-0.5 text-[11px] font-semibold text-white">{badge}</span>}
+            {badge && <span className="rounded-full bg-surface2 px-2 py-0.5 text-[11px] font-semibold t-heading">{badge}</span>}
           </div>
           <p className="mt-1 text-meta t-body">
             Post, tag products and share your invite code. Step 1 earns on referrals. Step 2 earns on your views too.

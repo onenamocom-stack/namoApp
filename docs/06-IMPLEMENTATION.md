@@ -687,7 +687,7 @@ Rahul on Telegram, every answer his: three ways to earn (Content, Pro,
 Market). Content has two steps (rules in `01` §2 and §12): **step 1**,
 100 followers, 10 live videos, 30 days, granted automatically on asking:
 tags, product links and the invite code earn, insights, no pay on views;
-**step 2**, 500 followers, 10 videos and 1,00,000 views (all views) in 90
+**step 2**, 500 followers, 3 videos and 1,00,000 views (all views) in 90
 days, then a request the console approves: pay on views and the blue tick.
 Today's Creators hold step 2. The ₹25 a sign-up becomes step 1's only (a
 Pro or a Seller without it loses it); everybody else keeps the 3 AI
