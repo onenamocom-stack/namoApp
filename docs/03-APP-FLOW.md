@@ -2138,7 +2138,9 @@ goes straight to the phone's sheet.
   title and link; green, Rahul), Share (the phone's sheet, as the button
   did before) and Copy link.
 
-In the chat, a share is a card: the picture, or the reel's first frame,
+In the chat, a share is a card: the picture, or for a reel its link
+preview standing 9:16 (the frame, NAMO's logo and the play mark, as
+WhatsApp shows it; 18 Oct 2026, Rahul — reels sent before then too),
 what it is (Reel, Post, Article, Shop, Bhakti, Profile) and its title. A tap
 opens it. A post has no page, so it opens its author's. The Chats list
 reads "Sent a reel", "Sent a post" and so on.

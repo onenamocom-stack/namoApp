@@ -92,6 +92,11 @@ export function fullUrl(path) {
 
 const OURS = /^https:\/\/(?:pro\.)?1namo\.com(\/\S*)$/
 const MEDIA_HOST = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
+/* Our R2 bucket's addresses: media.1namo.com since 18 Oct 2026, and the
+   r2.dev one older rows keep. The exact host, not any r2.dev: those are
+   anybody's buckets. Without these every R2 picture was dropped from the
+   card (Rahul, 18 Oct 2026: a reel arrived as words only). */
+const R2_HOSTS = ['https://media.1namo.com/', 'https://pub-3af0d667ea734b68a3281ea8d13e3a72.r2.dev/']
 
 export function shareMessage({ path, title, media }) {
   const url = /^https?:/.test(path) ? path : `${SEEKER_APP_URL.replace(/\/$/, '')}${path}`
@@ -105,6 +110,7 @@ function ourMedia(url) {
   if (!url || typeof url !== 'string') return null
   if (url.startsWith('/')) return url
   if (MEDIA_HOST && url.startsWith(`${MEDIA_HOST}/storage/`)) return url
+  if (R2_HOSTS.some((h) => url.startsWith(h))) return url
   return OURS.test(url) ? url : null
 }
 
@@ -156,7 +162,16 @@ export function parseShare(body) {
   const hit = first.trim().match(OURS)
   if (!hit) return null
   const path = hit[1] || '/'
-  return { path, kind: kindOf(path), title: title.trim(), media: ourMedia(media.trim()) }
+  return { path, kind: kindOf(path), title: title.trim(), media: reelCard(path) || ourMedia(media.trim()) }
+}
+
+/* A reel's card in a chat is its link preview (18 Oct 2026, Rahul: "like
+   share"): the standing frame with the logo and the play mark that
+   WhatsApp shows, one small JPEG for an MP4 or an HLS reel alike, and
+   for reels sent before this too. */
+function reelCard(path) {
+  const id = path.match(/^\/reels\/([0-9a-f-]{36})/i)?.[1]
+  return id ? `${SEEKER_APP_URL.replace(/\/$/, '')}/og/reel/${id}.jpg?v=3` : null
 }
 
 /** The Chats list's line for a conversation whose last message is a share. */

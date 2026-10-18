@@ -273,7 +273,7 @@ function ShareCard({ s, mine, hold }) {
       }`}
     >
       {s.media && (
-        <span className="block aspect-[4/5] w-full overflow-hidden bg-ink/[0.06]">
+        <span className={`block w-full overflow-hidden bg-ink/[0.06] ${s.kind === 'reel' ? 'aspect-[9/16]' : 'aspect-[4/5]'}`}>
           {video ? (
             <video src={`${s.media}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
           ) : posterOf(s.media) ? (
