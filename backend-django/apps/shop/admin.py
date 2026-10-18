@@ -145,6 +145,8 @@ class FormattedTextarea(forms.Textarea):
 class ProductForm(forms.ModelForm):
     price = RupeeField(label="Price")
     mrp = RupeeField(label="MRP (struck through)", required=False)
+    purchase_price = RupeeField(label="Purchase price", required=False,
+                                help_text="What it cost to buy. Only here and in the sheet; buyers never see it.")
     # First-order cashback through an astrologer's code (9 Oct 2026;
     # apps/shop/offers.py). The kind is the model's select; these hold its
     # amount in the units somebody types.
@@ -233,6 +235,7 @@ class ProductForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             self.fields["price"].initial = self.instance.price_paise
             self.fields["mrp"].initial = self.instance.mrp_paise
+            self.fields["purchase_price"].initial = self.instance.purchase_price_paise
             self.fields["gallery_text"].initial = "\n".join(self.instance.gallery or [])
             self.fields["faq_text"].initial = faq_to_text(self.instance.faq)
             kind, value = self.instance.referral_cashback_kind, self.instance.referral_cashback_value
@@ -325,6 +328,7 @@ class ProductForm(forms.ModelForm):
         product = super().save(commit=False)
         product.price_paise = self.cleaned_data["price"]
         product.mrp_paise = self.cleaned_data.get("mrp")
+        product.purchase_price_paise = self.cleaned_data.get("purchase_price")
         product.gallery = self.cleaned_data.get("gallery_text") or []
         product.faq = self.cleaned_data.get("faq_text") or []
         kind = self.cleaned_data.get("referral_cashback_kind") or "default"
@@ -353,7 +357,8 @@ class ProductAdmin(AuditedAdmin, dj.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("sku", "name", "brand", "subtitle", "category", "subcategory")}),
         ("Also shows under", {"fields": ("also_categories", "also_subcategories")}),
-        ("Price and stock", {"fields": ("price", "mrp", "stock", "weight_grams", "tax_rate_bps", "featured", "active")}),
+        ("Price and stock", {"fields": ("price", "mrp", "purchase_price", "stock", "weight_grams", "tax_rate_bps",
+                                        "featured", "active")}),
         ("Photos", {"fields": ("upload", "image_url", "gallery_upload", "gallery_text")}),
         ("Product page", {"fields": ("description", "faq_text")}),
         ("Search and sharing", {"fields": ("slug", "seo_title", "seo_description")}),

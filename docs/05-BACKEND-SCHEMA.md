@@ -654,6 +654,7 @@ products (
   seo_description text,                           -- blank: the description's first line
   price_paise     integer not null,               -- charged; GST inclusive
   mrp_paise       integer,                        -- struck through; above price or null (console check)
+  purchase_price_paise integer,                   -- 18 Oct 2026 (shop/0010): what it cost to buy; console and sheet only, never in product_row
   tax_rate_bps    smallint not null default 0,    -- recorded on the order line, not added
   stock           integer not null default 0,
   weight_grams    integer not null,               -- Shiprocket prices on it

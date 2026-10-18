@@ -43,6 +43,7 @@ COLUMNS = (
     ("also_subcategories", "Other subcategories, each written Category > Subcategory, separated by ;"),
     ("price_rupees", "Required. What is charged, in rupees: 1850 not 185000."),
     ("mrp_rupees", "Optional. The struck-through price; must be above the price."),
+    ("purchase_rupees", "Optional. What it cost to buy; the console and this sheet only, never shown to buyers."),
     ("stock", "Required. Whole number, 0 or more."),
     ("weight_grams", "Required. Shipping is priced on it."),
     ("gst_percent", "0, 3, 5, 12, 18 or 28."),
@@ -84,7 +85,7 @@ def export_workbook(products):
             p.subcategory.name if p.subcategory_id else "",
             "; ".join(c.name for c in p.also_categories.all()),
             "; ".join(f"{s.category.name} > {s.name}" for s in p.also_subcategories.select_related("category")),
-            _rupees(p.price_paise), _rupees(p.mrp_paise),
+            _rupees(p.price_paise), _rupees(p.mrp_paise), _rupees(p.purchase_price_paise),
             p.stock, p.weight_grams, p.tax_rate_bps / 100,
             "yes" if p.featured else "no", "yes" if p.active else "no",
             p.image_url or "", "\n".join(p.gallery or []), p.description or "",
@@ -247,6 +248,9 @@ def read_workbook(data):
 
         price, e1 = _money(get("price_rupees"), "price", True)
         mrp, e2 = _money(get("mrp_rupees"), "MRP", False)
+        purchase, e5 = _money(get("purchase_rupees"), "purchase price", False)
+        if e5:
+            problems.append(e5)
         stock, e3 = _whole(get("stock"), "stock")
         weight, e4 = _whole(get("weight_grams"), "weight")
         problems += [e for e in (e1, e2, e3, e4) if e]
@@ -325,6 +329,7 @@ def read_workbook(data):
                 "subtitle": _text(get("subtitle")) or None,
                 "category": category, "subcategory": subcategory,
                 "price_paise": price, "mrp_paise": mrp, "stock": stock,
+                **({"purchase_price_paise": purchase} if "purchase_rupees" in col else {}),
                 "weight_grams": weight, "tax_rate_bps": int(gst * 100),
                 "featured": featured, "active": active,
                 "image_url": cover or None, "gallery": gallery,

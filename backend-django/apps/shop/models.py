@@ -94,6 +94,9 @@ class Product(models.Model):
     image_url = models.TextField(null=True, blank=True)
     price_paise = models.IntegerField()
     mrp_paise = models.IntegerField(null=True, blank=True)
+    # What the product cost to buy (18 Oct 2026, Rahul). The console and the
+    # sheet only: never in product_row, never shown to a buyer.
+    purchase_price_paise = models.IntegerField(null=True, blank=True)
     tax_rate_bps = models.SmallIntegerField(default=0)
     stock = models.IntegerField(default=0)
     # Shiprocket prices on weight, so this is not decoration: a product

@@ -220,3 +220,23 @@ def test_the_cashback_column(shelf):
     bad = _sheet(header, [_row(header, sku="NAMO-0001", name="Ruby", category="Gemstones",
                                price_rupees=1000, stock=4, weight_grams=10, cashback="lots")])
     assert sheet.read_workbook(bad)[1]
+
+
+def test_the_purchase_price_stays_inside(shelf):
+    """18 Oct 2026, Rahul: a purchase price column — in the sheet and the
+    console, never in what the app reads."""
+    from apps.shop.services import product_row
+
+    header = sheet.HEADERS
+    data = _sheet(header, [
+        _row(header, sku="NAMO-0001", name="Ruby", category="Gemstones", price_rupees=1000,
+             purchase_rupees=240, stock=4, weight_grams=10),
+    ])
+    plans, errors = sheet.read_workbook(data)
+    assert errors == []
+    sheet.apply(plans)
+    ruby = Product.objects.get(sku="NAMO-0001")
+    assert ruby.purchase_price_paise == 24_000
+    header_row, rows = _rows(sheet.export_workbook(Product.objects.all()))
+    assert rows[0][list(header_row).index("purchase_rupees")] == 240
+    assert "purchase" not in str(product_row(ruby)) and "24000" not in str(product_row(ruby))

@@ -284,6 +284,11 @@ def _shelve(listing):
         product = Product.objects.filter(pk=listing.product_id).first()
         if product is not None:
             for k, v in fields.items():
+                # A brand set in the console (AMOGH for AK International,
+                # 18 Oct 2026) outlives an edit; the seller's name is only
+                # the first brand.
+                if k == "brand" and product.brand:
+                    continue
                 setattr(product, k, v)
             product.save()
             return product
