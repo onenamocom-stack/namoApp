@@ -23,6 +23,7 @@ made, the site's own og.png.
 import html
 import io
 import logging
+import os
 import re
 import uuid
 import zlib
@@ -152,8 +153,9 @@ def reel_page(request, content_id):
         return _page(_tags(title="NAMO", description=SITE_LINE,
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     name = Profile.objects.filter(pk=row.author_id).values_list("name", flat=True).first() or ""
-    # `v=2`: the standing card, so a day-cached landscape one is not reused.
-    image = f"{_site()}/og/reel/{row.id}.jpg?v=2" if row.media_url else None
+    # `v=3`: the standing card with the logo, so a day-cached older one is
+    # not reused.
+    image = f"{_site()}/og/reel/{row.id}.jpg?v=3" if row.media_url else None
     title = f"{name}'s reel on NAMO" if name else "A reel on NAMO"
     return _page(_tags(title=title, description=_summary(row.caption) or "Watch it on NAMO.",
                        image=image or f"{_site()}{FALLBACK_IMAGE}", url=url, kind="video.other",
@@ -389,6 +391,31 @@ def _frame(source):
     raise ValueError("no frame")
 
 
+# NAMO's logo with white letters (public/namo-logo-light.png), for the
+# reel card's corner.
+LOGO = os.path.join(os.path.dirname(__file__), "assets", "namo-logo-light.png")
+LOGO_WIDTH = 190
+# WhatsApp shows a standing image cut to about 5:7 around its middle, so
+# the corner it shows starts about this far down a 720 × 1280 card.
+SHOWN_TOP = 140
+
+
+def _logo(card):
+    """The logo in the top right corner (Rahul, 18 Oct 2026), on a soft
+    dark band so it reads over any frame, inside the part WhatsApp shows."""
+    from PIL import Image, ImageDraw, ImageFilter
+
+    logo = Image.open(LOGO).convert("RGBA")
+    logo = logo.resize((LOGO_WIDTH, round(logo.height * LOGO_WIDTH / logo.width)), Image.Resampling.LANCZOS)
+    x, y = card.width - LOGO_WIDTH - 32, SHOWN_TOP + 28
+    shade = Image.new("L", card.size, 0)
+    ImageDraw.Draw(shade).rounded_rectangle((x - 18, y - 14, x + logo.width + 18, y + logo.height + 14),
+                                            radius=20, fill=110)
+    shade = shade.filter(ImageFilter.GaussianBlur(10))
+    card.paste(Image.new("RGB", card.size, (0, 0, 0)), (0, 0), shade)
+    card.paste(logo, (x, y), logo)
+
+
 def _reel_card(source):
     """720 × 1280, standing: a portrait reel fills it (the edges trimmed to
     9:16); a landscape one sits whole across the middle over a dark blur
@@ -408,6 +435,7 @@ def _reel_card(source):
     cx, cy, r = w // 2, h // 2, 54
     draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(0, 0, 0, 120))
     draw.polygon([(cx - 18, cy - 28), (cx - 18, cy + 28), (cx + 30, cy)], fill=(255, 255, 255, 235))
+    _logo(back)
     out = io.BytesIO()
     back.save(out, format="JPEG", quality=80, optimize=True, progressive=True)
     return out.getvalue()

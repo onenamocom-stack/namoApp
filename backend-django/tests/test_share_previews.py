@@ -280,7 +280,7 @@ class TestReel:
         page = client.get(f"/reels/{reel.id}").content.decode()
         assert '<div id="root"></div>' in page
         assert 'og:title" content="Meera Joshi&#x27;s reel on NAMO"' in page
-        assert f'og:image" content="https://1namo.com/og/reel/{reel.id}.jpg?v=2"' in page
+        assert f'og:image" content="https://1namo.com/og/reel/{reel.id}.jpg?v=3"' in page
         assert 'og:image:width" content="720"' in page and 'og:image:height" content="1280"' in page
         assert "Ganga aarti at Har ki Pauri" in page and 'og:type" content="video.other"' in page
 
