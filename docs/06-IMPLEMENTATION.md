@@ -681,7 +681,7 @@ reject with note, notify), the console actions. Docs: `01` §2 and §12
 (who earns what), `03` (Earn on Namo, Dashboard), `04` (one tick), `05`
 (`profiles.seller`, `module_requests`).
 
-### Content in two steps, Studio, Engagement (Rahul, 17 Oct 2026 — built on branch `content-steps`, not deployed)
+### Content in two steps, Studio, Engagement (Rahul, 17 Oct 2026 — LIVE 18 Oct on Rahul's "ship")
 
 Rahul on Telegram, every answer his: three ways to earn (Content, Pro,
 Market). Content has two steps (rules in `01` §2 and §12): **step 1**,
@@ -705,8 +705,7 @@ annotation on `influencer` only; app: `ContentCard` and `StepBars`
 route rename. **What it changes on the day it goes live:** a Pro or a
 Seller who is not a Creator stops earning ₹25 a sign-up; a Seller loses
 the tick; nobody new can tag products until they reach step 1. Money
-already earned is paid. Needs `profiles/0009` migrated on production and
-Rahul's "ship".
+already earned is paid.
 
 ## Seed
 
