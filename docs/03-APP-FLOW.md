@@ -1068,7 +1068,9 @@ as you type, saved once every 30 days (11 Oct 2026, Rahul); the pro app's
 Settings has the same row under Practice — orders, notification history, phone — no Wallet row since 11 Oct
 2026, Rahul: the wallet is the header icon — on Consult only in the seeker
 app since 13 Oct 2026, every tab in the pro app), Preferences
-(language, help and support; the full deity image toggle went on 11 Oct
+(language; **Data saver**, Off / On, kept on the phone: reels play at
+480p and nothing loads ahead (18 Oct 2026, Rahul's video spec); help and
+support; the full deity image toggle went on 11 Oct
 2026, Rahul: the murti is always whole), and sign out. Back means Home from the profile and the
 profile from settings. "More from Namo" (Namo AI, premium, academy, shop) went on
 11 Oct 2026 (Rahul): each was a second link to a tab or a tool.
@@ -1393,7 +1395,13 @@ Content step 1 or 2. Header back to Studio; tabs **Earnings · Insights**.
 
 No Studio (14 Oct 2026, Rahul; it was the first row): posting is Home's +.
 A chosen video is made smaller on the phone first, under the post as
-"Making the video smaller · 40%", then "Uploading…" (Phase 15d). A chosen
+"Making the video smaller · 40%", then "Uploading · 60%" (Phase 15d; the
+video pipeline since 18 Oct 2026, `docs/06` Phase 19). The preview is the
+phone's own file. *Publish* answers "Posted. Your reel shows once it is
+checked." while the video is encoded and checked; the reel appears in the
+feeds when it is live, and the author gets *Your reel is live* or *Your
+reel was not posted* in notifications. Editing a reel's video, or an API
+without the pipeline, uploads it the old way. A chosen
 photo, on a festival's days, shows a row of **festival frames** under it
 (below). A video
 longer than 90 seconds is refused before upload: "Videos can be up to 90

@@ -144,6 +144,24 @@ def _mine(user_id, video_id):
     return video
 
 
+def for_post(user_id, video_id):
+    """A post of this video (content.publish_content): its playlist URL,
+    or None until encoded, and whether it is live already."""
+    video = _mine(user_id, video_id)
+    if video.status in (VideoStatus.UPLOADING, VideoStatus.REJECTED, VideoStatus.DELETED):
+        raise Refused("That video is not ready to post. Choose it again.", status=409, reason="not_ready")
+    from apps.media.providers import public_url
+
+    return (public_url(video.hls_path) if video.hls_path else None), video.status == VideoStatus.LIVE
+
+
+def _settle(ids):
+    """The posts waiting for these videos follow them (content.video_settled)."""
+    from apps.content import services as content
+
+    content.video_settled(ids)
+
+
 def parts(user_id, video_id):
     """What R2 has, and fresh URLs for the parts still to send."""
     video = _mine(user_id, video_id)
@@ -263,6 +281,7 @@ def worker_done(body, now=None):
             Video.objects.filter(pk=video.pk).update(claimed_at=None, error=str(body.get("error") or "")[:500])
     if rejected is not None:
         get_store().delete_outputs(f"v/{rejected.id}/")
+    _settle(_with_copies(video).values_list("pk", flat=True))
     return True
 
 
@@ -274,8 +293,10 @@ def approve(video, by=""):
     """The review queue's yes: the file and every copy of it go live."""
     root = _root(video)
     review = {**(root.moderation or {}), "reviewed": "approved", "by": by}
-    return _with_copies(root).filter(status=VideoStatus.IN_REVIEW).update(
+    n = _with_copies(root).filter(status=VideoStatus.IN_REVIEW).update(
         status=VideoStatus.LIVE, moderation=review)
+    _settle(_with_copies(root).values_list("pk", flat=True))
+    return n
 
 
 def reject(video, by="", why="rejected by a moderator"):
@@ -288,6 +309,7 @@ def reject(video, by="", why="rejected by a moderator"):
         status=VideoStatus.REJECTED, moderation=review, error=why[:500])
     if n:
         get_store().delete_outputs(f"v/{root.id}/")
+        _settle(_with_copies(root).values_list("pk", flat=True))
     return n
 
 
@@ -306,6 +328,7 @@ def redispatch(now=None):
             _with_copies(video).update(
                 status=VideoStatus.DELETED,
                 error=f"failed: not processed after {video.attempts} tries. {video.error}"[:500])
+            _settle(_with_copies(video).values_list("pk", flat=True))
         else:
             enqueue(video, now)
         n += 1

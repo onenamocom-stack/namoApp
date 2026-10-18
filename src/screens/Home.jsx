@@ -15,6 +15,8 @@ import { ActIcon, Count } from '../components/ActIcon.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
 import { useReshare } from '../components/ReshareSheet.jsx'
 import Plate from '../components/Plate.jsx'
+import Video from '../components/Video.jsx'
+import { dataSaver, isVideoUrl } from '../lib/hls.js'
 import ReportSheet from '../components/ReportSheet.jsx'
 import CommentSheet from '../components/CommentSheet.jsx'
 import EditSheet from '../components/EditSheet.jsx'
@@ -1266,7 +1268,7 @@ function ReelCard({ reel, resharedBy }) {
   const mine = !resharedBy && isMine(r.authorId, session?.user?.id)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(r.comments ?? 0)
-  const isVideo = r.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
+  const isVideo = isVideoUrl(r.mediaUrl)
   const frame = useRef(null)
   const near = useNearScreen(frame)
   const video = useRef(null)
@@ -1311,10 +1313,10 @@ function ReelCard({ reel, resharedBy }) {
               seeks there and `preload="metadata"` fetches just enough to paint it.
               ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
           {isVideo && near && (
-            <video
+            <Video
               ref={video}
-              src={`${r.mediaUrl}#t=0.5`}
-              preload={playing ? 'auto' : 'metadata'}
+              src={r.mediaUrl}
+              load={playing ? 'play' : dataSaver() ? 'none' : 'preload'}
               muted
               loop
               playsInline

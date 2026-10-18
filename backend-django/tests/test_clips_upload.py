@@ -322,3 +322,71 @@ def test_the_console_queue_shows_the_frames_and_approves():
     row.refresh_from_db()
     assert row.status == "live" and row.moderation["reviewed"] == "approved"
     assert AdminAction.objects.filter(action="video.approve").exists()
+
+
+@pytest.mark.django_db
+class TestPost:
+    """A reel posted with its video_id (18 Oct 2026): hidden until the
+    video is live, then its HLS playlist; removed when it is refused."""
+
+    @pytest.fixture(autouse=True)
+    def worker(self, settings, monkeypatch):
+        settings.VIDEO_WORKER_URL, settings.VIDEO_WORKER_TOKEN = "https://worker.test", "wt"
+        settings.R2_BUCKET = "namo-media"
+        settings.MEDIA_PUBLIC_BASE_URL = "https://media.test"
+        monkeypatch.setattr(services.requests, "post", _Posted())
+
+    def _completed(self, api_client, token):
+        row = _processing(api_client, token)
+        api_client.post(f"/v1/videos/{row.id}/complete/", {}, format="json", **auth(token))
+        return row
+
+    def _post(self, api_client, token, row):
+        return api_client.post("/v1/content/publish/", {"kind": "clip", "caption": "Aarti",
+                                                         "video_id": str(row.id)},
+                               format="json", **auth(token))
+
+    def _encode(self, api_client, row, verdict):
+        body = {"video_id": str(row.id), "ok": True, "hls_path": f"v/{row.id}/master.m3u8",
+                "thumb_path": f"v/{row.id}/thumb.webp", "duration_s": 30, "moderation": verdict}
+        api_client.post("/v1/videos/worker/done/", body, format="json", HTTP_X_WORKER_TOKEN="wt")
+
+    def test_waits_hidden_then_goes_live_with_its_playlist(self, api_client, token, me):
+        from apps.content.models import Content
+        from apps.notifications.models import Notification
+
+        row = self._completed(api_client, token)
+        got = self._post(api_client, token, row)
+        assert got.status_code == 201 and got.json()["status"] == "draft"
+        post = Content.objects.get(pk=got.json()["id"])
+        assert post.video_id == row.id and post.media_url is None
+        self._encode(api_client, row, CLEAR)  # a first video: the queue
+        post.refresh_from_db()
+        assert post.status == "draft" and post.media_url == f"https://media.test/v/{row.id}/master.m3u8"
+        services.approve(Video.objects.get(pk=row.id))
+        post.refresh_from_db()
+        assert post.status == "live" and post.published_at is not None
+        assert Notification.objects.filter(profile_id=TEST_USER, kind="content.video.live").count() == 1
+
+    def test_a_live_video_posts_at_once(self, api_client, token, me):
+        Profile.objects.filter(pk=TEST_USER).update(influencer=True)
+        row = self._completed(api_client, token)
+        self._encode(api_client, row, CLEAR)
+        got = self._post(api_client, token, row)
+        assert got.json()["status"] == "live"
+
+    def test_a_rejected_video_removes_the_post(self, api_client, token, me):
+        from apps.content.models import Content
+
+        row = self._completed(api_client, token)
+        post_id = self._post(api_client, token, row).json()["id"]
+        self._encode(api_client, row, {**CLEAR, "adult": "VERY_LIKELY"})
+        assert Content.objects.get(pk=post_id).status == "removed"
+
+    def test_only_your_own_finished_video(self, api_client, token, me, sign_hs256):
+        row = Video.objects.get(pk=_init(api_client, token).json()["id"])  # still uploading
+        assert self._post(api_client, token, row).status_code == 403
+        Profile.objects.create(id=OTHER_USER, phone="9000000002", name="Other")
+        other = sign_hs256(claims=make_claims(sub=OTHER_USER))
+        done = self._completed(api_client, token)
+        assert self._post(api_client, other, done).status_code == 403

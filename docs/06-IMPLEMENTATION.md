@@ -722,16 +722,17 @@ Order, each part shipped on its own:
 - **C — upload API (built 17 Oct, branch `video-pipeline`).** `videos`
   table; `init` (hash, size, length, daily limit, duplicate link),
   multipart parts of 5 MB with resume, `complete`, the 24-hour sweep.
-- **A — `media.1namo.com`.** The public bucket behind Cloudflare's cache
-  instead of the `r2.dev` address (no CDN, no guarantee). Needs the
-  domain's DNS on Cloudflare. The zone exists (Free plan, pending, 17
-  Oct) and on 18 Oct matched GoDaddy record for record once Zoho's DKIM
-  (`zmail._domainkey`, missing from Cloudflare's import) was added; it
-  goes live when GoDaddy's nameservers change to `jade.ns.cloudflare.com`
-  and `mustafa.ns.cloudflare.com`, the owner's or Rahul's step (HANDOFF
-  §83).
-- **B — compression to the spec** on the web (WebCodecs): 720p, 2 Mbps,
-  30 fps, AAC 128 kbps, faststart, location stripped, 30 MB.
+- **A — `media.1namo.com` (LIVE 18 Oct).** The public bucket behind
+  Cloudflare's cache instead of the `r2.dev` address (no CDN, no
+  guarantee). 1namo.com's DNS moved to Cloudflare (Rahul changed GoDaddy's
+  nameservers, 18 Oct); state in HANDOFF.
+- **B — compression to the spec (built 18 Oct, branch `video-pipeline`)**
+  on the web (WebCodecs, `src/lib/compress.js`): 720p, 2 Mbps, 30 fps, AAC
+  128 kbps, faststart, no metadata tags (location stripped). Over 30 MB
+  uncompressed goes up as an original (150 MB) for the worker to shrink.
+  The upload is `src/lib/clips.js` (init, 5 MB parts, three tries each,
+  fresh URLs when they run out, complete); the post carries `video_id`
+  and waits as a draft until the video is live (`content.video_settled`).
 - **D — the worker (built 17 Oct, branch `video-pipeline`).** Cloud Run
   service `namo-video` from `video-worker/` (FFmpeg, its own Dockerfile;
   the deploy line is in it). The API posts the job on `complete`; the
@@ -762,9 +763,16 @@ Order, each part shipped on its own:
   Approve puts the file and its copies live, Reject deletes them. The
   Vision API is enabled on the project (18 Oct 2026); the worker's
   service account is the credential.
-- **F — playback.** Thumbnail first, 480p muted autoplay, 720p on Wi-Fi
-  or strong bandwidth, only the first segment of the next one or two
-  preloaded, a Data saver setting. Web: hls.js. Android: ExoPlayer.
+- **F — playback (built 18 Oct, branch `video-pipeline`).** Thumbnail
+  first, 480p muted autoplay, 720p on Wi-Fi or strong bandwidth, only the
+  first segment of the next one or two preloaded, a Data saver setting.
+  Web: hls.js 1.7.3, light build, loaded with the first HLS reel
+  (`src/lib/hls.js`, `src/components/Video.jsx`); Safari plays the
+  playlist itself. Checked in headless Chrome against a real worker
+  encode: playback at 480p with the thumbnail as poster, a waiting reel
+  buffered 4 seconds (hls.js ignored the target alone and loaded all of
+  it until its cap moved too). Grids and shared cards show the thumbnail.
+  MP4 reels play as before. Android: the WebView runs the same code.
 - **Later (first month after launch):** lifecycle rules (Infrequent
   Access, soft delete), cost and playback dashboard; Cloudflare Stream
   for Academy and puja.
@@ -774,8 +782,7 @@ so B and F are written once, for the WebView: WebCodecs and hls.js both
 run there. Native Media3 or ExoPlayer comes later as a Capacitor plugin if
 the WebView falls short.
 
-Open, for Rahul and the owner: moving the DNS of 1namo.com to Cloudflare;
-the daily limits (10, and 50 for an approved Pro or Creator, as built);
+Open, for Rahul and the owner: the daily limits (10, and 50 for an approved Pro or Creator, as built);
 the retention policy for the privacy page; Play Store payment policy for
 wallet top-ups before the app is submitted.
 

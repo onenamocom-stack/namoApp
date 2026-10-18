@@ -27,6 +27,7 @@ import UsernameSheet, { usernameNote } from '../components/UsernameSheet.jsx'
 import { profileLink } from '../lib/profile.js'
 import ProfileHead from '../components/ProfileHead.jsx'
 import FollowSheet from '../components/FollowSheet.jsx'
+import { dataSaver, setDataSaver } from '../lib/hls.js'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -525,6 +526,7 @@ function SettingsPage({ pro }) {
   const { showToast, profile, t, lang, setLang } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [naming, setNaming] = useState(false)
+  const [saver, setSaver] = useState(dataSaver)
 
   const leave = async () => {
     if (leaving) return
@@ -607,6 +609,26 @@ function SettingsPage({ pro }) {
               className="pill flex-1 justify-center"
             >
               {l.label}
+            </button>
+          ))}
+        </div>
+        {/* Data saver (18 Oct 2026, Rahul's video spec): reels at 480p,
+            nothing loaded ahead. Kept on this phone. */}
+        <p className="mt-5 text-meta font-semibold t-heading">Data saver</p>
+        <p className="mt-0.5 text-meta t-body">Reels play at lower quality and load only when you reach them.</p>
+        <div className="mt-2 flex gap-2">
+          {[['Off', false], ['On', true]].map(([label, on]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={saver === on}
+              onClick={() => {
+                setDataSaver(on)
+                setSaver(on)
+              }}
+              className="pill flex-1 justify-center"
+            >
+              {label}
             </button>
           ))}
         </div>

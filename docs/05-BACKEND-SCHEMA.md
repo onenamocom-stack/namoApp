@@ -1154,6 +1154,7 @@ create table content (
   media_url     text,
   gallery       jsonb not null default '[]', -- 17 Oct 2026 (content/0014): a post's photos after media_url, in order, up to nine
   caption       text,
+  video_id      uuid,                        -- 18 Oct 2026 (content/0016), indexed: a reel from the video pipeline (videos.id, §5.5b). The row is 'draft' until that video is live, then media_url is its HLS playlist; a rejected or deleted video makes it 'removed'
   status        text not null default 'live' check (status in ('live','removed','draft')),
   view_count    integer not null default 0,
   published_at  timestamptz,

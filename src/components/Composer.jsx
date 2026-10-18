@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { frameFile, useFrames } from '../lib/frames.js'
 import { apiSupportsTags, editContent, publish, uploadMedia } from '../lib/content.js'
+import { uploadVideo } from '../lib/clips.js'
+import Video from './Video.jsx'
 import { fetchProducts } from '../lib/shop.js'
 import { BackButton } from './Chrome.jsx'
 import Icon from './Icon.jsx'
@@ -101,6 +103,8 @@ export default function Composer({
   const [uploading, setUploading] = useState(false)
   // 0 to 1 while a video is being made smaller before it uploads (Phase 15d).
   const [shrinking, setShrinking] = useState(null)
+  // The share of a reel's parts sent (18 Oct 2026, the video pipeline).
+  const [sending, setSending] = useState(null)
   // Festival frames (Phase 15c): the photo as chosen, its plain upload, and
   // the frame on it now, so "No frame" goes back without a second upload.
   const frames = useFrames()
@@ -186,6 +190,17 @@ export default function Composer({
     if (editing && editing.kind === 'clip' && !video) return showToast('A reel stays a video. Choose a video.')
     setUploading(true)
     try {
+      /* A new reel goes through the video pipeline (18 Oct 2026): HLS,
+         checked by SafeSearch, posted once live. Editing a reel's video,
+         or a server without the pipeline, uploads it the old way. */
+      const piped = video && !editing ? await uploadVideo(file, { onShrink: setShrinking, onSend: setSending }) : null
+      if (piped) {
+        setMedia({ url: URL.createObjectURL(file), type: 'video/mp4', videoId: piped.id })
+        photo.current = null
+        setPlainUrl(null)
+        setFrameId(null)
+        return
+      }
       const url = await uploadMedia(file, video ? (p) => setShrinking(p) : null)
       setMedia({ url, type: video ? 'video/mp4' : file.type })
       photo.current = video ? null : file
@@ -196,6 +211,7 @@ export default function Composer({
     } finally {
       setUploading(false)
       setShrinking(null)
+      setSending(null)
     }
   }
 
@@ -276,9 +292,9 @@ export default function Composer({
         onPublished?.({ ...fields, mediaUrl: media?.url ?? null, gallery: more, products: tagged })
         return
       }
-      await publish({
+      const posted = await publish({
         kind: blog ? 'article' : isVideo(media) ? 'clip' : 'post',
-        mediaUrl: media?.url,
+        ...(media?.videoId ? { videoId: media.videoId } : { mediaUrl: media?.url }),
         gallery: blog || isVideo(media) ? [] : more,
         productIds: tagProducts ? tagged.filter((p) => !p.listing && !p.ebook).map((p) => p.id) : [],
         listingIds: tagProducts ? tagged.filter((p) => p.listing).map((p) => p.id) : [],
@@ -297,7 +313,7 @@ export default function Composer({
       } catch {
         /* nothing to clear */
       }
-      showToast('Published to your feed')
+      showToast(posted.status === 'draft' ? 'Posted. Your reel shows once it is checked.' : 'Published to your feed')
       onPublished?.()
     } catch (err) {
       showToast(err.message)
@@ -391,13 +407,15 @@ export default function Composer({
               <p className="mt-2 text-meta t-faint tnum">
                 {shrinking !== null && shrinking < 1
                   ? `Making the video smaller · ${Math.round(shrinking * 100)}%`
-                  : 'Uploading…'}
+                  : sending !== null
+                    ? `Uploading · ${Math.round(sending * 100)}%`
+                    : 'Uploading…'}
               </p>
             )}
             {media && (
               <div className="relative mt-2 overflow-hidden rounded-2xl bg-ink">
                 {isVideo(media) ? (
-                  <video src={media.url} controls playsInline className="max-h-[60vh] w-full object-contain" />
+                  <Video src={media.url} frameAt={null} controls playsInline className="max-h-[60vh] w-full object-contain" />
                 ) : (
                   <img src={media.url} alt="What you are about to post" className="max-h-[60vh] w-full object-contain" />
                 )}

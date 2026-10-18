@@ -394,7 +394,7 @@ def clean_gallery(urls, cover):
 
 def publish_content(author_id, role, *, kind, title=None, body=None, caption=None,
                     media_url=None, status=Content.Status.LIVE, product_ids=(), group_id=None,
-                    listing_ids=(), ebook_ids=(), gallery=()):
+                    listing_ids=(), ebook_ids=(), gallery=(), video_id=None):
     """Insert one content row as the caller. author_id is forced (rule 3);
     published_at is the server's clock, never the client's (rule 3 again —
     a timestamp the client picks is a number the user benefits from).
@@ -402,8 +402,22 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
 
     `product_ids` tags shop products on the post (ContentProduct). The post
     and its tags are one write: a post that published and then lost its
-    tags would be a different post from the one the author sent."""
+    tags would be a different post from the one the author sent.
+
+    `video_id` is a reel uploaded through the video pipeline: the post
+    waits as a draft until the video is live (`video_settled`)."""
     _assert_kind_allowed(author_id, role, kind)
+    if video_id:
+        if kind != Content.Kind.CLIP:
+            raise ValidationError({"video_id": "Only a reel carries a video."})
+        from apps.clips import services as clips
+
+        try:
+            media_url, live = clips.for_post(author_id, video_id)
+        except clips.Refused as err:
+            raise PermissionDenied(err.message) from None
+        if not live:
+            status = Content.Status.DRAFT
     gallery = clean_gallery(gallery, media_url) if kind == Content.Kind.POST else []
     if status not in (Content.Status.LIVE, Content.Status.DRAFT):
         raise PermissionDenied("Removed content cannot be republished.")
@@ -433,6 +447,7 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
             gallery=gallery,
             status=status,
             published_at=timezone.now() if status == Content.Status.LIVE else None,
+            video_id=video_id or None,
         )
         row.save()
         ContentProduct.objects.bulk_create(
@@ -462,6 +477,38 @@ def publish_content(author_id, role, *, kind, title=None, body=None, caption=Non
 
         referral_services.code_for(author_id, CodeKind.CONSULTANT)
     return row
+
+
+def video_settled(video_ids):
+    """The video pipeline moved these videos on (apps.clips): the posts
+    waiting for one go live when it does, with its HLS playlist as
+    `media_url`, and are removed when it is rejected or deleted. The
+    author hears either way."""
+    from apps.clips.models import Video, VideoStatus
+    from apps.media.providers import public_url
+    from apps.notifications import services as notify
+
+    now = timezone.now()
+    for video in Video.objects.filter(pk__in=list(video_ids)):
+        rows = Content.objects.filter(video_id=video.id)
+        playlist = public_url(video.hls_path) if video.hls_path else None
+        if video.status == VideoStatus.LIVE:
+            for row in rows.filter(status=Content.Status.DRAFT):
+                row.status, row.media_url, row.published_at = Content.Status.LIVE, playlist, now
+                row.save(update_fields=["status", "media_url", "published_at"])
+                notify.push(row.author_id, kind="content.video.live", title="Your reel is live",
+                            ref_type="content", ref_id=row.id, dedupe_key=f"video-live:{row.id}")
+        elif video.status in (VideoStatus.REJECTED, VideoStatus.DELETED):
+            rejected = video.status == VideoStatus.REJECTED
+            for row in rows.exclude(status=Content.Status.REMOVED):
+                row.status = Content.Status.REMOVED
+                row.save(update_fields=["status"])
+                notify.push(row.author_id, kind="content.video.refused", title="Your reel was not posted",
+                            body="It breaks the rules." if rejected
+                            else "The video could not be processed. Post it again.",
+                            ref_type="content", ref_id=row.id, dedupe_key=f"video-refused:{row.id}")
+        elif playlist:
+            rows.filter(status=Content.Status.DRAFT).update(media_url=playlist)
 
 
 def record_view(content_id, viewer_id):

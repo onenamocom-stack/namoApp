@@ -4,6 +4,7 @@ import { Loader } from './Cosmos.jsx'
 import Icon from './Icon.jsx'
 import { Kicker } from './Pop.jsx'
 import Plate from './Plate.jsx'
+import { isHls, posterOf } from '../lib/hls.js'
 import { ago, contentEarnings } from '../lib/content.js'
 
 /**
@@ -97,7 +98,10 @@ function Media({ p, aspect }) {
   const words = p.title || p.caption || ''
   return (
     <div className={`relative w-full overflow-hidden rounded-xl bg-surface2 ${aspect}`}>
-      {p.media_url && VIDEO.test(p.media_url) ? (
+      {p.media_url && isHls(p.media_url) ? (
+        // An HLS reel's tile is the worker's thumbnail (18 Oct 2026).
+        <img src={posterOf(p.media_url)} alt="" loading="lazy" className="h-full w-full bg-black object-cover" />
+      ) : p.media_url && VIDEO.test(p.media_url) ? (
         <video
           src={`${p.media_url}#t=0.5`}
           preload="metadata"

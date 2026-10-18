@@ -6,6 +6,8 @@ import useWatchQualify from './useWatchQualify.js'
 import { shareLink } from '../lib/share.js'
 import Icon from './Icon.jsx'
 import Plate from './Plate.jsx'
+import Video from './Video.jsx'
+import { dataSaver, isVideoUrl } from '../lib/hls.js'
 import ReportSheet from './ReportSheet.jsx'
 import CommentSheet from './CommentSheet.jsx'
 import { useReshare } from './ReshareSheet.jsx'
@@ -217,16 +219,17 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
         {c.mediaUrl ? (
           /* A real upload. Played by the effect above, looping, with the
              frame at half a second as its cover until it starts. */
-          c.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
-            <video
+          isVideoUrl(c.mediaUrl) ? (
+            <Video
               ref={video}
-              src={`${c.mediaUrl}#t=0.5`}
+              src={c.mediaUrl}
               className="h-full w-full object-cover"
-              /* The reel on screen and one either side buffer fully, so a
+              /* The reel on screen buffers; one either side loads only its
+                 start (an HLS reel its first segment, 18 Oct 2026), so a
                  swipe lands on video that is already there. The rest load
                  nothing — 48 metadata requests at once were competing with
-                 the one being watched. */
-              preload={near ? 'auto' : 'none'}
+                 the one being watched. Data saver loads nothing ahead. */
+              load={active ? 'play' : near && !dataSaver() ? 'preload' : 'none'}
               loop
               playsInline
             />
@@ -262,7 +265,7 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
 
       {/* ── The right rail ─────────────────────────────────────────────── */}
       <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
-        {c.mediaUrl?.match(/\.(mp4|webm|mov)$/i) && (
+        {isVideoUrl(c.mediaUrl) && (
           <RailAct
             icon={muted ? 'muted' : 'sound'}
             label={muted ? 'Unmute' : 'Mute'}
