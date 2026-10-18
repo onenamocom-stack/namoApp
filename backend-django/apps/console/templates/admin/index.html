@@ -5,7 +5,7 @@
 
   On top, what is waiting for somebody, each with its count — the reason
   the console is opened. Then a card per part of Namo: Finance, Content
-  (the Creator module), Consulting (Pro), Market (Seller), Bhakti, Shop,
+  (the Creator module), Consulting (Pro), Market (everything sold, the shop included since 18 Oct 2026), Bhakti,
   People, Look of the app. Django's own model list stays below, for
   everything else.
 
@@ -85,10 +85,20 @@
       <a href="{% url 'namo:content_review_changelist' %}">Reviews</a>
     </div>
     <div class="mod">
-      <h3>Market · Sellers</h3><p>Downloads, courses, events and products.</p>
-      <a href="{% url 'namo:market_listing_changelist' %}">Listings</a>
-      <a href="{% url 'namo:market_sellerearning_changelist' %}">Sales</a>
-      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Payouts</a>
+      <h3>Market</h3><p>Everything sold, in one place: products, downloads, courses, events, and what they earn.</p>
+      <a href="{% url 'namo:shop_product_changelist' %}">Products (on the shelf)</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=product">Product listings from sellers</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=download">Downloads (PDF and files)</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=course">Courses</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=event">Events</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?status__exact=pending">Waiting for review</a>
+      <a href="{% url 'namo:shop_shopcategory_changelist' %}">Categories</a>
+      <a href="{% url 'namo:shop_shopsubcategory_changelist' %}">Sub categories</a>
+      <a href="{% url 'namo:shop_order_changelist' %}">Orders</a>
+      <a href="{% url 'namo:shop_shipment_changelist' %}">Parcels</a>
+      <a href="{% url 'namo:shop_coupon_changelist' %}">Coupons</a>
+      <a href="{% url 'namo:market_sellerearning_changelist' %}">Sellers' sales</a>
+      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Seller payouts</a>
     </div>
     <div class="mod">
       <h3>Bhakti</h3><p>Status, wallpapers, bhajans, mantras, e-books, darshan.</p>
@@ -100,13 +110,6 @@
       <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=ebook">E-books</a>
       <a href="{% url 'namo:bhakti_darshandeity_changelist' %}">Darshan deities</a>
       <a href="{% url 'namo:bhakti_darshanimage_changelist' %}">Darshan pictures</a>
-    </div>
-    <div class="mod">
-      <h3>Shop</h3><p>Namo's own products and their orders.</p>
-      <a href="{% url 'namo:shop_product_changelist' %}">Products</a>
-      <a href="{% url 'namo:shop_order_changelist' %}">Orders</a>
-      <a href="{% url 'namo:shop_shipment_changelist' %}">Parcels</a>
-      <a href="{% url 'namo:shop_coupon_changelist' %}">Coupons</a>
     </div>
     <div class="mod">
       <h3>People</h3><p>Accounts, modules, groups.</p>

@@ -857,6 +857,17 @@ class ShopCategoryAdmin(AuditedAdmin, dj.ModelAdmin):
     def has_module_permission(self, request):
         return at_least(request, Tier.FULFILMENT)
 
+    # Linked from the console's Market card (18 Oct 2026): the page itself
+    # must open for the same tier, which Django's own perms never granted.
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
+    def has_add_permission(self, request):
+        return at_least(request, Tier.FULFILMENT)
+
 
 @dj.register(ShopSubcategory, site=site)
 class ShopSubcategoryAdmin(AuditedAdmin, dj.ModelAdmin):
@@ -866,6 +877,17 @@ class ShopSubcategoryAdmin(AuditedAdmin, dj.ModelAdmin):
     list_editable = ("sort",)
 
     def has_module_permission(self, request):
+        return at_least(request, Tier.FULFILMENT)
+
+    # Linked from the console's Market card (18 Oct 2026): the page itself
+    # must open for the same tier, which Django's own perms never granted.
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FULFILMENT)
+
+    def has_add_permission(self, request):
         return at_least(request, Tier.FULFILMENT)
 
 
