@@ -707,7 +707,7 @@ Seller who is not a Creator stops earning ₹25 a sign-up; a Seller loses
 the tick; nobody new can tag products until they reach step 1. Money
 already earned is paid.
 
-## Phase 19 — The video pipeline (Rahul's spec, 17 Oct 2026, in progress)
+## Phase 19 — The video pipeline (Rahul's spec, 17 Oct 2026; A–F live 18 Oct)
 
 Source: *NAMO Video Pipeline – Technical Spec* (Rahul, 17 Oct 2026, PDF on
 Telegram). User videos up to 90 seconds, compressed on the phone, stored
