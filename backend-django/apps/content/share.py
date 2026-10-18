@@ -394,7 +394,7 @@ def _frame(source):
 # NAMO's logo with white letters (public/namo-logo-light.png), for the
 # reel card's corner.
 LOGO = os.path.join(os.path.dirname(__file__), "assets", "namo-logo-light.png")
-LOGO_WIDTH = 190
+LOGO_WIDTH = 130
 # WhatsApp shows a standing image cut to about 5:7 around its middle, so
 # the corner it shows starts about this far down a 720 × 1280 card.
 SHOWN_TOP = 140
@@ -407,10 +407,10 @@ def _logo(card):
 
     logo = Image.open(LOGO).convert("RGBA")
     logo = logo.resize((LOGO_WIDTH, round(logo.height * LOGO_WIDTH / logo.width)), Image.Resampling.LANCZOS)
-    x, y = card.width - LOGO_WIDTH - 32, SHOWN_TOP + 28
+    x, y = card.width - LOGO_WIDTH - 28, SHOWN_TOP + 24
     shade = Image.new("L", card.size, 0)
-    ImageDraw.Draw(shade).rounded_rectangle((x - 18, y - 14, x + logo.width + 18, y + logo.height + 14),
-                                            radius=20, fill=110)
+    ImageDraw.Draw(shade).rounded_rectangle((x - 14, y - 10, x + logo.width + 14, y + logo.height + 10),
+                                            radius=16, fill=110)
     shade = shade.filter(ImageFilter.GaussianBlur(10))
     card.paste(Image.new("RGB", card.size, (0, 0, 0)), (0, 0), shade)
     card.paste(logo, (x, y), logo)
