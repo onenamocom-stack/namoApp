@@ -40,6 +40,9 @@ logger = logging.getLogger("apps.content.share")
 
 INDEX_CACHE_SECONDS = 60
 OG_SIZE = (1200, 630)
+# A reel's card stands up, as Instagram's does on WhatsApp (Rahul, 18 Oct
+# 2026: "insta ki tarah verticle"); it was 1200 × 630 with a blurred side.
+REEL_SIZE = (720, 1280)
 # A profile's card is the person's photo, square: WhatsApp then draws the
 # small thumbnail beside the name rather than a cropped banner of a face.
 PROFILE_SIZE = (600, 600)
@@ -149,10 +152,12 @@ def reel_page(request, content_id):
         return _page(_tags(title="NAMO", description=SITE_LINE,
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     name = Profile.objects.filter(pk=row.author_id).values_list("name", flat=True).first() or ""
-    image = f"{_site()}/og/reel/{row.id}.jpg" if row.media_url else f"{_site()}{FALLBACK_IMAGE}"
+    # `v=2`: the standing card, so a day-cached landscape one is not reused.
+    image = f"{_site()}/og/reel/{row.id}.jpg?v=2" if row.media_url else None
     title = f"{name}'s reel on NAMO" if name else "A reel on NAMO"
     return _page(_tags(title=title, description=_summary(row.caption) or "Watch it on NAMO.",
-                       image=image, url=url, kind="video.other"), url)
+                       image=image or f"{_site()}{FALLBACK_IMAGE}", url=url, kind="video.other",
+                       size=REEL_SIZE if image else OG_SIZE), url)
 
 
 def _product(key):
@@ -369,6 +374,10 @@ def _frame(source):
         import imageio_ffmpeg
 
         exe = imageio_ffmpeg.get_ffmpeg_exe()
+    # A reel from the video pipeline is an HLS playlist; its folder holds
+    # the worker's thumbnail, one small file (18 Oct 2026).
+    if source.endswith("/master.m3u8"):
+        source = source[: -len("master.m3u8")] + "thumb.webp"
     for at in ("1", "0"):
         out = subprocess.run(
             [exe, "-hide_banner", "-loglevel", "error", "-ss", at, "-i", source,
@@ -381,21 +390,19 @@ def _frame(source):
 
 
 def _reel_card(source):
-    """1200 × 630: the whole frame, full height in the middle, over a dark
-    blur of itself, with a play mark, so a portrait reel is not cut to a
-    strip across the face."""
+    """720 × 1280, standing: a portrait reel fills it (the edges trimmed to
+    9:16); a landscape one sits whole across the middle over a dark blur
+    of itself. A play mark in the centre."""
     from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
     frame = ImageOps.exif_transpose(_frame(source)).convert("RGB")
-    w, h = OG_SIZE
-    back = ImageOps.fit(frame, OG_SIZE, method=Image.Resampling.LANCZOS)
-    back = back.filter(ImageFilter.GaussianBlur(28))
-    back = Image.blend(back, Image.new("RGB", OG_SIZE, (0, 0, 0)), 0.45)
-    scale = h / frame.height
-    front = frame.resize((max(1, round(frame.width * scale)), h), Image.Resampling.LANCZOS)
-    if front.width > w:
-        front = ImageOps.fit(frame, OG_SIZE, method=Image.Resampling.LANCZOS)
-    back.paste(front, ((w - front.width) // 2, 0))
+    w, h = REEL_SIZE
+    back = ImageOps.fit(frame, REEL_SIZE, method=Image.Resampling.LANCZOS)
+    if frame.height < frame.width * 1.2:
+        back = back.filter(ImageFilter.GaussianBlur(28))
+        back = Image.blend(back, Image.new("RGB", REEL_SIZE, (0, 0, 0)), 0.45)
+        front = frame.resize((w, max(1, round(frame.height * w / frame.width))), Image.Resampling.LANCZOS)
+        back.paste(front, (0, (h - front.height) // 2))
     # A play mark in the middle: a reel, not a photo.
     draw = ImageDraw.Draw(back, "RGBA")
     cx, cy, r = w // 2, h // 2, 54
