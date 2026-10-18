@@ -698,8 +698,11 @@ Order, each part shipped on its own:
 - **A — `media.1namo.com`.** The public bucket behind Cloudflare's cache
   instead of the `r2.dev` address (no CDN, no guarantee). Needs the
   domain's DNS on Cloudflare. The zone exists (Free plan, pending, 17
-  Oct); it goes live when GoDaddy's nameservers change to Cloudflare's,
-  the owner's or Rahul's step (HANDOFF §83).
+  Oct) and on 18 Oct matched GoDaddy record for record once Zoho's DKIM
+  (`zmail._domainkey`, missing from Cloudflare's import) was added; it
+  goes live when GoDaddy's nameservers change to `jade.ns.cloudflare.com`
+  and `mustafa.ns.cloudflare.com`, the owner's or Rahul's step (HANDOFF
+  §83).
 - **B — compression to the spec** on the web (WebCodecs): 720p, 2 Mbps,
   30 fps, AAC 128 kbps, faststart, location stripped, 30 MB.
 - **D — the worker (built 17 Oct, branch `video-pipeline`).** Cloud Run
