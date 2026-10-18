@@ -280,17 +280,19 @@ class TestReel:
         page = client.get(f"/reels/{reel.id}").content.decode()
         assert '<div id="root"></div>' in page
         assert 'og:title" content="Meera Joshi&#x27;s reel on NAMO"' in page
-        assert f'og:image" content="https://1namo.com/og/reel/{reel.id}.jpg"' in page
+        assert f'og:image" content="https://1namo.com/og/reel/{reel.id}.jpg?v=2"' in page
+        assert 'og:image:width" content="720"' in page and 'og:image:height" content="1280"' in page
         assert "Ganga aarti at Har ki Pauri" in page and 'og:type" content="video.other"' in page
 
     def test_the_thumbnail_is_a_frame_of_the_video(self, client, network, reel):
         response = client.get(f"/og/reel/{reel.id}.jpg")
         assert response.status_code == 200 and response["Content-Type"] == "image/jpeg"
         image = Image.open(io.BytesIO(response.content))
-        assert image.size == (1200, 630) and len(response.content) < 300_000
-        # The frame sits whole in the middle: the test pattern's colours,
-        # not the dark blur, at the centre column.
-        assert max(image.getpixel((600, 100))) > 60
+        # Standing, as Instagram's (Rahul, 18 Oct 2026).
+        assert image.size == (720, 1280) and len(response.content) < 300_000
+        # The frame sits whole across the middle: the test pattern's
+        # colours, not the dark blur, beside the play mark.
+        assert max(image.getpixel((100, 640))) > 60
 
     def test_a_removed_reel_previews_as_namo(self, client, network, reel):
         Content.objects.filter(pk=reel.id).update(status="removed")
