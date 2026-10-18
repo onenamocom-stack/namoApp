@@ -12,13 +12,14 @@ import { earningsSummary } from '../lib/consultants.js'
 import { earningsPeriod } from '../lib/market.js'
 import { contentEarnings } from '../lib/content.js'
 import { myModules } from '../lib/profile.js'
-import { CARDS, ModuleCard } from './Earn.jsx'
+import { CARDS, ContentCard, ModuleCard } from './Earn.jsx'
 
 /**
- * Dashboard (Phase 16, 14 Oct 2026): the screens of whoever holds a module,
- * inside the main app, at `/dashboard/...`. Since 16 Oct 2026 (Rahul) it is
- * this month's earnings on top, then a section per module held — Content &
- * Referrals (Creator), Market (Seller), Consulting (Pro) — and one Payout
+ * Studio (Rahul, 17 Oct 2026; Dashboard, `/dashboard`, from 14 Oct): the
+ * screens of whoever holds a module, inside the main app, at `/studio/...`.
+ * Since 16 Oct 2026 (Rahul) it is this month's earnings on top, then a
+ * section per module — Content (two steps, 17 Oct), Market (Seller),
+ * Consulting (Pro) — and one Payout
  * details last: everything is paid together on the 7th. No Studio (14 Oct 2026, Rahul): posting is
  * Home's +, where a Pro and a Creator also get video. Calls are not here: they ring only in
  * Namo Consult (`/desk`) and in the pro app.
@@ -28,12 +29,18 @@ import { CARDS, ModuleCard } from './Earn.jsx'
  * request to hold it. Signed out goes to Profile.
  */
 /** The modules this person holds (docs/06 Phase 18, 16 Oct 2026): `pro` a
- *  consultant row (pending shows as under review), `creator` the Creator
- *  module, `seller` the Seller module. 'loading' while they are read. */
+ *  consultant row (pending shows as under review), `referrer` Content step
+ *  1, `creator` Content step 2 (which includes step 1), `seller` the
+ *  Seller module. 'loading' while they are read. */
 export function useModules() {
   const { session, sessionReady, consultant, consultantLoading, profile, profileLoading } = useStore()
   if (!sessionReady || (session && (consultantLoading || profileLoading))) return 'loading'
-  return { pro: Boolean(consultant), creator: Boolean(profile?.influencer), seller: Boolean(profile?.seller) }
+  return {
+    pro: Boolean(consultant),
+    referrer: Boolean(profile?.referrer || profile?.influencer),
+    creator: Boolean(profile?.influencer),
+    seller: Boolean(profile?.seller),
+  }
 }
 
 /** 'pro', 'member' (a Creator or a Seller), null (a Seeker), or 'loading'. */
@@ -41,23 +48,23 @@ export function useDashboardRole() {
   const m = useModules()
   if (m === 'loading') return 'loading'
   if (m.pro) return 'pro'
-  if (m.creator || m.seller) return 'member'
+  if (m.referrer || m.seller) return 'member'
   return null
 }
 
-/** Wraps a Dashboard route: `need` is a module — 'pro', 'creator',
- *  'seller' — or 'any' (any of them). */
+/** Wraps a Studio route: `need` is a module — 'pro', 'referrer',
+ *  'creator', 'seller' — or 'any' (any of them). */
 export function DashboardGate({ need = 'any', children }) {
   const m = useModules()
   if (m === 'loading') return <Loader />
-  const ok = need === 'any' ? m.pro || m.creator || m.seller : m[need]
+  const ok = need === 'any' ? m.pro || m.referrer || m.seller : m[need]
   if (!ok) return <Navigate to="/profile" replace />
   return children
 }
 
 export default function Dashboard() {
   const m = useModules()
-  const { consultant, session, showToast } = useStore()
+  const { consultant, session, showToast, refreshProfile } = useStore()
   const [rating, setRating] = useState(false)
   // The modules' requests and questions, for the cards of those not held.
   const [asks, setAsks] = useState(null)
@@ -76,7 +83,7 @@ export default function Dashboard() {
   if (m === 'loading') return <Loader />
   if (!signedIn) return <Navigate to="/profile" replace />
   const pro = m.pro
-  const any = m.pro || m.creator || m.seller
+  const any = m.pro || m.referrer || m.seller
 
   /** A held module's card, its links inside (16 Oct 2026, Rahul: the same
    *  design as the cards to ask for one). */
@@ -91,7 +98,7 @@ export default function Dashboard() {
   /** The card for a module not held: ask for it, or where the ask stands. */
   const ask = (key) => {
     if (asks === null) return <Loader className="py-4" />
-    if (asks === false) return <p className="text-meta t-faint">Could not load this. Open the Dashboard again.</p>
+    if (asks === false) return <p className="text-meta t-faint">Could not load this. Open Studio again.</p>
     const card = CARDS.find((c) => c.key === key)
     return (
       <ul>
@@ -116,7 +123,7 @@ export default function Dashboard() {
     <>
       {/* Always Profile (17 Oct 2026, Rahul): a history back went to the
           Desk, whose button came here, a loop. */}
-      <TopBar title="Dashboard" back backTo="/profile" hardBack />
+      <TopBar title="Studio" back backTo="/profile" hardBack />
 
       {pro && consultant.status !== 'approved' && (
         <p className="mx-5 mt-4 rounded-lg border border-rule px-4 py-3 text-meta t-body">
@@ -133,24 +140,29 @@ export default function Dashboard() {
 
       {/* A section per module held (docs/06 Phase 18); a card to ask for
           each one not held (16 Oct 2026, Rahul). */}
-      {!m.creator && (
-        <section className="px-5 py-5">
-          <Kicker>Content &amp; Referrals</Kicker>
-          <div className="mt-3">{ask('creator')}</div>
-        </section>
-      )}
-      {m.creator && (
+      {/* Content, two steps (17 Oct 2026, Rahul): the bars, step 1's
+          start, step 2's request, and the links once step 1 is held. */}
       <section className="px-5 py-5">
         <Kicker>Content &amp; Referrals</Kicker>
         <div className="mt-3">
-          {held('creator', <>
-            <Row to="/dashboard/content" title="Earnings and insights" note="Commission from your links and code, and who saw your posts" />
-            <Row to="/dashboard/affiliate" title="Your product referral link" note="Share a product and earn" />
-            <Row to="/profile/influencer" title="Your app download referral code" note="Who joined with your code, and who paid" />
-          </>)}
+          {asks === null ? (
+            <Loader className="py-4" />
+          ) : asks === false ? (
+            <p className="text-meta t-faint">Could not load this. Open Studio again.</p>
+          ) : (
+            <ul>
+              <ContentCard asks={asks} onChanged={() => {
+                loadAsks()
+                refreshProfile(session.user.id)
+              }}>
+                <Row to="/studio/content" title="Earnings and insights" note="Commission from your links and code, and who saw your posts" />
+                <Row to="/studio/affiliate" title="Your product referral link" note="Share a product and earn" />
+                <Row to="/profile/influencer" title="Your app download referral code" note="Who joined with your code, and who paid" />
+              </ContentCard>
+            </ul>
+          )}
         </div>
       </section>
-      )}
 
       {!m.seller && (
         <section className="px-5 py-5">
@@ -163,8 +175,8 @@ export default function Dashboard() {
         <Kicker>Market</Kicker>
         <div className="mt-3">
           {held('seller', <>
-            <Row to="/dashboard/market/earnings" title="Earnings and insights" note="By month and year, and what sold" />
-            <Row to="/dashboard/market" title="Your listings" note="Add, edit or remove downloads, courses, events and products" />
+            <Row to="/studio/market/earnings" title="Earnings and insights" note="By month and year, and what sold" />
+            <Row to="/studio/market" title="Your listings" note="Add, edit or remove downloads, courses, events and products" />
           </>)}
         </div>
       </section>
@@ -181,7 +193,7 @@ export default function Dashboard() {
           <Kicker>Consulting</Kicker>
           <div className="mt-3">
             {held('pro', <>
-            <Row to="/dashboard/consulting" title="Earnings" note="What chat, calls and bookings earned" />
+            <Row to="/studio/consulting" title="Earnings" note="What chat, calls and bookings earned" />
             {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                 reviews" page went — reviews are on your page, the intro
                 and username in Edit profile, the slots in Namo Consult. */}
@@ -195,7 +207,7 @@ export default function Dashboard() {
               }
             />
             {/* The week as windows, 20-minute bookings (15 Oct 2026, Rahul). */}
-            <Row to="/dashboard/calendar" title="Booking calendar" note="Your hours each day, 20-minute bookings" />
+            <Row to="/studio/calendar" title="Booking calendar" note="Your hours each day, 20-minute bookings" />
             {/* The one row that earns, made to stand out (16 Oct 2026, Rahul):
                 the main-action green, a phone and a live dot. */}
             <Link
@@ -225,7 +237,7 @@ export default function Dashboard() {
         <Kicker>Payout details</Kicker>
         <div className="mt-2">
           <Row
-            to={pro ? '/dashboard/payout-details' : '/dashboard/market/bank'}
+            to={pro ? '/studio/payout-details' : '/studio/market/bank'}
             title="Payout details"
             note="Where we pay everything you earn, on the 7th"
           />
@@ -250,12 +262,12 @@ export default function Dashboard() {
  */
 function ThisMonth({ modules, consultantId }) {
   const [parts, setParts] = useState(null)
-  const { pro, creator, seller } = modules
+  const { pro, referrer, seller } = modules
 
   useEffect(() => {
     let live = true
     Promise.allSettled([
-      creator ? contentEarnings('this_month') : Promise.resolve(null),
+      referrer ? contentEarnings('this_month') : Promise.resolve(null),
       seller ? earningsPeriod('this_month') : Promise.resolve(null),
       pro ? earningsSummary(consultantId, 'this_month') : Promise.resolve(null),
     ]).then(([c, m, s]) => {
@@ -274,11 +286,11 @@ function ThisMonth({ modules, consultantId }) {
     return () => {
       live = false
     }
-  }, [pro, creator, seller, consultantId])
+  }, [pro, referrer, seller, consultantId])
 
   // A row per module held (docs/06 Phase 18).
   const rows = [
-    ...(creator ? [['Content & Referrals', parts?.content]] : []),
+    ...(referrer ? [['Content & Referrals', parts?.content]] : []),
     ...(seller ? [['Market', parts?.market]] : []),
     ...(pro ? [['Consulting', parts?.consulting]] : []),
   ]

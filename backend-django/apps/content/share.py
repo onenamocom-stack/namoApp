@@ -3,7 +3,8 @@ WhatsApp should go with the banner as thumbnail").
 
 WhatsApp, Telegram, Facebook and Google read a link's HTML and never run
 its JavaScript, so every 1namo.com link previewed as the front page. Firebase
-Hosting sends the shareable addresses — `/read/<id>` (a blog) and
+Hosting sends the shareable addresses — `/read/<id>` (a blog),
+`/reels/<id>` (a reel, 18 Oct 2026, Rahul: "it should show thumbnail") and
 `/shop/p/<slug or id>` (a product) — here instead of to its static file.
 This answers with the app's own index.html, unchanged except for the head:
 that page's title, description, image and address in the Open Graph and
@@ -136,6 +137,22 @@ def blog_page(request, content_id):
     image = f"{_site()}/og/blog/{row.id}.jpg" if row.media_url else f"{_site()}{FALLBACK_IMAGE}"
     return _page(_tags(title=row.title or "A blog on NAMO", description=_summary(row.body),
                        image=image, url=url), url)
+
+
+def reel_page(request, content_id):
+    """A reel's card: a frame of the video, whose name, and the caption."""
+    from apps.profiles.models import Profile
+
+    url = f"{_site()}/reels/{content_id}"
+    row = Content.objects.filter(pk=content_id, kind="clip", status=Content.Status.LIVE).first()
+    if row is None:
+        return _page(_tags(title="NAMO", description=SITE_LINE,
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    name = Profile.objects.filter(pk=row.author_id).values_list("name", flat=True).first() or ""
+    image = f"{_site()}/og/reel/{row.id}.jpg" if row.media_url else f"{_site()}{FALLBACK_IMAGE}"
+    title = f"{name}'s reel on NAMO" if name else "A reel on NAMO"
+    return _page(_tags(title=title, description=_summary(row.caption) or "Watch it on NAMO.",
+                       image=image, url=url, kind="video.other"), url)
 
 
 def _product(key):
@@ -281,7 +298,7 @@ def og_image(request, kind, item_id):
     """A 1200 × 630 JPEG cut from a blog cover or a product photo — light
     enough for every link preview. Any failure redirects to the site's own
     og.png rather than a broken card."""
-    if kind == "blog":
+    if kind in ("blog", "reel"):
         row = Content.objects.filter(pk=item_id, status=Content.Status.LIVE).first()
         source = row.media_url if row else None
     elif kind == "bhakti":
@@ -306,7 +323,10 @@ def og_image(request, kind, item_id):
     data = cache.get(key)
     if data is None:
         try:
-            data = _thumbnail(source, PROFILE_SIZE if kind == "profile" else OG_SIZE)
+            if kind == "reel":
+                data = _reel_card(source)
+            else:
+                data = _thumbnail(source, PROFILE_SIZE if kind == "profile" else OG_SIZE)
         except Exception as exc:  # noqa: BLE001 — any image failure is the fallback
             logger.warning("share: thumbnail failed for %s %s: %s", kind, item_id, exc)
             return HttpResponseRedirect(f"{_site()}{FALLBACK_IMAGE}")
@@ -330,4 +350,57 @@ def _thumbnail(source, size=OG_SIZE):
     image = ImageOps.fit(image, size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.45))
     out = io.BytesIO()
     image.save(out, format="JPEG", quality=80, optimize=True, progressive=True)
+    return out.getvalue()
+
+
+def _frame(source):
+    """One frame of a video at its URL, as a PIL image: a second in, or the
+    first frame of a shorter one. FFmpeg reads only what it needs over
+    HTTP. The system's FFmpeg (Debian's, in the API image); imageio-ffmpeg's
+    static one only where there is none (a dev machine), because on Cloud
+    Run that one crashed with signal 11 (18 Oct 2026)."""
+    import shutil
+    import subprocess
+
+    from PIL import Image
+
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        import imageio_ffmpeg
+
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+    for at in ("1", "0"):
+        out = subprocess.run(
+            [exe, "-hide_banner", "-loglevel", "error", "-ss", at, "-i", source,
+             "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "-"],
+            capture_output=True, timeout=20,
+        )
+        if out.returncode == 0 and out.stdout:
+            return Image.open(io.BytesIO(out.stdout))
+    raise ValueError("no frame")
+
+
+def _reel_card(source):
+    """1200 × 630: the whole frame, full height in the middle, over a dark
+    blur of itself, with a play mark, so a portrait reel is not cut to a
+    strip across the face."""
+    from PIL import Image, ImageDraw, ImageFilter, ImageOps
+
+    frame = ImageOps.exif_transpose(_frame(source)).convert("RGB")
+    w, h = OG_SIZE
+    back = ImageOps.fit(frame, OG_SIZE, method=Image.Resampling.LANCZOS)
+    back = back.filter(ImageFilter.GaussianBlur(28))
+    back = Image.blend(back, Image.new("RGB", OG_SIZE, (0, 0, 0)), 0.45)
+    scale = h / frame.height
+    front = frame.resize((max(1, round(frame.width * scale)), h), Image.Resampling.LANCZOS)
+    if front.width > w:
+        front = ImageOps.fit(frame, OG_SIZE, method=Image.Resampling.LANCZOS)
+    back.paste(front, ((w - front.width) // 2, 0))
+    # A play mark in the middle: a reel, not a photo.
+    draw = ImageDraw.Draw(back, "RGBA")
+    cx, cy, r = w // 2, h // 2, 54
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(0, 0, 0, 120))
+    draw.polygon([(cx - 18, cy - 28), (cx - 18, cy + 28), (cx + 30, cy)], fill=(255, 255, 255, 235))
+    out = io.BytesIO()
+    back.save(out, format="JPEG", quality=80, optimize=True, progressive=True)
     return out.getvalue()

@@ -98,7 +98,7 @@ export default function ProCalendar() {
 
   return (
     <>
-      <TopBar title="Booking calendar" back backTo={isPro ? '/pro/consult' : '/dashboard'} />
+      <TopBar title="Booking calendar" back backTo={isPro ? '/pro/consult' : '/studio'} />
       {days === null ? (
         <Loader label="Loading" className="py-24" />
       ) : (

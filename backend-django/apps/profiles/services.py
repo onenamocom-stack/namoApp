@@ -136,7 +136,8 @@ def serialize_profile(profile):
         # with the 025 policy: it decides which tabs are drawn, not who may
         # publish.
         "video_enabled": profile.video_enabled,
-        "influencer": profile.influencer,
+        "influencer": profile.influencer,  # Content step 2
+        "referrer": profile.referrer or profile.influencer,  # Content step 1 (17 Oct 2026); step 2 includes it
         "seller": profile.seller,  # the Seller module (docs/06 Phase 18)
         "bio": profile.bio,
         "interests": profile.interests,
@@ -285,14 +286,22 @@ def is_creator(profile_id):
     ).exists()
 
 
+def may_refer(profile_id):
+    """Content step 1 or step 2 (Rahul, 17 Oct 2026): tags products,
+    shares product links, holds the A code and earns on all three, earns
+    on sign-ups, sees insights. Pay on views is step 2's alone
+    (`is_creator`)."""
+    return Profile.objects.filter(
+        Q(referrer=True) | Q(influencer=True), pk=profile_id, blocked_at__isnull=True
+    ).exists()
+
+
 def creator_subquery(outer_field):
     """ORM annotation: does the row's <outer_field> carry the blue tick
-    without being a Pro — the Creator or the Seller module (docs/06 Phase
-    18: one tick for anybody holding any module). Display only; what a
-    person may do reads `is_creator` and `modules.is_seller`."""
-    return Exists(
-        Profile.objects.filter(id=OuterRef(outer_field)).filter(Q(influencer=True) | Q(seller=True))
-    )
+    without being a Pro: Content step 2 only (Rahul, 17 Oct 2026; Seller
+    and step 1 carry none, Seller did from 16 Oct). Display only; what a
+    person may do reads `is_creator`, `may_refer` and `modules.is_seller`."""
+    return Exists(Profile.objects.filter(id=OuterRef(outer_field), influencer=True))
 
 
 def set_influencer(profile_id, on):

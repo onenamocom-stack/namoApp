@@ -210,14 +210,13 @@ def signup_bonus_paise():
 
 
 def earns_on_signups(profile_id):
-    """A Pro, a Creator or a Seller (16 Oct 2026, Rahul: "pro creator or
-    seller anybody"). Read when the code is claimed; nothing reaches back."""
-    from apps.consultants import services as consultant_services
-    from apps.profiles import modules
+    """Content step 1 or 2 only (Rahul, 17 Oct 2026: "Pro aur seller ka 25
+    band", unless they hold step 1 too; it was any Pro, Creator or Seller
+    since 16 Oct). Everybody else's invite gives the 3 free AI questions,
+    as before. Read when the code is claimed; nothing reaches back."""
     from apps.profiles import services as profile_services
 
-    return (consultant_services.is_approved(profile_id) or profile_services.is_creator(profile_id)
-            or modules.is_seller(profile_id))
+    return profile_services.may_refer(profile_id)
 
 
 def _signup_bonus(referral):
@@ -300,16 +299,17 @@ def _day(iso):
 
 
 REFUSAL_CONSULTANT_LINK_NOT_YOURS = (
-    "Affiliate links are for approved consultants and Creators."
+    "Product links are for Content step 1. See Studio."
 )
 
 
 def may_share(profile_id):
-    """Who tags products and earns on a link: the Creator module (docs/06
-    Phase 18, 16 Oct 2026). It was an approved consultant or a Creator."""
+    """Who tags products and earns on a link: Content step 1 or 2 (Rahul,
+    17 Oct 2026). It was the Creator module (16 Oct), before that an
+    approved consultant or a Creator."""
     from apps.profiles import services as profile_services
 
-    return profile_services.is_creator(profile_id)
+    return profile_services.may_refer(profile_id)
 
 
 def affiliate_link(consultant_id, product_id=None, listing_id=None, ebook_id=None):

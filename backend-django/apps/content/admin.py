@@ -594,8 +594,8 @@ def _profile_label(profile_id):
 
 
 class PayRateForm(forms.ModelForm):
-    rupees = forms.DecimalField(label="₹ per 1,000 qualified views", min_value=0, max_digits=7, decimal_places=2,
-                                help_text="₹20 by default. A change counts from the next qualified view; "
+    rupees = forms.DecimalField(label="₹ per 1,000 engagements", min_value=0, max_digits=7, decimal_places=2,
+                                help_text="₹20 by default. A change counts from the next engagement; "
                                           "views already counted keep their rate.")
 
     class Meta:
@@ -626,7 +626,7 @@ def _register_pay_rate():
         audit_target = "content pay rate"
         list_display = ("rate", "updated_at")
 
-        @dj.display(description="₹ per 1,000 qualified views")
+        @dj.display(description="₹ per 1,000 engagements")
         def rate(self, obj):
             return f"₹{obj.paise_per_thousand / 100:g}"
 
@@ -763,14 +763,14 @@ def _register_qualified_views():
                      .order_by("-n")[:10])
             extra_context = extra_context or {}
             extra_context["summary_cards"] = [
-                ("Qualified views this month", f"{month.count():,}", None),
+                ("Engagement this month", f"{month.count():,}", None),
                 ("They pay this month", f"₹{paise / 100:,.2f}", "before tags and links"),
                 ("Creators earning", f"{month.values('author_id').distinct().count()}", None),
             ]
             extra_context["summary_tables"] = [
-                ("Top creators this month", ["Creator", "Qualified", "Pays"],
+                ("Top creators this month", ["Creator", "Engagement", "Pays"],
                  [[_name(t["author_id"]), f"{t['n']:,}", f"₹{t['r'] // 1000 / 100:,.2f}"] for t in top]),
-                ("Viewers who qualify one creator most (all time)", ["Viewer", "Creator", "Qualified"],
+                ("Viewers who engage one creator most (all time)", ["Viewer", "Creator", "Engagement"],
                  [[_name(p["viewer_id"]), _name(p["author_id"]), p["n"]] for p in pairs]),
             ]
             return super().changelist_view(request, extra_context)

@@ -18,3 +18,6 @@ http-ece==1.2.1
 openpyxl==3.1.5
 # Link-preview thumbnails for shared blogs and products (6 Oct 2026).
 Pillow==11.3.0
+# FFmpeg for a dev machine and the tests (apps/content/share.py, 18 Oct
+# 2026). The API image uses Debian's: this static one crashed on Cloud Run.
+imageio-ffmpeg==0.6.0

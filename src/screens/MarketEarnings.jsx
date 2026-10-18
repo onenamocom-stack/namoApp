@@ -11,7 +11,7 @@ import { rupees } from '../store.jsx'
 /**
  * Market earnings and insights (16 Oct 2026, Rahul: "Build same for market
  * tab"): the Earnings page's shape for what you sell on the Market —
- * `/dashboard/market/earnings`, a Pro's or a Creator's. Earnings: the
+ * `/studio/market/earnings`, a Pro's or a Creator's. Earnings: the
  * period's total after Namo's share, by kind, the last seven days, each
  * sale. Insights: the same period by listing — sales, units, buyers, what
  * each earned. One read, `GET /v1/market/me/earnings/period/`.
@@ -61,7 +61,7 @@ export default function MarketEarnings() {
 
   return (
     <>
-      <TopBar title="Market earnings" back backTo="/dashboard/market" />
+      <TopBar title="Market earnings" back backTo="/studio/market" />
 
       <div className="px-4 pt-4">
         <Segmented items={TABS} value={tab} onChange={setTab} />

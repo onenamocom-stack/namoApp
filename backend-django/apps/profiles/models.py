@@ -108,6 +108,13 @@ class Profile(models.Model):
     # and Pro (an approved consultants row) are the other two modules.
     seller = models.BooleanField(default=False, db_default=False)
 
+    # Content, step 1 (Rahul, 17 Oct 2026): granted on its own when the
+    # person has 100 followers, 10 live videos and a 30-day-old account.
+    # Tags, product links and the A code, with their earnings, the ₹25 a
+    # sign-up, and insights; no pay on views. `influencer` is step 2 (pay
+    # on views on top) and includes everything here.
+    referrer = models.BooleanField(default=False, db_default=False)
+
     # A line under the picture on the profile (4 Oct 2026). Nullable, not a
     # Django default: `handle_new_user` inserts only (id, phone, name), and
     # a NOT NULL column without a database default breaks every sign-up
@@ -173,6 +180,7 @@ class ModuleRequest(models.Model):
     request per person per module; a rejection carries the admin's note."""
 
     class Module(models.TextChoices):
+        REFERRER = "referrer", "Content, step 1"
         CREATOR = "creator", "Creator"
         SELLER = "seller", "Seller"
 

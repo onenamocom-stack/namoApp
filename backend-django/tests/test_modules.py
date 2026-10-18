@@ -31,11 +31,22 @@ from .test_content import (  # noqa: F401 — fixtures are used by name
 CREATOR_ANSWERS = {"topic": "Bhajans", "link": "https://instagram.com/x", "followers": "12000", "why": ""}
 
 
+@pytest.fixture
+def steps_met(monkeypatch):
+    """Both steps' conditions met (tests of their counting are in
+    test_content_steps.py); step 1 held, so step 2 can be asked for."""
+    from apps.profiles import milestones
+
+    monkeypatch.setattr(milestones, "progress", lambda pid, today=None: {
+        "step1": {"conditions": [], "met": True}, "step2": {"conditions": [], "met": True}})
+    Profile.objects.filter(pk=SEEKER).update(referrer=True)
+
+
 @pytest.mark.django_db
 class TestGates:
     def test_a_pro_alone_has_consulting_only(self, roster):
         Profile.objects.filter(pk=APPROVED).update(influencer=False)  # the roster's Pro is a Creator too
-        assert modules.holds(APPROVED) == {"creator": False, "pro": True, "seller": False}
+        assert modules.holds(APPROVED) == {"referrer": False, "creator": False, "pro": True, "seller": False}
         assert content._may_post_video(APPROVED, "authenticated") is False
         assert referrals.may_share(APPROVED) is False
         assert market.is_seller(APPROVED) is False
@@ -67,7 +78,7 @@ class TestGates:
 
 @pytest.mark.django_db
 class TestAsking:
-    def test_ask_once_with_answers(self, api_client, seeker_token, roster):
+    def test_ask_once_with_answers(self, api_client, seeker_token, roster, steps_met):
         url = "/v1/profiles/me/modules/creator/"
         got = api_client.post(url, {"answers": {"topic": "Bhajans"}}, format="json", **auth(seeker_token))
         assert got.status_code == 400 and "Instagram" in got.json()["message"]
@@ -96,7 +107,7 @@ class TestDeciding:
         with pytest.raises(modules.Refused):
             modules.decide(row, False, "admin@namo", "late")
 
-    def test_reject_needs_a_note_the_person_sees(self, roster):
+    def test_reject_needs_a_note_the_person_sees(self, roster, steps_met):
         row = modules.ask(SEEKER, "creator", CREATOR_ANSWERS)
         with pytest.raises(modules.Refused):
             modules.decide(row, False, "admin@namo", "")
@@ -115,6 +126,8 @@ class TestDeciding:
 class TestStatus:
     def test_what_each_person_sees(self, api_client, seeker_token, roster):
         got = api_client.get("/v1/profiles/me/modules/", **auth(seeker_token)).json()
-        assert {k: v["held"] for k, v in got["modules"].items()} == {"creator": False, "pro": False, "seller": False}
+        assert {k: v["held"] for k, v in got["modules"].items()} == {
+            "referrer": False, "creator": False, "pro": False, "seller": False}
+        assert got["progress"]["step1"]["met"] is False
         assert [q["key"] for q in got["questions"]["creator"]] == ["topic", "link", "followers", "why"]
         assert modules.status(APPROVED)["modules"]["pro"] == {"held": True, "request": None}

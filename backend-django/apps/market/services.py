@@ -472,7 +472,7 @@ def _sellers(ids):
     for i in ids:
         p = rows.get(i, {})
         out[i] = {"id": i, "name": p.get("name") or "Namo", "avatar_url": p.get("avatar_url"),
-                  "is_pro": i in pros, "is_creator": bool(p.get("influencer") or p.get("seller"))}
+                  "is_pro": i in pros, "is_creator": bool(p.get("influencer"))}
     return out
 
 

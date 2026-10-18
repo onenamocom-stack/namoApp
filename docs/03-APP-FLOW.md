@@ -67,9 +67,9 @@ In file order, which is also resolution order.
 | `/live/:id` | LiveRoom | Plain |
 | `/consult/:id` | ConsultantProfile | Plain |
 | `/notifications` | Notifications | Plain |
-| `/dashboard` | Dashboard — a Pro's or a Creator's own screens (main app, 14 Oct 2026, Phase 16); anyone else goes to `/profile` | Plain |
-| `/dashboard/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
-| `/dashboard/consulting` | Consulting earnings — chat, calls and bookings only (16 Oct 2026). A Pro | Plain |
+| `/studio` | Studio — everybody's own screens (main app, 14 Oct 2026, Phase 16; Dashboard at `/dashboard` until 17 Oct, which still opens it); signed out goes to `/profile` | Plain |
+| `/studio/studio` · `/earnings` · `/profile[/:tab]` · `/affiliate` · `/payout-details` | The pro app's Studio, Earnings and Insights, practice, links and payout details. Studio for a Pro or a Creator, the rest for a Pro | Plain |
+| `/studio/consulting` | Consulting earnings — chat, calls and bookings only (16 Oct 2026). A Pro | Plain |
 | `/desk` · `/desk/ring/:id` | **Namo Consult** — a Pro's calling screen in the main app (14 Oct 2026, Phase 16): online switch, ringing requests, the queue and slots; a notification's Answer / Decline lands on `/desk/ring/:id` | Own shell, no tab bar |
 | `/home?compose=1` | Home with the new-post sheet open (14 Oct 2026) | Tab |
 | `/tag/:tag` | TagScreen — a hashtag's posts, Newest · Top (both apps) | Plain |
@@ -626,7 +626,10 @@ be edited.
 **Sharing a blog or a product** shows its own card — title, a line of the
 text, and the cover (or product photo) as the thumbnail — in WhatsApp and
 anywhere else that previews links (6 Oct 2026; every link previewed as
-Namo's front page). **So does a Bhakti item** (8 Oct 2026): its share
+Namo's front page). **So does a reel** (18 Oct 2026, Rahul): `/reels/<id>`
+previews as "<Name>'s reel on NAMO", the caption, and a frame from a second
+into the video, whole, over a blur of itself, with a play mark. **So does a
+Bhakti item** (8 Oct 2026): its share
 message links to `/bhakti/s/<id>?ref=<code>`, which previews with its title
 and, for a status or wallpaper, its picture (a priced one shows only its
 public preview); opened, it is the Bhakti screen, or sign-up with the code
@@ -1036,7 +1039,7 @@ specialization, rating line, bio, the degree and *Speaks* (the languages,
 opens first, for clients too), and
 the footer with the 20-minute price and the per-minute rate — with **Edit
 profile** (13 Oct 2026, Rahul; the old one, which edited name and birth
-details, went to Settings on 11 Oct), then **Dashboard**
+details, went to Settings on 11 Oct), then **Studio**
 (11 Oct 2026, Rahul: opens pro.1namo.com from 1namo.com, the pro app's start
 inside it; a first visit there asks for the phone code once) and **Share profile**
 (`/consult/<you>`) where a client sees Follow and **Share profile**, half
@@ -1226,8 +1229,8 @@ the move *out of* pending. Confirmed sessions each get a channel button — chat
 opens the panel, live navigates to a room, call toasts. Below, **Booking
 calendar** opens its own page (15 Oct 2026; it replaced the 7 × 6 grid).
 
-### `/pro/calendar` · `/dashboard/calendar`
-The booking calendar (Dashboard → Your consulting setting → Booking calendar on the
+### `/pro/calendar` · `/studio/calendar`
+The booking calendar (Studio → Your consulting setting → Booking calendar on the
 website). Monday to Sunday, each with a switch; on, a day shows its windows as
 From and To times, **+ New window** adds the second (two at most), × removes
 one. **Save calendar** sends the whole week (`POST /v1/consultants/<id>/week/`);
@@ -1285,10 +1288,14 @@ Settings → **Your consulting price** (16 Oct 2026; it was Your rates) opens a 
 application and **Save rates**; all four save together, and new prices apply to
 what is asked or booked afterwards.
 
-### `/dashboard` — a Pro's and a Creator's own screens (14 Oct 2026, Phase 16)
+### `/studio` — Studio, everybody's own screens (14 Oct 2026, Phase 16)
 
-Reached from **Dashboard** on a Pro's own page (it opened pro.1namo.com
-until this day) and on a Creator's Profile, under the five icons.
+Named **Studio** at `/studio` since 17 Oct 2026 (Rahul); it was Dashboard
+at `/dashboard`, and every `/dashboard/...` address still opens the same
+screen at `/studio/...` (`/dashboard/studio` keeps opening Home's
+composer). Reached from **Studio** on a Pro's own page (it opened
+pro.1namo.com until 14 Oct) and on Profile, under the five icons; the
+header of a Studio screen has a Studio button.
 
 Since 16 Oct 2026 (Rahul) it is one layout for both, in this order. It
 replaced *Your work* / *Your consulting setting* for a Pro and the Creator's
@@ -1298,55 +1305,79 @@ earnings-and-Insights page.
   Content & Referrals, Market and (a Pro) Consulting, each this month to
   date; "Paid together on the 7th of next month". A part that does not load
   shows a dash.
-- **Content & Referrals:** *Earnings and insights* (`/dashboard/content`,
-  below), *Your links* (`/dashboard/affiliate`), *Your code* (a Creator, the
+- **Content & Referrals:** *Earnings and insights* (`/studio/content`,
+  below), *Your links* (`/studio/affiliate`), *Your code* (a Creator, the
   Profile's Influencer tab).
-- **Market:** *Earnings and insights* (`/dashboard/market/earnings`), *Your
-  listings* (`/dashboard/market`).
-- **Consulting** (a Pro): *Earnings* (`/dashboard/consulting`), *Your
+- **Market:** *Earnings and insights* (`/studio/market/earnings`), *Your
+  listings* (`/studio/market`).
+- **Consulting** (a Pro): *Earnings* (`/studio/consulting`), *Your
   consulting price* (the rates sheet here), *Booking calendar*, *Go online*
   (`/desk`, the green card).
 - **Payout details**, last: one row; a Pro's opens payout details, a
   Creator's the Market's bank form.
 
-The mixed *Earnings and Insights* page went: `/dashboard/earnings` opens the
-Dashboard, and Namo Consult's *Earnings* link opens Consulting earnings. The
+The mixed *Earnings and Insights* page went: `/studio/earnings` opens the
+Studio, and Namo Consult's *Earnings* link opens Consulting earnings. The
 pro app keeps its own Earnings tab. "Practice and reviews" went on 14 Oct
 2026 (Rahul): reviews are on the Pro's page, Intro video and Username in Edit
-profile (`/practice/edit`), slots in Namo Consult. `/dashboard/profile` opens
-the Dashboard. Edit and the public page are not here: Dashboard opens from
+profile (`/practice/edit`), slots in Namo Consult. `/studio/profile` opens
+Studio. Edit and the public page are not here: Studio opens from
 that page, which carries Edit profile.
 
-### The modules on the Dashboard (Phase 18, 16 Oct 2026, Rahul)
+### The modules in Studio (Phase 18, 16 Oct 2026, Rahul)
 
-`/dashboard` is open to everybody signed in (signed out goes to Profile).
-Each part — Content & Referrals (Creator), Market (Seller), Consulting
-(Pro) — is its section when the module is held, and otherwise that module's
-card: what it opens, and *Waiting for approval*, or *Not approved* with
-"Team:" and the note and *Ask again*, or the request. Creator and Seller ask
-inline: Creator — what you post about, Instagram or YouTube, followers (all
-needed), why (optional); Seller — what you will sell, a sample or link
+`/studio` is open to everybody signed in (signed out goes to Profile).
+**Content & Referrals** is always the **Content card** (17 Oct 2026,
+Rahul): two steps, each condition a completion bar with what you have and
+what it needs (green when met).
+
+- **Step 1 · Earn on referrals** (followers, videos live, days since you
+  joined): while not met, "Meet all three and step 1 opens at once. No
+  approval needed."; when met, *Start step 1*, which grants it on the spot
+  (a toast, and the card turns to step 1). Refused with what is left when
+  the numbers moved meanwhile.
+- Once step 1 is held: the badge *Step 1*, and its rows — *Earnings and
+  insights* (`/studio/content`), *Your product referral link*
+  (`/studio/affiliate`), *Your app download referral code* (Profile's code
+  tab).
+- **Step 2 · Earn on your views** (followers, videos and views in the last
+  90 days): greyed with "Opens after step 1" before step 1; then "Meet all
+  three, then apply. The team approves it."; when met, *Apply for step 2*,
+  which opens the questions (what you post about, Instagram or YouTube,
+  followers; why optional) and *Send for approval*; then "Sent. The team is
+  looking at it."; a rejection shows "Team:" and the note and *Apply
+  again*. Held: the badge *Step 2* and no step 2 block.
+
+Market (Seller) and Consulting (Pro) are their section when the module is
+held, and otherwise that module's card: what it opens, and *Waiting for
+approval*, or *Not approved* with "Team:" and the note and *Ask again*, or
+the request. Seller asks inline: what you will sell, a sample or link
 (needed), anything else. *Send for approval*. Pro opens `/earn/pro`, the
-consultant application (an approved Pro there lands on Dashboard). A
+consultant application (an approved Pro there lands on Studio). A
 decision arrives in the bell. The top table and Payout details show only to
 somebody holding a module; the top table has only their rows. The pages
-below the Dashboard are gated by module. `/earn` (Earn on Namo, its own page
+below Studio are gated by module. `/earn` (Earn on Namo, its own page
 until the same day) redirects here; Profile settings → *Earn on Namo* and
-the Dashboard button on Profile, now shown to everybody, open it. Profile:
-the Shop tab for a Seller, the code tab for a Creator; the blue tick for any
-module.
+the Studio button on Profile, shown to everybody, open it. Profile: the
+Shop tab for a Seller, the code tab for Content step 1; the blue tick for a
+Pro or Content step 2 only.
 
-### `/dashboard/content` — Content & Referrals (16 Oct 2026, Rahul)
+### `/studio/content` — Content & Referrals (16 Oct 2026, Rahul)
 
-A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
+Content step 1 or 2. Header back to Studio; tabs **Earnings · Insights**.
 
 - **Earnings** (since 16 Oct 2026, both): the period chips; **Content
   earnings** for the period, one figure, with "Namo works out your content
   earnings from your views, qualified views and sales through your tags.
   When ads run between posts, they count too."; Views (for the period, up
-  to yesterday — "Till yesterday" — so it moves once a day) and Qualified
-  views (for the period), with what a qualified view is, and **Lifetime views**
-  in a band below them (16 Oct 2026, Rahul).
+  to yesterday — "Till yesterday" — so it moves once a day) and
+  **Engagement** (for the period; called Qualified views until 17 Oct
+  2026), with what engagement is, and **Lifetime views** in a band below
+  them (16 Oct 2026, Rahul). **Step 1** (17 Oct 2026) sees no Engagement;
+  the line under the figure reads "Step 1 earns on sales through your tags
+  and links and on sign-ups with your code. Your views earn from step 2.",
+  and under the card **Step 2 · Earn on your views** with its bars and a
+  link to apply in Studio.
 - **Insights:** **this month** (16 Oct 2026, Rahul; the pro app keeps the
   last seven days): views up to yesterday ("Till yesterday"), new
   followers, saves and comments. Then rows that slide left to right
@@ -1354,7 +1385,7 @@ A Pro or a Creator. Header back to Dashboard; tabs **Earnings · Insights**.
   whole at 9:16, length), **Images** (photos, and text posts as a saffron
   tile with their words), **Blogs** (cover); each card carries views on the
   picture and, under it, the caption, how long ago, likes, comments,
-  reshares and qualified views (all time); a reel or blog opens. Last,
+  reshares and engagement (all time); a reel or blog opens. Last,
   **Sales from tags and referrals**: products and Market listings sold
   through the person's tags and links together, most sold first, each with
   its picture, name, number of sales and buyers; opens the product or
@@ -1367,17 +1398,16 @@ photo, on a festival's days, shows a row of **festival frames** under it
 (below). A video
 longer than 90 seconds is refused before upload: "Videos can be up to 90
 seconds. This one is 2 min 10 s."
-In that sheet a Pro and a Creator also get video and Tag product (a
-Creator's tag earns as a Pro's, 01-PRD §12); a Seeker gets photo, text and
-blog. Gallery and Camera are icons
-without words. `/dashboard/studio` and "Post more" open Home with the sheet
+In that sheet Content step 1 also gets Tag product (01-PRD §12); everybody
+gets photo, video, text and blog. Gallery and Camera are icons
+without words. `/studio/studio` and "Post more" open Home with the sheet
 up (`/home?compose=1`).
 
-The screens are the pro app's own, at `/dashboard/...` and not `/pro/...`:
+The screens are the pro app's own, at `/studio/...` and not `/pro/...`:
 a `/pro` path switches the online beat on, which would show a Pro as online
 where no call can ring. A Seeker downloads none of these screens.
 
-### `/dashboard/consulting` — Consulting earnings (16 Oct 2026, Rahul)
+### `/studio/consulting` — Consulting earnings (16 Oct 2026, Rahul)
 
 A Pro only, main app. The Earnings tab's shape, holding consulting alone:
 metered chat, audio and video, booked sessions and their reversals.
@@ -1386,7 +1416,7 @@ Oct 2026, a Market listing's or e-book's 6% ("Referral · …"), which the
 Earnings tab files under **Shop and Market commission** (it read as Chat,
 call and video before).
 
-- Header: back to Dashboard, "Consulting earnings". The period chips (This
+- Header: back to Studio, "Consulting earnings". The period chips (This
   month, Last month, This FY, Last FY, Lifetime).
 - The period's consulting total ("Shop commission is not in this"), what is
   booked ahead (this month and lifetime), Where it came from (Chat, Audio
@@ -1400,8 +1430,8 @@ The pro app's Earnings tab is unchanged and keeps everything.
 
 ### `/desk` — Namo Consult (14 Oct 2026, Phase 16)
 
-The main app's one screen where a Pro is on duty, reached from Dashboard
-and from Availability in Practice settings. Header: back to Dashboard, the
+The main app's one screen where a Pro is on duty, reached from Studio
+and from Availability in Practice settings. Header: back to Studio, the
 name, the **Online** switch. Under it the ringing requests (Decline,
 Answer), then the pro app's Consult screen as it is: approval state,
 Sessions · Chat · Call, the slots. No tab bar.
@@ -1421,9 +1451,9 @@ search, every presence avatar. Their page says *X is busy right now, on
 another call* in red. Pressing call or chat then shows *X is busy right
 now* while the app keeps asking, as before.
 
-**The Desk's header (17 Oct 2026, Rahul):** Home on the left, **Dashboard**
-on the right, no back. The Dashboard's own back always goes to Profile:
-a history back from it returned to the Desk, which led to the Dashboard
+**The Desk's header (17 Oct 2026, Rahul):** Home on the left, **Studio**
+on the right, no back. The Studio's own back always goes to Profile:
+a history back from it returned to the Desk, which led to Studio
 again.
 
 **Birth details before a call (17 Oct 2026, Rahul).** Pressing video,
@@ -1456,7 +1486,7 @@ pro.1namo.com closed on 16 Oct 2026 (Rahul, after a call through
 `/desk`): every path on it redirects to 1namo.com/desk, and a tapped call
 notification from an old subscription, `/pro/ring/<id>`, to
 `/desk/ring/<id>`. The main app's consultant links (Welcome, Consult's
-empty state, `?next=pro` sign-in) land on the Dashboard.
+empty state, `?next=pro` sign-in) land on Studio.
 
 ### `/practice/edit` — a consultant's Edit profile (13 Oct 2026, Rahul)
 
@@ -2127,25 +2157,25 @@ conversation: **Delete message** deletes it for both people; each sees
 "This message was deleted" in its place (the other person on their next
 open of the conversation). Nobody deletes another person's message.
 
-### `/dashboard/market` — Your listings (15 Oct 2026, Phase 17)
+### `/studio/market` — Your listings (15 Oct 2026, Phase 17)
 
-A Pro or a Creator (Dashboard → Market → *Your listings*, or *Add a listing*
+A Pro or a Creator (Studio → Market → *Your listings*, or *Add a listing*
 on their profile's Shop tab). Since 16 Oct 2026 (Rahul) the page is the
 listings only: the Market earnings, the insights link, the sales and the
-payout row went (they are the Dashboard's). *Add a listing* (four tiles) on
+payout row went (they are Studio's). *Add a listing* (four tiles) on
 top, then **Waiting for approval · N** (a rejected one waits here too, with
 "Admin:" and the note) and **Live · N** below it. Each listing is a card: cover with a
 Live / Waiting for approval / Needs a change pill, title, kind, price and
 (live) how many sold; Edit, See it (live) and Remove along its foot.
 *Add a listing*:
-Download, Course, Event or Product → `/dashboard/market/new/:kind`: cover
+Download, Course, Event or Product → `/studio/market/new/:kind`: cover
 (16:9), name, price (0 free; not for a product), MRP, description, and the
 file; or the language and lessons (each a video or PDF, the first a free
 preview); or the start, length, seats and joining link; or the category,
 stock to send and packed weight. The form shows what Namo keeps and what the
 seller gets. *Send for approval*. Edit sends a listing back to approval.
 
-**`/dashboard/market/earnings` — Market earnings and insights (16 Oct 2026,
+**`/studio/market/earnings` — Market earnings and insights (16 Oct 2026,
 Rahul).** The Earnings page's shape for the Market. Header back to Sell on
 the Market; tabs **Earnings · Insights**; the period chips (This month, Last
 month, This FY, Last FY, Lifetime), shared by both. A sale counts when it was

@@ -627,8 +627,9 @@ earning at once; after this phase each is separate.
 **Decided (Rahul):**
 - Every module is **requested and approved**, no exceptions. Existing Pros
   request Creator and Seller like anybody else.
-- **One badge: a blue tick** for anybody holding any module. The orange Pro
-  tick and the separate Creator tick go.
+- **One badge: a blue tick.** For anybody holding any module (16 Oct);
+  since 17 Oct (Rahul) for a Pro or Content step 2 only. The orange Pro
+  tick and the separate Creator tick went on 16 Oct.
 - Payout details are **one**, for all three, paid together on the 7th.
 
 **Open (asked, not answered):** whether listings already live from somebody
@@ -679,6 +680,32 @@ Tests: each gate per module, a request's life (send, one pending, approve,
 reject with note, notify), the console actions. Docs: `01` §2 and §12
 (who earns what), `03` (Earn on Namo, Dashboard), `04` (one tick), `05`
 (`profiles.seller`, `module_requests`).
+
+### Content in two steps, Studio, Engagement (Rahul, 17 Oct 2026 — LIVE 18 Oct on Rahul's "ship")
+
+Rahul on Telegram, every answer his: three ways to earn (Content, Pro,
+Market). Content has two steps (rules in `01` §2 and §12): **step 1**,
+100 followers, 10 live videos, 30 days, granted automatically on asking:
+tags, product links and the invite code earn, insights, no pay on views;
+**step 2**, 500 followers, 3 videos and 1,00,000 views (all views) in 90
+days, then a request the console approves: pay on views and the blue tick.
+Today's Creators hold step 2. The ₹25 a sign-up becomes step 1's only (a
+Pro or a Seller without it loses it); everybody else keeps the 3 AI
+questions. The tick: Pro and step 2 only (Seller loses it). Dashboard is
+**Studio** at `/studio` (`/dashboard/...` redirects). *Qualified views*
+is **Engagement** in the app and the console. The income page is
+unchanged: no separate referrals line (Rahul).
+
+Built: `profiles.referrer` (`profiles/0009`), `apps/profiles/milestones.py`
+(the counts and the bars), `modules.ask("referrer")` granting at once,
+`modules.ask("creator")` gated on step 1 held and step 2 met,
+`profile_services.may_refer` behind every referral gate, the tick
+annotation on `influencer` only; app: `ContentCard` and `StepBars`
+(`src/screens/Earn.jsx`) in Studio and on Content earnings, the
+route rename. **What it changes on the day it goes live:** a Pro or a
+Seller who is not a Creator stops earning ₹25 a sign-up; a Seller loses
+the tick; nobody new can tag products until they reach step 1. Money
+already earned is paid.
 
 ## Phase 19 — The video pipeline (Rahul's spec, 17 Oct 2026, in progress)
 

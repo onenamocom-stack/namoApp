@@ -51,8 +51,8 @@ export default function Group() {
   const member = group.me?.status === 'active'
   const admin = member && group.me.role === 'admin'
   const removed = group.me?.status === 'removed'
-  const sharer = Boolean(profile?.influencer) // the Creator module (docs/06 Phase 18)
-  // Everybody posts video (17 Oct 2026, Rahul); only a Creator earns on it.
+  const sharer = Boolean(profile?.referrer) // Content step 1 or 2 (17 Oct 2026, Rahul)
+  // Everybody posts video (17 Oct 2026, Rahul); only step 2 earns on views.
   const video = true
 
   async function toggle() {

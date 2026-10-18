@@ -182,7 +182,7 @@ def my_bank(request):
     if request.method == "GET":
         return Response({"pro": pro, "bank": None if pro else services.bank(request.user.pk)})
     if pro:
-        return Response(refusal_body("refused", "Your payout details are on Dashboard → Payout details."), status=400)
+        return Response(refusal_body("refused", "Your payout details are in Studio → Payout details."), status=400)
     form = BankInput(data=request.data)
     form.is_valid(raise_exception=True)
     try:

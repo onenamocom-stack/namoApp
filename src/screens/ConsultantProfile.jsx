@@ -355,10 +355,10 @@ export function ConsultantPage({
               {/* Edit profile went to Settings on 11 Oct 2026 (Rahul): it
                   edits your name and birth details, not this page.
                   Dashboard (11 Oct 2026, Rahul) opened the consultant app;
-                  since 14 Oct 2026 (Phase 16) it is /dashboard in this app.
+                  since 14 Oct 2026 (Phase 16) it is /studio in this app.
                   The pro app keeps its own start. */}
-              <Link to={isPro ? '/' : '/dashboard'} className={ownButton}>
-                Dashboard
+              <Link to={isPro ? '/' : '/studio'} className={ownButton}>
+                Studio
               </Link>
               <button type="button" onClick={share} className={ownButton}>
                 Share profile

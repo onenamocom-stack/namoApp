@@ -2,9 +2,9 @@
  * The verified mark beside a name: a white tick in a blue circle. It was a
  * scalloped rosette until 13 Oct 2026 (Rahul: "need to be round").
  *
- * One tick since 16 Oct 2026 (docs/06 Phase 18, Rahul): blue, for anybody
- * holding any module — Creator, Pro or Seller. From 13 to 16 Oct a Pro's was
- * orange and a Creator's blue. `tone` is still accepted and ignored, so the
+ * One tick, blue: a Pro's and Content step 2's only (Rahul, 17 Oct 2026).
+ * From 16 to 17 Oct anybody holding any module carried it, Seller too;
+ * from 13 to 16 Oct a Pro's was orange and a Creator's blue. `tone` is still accepted and ignored, so the
  * callers that pass it need not change.
  */
 const BLUE = '#1d9bf0'

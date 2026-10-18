@@ -9,7 +9,7 @@ import { BackButton, TabHeader, TopBar } from './Chrome.jsx'
  */
 export default function ProHeader({ title }) {
   if (isPro) return <TabHeader />
-  return <TopBar title={title} back backTo="/dashboard" />
+  return <TopBar title={title} back backTo="/studio" />
 }
 
 /**
@@ -24,8 +24,8 @@ export function DeskHeader() {
     <header className="topbar flex h-11 items-center gap-3 px-4">
       <BackButton onClick={() => navigate('/home')} icon="home" label="Home" />
       <p className="label min-w-0 flex-1 truncate text-center font-bold !text-t1">NAMO Desk</p>
-      <Link to="/dashboard" className="flex-none rounded-full border border-rule bg-white px-3 py-1.5 caps-sm t-heading shadow-sm">
-        Dashboard
+      <Link to="/studio" className="flex-none rounded-full border border-rule bg-white px-3 py-1.5 caps-sm t-heading shadow-sm">
+        Studio
       </Link>
     </header>
   )

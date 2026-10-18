@@ -208,9 +208,9 @@ def search(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_modules(request):
-    """Creator, Pro and Seller: which the caller holds, what they have asked
-    for (waiting, or turned down with the note), and the questions each
-    request asks."""
+    """Content (steps 1 and 2), Pro and Seller: which the caller holds,
+    what they have asked for (waiting, or turned down with the note), the
+    questions each request asks, and the two steps' completion bars."""
     from . import modules
 
     return Response(modules.status(request.user.pk))
@@ -219,11 +219,12 @@ def my_modules(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def ask_module(request, module):
-    """Ask for the Creator or the Seller module. `{answers: {key: text}}`."""
+    """Ask for Content step 1 (granted at once when its conditions are
+    met), step 2 (`creator`) or Seller. `{answers: {key: text}}`."""
     from . import modules
 
     try:
         row = modules.ask(request.user.pk, module, request.data.get("answers"))
     except modules.Refused as err:
         return Response(refusal_body("refused", err.message), status=err.status)
-    return Response({"ok": True, "id": str(row.id)}, status=201)
+    return Response({"ok": True, "id": str(row.id), "status": row.status}, status=201)

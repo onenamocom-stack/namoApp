@@ -43,11 +43,17 @@ class TestWhoEarns:
         [b] = SignupBonus.objects.all()
         assert str(b.referrer_id) == SEEKER and b.amount_paise == 2500
 
-    def test_a_seller_and_a_pro_earn(self, roster):
+    def test_only_content_step_1_earns(self, roster):
+        """Rahul, 17 Oct 2026: a Seller or a Pro earns nothing on sign-ups
+        until they hold Content step 1."""
         Profile.objects.filter(pk=SEEKER).update(seller=True)
+        Profile.objects.filter(pk=APPROVED).update(influencer=False)
         services.claim_signup(newcomer(), code(SEEKER))
         services.claim_signup(newcomer(), code(APPROVED))
-        assert {str(b.referrer_id) for b in SignupBonus.objects.all()} == {SEEKER, APPROVED}
+        assert not SignupBonus.objects.exists()
+        Profile.objects.filter(pk=SEEKER).update(referrer=True)
+        services.claim_signup(newcomer(), code(SEEKER))
+        assert [str(b.referrer_id) for b in SignupBonus.objects.all()] == [SEEKER]
 
     def test_a_plain_seeker_does_not(self, roster):
         assert services.claim_signup(newcomer(), code(SECOND_SEEKER))["ok"]
