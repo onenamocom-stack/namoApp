@@ -88,7 +88,8 @@
       <h3>Market</h3><p>Everything sold, in one place: products, downloads, courses, events, and what they earn.</p>
       <a href="{% url 'namo:shop_product_changelist' %}">Products (on the shelf)</a>
       <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=product">Product listings from sellers</a>
-      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=download">Downloads (PDF and files)</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=ebook">Namo's own downloads (e-books)</a>
+      <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=download">Sellers' downloads (PDF and files)</a>
       <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=course">Courses</a>
       <a href="{% url 'namo:market_listing_changelist' %}?kind__exact=event">Events</a>
       <a href="{% url 'namo:market_listing_changelist' %}?status__exact=pending">Waiting for review</a>
