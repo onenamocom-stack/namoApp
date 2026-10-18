@@ -43,6 +43,20 @@
           }
         },
         {
+          "regex": "^/shop/[ld]/[0-9a-fA-F-]{36}/?$",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
+          "regex": "^/(u|consult)/[0-9a-fA-F-]{36}/?$",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "/og/**",
           "run": {
             "serviceId": "namo-api",

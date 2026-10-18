@@ -119,6 +119,7 @@ const KINDS = [
   [/^\/reels\//, 'reel'],
   [/^\/read\//, 'article'],
   [/^\/bhakti\//, 'bhakti'],
+  [/^\/shop\/[ld]\//, 'listing'],
   [/^\/shop\b/, 'product'],
   [/^\/(u|consult)\//, 'profile'],
   [/^\/groups\//, 'group'],
@@ -131,6 +132,7 @@ export const KIND_LABEL = {
   article: 'Article',
   bhakti: 'Bhakti',
   product: 'Shop',
+  listing: 'Market',
   profile: 'Profile',
   group: 'Group',
   invite: 'Invite',
@@ -143,6 +145,7 @@ const PREVIEW = {
   article: 'Sent an article',
   bhakti: 'Sent from Bhakti',
   product: 'Sent a product',
+  listing: 'Sent from the Market',
   profile: 'Sent a profile',
   group: 'Sent a group',
   invite: 'Sent an invite',
@@ -162,8 +165,10 @@ export function parseShare(body) {
   const hit = first.trim().match(OURS)
   if (!hit) return null
   const path = hit[1] || '/'
-  return { path, kind: kindOf(path), title: title.trim(), media: reelCard(path) || ourMedia(media.trim()) }
+  return { path, kind: kindOf(path), title: title.trim(), media: reelCard(path) || ourMedia(media.trim()) || previewCard(path) }
 }
+
+const SITE = SEEKER_APP_URL.replace(/\/$/, '')
 
 /* A reel's card in a chat is its link preview (18 Oct 2026, Rahul: "like
    share"): the standing frame with the logo and the play mark that
@@ -171,7 +176,26 @@ export function parseShare(body) {
    for reels sent before this too. */
 function reelCard(path) {
   const id = path.match(/^\/reels\/([0-9a-f-]{36})/i)?.[1]
-  return id ? `${SEEKER_APP_URL.replace(/\/$/, '')}/og/reel/${id}.jpg?v=3` : null
+  return id ? `${SITE}/og/reel/${id}.jpg?v=3` : null
+}
+
+/* Anything else sent without a picture (a bhajan, an e-book, a listing
+   shared from its page) gets its link preview's picture (18 Oct 2026,
+   Rahul: a thumbnail on every share). The server answers with NAMO's own
+   card when the thing has none. */
+const PREVIEWS = [
+  [/^\/read\/([0-9a-f-]{36})/i, 'blog'],
+  [/^\/bhakti\/s\/([0-9a-f-]{36})/i, 'bhakti'],
+  [/^\/shop\/d\/([0-9a-f-]{36})/i, 'bhakti'],
+  [/^\/shop\/l\/([0-9a-f-]{36})/i, 'listing'],
+  [/[?&]post=([0-9a-f-]{36})/i, 'post'],
+]
+function previewCard(path) {
+  for (const [re, kind] of PREVIEWS) {
+    const id = path.match(re)?.[1]
+    if (id) return `${SITE}/og/${kind}/${id}.jpg`
+  }
+  return null
 }
 
 /** The Chats list's line for a conversation whose last message is a share. */

@@ -264,16 +264,30 @@ function Bubble({ m, mine, onHold }) {
  *  or the reel's first frame, what it is and its title; a tap opens it. */
 function ShareCard({ s, mine, hold }) {
   const video = s.media && /\.(mp4|webm|mov)(\?|#|$)/i.test(s.media)
+  /* A reel is all picture, as Instagram's is in a chat (18 Oct 2026,
+     Rahul): its words over the bottom of the frame, no box under it. Every
+     card is smaller than it was (220 px): about half the screen. */
+  if (s.kind === 'reel' && s.media) {
+    return (
+      <Link to={s.path} {...hold} className="relative block w-[170px] select-none overflow-hidden rounded-2xl bg-ink">
+        <img src={s.media} alt="" loading="lazy" className="block aspect-[9/16] w-full object-cover" />
+        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-8 text-white">
+          <span className="block caps-sm opacity-80">{KIND_LABEL.reel}</span>
+          <span className="line-clamp-2 block text-meta">{s.title || 'Open on NAMO'}</span>
+        </span>
+      </Link>
+    )
+  }
   return (
     <Link
       to={s.path}
       {...hold}
-      className={`block w-[220px] select-none overflow-hidden rounded-2xl border ${
+      className={`block w-[180px] select-none overflow-hidden rounded-2xl border ${
         mine ? 'border-transparent bg-btn text-white' : 'border-rule bg-white text-t1'
       }`}
     >
       {s.media && (
-        <span className={`block w-full overflow-hidden bg-ink/[0.06] ${s.kind === 'reel' ? 'aspect-[9/16]' : 'aspect-[4/5]'}`}>
+        <span className="block aspect-[4/5] w-full overflow-hidden bg-ink/[0.06]">
           {video ? (
             <video src={`${s.media}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
           ) : posterOf(s.media) ? (
@@ -283,9 +297,9 @@ function ShareCard({ s, mine, hold }) {
           )}
         </span>
       )}
-      <span className="block px-3.5 py-2.5">
+      <span className="block px-3 py-2">
         <span className={`block caps-sm ${mine ? 'opacity-70' : 't-faint'}`}>{KIND_LABEL[s.kind]}</span>
-        <span className="mt-0.5 line-clamp-2 block text-body">{s.title || 'Open on NAMO'}</span>
+        <span className="mt-0.5 line-clamp-2 block text-meta">{s.title || 'Open on NAMO'}</span>
       </span>
     </Link>
   )

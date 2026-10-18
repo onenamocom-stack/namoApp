@@ -303,3 +303,71 @@ class TestReel:
         Content.objects.filter(pk=reel.id).update(media_url="https://cdn.example/missing.mp4")
         response = client.get(f"/og/reel/{reel.id}.jpg")
         assert response.status_code == 302 and response["Location"].endswith("/og.png")
+
+
+@pytest.mark.django_db
+class TestEveryShare:
+    """18 Oct 2026, Rahul: a thumbnail on every share — a photo post, a
+    Market listing (PDF, course, event), one of Namo's downloads."""
+
+    PID = "33333333-4444-5555-6666-777777777777"
+
+    def _person(self):
+        from apps.profiles.models import Profile
+
+        return Profile.objects.create(id=self.PID, phone="+910000000011", name="Meera Joshi",
+                                      username="meerajoshi")
+
+    def test_a_photo_post_previews_as_its_photo(self, client, network):
+        self._person()
+        post = Content.objects.create(author_id=self.PID, kind="post", status="live",
+                                      caption="Diwali diyas at home", media_url="https://cdn.example/diya.png")
+        for path in (f"/u/{self.PID}?post={post.id}", f"/meerajoshi?post={post.id}"):
+            page = client.get(path).content.decode()
+            assert 'og:title" content="Meera Joshi&#x27;s post on NAMO"' in page
+            assert 'og:description" content="Diwali diyas at home"' in page
+            assert f'og:image" content="https://1namo.com/og/post/{post.id}.jpg"' in page
+            assert 'og:image:width" content="1080"' in page
+        image = Image.open(io.BytesIO(client.get(f"/og/post/{post.id}.jpg").content))
+        assert image.size == (1080, 1080)
+
+    def test_without_a_post_the_id_link_is_the_persons_card(self, client, network):
+        self._person()
+        page = client.get(f"/consult/{self.PID}").content.decode()
+        assert 'og:title" content="Meera Joshi on NAMO"' in page
+        # Somebody else's post id does not borrow this page.
+        other = Content.objects.create(author_id="44444444-4444-5555-6666-777777777777", kind="post",
+                                       status="live", caption="x", media_url="https://cdn.example/x.png")
+        page = client.get(f"/u/{self.PID}?post={other.id}").content.decode()
+        assert 'og:title" content="Meera Joshi on NAMO"' in page
+
+    def test_a_listing_previews_with_cover_title_and_price(self, client, network):
+        from apps.market.models import Listing
+
+        self._person()
+        row = Listing.objects.create(seller_id=self.PID, kind="download", title="Hanuman Chalisa, with meaning",
+                                     cover_url="https://cdn.example/cover.png", price_paise=9900,
+                                     status="approved")
+        page = client.get(f"/shop/l/{row.id}").content.decode()
+        assert 'og:title" content="Hanuman Chalisa, with meaning · ₹99"' in page
+        assert 'og:description" content="A download on NAMO by Meera Joshi."' in page
+        assert f'og:image" content="https://1namo.com/og/listing/{row.id}.jpg"' in page
+        image = Image.open(io.BytesIO(client.get(f"/og/listing/{row.id}.jpg").content))
+        assert image.size == (1200, 630)
+
+    def test_a_listing_not_approved_previews_as_namo(self, client, network):
+        from apps.market.models import Listing
+
+        row = Listing.objects.create(seller_id=self.PID, kind="course", title="x", status="pending",
+                                     cover_url="https://cdn.example/cover.png")
+        assert 'og:title" content="NAMO"' in client.get(f"/shop/l/{row.id}").content.decode()
+        assert client.get(f"/og/listing/{row.id}.jpg").status_code == 302
+
+    def test_a_namo_download_previews_with_its_cover(self, client, network):
+        from apps.bhakti.models import BhaktiAsset
+
+        book = BhaktiAsset.objects.create(kind="ebook", title="Sundarkand", active=True,
+                                          preview_url="https://cdn.example/book.png", media_url="ebooks/x.pdf")
+        page = client.get(f"/shop/d/{book.id}").content.decode()
+        assert 'og:title" content="Sundarkand · Free"' in page
+        assert f'og:image" content="https://1namo.com/og/bhakti/{book.id}.jpg"' in page

@@ -12,6 +12,7 @@ import { access, get, listing as fetchListing, previewLesson } from '../lib/mark
 import { useStore } from '../store.jsx'
 import { PickBar, SharerBar } from '../components/TagPick.jsx'
 import { PhotoSwiper } from '../components/Pieces.jsx'
+import { openShare } from '../lib/share.js'
 
 /**
  * A seller's listing, `/shop/l/:id` (15 Oct 2026, Phase 17): a download, a
@@ -100,7 +101,7 @@ function Cover({ l, children }) {
 }
 
 function Head({ l, kindLabel }) {
-  const { t } = useStore()
+  const { t, showToast } = useStore()
   return (
     <>
     <PickBar />
@@ -117,6 +118,20 @@ function Head({ l, kindLabel }) {
         <MarketPrice price={l.price_paise / 100} mrp={l.mrp_paise ? l.mrp_paise / 100 : null} free={t('ac.free')} />
       </div>
     </section>
+    {/* Share for everybody (18 Oct 2026, Rahul): WhatsApp and a Namo chat
+        both show the cover. */}
+    <div className="px-5 pt-3">
+      <button
+        type="button"
+        onClick={async () => {
+          const said = await openShare({ path: `/shop/l/${l.id}`, title: l.title, media: l.cover_url || null })
+          if (said) showToast(said)
+        }}
+        className="pill caps-sm"
+      >
+        <Icon name="share" size={14} /> Share
+      </button>
+    </div>
     {/* A Pro's or a Creator's Tag and Link (15 Oct 2026, Rahul). */}
     <SharerBar product={l} />
     </>

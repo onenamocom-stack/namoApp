@@ -49,7 +49,10 @@ if settings.PUBLIC_API_ENABLED:
         re_path(r"^reels/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.reel_page, name="share-reel"),
         re_path(r"^shop/p/(?P<key>[^/]+)/?$", share.product_page, name="share-product"),
         re_path(r"^bhakti/s/(?P<asset_id>[0-9a-fA-F-]{36})/?$", share.bhakti_page, name="share-bhakti"),
-        re_path(r"^og/(?P<kind>blog|reel|product|bhakti|profile|site)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
+        re_path(r"^shop/l/(?P<listing_id>[0-9a-fA-F-]{36})/?$", share.listing_page, name="share-listing"),
+        re_path(r"^shop/d/(?P<asset_id>[0-9a-fA-F-]{36})/?$", share.download_page, name="share-download"),
+        re_path(r"^(?:u|consult)/(?P<profile_id>[0-9a-fA-F-]{36})/?$", share.person_page, name="share-person"),
+        re_path(r"^og/(?P<kind>blog|reel|post|listing|product|bhakti|profile|site)/(?P<item_id>[0-9a-fA-F-]{36})\.jpg$", share.og_image, name="share-og"),
         # 1namo.com itself, for the console's Link card (12 Oct 2026).
         path("", share.home_page, name="share-home"),
         # 1namo.com/<username> (12 Oct 2026). Last, so it can shadow nothing.

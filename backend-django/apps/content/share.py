@@ -47,6 +47,9 @@ REEL_SIZE = (720, 1280)
 # A profile's card is the person's photo, square: WhatsApp then draws the
 # small thumbnail beside the name rather than a cropped banner of a face.
 PROFILE_SIZE = (600, 600)
+# A shared photo post is its photo, square (18 Oct 2026, Rahul: every share
+# with its thumbnail); it was the author's profile card.
+POST_SIZE = (1080, 1080)
 FALLBACK_IMAGE = "/og.png"
 
 
@@ -230,6 +233,48 @@ def bhakti_page(request, asset_id):
                        image=image, url=url, kind="website"), url)
 
 
+_LISTING_WORDS = {"download": "A download", "course": "A course", "event": "An event"}
+
+
+def listing_page(request, listing_id):
+    """A Market listing, `/shop/l/<id>` (18 Oct 2026, Rahul): a PDF or
+    other download, a course, an event — its cover, title, price and
+    seller. Only an approved one; anything else previews as NAMO."""
+    from apps.market.models import Listing, ListingStatus
+    from apps.profiles.models import Profile
+
+    url = f"{_site()}/shop/l/{listing_id}"
+    row = Listing.objects.filter(pk=listing_id, status=ListingStatus.APPROVED).first()
+    if row is None:
+        return _page(_tags(title="NAMO", description=SITE_LINE,
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    seller = Profile.objects.filter(pk=row.seller_id).values_list("name", flat=True).first() or ""
+    price = f"₹{row.price_paise / 100:,.0f}" if row.price_paise else "Free"
+    what = _LISTING_WORDS.get(row.kind, "On the Market")
+    by = f" by {seller}" if seller else ""
+    description = _summary(row.description) or f"{what} on NAMO{by}."
+    image = f"{_site()}/og/listing/{row.id}.jpg" if row.cover_url else f"{_site()}{FALLBACK_IMAGE}"
+    return _page(_tags(title=f"{row.title} · {price}", description=description, image=image,
+                       url=url, kind="product"), url)
+
+
+def download_page(request, asset_id):
+    """One of Namo's own downloads, `/shop/d/<id>` (an e-book), previewed
+    as its Bhakti page is, at its own address."""
+    from apps.bhakti.models import BhaktiAsset
+
+    url = f"{_site()}/shop/d/{asset_id}"
+    asset = BhaktiAsset.objects.filter(pk=asset_id, active=True).first()
+    if asset is None:
+        return _page(_tags(title="NAMO", description=SITE_LINE,
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    image = (f"{_site()}/og/bhakti/{asset.id}.jpg" if _bhakti_picture(asset)
+             else f"{_site()}{FALLBACK_IMAGE}")
+    price = f"₹{asset.price_paise / 100:,.0f}" if asset.price_paise else "Free"
+    return _page(_tags(title=f"{asset.title} · {price}", description="Read it on NAMO.",
+                       image=image, url=url, kind="product"), url)
+
+
 def _public_profile(username=None, profile_id=None):
     """(profile, consultant row or None) for somebody a username link may
     show — the resolve_username rule, so a card never names a person the
@@ -252,6 +297,39 @@ def _public_profile(username=None, profile_id=None):
     return profile, pro
 
 
+def _post_tags(request, profile, url):
+    """A post shared from its author's page (`?post=<id>`): the post's own
+    card — its photo, whose post, its words — when it is that author's
+    live post; None otherwise, and the person's card stands."""
+    try:
+        post_id = uuid.UUID(request.GET.get("post") or "")
+    except ValueError:
+        return None
+    row = Content.objects.filter(pk=post_id, author_id=profile.pk, status=Content.Status.LIVE,
+                                 kind=Content.Kind.POST).first()
+    if row is None:
+        return None
+    url = f"{url}?post={row.id}"
+    image = f"{_site()}/og/post/{row.id}.jpg" if row.media_url else None
+    tags = _tags(title=f"{profile.name}'s post on NAMO",
+                 description=_summary(row.caption or row.title or row.body) or "See it on NAMO.",
+                 image=image or f"{_site()}{FALLBACK_IMAGE}", url=url,
+                 size=POST_SIZE if image else OG_SIZE)
+    return tags, url
+
+
+def person_page(request, profile_id):
+    """`/u/<id>` and `/consult/<id>` (18 Oct 2026): the person's card, as
+    their username link has, or a post shared from their page."""
+    kind = "consult" if request.path.startswith("/consult/") else "u"
+    url = f"{_site()}/{kind}/{profile_id}"
+    profile, pro = _public_profile(profile_id=profile_id)
+    if profile is None:
+        return _page(_tags(title="NAMO", description=SITE_LINE,
+                           image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    return _person(request, profile, pro, url)
+
+
 def profile_page(request, username):
     """1namo.com/<username> (12 Oct 2026, Rahul): the person's own card —
     photo, name, and what they do or their bio. A name nobody has, or that
@@ -261,6 +339,13 @@ def profile_page(request, username):
     if profile is None:
         return _page(_tags(title="NAMO", description=SITE_LINE,
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
+    return _person(request, profile, pro, url)
+
+
+def _person(request, profile, pro, url):
+    post = _post_tags(request, profile, url)
+    if post is not None:
+        return _page(*post)
     if pro is not None:
         title = f"{profile.name} · {pro.category or 'Pro'} on NAMO"
         description = _summary(pro.specialization or pro.bio or profile.bio) or "Talk to them on NAMO."
@@ -305,9 +390,14 @@ def og_image(request, kind, item_id):
     """A 1200 × 630 JPEG cut from a blog cover or a product photo — light
     enough for every link preview. Any failure redirects to the site's own
     og.png rather than a broken card."""
-    if kind in ("blog", "reel"):
+    if kind in ("blog", "reel", "post"):
         row = Content.objects.filter(pk=item_id, status=Content.Status.LIVE).first()
         source = row.media_url if row else None
+    elif kind == "listing":
+        from apps.market.models import Listing, ListingStatus
+
+        row = Listing.objects.filter(pk=item_id, status=ListingStatus.APPROVED).first()
+        source = row.cover_url if row else None
     elif kind == "bhakti":
         from apps.bhakti.models import BhaktiAsset
 
@@ -333,7 +423,7 @@ def og_image(request, kind, item_id):
             if kind == "reel":
                 data = _reel_card(source)
             else:
-                data = _thumbnail(source, PROFILE_SIZE if kind == "profile" else OG_SIZE)
+                data = _thumbnail(source, {"profile": PROFILE_SIZE, "post": POST_SIZE}.get(kind, OG_SIZE))
         except Exception as exc:  # noqa: BLE001 — any image failure is the fallback
             logger.warning("share: thumbnail failed for %s %s: %s", kind, item_id, exc)
             return HttpResponseRedirect(f"{_site()}{FALLBACK_IMAGE}")
