@@ -828,7 +828,10 @@ book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
   name, seller, then the price with the MRP struck through and the % off
   when there is an MRP above it. Downloads first (a card opens that
   download's page, `/shop/d/:id`), then Events and Courses once they
-  have listings, then the console's categories. A product on no console
+  have listings, then each **sub category ticked "Show on Market home"**
+  in the console (18 Oct 2026, Rahul), its name as the heading and *See
+  all* opening its category with that sub category picked, then the
+  console's categories. A product on no console
   category is under *More*; a category with nothing in it has no section.
 - **Downloads**: every one. Each has the Bhakti row under its title (12 Oct
   2026, Rahul): Like, Comment, Reshare and Share, with Read on the right; a

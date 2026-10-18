@@ -240,7 +240,18 @@ export default function Shop() {
      drops out. */
   const home = cat === 'All' && !sub && !q
   const known = new Set(catList.map((c) => c.name))
+  /* A sub category ticked in the console is its own section, ahead of
+     the categories (18 Oct 2026, Rahul): "Shani (Saturn)", "Money". */
+  const subSections = catList.flatMap((c) =>
+    (c.home ?? []).map((sc) => ({
+      name: c.name,
+      sub: sc,
+      label: sc,
+      items: rest.filter((p) => p.categories.includes(c.name) && p.subcategories.includes(sc)),
+    })),
+  )
   const sections = [
+    ...subSections,
     ...catList.map((c) => ({ name: c.name, label: c.name, items: rest.filter((p) => p.categories.includes(c.name)) })),
     { name: null, label: t('shop.more'), items: rest.filter((p) => !p.categories.some((c) => known.has(c))) },
   ].filter((s) => s.items.length)
@@ -481,10 +492,10 @@ export default function Shop() {
           )}
           {sections.map((s) => (
             <MarketSection
-              key={s.label}
+              key={`${s.name}:${s.sub ?? ''}:${s.label}`}
               title={s.label}
               seeAll={t('a.seeAll')}
-              onSeeAll={s.name ? () => { setCat(s.name); setSub(null) } : undefined}
+              onSeeAll={s.name ? () => { setCat(s.name); setSub(s.sub ?? null) } : undefined}
               strip
             >
               {s.items.slice(0, STRIP_MAX).map((p) => (

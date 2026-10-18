@@ -632,7 +632,9 @@ above carries into the balance.
 
 Came across in the migration with no model; `apps/shop/models.py` maps it.
 `shop_categories (id, name, sort)` and `shop_subcategories (id,
-category_id, name, sort)` beside it — the app reads both from
+category_id, name, sort, show_on_home)` beside it (`show_on_home` boolean,
+default false, `shop/0011`, 18 Oct 2026: a section on the Market's home;
+the API lists the ticked ones per category as `home`) — the app reads both from
 `GET /v1/shop/categories/`, never a list of its own.
 
 ```sql

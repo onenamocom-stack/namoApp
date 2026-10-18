@@ -113,3 +113,11 @@ class TestTheEndpoints:
         _form(category).save()
         assert api.get("/v1/shop/categories/").json()[0]["name"] == "Gems"
         assert {p["category"] for p in api.get("/v1/shop/").json()} == {"Gems"}
+
+    def test_a_ticked_sub_category_is_a_home_section(self, category):
+        """18 Oct 2026, Rahul: a tick on a sub category puts it on the
+        Market's home."""
+        ShopSubcategory.objects.create(category=category, name="Neelam", sort=2, show_on_home=True)
+        ShopSubcategory.objects.create(category=category, name="Pukhraj", sort=1)
+        row = APIClient().get("/v1/shop/categories/").json()[0]
+        assert row["subcategories"] == ["Pukhraj", "Neelam"] and row["home"] == ["Neelam"]

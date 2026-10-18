@@ -872,9 +872,10 @@ class ShopCategoryAdmin(AuditedAdmin, dj.ModelAdmin):
 @dj.register(ShopSubcategory, site=site)
 class ShopSubcategoryAdmin(AuditedAdmin, dj.ModelAdmin):
     audit_target = "shop_subcategory"
-    list_display = ("name", "category", "sort")
-    list_filter = ("category",)
-    list_editable = ("sort",)
+    list_display = ("name", "category", "sort", "show_on_home")
+    list_filter = ("category", "show_on_home")
+    # Tick straight from the list: a section on the Market's home (18 Oct 2026).
+    list_editable = ("sort", "show_on_home")
 
     def has_module_permission(self, request):
         return at_least(request, Tier.FULFILMENT)

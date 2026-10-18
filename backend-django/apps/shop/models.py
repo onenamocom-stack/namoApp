@@ -46,6 +46,9 @@ class ShopSubcategory(models.Model):
     )
     name = models.TextField()
     sort = models.SmallIntegerField(default=0)
+    # Ticked in the console: its own section on the Market's home, with its
+    # products and See all (18 Oct 2026, Rahul).
+    show_on_home = models.BooleanField(default=False, db_default=False)
 
     class Meta:
         db_table = "shop_subcategories"
