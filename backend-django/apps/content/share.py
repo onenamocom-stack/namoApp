@@ -356,13 +356,19 @@ def _thumbnail(source, size=OG_SIZE):
 def _frame(source):
     """One frame of a video at its URL, as a PIL image: a second in, or the
     first frame of a shorter one. FFmpeg reads only what it needs over
-    HTTP; the binary is imageio-ffmpeg's, so the image needs no apt."""
+    HTTP. The system's FFmpeg (Debian's, in the API image); imageio-ffmpeg's
+    static one only where there is none (a dev machine), because on Cloud
+    Run that one crashed with signal 11 (18 Oct 2026)."""
+    import shutil
     import subprocess
 
-    import imageio_ffmpeg
     from PIL import Image
 
-    exe = imageio_ffmpeg.get_ffmpeg_exe()
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        import imageio_ffmpeg
+
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
     for at in ("1", "0"):
         out = subprocess.run(
             [exe, "-hide_banner", "-loglevel", "error", "-ss", at, "-i", source,

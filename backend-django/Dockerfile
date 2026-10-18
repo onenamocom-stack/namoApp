@@ -20,6 +20,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# FFmpeg for a reel's link-preview frame (apps/content/share.py, 18 Oct
+# 2026). Debian's, not imageio-ffmpeg's static binary: that one died with
+# signal 11 on every run inside Cloud Run's sandbox.
+RUN apt-get update     && apt-get install -y --no-install-recommends ffmpeg     && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first, in their own layer: requirements.txt changes far less
 # often than the application, so a code edit does not reinstall Django.
 COPY requirements.txt .
