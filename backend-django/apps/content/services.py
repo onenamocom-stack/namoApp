@@ -69,7 +69,7 @@ VIDEO_REFUSAL = "Reels and video are for Creators. Ask for the Creator module in
 BLOCKED_REFUSAL = "Your account cannot post"
 TAG_REFUSAL = "Tagging products opens with Content step 1. See Studio"
 TAG_LIMIT_REFUSAL = f"Tag at most {MAX_TAGGED_PRODUCTS} products"
-TAG_MISSING_REFUSAL = "One of those products is not in the shop"
+TAG_MISSING_REFUSAL = "One of those products is not on the Market"
 SELF_REPORT_REFUSAL = "You cannot report your own post"
 DUPLICATE_REPORT_REFUSAL = "You have already reported this"
 

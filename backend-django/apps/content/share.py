@@ -177,7 +177,7 @@ def product_page(request, key):
     url = f"{_site()}/shop/p/{key}"
     p = _product(key)
     if p is None:
-        return _page(_tags(title="NAMO shop", description="Gemstones, rudraksha, maalas and remedies.",
+        return _page(_tags(title="NAMO Market", description="Gemstones, rudraksha, maalas and remedies.",
                            image=f"{_site()}{FALLBACK_IMAGE}", url=url, kind="website"), url)
     price = f"₹{p.price_paise / 100:,.0f}"
     from apps.shop.services import plain_text

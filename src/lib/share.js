@@ -131,7 +131,7 @@ export const KIND_LABEL = {
   post: 'Post',
   article: 'Article',
   bhakti: 'Bhakti',
-  product: 'Shop',
+  product: 'Market',
   listing: 'Market',
   profile: 'Profile',
   group: 'Group',

@@ -370,7 +370,7 @@ function MoreProducts({ current }) {
   if (!rows?.length) return null
   return (
     <section className="px-5 pt-8">
-      <h2 className="caps-sm t-faint">More from the shop</h2>
+      <h2 className="caps-sm t-faint">More from the Market</h2>
       <ul className="mt-3 grid grid-cols-2 gap-3">
         {rows.map((x) => (
           <li key={x.id}>

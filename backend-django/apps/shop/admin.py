@@ -851,8 +851,10 @@ class ShipmentAdmin(AuditedAdmin, dj.ModelAdmin):
 @dj.register(ShopCategory, site=site)
 class ShopCategoryAdmin(AuditedAdmin, dj.ModelAdmin):
     audit_target = "shop_category"
-    list_display = ("name", "sort")
-    list_editable = ("sort",)
+    list_display = ("name", "sort", "show")
+    # Downloads, Events and Courses are categories too (19 Oct 2026): order
+    # them with the rest, untick Show to hide a tile.
+    list_editable = ("sort", "show")
 
     def has_module_permission(self, request):
         return at_least(request, Tier.FULFILMENT)

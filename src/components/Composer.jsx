@@ -634,7 +634,7 @@ function ProductPicker({ tagged, onChange, search = true, onMore = null }) {
     <div className="mt-6">
       <p className="label text-left">Tag products · {tagged.length}/{MAX_TAGS}</p>
       <p className="mt-1 text-meta t-body">
-        Seekers tap through to the shop. You earn on what they buy, as with your links.
+        Seekers tap through to the Market. You earn on what they buy, as with your links.
       </p>
 
       {tagged.length > 0 && (
@@ -667,14 +667,14 @@ function ProductPicker({ tagged, onChange, search = true, onMore = null }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search the shop"
+            placeholder="Search the Market"
             aria-label="Search products to tag"
             className="field-line mt-4"
           />
           {all === null ? (
-            <p className="mt-3 text-meta t-faint">Loading the shop.</p>
+            <p className="mt-3 text-meta t-faint">Loading the Market.</p>
           ) : matches.length === 0 ? (
-            <p className="mt-3 text-meta t-faint">Nothing in the shop matches that.</p>
+            <p className="mt-3 text-meta t-faint">Nothing on the Market matches that.</p>
           ) : (
             <ul className="mt-2">
               {matches.map((p) => (

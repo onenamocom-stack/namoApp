@@ -48,7 +48,7 @@ COLUMNS = (
     ("weight_grams", "Required. Shipping is priced on it."),
     ("gst_percent", "0, 3, 5, 12, 18 or 28."),
     ("featured", "yes or no."),
-    ("active", "yes puts it in the shop, no takes it down."),
+    ("active", "yes puts it on the Market, no takes it down."),
     ("cover_url", "The first photo."),
     ("gallery", "More photos and videos, one URL per line, in order."),
     ("description", "The product page text. New lines are kept."),

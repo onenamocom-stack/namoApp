@@ -235,6 +235,7 @@ def list_categories():
         {
             "id": str(c.id),
             "name": c.name,
+            "show": c.show,
             "subcategories": [s.name for s in c.subcategories.all()],
             # The ones ticked for the Market's home, in their order (18 Oct 2026).
             "home": [s.name for s in c.subcategories.all() if s.show_on_home],

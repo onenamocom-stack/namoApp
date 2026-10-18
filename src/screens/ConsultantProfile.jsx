@@ -96,7 +96,7 @@ export function ConsultantPage({
   // What they sell on the Market (15 Oct 2026, Phase 17): a Shop tab when
   // there is something, and always on your own page.
   const shop = useSellerListings(id)
-  const shopTab = own || shop?.length ? [{ key: 'shop', label: 'Shop' }] : []
+  const shopTab = own || shop?.length ? [{ key: 'shop', label: 'Market' }] : []
   const [sheet, setSheet] = useState(params.get('book') === '1')
   const [slot, setSlot] = useState(null)
   const [service, setService] = useState(null)

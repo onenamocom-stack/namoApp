@@ -27,10 +27,10 @@ REFUSAL_SELF = "You cannot use your own code."
 REFUSAL_ALREADY_REFERRED = "You have already used a referral code."
 REFUSAL_NOT_FIRST_ORDER = "This coupon is for first-time buyers only."
 REFUSAL_WRONG_KIND_AT_SIGNUP = (
-    "That is a shop coupon. Use it at checkout on your first order."
+    "That is a Market coupon. Use it at checkout on your first order."
 )
 REFUSAL_WRONG_KIND_AT_CHECKOUT = (
-    "That is a sign-up code, not a shop coupon."
+    "That is a sign-up code, not a Market coupon."
 )
 REFUSAL_CONSULTANT_TO_CONSULTANT = (
     "Referral rewards are for seekers. Nothing is credited between consultants."

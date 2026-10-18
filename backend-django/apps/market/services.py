@@ -273,7 +273,7 @@ def _shelve(listing):
     category = (ShopCategory.objects.filter(name__iexact=listing.category_name).first()
                 or ShopCategory.objects.order_by("sort", "name").first())
     if category is None:
-        raise Refused("Add a shop category in the console first.")
+        raise Refused("Add a Market category in the console first.")
     fields = dict(
         name=listing.title, image_url=listing.cover_url, gallery=list(listing.gallery or []),
         price_paise=listing.price_paise,

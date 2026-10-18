@@ -604,7 +604,7 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                 settled = shop_services.order_paid(shop_order_id)
                 if settled == "lapsed":
                     logger.warning("[shop-pay] %s paid after its order lapsed; credited to wallet", shop_order_id)
-                    credit(profile_id, amount_paise, "Shop payment after the order lapsed",
+                    credit(profile_id, amount_paise, "Market payment after the order lapsed",
                            ref_type=RefType.PAYMENT)
             elif status == PaymentStatus.CAPTURED and entitlement_sku:
                 # Something kept, paid at the gateway (15 Oct 2026): it is

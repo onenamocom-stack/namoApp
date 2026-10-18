@@ -28,10 +28,15 @@ class ShopCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.TextField()
     sort = models.SmallIntegerField(default=0)
+    # Untick to take the tile and its section off the Market (19 Oct 2026,
+    # Rahul: Downloads, Events and Courses too).
+    show = models.BooleanField(default=True, db_default=True)
 
     class Meta:
         db_table = "shop_categories"
         ordering = ("sort", "name")
+        # The Market's, not a "shop" (19 Oct 2026, Rahul: one name).
+        verbose_name = "category"
         verbose_name_plural = "categories"
 
     def __str__(self):
@@ -53,7 +58,8 @@ class ShopSubcategory(models.Model):
     class Meta:
         db_table = "shop_subcategories"
         ordering = ("sort", "name")
-        verbose_name_plural = "subcategories"
+        verbose_name = "sub category"
+        verbose_name_plural = "sub categories"
 
     def __str__(self):
         return f"{self.category.name} · {self.name}"

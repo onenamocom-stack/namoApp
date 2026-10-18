@@ -631,7 +631,9 @@ above carries into the balance.
 ### 4.6a `products` — the shop's catalogue (columns of 6 Oct 2026)
 
 Came across in the migration with no model; `apps/shop/models.py` maps it.
-`shop_categories (id, name, sort)` and `shop_subcategories (id,
+`shop_categories (id, name, sort, show)` (`show` boolean, default true,
+`shop/0012`, 19 Oct 2026: untick to hide the tile and its section; the API
+returns it) and `shop_subcategories (id,
 category_id, name, sort, show_on_home)` beside it (`show_on_home` boolean,
 default false, `shop/0011`, 18 Oct 2026: a section on the Market's home;
 the API lists the ticked ones per category as `home`) — the app reads both from

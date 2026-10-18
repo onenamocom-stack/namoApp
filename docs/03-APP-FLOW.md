@@ -817,7 +817,13 @@ no longer on the Market.
 One page where somebody buys goods and services. The tiles, after the
 header's search, in Rahul's order (15 Oct 2026): **All**, **Downloads**
 (was E-books: any file — a PDF, an e-book, a tool), **Events**,
-**Courses**, then the console's shop categories. `?cat=ebooks` (or
+**Courses**, then the console's shop categories. **Since 19 Oct 2026
+(Rahul)** Downloads, Events and Courses can be categories in the console
+too: a console category named Downloads, Events or Courses is that tile,
+in the console's order among the rest, and any category unticked *Show*
+(those three included) has no tile and no section; without such a
+category the three tiles stay first as before. The word is **Market**
+everywhere a person reads it (was Shop; the `/shop/...` addresses stay). `?cat=ebooks` (or
 `?cat=downloads`), `?cat=events` or `?cat=courses` opens on that tile; `/academy` forwards to `?cat=ebooks`, and a shared
 book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
 

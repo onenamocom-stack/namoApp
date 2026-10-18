@@ -121,3 +121,10 @@ class TestTheEndpoints:
         ShopSubcategory.objects.create(category=category, name="Pukhraj", sort=1)
         row = APIClient().get("/v1/shop/categories/").json()[0]
         assert row["subcategories"] == ["Pukhraj", "Neelam"] and row["home"] == ["Neelam"]
+
+    def test_a_category_can_be_hidden(self, category):
+        """19 Oct 2026, Rahul: Downloads, Events and Courses are categories
+        too, and any category can be hidden from the Market."""
+        ShopCategory.objects.create(name="Events", sort=3, show=False)
+        rows = {r["name"]: r["show"] for r in APIClient().get("/v1/shop/categories/").json()}
+        assert rows == {"Gemstones": True, "Events": False}

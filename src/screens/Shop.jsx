@@ -93,6 +93,12 @@ const MARKET = [
   { key: ':courses', label: 'ac.tab.courses', icon: 'play', hue: '#c2410c', soon: 'ac.soon.courses' },
 ]
 const marketOf = (key) => MARKET.find((m) => m.key === key)
+/* Downloads, Events and Courses are categories in the console too (19 Oct
+   2026, Rahul: the Market sells goods and services, all categories in one
+   place). A console category of that name is that tile, in the console's
+   order; without one, the tile stays first as before. */
+const SPECIAL_NAMES = { downloads: ':ebooks', download: ':ebooks', 'e-books': ':ebooks', events: ':events', event: ':events', courses: ':courses', course: ':courses' }
+const keyOfName = (name) => SPECIAL_NAMES[(name || '').trim().toLowerCase()]
 // A home section's strip shows this many; See all has the rest.
 const STRIP_MAX = 12
 // `?cat=downloads` is the new name for `?cat=ebooks`.
@@ -197,9 +203,11 @@ export default function Shop() {
       .then(setCategories)
       .catch((err) => console.error('[shop] categories failed:', err.message))
   }, [])
-  const catList = categories?.length
+  const allCats = categories?.length
     ? categories
     : [...new Set(products.map((p) => p.category).filter(Boolean))].map((name) => ({ name, subcategories: [] }))
+  // The categories that hold products; Downloads, Events, Courses are tiles.
+  const catList = allCats.filter((c) => !keyOfName(c.name) && c.show !== false)
   const subsOf = (name) => catList.find((c) => c.name === name)?.subcategories ?? []
 
   /* Once the grid exists, bring the linked product to the middle of the
@@ -215,7 +223,11 @@ export default function Shop() {
   }, [loadingShop, focusId])
   const focusRing = 'ring-2 ring-gold-fill ring-offset-2 ring-offset-bg'
 
-  const filters = ['All', ...MARKET.map((m) => m.key), ...catList.map((c) => c.name)]
+  // A category unticked in the console is not a tile (19 Oct 2026); a
+  // hidden Downloads, Events or Courses takes its tile away too.
+  const named = allCats.map((c) => keyOfName(c.name) ?? c.name)
+  const fromConsole = allCats.filter((c) => c.show !== false).map((c) => keyOfName(c.name) ?? c.name)
+  const filters = ['All', ...MARKET.map((m) => m.key).filter((k) => !named.includes(k)), ...fromConsole]
   const special = marketOf(cat)
   const q = query.trim().toLowerCase()
   const list = products.filter((p) => {
@@ -480,9 +492,12 @@ export default function Shop() {
       {/* ── Sections, on All ──────────────────────────────────────────── */}
       {home && !loadingShop && !shopError && (
         <>
-          <Ebooks cards limit={STRIP_MAX} onMore={() => setCat(':ebooks')} onOpen={openBook} extra={ofKind('download')} />
+          {/* A tile hidden in the console takes its section too (19 Oct 2026). */}
+          {filters.includes(':ebooks') && (
+            <Ebooks cards limit={STRIP_MAX} onMore={() => setCat(':ebooks')} onOpen={openBook} extra={ofKind('download')} />
+          )}
           {[[':events', 'event'], [':courses', 'course']].map(([key, kind]) =>
-            ofKind(kind).length ? (
+            filters.includes(key) && ofKind(kind).length ? (
               <MarketSection key={key} title={t(marketOf(key).label)} seeAll={t('a.seeAll')} onSeeAll={() => setCat(key)} strip>
                 {ofKind(kind).slice(0, STRIP_MAX).map((row) => (
                   <ListingCard key={row.id} row={row} free={t('ac.free')} onOpen={() => openListing(row.id)} corner={<CardCorner product={row} />} />

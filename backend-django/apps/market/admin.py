@@ -157,7 +157,7 @@ class ListingAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
             return format_html("{} · {} min · {} seats<br>Online: <a href='{}' target='_blank' rel='noopener'>{}</a>",
                                when, obj.duration_minutes, obj.seats, obj.join_url, obj.join_url)
         if obj.kind == ListingKind.PRODUCT:
-            shop = format_html(" · on the shop as product {}", obj.product_id) if obj.product_id else ""
+            shop = format_html(" · on the Market as product {}", obj.product_id) if obj.product_id else ""
             return format_html("Category: {} · the seller sends {} · {} g each{}",
                                obj.category_name or "—", obj.stock, obj.weight_grams, shop)
         return "—"

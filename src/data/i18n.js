@@ -33,7 +33,7 @@ export const strings = {
   'nav.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
   'nav.pooja': { en: 'Pooja', hi: 'पूजा' },
   'nav.consult': { en: 'Consult', hi: 'परामर्श' },
-  'nav.shop': { en: 'Shop', hi: 'दुकान' },
+  'nav.shop': { en: 'Market', hi: 'मार्केट' },
   'nav.market': { en: 'Market', hi: 'बाज़ार' },
   'nav.messages': { en: 'Chat', hi: 'चैट' }, // Rahul, 13 Oct 2026: "Chat", not "Messages"
   'nav.academy': { en: 'Academy', hi: 'अकादमी' },
@@ -124,7 +124,7 @@ export const strings = {
   'home.resume': { en: 'Resume · {n}% done', hi: 'जारी रखें · {n}% पूरा' },
   'home.startCourse': { en: 'Start course', hi: 'कोर्स शुरू करें' },
   'home.lessons': { en: '{n} lessons', hi: '{n} पाठ' },
-  'home.namoShop': { en: 'NAMO Shop', hi: 'नमो शॉप' },
+  'home.namoShop': { en: 'NAMO Market', hi: 'नमो मार्केट' },
   'home.forChart': { en: 'For your chart', hi: 'आपकी कुंडली के लिए' },
   'home.addToCart': { en: 'Add to cart · ₹{price}', hi: 'कार्ट में डालें · ₹{price}' },
 
@@ -383,7 +383,7 @@ export const strings = {
   },
   'sup.t.money': { en: 'Money or wallet', hi: 'पैसे या वॉलेट' },
   'sup.t.session': { en: 'A session or chat', hi: 'सेशन या चैट' },
-  'sup.t.order': { en: 'A shop order', hi: 'दुकान का ऑर्डर' },
+  'sup.t.order': { en: 'A Market order', hi: 'मार्केट का ऑर्डर' },
   'sup.t.account': { en: 'My account', hi: 'मेरा अकाउंट' },
   'sup.t.other': { en: 'Something else', hi: 'कुछ और' },
   'sup.ref': { en: 'Order or session ID · optional', hi: 'ऑर्डर या सेशन ID · वैकल्पिक' },
@@ -409,7 +409,7 @@ export const strings = {
     en: 'A request the consultant does not answer costs nothing, and you pay only for the time a session was running. If you were charged for one that never started, report it with the session time.',
     hi: 'अगर ज्योतिषी जवाब न दें तो कोई पैसा नहीं कटता, और आप सिर्फ चले हुए सेशन के समय का भुगतान करते हैं। अगर बिना शुरू हुए सेशन के पैसे कटे हों, तो सेशन के समय के साथ बताएं।',
   },
-  'sup.q3': { en: 'Where is my shop order?', hi: 'मेरा ऑर्डर कहां है?' },
+  'sup.q3': { en: 'Where is my Market order?', hi: 'मेरा ऑर्डर कहां है?' },
   'sup.a3': {
     en: 'Profile → Orders shows each order and its status. If it looks stuck, report it with the order ID.',
     hi: 'प्रोफ़ाइल → ऑर्डर में हर ऑर्डर और उसकी स्थिति दिखती है। अगर अटका लगे, तो ऑर्डर ID के साथ बताएं।',
@@ -556,7 +556,7 @@ export const strings = {
     hi: 'तेल, कपड़ा, मंत्र कार्ड। ऐसा कुछ नहीं जो आप बोल न सकें।',
   },
   'shop.bn.remedies.c': { en: 'See remedies', hi: 'उपाय देखें' },
-  'shop.gone': { en: 'That product is no longer in the shop', hi: 'यह प्रोडक्ट अब दुकान में नहीं है' },
+  'shop.gone': { en: 'That product is no longer on the Market', hi: 'यह प्रोडक्ट अब मार्केट में नहीं है' },
   'shop.searchPh': { en: 'Search stones, maalas and kits', hi: 'रत्न, माला और किट खोजें' },
   'shop.matched': { en: 'Matched to your chart', hi: 'आपकी कुंडली के हिसाब से' },
   'shop.heroSun': {
@@ -572,7 +572,7 @@ export const strings = {
   'shop.item': { en: '{n} item', hi: '{n} आइटम' },
   'shop.items': { en: '{n} items', hi: '{n} आइटम' },
   'shop.more': { en: 'More', hi: 'और' },
-  'prof.tab.shop': { en: 'Shop', hi: 'दुकान' },
+  'prof.tab.shop': { en: 'Market', hi: 'मार्केट' },
   'shop.pp.ships': { en: 'Shipped by Namo', hi: 'Namo भेजता है' },
   'shop.pp.free': { en: 'Free delivery', hi: 'मुफ़्त डिलीवरी' },
   'shop.pp.soldBy': { en: 'Sold by {name}', hi: '{name} बेचते हैं' },
@@ -618,8 +618,8 @@ export const strings = {
   'ls.e.how2': { en: 'The joining link reaches you on Namo an hour before it starts.', hi: 'शुरू होने से एक घंटा पहले जुड़ने का लिंक Namo पर मिलेगा।' },
   'ls.e.how3': { en: 'Join from your phone or computer. Nothing to install.', hi: 'फ़ोन या कंप्यूटर से जुड़ें। कुछ इंस्टॉल नहीं करना।' },
   'ls.e.book': { en: 'Book seat', hi: 'सीट बुक करें' },
-  'shop.opening': { en: 'Opening the shop', hi: 'दुकान खुल रही है' },
-  'shop.err': { en: 'We could not reach the shop.', hi: 'दुकान से संपर्क नहीं हो सका।' },
+  'shop.opening': { en: 'Opening the Market', hi: 'मार्केट खुल रहा है' },
+  'shop.err': { en: 'We could not reach the Market.', hi: 'मार्केट से संपर्क नहीं हो सका।' },
   'shop.errNote': { en: 'Nothing is wrong with your search.', hi: 'आपकी खोज में कोई गड़बड़ी नहीं है।' },
   'shop.retry': { en: 'Try again', hi: 'फिर कोशिश करें' },
   'shop.noMatch': {
@@ -634,7 +634,7 @@ export const strings = {
   'shop.viewCart': { en: 'View cart', hi: 'कार्ट देखें' },
   // The product page (6 Oct 2026)
   'shop.pp.title': { en: 'Product', hi: 'प्रोडक्ट' },
-  'shop.pp.toShop': { en: 'Back to the shop', hi: 'दुकान पर वापस' },
+  'shop.pp.toShop': { en: 'Back to the Market', hi: 'मार्केट पर वापस' },
   'shop.pp.mrp': { en: 'MRP', hi: 'एमआरपी' },
   'shop.pp.taxes': { en: 'Inclusive of all taxes. Free delivery.', hi: 'सभी टैक्स शामिल। डिलीवरी मुफ़्त।' },
   'shop.pp.few': { en: 'Only {n} left', hi: 'सिर्फ़ {n} बचे हैं' },
@@ -820,7 +820,7 @@ export const strings = {
   'ord.sub': { en: 'What you have bought', hi: 'आपने क्या खरीदा' },
   'ord.loading': { en: 'Loading.', hi: 'लोड हो रहा है।' },
   'ord.empty': { en: 'Nothing yet.', hi: 'अभी कुछ नहीं।' },
-  'ord.toShop': { en: 'Go to the shop', hi: 'दुकान पर जाएं' },
+  'ord.toShop': { en: 'Go to the Market', hi: 'मार्केट पर जाएं' },
   'ord.moneyBack': { en: 'Returned', hi: 'वापस' },
   'ord.paid': { en: 'Paid', hi: 'चुकाया' },
   // Cash on delivery (6 Oct 2026)
