@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
-import { fetchFeed, fetchReposts, fetchSuggestions, isMine, productHref, recordView, reshareToLead } from '../lib/content.js'
+import { fetchFeed, fetchReposts, fetchSuggestions, isMine, noteSeen, productHref, recordView, reshareToLead } from '../lib/content.js'
 import useWatchQualify from '../components/useWatchQualify.js'
 import { fetchBhaktiReposts } from '../lib/bhakti.js'
 import { shareLink } from '../lib/share.js'
@@ -1149,7 +1149,7 @@ const countedViews = new Set()
  * (11 Oct 2026, Rahul): photo and text posts, and a reel playing in the feed
  * — the reel viewer's rule. Scrolling past does not count. Returns the count the server sends back, or null until then.
  */
-function useCountView(ref, id) {
+function useCountView(ref, id, { count = true } = {}) {
   const [views, setViews] = useState(null)
   useEffect(() => {
     const el = ref.current
@@ -1163,7 +1163,11 @@ function useCountView(ref, id) {
             if (countedViews.has(id)) return
             countedViews.add(id)
             io.disconnect()
-            recordView(id).then((n) => n != null && setViews(n))
+            // A blog card is only noted as seen on this phone (19 Oct 2026):
+            // the server's view of a blog is opening it, and the 30-second
+            // read that earns is timed from that.
+            if (count) recordView(id).then((n) => n != null && setViews(n))
+            else noteSeen(id)
           }, 2000)
         } else {
           clearTimeout(timer)
@@ -1177,7 +1181,7 @@ function useCountView(ref, id) {
       clearTimeout(timer)
       io.disconnect()
     }
-  }, [ref, id])
+  }, [ref, id, count])
   return views
 }
 
@@ -1549,8 +1553,12 @@ function ArticleCard({ read }) {
   const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(b.comments ?? 0)
+  // Two seconds on screen and it goes behind the new next time (19 Oct
+  // 2026, Rahul: a blog kept coming back to the top).
+  const frame = useRef(null)
+  useCountView(frame, b.id, { count: false })
   return (
-    <article className="border-b border-rule bg-white">
+    <article ref={frame} className="border-b border-rule bg-white">
       <GroupLine group={b.group} />
       <PostHead
         initials={b.initials}

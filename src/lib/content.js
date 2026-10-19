@@ -273,7 +273,7 @@ function localSeen() {
   }
 }
 
-function noteSeen(id) {
+export function noteSeen(id) {
   try {
     const ids = [...localSeen()].filter((x) => x !== String(id))
     ids.push(String(id))
