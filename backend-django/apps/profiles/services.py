@@ -216,7 +216,29 @@ def save_onboarding(user_id, phone, fields):
             setattr(profile, key, value)
         profile.save(update_fields=list(updates))
         profile.refresh_from_db()
+    if "name" in updates:
+        rename_placeholder_username(profile)
     return profile
+
+
+PLACEHOLDER_USERNAME = re.compile(r"user-\d+")
+
+
+def rename_placeholder_username(profile):
+    """The app reads the profile right after the OTP, before the name is
+    typed, so the automatic username was drawn from no name: user-4821
+    (19 Oct 2026, Rahul: "first and last name with a number ... this not
+    happening"). Once a real name arrives, a username nobody chose and
+    still the placeholder becomes name-surname-NNNN. A username the person
+    picked, or one already made from a name, is never touched: links to it
+    are out there."""
+    if (profile.username and profile.username_changed_at is None
+            and PLACEHOLDER_USERNAME.fullmatch(profile.username)
+            and suggest_username(profile.name).split("-")[0] != "user"):
+        Profile.objects.filter(pk=profile.pk, username=profile.username,
+                               username_changed_at__isnull=True).update(username=None)
+        profile.username = None
+    return ensure_username(profile)
 
 
 # ── the seams other modules re-point to (were raw-SQL gateways) ──────────────

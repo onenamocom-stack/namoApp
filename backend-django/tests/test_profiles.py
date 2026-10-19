@@ -33,6 +33,7 @@ import threading
 
 import pytest
 from django.db import IntegrityError
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.consultants.models import Consultant
@@ -703,6 +704,23 @@ class TestUsername:
         assert body["username_changed_at"] is None
         # Stable: a second read does not draw a new number.
         assert authed_client.get(ME).json()["username"] == body["username"]
+
+    def test_read_before_the_name_is_typed_then_named(self, authed_client, clean_profiles):
+        # 19 Oct 2026, Rahul: the app reads the profile right after the OTP,
+        # so the first username was user-NNNN; the name, once saved, gives
+        # name-surname-NNNN.
+        services.ensure_profile(TEST_USER)
+        assert authed_client.get(ME).json()["username"].startswith("user-")
+        body = authed_client.patch(ME, {"name": "Avania Verma"}, format="json").json()
+        assert body["username"].startswith("avania-verma-")
+        # Named once; a later name change keeps the link.
+        assert authed_client.patch(ME, {"name": "Avania V"}, format="json").json()["username"] == body["username"]
+
+    def test_a_chosen_username_is_never_replaced(self, authed_client, clean_profiles):
+        services.ensure_profile(TEST_USER)
+        Profile.objects.filter(pk=TEST_USER).update(username="user-2024", username_changed_at=timezone.now())
+        body = authed_client.patch(ME, {"name": "Avania Verma"}, format="json").json()
+        assert body["username"] == "user-2024"
 
     def test_a_devanagari_name_falls_back_to_user(self, authed_client, clean_profiles):
         full_profile(name="राहुल")
