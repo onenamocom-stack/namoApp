@@ -227,6 +227,11 @@ How the rates are stored is `05-BACKEND-SCHEMA.md` §4.3.
 
 ### 4.2 Tarot
 
+**Free only, one card a day, since 19 Oct 2026** (Rahul: "We will not
+charge him as of now"): past it, "come back tomorrow"; no price is shown and
+nothing is charged (`AI_PAID` off). The priced terms below stand for when it
+is switched back on.
+
 **₹11 per pull, after two free pulls a week.** The cheapest thing in the app and
 deliberately so — it is the habit-forming line, not a margin line.
 
@@ -307,7 +312,7 @@ no prediction about death, disease or pregnancy.
 |---|---|
 | On arrival | **5 free messages**, once per account, never refilled |
 | From the next day | **1 free message a day** (IST calendar) |
-| After that | **₹9 a question**, charged from the wallet |
+| After that | **₹9 a question**, charged from the wallet — **switched off since 19 Oct 2026** (Rahul: free only for now). Past the free ones (and a referral boost) it is "come back tomorrow"; no price is shown and nothing is charged. `AI_PAID=true` brings the ₹9 back |
 
 The daily message begins the day **after** the welcome five are spent — a
 new account gets five on its first day, not six.

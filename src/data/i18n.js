@@ -225,6 +225,10 @@ export const strings = {
     hi: 'निःशुल्क कार्ड समाप्त · उसके बाद ₹{price} प्रति कार्ड',
   },
   'tarot.lastFree': { en: 'Your last free card this week', hi: 'इस सप्ताह का अंतिम निःशुल्क कार्ड' },
+  // Free only, one card a day (19 Oct 2026, Rahul).
+  'tarot.freeLeftToday': { en: 'free today', hi: 'आज निःशुल्क' },
+  'tarot.lastFreeToday': { en: "That was today's free card. Come back tomorrow.", hi: 'आज का निःशुल्क कार्ड हो गया। कल फिर आइए।' },
+  'tarot.tomorrow': { en: 'Next free card tomorrow', hi: 'अगला निःशुल्क कार्ड कल' },
   'tarot.prompt': {
     en: 'One card is a prompt, not a reading. A tarot reader will do the other twenty minutes.',
     hi: 'एक कार्ड संकेत है, पूरा पाठ नहीं। बाकी बीस मिनट एक टैरो पाठक ही देगा।',
@@ -786,6 +790,9 @@ export const strings = {
   // ── Namo AI ──────────────────────────────────────────────────────────────
   'ask.each': { en: '{price} each', hi: '{price} प्रति सवाल' },
   'ask.free': { en: '{n} free', hi: '{n} मुफ़्त' },
+  // Free only for now (19 Oct 2026, Rahul): past the free ones, tomorrow.
+  'ask.tomorrow': { en: 'Free again tomorrow', hi: 'कल फिर मुफ़्त' },
+  'ask.comeBack': { en: "That was today's free question. Come back tomorrow for the next one.", hi: 'आज का मुफ़्त सवाल हो गया। अगले के लिए कल आइए।' },
   'ask.opening': { en: 'Opening…', hi: 'खुल रहा है…' },
   'home.yourRashifal': { en: 'Your rashifal', hi: 'आपका राशिफल' },
   'ask.thinking': { en: 'Reading your chart…', hi: 'आपकी कुंडली पढ़ रहे हैं…' },

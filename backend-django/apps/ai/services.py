@@ -45,6 +45,8 @@ logger = logging.getLogger("apps.ai")
 REFUSAL_NO_WALLET = "Add money to keep asking."
 REFUSAL_SHORT_BALANCE = "Not enough for a question. Add money to keep going."
 REFUSAL_EMPTY = "Type a question first."
+REFUSAL_COME_BACK = "That was today's free question. Come back tomorrow for the next one."
+REFUSAL_TAROT_COME_BACK = "That was today's free card. Come back tomorrow for the next one."
 REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
 
 # How many past messages the model sees. The seeker asked for "last 20,
@@ -126,6 +128,15 @@ def _ist_today():
             days=int(elapsed // window) % _WINDOW_WRAP
         )
     return (timezone.now() + timezone.timedelta(hours=5, minutes=30)).date()
+
+
+def paid_on():
+    """Do Namo AI and tarot charge past the free ones? Not for now
+    (19 Oct 2026, Rahul): `AI_PAID` off refuses instead, and sends no
+    price."""
+    from django.conf import settings
+
+    return getattr(settings, "AI_PAID", False)
 
 
 def _price_paise():
@@ -339,11 +350,16 @@ def ask(profile_id, question, subject=None):
         return {"ok": False, "reason": REFUSAL_EMPTY}
 
     now = timezone.now()
-    price = _price_paise()
+    price = _price_paise() if paid_on() else None
     charged = 0
 
     with transaction.atomic():
         used_free = _take_free(profile_id)
+        if not used_free and not paid_on():
+            # Free only for now (19 Oct 2026, Rahul): nothing is charged.
+            state = quota_state(profile_id)
+            return {"ok": False, "reason": REFUSAL_COME_BACK, "come_back": True,
+                    "free_left": state["free_left"], "price_paise": None}
         if not used_free:
             # Charged BEFORE the model is called, and inside the same
             # transaction as the quota check — so two taps in one tick
@@ -449,17 +465,20 @@ def _tarot_price_paise():
 
 
 def _tarot_free_weekly():
+    """The free cards in one period: a day's while tarot is free only
+    (19 Oct 2026, Rahul: "1 card per day"), a week's when it is paid."""
     from django.conf import settings
 
-    return settings.TAROT_FREE_WEEKLY
+    return settings.TAROT_FREE_WEEKLY if paid_on() else settings.TAROT_FREE_DAILY
 
 
 def _ist_week():
-    """The Monday of the current IST week. A week rather than a day because
-    that is what was priced (docs/01-PRD.md §4.2), and a stored Monday
-    rather than an ISO week number because a date sorts, prints and
-    compares without anybody having to remember what week 39 was."""
+    """The period free cards count in: the IST day while free only, else
+    the Monday of the IST week — a week because that is what was priced
+    (docs/01-PRD.md §4.2). Stored in `tarot_week` either way: a date."""
     today = _ist_today()
+    if not paid_on():
+        return today
     return today - timezone.timedelta(days=today.weekday())
 
 
@@ -469,7 +488,8 @@ def tarot_state(profile_id):
     used = row.tarot_used if (row and row.tarot_week == _ist_week()) else 0
     return {
         "free_left": max(0, _tarot_free_weekly() - used),
-        "price_paise": _tarot_price_paise(),
+        "price_paise": _tarot_price_paise() if paid_on() else None,
+        "per": "week" if paid_on() else "day",
     }
 
 
@@ -516,11 +536,16 @@ def tarot_pull(profile_id, deck_key, question):
     if deck_key not in tarot_decks.DECKS:
         return {"ok": False, "reason": REFUSAL_DECK}
 
-    price = _tarot_price_paise()
+    price = _tarot_price_paise() if paid_on() else None
     charged = 0
 
     with transaction.atomic():
-        if not _take_free_pull(profile_id):
+        taken = _take_free_pull(profile_id)
+        if not taken and not paid_on():
+            # Free only for now (19 Oct 2026, Rahul): nothing is charged.
+            return {"ok": False, "reason": REFUSAL_TAROT_COME_BACK, "come_back": True,
+                    "free_left": 0, "price_paise": None}
+        if not taken:
             paid = wallet_services.debit(profile_id, price, "Tarot · one card")
             if not paid.get("ok"):
                 return {

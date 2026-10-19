@@ -54,6 +54,14 @@ def _ledger_rows(pid):
 
 
 @pytest.fixture(autouse=True)
+def _paid(settings):
+    """These tests are the paid path, which is switched off for now (19 Oct
+    2026, Rahul: free only; `AI_PAID`). The free-only path is tested in
+    test_free_only.py."""
+    settings.AI_PAID = True
+
+
+@pytest.fixture(autouse=True)
 def money_tables(db):
     """prod's append-only ledger, emulated — test_ai.py's fixture, because a
     refund that silently updated a row instead of appending one would pass
@@ -205,7 +213,7 @@ class TestMoney:
 
     def test_state_reports_the_price(self):
         _wallet(SEEKER, 0)
-        assert services.tarot_state(SEEKER) == {"free_left": 2, "price_paise": PRICE}
+        assert services.tarot_state(SEEKER) == {"free_left": 2, "price_paise": PRICE, "per": "week"}
 
 
 @pytest.mark.django_db
@@ -292,7 +300,7 @@ class TestEndpoint:
     def test_state_over_http(self, authed_client):
         _wallet(SEEKER, 0)
         body = authed_client.get("/v1/ai/tarot/state/").json()
-        assert body == {"ok": True, "free_left": 2, "price_paise": PRICE}
+        assert body == {"ok": True, "free_left": 2, "price_paise": PRICE, "per": "week"}
 
     def test_a_card_sent_by_the_client_is_ignored(self, authed_client):
         # Rule 3: the client sends a deck and a question. Anything else it

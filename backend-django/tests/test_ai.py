@@ -63,6 +63,14 @@ def _balance(pid):
 
 
 @pytest.fixture(autouse=True)
+def _paid(settings):
+    """These tests are the paid path, which is switched off for now (19 Oct
+    2026, Rahul: free only; `AI_PAID`). The free-only path is tested in
+    test_free_only.py."""
+    settings.AI_PAID = True
+
+
+@pytest.fixture(autouse=True)
 def money_tables(db):
     """The order layer the meter writes through. `orders` and `order_items`
     are the wallet module's tables but live outside its models (the

@@ -50,7 +50,11 @@ export default function Tarot() {
   }, [sessionReady, session])
 
   const freeLeft = state?.free_left ?? null
-  const paying = freeLeft === 0
+  // Free only for now (19 Oct 2026, Rahul): one card a day and no price;
+  // past it, tomorrow. `paying` is the priced path, kept for when it returns.
+  const daily = state?.per === 'day' || (state && !state.price_paise)
+  const paying = freeLeft === 0 && !daily
+  const comeBack = freeLeft === 0 && daily
 
   const pull = async () => {
     setPulling(true)
@@ -67,9 +71,9 @@ export default function Tarot() {
     }
 
     setResult(res)
-    setState({ free_left: res.free_left, price_paise: res.price_paise })
+    setState((s) => ({ ...s, free_left: res.free_left, price_paise: res.price_paise }))
     setStep('card')
-    if (res.charged_paise === 0 && res.free_left === 0) showToast(t('tarot.lastFree'))
+    if (res.charged_paise === 0 && res.free_left === 0) showToast(t(daily ? 'tarot.lastFreeToday' : 'tarot.lastFree'))
   }
 
   /* The card as this screen's own data knows it: the art and, for
@@ -86,7 +90,7 @@ export default function Tarot() {
         back
         backTo="/home"
         // The free count only; no price under the title (9 Oct 2026, owner).
-        sub={freeLeft > 0 ? `${freeLeft} ${t('tarot.freeLeft')}` : null}
+        sub={freeLeft > 0 ? `${freeLeft} ${t(daily ? 'tarot.freeLeftToday' : 'tarot.freeLeft')}` : null}
       />
 
       <section className="px-5 py-6">
@@ -150,12 +154,14 @@ export default function Tarot() {
           <PopButton
             variant="gold"
             className="mt-2"
-            disabled={pulling}
+            disabled={pulling || comeBack}
             onClick={pull}
           >
             {pulling
               ? '…'
-              : paying
+              : comeBack
+                ? t('tarot.tomorrow')
+                : paying
                 ? `${t('tarot.pull')} · ${priceLabel(state.price_paise)}`
                 : t('tarot.pull')}
           </PopButton>

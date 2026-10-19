@@ -388,6 +388,13 @@ AI_FREE_WINDOW_SECONDS = int(os.environ.get("AI_FREE_WINDOW_SECONDS", "0"))
 # that a reload cleared, which made it unlimited.
 TAROT_PRICE_PAISE = int(os.environ.get("TAROT_PRICE_PAISE", "1100"))
 TAROT_FREE_WEEKLY = int(os.environ.get("TAROT_FREE_WEEKLY", "2"))
+# Free only, for now (19 Oct 2026, Rahul): Namo AI and tarot charge nothing.
+# Off, a question past the free ones and a card past today's are refused
+# with "come back tomorrow", and no price is sent to the app. On brings the
+# ₹ per question and per card back as before.
+AI_PAID = os.environ.get("AI_PAID", "false").lower() == "true"
+# One free card a day while unpaid (Rahul); paid, the weekly allowance above.
+TAROT_FREE_DAILY = int(os.environ.get("TAROT_FREE_DAILY", "1"))
 
 # ── things bought once and kept (30 Sep 2026, apps.wallet Entitlement) ──────
 # Amounts are docs/01-PRD.md §4.8's; an e-book's price is its own row's.

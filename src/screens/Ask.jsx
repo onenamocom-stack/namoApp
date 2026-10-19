@@ -45,7 +45,7 @@ export default function Ask() {
         backTo="/consult"
         right={
           <span className="whitespace-nowrap text-micro uppercase tracking-label tnum text-t2">
-            {loading ? '' : outOfFree ? t('ask.each', { price }) : t('ask.free', { n: freeLeft })}
+            {loading ? '' : outOfFree ? (price ? t('ask.each', { price }) : t('ask.tomorrow')) : t('ask.free', { n: freeLeft })}
           </span>
         }
       />
@@ -122,6 +122,11 @@ export default function Ask() {
           </p>
         )}
 
+        {/* Free only for now (19 Oct 2026, Rahul): no price, no wallet —
+            past the free ones it is tomorrow. */}
+        {outOfFree && !price && (
+          <p className="mb-2 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{t('ask.comeBack')}</p>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -145,8 +150,8 @@ export default function Ask() {
           />
           <button
             type="submit"
-            disabled={!draft.trim() || thinking}
-            aria-label={outOfFree ? `Send, ${price}` : 'Send'}
+            disabled={!draft.trim() || thinking || (outOfFree && !price)}
+            aria-label={outOfFree && price ? `Send, ${price}` : 'Send'}
             className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-fill text-ink transition-opacity disabled:opacity-40"
           >
             <Icon name="send" size={16} />

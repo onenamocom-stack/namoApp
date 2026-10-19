@@ -41,7 +41,8 @@ def _state(profile_id):
         # What the NEXT question costs once the free ones are gone. The
         # panel shows this before anybody is charged, so nobody is
         # surprised by a debit.
-        "price_paise": services._price_paise(),
+        # None while Namo AI is free only (19 Oct 2026, Rahul): no price shown.
+        "price_paise": services._price_paise() if services.paid_on() else None,
         # A referral boost, open or coming. Both are needed: the number
         # explains why there are three today, and the date explains why
         # there are still only one — a reward that changes nothing
