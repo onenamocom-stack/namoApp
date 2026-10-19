@@ -27,6 +27,8 @@ import {
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
+import { isVideoUrl } from '../lib/hls.js'
+import { viaCdn } from '../lib/content.js'
 import { tileStyle } from '../lib/tiles.js'
 
 /**
@@ -723,7 +725,11 @@ function StatusShelf({ list }) {
     <>
       <ul className="space-y-4">
         {list.map((a) => (
-          <StatusCard key={a.id} asset={a} details={details} onEdit={() => setEditing(true)} />
+          isVideoUrl(a.url) ? (
+            <VideoStatusCard key={a.id} asset={a} />
+          ) : (
+            <StatusCard key={a.id} asset={a} details={details} onEdit={() => setEditing(true)} />
+          )
         ))}
       </ul>
       {editing &&
@@ -844,6 +850,73 @@ function StatusCard({ asset, details, onEdit }) {
           <BhaktiActions asset={asset} />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working || !preview} onClick={share}>
+            <span className="flex items-center gap-1.5">
+              <WhatsAppGlyph />
+              {working ? 'Preparing…' : 'Share'}
+            </span>
+          </PopButton>
+        </div>
+      </PopCard>
+    </li>
+  )
+}
+
+/**
+ * A video status (19 Oct 2026, Rahul: "Bhakti me console se video bhi daal
+ * sakte hai"). It plays as it is, muted until tapped, and Share hands the
+ * video file itself to the share sheet, where the person picks WhatsApp and
+ * Status. Nothing is drawn on a video: the name, photo and date are a
+ * picture status's.
+ */
+function VideoStatusCard({ asset }) {
+  const { showToast } = useStore()
+  const [working, setWorking] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const src = viaCdn(asset.url)
+
+  const share = async () => {
+    setWorking(true)
+    try {
+      const got = await fetch(src)
+      if (!got.ok) throw new Error(String(got.status))
+      const blob = await got.blob()
+      const filename = `namo-status-${Date.now()}.mp4`
+      const typed = blob.type ? blob : new Blob([blob], { type: 'video/mp4' })
+      const shared = await shareFile(typed, filename, await inviteMessage(asset))
+      if (!shared) {
+        saveBlob(typed, filename)
+        showToast('Saved — sharing needs a phone')
+      }
+    } catch {
+      showToast('Could not prepare that video.')
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  return (
+    <li>
+      <PopCard className="overflow-hidden">
+        <div className="relative aspect-[9/16] w-full bg-black">
+          <video
+            src={src}
+            poster={asset.previewUrl ? viaCdn(asset.previewUrl) : undefined}
+            className="h-full w-full object-cover"
+            autoPlay
+            loop
+            muted={muted}
+            playsInline
+            preload="metadata"
+            onClick={() => setMuted((m) => !m)}
+          />
+          <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-micro font-semibold text-white">
+            {muted ? 'Tap for sound' : 'Sound on'}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
+          <BhaktiActions asset={asset} />
+          <span className="flex-1" />
+          <PopButton size="sm" variant="gold" full={false} disabled={working} onClick={share}>
             <span className="flex items-center gap-1.5">
               <WhatsAppGlyph />
               {working ? 'Preparing…' : 'Share'}

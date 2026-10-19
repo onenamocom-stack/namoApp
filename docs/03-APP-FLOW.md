@@ -475,6 +475,12 @@ and a line under the grid says what to do with the file.
 1080×1920 on a canvas and handed to `navigator.share`; the person picks
 WhatsApp, then Status. Their own photo goes through the identical path. Desktop
 has no file share, so it falls back to saving the composed image.
+**A status can be a video** (19 Oct 2026, Rahul), uploaded in the console
+(MP4, up to 30 MB, with an optional cover picture). Its card plays it muted,
+tap for sound; **Share** hands the video file itself to the share sheet. No
+name, photo or date is drawn on a video. Reshared to Home it shows its cover
+or its own first frame; its WhatsApp link preview is the cover, or the site's
+card without one.
 
 `price_paise` is nullable and **null means not priced yet**, which the screen
 distinguishes from free. Attribution is three NOT NULL columns and is rendered

@@ -1010,6 +1010,17 @@ function PictureCard({ asset, resharedBy }) {
       <Link to={`/bhakti/s/${asset.id}`} className={`${resharedBy?.note ? '' : 'mt-2.5 '}block`}>
         {/* A bhajan or mantra is a sound and a book a PDF; their cover
             picture stands in. */}
+        {/* A video status (19 Oct 2026) shows its cover, or its own frame. */}
+        {isVideoUrl(asset.url) ? (
+          <video
+            src={`${asset.url}#t=0.5`}
+            poster={asset.previewUrl || undefined}
+            preload="metadata"
+            muted
+            playsInline
+            className="aspect-[4/5] w-full bg-surface2 object-cover"
+          />
+        ) : (
         <img
           src={['bhajan', 'mantra', 'ebook'].includes(asset.kind) ? asset.previewUrl : asset.url}
           alt={asset.title}
@@ -1022,6 +1033,7 @@ function PictureCard({ asset, resharedBy }) {
               : `${asset.kind === 'bhajan' || asset.kind === 'mantra' ? 'aspect-video' : 'aspect-[4/5]'} w-full bg-surface2 object-cover`
           }
         />
+        )}
       </Link>
       </Quoted>
       <div className="flex items-center gap-4 px-3 pt-2.5">

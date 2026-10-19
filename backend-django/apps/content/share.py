@@ -204,6 +204,10 @@ def _bhakti_picture(asset):
         return source if source and source.startswith("http") else None
     if asset.kind not in _PICTURES:
         return None
+    # A video status (19 Oct 2026): its cover picture, or none.
+    if (asset.media_url or "").split("?")[0].lower().endswith((".mp4", ".webm", ".mov", ".m4v")):
+        source = asset.preview_url
+        return source if source and source.startswith("http") else None
     source = asset.preview_url if asset.price_paise else asset.media_url
     if source and source.startswith("/") and not asset.price_paise:
         return f"{_site()}{source}"   # art shipped with the site itself

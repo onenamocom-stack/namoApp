@@ -56,3 +56,35 @@ def test_an_ebook_takes_an_mrp_in_rupees():
     form.save()
     book.refresh_from_db()
     assert book.mrp_paise is None
+
+
+def _status(name, mime, size=2000):
+    return BhaktiAssetForm(
+        data={"kind": "status", "title": "Ganesh aarti", "deity": "Ganesh", "artist": "Namo",
+              "licence": "All rights reserved", "source": "", "media_url": "", "preview_url": "",
+              "sort": "0", "active": "on"},
+        files={"upload": SimpleUploadedFile(name, b"\0" * size, content_type=mime)},
+    )
+
+
+@pytest.mark.django_db
+def test_a_status_may_be_a_video(settings):
+    # 19 Oct 2026 (Rahul): video statuses from the console.
+    assert _status("aarti.mp4", "video/mp4").is_valid()
+    assert _status("ganesh.jpg", "image/jpeg").is_valid()
+    too_big = _status("long.mp4", "video/mp4", size=31 * 1024 * 1024)
+    assert not too_big.is_valid() and "30 MB" in str(too_big.errors)
+    # A wallpaper stays a picture.
+    wallpaper = _status("aarti.mp4", "video/mp4")
+    wallpaper.data = {**wallpaper.data, "kind": "wallpaper"}
+    assert not wallpaper.is_valid()
+
+
+def test_a_video_status_previews_its_cover_not_the_video():
+    from apps.bhakti.models import BhaktiAsset
+    from apps.content.share import _bhakti_picture
+
+    clip = BhaktiAsset(kind="status", title="x", media_url="https://media.1namo.com/reels/a/b/aarti.mp4")
+    assert _bhakti_picture(clip) is None
+    clip.preview_url = "https://media.1namo.com/images/a/b/cover.jpg"
+    assert _bhakti_picture(clip) == clip.preview_url

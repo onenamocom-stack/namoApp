@@ -22,6 +22,24 @@ from apps.shop.admin import RupeeField
 from .models import BhaktiAsset, DarshanDeity, DarshanImage
 
 AUDIO_KINDS = {BhaktiAsset.Kind.TUNE, BhaktiAsset.Kind.BHAJAN, BhaktiAsset.Kind.MANTRA}
+# A status may be a video too (19 Oct 2026, Rahul): shared to WhatsApp as
+# the file itself. 30 MB keeps the upload inside Cloud Run's request size;
+# WhatsApp's own status video is shorter than that.
+VIDEO_STATUS_BYTES = 30 * 1024 * 1024
+VIDEO_EXTS = (".mp4", ".webm", ".mov", ".m4v")
+
+
+def is_video(url):
+    return (url or "").split("?")[0].lower().endswith(VIDEO_EXTS)
+
+
+def _want(kind, mime):
+    """What an upload must be for this kind: audio, image, or (a status) video."""
+    if kind in AUDIO_KINDS:
+        return "audio"
+    if kind == BhaktiAsset.Kind.STATUS and mime.startswith("video/"):
+        return "video"
+    return "image"
 
 
 class BhaktiAssetForm(forms.ModelForm):
@@ -31,7 +49,12 @@ class BhaktiAssetForm(forms.ModelForm):
     upload = forms.FileField(
         required=False,
         label="New file",
-        help_text="A picture for status and wallpapers, audio for tunes, bhajans and mantras. Replaces the current one.",
+        help_text="A picture for status and wallpapers (a status can be a video, up to 30 MB, MP4), audio for tunes, bhajans and mantras. Replaces the current one.",
+    )
+    cover = forms.ImageField(
+        required=False,
+        label="Cover picture (video status)",
+        help_text="Optional. Shown before a video status plays and on its WhatsApp link preview.",
     )
 
     class Meta:
@@ -78,11 +101,15 @@ class BhaktiAssetForm(forms.ModelForm):
         upload = data.get("upload")
         if upload:
             mime = getattr(upload, "content_type", "") or ""
-            want = "audio" if data.get("kind") in AUDIO_KINDS else "image"
+            want = _want(data.get("kind"), mime)
             if not mime.startswith(f"{want}/"):
                 raise forms.ValidationError({"upload": f"This kind needs {want}, not {mime or 'that file'}."})
+            if want == "video" and upload.size > VIDEO_STATUS_BYTES:
+                raise forms.ValidationError({"upload": "A video status can be up to 30 MB."})
+            if want == "video" and not upload.name.lower().endswith(VIDEO_EXTS):
+                raise forms.ValidationError({"upload": "Upload the video as MP4."})
             try:
-                media.validate_upload(want, upload.name, upload.size, mime)
+                media.validate_upload("reel" if want == "video" else want, upload.name, upload.size, mime)
             except media.ValidationError as exc:
                 raise forms.ValidationError({"upload": str(exc)}) from None
         elif not data.get("media_url"):
@@ -110,7 +137,7 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
     fieldsets = (
         ("What it is", {"fields": ("kind", "deity", "title")}),
         ("Credit line", {"fields": ("artist", "licence", "source")}),
-        ("File", {"fields": ("preview", "upload", "media_url", "preview_url")}),
+        ("File", {"fields": ("preview", "upload", "cover", "media_url", "preview_url")}),
         ("Market (downloads)", {"fields": ("mrp", "description")}),
         ("Showing", {"fields": ("sort", "active")}),
     )
@@ -119,6 +146,8 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
     def thumb(self, obj):
         if obj.kind in AUDIO_KINDS:
             return "♪"
+        if is_video(obj.media_url) and not obj.preview_url:
+            return "▶"
         return format_html(
             '<img src="{}" style="width:48px;height:48px;object-fit:cover;border-radius:8px">',
             obj.preview_url or obj.media_url,
@@ -134,6 +163,9 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
             return "—"
         if obj.kind in AUDIO_KINDS:
             return format_html('<audio controls src="{}" style="width:320px"></audio>', obj.media_url)
+        if is_video(obj.media_url):
+            return format_html('<video controls src="{}" poster="{}" style="max-width:240px;border-radius:12px"></video>',
+                               obj.media_url, obj.preview_url or "")
         return format_html('<img src="{}" style="max-width:240px;border-radius:12px">', obj.media_url)
 
     def save_model(self, request, obj, form, change):
@@ -141,17 +173,29 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
         if upload:
             admin = admin_row(request)
             owner = str(admin.profile_id) if admin else "console"
-            kind = "audio" if obj.kind in AUDIO_KINDS else "image"
+            kind = _want(obj.kind, upload.content_type or "")
             mime = upload.content_type or ("audio/mpeg" if kind == "audio" else "image/jpeg")
-            key = media.make_bucket_key(owner, kind, upload.name)
+            key = media.make_bucket_key(owner, "reel" if kind == "video" else kind, upload.name)
             obj.media_url = media.get_provider().put_bytes(key, upload.read(), mime)
             if kind == "image":
                 obj.preview_url = obj.media_url
+            elif kind == "video" and is_video(obj.preview_url or ""):
+                obj.preview_url = None
             MediaAsset.objects.create(
-                owner=owner, kind=MediaKind.AUDIO if kind == "audio" else MediaKind.IMAGE,
+                owner=owner,
+                kind={"audio": MediaKind.AUDIO, "video": MediaKind.REEL}.get(kind, MediaKind.IMAGE),
                 bucket_key=key, mime=mime, size_bytes=upload.size, status=MediaStatus.READY,
             )
             record(request, "bhakti_asset.file", "bhakti_asset", target_id=obj.pk, bucket_key=key)
+        cover = form.cleaned_data.get("cover")
+        if cover:
+            admin = admin_row(request)
+            owner = str(admin.profile_id) if admin else "console"
+            key = media.make_bucket_key(owner, "image", cover.name)
+            obj.preview_url = media.get_provider().put_bytes(key, cover.read(), cover.content_type or "image/jpeg")
+            MediaAsset.objects.create(owner=owner, kind=MediaKind.IMAGE, bucket_key=key,
+                                      mime=cover.content_type or "image/jpeg", size_bytes=cover.size,
+                                      status=MediaStatus.READY)
         super().save_model(request, obj, form, change)
 
     def has_delete_permission(self, request, obj=None):
