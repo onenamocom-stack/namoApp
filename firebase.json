@@ -98,7 +98,7 @@
           "headers": [
             {
               "key": "Cache-Control",
-              "value": "no-cache"
+              "value": "public, max-age=0, s-maxage=3600"
             },
             {
               "key": "X-Content-Type-Options",

@@ -106,6 +106,13 @@ _STRIP = re.compile(
 )
 
 
+# The browser asks every time (max-age=0), so a new deploy shows on the next
+# load; Firebase's CDN keeps a copy for five minutes (s-maxage) and serves it
+# from near the reader (19 Oct 2026: a page waited ~0.5 s on the API for 2.5
+# KB of HTML). A deploy clears the CDN; an edited title shows within five.
+PAGE_CACHE = "public, max-age=0, s-maxage=300"
+
+
 def _page(tags, url):
     index = _index_html()
     if index and "</head>" in index:
@@ -117,9 +124,7 @@ def _page(tags, url):
             f'<body><a href="{html.escape(url)}">Open in NAMO</a></body></html>'
         )
     response = HttpResponse(body, content_type="text/html; charset=utf-8")
-    # Pages are never cached (the app's own rule): a new deploy and an edited
-    # title must both show on the next load.
-    response["Cache-Control"] = "no-cache"
+    response["Cache-Control"] = PAGE_CACHE
     return response
 
 
@@ -378,7 +383,7 @@ def home_page(request):
         index = _index_html()
         if index:
             response = HttpResponse(index, content_type="text/html; charset=utf-8")
-            response["Cache-Control"] = "no-cache"
+            response["Cache-Control"] = PAGE_CACHE
             return response
         return HttpResponseRedirect(f"{_site()}/home")
     if card.image_url:

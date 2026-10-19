@@ -74,7 +74,8 @@ class TestBlog:
         # The generic tags are gone, not duplicated.
         assert page.count('property="og:title"') == 1 and "generic" not in page
         assert page.count("<title>") == 1
-        assert response["Cache-Control"] == "no-cache"
+        # The browser asks every time; the CDN may keep it five minutes (19 Oct).
+        assert response["Cache-Control"] == "public, max-age=0, s-maxage=300"
 
     def test_the_thumbnail_is_a_light_1200_by_630_jpeg(self, client, network, blog):
         response = client.get(f"/og/blog/{blog.id}.jpg")
