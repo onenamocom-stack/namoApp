@@ -24,7 +24,7 @@ export function DeskHeader() {
     <header className="topbar flex h-11 items-center gap-3 px-4">
       <BackButton onClick={() => navigate('/home')} icon="home" label="Home" />
       <p className="label min-w-0 flex-1 truncate text-center font-bold !text-t1">NAMO Desk</p>
-      <Link to="/studio" className="flex-none rounded-full border border-rule bg-white px-3 py-1.5 caps-sm t-heading shadow-sm">
+      <Link to="/studio" className="flex-none rounded-full border border-[#d9d9df] bg-[#e8e8ed] px-3 py-1.5 caps-sm t-heading shadow-sm">
         Studio
       </Link>
     </header>

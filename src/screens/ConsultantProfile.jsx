@@ -357,7 +357,8 @@ export function ConsultantPage({
                   Dashboard (11 Oct 2026, Rahul) opened the consultant app;
                   since 14 Oct 2026 (Phase 16) it is /studio in this app.
                   The pro app keeps its own start. */}
-              <Link to={isPro ? '/' : '/studio'} className={ownButton}>
+              {/* Grey, as on every Studio button (19 Oct 2026, Rahul). */}
+              <Link to={isPro ? '/' : '/studio'} className={ownButton.replace('border-rule bg-white', 'border-[#d9d9df] bg-[#e8e8ed]')}>
                 Studio
               </Link>
               <button type="button" onClick={share} className={ownButton}>

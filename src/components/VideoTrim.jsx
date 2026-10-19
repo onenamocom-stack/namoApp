@@ -105,7 +105,7 @@ export default function VideoTrim({ file, seconds, onCancel, onCut }) {
         </div>
 
         {/* The whole video: the chosen part in saffron, where it is now as a line. */}
-        <div className="relative mx-5 mt-4 h-3 rounded-full bg-surface-2" aria-hidden="true">
+        <div className="relative mx-5 mt-4 h-3 rounded-full bg-[#e8e8ed]" aria-hidden="true">
           <span className="absolute inset-y-0 rounded-full bg-[#f26a1b]/70" style={{ left: pct(start), width: pct(end - start) }} />
           <span className="absolute -inset-y-1 w-0.5 bg-t1" style={{ left: pct(now) }} />
         </div>

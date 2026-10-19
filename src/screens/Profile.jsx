@@ -257,10 +257,11 @@ function Hero({ posts, counts }) {
       {/* The Dashboard, for everybody since 16 Oct 2026 (Rahul): your modules,
           and the way to ask for the others. A Pro reaches it from their own
           page as well. */}
+      {/* Grey, so it stands out from the white buttons (19 Oct 2026, Rahul). */}
       {profile && (
         <Link
           to="/studio"
-          className="mt-2 block rounded-xl border border-rule bg-white py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
+          className="mt-2 block rounded-xl border border-[#d9d9df] bg-[#e8e8ed] py-2.5 text-center text-meta font-semibold t-heading shadow-sm transition-colors hover:border-gold-fill"
         >
           Studio
         </Link>
