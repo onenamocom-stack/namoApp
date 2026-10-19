@@ -2135,6 +2135,22 @@ appeals process it should have built first. Every removal and every block
 is an admin's own action and lands in `admin_actions` with their name on
 it. `tests/test_moderation.py::TestAReportIsNotAVerdict` is the guard.
 
+## A Pro's day — `consultant_presence_switches`, `pro_day_reports` (19 Oct 2026)
+
+`consultants/0013`. **`consultant_presence_switches`**: `consultant_id`,
+`on` boolean, `at`; index (consultant_id, at). A row each time the Online
+switch actually changes (the beat, `go_offline`, the three-missed-calls
+rule); a day's Online time is the on spans inside it. Nothing before
+19 Oct 2026.
+
+**`pro_day_reports`**: one row per approved Pro per IST `day` (unique):
+`live_seconds`, `received_chat|audio|video`, `attended_chat|audio|video`,
+`recharged`, `score` (0–100), `badge`, `final`, `notified_at`,
+`updated_at`. Written at 23:00 IST with the notification, and again after
+00:30 with the day's last hour (`final`). The rules — weights, the 70/30
+split, what counts as a recharge — are in `apps/consultants/report.py`;
+the Pro's own screen computes live from the sources, not from this table.
+
 ## Presence — two columns on `consultants` (24 Sep 2026)
 
 `apps/consultants/migrations/0002_…`.

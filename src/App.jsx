@@ -77,6 +77,7 @@ const DashboardGate = lazy(() =>
   import('./screens/Dashboard.jsx').then((m) => ({ default: m.DashboardGate })),
 )
 const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
+const DashReport = lazy(() => import('./screens/DailyReport.jsx'))
 const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
 const ContentEarnings = lazy(() => import('./screens/ContentEarnings.jsx'))
 const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
@@ -505,6 +506,7 @@ function Frame() {
                 <Route path="/earn" element={<Navigate to="/studio" replace />} />
                 <Route path="/earn/pro" element={<ProApply />} />
                 <Route path="/studio/consulting" element={<Dash><DashConsulting /></Dash>} />
+                <Route path="/studio/report" element={<Dash><DashReport /></Dash>} />
                 {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
                 <Route path="/studio/profile" element={<Navigate to="/studio" replace />} />
                 <Route path="/studio/profile/:tab" element={<Navigate to="/studio" replace />} />

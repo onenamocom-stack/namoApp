@@ -279,6 +279,9 @@ def _missed_check(consultant_id, now):
     moved = Consultant.objects.filter(profile_id=consultant_id, accepting_now=True).update(
         accepting_now=False)
     if moved:
+        from apps.consultants.report import log_switch
+
+        log_switch(consultant_id, False)
         from apps.notifications import push
         from apps.notifications import services as notify
 

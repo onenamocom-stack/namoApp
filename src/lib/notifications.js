@@ -52,6 +52,8 @@ export function alertHref(n) {
   if (n?.ref_type === 'profile' && n.ref_id) return `/u/${n.ref_id}`
   if (n?.ref_type === 'dm' && n.ref_id) return `/messages/${n.ref_id}`
   if (n?.ref_type === 'content') return '/profile'
+  // A Pro's daily report (19 Oct 2026).
+  if (n?.ref_type === 'pro_report') return '/studio/report'
   // A Market listing (15 Oct 2026): a seller's news opens their listings,
   // an event's reminder its page.
   if (n?.ref_type === 'listing' && n.ref_id) {

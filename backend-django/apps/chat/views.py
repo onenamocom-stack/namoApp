@@ -242,4 +242,11 @@ def sweep(request):
     from apps.clips.services import redispatch
 
     result["videos_redispatched"] = redispatch()
+    # Pros' daily reports: written and sent at 23:00 IST (19 Oct 2026).
+    from apps.consultants.report import tick
+
+    try:
+        result["pro_reports"] = tick()
+    except Exception as err:  # a report must never stop the sweep
+        result["pro_reports"] = f"failed: {err}"
     return JsonResponse({"ok": True, **result})

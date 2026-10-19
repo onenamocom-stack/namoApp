@@ -194,6 +194,7 @@ export default function Dashboard() {
           <div className="mt-3">
             {held('pro', <>
             <Row to="/studio/consulting" title="Earnings" note="What chat, calls and bookings earned" />
+            <Row to="/studio/report" title="Daily report" note="Online time, calls answered and your score, each day" />
             {/* Rates open here (14 Oct 2026, Rahul): the "Practice and
                 reviews" page went — reviews are on your page, the intro
                 and username in Edit profile, the slots in Namo Consult. */}

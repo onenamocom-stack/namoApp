@@ -623,3 +623,12 @@ export async function beat(accepting) {
     return null
   }
 }
+
+
+/** The caller's daily report, today first and six days before (19 Oct
+ *  2026, Rahul): Online time, calls received and answered, score, recharges,
+ *  badge. backend-django/apps/consultants/report.py has the rules. */
+export async function myDailyReport() {
+  const body = await api('/consultants/me/report/', { token: await accessToken() })
+  return body?.days ?? []
+}

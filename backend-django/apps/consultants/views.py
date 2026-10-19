@@ -410,6 +410,19 @@ def my_insights(request):
     return Response(insights.insights(request.user.pk, window=window))
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_report(request):
+    """The caller's daily report, today and the six days before (19 Oct
+    2026, Rahul): live time, calls received and answered, the score out of
+    100, customers who recharged, the badge. `report.py` has the rules."""
+    from . import report
+
+    if services.my_consultant(request.user.pk) is None:
+        return Response(refusal_body("not_consultant", "No practice on this account."), status=404)
+    return Response({"days": report.recent(request.user.pk, days=7)})
+
+
 @api_view(["GET", "PUT"])
 @permission_classes([IsAuthenticated])
 def my_payout_details(request):

@@ -1342,9 +1342,16 @@ earnings-and-Insights page.
   Profile's Influencer tab).
 - **Market:** *Earnings and insights* (`/studio/market/earnings`), *Your
   listings* (`/studio/market`).
-- **Consulting** (a Pro): *Earnings* (`/studio/consulting`), *Your
-  consulting price* (the rates sheet here), *Booking calendar*, *Go online*
-  (`/desk`, the green card).
+- **Consulting** (a Pro): *Earnings* (`/studio/consulting`), *Daily
+  report* (`/studio/report`, 19 Oct 2026, Rahul: today and the six days
+  before — Online time, calls received and answered by chat / audio / video,
+  customers who recharged after reaching them, the badge, and a score out of
+  100: answered over received with a video weighing 2 and audio 1.5, for 70,
+  and Online time for 30, 8 hours full; a day with no calls while Online
+  counts the calls part full; the same numbers come as a notification at
+  23:00 IST and in the console's *Daily reports*), *Your consulting price*
+  (the rates sheet here), *Booking calendar*, *Go online* (`/desk`, the
+  green card).
 - **Payout details**, last: one row; a Pro's opens payout details, a
   Creator's the Market's bank form.
 

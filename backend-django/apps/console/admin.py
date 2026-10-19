@@ -649,3 +649,63 @@ def _register_statements():
 
 
 _register_statements()
+
+
+from apps.consultants.models import ProDayReport  # noqa: E402
+
+
+@dj.register(ProDayReport, site=site)
+class ProDayReportAdmin(dj.ModelAdmin):
+    """Every Pro's day, scored (19 Oct 2026, Rahul): Online time, calls
+    received and answered (video weighs 2, audio 1.5, chat 1), customers
+    who recharged after reaching them, and the badge. Written at 23:00 IST,
+    when each Pro is sent theirs, and again the next morning with the last
+    hour (`final`). Read only; `apps/consultants/report.py` has the rules."""
+
+    list_display = ("who", "day", "badge", "online", "received", "answered", "video", "recharged", "score_bar", "final")
+    list_filter = ("day", "badge", "final")
+    ordering = ("-day", "-score")
+    date_hierarchy = "day"
+    list_per_page = 100
+
+    @dj.display(description="Pro")
+    def who(self, obj):
+        p = Profile.objects.filter(pk=obj.consultant_id).values("name", "phone").first() or {}
+        return format_html("<strong>{}</strong><br><small>{}</small>", p.get("name") or "—", p.get("phone") or "")
+
+    @dj.display(description="Online", ordering="live_seconds")
+    def online(self, obj):
+        h, m = divmod(obj.live_seconds // 60, 60)
+        return f"{h}h {m:02d}m"
+
+    @dj.display(description="Calls received")
+    def received(self, obj):
+        return f"{obj.received_chat + obj.received_audio + obj.received_video}  (chat {obj.received_chat} · audio {obj.received_audio} · video {obj.received_video})"
+
+    @dj.display(description="Answered")
+    def answered(self, obj):
+        return obj.attended_chat + obj.attended_audio + obj.attended_video
+
+    @dj.display(description="Video answered")
+    def video(self, obj):
+        return f"{obj.attended_video} of {obj.received_video}"
+
+    @dj.display(description="Score", ordering="score")
+    def score_bar(self, obj):
+        tone = "#30a46c" if obj.score >= 70 else "#f5782c" if obj.score >= 40 else "#e5484d"
+        return format_html('<strong style="color:{}">{}</strong>/100', tone, obj.score)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.SUPPORT, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.SUPPORT, Tier.FINANCE)

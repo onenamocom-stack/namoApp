@@ -620,3 +620,47 @@ class PayoutStatement(models.Model):
     @property
     def to_pay_paise(self):
         return self.total_paise - self.tds_paise
+
+
+class PresenceSwitch(models.Model):
+    """The Online switch moving, on or off, and when (19 Oct 2026): what a
+    Pro's daily live time is added up from (`report.live_seconds`). Written
+    only when the switch actually changes; nothing before 19 Oct 2026."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultant_id = models.UUIDField()  # profiles id
+    on = models.BooleanField()
+    at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "consultant_presence_switches"
+        indexes = [models.Index(fields=["consultant_id", "at"], name="presence_switches_idx")]
+
+
+class ProDayReport(models.Model):
+    """One Pro's day, as `report.write_day` found it (19 Oct 2026, Rahul):
+    the console's daily list and what the 23:00 IST notification said.
+    Written again the next morning with the day's last hour (`final`)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultant_id = models.UUIDField()  # profiles id
+    day = models.DateField()  # IST
+    live_seconds = models.IntegerField(default=0)
+    received_chat = models.IntegerField(default=0)
+    received_audio = models.IntegerField(default=0)
+    received_video = models.IntegerField(default=0)
+    attended_chat = models.IntegerField(default=0)
+    attended_audio = models.IntegerField(default=0)
+    attended_video = models.IntegerField(default=0)
+    recharged = models.IntegerField(default=0)
+    score = models.SmallIntegerField(default=0)
+    badge = models.CharField(max_length=8, default="pro")
+    final = models.BooleanField(default=False)
+    notified_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "pro_day_reports"
+        verbose_name = "Pro daily report"
+        ordering = ("-day", "-score")
+        constraints = [models.UniqueConstraint(fields=["consultant_id", "day"], name="pro_day_reports_one_a_day")]

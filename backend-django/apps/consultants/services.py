@@ -1094,11 +1094,19 @@ def touch_presence(consultant_id, accepting=None, now=None):
     if accepting is not None:
         fields["accepting_now"] = bool(accepting)
 
+    was = Consultant.objects.filter(
+        profile_id=consultant_id, status=ConsultantStatus.APPROVED
+    ).values_list("accepting_now", flat=True).first()
     updated = Consultant.objects.filter(
         profile_id=consultant_id, status=ConsultantStatus.APPROVED
     ).update(**fields)
     if not updated:
         return None
+    # The switch's moves are the daily report's live time (19 Oct 2026).
+    if accepting is not None and bool(accepting) != bool(was):
+        from .report import log_switch
+
+        log_switch(consultant_id, accepting, stamp)
 
     row = Consultant.objects.filter(profile_id=consultant_id).values(
         "accepting_now", "last_seen_at"
@@ -1115,9 +1123,14 @@ def go_offline(consultant_id):
     """The switch, off. Used by the toggle and by signing out of the pro
     app — leaving `accepting_now` true on a logout would put a green dot
     on somebody who has gone home."""
-    return Consultant.objects.filter(profile_id=consultant_id).update(
+    moved = Consultant.objects.filter(profile_id=consultant_id, accepting_now=True).update(
         accepting_now=False
     ) == 1
+    if moved:
+        from .report import log_switch
+
+        log_switch(consultant_id, False)
+    return Consultant.objects.filter(profile_id=consultant_id).exists()
 
 
 def is_approved(profile_id):
