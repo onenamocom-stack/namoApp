@@ -1,8 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Boundary from '../components/Boundary.jsx'
-import IncomingCall from '../components/IncomingCall.jsx'
-import { PresenceKeeper } from '../components/PresenceToggle.jsx'
 
 /**
  * Namo Consult, `/desk` (Phase 16, 14 Oct 2026): the one place in the main
@@ -42,10 +40,8 @@ export default function DeskLayout() {
   useInstallAsNamoConsult()
   return (
     <>
-      <PresenceKeeper />
-      {/* Above the scroll, as in the pro app: a request seen only by
-          scrolling to it is a request missed. */}
-      <IncomingCall />
+      {/* The presence beat and incoming calls are at the app's root since
+          19 Oct 2026, over every screen, not only the Desk. */}
       <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <Boundary resetKey={pathname}>
           <Outlet />

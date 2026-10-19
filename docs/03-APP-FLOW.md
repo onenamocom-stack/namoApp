@@ -2025,6 +2025,15 @@ same tap. The app then beats every thirty seconds and **every beat carries
 the switch**, so a toggle whose request failed corrects itself thirty
 seconds later rather than leaving somebody visible and absent.
 
+**Anywhere in the app** (19 Oct 2026, Rahul): an approved consultant's beat
+runs on every page of the main app, not only on the Desk, so a Pro with the
+switch on stays online while browsing Home or the Market (before, leaving the
+Desk took them offline after 90 seconds). A call request then **covers the
+whole screen** on any page, as a phone call does: the caller's initial and
+name, Audio / Video call or Chat and the rate, a red Decline left and a green
+Answer right, ringing and vibrating. Others waiting show as a line under it.
+On a call already, a new request is a quiet line at the top instead.
+
 | What the seeker sees | When |
 |---|---|
 | Green dot on the avatar | `online` from the roster — the server's boolean, not the client's arithmetic |

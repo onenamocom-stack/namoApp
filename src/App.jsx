@@ -139,10 +139,7 @@ function ProLayout() {
   const { pathname } = useLocation()
   return (
     <>
-      {/* Above the scroll and on every screen. A call request that can
-          only be seen by being on the right tab is one that gets missed,
-          and the seeker is watching a countdown while it is. */}
-      <IncomingCall />
+      {/* Incoming calls are mounted once, at the root, over every screen. */}
       <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
         {/* Inside the shell, not around it: a screen that throws must not take
             the bottom nav with it, or there is no way out of the crash. */}
@@ -378,9 +375,12 @@ function Frame() {
         <NotificationRouter />
         <LiveChatResume />
         {!isPro && <AffiliateCatcher />}
-        {/* The consultant's "app is open" beat, on every route — the call
-            screen included, which is outside the shell (5 Oct 2026). */}
-        {isPro && <PresenceKeeper />}
+        {/* The consultant's "app is open" beat and their incoming calls, on
+            every route of either side (19 Oct 2026, Rahul: a call was seen
+            only on the Desk, and a Pro who left it went offline in 90 s).
+            Both gate themselves on an approved consultant. */}
+        <PresenceKeeper />
+        <IncomingCall />
         <Routes>
           <Route
             path="/"

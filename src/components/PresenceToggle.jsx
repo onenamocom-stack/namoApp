@@ -148,10 +148,13 @@ export default function PresenceToggle({ big = false }) {
  * slept does not wait half a minute to be seen again.
  */
 export function PresenceKeeper() {
-  const { isPro, session } = useStore()
+  const { isPro, session, consultant } = useStore()
   const signedIn = !!session?.user?.id
+  // An approved consultant anywhere in the app, not only on the Desk (19 Oct
+  // 2026, Rahul). Online still needs their own Online switch on.
+  const on = isPro || consultant?.status === 'approved'
   useEffect(() => {
-    if (!isPro || !signedIn) return undefined
+    if (!on || !signedIn) return undefined
     // A phone that already allowed notifications re-registers on launch,
     // so a subscription the browser rotated never goes quietly dead.
     keepPushFresh()
@@ -162,6 +165,6 @@ export function PresenceKeeper() {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', onShow)
     }
-  }, [isPro, signedIn])
+  }, [on, signedIn])
   return null
 }
