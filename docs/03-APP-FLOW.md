@@ -1997,14 +1997,16 @@ Every refusal sentence is the server's. There are none in the client.
 
 ## Reporting — where the option lives (23 Sep 2026)
 
-One sheet, `components/ReportSheet.jsx`, raised from three places. Nothing
+One sheet, `components/ReportSheet.jsx`, raised from these places. Nothing
 else in the app reports anything.
 
 | Where | The control | What is reported |
 |---|---|---|
-| A post card in the feed | **⋯** at the card's top-right corner | that post |
+| A post card in the feed | **⋮** beside Follow | that post |
 | A reel | **Report** at the bottom of the right-hand rail | that reel |
 | `/u/:id`, somebody's profile | **Report** in the top bar | that person |
+| A message thread (`/messages/:id`) | **⋯** → Report | the other person |
+| A consultation chat (chat panel) | **⋮** at the header's right, both sides (19 Oct 2026, Rahul, for Play) | the other person |
 
 **Not in the action row.** Report sits away from Like, Reply, Share and
 Save on both surfaces, and the reason is the same in each: it is the one

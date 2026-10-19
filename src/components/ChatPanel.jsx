@@ -24,6 +24,7 @@ import SessionRecharge from './SessionRecharge.jsx'
 import { uploadAsset } from '../lib/media.js'
 import ClientKundli from './ClientKundli.jsx'
 import { askReview } from '../lib/reviewAsk.js'
+import ReportSheet from './ReportSheet.jsx'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -407,6 +408,8 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
   const [topup, setTopup] = useState(false)
   // The client's kundli, the consultant's only (17 Oct 2026, Rahul).
   const [kundli, setKundli] = useState(false)
+  // Report the other person from the chat (19 Oct 2026, Rahul, for Play).
+  const [reporting, setReporting] = useState(false)
   const endRef = useRef(null)
   const [openedAt] = useState(() => new Date().toISOString())
 
@@ -616,7 +619,22 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
             End session
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => setReporting(true)}
+          aria-label={`Report ${other || 'this person'}`}
+          className="-mr-2 flex-none px-2 text-lead leading-none text-t2"
+        >
+          ⋮
+        </button>
       </div>
+
+      <ReportSheet
+        open={reporting}
+        onClose={() => setReporting(false)}
+        profileId={thread.seeker_id === myId ? thread.consultant_id : thread.seeker_id}
+        name={other}
+      />
 
       {/* The meter. A charge nobody can see accruing is a charge that gets
           disputed, so the time left and the rate are on screen the whole time
