@@ -1100,7 +1100,19 @@ app since 13 Oct 2026, every tab in the pro app), Preferences
 (language; **Data saver**, Off / On, kept on the phone: reels play at
 480p and nothing loads ahead (18 Oct 2026, Rahul's video spec); help and
 support; the full deity image toggle went on 11 Oct
-2026, Rahul: the murti is always whole), and sign out. Back means Home from the profile and the
+2026, Rahul: the murti is always whole), and sign out. Under it, **Delete my
+account** (19 Oct 2026, Google Play's rule): a sheet says what goes (name,
+phone, birth details, photo, username, bio, posts, comments, the login, a
+Pro or seller practice, the referral code, wallet money) and what the law
+keeps (payment, order and earnings records, unnamed), and wants the word
+DELETE; then signed out. The same steps without the app are at
+`/delete-account.html`; `/community-guidelines.html`, `/terms.html` and
+`/privacy.html` are linked there. A person's page (`/u/:id`) has **Block**
+beside Report: their posts, reels, comments and messages are hidden from
+you (the feed, for-you and comments leave them out). In the Android app a
+paid download or course says *Not sold in the app* instead of Buy (Play's
+billing rule); Namo AI and tarot say they are guidance, not medical, legal
+or financial advice. Back means Home from the profile and the
 profile from settings. "More from Namo" (Namo AI, premium, academy, shop) went on
 11 Oct 2026 (Rahul): each was a second link to a tab or a tool.
 

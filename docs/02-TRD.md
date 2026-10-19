@@ -166,6 +166,13 @@ primary key.
 There are no passwords and no email flow in v1. That removes password reset,
 credential stuffing and most of the account-recovery surface in one decision.
 
+**Deleting an account** (19 Oct 2026, `POST /v1/profiles/me/delete/`, the
+word DELETE in the body): the API strips the profile of everything that
+names the person, marks it blocked (which hides their content), closes a
+practice, and deletes their `auth.users` row directly — the API's database
+role is Supabase's `postgres`, so no service key is involved, and no
+`public` table references `auth.users`. Money records stay, unnamed.
+
 ### Role is not stored, and is not a role
 
 `isPro` is derived from the URL path in the client, and **must stay that way** —

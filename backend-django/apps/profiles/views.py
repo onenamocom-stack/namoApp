@@ -119,6 +119,21 @@ def me(request):
     return Response(services.serialize_profile(profile))
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def delete_me(request):
+    """Delete the caller's account (19 Oct 2026; Google Play's rule).
+    Needs the word DELETE in `confirm`, typed by the person, so no stray
+    tap or script deletes an account. `services.delete_account` says what
+    goes and what the law keeps."""
+    if (request.data.get("confirm") or "").strip().upper() != services.DELETE_WORD:
+        return Response(refusal_body("confirm", "Type DELETE to confirm."), status=400)
+    result = services.delete_account(request.user.pk)
+    if not result["ok"]:
+        return Response(refusal_body("refused", result["reason"]), status=409)
+    return Response({"ok": True})
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])  # the 025/007 views' grants cover anon
 def public(request, profile_id):

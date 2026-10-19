@@ -196,6 +196,15 @@ def block(me, profile_id):
     return True
 
 
+def blocked_by(me):
+    """Everybody `me` has blocked. Since 19 Oct 2026 a block also hides
+    their posts and comments from `me` (Play Store's rule for a social app;
+    it was messages only)."""
+    if not me:
+        return []
+    return list(DmBlock.objects.filter(blocker_id=me).values_list("blocked_id", flat=True))
+
+
 def unblock(me, profile_id):
     DmBlock.objects.filter(blocker_id=me, blocked_id=profile_id).delete()
     return True

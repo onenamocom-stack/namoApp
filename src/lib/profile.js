@@ -175,3 +175,15 @@ export async function askModule(module, answers) {
   if (result.status !== 201) throw new Error(refusalMessage(result, 'Could not send that. Try again.'))
   return result.body
 }
+
+/** Delete the signed-in account (19 Oct 2026, Google Play's rule). `word`
+ *  is what the person typed; the server wants DELETE. Throws the refusal. */
+export async function deleteMyAccount(word) {
+  const token = await getToken()
+  if (!token) throw new Error('Sign in to continue.')
+  const result = await call('/me/delete/', { method: 'POST', token, body: { confirm: word } })
+  if (result.status !== 200) {
+    throw new Error(refusalMessage(result, 'Could not delete your account. Try again.'))
+  }
+  return true
+}

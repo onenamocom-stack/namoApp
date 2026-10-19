@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("me/", views.me, name="profiles-me"),
     path("me/avatar/", views.avatar, name="profiles-avatar"),
+    path("me/delete/", views.delete_me, name="profiles-delete-me"),
     path("me/username/", views.my_username, name="profiles-my-username"),
     path("me/modules/", views.my_modules, name="profiles-my-modules"),
     path("me/modules/<str:module>/", views.ask_module, name="profiles-ask-module"),

@@ -28,6 +28,7 @@ import { profileLink } from '../lib/profile.js'
 import ProfileHead from '../components/ProfileHead.jsx'
 import FollowSheet from '../components/FollowSheet.jsx'
 import { dataSaver, setDataSaver } from '../lib/hls.js'
+import DeleteAccount from '../components/DeleteAccount.jsx'
 
 /**
  * Profile, Instagram-shaped (4 Oct 2026, owner's call).
@@ -653,6 +654,12 @@ function SettingsPage({ pro }) {
           {leaving ? t('prof.signingOut') : t('prof.signOut')}
         </button>
         <p className="mt-3 text-center text-micro t-faint">{t('prof.signOutNote')}</p>
+        {/* Google Play's rule for an app with accounts (19 Oct 2026). */}
+        <DeleteAccount />
+        <p className="mt-2 text-center text-micro t-faint">
+          <a href="/community-guidelines.html" className="underline">Community guidelines</a> ·{' '}
+          <a href="/terms.html" className="underline">Terms</a> · <a href="/privacy.html" className="underline">Privacy</a>
+        </p>
       </section>
 
       <div className="h-24" />

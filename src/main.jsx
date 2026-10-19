@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+import { noteAndroidApp } from './lib/platform.js'
+
+// The Play Store app says so on its first page only (lib/platform.js).
+noteAndroidApp()
 
 /* Real addresses since the move to Cloudflare Pages (6 Oct 2026):
    1namo.com/shop/p/x, not 1namo.com/#/shop/p/x. Every link shared in the

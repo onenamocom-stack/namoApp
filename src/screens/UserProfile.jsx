@@ -12,7 +12,7 @@ import VerifiedMark from '../components/VerifiedMark.jsx'
 import { FeedCard } from './Home.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAuthor, fetchByAuthor, followCounts } from '../lib/content.js'
-import { startDm } from '../lib/dms.js'
+import { blockPerson, startDm } from '../lib/dms.js'
 
 /**
  * A person who posts, seen by everybody else.
@@ -37,6 +37,34 @@ export default function UserProfile() {
   const [posts, setPosts] = useState([])
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
   const [reporting, setReporting] = useState(false)
+  /* Block (19 Oct 2026, Rahul — Google Play's rule for a social app): their
+     posts, comments and messages are hidden from you. Remembered on this
+     phone for the button's word; the server keeps the block itself. */
+  const blockKey = `namo:blocked:${id}`
+  const [blocked, setBlocked] = useState(() => {
+    try {
+      return localStorage.getItem(blockKey) === '1'
+    } catch {
+      return false
+    }
+  })
+  const toggleBlock = async () => {
+    const next = !blocked
+    if (next && !window.confirm('Block this person? Their posts, comments and messages will be hidden from you.')) return
+    try {
+      await blockPerson(id, next)
+      try {
+        if (next) localStorage.setItem(blockKey, '1')
+        else localStorage.removeItem(blockKey)
+      } catch {
+        /* storage off: the block still holds on the server */
+      }
+      setBlocked(next)
+      showToast(next ? 'Blocked. You will not see their posts or messages.' : 'Unblocked.')
+    } catch (err) {
+      showToast(err.message || 'Could not do that. Try again.')
+    }
+  }
 
   const following = hasFlag(`followp:${id}`)
 
@@ -106,14 +134,24 @@ export default function UserProfile() {
         backTo="/home"
         right={
           mine ? null : (
-            <button
-              type="button"
-              onClick={() => setReporting(true)}
-              aria-label="Report this person"
-              className="text-micro uppercase tracking-label text-t3 transition-colors hover:text-t1"
-            >
-              Report
-            </button>
+            <span className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleBlock}
+                aria-label={blocked ? 'Unblock this person' : 'Block this person'}
+                className="text-micro uppercase tracking-label text-t3 transition-colors hover:text-t1"
+              >
+                {blocked ? 'Unblock' : 'Block'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReporting(true)}
+                aria-label="Report this person"
+                className="text-micro uppercase tracking-label text-t3 transition-colors hover:text-t1"
+              >
+                Report
+              </button>
+            </span>
           )
         }
       />

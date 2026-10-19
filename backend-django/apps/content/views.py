@@ -149,6 +149,16 @@ def _review_row(row):
     }
 
 
+def _without_blocked(request, rows):
+    """The rows minus the authors the signed-in reader blocked."""
+    if not request.user or not request.user.is_authenticated:
+        return rows
+    from apps.dms.services import blocked_by
+
+    hidden = {str(x).replace("-", "") for x in blocked_by(request.user.pk)}
+    return [r for r in rows if str(r.author_id).replace("-", "") not in hidden] if hidden else rows
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def feed(request):
@@ -162,6 +172,7 @@ def feed(request):
     rows, next_after = services.feed_page(
         kinds=kinds, after_id=data["after"], limit=data["limit"]
     )
+    rows = _without_blocked(request, rows)
     rows = services.attach_products(rows)
     return Response({"results": [_public_row(r) for r in rows], "next_after": next_after})
 
@@ -192,6 +203,12 @@ def for_you(request):
     )
     if kinds:
         qs = qs.filter(kind__in=kinds)
+    # Nobody the reader blocked (19 Oct 2026).
+    from apps.dms.services import blocked_by
+
+    hidden = blocked_by(viewer)
+    if hidden:
+        qs = qs.exclude(author_id__in=hidden)
     rows = ranking.for_you(qs, viewer, limit=data["limit"])
     rows = services.attach_products(rows)
     return Response({"results": [_public_row(r) for r in rows]})
@@ -350,7 +367,14 @@ def comments(request, content_id):
     """GET: a post's live comments, oldest first — anonymous, like the feed.
     POST: comment as the caller; signed in, not blocked."""
     if request.method == "GET":
-        return Response([_comment_row(c) for c in services.list_comments(content_id)])
+        rows = services.list_comments(content_id)
+        # Not the comments of anybody the reader blocked (19 Oct 2026).
+        if request.user and request.user.is_authenticated:
+            from apps.dms.services import blocked_by
+
+            hidden = {str(x).replace("-", "") for x in blocked_by(request.user.pk)}
+            rows = [c for c in rows if str(c.author_id).replace("-", "") not in hidden]
+        return Response([_comment_row(c) for c in rows])
     if not request.user or not request.user.is_authenticated:
         return Response(refusal_body("unauthenticated", "Sign in to comment."), status=401)
     data = CommentInput(data=request.data)

@@ -42,6 +42,7 @@ here, rule by rule:
 
 import random
 import re
+import logging
 import time
 import unicodedata
 import uuid
@@ -595,3 +596,73 @@ def set_avatar(user_id, asset_id):
     busted = f"{url}?v={int(time.time() * 1000)}"
     Profile.objects.filter(pk=user_id).update(avatar_url=busted)
     return busted
+
+
+# ── deleting an account (19 Oct 2026, Rahul: Play Store's rule) ─────────────
+
+logger = logging.getLogger("apps.profiles")
+
+DELETED_NAME = "Deleted user"
+DELETED_REASON = "account deleted by the person"
+DELETE_WORD = "DELETE"
+
+
+def delete_account(profile_id, now=None):
+    """The person deletes their account, from Settings (Google Play asks for
+    it in the app and on the web). Done at once:
+
+      * the profile loses everything that names them — name ("Deleted
+        user"), phone, email, birth details, gender, bio, photo, username,
+        interests — and is marked blocked, which already hides every post,
+        reel, comment and profile page of theirs everywhere;
+      * a Pro or seller practice is switched off and their referral code
+        stops working; their push subscriptions and notifications go;
+      * their login (Supabase `auth.users`) is removed, so the phone number
+        can sign up again as a new person.
+
+    Kept, because the law requires it and nothing in them is shown to
+    anybody: payments, orders, the wallet ledger, earnings and payout
+    records, against the anonymous id. Refused while a paid session is
+    live, so nobody is cut off mid-call.
+
+    Returns `{"ok": True}` or `{"ok": False, "reason": ...}`.
+    """
+    from django.db import connection
+
+    from apps.chat.models import Session
+    from apps.consultants.models import Consultant, ConsultantStatus
+    from apps.notifications.models import Notification, PushSubscription
+    from apps.referrals.models import ReferralCode
+
+    now = now or timezone.now()
+    profile = Profile.objects.filter(pk=profile_id).first()
+    if profile is None:
+        return {"ok": False, "reason": "No account to delete."}
+    live = Session.objects.filter(status=Session.Status.LIVE).filter(
+        Q(seeker_id=profile_id) | Q(consultant_id=profile_id)).exists()
+    if live:
+        return {"ok": False, "reason": "End your live session first, then delete your account."}
+
+    with transaction.atomic():
+        Profile.objects.filter(pk=profile_id).update(
+            name=DELETED_NAME, phone=f"deleted-{profile_id}", email=None,
+            birth_date=None, birth_time=None, birth_time_known=False, birth_place=None,
+            birth_lat=None, birth_lon=None, birth_zone=None, gender=None, bio=None,
+            interests=None, username=None, avatar_url=None,
+            influencer=False, seller=False, referrer=False, video_enabled=False,
+            blocked_at=now, blocked_reason=DELETED_REASON,
+        )
+        Consultant.objects.filter(profile_id=profile_id).update(
+            status=ConsultantStatus.BLOCKED, accepting_now=False)
+        ReferralCode.objects.filter(profile_id=profile_id).update(active=False)
+        PushSubscription.objects.filter(profile_id=profile_id).delete()
+        Notification.objects.filter(profile_id=profile_id).delete()
+        # The login itself. Only where the database is Supabase's (production);
+        # a savepoint so a missing `auth` schema cannot undo the rest.
+        if connection.vendor == "postgresql":
+            try:
+                with transaction.atomic(), connection.cursor() as cursor:
+                    cursor.execute("delete from auth.users where id = %s", [str(profile_id)])
+            except Exception as err:  # noqa: BLE001 - the profile is gone either way
+                logger.warning("[profiles] auth user not removed for %s: %s", profile_id, err)
+    return {"ok": True}

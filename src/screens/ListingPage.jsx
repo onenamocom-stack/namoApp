@@ -6,6 +6,7 @@ import Icon from '../components/Icon.jsx'
 import { MarketPrice } from '../components/MarketCard.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton } from '../components/Pop.jsx'
+import { inAndroidApp } from '../lib/platform.js'
 import RichText from '../components/RichText.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import { access, get, listing as fetchListing, previewLesson } from '../lib/market.js'
@@ -189,6 +190,12 @@ function Seller({ l }) {
   )
 }
 
+/* A paid download or course is not sold in the Android app: Google Play
+   allows digital purchases only through its own billing (19 Oct 2026). */
+function NotInApp() {
+  return <span className="max-w-[10rem] text-right text-micro t-faint">Not sold in the app</span>
+}
+
 function Foot({ price, note, children }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[420px] items-center gap-3 border-t border-rule bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
@@ -285,6 +292,8 @@ export function CoursePage({ l, opened, busy, buy }) {
           <PopButton variant="gold" full={false} className="px-6" onClick={() => play(0)}>
             Start
           </PopButton>
+        ) : l.price_paise && inAndroidApp() ? (
+          <NotInApp />
         ) : (
           <PopButton variant="gold" full={false} className="px-6" onClick={buy} disabled={busy || !l.open}>
             {busy ? '…' : t('ls.c.enroll')}
@@ -412,6 +421,8 @@ function DownloadListing({ l, opened, busy, buy }) {
           <PopButton href={opened?.file_url} variant="gold" full={false} className="px-6" disabled={!opened?.file_url}>
             {t('dl.download')}
           </PopButton>
+        ) : l.price_paise && inAndroidApp() ? (
+          <NotInApp />
         ) : (
           <PopButton variant="gold" full={false} className="px-6" onClick={buy} disabled={busy}>
             {busy ? '…' : l.price_paise ? t('dl.buy') : t('dl.download')}

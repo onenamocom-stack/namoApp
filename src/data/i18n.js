@@ -790,6 +790,11 @@ export const strings = {
   // ── Namo AI ──────────────────────────────────────────────────────────────
   'ask.each': { en: '{price} each', hi: '{price} प्रति सवाल' },
   'ask.free': { en: '{n} free', hi: '{n} मुफ़्त' },
+  // Google Play asks an astrology app to say what it is not (19 Oct 2026).
+  'legal.astro': {
+    en: 'For guidance only, not medical, legal or financial advice.',
+    hi: 'केवल मार्गदर्शन के लिए; चिकित्सा, कानूनी या वित्तीय सलाह नहीं।',
+  },
   // Free only for now (19 Oct 2026, Rahul): past the free ones, tomorrow.
   'ask.tomorrow': { en: 'Free again tomorrow', hi: 'कल फिर मुफ़्त' },
   'ask.comeBack': { en: "That was today's free question. Come back tomorrow for the next one.", hi: 'आज का मुफ़्त सवाल हो गया। अगले के लिए कल आइए।' },

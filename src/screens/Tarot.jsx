@@ -344,6 +344,7 @@ function Card({ card, reading, verdict, deck }) {
           )}
 
           {!sheetOnly && <p className="mt-6 text-center text-meta t-faint">{t('tarot.prompt')}</p>}
+          <p className="mt-3 text-center text-micro t-faint">{t('legal.astro')}</p>
         </div>
       )}
     </>

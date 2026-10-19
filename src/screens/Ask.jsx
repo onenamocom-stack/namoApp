@@ -58,6 +58,7 @@ export default function Ask() {
             <Orbit size={72} className="mb-6" />
             <p className="text-title font-semibold t-heading">{t('ask.title')}</p>
             <p className="mt-2 text-meta t-faint">{t('ask.sub')}</p>
+            <p className="mt-3 text-micro t-faint">{t('legal.astro')}</p>
             <div className="mt-8 flex w-full flex-col gap-2">
               {askSuggestions.slice(0, 4).map((s) => (
                 <button
