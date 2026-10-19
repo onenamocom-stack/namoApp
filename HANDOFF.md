@@ -6510,7 +6510,7 @@ the include.
 
 ## 84. The Android app (TWA), built — 19 Oct 2026
 
-`com.onenamo.app`, "Namo – Hindu Social Network" (launcher "Namo"), version
+`com.onenamo.app`, "Namo – Connecting Bharat" (launcher "Namo"; it was built as "Namo – Hindu Social Network" and rebuilt 19 Oct at Rahul's word, before any upload), version
 1.0.0 (code 1), Android 7+ (API 24), a Trusted Web Activity of
 https://1namo.com/ — every web deploy is the app; no app update needed.
 
