@@ -32,12 +32,12 @@ export default function VerifyOtp() {
 
          Your NAMO code is 123456
 
-         @onenamocom-stack.github.io #123456
+         @1namo.com #123456
 
      Without that last line the promise below simply never resolves, silently,
-     which is exactly how this looks when it is misconfigured. Set it in
-     Supabase → Authentication → SMS templates. The origin has to match the
-     deployment, so it changes again at the move to 1namo.com. */
+     which is exactly how this looks when it is misconfigured (19 Oct 2026,
+     Rahul: "Auto fill nahi hai"). Set it in Supabase → Authentication → SMS
+     templates; the origin is 1namo.com since the move. */
   const autoFilled = useRef(false)
   useEffect(() => {
     if (!('OTPCredential' in window)) return
