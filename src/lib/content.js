@@ -98,6 +98,12 @@ async function api(path, { method = 'GET', body, token } = {}) {
  * A content_public row in the shape the feed components already read —
  * byte-identical to the old shape(), so every call site keeps working.
  */
+/* The bucket's old r2.dev address, which Cloudflare does not cache, to
+   media.1namo.com, which it does (19 Oct 2026, Rahul: videos were slow to
+   start). Same bucket, same keys; rows keep what they were saved with. */
+const R2_DEV = 'https://pub-3af0d667ea734b68a3281ea8d13e3a72.r2.dev/'
+export const viaCdn = (url) => (typeof url === 'string' && url.startsWith(R2_DEV) ? `https://media.1namo.com/${url.slice(R2_DEV.length)}` : url)
+
 function shape(row) {
   return {
     id: row.id,
@@ -115,14 +121,14 @@ function shape(row) {
       .slice(0, 2)
       .join('')
       .toUpperCase(),
-    avatarUrl: row.author_avatar || null,
+    avatarUrl: viaCdn(row.author_avatar) || null,
     kind: row.kind,
     title: row.title,
     body: row.body,
     caption: row.caption,
-    mediaUrl: row.media_url,
+    mediaUrl: viaCdn(row.media_url),
     // The photos after the first on a post (17 Oct 2026); [] for the rest.
-    gallery: row.gallery ?? [],
+    gallery: (row.gallery ?? []).map(viaCdn),
     views: row.view_count,
     likes: row.like_count,
     saves: row.save_count,

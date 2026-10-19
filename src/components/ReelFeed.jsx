@@ -113,6 +113,7 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false, auth
           reel={c}
           active={i === index}
           near={Math.abs(i - index) <= 1}
+          next={i === index + 1}
           paused={paused}
           onTogglePlay={() => setPaused((p) => !p)}
           muted={muted}
@@ -148,7 +149,7 @@ function RailAct({ icon, label, count, on, tone = 'default', onClick }) {
   )
 }
 
-function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMuted, isLast }) {
+function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, setMuted, isLast }) {
   const { showToast, hasFlag, toggleFlag, session } = useStore()
   const video = useRef(null)
   const [reporting, setReporting] = useState(false)
@@ -228,8 +229,10 @@ function ReelFrame({ reel: c, active, near, paused, onTogglePlay, muted, setMute
                  start (an HLS reel its first segment, 18 Oct 2026), so a
                  swipe lands on video that is already there. The rest load
                  nothing — 48 metadata requests at once were competing with
-                 the one being watched. Data saver loads nothing ahead. */
-              load={active ? 'play' : near && !dataSaver() ? 'preload' : 'none'}
+                 the one being watched. Data saver loads nothing ahead.
+                 The next one down loads properly (19 Oct 2026, Rahul: a
+                 swipe waited on the video). */
+              load={active ? 'play' : dataSaver() ? 'none' : next ? 'next' : near ? 'preload' : 'none'}
               loop
               playsInline
             />

@@ -61,12 +61,13 @@ function fast() {
 // one playing. hls.js buffers up to the cap whatever the target (its
 // byte budget wins), so the cap moves with it: with only the target, a
 // waiting reel loaded all of itself (checked in Chrome, 18 Oct 2026).
-const AHEAD = { preload: 4, play: 30 }
-const CAP = { preload: 4, play: 60 }
+const AHEAD = { preload: 4, play: 30, next: 8 }
+const CAP = { preload: 4, play: 60, next: 8 }
 
 /**
  * Attach an HLS playlist to a <video>. `load` is 'none' (the poster only),
- * 'preload' (the first segment) or 'play' (buffer as it plays).
+ * 'preload' (the first segment), 'next' (the reel a swipe lands on: its
+ * first 8 seconds, 19 Oct 2026) or 'play' (buffer as it plays).
  */
 export function useHls(ref, src, load = 'play') {
   const player = useRef(null)
