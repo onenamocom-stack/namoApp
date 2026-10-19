@@ -124,8 +124,10 @@ function TabLayout() {
       </main>
       {/* A Pro's Online / Offline, above Home's + on every tab page (19 Oct
           2026, Rahul); nothing for anybody else. */}
+      {/* The tab bar is fixed over the page, so this measures from the
+          screen's foot: Home's + is about 64-128 px up; this sits above it. */}
       <div className="pointer-events-none relative z-30 h-0">
-        <div className="absolute bottom-[86px] right-4">
+        <div className="absolute bottom-[142px] right-[26px]">
           <PresenceToggle floating />
         </div>
       </div>
