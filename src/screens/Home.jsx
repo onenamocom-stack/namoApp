@@ -831,6 +831,28 @@ function Caption({ name, to, text, comments = 0, onComments }) {
   )
 }
 
+/** What the author wrote, under their name and above the picture or video
+ *  (19 Oct 2026, Rahul: "should go above the post, below his name. Not below
+ *  the image"). Three lines, then More. */
+function PostText({ text }) {
+  const { t } = useStore()
+  const [open, setOpen] = useState(false)
+  if (!text) return null
+  const long = text.length > 160 || text.split(/\n/).length > 3
+  return (
+    <div className="px-3 pb-2.5">
+      <p className={`whitespace-pre-line text-meta text-t1 ${long && !open ? 'line-clamp-3' : ''}`}>
+        <Hashtags text={text} />
+      </p>
+      {long && !open && (
+        <button type="button" onClick={() => setOpen(true)} className="mt-0.5 text-meta text-t3">
+          {t('home.more')}
+        </button>
+      )}
+    </div>
+  )
+}
+
 /**
  * The Instagram "Shop now" strip under a suggested post: full width, tinted,
  * label left and a chevron right. Green for a commitment, saffron for a read.
@@ -1084,6 +1106,7 @@ function PostCard({ post, resharedBy }) {
         moreLabel="Report this post"
         onEdit={mine ? () => setEditing(true) : undefined}
       />
+      {p.mediaUrl && <PostText text={text} />}
 
       {p.mediaUrl &&
         (p.gallery?.length ? (
@@ -1128,7 +1151,9 @@ function PostCard({ post, resharedBy }) {
       <Caption
         name={p.consultant}
         to={authorHref(p)}
-        text={tile ? null : text}
+        // Above the picture now (19 Oct 2026); a text-only post that is not a
+        // tile keeps it here, where it is the post.
+        text={tile || p.mediaUrl ? null : text}
         comments={comments}
         onComments={() => setCommenting(true)}
       />
@@ -1327,6 +1352,7 @@ function ReelCard({ reel, resharedBy }) {
         onEdit={mine ? () => setEditing(true) : undefined}
       />
       {editing && <EditSheet piece={r} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
+      <PostText text={r.caption} />
 
       <Link ref={frame} to={`/reels/${r.id}`} className="group relative block">
         <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
@@ -1389,7 +1415,7 @@ function ReelCard({ reel, resharedBy }) {
       <Caption
         name={r.consultant}
         to={authorHref(r)}
-        text={r.caption}
+        text={null}
         comments={comments}
         onComments={() => setCommenting(true)}
       />
