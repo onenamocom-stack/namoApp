@@ -73,6 +73,16 @@ class TestForYou:
         ContentView.objects.create(content=seen, viewer_id=SEEKER)
         assert _ids(api_client.get(URL, **auth(seeker_token))) == [str(other.id), str(seen.id)]
 
+    def test_a_seen_post_comes_after_everything_new_even_a_followed_one(self, api_client, roster, seeker_token):
+        # 19 Oct 2026 (Rahul): seen goes behind all that is new, not just lower.
+        followed = _post(ADMIN)
+        _react(SEEKER, "profile", ADMIN, "follow")
+        quiet = _post(SECOND_SEEKER, minutes_ago=600)
+        ContentView.objects.create(content=followed, viewer_id=SEEKER)
+        body = api_client.get(URL, **auth(seeker_token)).json()["results"]
+        assert [r["id"] for r in body] == [str(quiet.id), str(followed.id)]
+        assert [r["seen"] for r in body] == [False, True]
+
     def test_popular_beats_quiet_when_nothing_else_differs(self, api_client, roster):
         quiet = _post(APPROVED)
         popular = _post(SECOND_SEEKER)

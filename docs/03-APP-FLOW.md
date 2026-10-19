@@ -254,8 +254,12 @@ takes its place like any other (12 Oct 2026, Rahul).
 and Reels are ordered for the reader; they were dealt at random. First come
 authors you follow, then authors whose posts you liked, saved, reshared or
 commented on, and the kind you engage with most (reel, photo, blog). Newer
-posts and more popular posts rank higher. A post you watched in the last two
-weeks sinks. The same author never shows twice in a row while there is
+posts and more popular posts rank higher. A post or reel you watched (two
+seconds on screen) in the last two weeks comes **after everything you have
+not seen**, in Home and in Reels alike (19 Oct 2026, Rahul; before, it only
+sank); Home puts a line where they begin: *You have seen everything new ·
+What you have seen before is below.* Signed out, the phone remembers its
+last 500 seen posts and orders the same way. The same author never shows twice in a row while there is
 another, and every fifth post is a random pick. Signed out, or with nothing
 liked or followed yet, the feed is fresh and popular posts. If the ranked
 feed fails to load, the old random deal stands in.

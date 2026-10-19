@@ -101,6 +101,7 @@ async function api(path, { method = 'GET', body, token } = {}) {
 function shape(row) {
   return {
     id: row.id,
+    seen: Boolean(row.seen),
     authorId: row.author_id,
     isConsultant: row.author_is_consultant,
     isCreator: Boolean(row.author_is_creator),
@@ -257,6 +258,38 @@ export function reshareToLead() {
    ranked request fail, the old random deal stands in. */
 const forYouCache = new Map()
 
+/* What this phone has seen (19 Oct 2026, Rahul: what you have seen goes
+   back in Home and Reels). The server knows a signed-in reader's views and
+   already orders by them; this covers a signed-out reader, and a view the
+   server has not been told about yet. The newest 500 ids. */
+const SEEN_KEY = 'namo:seen'
+const SEEN_MAX = 500
+
+function localSeen() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+function noteSeen(id) {
+  try {
+    const ids = [...localSeen()].filter((x) => x !== String(id))
+    ids.push(String(id))
+    localStorage.setItem(SEEN_KEY, JSON.stringify(ids.slice(-SEEN_MAX)))
+  } catch {
+    // Private window or storage off: the server's order stands.
+  }
+}
+
+/** New first, seen after, each in the order it came; marks `seen`. */
+function seenLast(rows) {
+  const mine = localSeen()
+  const marked = rows.map((r) => (r.seen || !mine.has(String(r.id)) ? r : { ...r, seen: true }))
+  return [...marked.filter((r) => !r.seen), ...marked.filter((r) => r.seen)]
+}
+
 async function fetchForYou(kinds, limit) {
   const token = await accessToken()
   const key = `${token ? 'in' : 'out'}:${(kinds ?? []).join(',')}:${limit}`
@@ -273,7 +306,7 @@ async function fetchForYou(kinds, limit) {
 export async function fetchFeed({ kinds, limit = 40, shuffle = false } = {}) {
   if (shuffle) {
     try {
-      return leadWithJustPosted([...(await fetchForYou(kinds, limit))])
+      return leadWithJustPosted(seenLast(await fetchForYou(kinds, limit)))
     } catch (err) {
       console.error('[feed] ranked feed failed, dealing at random:', err.message)
     }
@@ -434,6 +467,7 @@ export async function removeComment(commentId) {
  * — a failed count must not interrupt a reel.
  */
 export async function recordView(contentId) {
+  noteSeen(contentId)
   const token = await accessToken()
   if (!token) return null
   try {

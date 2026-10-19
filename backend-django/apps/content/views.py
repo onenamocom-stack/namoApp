@@ -90,6 +90,9 @@ def _public_row(row):
         "gallery": list(getattr(row, "gallery", None) or []),
         "caption": row.caption,
         "view_count": row.view_count,
+        # The reader watched it in the last two weeks (the for-you feed only;
+        # ranking.py puts these after everything new, 19 Oct 2026).
+        "seen": bool(getattr(row, "_seen", False)),
         "published_at": row.published_at,
         "like_count": row.like_count,
         "save_count": row.save_count,

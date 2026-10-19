@@ -16,11 +16,15 @@ The score:
                   for an account with nothing liked or followed yet.
   * popular     — likes, saves, comments, reshares and views, on a log
                   scale, against the most popular post in the deck.
-  * seen        — a post you watched in the last two weeks keeps a third
-                  of its score, so it sinks rather than vanishes.
 A small random jitter keeps two loads from being identical.
 
 The order:
+  * everything you have not seen first; a post you watched in the last
+    two weeks comes after all of them, in its own ranked order, so it
+    sinks below the new rather than vanishing (19 Oct 2026, Rahul: "jo
+    reel ya post hamne dekh li wo peeche chali jaani chahiye"; until
+    then a seen post only kept a third of its score). Each row carries
+    `_seen`, for the app's "you are all caught up" line;
   * no author twice in a row, while another author is left;
   * every fifth slot is a post drawn at random from the rest, so new and
     quiet authors are seen;
@@ -51,7 +55,6 @@ W_INTEREST = 2.5
 W_FRESH = 3.0
 FRESH_HALF_LIFE_HOURS = 48
 W_POPULAR = 1.5
-SEEN_KEEP = 0.3
 SEEN_DAYS = 14
 JITTER = 0.3
 EXPLORE_EVERY = 5  # slots 5, 10, 15 … are a random pick
@@ -143,8 +146,6 @@ def score(row, signals, *, now, top_popularity, rng):
     if top_popularity > 0:
         s += W_POPULAR * math.log1p(_popularity(row)) / math.log1p(top_popularity)
     s += rng.uniform(0, JITTER)
-    if str(row.id) in signals["seen"]:
-        s *= SEEN_KEEP
     return s
 
 
@@ -174,5 +175,8 @@ def for_you(qs, viewer_id, *, limit, rng=None):
     signals = viewer_signals(viewer_id)
     now = timezone.now()
     top = max(_popularity(r) for r in rows)
-    scored = [(score(r, signals, now=now, top_popularity=top, rng=rng), r) for r in rows]
-    return arrange(scored, rng=rng)[:limit]
+    fresh, seen = [], []
+    for r in rows:
+        r._seen = str(r.id) in signals["seen"]
+        (seen if r._seen else fresh).append((score(r, signals, now=now, top_popularity=top, rng=rng), r))
+    return (arrange(fresh, rng=rng) + arrange(seen, rng=rng))[:limit]

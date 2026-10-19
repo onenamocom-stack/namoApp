@@ -308,6 +308,8 @@ export default function Home() {
      buried them; they have their own tab now, which is what that splice was
      approximating. */
   const items = [...real, ...stillMock]
+  // Where the posts you have already seen begin (19 Oct 2026, Rahul).
+  const caughtUp = items.findIndex((it) => !it.by && it.data?.seen)
 
   if (!known) return <Navigate to="/home" replace />
   if (tab === 'darshan') return null // the effect above is already leaving
@@ -385,15 +387,27 @@ export default function Home() {
                   default:
                     return null
                 } })()
+                const withLine =
+                  i === caughtUp && i > 0 ? (
+                    <Fragment key={item.id}>
+                      <div className="border-b border-rule px-5 py-6 text-center">
+                        <p className="text-meta font-semibold t-heading">{t('home.caughtUp')}</p>
+                        <p className="mt-1 text-micro t-faint">{t('home.caughtUpSub')}</p>
+                      </div>
+                      {card}
+                    </Fragment>
+                  ) : (
+                    card
+                  )
                 // People to follow, once, after the fifth card (Phase 15a);
                 // Groups for you after the twelfth (14 Oct 2026, Rahul).
                 return i === 4 || i === 11 ? (
                   <Fragment key={item.id}>
-                    {card}
+                    {withLine}
                     {i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
                   </Fragment>
                 ) : (
-                  card
+                  withLine
                 )
               })}
             </div>
