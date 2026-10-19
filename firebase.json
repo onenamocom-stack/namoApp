@@ -4,7 +4,8 @@
       "target": "web",
       "public": "dist",
       "ignore": [
-        "**/.*"
+        "**/.DS_Store",
+        "**/.git*"
       ],
       "rewrites": [
         {

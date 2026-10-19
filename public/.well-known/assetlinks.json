@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.onenamo.app",
+      "sha256_cert_fingerprints": [
+        "A0:28:55:14:D0:D0:1A:7C:B9:8D:68:CA:30:27:28:33:EF:0B:BE:D8:C6:10:54:BB:C7:B5:78:63:D7:72:64:06"
+      ]
+    }
+  }
+]
