@@ -141,3 +141,20 @@ def test_reels_are_spread_evenly_and_never_twice_in_a_row(drive, settings):
     assert {str(a) for a in authors} == {AUTHOR, seeker}
     assert str(authors[0]) != str(authors[1])
     assert Profile.objects.get(pk=seeker).video_enabled is False
+
+
+@pytest.mark.django_db
+def test_every_account_gets_one_in_each_round(drive, settings):
+    """A round of N reels goes to N different accounts, whatever came before."""
+    ids = [AUTHOR] + [f"22222222-0000-0000-0000-00000000000{i}" for i in range(1, 4)]
+    for i, pid in enumerate(ids[1:]):
+        Profile.objects.create(id=pid, phone=f"r{i}", name=f"R{i}")
+    TREE["f3"] += [{"id": f"x{i}", "name": f"z{i}.mp4", "mimeType": "video/mp4", "size": "10"} for i in range(8)]
+    try:
+        settings.DRIVE_REELS_AUTHOR_IDS = ",".join(ids)
+        for _ in range(8):
+            drive_reels.post_one()
+        order = [str(a) for a in Content.objects.order_by("created_at").values_list("author_id", flat=True)]
+        assert set(order[:4]) == set(ids) and set(order[4:8]) == set(ids)
+    finally:
+        del TREE["f3"][-8:]

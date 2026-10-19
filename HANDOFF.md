@@ -6448,6 +6448,13 @@ a laptop.
   and a file whose Instagram id is already in any clip's file name on the
   app (the 49 seeded) is never queued.
 - **No bursts:** a time missed by more than an hour is dropped, not made up.
+- **Spread across six accounts since 19 Oct 2026** (owner): Rahul Jain,
+  Nitya Jain, Anand Ray, Avania Verma, Rudra Jain, Ramesh Kumar
+  (`DRIVE_REELS_AUTHOR_IDS`); Vishwas Jain to be added when his account
+  exists. Random rounds: each account one reel per six, in a new order.
+  Posted as the platform (role `admin`), so those accounts keep their own
+  video rights and posting limits. The job's image is built from a clean
+  worktree of the commit and set on `namo-post-reel` alone.
 - The job has only the database and media settings (copied from namo-api
   by the Cloud Run API, never printed). **All Cloud Run Jobs were moved to
   the current API image** — they had been pinned to the image of the day

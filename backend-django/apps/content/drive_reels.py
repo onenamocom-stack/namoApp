@@ -197,21 +197,17 @@ def authors():
 
 
 def pick_author(rng=random):
-    """Random, but even: one of the accounts that has had the fewest reels
-    from the folder so far, never the one that had the last."""
-    from .models import Content, DriveReel
+    """Random, in rounds: an account that has not had one of the last
+    (accounts − 1) reels, chosen at random — so every account gets one reel
+    in each round, in a new order each time, whatever came before (an
+    account with a head start is not skipped while the others catch up)."""
+    from .models import DriveReel
 
     ids = authors()
-    posted = list(DriveReel.objects.exclude(content=None).order_by("posted_at")
-                  .values_list("content__author_id", flat=True))
-    counts = {a: 0 for a in ids}
-    for a in posted:
-        if str(a) in counts:
-            counts[str(a)] += 1
-    last = str(posted[-1]) if posted else None
-    pool = [a for a in ids if not (a == last and len(ids) > 1)]
-    low = min(counts[a] for a in pool)
-    return rng.choice([a for a in pool if counts[a] == low])
+    recent = [str(a) for a in DriveReel.objects.exclude(content=None)
+              .order_by("-posted_at").values_list("content__author_id", flat=True)[:max(0, len(ids) - 1)]]
+    pool = [a for a in ids if a not in recent] or [a for a in ids if not recent or a != recent[0]] or ids
+    return rng.choice(pool)
 
 
 def post_one(token=None, now=None):
