@@ -6532,3 +6532,24 @@ https://1namo.com/ — every web deploy is the app; no app update needed.
 - **Still to do:** after the first upload, add Play App Signing's SHA-256
   (Play Console → App integrity) to `assetlinks.json`, or Play installs open
   with an address bar. Store listing, Data safety, Content rating.
+
+## 85. Faster first loads: the API stays warm, pages cached at the CDN — 19 Oct 2026
+
+Owner's yes (both, and the cost). Measured before: `/` and the share pages
+are served by the API (firebase.json rewrites), and with `minScale=0` the
+first visit after a quiet spell woke a stopped server (3–8 s); every page's
+HTML waited ~0.5–1 s with `Cache-Control: no-cache`, `X-Cache: MISS`.
+
+- **namo-api `minScale=1`** (revision 00181 on; ~₹800–1,200 a month with CPU
+  throttling). A `gcloud run deploy` keeps it.
+- **HTML at the CDN:** `firebase.json` `**` → `public, max-age=0,
+  s-maxage=3600` (was `no-cache`); `apps/content/share.py` pages →
+  `PAGE_CACHE` `public, max-age=0, s-maxage=300`. Browsers still ask every
+  load; Firebase's CDN answers (measured `X-Cache: HIT`, 0.03–0.07 s). A
+  deploy clears the CDN, so a release shows at once; a console Link card or
+  an edited post title shows within the hour at worst.
+- Shipped from a worktree of the live web commit `3944d20` with only
+  `firebase.json` changed (`8e815fd`, the chat Report, was not live and
+  still waits for its "ship"); API `00182` from main.
+- **Not done (owner chose 1 and 3):** splitting the 1.1 MB `index.js` by
+  route, `media.1namo.com`, moving the API to Singapore.
