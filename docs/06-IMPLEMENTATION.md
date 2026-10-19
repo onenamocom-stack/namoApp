@@ -757,9 +757,9 @@ Order, each part shipped on its own:
   decides: adult or violence VERY_LIKELY → `rejected`, files deleted, the
   same file refused at `init` for good; adult POSSIBLE or more, violence
   or racy LIKELY or more, or no verdict (Vision failed) → the console's
-  **Videos to review** queue; clear → `live` for an approved Pro or
-  Creator, and for anybody else once they have 3 live videos (their first
-  3 wait in the queue). The queue shows the sheet and the verdict;
+  **Videos to review** queue; clear → `live` for anybody (19 Oct 2026,
+  Rahul; until then everybody but an approved Pro or Creator had their
+  first 3 wait in the queue). The queue shows the sheet and the verdict;
   Approve puts the file and its copies live, Reject deletes them. The
   Vision API is enabled on the project (18 Oct 2026); the worker's
   service account is the credential.

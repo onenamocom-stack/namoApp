@@ -1,8 +1,8 @@
 """The video review queue (part E, 17 Oct 2026; docs/06 Phase 19).
 
-What waits here: a video SafeSearch was unsure of, one it could not
-check, and the first 3 videos of anybody who is not an approved Pro or a
-Creator. Each row shows the moderation sheet (a frame every 10 seconds,
+What waits here: a video SafeSearch was unsure of, and one it could not
+check. A clear video goes live for anybody (19 Oct 2026; before, a new
+account's first 3 waited here too). Each row shows the moderation sheet (a frame every 10 seconds,
 nine to an image) beside SafeSearch's verdict. Approve puts the file and
 every copy of it live; Reject deletes its files and refuses the same file
 for good. Oldest first, in-review only by default.

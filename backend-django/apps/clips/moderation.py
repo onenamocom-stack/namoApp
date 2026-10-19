@@ -7,16 +7,15 @@ this decides what happens:
   doubt      adult POSSIBLE or more, violence or racy LIKELY or more, or
              no verdict at all (Vision failed, moderation off) → the
              console's review queue (`in_review`)
-  clear      an approved Pro or a Creator → `live`; anybody else → `live`
-             too, except while they have fewer than 3 live videos, which
-             wait in the queue
+  clear      → `live`, for everybody. Until 19 Oct 2026 anybody but an
+             approved Pro or a Creator had their first 3 videos wait in
+             the queue; Rahul: "approval ke baad live hoti hai. Wo hata do"
 
 SafeSearch sees frames only: it does not hear audio or read hate speech,
 and nothing between two frames. Reports cover that.
 """
 
 LEVELS = ("UNKNOWN", "VERY_UNLIKELY", "UNLIKELY", "POSSIBLE", "LIKELY", "VERY_LIKELY")
-FIRST_REVIEWED = 3
 
 CLEAR, DOUBT, VIOLATION = "clear", "doubt", "violation"
 
@@ -40,14 +39,10 @@ def judge(verdict):
 
 def status_for(video, outcome):
     """Where one row goes, given the file's outcome and its owner."""
-    from .models import Video, VideoStatus
-    from .services import _verified
+    from .models import VideoStatus
 
     if outcome == VIOLATION:
         return VideoStatus.REJECTED
     if outcome == DOUBT:
         return VideoStatus.IN_REVIEW
-    if _verified(video.user_id):
-        return VideoStatus.LIVE
-    earlier = Video.objects.filter(user_id=video.user_id, status=VideoStatus.LIVE).exclude(pk=video.pk).count()
-    return VideoStatus.IN_REVIEW if earlier < FIRST_REVIEWED else VideoStatus.LIVE
+    return VideoStatus.LIVE

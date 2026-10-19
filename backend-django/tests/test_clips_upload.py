@@ -264,11 +264,8 @@ class TestModeration:
         row = self._encoded(api_client, token, CLEAR)
         assert row.status == "live" and row.moderation["outcome"] == "clear"
 
-    def test_anybody_else_waits_for_their_first_three(self, api_client, token, me):
-        for i in range(3):
-            row = self._encoded(api_client, token, CLEAR, sha=f"{i}" * 64)
-            assert row.status == "in_review"
-            services.approve(row)
+    def test_anybody_goes_live_without_waiting_when_clear(self, api_client, token, me):
+        # No first-three review since 19 Oct 2026 (Rahul).
         assert self._encoded(api_client, token, CLEAR, sha="d" * 64).status == "live"
 
     def test_doubtful_frames_wait_even_for_a_creator(self, api_client, token, me):
@@ -291,7 +288,8 @@ class TestModeration:
         Profile.objects.create(id=OTHER_USER, phone="9000000002", name="Other")
         other = sign_hs256(claims=make_claims(sub=OTHER_USER))
         twin = Video.objects.get(pk=_init(api_client, other).json()["id"])
-        assert twin.status == "in_review"
+        # A clear file is live for anybody since 19 Oct 2026; a moderator can still reject it.
+        assert twin.status == "live"
         assert services.reject(twin, by="mod") == 2
         for v in (row, twin):
             v.refresh_from_db()
@@ -360,7 +358,7 @@ class TestPost:
         assert got.status_code == 201 and got.json()["status"] == "draft"
         post = Content.objects.get(pk=got.json()["id"])
         assert post.video_id == row.id and post.media_url is None
-        self._encode(api_client, row, CLEAR)  # a first video: the queue
+        self._encode(api_client, row, {**CLEAR, "racy": "LIKELY"})  # doubtful: the queue
         post.refresh_from_db()
         assert post.status == "draft" and post.media_url == f"https://media.test/v/{row.id}/master.m3u8"
         services.approve(Video.objects.get(pk=row.id))
