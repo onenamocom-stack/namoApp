@@ -25,8 +25,11 @@ import { useStore } from '../store.jsx'
  */
 const BEAT_MS = 30_000
 
-export default function PresenceToggle({ big = false }) {
-  const { isPro, session, showToast } = useStore()
+export default function PresenceToggle({ big = false, floating = false }) {
+  const { isPro: proSide, session, showToast, consultant } = useStore()
+  // The floating pill shows on the main app's pages too, to an approved
+  // consultant only (19 Oct 2026, Rahul).
+  const isPro = proSide || (floating && consultant?.status === 'approved')
   const [state, setState] = useState(null)
   const [busy, setBusy] = useState(false)
   // The last state we rendered, so the interval can beat with the current
@@ -86,6 +89,27 @@ export default function PresenceToggle({ big = false }) {
         : ring === 'denied'
           ? 'You are online, but notifications are blocked — calls ring only while the app is open. Allow notifications for this site in your browser settings.'
           : 'You are online. Calls ring while the app is open.',
+    )
+  }
+
+  /* Over every tab page of the main app, above Home's + (19 Oct 2026,
+     Rahul): a Pro stays online anywhere in the app now, so the switch has to
+     be in sight anywhere too. */
+  if (floating) {
+    return (
+      <button
+        type="button"
+        onClick={flip}
+        disabled={busy}
+        aria-pressed={on}
+        aria-label={on ? 'You are online. Go offline.' : 'You are offline. Go online.'}
+        className={`pointer-events-auto flex h-9 items-center gap-1.5 rounded-full px-3 shadow-[0_5px_14px_rgba(0,0,0,0.22)] transition-transform active:scale-95 disabled:opacity-70 ${
+          on ? 'bg-[#30a46c] text-white' : 'bg-white text-t2 ring-1 ring-rule'
+        }`}
+      >
+        <span aria-hidden="true" className={`block h-2 w-2 rounded-full ${on ? 'animate-pulse bg-white' : 'bg-t4'}`} />
+        <span className="caps-sm">{on ? 'Online' : 'Offline'}</span>
+      </button>
     )
   }
 

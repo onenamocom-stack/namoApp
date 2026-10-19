@@ -2033,6 +2033,9 @@ whole screen** on any page, as a phone call does: the caller's initial and
 name, Audio / Video call or Chat and the rate, a red Decline left and a green
 Answer right, ringing and vibrating. Others waiting show as a line under it.
 On a call already, a new request is a quiet line at the top instead.
+The switch is in sight there too: an approved consultant sees a small
+**Online / Offline** pill (green when online) over every tab page of the main
+app, above Home's +; a tap flips it, the same switch as the Desk's.
 
 | What the seeker sees | When |
 |---|---|

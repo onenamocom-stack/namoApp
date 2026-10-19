@@ -44,7 +44,7 @@ import Call from './screens/Call.jsx'
 import Connect from './screens/Connect.jsx'
 import { useReloadIntoNewBuild } from './lib/update.js'
 import IncomingCall from './components/IncomingCall.jsx'
-import { PresenceKeeper } from './components/PresenceToggle.jsx'
+import PresenceToggle, { PresenceKeeper } from './components/PresenceToggle.jsx'
 import Horoscope from './screens/Horoscope.jsx'
 import Ask from './screens/Ask.jsx'
 import Chart from './screens/Chart.jsx'
@@ -122,6 +122,13 @@ function TabLayout() {
           <Outlet />
         </Boundary>
       </main>
+      {/* A Pro's Online / Offline, above Home's + on every tab page (19 Oct
+          2026, Rahul); nothing for anybody else. */}
+      <div className="pointer-events-none relative z-30 h-0">
+        <div className="absolute bottom-[72px] right-4">
+          <PresenceToggle floating />
+        </div>
+      </div>
       <BottomNav />
     </>
   )
