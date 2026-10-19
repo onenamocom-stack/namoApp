@@ -1,4 +1,5 @@
 import Plate from './Plate.jsx'
+import { useStore } from '../store.jsx'
 
 /**
  * The Market's home layout (15 Oct 2026, Rahul's reference): on All, every
@@ -52,9 +53,11 @@ export function MarketPrice({ price, mrp, free }) {
 }
 
 /** `art` is the picture, already sized by the caller (a product's photo, a
- *  book's cover); `lines` the grey rows under the name; `price` a
- *  MarketPrice. */
-export function MarketCard({ art, name, lines = [], price = null, onOpen, id, corner = null }) {
+ *  book's cover); `seller` who sells it, shown as "Sold by: …" (19 Oct 2026,
+ *  Rahul); `lines` the grey rows under it; `price` a MarketPrice. */
+export function MarketCard({ art, name, seller = null, lines = [], price = null, onOpen, id, corner = null }) {
+  const { t } = useStore()
+  if (seller) lines = [t('shop.soldBy', { name: seller }), ...lines]
   return (
     <li id={id}>
       <button type="button" onClick={onOpen} className="pop-tap block w-full text-left">
@@ -88,7 +91,8 @@ export function ListingCard({ row, onOpen, free = 'Free', corner = null }) {
         )
       }
       name={row.title}
-      lines={[row.seller?.name, what]}
+      seller={row.seller?.name}
+      lines={[what]}
       price={<MarketPrice price={row.price_paise / 100} mrp={row.mrp_paise ? row.mrp_paise / 100 : null} free={free} />}
       onOpen={onOpen}
       corner={corner}

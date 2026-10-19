@@ -69,7 +69,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
               )
             }
             name={d.title}
-            lines={[d.artist]}
+            seller={d.artist}
             price={
               <MarketPrice
                 price={d.pricePaise ? d.pricePaise / 100 : 0}

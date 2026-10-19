@@ -520,7 +520,8 @@ export default function Shop() {
                   art={<ProductArt product={p} className={`h-full w-full ${focusId === p.id ? focusRing : ''}`} />}
                   name={p.name}
                   corner={<CardCorner product={p} />}
-                  lines={[p.brand || 'Namo', p.soldOut && t('shop.soldOut')]}
+                  seller={p.brand || 'Namo'}
+                  lines={[p.soldOut && t('shop.soldOut')]}
                   price={!p.soldOut && <MarketPrice price={p.price} mrp={p.mrp} />}
                   onOpen={() => navigate(productHref(p))}
                 />

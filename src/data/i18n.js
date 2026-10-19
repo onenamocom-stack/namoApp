@@ -632,6 +632,7 @@ export const strings = {
   },
   'shop.linked': { en: 'Linked', hi: 'लिंक से' },
   'shop.soldOut': { en: 'Sold out', hi: 'स्टॉक ख़त्म' },
+  'shop.soldBy': { en: 'Sold by: {name}', hi: 'विक्रेता: {name}' },
   'shop.namedBy': { en: 'Named by {name}', hi: '{name} का सुझाव' },
   'shop.add': { en: 'Add', hi: 'जोड़ें' },
   'shop.buy': { en: 'Buy', hi: 'खरीदें' },

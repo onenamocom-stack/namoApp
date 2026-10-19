@@ -195,7 +195,7 @@ export default function DownloadPage() {
                 )
               }
               name={x.title}
-              lines={[x.artist]}
+              seller={x.artist}
               price={
                 <MarketPrice
                   price={x.pricePaise ? x.pricePaise / 100 : 0}
