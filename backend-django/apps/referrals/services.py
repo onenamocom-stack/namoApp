@@ -58,12 +58,15 @@ def code_for(profile_id, kind):
     row = ReferralCode.objects.filter(profile_id=profile_id, kind=kind).first()
     if row:
         return row
+    # One code per person (19 Oct 2026): their other programme's, if any.
+    mine = ReferralCode.objects.filter(profile_id=profile_id).values_list("code", flat=True).first()
 
-    for _ in range(5):
+    for _ in range(20):
+        code = mine or _fresh_code()
         try:
             with transaction.atomic():
                 return ReferralCode.objects.create(
-                    profile_id=profile_id, kind=kind, code=mint(kind)
+                    profile_id=profile_id, kind=kind, code=code
                 )
         except IntegrityError:
             # Either the code collided or this person raced themselves in
@@ -77,14 +80,34 @@ def code_for(profile_id, kind):
     raise RuntimeError("could not mint a referral code")
 
 
-def resolve(code):
+def _fresh_code():
+    """Four characters nobody holds, and no shop coupon is called (the
+    basket's one box tries a referral code first)."""
+    from apps.shop.models import Coupon
+
+    for _ in range(50):
+        code = mint()
+        if not ReferralCode.objects.filter(code=code).exists() and \
+                not Coupon.objects.filter(code__iexact=code).exists():
+            return code
+    raise RuntimeError("could not mint a referral code")
+
+
+def resolve(code, kind=None):
     """A typed code to its row, or None. Case and spacing are the user's
     problem to get wrong and ours to forgive — these get read off
-    screenshots and over the phone."""
+    screenshots and over the phone.
+
+    One person's two rows share a code (19 Oct 2026), so the caller says
+    which programme it is asking about; that row if there is one, else the
+    other, so a wrong-place code still gets its own sentence. Without
+    `kind`, the consultant's row first: every money path asks for it."""
     cleaned = (code or "").strip().replace(" ", "").replace("-", "").upper()
     if not cleaned:
         return None
-    return ReferralCode.objects.filter(code=cleaned).first()
+    rows = list(ReferralCode.objects.filter(code=cleaned))
+    want = kind or ReferralCode.Kind.CONSULTANT
+    return next((r for r in rows if r.kind == want), rows[0] if rows else None)
 
 
 # ── sign-up: seeker brings a seeker ─────────────────────────────────────────
@@ -142,7 +165,7 @@ def claim_signup(referee_id, code, now=None):
     sign-up has not done anything wrong — they have used the right code in
     the wrong place, and the fix is one sentence away.
     """
-    row = resolve(code)
+    row = resolve(code, ReferralCode.Kind.SEEKER)
     if row is None:
         return {"ok": False, "reason": REFUSAL_UNKNOWN_CODE}
     if not row.active:
@@ -922,7 +945,10 @@ def describe_code(code, viewer_id=None, subtotal_paise=0, lines=None, payment=No
     can know, since there is no session yet to check "your own code" or
     "already used one" against. With it, every rule is applied.
     """
-    row = resolve(code)
+    # A basket means checkout, where a code is a coupon; none means
+    # onboarding, where it is a sign-up code (one code serves both).
+    at_checkout = bool(lines) or bool(subtotal_paise) or payment is not None
+    row = resolve(code, ReferralCode.Kind.CONSULTANT if at_checkout else ReferralCode.Kind.SEEKER)
     if row is None:
         return {"ok": False, "kind": None, "reason": REFUSAL_UNKNOWN_CODE}
     if not row.active:

@@ -4,10 +4,13 @@
  * TWO PROGRAMMES, AND THEY ARE NOT THE SAME THING — the server enforces
  * the difference, this file only has to render it:
  *
- *   N… a seeker's code       typed at sign-up. Both sides get extra free
- *                            AI questions for three days. No money.
- *   A… a consultant's code   used at shop checkout on a FIRST order.
- *                            Both sides get 10% back, after delivery.
+ *   at sign-up               both sides get extra free AI questions for
+ *                            three days. No money.
+ *   at checkout (a Pro's)    both sides get 10% back, after delivery.
+ *
+ * One four-character code per person serves both since 19 Oct 2026
+ * (Rahul); it was N… for sign-up and A… for a consultant. Where it is
+ * typed says which applies, and the server decides.
  *
  * THE 10% IS CASHBACK, NEVER A DISCOUNT. The order is paid in full and
  * the money arrives afterwards as wallet credit. Nothing here may render
@@ -166,7 +169,8 @@ export async function checkCode(code, subtotalPaise = 0, { lines, payment } = {}
  * never a wrong price.
  */
 export function looksLikeReferral(code) {
-  return /^[NA][23456789ABCDEFGHJKMNPQRSTUVWXYZ]{7}$/i.test((code || '').trim())
+  // Four characters, no prefix, one per person (19 Oct 2026, Rahul).
+  return /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/i.test((code || '').trim())
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -189,7 +193,8 @@ const RETURN_HOURS = 24
 export function catchAffiliateLink(search, pathname = '') {
   const params = new URLSearchParams(search)
   const code = (params.get('ref') || '').trim().toUpperCase()
-  if (!looksLikeReferral(code) || !code.startsWith('A')) return false
+  // Any code: the server records the visit only for a consultant's.
+  if (!looksLikeReferral(code)) return false
   const product = params.get('p')
   if (pathname.startsWith('/shop')) {
     try {

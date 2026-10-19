@@ -152,7 +152,7 @@ export default function AskPhone() {
             value={birth.referralCode ?? ''}
             onChange={(v) => setBirthField('referralCode', v.trim())}
             label="Referral code · optional"
-            placeholder="NXXXXXXX"
+            placeholder="XXXX"
             hint="Invited by someone? You both get three free questions a day for three days."
           />
         </div>

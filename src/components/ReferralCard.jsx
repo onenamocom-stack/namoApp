@@ -103,7 +103,7 @@ export default function ReferralCard() {
               value={typed}
               onChange={setTyped}
               label="Their code"
-              placeholder="NXXXXXXX"
+              placeholder="XXXX"
               hint="Once per account. An astrologer's shop coupon goes in at checkout instead."
             />
           </div>

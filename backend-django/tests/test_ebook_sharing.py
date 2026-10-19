@@ -35,7 +35,7 @@ class TestTagsAndLinks:
     def test_the_link_opens_the_download(self, creator, book, settings):
         settings.APP_PUBLIC_URL = "https://1namo.com"
         link = referrals.affiliate_link(CREATOR, ebook_id=book.id)
-        assert link["url"].startswith(f"https://1namo.com/shop/d/{book.id}?ref=A")
+        assert link["url"] == f"https://1namo.com/shop/d/{book.id}?ref={link['code']}"
 
     def test_a_post_tags_an_ebook_and_carries_the_code(self, creator, book):
         from apps.content import services as content

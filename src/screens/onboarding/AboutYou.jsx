@@ -342,7 +342,7 @@ export default function AboutYou() {
               value={referral}
               onChange={setReferral}
               label={t('d.referral')}
-              placeholder="NXXXXXXX"
+              placeholder="XXXX"
               hint="Invited by someone? You both get three free questions a day for three days."
             />
           ) : (

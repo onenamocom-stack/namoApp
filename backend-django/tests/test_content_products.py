@@ -153,7 +153,7 @@ class TestReading:
         assert row["products"][0]["price_paise"] == 185_000
         code = ReferralCode.objects.get(profile_id=APPROVED, kind=CodeKind.CONSULTANT)
         assert row["shop_ref"] == code.code
-        assert row["shop_ref"].startswith("A")
+        assert len(row["shop_ref"]) == 4  # four characters since 19 Oct 2026
 
     def test_untagged_row_is_empty_and_null(
         self, api_client, consultant_token, roster

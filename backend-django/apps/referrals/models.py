@@ -27,26 +27,25 @@ from django.utils import timezone
 # screenshot, and written on paper — every pair this drops is a pair
 # somebody would eventually mistype into a stranger's code.
 ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
-BODY_LENGTH = 7
+# Four characters, one per person for both programmes, no prefix (19 Oct
+# 2026, Rahul: "4 digit kar do. Sabko ek he"). It was a prefix (N a seeker,
+# A a consultant) and seven random. 31^4 is about 920,000; `code_for` checks
+# a new one against every code and shop coupon before it is given.
+CODE_LENGTH = 4
 
 
 class CodeKind(models.TextChoices):
-    """The prefix says which app issued it, at a glance and in a support
-    ticket. One character, and the rest is random."""
+    """Which programme a row is for. One person's rows for both carry the
+    same code since 19 Oct 2026: where it is typed says which applies."""
 
-    SEEKER = "seeker", "Seeker — N"
-    CONSULTANT = "consultant", "Consultant — A"
-
-
-PREFIX = {CodeKind.SEEKER: "N", CodeKind.CONSULTANT: "A"}
+    SEEKER = "seeker", "Seeker (sign-up)"
+    CONSULTANT = "consultant", "Consultant (link and coupon)"
 
 
-def mint(kind):
-    """Eight characters: one prefix, seven random. 31^7 is about 27
-    billion, so collisions are a formality the unique index handles rather
-    than something the generator has to reason about."""
-    body = "".join(secrets.choice(ALPHABET) for _ in range(BODY_LENGTH))
-    return f"{PREFIX[kind]}{body}"
+def mint(kind=None):
+    """Four random characters. Uniqueness is `code_for`'s check, not the
+    odds: at four characters a collision is a real event."""
+    return "".join(secrets.choice(ALPHABET) for _ in range(CODE_LENGTH))
 
 
 class ReferralCode(models.Model):
@@ -66,7 +65,10 @@ class ReferralCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile_id = models.UUIDField()
     kind = models.CharField(max_length=16, choices=CodeKind.choices)
-    code = models.CharField(max_length=16, unique=True)
+    # Unique per programme, not overall: one person's seeker and consultant
+    # rows share it (19 Oct 2026). That no two PEOPLE share one is
+    # `code_for`'s check.
+    code = models.CharField(max_length=16)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -78,6 +80,7 @@ class ReferralCode(models.Model):
             models.UniqueConstraint(
                 fields=["profile_id", "kind"], name="referral_codes_one_per_kind"
             ),
+            models.UniqueConstraint(fields=["code", "kind"], name="referral_codes_code_kind"),
             models.CheckConstraint(
                 condition=models.Q(kind__in=CodeKind.values),
                 name="referral_codes_kind_check",

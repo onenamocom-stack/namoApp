@@ -1135,9 +1135,10 @@ day, with no picker for the other eleven (4 Oct 2026; they remain on
 `/horoscope`). The panchang header no longer says "Computed at Ujjain".
 
 ### Sign-up links
-`/#/onboarding?ref=N…` stores the code for the visit; the details page opens its
-referral field already filled, and claims it on submit. Only N (invite) codes —
-an A code is a shop coupon and belongs to the cart.
+`/onboarding?ref=…` stores the code for the visit; the details page opens its
+referral field already filled, and claims it on submit. Codes are four
+characters, one per person, since 19 Oct 2026 (Rahul): a Pro's code works at
+sign-up too, and the server decides whether it applies.
 
 **A Pro's or Creator's Market link opened signed out** (16 Oct 2026, Rahul):
 the app notes the page (`/shop/p/…`, `/shop/l/…`, `/shop/d/…`, with its

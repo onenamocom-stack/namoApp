@@ -2182,19 +2182,20 @@ plus two columns on `ai_quota`.
 
 ### `referral_codes`
 
-`profile_id`, `kind`, `code` unique, `active`, unique on (profile_id, kind).
+`profile_id`, `kind`, `code`, `active`; unique on (profile_id, kind) and on
+(code, kind) (`referrals/0005`, 19 Oct 2026).
 
-**Eight characters: one prefix, seven random**, from a 31-letter alphabet
-with **0, O, 1, I and L removed**. These get read aloud on calls, typed
-off screenshots and written on paper; every confusable pair dropped is a
-pair somebody would eventually mistype into a stranger's code. 31⁷ ≈ 27
-billion, so the unique index handles collisions as a formality rather
-than something the generator reasons about.
-
-`N…` is a seeker's, `A…` an approved consultant's. **A person can hold
-both** — a seeker who is later approved keeps the N code they may already
-have shared and gains an A code. Re-prefixing the old one would silently
-break every link already written down.
+**Four characters, no prefix, one per person** (19 Oct 2026, Rahul: "4 digit
+kar do. Sabko ek he. Aur purane band kar do"), from a 31-letter alphabet with
+**0, O, 1, I and L removed** — read aloud, typed off screenshots. A person
+with both programmes has two rows (`seeker`, `consultant`) carrying the same
+code; where it is typed decides which applies (sign-up asks for the seeker
+row, checkout and links for the consultant's). That no two people share a
+code is `code_for`'s check against every code and shop coupon (31⁴ ≈
+920,000). It replaced eight characters (N or A, then seven) the same day:
+`0005` gave everybody holding a code a new one, moved open affiliate visits
+to it, and the old codes stopped working; `referrals.code` keeps the old one
+as history.
 
 Minted lazily, on first ask. Most people never share one, and a code
 nobody sees is a row nobody needs.

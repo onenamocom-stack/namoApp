@@ -49,13 +49,13 @@ export default function Welcome() {
   const [digits, setDigits] = useState('')
   const [phone, setPhone] = useState('') // set once a code has been sent
 
-  /* A sign-up link (`/onboarding?ref=N…`, what an influencer or a friend
+  /* A sign-up link (`/onboarding?ref=…`, what an influencer or a friend
      shares) carries their code. Kept for this visit and filled in on the
-     details page, where it is claimed (3 Oct 2026). Only seeker codes: an A
-     code is a shop coupon and belongs to the cart. */
+     details page, where it is claimed (3 Oct 2026). One code per person
+     since 19 Oct 2026: the server says whether it applies at sign-up. */
   useEffect(() => {
     const ref = (params.get('ref') || '').trim().toUpperCase()
-    if (!looksLikeReferral(ref) || !ref.startsWith('N')) return
+    if (!looksLikeReferral(ref)) return
     try {
       sessionStorage.setItem(SIGNUP_REF_KEY, ref)
     } catch {

@@ -81,7 +81,7 @@ class TestStats:
             {"joined_on": "2026-10-04", "bought_on": None},
             {"joined_on": "2026-10-02", "bought_on": "2026-10-03"},
         ]
-        assert body["code"].startswith("N")
+        assert len(body["code"]) == 4  # four characters since 19 Oct 2026
         assert body["link"].endswith(f"/onboarding?ref={body['code']}")
 
 

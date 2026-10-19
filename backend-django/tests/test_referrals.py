@@ -81,13 +81,13 @@ def _code(profile_id, kind):
 
 @pytest.mark.django_db
 class TestCodes:
-    def test_a_seeker_code_starts_with_N_and_a_consultant_code_with_A(self, people):
-        assert _code(BUYER, ReferralCode.Kind.SEEKER).startswith("N")
-        assert _code(PRO, ReferralCode.Kind.CONSULTANT).startswith("A")
+    def test_two_people_never_share_a_code(self, people):
+        assert _code(BUYER, ReferralCode.Kind.SEEKER) != _code(PRO, ReferralCode.Kind.CONSULTANT)
 
-    def test_codes_are_eight_characters_and_avoid_confusable_letters(self, people):
+    def test_codes_are_four_characters_and_avoid_confusable_letters(self, people):
+        # Four, no prefix, since 19 Oct 2026 (Rahul); it was N or A and seven.
         code = _code(BUYER, ReferralCode.Kind.SEEKER)
-        assert len(code) == 8
+        assert len(code) == 4
         # These get read aloud and typed off screenshots. Every pair
         # dropped is a pair somebody would mistype into a stranger's code.
         assert not set(code) & set("01OIL")
@@ -97,18 +97,24 @@ class TestCodes:
             BUYER, ReferralCode.Kind.SEEKER
         )
 
-    def test_a_consultant_holds_both_codes(self, people):
-        """They keep the seeker code they may already have shared, and gain
-        the A code. Re-prefixing the old one would break every link
-        already written down."""
+    def test_a_consultant_has_one_code_for_both(self, people):
+        """One code per person (19 Oct 2026, Rahul: "Sabko ek he"): where it
+        is typed says which programme it is — sign-up or checkout."""
         seeker = _code(PRO, ReferralCode.Kind.SEEKER)
         consultant = _code(PRO, ReferralCode.Kind.CONSULTANT)
-        assert seeker != consultant
+        assert seeker == consultant
         assert ReferralCode.objects.filter(profile_id=PRO).count() == 2
+        assert services.resolve(seeker, ReferralCode.Kind.SEEKER).kind == ReferralCode.Kind.SEEKER
+        assert services.resolve(seeker).kind == ReferralCode.Kind.CONSULTANT
+
+    def test_a_pros_code_brings_a_seeker_at_sign_up(self, people):
+        code = _code(PRO, ReferralCode.Kind.CONSULTANT)
+        _code(PRO, ReferralCode.Kind.SEEKER)
+        assert services.claim_signup(FRIEND, code)["ok"]
 
     def test_a_typed_code_is_forgiven_its_case_and_spacing(self, people):
         code = _code(PRO, ReferralCode.Kind.CONSULTANT)
-        for typed in (code.lower(), f" {code} ", f"{code[:4]}-{code[4:]}"):
+        for typed in (code.lower(), f" {code} ", f"{code[:2]}-{code[2:]}"):
             assert services.resolve(typed).code == code
 
 
@@ -377,7 +383,7 @@ class TestTheCap:
 class TestAffiliateLinks:
     def test_a_consultant_gets_a_link_with_their_code_in_it(self, people, product):
         link = services.affiliate_link(PRO, product.id)
-        assert link["code"].startswith("A")
+        assert len(link["code"]) == 4
         assert f"ref={link['code']}" in link["url"]
         # The product's own page (11 Oct 2026), which previews with its photo.
         assert f"/shop/p/{product.slug}?ref=" in link["url"]

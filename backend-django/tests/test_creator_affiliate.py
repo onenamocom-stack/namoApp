@@ -76,9 +76,9 @@ class TestCreatorAffiliate:
     def test_codes_link_and_book_over_the_api(self, api_client, sign_hs256, hs256_mode, creator):
         headers = _auth(sign_hs256, CREATOR)
         codes = api_client.get("/v1/referrals/me/", **headers).json()["codes"]
-        assert codes["consultant"].startswith("A")
+        assert len(codes["consultant"]) == 4
         link = api_client.post("/v1/referrals/link/", {}, format="json", **headers)
-        assert link.status_code == 200 and "ref=A" in link.json()["url"]
+        assert link.status_code == 200 and f"ref={codes['consultant']}" in link.json()["url"]
         book = api_client.get("/v1/referrals/creator-earnings/", **headers).json()
         assert book["lifetime_paise"] == 0 and book["pending_paise"] == 0
         seeker = _auth(sign_hs256, BUYER)
