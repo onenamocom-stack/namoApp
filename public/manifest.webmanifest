@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Namo – Hindu Social Network",
+  "short_name": "Namo",
+  "description": "Connecting Bharat. Daily darshan, bhajans, astrologers, the shop and your community in one app.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#f5782c",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
