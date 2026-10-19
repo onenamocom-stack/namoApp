@@ -125,7 +125,7 @@ function TabLayout() {
       {/* A Pro's Online / Offline, above Home's + on every tab page (19 Oct
           2026, Rahul); nothing for anybody else. */}
       <div className="pointer-events-none relative z-30 h-0">
-        <div className="absolute bottom-[72px] right-4">
+        <div className="absolute bottom-[86px] right-4">
           <PresenceToggle floating />
         </div>
       </div>

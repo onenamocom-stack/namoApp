@@ -103,12 +103,14 @@ export default function PresenceToggle({ big = false, floating = false }) {
         disabled={busy}
         aria-pressed={on}
         aria-label={on ? 'You are online. Go offline.' : 'You are offline. Go online.'}
-        className={`pointer-events-auto flex h-9 items-center gap-1.5 rounded-full px-3 shadow-[0_5px_14px_rgba(0,0,0,0.22)] transition-transform active:scale-95 disabled:opacity-70 ${
+        // Upright and narrow, the + button's width, clear above it (19 Oct
+        // 2026, Rahul: it sat over the +).
+        className={`pointer-events-auto flex w-12 flex-col items-center gap-1 rounded-2xl py-2 shadow-[0_5px_14px_rgba(0,0,0,0.22)] transition-transform active:scale-95 disabled:opacity-70 ${
           on ? 'bg-[#30a46c] text-white' : 'bg-white text-t2 ring-1 ring-rule'
         }`}
       >
         <span aria-hidden="true" className={`block h-2 w-2 rounded-full ${on ? 'animate-pulse bg-white' : 'bg-t4'}`} />
-        <span className="caps-sm">{on ? 'Online' : 'Offline'}</span>
+        <span className="text-[9px] font-bold uppercase leading-none tracking-[0.06em]">{on ? 'Online' : 'Offline'}</span>
       </button>
     )
   }
