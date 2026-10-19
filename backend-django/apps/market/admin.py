@@ -46,12 +46,46 @@ def _seller_cell(seller_id):
     return format_html("<strong>{}</strong><br><small>{}</small>", s["name"], tag)
 
 
+def _category_choices():
+    from apps.shop.models import ShopCategory
+
+    names = ShopCategory.objects.order_by("sort", "name").values_list("name", flat=True)
+    return [("", "—")] + [(n, n) for n in names]
+
+
 class ListingForm(forms.ModelForm):
+    """The decision, and every field the seller filled, corrected here
+    (19 Oct 2026, Rahul: "admin can change the product field ... otherwise
+    for every change he has to send product back to seller"). Prices in
+    rupees. The file and the lessons stay the seller's."""
+
     decision = forms.ChoiceField(
         label="Decision", required=False,
         choices=(("", "Leave as it is"), ("approve", "Approve — put it on the Market"),
                  ("reject", "Reject — send back with the note below")),
     )
+    title_text = forms.CharField(label="Name", max_length=200, widget=forms.TextInput(attrs={"size": 80}))
+    price_rupees = forms.DecimalField(label="Price (₹)", required=False, min_value=0, decimal_places=2,
+                                      help_text="0 is free. A product needs a price.")
+    mrp_rupees = forms.DecimalField(label="MRP (₹)", required=False, min_value=0, decimal_places=2,
+                                    help_text="Above the price, or blank.")
+    description_box = forms.CharField(label="Description", required=False,
+                                      widget=forms.Textarea(attrs={"rows": 10, "cols": 80}))
+    cover_box = forms.CharField(label="Picture URL", widget=forms.TextInput(attrs={"size": 80}))
+    category_box = forms.ChoiceField(label="Category", required=False, choices=())
+    stock_box = forms.IntegerField(label="Units the seller sends", required=False)
+    weight_box = forms.IntegerField(label="Weight, packed (g)", required=False)
+    language_box = forms.CharField(label="Language", required=False, max_length=40)
+    starts_box = forms.DateTimeField(label="Starts", required=False)
+    minutes_box = forms.IntegerField(label="Minutes", required=False)
+    seats_box = forms.IntegerField(label="Seats", required=False)
+    join_box = forms.CharField(label="Joining link", required=False, widget=forms.TextInput(attrs={"size": 80}))
+
+    # box -> listing field
+    BOXES = {"title_text": "title", "description_box": "description", "cover_box": "cover_url",
+             "category_box": "category_name", "stock_box": "stock", "weight_box": "weight_grams",
+             "language_box": "language", "starts_box": "starts_at", "minutes_box": "duration_minutes",
+             "seats_box": "seats", "join_box": "join_url"}
 
     class Meta:
         model = Listing
@@ -60,10 +94,39 @@ class ListingForm(forms.ModelForm):
         labels = {"review_note": "Note to the seller"}
         help_texts = {"review_note": "Required to reject: the seller reads it."}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        listing = self.instance
+        choices = _category_choices()
+        if listing.category_name and listing.category_name not in dict(choices):
+            choices.append((listing.category_name, f"{listing.category_name} (as the seller typed it)"))
+        self.fields["category_box"].choices = choices
+        for box, field in self.BOXES.items():
+            self.fields[box].initial = getattr(listing, field)
+        self.fields["price_rupees"].initial = Decimal(listing.price_paise or 0) / 100
+        self.fields["mrp_rupees"].initial = Decimal(listing.mrp_paise) / 100 if listing.mrp_paise else None
+
     def clean(self):
         data = super().clean()
         if data.get("decision") == "reject" and not (data.get("review_note") or "").strip():
             raise forms.ValidationError({"review_note": "Write the reason before rejecting."})
+        listing = self.instance
+        changes = {field: data.get(box) for box, field in self.BOXES.items() if box in self.fields}
+        start, was = changes.get("starts_at"), listing.starts_at
+        if start and was and abs((start - was).total_seconds()) < 60:
+            changes["starts_at"] = was  # the box shows minutes; untouched is unchanged
+        price = data.get("price_rupees")
+        changes["price_paise"] = int(round(price * 100)) if price is not None else 0
+        mrp = data.get("mrp_rupees")
+        changes["mrp_paise"] = int(round(mrp * 100)) if mrp else None
+        self.edits = {k: v for k, v in changes.items()
+                      if not (v in (None, "") and getattr(listing, k) in (None, "")) and v != getattr(listing, k)}
+        if self.edits:
+            # The seller's rules, checked now so the page says what is wrong.
+            try:
+                services.admin_check(listing, self.edits)
+            except services.Refused as err:
+                raise forms.ValidationError(err.message) from None
         return data
 
 
@@ -84,15 +147,23 @@ class ListingAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
 
     def decide_shown(self, obj):
         return obj.status == ListingStatus.PENDING
-    readonly_fields = (
-        "seller", "kind", "status", "cover", "title", "price", "mrp", "description_text",
-        "what", "reviewed_at", "reviewed_by",
-    )
-    fieldsets = (
-        ("The listing", {"fields": ("seller", "kind", "status", "cover", "title", "price", "mrp",
-                                    "description_text", "what")}),
-        ("Your decision", {"fields": ("decision", "review_note", "reviewed_at", "reviewed_by")}),
-    )
+    readonly_fields = ("seller", "kind", "status", "cover", "what", "reviewed_at", "reviewed_by")
+
+    def get_fieldsets(self, request, obj=None):
+        """Only the boxes for this kind of listing."""
+        kind = obj.kind if obj else None
+        edit = ["title_text", "price_rupees", "mrp_rupees", "description_box", "cover_box"]
+        if kind == ListingKind.PRODUCT:
+            edit += ["category_box", "stock_box", "weight_box"]
+        if kind == ListingKind.COURSE:
+            edit += ["language_box"]
+        if kind == ListingKind.EVENT:
+            edit += ["starts_box", "minutes_box", "seats_box", "join_box"]
+        return (
+            ("The listing", {"fields": ("seller", "kind", "status", "cover", "what")}),
+            ("Correct it here: saved as you type it, not sent back to the seller", {"fields": edit}),
+            ("Your decision", {"fields": ("decision", "review_note", "reviewed_at", "reviewed_by")}),
+        )
 
     def get_queryset(self, request):
         # Waiting first.
@@ -164,7 +235,11 @@ class ListingAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         decision = form.cleaned_data.get("decision")
+        edits = getattr(form, "edits", None)
         try:
+            if edits:
+                services.admin_edit(obj, edits)
+                record(request, "market_listing.edit", "market_listing", target_id=obj.pk, fields=sorted(edits))
             if decision == "approve":
                 services.approve(obj, _who(request))
                 record(request, "market_listing.approve", "market_listing", target_id=obj.pk)

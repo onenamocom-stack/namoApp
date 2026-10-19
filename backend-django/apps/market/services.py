@@ -210,6 +210,57 @@ def update(seller_id, listing_id, data):
     return listing
 
 
+ADMIN_FIELDS = ("title", "description", "cover_url", "price_paise", "mrp_paise", "language", "starts_at",
+                "duration_minutes", "seats", "join_url", "category_name", "stock", "weight_grams")
+
+
+def admin_edit(listing, changes):
+    """The console corrects a listing itself (19 Oct 2026, Rahul: "otherwise
+    for every change he has to send product back to seller"). The seller's
+    rules still hold (`_clean`); the status stays as it is, and an approved
+    product's shop row follows at once. The file and the lessons stay the
+    seller's."""
+    fields = admin_check(listing, changes)
+    for k, v in fields.items():
+        setattr(listing, k, v)
+    listing.updated_at = timezone.now()
+    listing.save()
+    if listing.kind == ListingKind.PRODUCT and listing.status == ListingStatus.APPROVED and listing.product_id:
+        from apps.shop.models import Product, ShopCategory
+
+        # What the buyer sees follows; the shop's stock, brand and active
+        # switch are the shop's (stock moves with every sale).
+        product = Product.objects.filter(pk=listing.product_id).first()
+        if product is not None:
+            product.name, product.image_url = listing.title, listing.cover_url
+            product.price_paise, product.mrp_paise = listing.price_paise, listing.mrp_paise
+            product.description, product.weight_grams = listing.description, listing.weight_grams or 500
+            category = ShopCategory.objects.filter(name__iexact=listing.category_name).first()
+            if category is not None and category.pk != product.category_id:
+                product.category, product.subcategory = category, None
+            product.save()
+    return listing
+
+
+def admin_check(listing, changes):
+    """`changes` over the listing, by the seller's rules: the fields to
+    write, or Refused with the sentence. Writes nothing."""
+    data = {k: getattr(listing, k) for k in ADMIN_FIELDS}
+    data.update({k: v for k, v in changes.items() if k in ADMIN_FIELDS})
+    data.update(kind=listing.kind, gallery=listing.gallery, file_asset_id=listing.file_asset_id,
+                lessons=listing.lessons)
+    if listing.kind == ListingKind.EVENT and data["starts_at"] == listing.starts_at:
+        # An event already under way can still have its name or price fixed.
+        data["starts_at"] = max(listing.starts_at, timezone.now() + timedelta(minutes=1))
+        keep_start = listing.starts_at
+    else:
+        keep_start = None
+    fields = _clean(listing.seller_id, data, current=listing)
+    if keep_start is not None:
+        fields["starts_at"] = keep_start
+    return fields
+
+
 def withdraw(seller_id, listing_id):
     listing = Listing.objects.filter(pk=listing_id, seller_id=seller_id).first()
     if listing is None:
