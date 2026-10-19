@@ -109,6 +109,30 @@ class TestTheDay:
         assert Notification.objects.filter(profile_id=PRO, kind="pro.daily_report").count() == 1
 
 
+class TestTheMonth:
+    def test_scores_the_month_to_date_as_one(self, pro):
+        # Rahul: "Score poore mahine ka rakhna hai. Till date."
+        _, service = pro
+        first = DAY.replace(day=1)
+        _session(service, mode="call", audio_only=False, accepted=True, when=at(10, day=first))
+        _session(service, mode="call", audio_only=False, accepted=False, when=at(10, day=DAY))
+        report.log_switch(PRO, True, at(9, day=DAY))
+        report.log_switch(PRO, False, at(17, day=DAY))
+        m = report.month_numbers(PRO, DAY, now=at(23))
+        assert m["days"] == DAY.day and m["received_total"] == 2 and m["attended_total"] == 1
+        # calls 2/4 weighted; live 8h over 19 days on average
+        assert m["score"] == report.score(m["received"], m["attended"], 8 * 3600 / DAY.day)
+
+    def test_the_morning_row_and_notification_carry_it(self, pro):
+        _, service = pro
+        _session(service, when=at(10))
+        report.tick(now=at(10, 5, day=DAY + timedelta(days=1)))
+        row = ProDayReport.objects.get(consultant_id=PRO, day=DAY)
+        assert row.month_score == report.month_numbers(PRO, DAY, now=at(23, 59))["score"]
+        n = Notification.objects.get(profile_id=PRO, kind="pro.daily_report")
+        assert n.title.startswith("October score so far")
+
+
 def test_the_api_gives_the_last_seven_days(api_client, sign_hs256, hs256_mode, pro):
     from .conftest import make_claims
 
@@ -118,4 +142,5 @@ def test_the_api_gives_the_last_seven_days(api_client, sign_hs256, hs256_mode, p
     days = got.json()["days"]
     assert len(days) == 7 and days[0]["day"] == report.ist_day().isoformat()
     assert {"live_seconds", "received", "attended", "score", "recharged", "badge"} <= set(days[0])
+    assert got.json()["month"]["days"] == report.ist_day().day
     assert timezone

@@ -1348,7 +1348,9 @@ earnings-and-Insights page.
   customers who recharged after reaching them, the badge, and a score out of
   100: answered over received with a video weighing 2 and audio 1.5, for 70,
   and Online time for 30, 8 hours full; a day with no calls while Online
-  counts the calls part full; a day is 00:00 to 24:00, today shown so far;
+  counts the calls part full; first, the **month so far** scored as one —
+  every call of the month added up, Online time as the average day; a day
+  is 00:00 to 24:00, today shown so far;
   yesterday's numbers come as a notification at 10:00 IST and are in the
   console's *Daily reports*, everybody's; the Pro sees only their own), *Your consulting price*
   (the rates sheet here), *Booking calendar*, *Go online* (`/desk`, the

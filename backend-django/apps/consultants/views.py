@@ -420,7 +420,10 @@ def my_report(request):
 
     if services.my_consultant(request.user.pk) is None:
         return Response(refusal_body("not_consultant", "No practice on this account."), status=404)
-    return Response({"days": report.recent(request.user.pk, days=7)})
+    days = report.recent(request.user.pk, days=7)
+    known = {d["day"]: d for d in days}
+    month = report.month_numbers(request.user.pk, report.ist_day(), known=known)
+    return Response({"days": days, "month": month})
 
 
 @api_view(["GET", "PUT"])

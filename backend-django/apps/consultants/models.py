@@ -654,6 +654,8 @@ class ProDayReport(models.Model):
     attended_video = models.IntegerField(default=0)
     recharged = models.IntegerField(default=0)
     score = models.SmallIntegerField(default=0)
+    # The month from its 1st through this day, scored as one (Rahul).
+    month_score = models.SmallIntegerField(default=0)
     badge = models.CharField(max_length=8, default="pro")
     final = models.BooleanField(default=False)
     notified_at = models.DateTimeField(null=True, blank=True)

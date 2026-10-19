@@ -141,6 +141,33 @@ def recent(consultant_id, days=7, now=None):
     return [day_numbers(consultant_id, today - timedelta(days=i), now) for i in range(days)]
 
 
+def month_numbers(consultant_id, upto, now=None, known=None):
+    """The month from its 1st through `upto`, scored as one (Rahul, same
+    day: "Score poore mahine ka rakhna hai. Till date"): every call received
+    and answered added up, and Online time as the average day against 8
+    hours. `known` maps days already worked out to their numbers."""
+    known = known or {}
+    received = dict.fromkeys(WEIGHT, 0)
+    attended = dict.fromkeys(WEIGHT, 0)
+    live = recharged = 0
+    day, days = upto.replace(day=1), 0
+    while day <= upto:
+        d = known.get(day.isoformat()) or day_numbers(consultant_id, day, now)
+        for k in WEIGHT:
+            received[k] += d["received"][k]
+            attended[k] += d["attended"][k]
+        live += d["live_seconds"]
+        recharged += d["recharged"]
+        days += 1
+        day += timedelta(days=1)
+    return {
+        "from": upto.replace(day=1).isoformat(), "to": upto.isoformat(), "days": days,
+        "live_seconds": live, "received": received, "attended": attended,
+        "received_total": sum(received.values()), "attended_total": sum(attended.values()),
+        "recharged": recharged, "score": score(received, attended, live / days if days else 0),
+    }
+
+
 def _hm(seconds):
     h, m = divmod(int(seconds) // 60, 60)
     return f"{h}h {m}m" if h else f"{m}m"
@@ -153,6 +180,7 @@ def write_day(day, *, notify=False, final=False, now=None):
     n = 0
     for cid in Consultant.objects.filter(status=ConsultantStatus.APPROVED).values_list("profile_id", flat=True):
         d = day_numbers(cid, day, now)
+        month = month_numbers(cid, day, now, known={day.isoformat(): d})
         ProDayReport.objects.update_or_create(
             consultant_id=cid, day=day,
             defaults=dict(
@@ -161,14 +189,16 @@ def write_day(day, *, notify=False, final=False, now=None):
                 received_video=d["received"]["video"],
                 attended_chat=d["attended"]["chat"], attended_audio=d["attended"]["audio"],
                 attended_video=d["attended"]["video"],
-                recharged=d["recharged"], score=d["score"], badge=d["badge"], final=final,
+                recharged=d["recharged"], score=d["score"], month_score=month["score"],
+                badge=d["badge"], final=final,
             ),
         )
         if notify and (d["received_total"] or d["live_seconds"]):
             notify_service.push(
-                cid, kind="pro.daily_report", title=f"Yesterday's score: {d['score']}/100",
-                body=(f"{day.strftime('%d %b')}: Online {_hm(d['live_seconds'])} · calls {d['attended_total']} of "
-                      f"{d['received_total']} answered · {d['recharged']} recharged"),
+                cid, kind="pro.daily_report",
+                title=f"{day.strftime('%B')} score so far: {month['score']}/100",
+                body=(f"{day.strftime('%d %b')}: {d['score']}/100 · Online {_hm(d['live_seconds'])} · calls "
+                      f"{d['attended_total']} of {d['received_total']} answered · {d['recharged']} recharged"),
                 ref_type="pro_report", ref_id=None, dedupe_key=f"pro-report:{cid}:{day.isoformat()}",
             )
         n += 1

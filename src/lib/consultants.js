@@ -630,5 +630,6 @@ export async function beat(accepting) {
  *  badge. backend-django/apps/consultants/report.py has the rules. */
 export async function myDailyReport() {
   const body = await api('/consultants/me/report/', { token: await accessToken() })
-  return body?.days ?? []
+  // `month`: the 1st to today scored as one (Rahul, same day).
+  return { days: body?.days ?? [], month: body?.month ?? null }
 }

@@ -662,7 +662,8 @@ class ProDayReportAdmin(dj.ModelAdmin):
     24:00 IST; it is written at 10:00 the next morning, when each Pro is
     sent theirs. Read only; `apps/consultants/report.py` has the rules."""
 
-    list_display = ("who", "day", "badge", "online", "received", "answered", "video", "recharged", "score_bar", "final")
+    list_display = ("who", "day", "badge", "online", "received", "answered", "video", "recharged", "score_bar",
+                    "month_bar", "final")
     list_filter = ("day", "badge", "final")
     ordering = ("-day", "-score")
     date_hierarchy = "day"
@@ -694,6 +695,11 @@ class ProDayReportAdmin(dj.ModelAdmin):
     def score_bar(self, obj):
         tone = "#30a46c" if obj.score >= 70 else "#f5782c" if obj.score >= 40 else "#e5484d"
         return format_html('<strong style="color:{}">{}</strong>/100', tone, obj.score)
+
+    @dj.display(description="Month so far", ordering="month_score")
+    def month_bar(self, obj):
+        tone = "#30a46c" if obj.month_score >= 70 else "#f5782c" if obj.month_score >= 40 else "#e5484d"
+        return format_html('<strong style="color:{}">{}</strong>/100', tone, obj.month_score)
 
     def has_add_permission(self, request):
         return False

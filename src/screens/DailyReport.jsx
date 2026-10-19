@@ -33,10 +33,16 @@ function tone(score) {
 
 export default function DailyReport() {
   const [days, setDays] = useState(null)
+  const [month, setMonth] = useState(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    myDailyReport().then(setDays).catch(() => setFailed(true))
+    myDailyReport()
+      .then((r) => {
+        setDays(r.days)
+        setMonth(r.month)
+      })
+      .catch(() => setFailed(true))
   }, [])
 
   return (
@@ -48,6 +54,29 @@ export default function DailyReport() {
         <Loader />
       ) : (
         <div className="space-y-3 px-4 pb-10 pt-4">
+          {/* The month to date, scored as one, first (Rahul: "Score poore
+              mahine ka rakhna hai. Till date"). */}
+          {month && (
+            <PopCard className="p-5">
+              <div className="flex items-center justify-between">
+                <span>
+                  <span className="block caps-sm t-faint">
+                    {new Date(`${month.to}T00:00:00`).toLocaleDateString('en-IN', { month: 'long' })} so far
+                  </span>
+                  <span className="mt-1 block text-micro t-sub tnum">
+                    {month.days} days · Online {hm(month.live_seconds)} · {month.attended_total} of {month.received_total}{' '}
+                    calls answered · {month.recharged} recharged
+                  </span>
+                </span>
+                <span className="ml-3 flex-none text-right">
+                  <span className="block text-[40px] font-semibold leading-none tnum" style={{ color: tone(month.score) }}>
+                    {month.score}
+                  </span>
+                  <span className="text-micro t-faint">out of 100</span>
+                </span>
+              </div>
+            </PopCard>
+          )}
           <p className="px-1 text-micro t-sub">
             Score: calls answered out of calls received (a video counts double, an audio call one and a half) for 70,
             and time Online for 30 — 8 hours is full marks. Online time is counted from 19 Oct 2026.
