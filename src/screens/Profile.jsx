@@ -311,11 +311,14 @@ function AvatarPicker() {
         aria-label={me.avatarUrl ? 'Change your picture' : 'Add a picture'}
         className="relative flex-none rounded-full transition-transform active:scale-95"
       >
+        {/* flex, not block (19 Oct 2026, Rahul: "ye round nahi hai"): a block
+            around the inline avatar kept a line box under it, and the ring
+            drew taller than wide. */}
         <span
-          className="block rounded-full p-[3px]"
+          className="flex rounded-full p-[3px]"
           style={{ background: 'conic-gradient(from 200deg, #ffa05e, #f5782c, #c2410c, #ffb27a, #ffa05e)' }}
         >
-          <span className="block rounded-full bg-bg p-[3px]">
+          <span className="flex rounded-full bg-bg p-[3px]">
             <PopAvatar initials={me.initials} src={me.avatarUrl} size={78} />
           </span>
         </span>
