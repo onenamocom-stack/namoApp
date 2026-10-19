@@ -1415,9 +1415,13 @@ feeds when it is live, and the author gets *Your reel is live* or *Your
 reel was not posted* in notifications. Editing a reel's video, or an API
 without the pipeline, uploads it the old way. A chosen
 photo, on a festival's days, shows a row of **festival frames** under it
-(below). A video
-longer than 90 seconds is refused before upload: "Videos can be up to 90
-seconds. This one is 2 min 10 s."
+(below). A new reel
+longer than 90 seconds opens **Cut the video** (19 Oct 2026, Rahul; it was
+refused until then): the video loops the chosen stretch, *Starts at* and
+*Ends at* sliders set it, at most 90 seconds, and **Use this part** cuts it
+on the phone while it is made smaller, so only that part uploads. A phone
+that cannot encode is told to trim it in its gallery. Editing a reel's
+video still refuses one over 90 seconds.
 In that sheet Content step 1 also gets Tag product (01-PRD §12); everybody
 gets photo, video, text and blog. Gallery and Camera are icons
 without words. `/studio/studio` and "Post more" open Home with the sheet

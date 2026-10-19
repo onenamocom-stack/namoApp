@@ -3,6 +3,8 @@ import { frameFile, useFrames } from '../lib/frames.js'
 import { apiSupportsTags, editContent, publish, uploadMedia } from '../lib/content.js'
 import { uploadVideo } from '../lib/clips.js'
 import Video from './Video.jsx'
+import VideoTrim from './VideoTrim.jsx'
+import { MAX_VIDEO_SECONDS, videoSeconds } from '../lib/compress.js'
 import { fetchProducts } from '../lib/shop.js'
 import { BackButton } from './Chrome.jsx'
 import Icon from './Icon.jsx'
@@ -105,6 +107,8 @@ export default function Composer({
   const [shrinking, setShrinking] = useState(null)
   // The share of a reel's parts sent (18 Oct 2026, the video pipeline).
   const [sending, setSending] = useState(null)
+  // A video over 90 s waiting to be cut: {file, seconds} (19 Oct 2026, Rahul).
+  const [cutting, setCutting] = useState(null)
   // Festival frames (Phase 15c): the photo as chosen, its plain upload, and
   // the frame on it now, so "No frame" goes back without a second upload.
   const frames = useFrames()
@@ -188,14 +192,25 @@ export default function Composer({
       return showToast(blog ? 'A blog cover is a photo.' : 'Video posts are for Pros and Creators. Choose a photo.')
     }
     if (editing && editing.kind === 'clip' && !video) return showToast('A reel stays a video. Choose a video.')
+    // Too long for a new reel: choose the part to keep first.
+    if (video && !editing) {
+      const seconds = await videoSeconds(file)
+      if (seconds && seconds > MAX_VIDEO_SECONDS + 0.5) return setCutting({ file, seconds })
+    }
+    return sendFile(file)
+  }
+
+  async function sendFile(file, trim = null) {
+    const video = file.type.startsWith('video/')
     setUploading(true)
     try {
       /* A new reel goes through the video pipeline (18 Oct 2026): HLS,
          checked by SafeSearch, posted once live. Editing a reel's video,
          or a server without the pipeline, uploads it the old way. */
-      const piped = video && !editing ? await uploadVideo(file, { onShrink: setShrinking, onSend: setSending }) : null
+      const piped = video && !editing ? await uploadVideo(file, { onShrink: setShrinking, onSend: setSending, trim }) : null
+      if (!piped && trim) throw new Error(`Could not cut this video. Trim it to ${MAX_VIDEO_SECONDS} seconds in your gallery and choose it again.`)
       if (piped) {
-        setMedia({ url: URL.createObjectURL(file), type: 'video/mp4', videoId: piped.id })
+        setMedia({ url: URL.createObjectURL(piped.file ?? file), type: 'video/mp4', videoId: piped.id })
         photo.current = null
         setPlainUrl(null)
         setFrameId(null)
@@ -513,6 +528,18 @@ export default function Composer({
         )}
       </div>
 
+      {cutting && (
+        <VideoTrim
+          file={cutting.file}
+          seconds={cutting.seconds}
+          onCancel={() => setCutting(null)}
+          onCut={(trim) => {
+            const { file } = cutting
+            setCutting(null)
+            sendFile(file, trim)
+          }}
+        />
+      )}
       <input ref={gallery} type="file" accept={accept} multiple={canMore} className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
     </div>

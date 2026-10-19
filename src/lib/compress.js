@@ -65,18 +65,28 @@ export async function assertVideoLength(file) {
   }
 }
 
+export const CANNOT_CUT = `This phone cannot cut a video. Trim it to ${MAX_VIDEO_SECONDS} seconds in your gallery and choose it again.`
+
 /** The file to upload: a smaller MP4, or `file` unchanged. `onProgress`
- *  receives 0 to 1 while it works. */
-export async function compressVideo(file, onProgress = null) {
-  if (!file?.type?.startsWith('video/') || file.size < LEAVE_UNDER) return file
-  if (typeof window === 'undefined' || !('VideoEncoder' in window)) return file
+ *  receives 0 to 1 while it works. With `trim` ({start, end} in seconds,
+ *  19 Oct 2026) only that stretch is kept, and a phone that cannot do it
+ *  throws CANNOT_CUT instead of handing back the whole video. */
+export async function compressVideo(file, onProgress = null, trim = null) {
+  if (!file?.type?.startsWith('video/')) return file
+  if (!trim && file.size < LEAVE_UNDER) return file
+  const fail = (why) => {
+    if (trim) throw new Error(CANNOT_CUT)
+    if (why) console.error('[compress] kept the original:', why)
+    return file
+  }
+  if (typeof window === 'undefined' || !('VideoEncoder' in window)) return fail()
   try {
     const mb = await import('mediabunny')
-    if (!(await mb.canEncodeVideo('avc')) || !(await mb.canEncodeAudio('aac'))) return file
+    if (!(await mb.canEncodeVideo('avc')) || !(await mb.canEncodeAudio('aac'))) return fail()
 
     const input = new mb.Input({ formats: mb.ALL_FORMATS, source: new mb.BlobSource(file) })
     const track = await input.getPrimaryVideoTrack()
-    if (!track) return file
+    if (!track) return fail()
     const w = track.displayWidth
     const h = track.displayHeight
     const scale = Math.min(1, MAX_SIDE / Math.max(w, h))
@@ -100,19 +110,22 @@ export async function compressVideo(file, onProgress = null) {
       audio: { codec: 'aac', quality: new mb.Quality({ bitrate: AUDIO_BPS }) },
       // No tags: the phone's location and the camera's name stay behind.
       tags: {},
+      ...(trim ? { trim: { start: trim.start, end: trim.end } } : {}),
     })
     // A track it would have to drop (the sound, say) is a worse post than a
     // bigger file.
-    if (!conversion.isValid || conversion.discardedTracks.length) return file
+    if (!conversion.isValid || conversion.discardedTracks.length) return fail()
     if (onProgress) conversion.onProgress = (p) => onProgress(Math.max(0, Math.min(1, p)))
     await conversion.execute()
 
     const buffer = output.target.buffer
-    if (!buffer || buffer.byteLength >= file.size * 0.9) return file
+    if (!buffer) return fail()
+    // Cut, it is always the new file; uncut, only when it saved something.
+    if (!trim && buffer.byteLength >= file.size * 0.9) return file
     const name = `${(file.name || 'video').replace(/\.[^.]+$/, '')}.mp4`
     return new File([buffer], name, { type: 'video/mp4' })
   } catch (err) {
-    console.error('[compress] kept the original:', err?.message)
-    return file
+    if (err?.message === CANNOT_CUT) throw err
+    return fail(err?.message)
   }
 }

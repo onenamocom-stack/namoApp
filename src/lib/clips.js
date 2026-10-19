@@ -65,15 +65,16 @@ async function putPart(url, blob) {
 }
 
 /**
- * Upload a video for a reel. Returns {id, status}, or null when this API
+ * Upload a video for a reel. Returns {id, status, file}, or null when this API
  * is not there (an older server): the caller then uploads the old way.
  * `onShrink` and `onSend` receive 0 to 1.
  */
-export async function uploadVideo(original, { onShrink = null, onSend = null } = {}) {
+export async function uploadVideo(original, { onShrink = null, onSend = null, trim = null } = {}) {
   const token = await accessToken()
   if (!token) throw new Error('Sign in to upload')
-  await assertVideoLength(original) // 90 seconds at most (14 Oct 2026, Rahul)
-  const file = await compressVideo(original, onShrink)
+  // 90 seconds at most (14 Oct 2026, Rahul); a longer one comes cut (`trim`).
+  if (!trim) await assertVideoLength(original)
+  const file = await compressVideo(original, onShrink, trim)
   const seconds = (await videoSeconds(file)) ?? (await videoSeconds(original))
   // A length the browser cannot read: the old path, which does not need it.
   if (!seconds) return null
@@ -119,5 +120,6 @@ export async function uploadVideo(original, { onShrink = null, onSend = null } =
   }
 
   const done = await call(`/videos/${row.id}/complete/`, token, { method: 'POST', body: { parts: etags } })
-  return { id: done.id, status: done.status }
+  // `file` is what went up: the cut, smaller copy, for the composer's preview.
+  return { id: done.id, status: done.status, file }
 }
