@@ -712,9 +712,10 @@ function PostHead({ initials, avatar, name, to, note, tag, onMore, moreLabel, fo
           type="button"
           onClick={onMore}
           aria-label={moreLabel}
-          className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-t1 transition-colors hover:bg-surface"
+          // Upright dots, narrower than ⋯ beside Follow (19 Oct 2026, Rahul).
+          className="-mr-1.5 flex h-8 w-5 flex-none items-center justify-center rounded-full text-t1 transition-colors hover:bg-surface"
         >
-          <span aria-hidden="true" className="text-lead leading-none">⋯</span>
+          <span aria-hidden="true" className="text-lead font-bold leading-none">⋮</span>
         </button>
       )}
     </div>
