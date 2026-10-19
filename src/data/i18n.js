@@ -85,8 +85,6 @@ export const strings = {
   'home.tab.today': { en: 'आज का पंचांग', hi: 'आज का पंचांग' },
   'home.tab.darshan': { en: 'आज के दर्शन', hi: 'आज के दर्शन' },
   'home.end': { en: "End of today's feed", hi: 'आज की फ़ीड यहीं तक' },
-  'home.caughtUp': { en: 'You have seen everything new', hi: 'आपने सब नया देख लिया' },
-  'home.caughtUpSub': { en: 'What you have seen before is below.', hi: 'पहले देखा हुआ नीचे है।' },
   'home.reshared': {
     en: 'Reshared to your profile and the feed',
     hi: 'आपकी प्रोफ़ाइल और फ़ीड में रीशेयर हो गया',
