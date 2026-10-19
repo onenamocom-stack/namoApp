@@ -127,7 +127,7 @@ function TabLayout() {
       {/* The tab bar is fixed over the page, so this measures from the
           screen's foot: Home's + is about 64-128 px up; this sits above it. */}
       <div className="pointer-events-none relative z-30 h-0">
-        <div className="absolute bottom-[142px] right-[26px]">
+        <div className="absolute bottom-[142px] right-[21px]">
           <PresenceToggle floating />
         </div>
       </div>

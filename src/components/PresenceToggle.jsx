@@ -106,13 +106,13 @@ export default function PresenceToggle({ big = false, floating = false }) {
         // A tall slim capsule, the word running up it, clear above the +
         // (19 Oct 2026, Rahul: "lamba with rounder corner, vertical"; it sat
         // over the +).
-        className={`pointer-events-auto flex h-[92px] w-9 flex-col items-center gap-2 rounded-full pb-3 pt-3 shadow-[0_5px_14px_rgba(0,0,0,0.22)] transition-transform active:scale-95 disabled:opacity-70 ${
+        className={`pointer-events-auto flex h-[74px] w-9 flex-col items-center gap-1.5 rounded-full pb-2.5 pt-2.5 shadow-[0_5px_14px_rgba(0,0,0,0.22)] transition-transform active:scale-95 disabled:opacity-70 ${
           on ? 'bg-[#30a46c] text-white' : 'bg-white text-t2 ring-1 ring-rule'
         }`}
       >
         <span aria-hidden="true" className={`block h-2 w-2 flex-none rounded-full ${on ? 'animate-pulse bg-white' : 'bg-t4'}`} />
         <span
-          className="text-[10px] font-bold uppercase leading-none tracking-[0.12em]"
+          className="text-[9px] font-bold uppercase leading-none tracking-[0.08em]"
           style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
         >
           {on ? 'Online' : 'Offline'}
