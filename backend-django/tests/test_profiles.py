@@ -716,6 +716,23 @@ class TestUsername:
         # Named once; a later name change keeps the link.
         assert authed_client.patch(ME, {"name": "Avania V"}, format="json").json()["username"] == body["username"]
 
+    def test_the_one_off_renames_only_unchosen_placeholders(self, clean_profiles):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        services.ensure_profile(TEST_USER, name="Avania Verma")
+        services.ensure_profile(OTHER_USER, name="राहुल")
+        Profile.objects.filter(pk=TEST_USER).update(username="user-1111")
+        Profile.objects.filter(pk=OTHER_USER).update(username="user-2222")
+        out = StringIO()
+        call_command("rename_placeholder_usernames", stdout=out)
+        assert "would rename 1; kept 1" in out.getvalue()
+        assert Profile.objects.get(pk=TEST_USER).username == "user-1111"
+        call_command("rename_placeholder_usernames", "--write", stdout=out)
+        assert Profile.objects.get(pk=TEST_USER).username.startswith("avania-verma-")
+        assert Profile.objects.get(pk=OTHER_USER).username == "user-2222"
+
     def test_a_chosen_username_is_never_replaced(self, authed_client, clean_profiles):
         services.ensure_profile(TEST_USER)
         Profile.objects.filter(pk=TEST_USER).update(username="user-2024", username_changed_at=timezone.now())
