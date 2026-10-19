@@ -1082,9 +1082,10 @@ degree, and its category, experience and verified tick were on top already. On y
 Followers and Following open the list of those people (12 Oct 2026, Rahul);
 on anybody else's they are numbers only — the server lists only your own.
 No Book section, no footer buttons, no offline note. Back means Home; ☰ opens
-settings, which gain a first section, Profile, for a Creator only:
-**Creator**, at `/profile/influencer` under a plain top bar whose back is
-settings. The intro row left it for Edit profile, and Settings lost
+settings. Settings had a first section, Profile → **Creator**
+(`/profile/influencer`, which still opens), and *Earn on Namo → Studio*,
+until 19 Oct 2026 (Rahul: duplicates of Studio, which is the button on the
+profile and holds the sign-ups). The intro row left it for Edit profile, and Settings lost
 *Notification history*, on 14 Oct 2026 (Rahul): the bell is the
 notifications. Kundli and Saved left that section on 11 Oct 2026 (Rahul): the
 horoscope section has the kundli, and Saved is a tab on the page. An applicant who is not approved, or a blocked

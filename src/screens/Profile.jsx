@@ -90,7 +90,7 @@ export default function Profile() {
   }, [me])
   useEffect(load, [load])
 
-  if (tab === 'settings') return <SettingsPage pro={Boolean(consultant)} />
+  if (tab === 'settings') return <SettingsPage />
 
   // A Seller's Shop tab, a Creator's code tab (docs/06 Phase 18, 16 Oct
   // 2026; both were a Creator's).
@@ -527,7 +527,7 @@ function KundliTab() {
  * Settings tab's address, so links to it still land). The two rows that
  * only toasted "prototype only" — notifications and privacy — are gone.
  */
-function SettingsPage({ pro }) {
+function SettingsPage() {
   const { showToast, profile, t, lang, setLang } = useStore()
   const [leaving, setLeaving] = useState(false)
   const [naming, setNaming] = useState(false)
@@ -550,28 +550,11 @@ function SettingsPage({ pro }) {
 
       <ReferralCard />
 
-      {/* A pro's profile is their consultant page; what was in its tabs is
-          here (10 Oct 2026). The intro went to Edit profile (14 Oct 2026,
-          Rahul), so this is only a Creator's tab now. */}
-      {pro && profile?.referrer && (
-        <section className="border-b border-rule px-5 py-6">
-          <Kicker>{t('nav.profile')}</Kicker>
-          <div className="mt-2">
-            {/* Kundli and Saved went on 11 Oct 2026 (Rahul): the horoscope
-                section has the kundli, and Saved is a tab on your page. */}
-            <Row to="/profile/influencer" title={t('prof.tab.influencer')} />
-          </div>
-        </section>
-      )}
+      {/* No Profile → Creator or Earn on Namo → Studio rows since 19 Oct
+          2026 (Rahul: "duplicate, already in Studio"): Studio is the button
+          on your profile, and your sign-ups are in Studio → Content.
+          /profile/influencer still opens. */}
       {naming && <UsernameSheet onClose={() => setNaming(false)} />}
-
-      {/* The three modules, for everybody (docs/06 Phase 18, 16 Oct 2026). */}
-      <section className="border-b border-rule px-5 py-6">
-        <Kicker>Earn on Namo</Kicker>
-        <div className="mt-2">
-          <Row to="/studio" title="Studio" note="Earn from content, consulting or selling" />
-        </div>
-      </section>
 
       <section className="border-b border-rule px-5 py-6">
         <Kicker>{t('prof.account')}</Kicker>
