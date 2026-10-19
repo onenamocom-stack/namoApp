@@ -328,6 +328,8 @@ Home's three tabs are labelled **Reels · आज का पंचांग · �
 keys and URLs unchanged). No stories strip, no dates on posts. In
 `/reels/:id` there is no position counter, and the chips under the author are
 the reel's tagged products — "Book a session" was removed from there.
+A reel that ends scrolls on to the next by itself; the last one loops
+(19 Oct 2026, Rahul).
 `/bhakti` has no header tag and its search sits above the tiles.
 | Panchang | First on the आज का पंचांग tab. No links (the *Full chart* link was removed 30 Sep) |
 | Reading | Under the panchang: **the free reading by sign** (30 Sep) — twelve sign chips, opening on the reader's own moon sign; the sign and date, headline, summary and Ujjain's windows; a last line to *Your own predictions* on `/chart`. No heading and no *Read all* |

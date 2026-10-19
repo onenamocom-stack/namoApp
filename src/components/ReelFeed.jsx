@@ -85,6 +85,14 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false, auth
     if (startIndex > 0) setIndex(startIndex)
   }, [startIndex, clips.length])
 
+  /* A reel that finishes moves on to the next by itself (19 Oct 2026,
+     Rahul), as Instagram does; the last one loops. The scroll is what
+     changes `index`, so the URL and the counter follow as for a swipe. */
+  const advance = (i) => {
+    const el = scroller.current
+    if (el && clips[i + 1]) el.scrollTo({ top: el.clientHeight * (i + 1), behavior: 'smooth' })
+  }
+
   const onScroll = () => {
     const el = scroller.current
     if (!el || !el.clientHeight) return
@@ -119,6 +127,7 @@ export default function ReelFeed({ startId, onIndexChange, syncUrl = false, auth
           muted={muted}
           setMuted={setMuted}
           isLast={i === clips.length - 1}
+          onEnded={() => advance(i)}
         />
       ))}
     </div>
@@ -149,7 +158,7 @@ function RailAct({ icon, label, count, on, tone = 'default', onClick }) {
   )
 }
 
-function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, setMuted, isLast }) {
+function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, setMuted, isLast, onEnded }) {
   const { showToast, hasFlag, toggleFlag, session } = useStore()
   const video = useRef(null)
   const [reporting, setReporting] = useState(false)
@@ -218,8 +227,9 @@ function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, s
         className="absolute inset-0 h-full w-full"
       >
         {c.mediaUrl ? (
-          /* A real upload. Played by the effect above, looping, with the
-             frame at half a second as its cover until it starts. */
+          /* A real upload. Played by the effect above, with the frame at
+             half a second as its cover until it starts. At its end the
+             next reel comes up; the last one loops. */
           isVideoUrl(c.mediaUrl) ? (
             <Video
               ref={video}
@@ -233,7 +243,8 @@ function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, s
                  The next one down loads properly (19 Oct 2026, Rahul: a
                  swipe waited on the video). */
               load={active ? 'play' : dataSaver() ? 'none' : next ? 'next' : near ? 'preload' : 'none'}
-              loop
+              loop={isLast}
+              onEnded={active ? onEnded : undefined}
               playsInline
             />
           ) : (
