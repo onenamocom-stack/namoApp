@@ -37,6 +37,7 @@ TREE = {
 def drive(monkeypatch, settings):
     settings.DRIVE_REELS_FOLDER_ID = "root"
     settings.DRIVE_REELS_AUTHOR_ID = AUTHOR
+    settings.DRIVE_REELS_AUTHOR_IDS = AUTHOR
     monkeypatch.setattr(drive_reels, "_token", lambda: "tok")
     monkeypatch.setattr(drive_reels, "_list", lambda parent, token: list(TREE.get(parent, [])))
     monkeypatch.setattr(drive_reels, "_download", lambda fid, token, into: (into.write(b"video"), into.seek(0)))
@@ -125,3 +126,18 @@ def test_times_missed_by_more_than_an_hour_are_not_made_up(drive):
     times = drive_reels.plan_for(date(2026, 10, 12))
     assert drive_reels.tick(times[-1] + timedelta(hours=2))["action"] is None
     assert drive_reels.tick(times[-1] + timedelta(minutes=5))["action"]["posted"]
+
+
+@pytest.mark.django_db
+def test_reels_are_spread_evenly_and_never_twice_in_a_row(drive, settings):
+    """20 Oct 2026: spread across the named accounts, at random, evenly; a
+    non-Pro account is posted for without being given video rights."""
+    seeker = "11111111-0000-0000-0000-000000000001"
+    Profile.objects.create(id=seeker, phone="seeker-r", name="Seeker")
+    settings.DRIVE_REELS_AUTHOR_IDS = f"{AUTHOR},{seeker}"
+    drive_reels.post_one()
+    drive_reels.post_one()
+    authors = list(Content.objects.order_by("created_at").values_list("author_id", flat=True))
+    assert {str(a) for a in authors} == {AUTHOR, seeker}
+    assert str(authors[0]) != str(authors[1])
+    assert Profile.objects.get(pk=seeker).video_enabled is False

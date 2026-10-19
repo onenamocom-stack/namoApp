@@ -456,6 +456,17 @@ LOGGING = {
 DRIVE_REELS_FOLDER_ID = os.environ.get("DRIVE_REELS_FOLDER_ID", "1d5odpIpxrzcVSSyVUONQSPnSdHJqhlQ5")
 DRIVE_REELS_FROM_FOLDER = int(os.environ.get("DRIVE_REELS_FROM_FOLDER", "3"))  # 1 and 2 are up
 DRIVE_REELS_AUTHOR_ID = os.environ.get("DRIVE_REELS_AUTHOR_ID", "483214f1-f7fc-407a-9d9d-e4c437d64d18")  # Rahul Jain
+# The accounts the reels are spread across, at random and evenly (20 Oct 2026,
+# owner): Rahul Jain, Nitya Jain, Anand Ray, Avania Verma, Rudra Jain, Ramesh
+# Kumar. Vishwas Jain is to be added once his account exists.
+DRIVE_REELS_AUTHOR_IDS = os.environ.get("DRIVE_REELS_AUTHOR_IDS", ",".join([
+    "483214f1-f7fc-407a-9d9d-e4c437d64d18",
+    "8adf6ef4-48c1-4974-81dc-de9a5c421249",
+    "28fc91cc-b740-4d4e-8e67-57573e4ae4cd",
+    "a9419459-9309-4cf1-b6c0-461f895b5a11",
+    "250a4fd3-d05e-4fd6-a486-57f6af4601f7",
+    "6700ccb9-d2f0-4508-912a-71b0d1e4091d",
+]))
 DRIVE_REELS_PER_DAY = int(os.environ.get("DRIVE_REELS_PER_DAY", "10"))
 DRIVE_REELS_DAY_START = os.environ.get("DRIVE_REELS_DAY_START", "06:00")
 DRIVE_REELS_DAY_END = os.environ.get("DRIVE_REELS_DAY_END", "23:30")

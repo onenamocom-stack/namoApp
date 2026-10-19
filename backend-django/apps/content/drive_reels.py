@@ -188,6 +188,32 @@ def _download(file_id, token, into):
 # ── posting ─────────────────────────────────────────────────────────────────
 
 
+def authors():
+    """The accounts the reels go to (20 Oct 2026, owner: spread across the
+    people he named, at random). DRIVE_REELS_AUTHOR_IDS, comma-separated;
+    the single DRIVE_REELS_AUTHOR_ID before it."""
+    ids = [a.strip() for a in settings.DRIVE_REELS_AUTHOR_IDS.split(",") if a.strip()]
+    return ids or [settings.DRIVE_REELS_AUTHOR_ID]
+
+
+def pick_author(rng=random):
+    """Random, but even: one of the accounts that has had the fewest reels
+    from the folder so far, never the one that had the last."""
+    from .models import Content, DriveReel
+
+    ids = authors()
+    posted = list(DriveReel.objects.exclude(content=None).order_by("posted_at")
+                  .values_list("content__author_id", flat=True))
+    counts = {a: 0 for a in ids}
+    for a in posted:
+        if str(a) in counts:
+            counts[str(a)] += 1
+    last = str(posted[-1]) if posted else None
+    pool = [a for a in ids if not (a == last and len(ids) > 1)]
+    low = min(counts[a] for a in pool)
+    return rng.choice([a for a in pool if counts[a] == low])
+
+
 def post_one(token=None, now=None):
     """Post the next video in the queue. Returns what was posted, or None
     when the queue is empty."""
@@ -209,7 +235,7 @@ def post_one(token=None, now=None):
                                  skipped_reason=f"over {limit // (1024 * 1024)} MB")
         logger.error("[reels] skipped %s/%s: too large (%s bytes)", folder, f["name"], f["size"])
         return {"skipped": f["name"]}
-    author = settings.DRIVE_REELS_AUTHOR_ID
+    author = pick_author()
     with tempfile.TemporaryFile() as tmp:
         _download(f["id"], token, tmp)
         key = media.make_bucket_key(author, "clip", re.sub(r"[^\w.-]", "-", f["name"]))
@@ -217,8 +243,12 @@ def post_one(token=None, now=None):
     try:
         with transaction.atomic():
             DriveReel.objects.create(drive_file_id=f["id"], folder=folder, file_name=f["name"])
+            # As the platform (role "admin", the way the console posts):
+            # the accounts keep their own permissions and posting limits —
+            # this job is not them posting, and must not unlock video or
+            # lift a new account's limits for them.
             row = services.publish_content(
-                author, "consultant", kind="clip",
+                author, "admin", kind="clip",
                 caption=(f.get("description") or "").strip() or None, media_url=url,
             )
             DriveReel.objects.filter(drive_file_id=f["id"]).update(
