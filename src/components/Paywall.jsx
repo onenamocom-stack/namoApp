@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PopButton, PopCard } from './Pop.jsx'
 import { buy, payOnline } from '../lib/wallet.js'
 import { rupees, useStore } from '../store.jsx'
+import { inAndroidApp } from '../lib/platform.js'
 
 /**
  * Something the wallet can unlock, offered in place of it (30 Sep 2026):
@@ -15,6 +16,12 @@ import { rupees, useStore } from '../store.jsx'
  * `pay="online"` (15 Oct 2026, a priced e-book once the owner switches it
  * on): PhonePe's checkout instead of the wallet. The server decides which
  * and says so on the refusal; this only follows it.
+ *
+ * NOT IN THE ANDROID APP (19 Oct 2026, Rahul): everything here is a digital
+ * good, which Google Play lets an app sell only through Play's billing. The
+ * app says so and offers no button, and never points to the website
+ * (Play forbids that too). Bought on the website, it opens here as usual —
+ * the caller asks the server first, and an owner never reaches this.
  */
 export default function Paywall({ title, note, sku, refKey = '', pricePaise, pay = 'wallet', onBought, className = '' }) {
   const { session, showToast, refreshWallet } = useStore()
@@ -48,6 +55,15 @@ export default function Paywall({ title, note, sku, refKey = '', pricePaise, pay
     if (!res.ok) return showToast(res.reason)
     showToast(res.already ? 'Already yours' : 'Unlocked')
     onBought?.()
+  }
+
+  if (inAndroidApp()) {
+    return (
+      <PopCard raised className={`p-5 text-center ${className}`}>
+        <p className="caps t-heading">{title}</p>
+        <p className="mt-2 text-meta t-faint">Not sold in the app.</p>
+      </PopCard>
+    )
   }
 
   return (

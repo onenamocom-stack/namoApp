@@ -3,7 +3,8 @@
  * 1namo.com), rather than a browser? (19 Oct 2026.)
  *
  * Google Play allows a digital purchase inside an app only through Google
- * Play's own billing, so the app does not sell paid downloads or courses;
+ * Play's own billing, so the app does not sell paid listings, downloads,
+ * muhurats or predictions (`Paywall`, `ListingPage`);
  * the website does. Physical products and consultations with a person are
  * not digital goods and are sold as everywhere else.
  *

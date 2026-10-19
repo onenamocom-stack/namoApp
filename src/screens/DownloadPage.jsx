@@ -12,6 +12,7 @@ import RichText from '../components/RichText.jsx'
 import { PickBar, SharerBar } from '../components/TagPick.jsx'
 import { assetFile, fetchAssets } from '../lib/bhakti.js'
 import { rupees, useStore } from '../store.jsx'
+import { inAndroidApp } from '../lib/platform.js'
 
 /**
  * A download's own page, `/shop/d/:id` (15 Oct 2026, Rahul: "optimise the
@@ -225,7 +226,10 @@ export default function DownloadPage() {
           </PopButton>
         ) : (
           <PopButton onClick={getIt} variant="gold" full={false} className="px-6" disabled={busy}>
-            {busy ? '…' : t('dl.buy')}
+            {/* In the Android app nothing digital is sold (Play's rule): the
+                button only opens one already bought on the website; for
+                anybody else the Paywall says it is not sold here. */}
+            {busy ? '…' : inAndroidApp() ? t('ac.openPdf') : t('dl.buy')}
           </PopButton>
         )}
       </div>
