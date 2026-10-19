@@ -1,5 +1,6 @@
 import Plate from './Plate.jsx'
 import { useStore } from '../store.jsx'
+import { inAndroidApp } from '../lib/platform.js'
 
 /**
  * The Market's home layout (15 Oct 2026, Rahul's reference): on All, every
@@ -36,8 +37,10 @@ export function MarketSection({ title, seeAll, onSeeAll, strip = false, children
 
 /** The price, the MRP struck through and the saving (15 Oct 2026, Rahul:
  *  "mention MRP"), in rupees. No MRP, or one not above the price, shows the
- *  price alone. */
-export function MarketPrice({ price, mrp, free }) {
+ *  price alone. A priced `digital` thing shows none in the Android app,
+ *  where it is not sold (19 Oct 2026, Rahul; `lib/platform.js`). */
+export function MarketPrice({ price, mrp, free, digital = false }) {
+  if (digital && price && inAndroidApp()) return null
   const off = mrp && mrp > price ? Math.round((1 - price / mrp) * 100) : 0
   return (
     <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 tnum">
@@ -93,7 +96,7 @@ export function ListingCard({ row, onOpen, free = 'Free', corner = null }) {
       name={row.title}
       seller={row.seller?.name}
       lines={[what]}
-      price={<MarketPrice price={row.price_paise / 100} mrp={row.mrp_paise ? row.mrp_paise / 100 : null} free={free} />}
+      price={<MarketPrice price={row.price_paise / 100} mrp={row.mrp_paise ? row.mrp_paise / 100 : null} free={free} digital={row.kind !== 'event'} />}
       onOpen={onOpen}
       corner={corner}
     />

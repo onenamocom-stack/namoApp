@@ -116,7 +116,7 @@ function Head({ l, kindLabel }) {
         )}
       </p>
       <div className="mt-3 text-lead">
-        <MarketPrice price={l.price_paise / 100} mrp={l.mrp_paise ? l.mrp_paise / 100 : null} free={t('ac.free')} />
+        <MarketPrice price={l.price_paise / 100} mrp={l.mrp_paise ? l.mrp_paise / 100 : null} free={t('ac.free')} digital={l.kind !== 'event'} />
       </div>
     </section>
     {/* Share for everybody (18 Oct 2026, Rahul): WhatsApp and a Namo chat
@@ -208,7 +208,13 @@ function Foot({ price, note, children }) {
   )
 }
 
-const priceLabel = (l, t) => (l.price_paise ? `₹${(l.price_paise / 100).toLocaleString('en-IN')}` : t('ac.free'))
+// No price in the Android app for a priced course or download: not sold there.
+const priceLabel = (l, t) =>
+  l.price_paise
+    ? l.kind !== 'event' && inAndroidApp()
+      ? ''
+      : `₹${(l.price_paise / 100).toLocaleString('en-IN')}`
+    : t('ac.free')
 
 // ── a course ────────────────────────────────────────────────────────────────
 

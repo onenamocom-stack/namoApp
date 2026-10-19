@@ -123,7 +123,7 @@ export default function DownloadPage() {
         <p className="mt-1 text-meta t-faint">{t('dl.by', { name: d.artist })}</p>
 
         <div className="mt-3 text-lead">
-          <MarketPrice price={price} mrp={mrp} free={t('ac.free')} />
+          <MarketPrice price={price} mrp={mrp} free={t('ac.free')} digital />
         </div>
 
         <div className="mt-4 flex items-center gap-4">
@@ -202,6 +202,7 @@ export default function DownloadPage() {
                   price={x.pricePaise ? x.pricePaise / 100 : 0}
                   mrp={x.mrpPaise ? x.mrpPaise / 100 : null}
                   free={t('ac.free')}
+                  digital
                 />
               }
               onOpen={() => navigate(`/shop/d/${x.id}`)}
@@ -214,7 +215,7 @@ export default function DownloadPage() {
       {/* One action under the thumb, as on a product's page. */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[420px] items-center gap-3 border-t border-rule bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_16px_rgba(0,0,0,0.06)]">
         <span className="flex-1 text-lead font-semibold t-heading tnum">
-          {priced ? `₹${rupees(d.pricePaise)}` : t('ac.free')}
+          {priced ? (inAndroidApp() ? '' : `₹${rupees(d.pricePaise)}`) : t('ac.free')}
         </span>
         {!priced ? (
           <PopButton href={d.url} variant="gold" full={false} className="px-6">

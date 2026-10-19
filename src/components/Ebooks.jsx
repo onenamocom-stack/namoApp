@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { assetFile, fetchAssets } from '../lib/bhakti.js'
 import Paywall from './Paywall.jsx'
+import { inAndroidApp } from '../lib/platform.js'
 import Plate from './Plate.jsx'
 import BhaktiActions from './BhaktiActions.jsx'
 import { Kicker, PopButton, PopCard } from './Pop.jsx'
@@ -75,6 +76,7 @@ export default function Ebooks({ limit = null, onMore = null, cards = false, onO
                 price={d.pricePaise ? d.pricePaise / 100 : 0}
                 mrp={d.mrpPaise ? d.mrpPaise / 100 : null}
                 free={t('ac.free')}
+                digital
               />
             }
             onOpen={() => onOpen?.(d.id)}
@@ -158,8 +160,8 @@ function Ebook({ book: d }) {
         <p className="truncate text-meta t-heading">{d.title}</p>
         <p className="mt-1 caps-sm t-faint">
           PDF · {d.artist}
-          {priced && ` · ₹${rupees(d.pricePaise)}`}
-          {priced && d.mrpPaise > d.pricePaise && (
+          {priced && !inAndroidApp() && ` · ₹${rupees(d.pricePaise)}`}
+          {priced && !inAndroidApp() && d.mrpPaise > d.pricePaise && (
             <>
               {' '}
               <span className="line-through">₹{rupees(d.mrpPaise)}</span>
