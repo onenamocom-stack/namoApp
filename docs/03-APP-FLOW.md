@@ -479,10 +479,11 @@ has no file share, so it falls back to saving the composed image.
 (MP4, up to 30 seconds and 30 MB, with an optional cover picture). Its card
 plays it muted, tap for sound, with the same card a picture status has laid
 over it (photo, name, date, tithi, the NAMO mark; the pencil changes them).
-The phone draws that card into every frame at 720×1280, starting as soon as
-the card is half on screen, one video at a time; **Share** shows
-*Preparing n%* until the file is ready, then hands it to the share sheet. A
-phone that cannot encode shares the plain video and says so. Reshared to Home it shows its cover
+The phone draws that card into every frame at 720×1280 only when **Share**
+is tapped (Rahul: people scroll past most statuses), showing *Preparing n%*;
+the ready file's button says **Send to WhatsApp** and a second tap opens the
+share sheet, which needs a fresh tap. A phone that cannot encode gets the
+plain video the same way and is told so. Reshared to Home it shows its cover
 or its own first frame; its WhatsApp link preview is the cover, or the site's
 card without one.
 

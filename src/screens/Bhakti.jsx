@@ -869,33 +869,21 @@ function StatusCard({ asset, details, onEdit }) {
  * sakte hai", then "photo aur date to lagani hai"). It plays with the same
  * card a picture status has — your photo, name, today's date and tithi, the
  * NAMO mark — laid over it, and that is what goes out: the phone draws the
- * card into every frame (`composeVideoStatus`). It starts making the file
- * as soon as the card is on screen, one video at a time, so Share usually
- * has it ready. A phone that cannot encode shares the plain video and says
- * so.
+ * card into every frame (`composeVideoStatus`). Only when Share is tapped
+ * (Rahul, same day: people scroll past most statuses, and making each one
+ * would spend their battery). The phone's share sheet needs a fresh tap, and
+ * making the file takes longer than a tap stays fresh, so a ready file says
+ * *Send to WhatsApp* and takes a second tap. A phone that cannot encode
+ * shares the plain video and says so.
  */
 function VideoStatusCard({ asset, details, onEdit }) {
   const { showToast } = useStore()
-  const box = useRef(null)
-  const [seen, setSeen] = useState(false)
   const [layer, setLayer] = useState(null) // { url, marks }
   const [made, setMade] = useState(null) // { blob } | { error }
   const [progress, setProgress] = useState(null)
   const [working, setWorking] = useState(false)
   const [muted, setMuted] = useState(true)
   const src = viaCdn(asset.url)
-
-  // Prepared once it is properly on screen, not merely near it.
-  useEffect(() => {
-    const el = box.current
-    if (!el || seen) return undefined
-    const watch = new IntersectionObserver(
-      (entries) => entries.some((e) => e.intersectionRatio >= 0.5) && setSeen(true),
-      { threshold: [0, 0.5] },
-    )
-    watch.observe(el)
-    return () => watch.disconnect()
-  }, [seen])
 
   useEffect(() => {
     let live = true
@@ -911,19 +899,27 @@ function VideoStatusCard({ asset, details, onEdit }) {
     }
   }, [details])
 
-  useEffect(() => {
-    if (!seen) return undefined
-    let live = true
-    setMade(null)
+  // A changed photo or name makes a new file.
+  useEffect(() => setMade(null), [details])
+
+  const prepare = () => {
     setProgress(0)
-    composeVideoStatus(src, details, (p) => live && setProgress(p))
-      .then((blob) => live && setMade({ blob }))
-      .catch((err) => live && setMade({ error: err?.message || CANNOT_MAKE_VIDEO }))
-      .finally(() => live && setProgress(null))
-    return () => {
-      live = false
-    }
-  }, [seen, src, details])
+    composeVideoStatus(src, details, setProgress)
+      .then((blob) => setMade({ blob }))
+      .catch(async (err) => {
+        // The plain video, said plainly; ready for the second tap too.
+        showToast(`${err?.message || CANNOT_MAKE_VIDEO} Sharing the video without it.`)
+        try {
+          const got = await fetch(src)
+          if (!got.ok) throw new Error(String(got.status))
+          const blob = await got.blob()
+          setMade({ blob: blob.type ? blob : new Blob([blob], { type: 'video/mp4' }) })
+        } catch {
+          showToast('Could not prepare that video.')
+        }
+      })
+      .finally(() => setProgress(null))
+  }
 
   const sendFile = async (blob) => {
     const filename = `namo-status-${Date.now()}.mp4`
@@ -938,15 +934,7 @@ function VideoStatusCard({ asset, details, onEdit }) {
     setWorking(true)
     try {
       if (made?.blob) return await sendFile(made.blob)
-      if (made?.error) {
-        // The plain video, said plainly.
-        showToast(`${made.error} Sharing the video without it.`)
-        const got = await fetch(src)
-        if (!got.ok) throw new Error(String(got.status))
-        const blob = await got.blob()
-        return await sendFile(blob.type ? blob : new Blob([blob], { type: 'video/mp4' }))
-      }
-      showToast('Still preparing. Tap Share again in a moment.')
+      if (progress === null) prepare()
     } catch {
       showToast('Could not prepare that video.')
     } finally {
@@ -956,12 +944,14 @@ function VideoStatusCard({ asset, details, onEdit }) {
 
   const label = working
     ? 'Preparing…'
-    : progress !== null && !made
+    : progress !== null
       ? `Preparing ${Math.round(progress * 100)}%`
-      : 'Share'
+      : made?.blob
+        ? 'Send to WhatsApp'
+        : 'Share'
 
   return (
-    <li ref={box}>
+    <li>
       <PopCard className="overflow-hidden">
         <div className="relative aspect-[9/16] w-full bg-black">
           <video
@@ -999,7 +989,7 @@ function VideoStatusCard({ asset, details, onEdit }) {
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
           <BhaktiActions asset={asset} />
           <span className="flex-1" />
-          <PopButton size="sm" variant="gold" full={false} disabled={working} onClick={share}>
+          <PopButton size="sm" variant="gold" full={false} disabled={working || progress !== null} onClick={share}>
             <span className="flex items-center gap-1.5 tnum">
               <WhatsAppGlyph />
               {label}
