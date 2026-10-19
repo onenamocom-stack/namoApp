@@ -56,33 +56,45 @@
     <a href="{% url 'namo:shop_shipment_changelist' %}?status__exact=ready" {% if queues.parcels %}class="hot"{% endif %}><b>{{ queues.parcels }}</b><span>Parcels to send</span></a>
   </div>
 
-  <h2>By module</h2>
+  <h2>By part of Namo</h2>
   <div class="mods">
     <div class="mod">
-      <h3>Finance</h3><p>One payment on the 7th, every book together.</p>
-      <a href="{% url 'namo:consultants_payoutstatement_changelist' %}">Payout statements</a>
-      <a href="{% url 'namo:consultants_payoutdetails_changelist' %}">Pro payout details</a>
-      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Market payouts</a>
-      <a href="{% url 'namo:referrals_cashback_changelist' %}">Cashback</a>
-      <a href="{% url 'namo:market_commissionrate_changelist' %}">Commission rates</a>
-    </div>
-    <div class="mod">
-      <h3>Content · Creators</h3><p>Posts, reels, engagement, what it pays.</p>
-      <a href="{% url 'namo:content_content_changelist' %}">Reels and posts</a>
-      <a href="{% url 'namo:content_qualifiedview_changelist' %}">Engagement</a>
-      <a href="{% url 'namo:content_contentpaysettings_changelist' %}">Pay per 1,000 engagements</a>
+      <h3>Home feed</h3><p>Posts, reels, blogs; what was reported or flagged; what views pay.</p>
+      <a href="{% url 'namo:content_content_changelist' %}">Everything posted</a>
+      <a href="{% url 'namo:content_content_changelist' %}?kind__exact=clip">Reels</a>
+      <a href="{% url 'namo:content_content_changelist' %}?kind__exact=post">Photo and text posts</a>
+      <a href="{% url 'namo:content_content_changelist' %}?kind__exact=article">Blogs</a>
+      <a href="{% url 'namo:clips_video_changelist' %}">Uploaded videos</a>
+      <a href="{% url 'namo:clips_video_changelist' %}?status=in_review">Videos to review</a>
       <a href="{% url 'namo:content_report_changelist' %}">Reports</a>
       <a href="{% url 'namo:content_moderationflag_changelist' %}">Daily check flags</a>
-      <a href="{% url 'namo:clips_video_changelist' %}">Uploaded videos</a>
-      <a href="{% url 'namo:referrals_signupbonus_changelist' %}">Sign-ups with their code (₹ each)</a>
-      <a href="{% url 'namo:referrals_affiliatevisit_changelist' %}">Link visits</a>
-      <a href="{% url 'namo:referrals_affiliatesettings_changelist' %}">Link window and sign-up pay</a>
+      <a href="{% url 'namo:content_qualifiedview_changelist' %}">Engagement</a>
+      <a href="{% url 'namo:content_contentpaysettings_changelist' %}">Pay per 1,000 engagements</a>
     </div>
     <div class="mod">
-      <h3>Consulting · Pros</h3><p>Who may take calls, and what they changed.</p>
+      <h3>Bhakti</h3><p>Status, wallpapers, bhajans, mantras, e-books, darshan.</p>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}">All Bhakti items</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=status">Status</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=wallpaper">Wallpapers</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=bhajan">Bhajans</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=mantra">Mantras</a>
+      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=ebook">E-books</a>
+      <a href="{% url 'namo:bhakti_darshandeity_changelist' %}">Darshan deities</a>
+      <a href="{% url 'namo:bhakti_darshanimage_changelist' %}">Darshan pictures</a>
+    </div>
+    <div class="mod">
+      <h3>Chat</h3><p>Groups and what people are told. Messages are private and are not in the console.</p>
+      <a href="{% url 'namo:groups_group_changelist' %}">Groups</a>
+      <a href="{% url 'namo:notifications_notification_changelist' %}">Notifications sent</a>
+      <a href="{% url 'namo:content_report_changelist' %}?status__exact=open">Reports</a>
+    </div>
+    <div class="mod">
+      <h3>Consulting</h3><p>Pros: who may take calls, what they changed, what seekers said.</p>
       <a href="{% url 'namo:consultants_consultant_changelist' %}">Pros</a>
+      <a href="{% url 'namo:consultants_consultant_changelist' %}?status__exact=pending">Pros applying</a>
       <a href="{% url 'namo:consultants_profilereview_changelist' %}">Profile changes</a>
       <a href="{% url 'namo:content_review_changelist' %}">Reviews</a>
+      <a href="{% url 'namo:consultants_payoutdetails_changelist' %}">Pro payout details</a>
     </div>
     <div class="mod">
       <h3>Market</h3><p>Everything sold, in one place: products, downloads, courses, events, and what they earn.</p>
@@ -98,25 +110,29 @@
       <a href="{% url 'namo:shop_shipment_changelist' %}">Parcels</a>
       <a href="{% url 'namo:shop_coupon_changelist' %}">Coupons</a>
       <a href="{% url 'namo:market_sellerearning_changelist' %}">Sellers' sales</a>
-      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Seller payouts</a>
+      <a href="{% url 'namo:market_commissionrate_changelist' %}">Commission rates</a>
     </div>
     <div class="mod">
-      <h3>Bhakti</h3><p>Status, wallpapers, bhajans, mantras, e-books, darshan.</p>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}">All Bhakti items</a>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=status">Status</a>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=wallpaper">Wallpapers</a>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=bhajan">Bhajans</a>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=mantra">Mantras</a>
-      <a href="{% url 'namo:bhakti_bhaktiasset_changelist' %}?kind__exact=ebook">E-books</a>
-      <a href="{% url 'namo:bhakti_darshandeity_changelist' %}">Darshan deities</a>
-      <a href="{% url 'namo:bhakti_darshanimage_changelist' %}">Darshan pictures</a>
-    </div>
-    <div class="mod">
-      <h3>People</h3><p>Accounts, modules, groups.</p>
+      <h3>Profiles</h3><p>Accounts and the modules they asked for.</p>
       <a href="{% url 'namo:profiles_profile_changelist' %}">Everybody</a>
-      <a href="{% url 'namo:profiles_modulerequest_changelist' %}">Module requests</a>
-      <a href="{% url 'namo:groups_group_changelist' %}">Groups</a>
+      <a href="{% url 'namo:profiles_profile_changelist' %}?creator=yes">Creators</a>
+      <a href="{% url 'namo:profiles_modulerequest_changelist' %}">Module requests (Creator, Seller)</a>
+      <a href="{% url 'namo:shop_shippingaddress_changelist' %}">Delivery addresses</a>
+    </div>
+    <div class="mod">
+      <h3>Money</h3><p>One payment on the 7th, every book together.</p>
+      <a href="{% url 'namo:consultants_payoutstatement_changelist' %}">Payout statements</a>
+      <a href="{% url 'namo:consultants_payoutstatement_changelist' %}?status__exact=due">To pay on the 7th</a>
+      <a href="{% url 'namo:market_sellerpayout_changelist' %}">Market payouts</a>
+      <a href="{% url 'namo:referrals_cashback_changelist' %}">Cashback</a>
+    </div>
+    <div class="mod">
+      <h3>Referrals and links</h3><p>Codes, sign-ups, link visits, and what they pay.</p>
       <a href="{% url 'namo:referrals_referralcode_changelist' %}">Codes</a>
+      <a href="{% url 'namo:referrals_referral_changelist' %}">Referrals</a>
+      <a href="{% url 'namo:referrals_signupbonus_changelist' %}">Sign-ups with their code (₹ each)</a>
+      <a href="{% url 'namo:referrals_affiliatevisit_changelist' %}">Link visits</a>
+      <a href="{% url 'namo:referrals_affiliatesettings_changelist' %}">Link window and sign-up pay</a>
     </div>
     <div class="mod">
       <h3>Look of the app</h3><p>Banners, themes, the link card, festival frames.</p>
@@ -124,7 +140,14 @@
       <a href="{% url 'namo:appearance_theme_changelist' %}">Themes</a>
       <a href="{% url 'namo:appearance_linkcard_changelist' %}">Link card</a>
       <a href="{% url 'namo:appearance_frame_changelist' %}">Frames</a>
+    </div>
+    <div class="mod">
+      <h3>Overall admin</h3><p>Who runs the console, what they did, where people came from.</p>
+      <a href="{% url 'namo:analytics_dashboard' %}">Dashboard</a>
+      <a href="{% url 'namo:console_adminuser_changelist' %}">Admins</a>
       <a href="{% url 'namo:console_adminaction_changelist' %}">Audit trail</a>
+      <a href="{% url 'namo:analytics_event_changelist' %}">Events</a>
+      <a href="{% url 'namo:analytics_attribution_changelist' %}">Where people came from</a>
     </div>
   </div>
 

@@ -134,11 +134,26 @@ class TestTheMenu:
     def test_the_front_page_links_the_jobs_somebody_opens_it_for(self):
         client, _ = _admin(Tier.FULFILMENT)
         body = client.get(CONSOLE).content.decode()
-        # By module since 16 Oct 2026 (Rahul): the queues on top, then a card each.
+        # By module since 16 Oct 2026 (Rahul): the queues on top, then a card
+        # per part of Namo as the app is laid out (19 Oct 2026).
         for fragment in ("Waiting for somebody", "Pros applying", "Creator and Seller requests",
-                         "To pay on the 7th", "Parcels to send", "Reels and posts", "Engagement",
+                         "To pay on the 7th", "Parcels to send", "Everything posted", "Engagement",
                          "Payout statements", "Audit trail"):
             assert fragment in body, fragment
+        for card in ("Home feed", "Bhakti", "Chat", "Consulting", "Market", "Profiles", "Money",
+                     "Referrals and links", "Look of the app", "Overall admin"):
+            assert f"<h3>{card}</h3>" in body, card
+
+    def test_every_console_page_is_in_a_card(self):
+        from apps.console.site import site
+
+        client, _ = _admin(Tier.SUPERADMIN)
+        body = client.get(CONSOLE).content.decode()
+        start = body.index("By part of Namo")
+        cards = body[start:body.index("<h2>Everything</h2>", start)]
+        for model in site._registry:
+            url = reverse(f"namo:{model._meta.app_label}_{model._meta.model_name}_changelist")
+            assert f'href="{url}' in cards, url
 
     @pytest.mark.parametrize("url_name", [
         "namo:consultants_payoutstatement_changelist",
