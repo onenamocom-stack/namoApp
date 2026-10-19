@@ -88,3 +88,28 @@ def test_a_video_status_previews_its_cover_not_the_video():
     assert _bhakti_picture(clip) is None
     clip.preview_url = "https://media.1namo.com/images/a/b/cover.jpg"
     assert _bhakti_picture(clip) == clip.preview_url
+
+
+def _mp4(seconds, scale=1000):
+    import struct
+
+    head = struct.pack(">I", 32) + b"ftypisom" + bytes(20)
+    movie = struct.pack(">I", 108) + b"mvhd" + bytes(4) + struct.pack(">IIII", 0, 0, scale, int(seconds * scale))
+    return head + movie + bytes(80)
+
+
+def test_mp4_seconds_reads_the_movie_header():
+    from apps.bhakti.admin import mp4_seconds
+
+    assert mp4_seconds(_mp4(12.5)) == 12.5
+    assert mp4_seconds(b"not a video") is None
+
+
+@pytest.mark.django_db
+def test_a_video_status_over_30_seconds_is_refused():
+    form = BhaktiAssetForm(
+        data={"kind": "status", "title": "x", "deity": "", "artist": "Namo", "licence": "x", "source": "",
+              "media_url": "", "preview_url": "", "sort": "0", "active": "on"},
+        files={"upload": SimpleUploadedFile("long.mp4", _mp4(45), content_type="video/mp4")},
+    )
+    assert not form.is_valid() and "30 seconds" in str(form.errors)

@@ -9,7 +9,9 @@ import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard } from '../components/Pop.jsx'
 import {
+  CANNOT_MAKE_VIDEO,
   composeStatus,
+  composeVideoStatus,
   download,
   fetchAssets,
   hinduDateLine,
@@ -23,6 +25,7 @@ import {
   shareFile,
   shrinkForStatus,
   statusDateLine,
+  statusOverlay,
 } from '../lib/bhakti.js'
 import { istDate, useAstro } from '../lib/astro.js'
 import { rupees, useStore } from '../store.jsx'
@@ -726,7 +729,7 @@ function StatusShelf({ list }) {
       <ul className="space-y-4">
         {list.map((a) => (
           isVideoUrl(a.url) ? (
-            <VideoStatusCard key={a.id} asset={a} />
+            <VideoStatusCard key={a.id} asset={a} details={details} onEdit={() => setEditing(true)} />
           ) : (
             <StatusCard key={a.id} asset={a} details={details} onEdit={() => setEditing(true)} />
           )
@@ -863,30 +866,87 @@ function StatusCard({ asset, details, onEdit }) {
 
 /**
  * A video status (19 Oct 2026, Rahul: "Bhakti me console se video bhi daal
- * sakte hai"). It plays as it is, muted until tapped, and Share hands the
- * video file itself to the share sheet, where the person picks WhatsApp and
- * Status. Nothing is drawn on a video: the name, photo and date are a
- * picture status's.
+ * sakte hai", then "photo aur date to lagani hai"). It plays with the same
+ * card a picture status has — your photo, name, today's date and tithi, the
+ * NAMO mark — laid over it, and that is what goes out: the phone draws the
+ * card into every frame (`composeVideoStatus`). It starts making the file
+ * as soon as the card is on screen, one video at a time, so Share usually
+ * has it ready. A phone that cannot encode shares the plain video and says
+ * so.
  */
-function VideoStatusCard({ asset }) {
+function VideoStatusCard({ asset, details, onEdit }) {
   const { showToast } = useStore()
+  const box = useRef(null)
+  const [seen, setSeen] = useState(false)
+  const [layer, setLayer] = useState(null) // { url, marks }
+  const [made, setMade] = useState(null) // { blob } | { error }
+  const [progress, setProgress] = useState(null)
   const [working, setWorking] = useState(false)
   const [muted, setMuted] = useState(true)
   const src = viaCdn(asset.url)
 
+  // Prepared once it is properly on screen, not merely near it.
+  useEffect(() => {
+    const el = box.current
+    if (!el || seen) return undefined
+    const watch = new IntersectionObserver(
+      (entries) => entries.some((e) => e.intersectionRatio >= 0.5) && setSeen(true),
+      { threshold: [0, 0.5] },
+    )
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [seen])
+
+  useEffect(() => {
+    let live = true
+    let url = null
+    statusOverlay(details).then((l) => {
+      if (!live) return
+      url = l.url
+      setLayer(l)
+    })
+    return () => {
+      live = false
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [details])
+
+  useEffect(() => {
+    if (!seen) return undefined
+    let live = true
+    setMade(null)
+    setProgress(0)
+    composeVideoStatus(src, details, (p) => live && setProgress(p))
+      .then((blob) => live && setMade({ blob }))
+      .catch((err) => live && setMade({ error: err?.message || CANNOT_MAKE_VIDEO }))
+      .finally(() => live && setProgress(null))
+    return () => {
+      live = false
+    }
+  }, [seen, src, details])
+
+  const sendFile = async (blob) => {
+    const filename = `namo-status-${Date.now()}.mp4`
+    const shared = await shareFile(blob, filename, await inviteMessage(asset))
+    if (!shared) {
+      saveBlob(blob, filename)
+      showToast('Saved — sharing needs a phone')
+    }
+  }
+
   const share = async () => {
     setWorking(true)
     try {
-      const got = await fetch(src)
-      if (!got.ok) throw new Error(String(got.status))
-      const blob = await got.blob()
-      const filename = `namo-status-${Date.now()}.mp4`
-      const typed = blob.type ? blob : new Blob([blob], { type: 'video/mp4' })
-      const shared = await shareFile(typed, filename, await inviteMessage(asset))
-      if (!shared) {
-        saveBlob(typed, filename)
-        showToast('Saved — sharing needs a phone')
+      if (made?.blob) return await sendFile(made.blob)
+      if (made?.error) {
+        // The plain video, said plainly.
+        showToast(`${made.error} Sharing the video without it.`)
+        const got = await fetch(src)
+        if (!got.ok) throw new Error(String(got.status))
+        const blob = await got.blob()
+        return await sendFile(blob.type ? blob : new Blob([blob], { type: 'video/mp4' }))
       }
+      showToast('Still preparing. Tap Share again in a moment.')
     } catch {
       showToast('Could not prepare that video.')
     } finally {
@@ -894,8 +954,14 @@ function VideoStatusCard({ asset }) {
     }
   }
 
+  const label = working
+    ? 'Preparing…'
+    : progress !== null && !made
+      ? `Preparing ${Math.round(progress * 100)}%`
+      : 'Share'
+
   return (
-    <li>
+    <li ref={box}>
       <PopCard className="overflow-hidden">
         <div className="relative aspect-[9/16] w-full bg-black">
           <video
@@ -909,7 +975,24 @@ function VideoStatusCard({ asset }) {
             preload="metadata"
             onClick={() => setMuted((m) => !m)}
           />
-          <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-micro font-semibold text-white">
+          {/* The card, exactly as it is drawn into the file. */}
+          {layer && <img src={layer.url} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />}
+          {layer?.marks && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label="Change your photo and name"
+              className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg ring-2 ring-white active:scale-90"
+              style={{
+                left: `${layer.marks.photo.x * 100}%`,
+                top: `${layer.marks.photo.y * 100}%`,
+                background: 'linear-gradient(160deg, var(--orange-hi), var(--orange-lo))',
+              }}
+            >
+              <PencilGlyph />
+            </button>
+          )}
+          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-micro font-semibold text-white">
             {muted ? 'Tap for sound' : 'Sound on'}
           </span>
         </div>
@@ -917,9 +1000,9 @@ function VideoStatusCard({ asset }) {
           <BhaktiActions asset={asset} />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working} onClick={share}>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 tnum">
               <WhatsAppGlyph />
-              {working ? 'Preparing…' : 'Share'}
+              {label}
             </span>
           </PopButton>
         </div>

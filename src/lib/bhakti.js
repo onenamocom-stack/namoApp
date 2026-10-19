@@ -274,6 +274,11 @@ function drawCover(ctx, img, width, height) {
  * Returns `{ blob, marks }`: `marks` are where the photo and the name ended
  * up, as fractions of the frame, so the preview can put its edit pencils on
  * them. The pencils are the screen's, never drawn into the image.
+ *
+ * With `overlay` (a video status, 19 Oct 2026) there is no artwork: the
+ * canvas is transparent but for the mark and the card, whose wash is a
+ * little darker since nothing is blurred under it, and it returns
+ * `{ canvas, marks }` for drawing over every frame.
  */
 export const STATUS_W = 1080
 export const STATUS_H = 1920
@@ -281,18 +286,21 @@ export const STATUS_H = 1920
 export async function composeStatus(
   artworkSrc,
   { photoSrc, name, dateLine, hinduLine, logoSrc, iconSrc } = {},
+  { overlay = false } = {},
 ) {
-  const art = await loadImage(artworkSrc)
-  if (!art) return null
+  const art = overlay ? null : await loadImage(artworkSrc)
+  if (!art && !overlay) return null
   const W = STATUS_W
   const H = STATUS_H
   const c = document.createElement('canvas')
   c.width = W
   c.height = H
   const ctx = c.getContext('2d')
-  ctx.fillStyle = '#0e0e10'
-  ctx.fillRect(0, 0, W, H)
-  drawCover(ctx, art, W, H)
+  if (art) {
+    ctx.fillStyle = '#0e0e10'
+    ctx.fillRect(0, 0, W, H)
+    drawCover(ctx, art, W, H)
+  }
 
   const [photo, logo, icon] = await Promise.all([loadImage(photoSrc), loadImage(logoSrc), loadImage(iconSrc)])
   // The fonts the page already loads; a canvas draws only what has arrived.
@@ -321,12 +329,12 @@ export async function composeStatus(
   ctx.save()
   roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
   ctx.clip()
-  if ('filter' in ctx) {
+  if (art && 'filter' in ctx) {
     ctx.filter = 'blur(26px)'
     drawCover(ctx, art, W, H)
     ctx.filter = 'none'
   }
-  ctx.fillStyle = 'rgba(28, 16, 10, 0.52)'
+  ctx.fillStyle = art ? 'rgba(28, 16, 10, 0.52)' : 'rgba(28, 16, 10, 0.66)'
   ctx.fillRect(card.x, card.y, card.w, card.h)
   ctx.restore()
   roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
@@ -432,15 +440,84 @@ export async function composeStatus(
   ctx.closePath()
   ctx.fill()
 
-  const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
-  return {
-    blob,
-    marks: {
-      photo: { x: (pcx + d * 0.36) / W, y: (pcy - d * 0.36) / H },
-      // Clear of the name at preview size (about a third of the image).
-      name: { x: Math.min(nameEnd + 76, right - 10) / W, y: (card.y + 92) / H },
-    },
+  const marks = {
+    photo: { x: (pcx + d * 0.36) / W, y: (pcy - d * 0.36) / H },
+    // Clear of the name at preview size (about a third of the image).
+    name: { x: Math.min(nameEnd + 76, right - 10) / W, y: (card.y + 92) / H },
   }
+  if (overlay) return { canvas: c, marks }
+  const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
+  return { blob, marks }
+}
+
+/* A video status with the card on it (19 Oct 2026, Rahul): the overlay above
+   drawn over every frame, on the phone, with the same WebCodecs library that
+   shrinks uploads (`mediabunny`). 720 × 1280 — what WhatsApp shows — on the
+   phone's hardware encoder where it has one. One video at a time across the
+   shelf: two at once would halve both. */
+export const STATUS_VIDEO_W = 720
+export const STATUS_VIDEO_H = 1280
+export const CANNOT_MAKE_VIDEO = 'This phone cannot add your card to a video.'
+let videoTurn = Promise.resolve()
+
+export function composeVideoStatus(src, details, onProgress = null) {
+  const job = videoTurn.then(() => makeVideoStatus(src, details, onProgress))
+  videoTurn = job.catch(() => {})
+  return job
+}
+
+async function makeVideoStatus(src, details, onProgress) {
+  if (typeof window === 'undefined' || !('VideoEncoder' in window)) throw new Error(CANNOT_MAKE_VIDEO)
+  const mb = await import('mediabunny')
+  if (!(await mb.canEncodeVideo('avc')) || !(await mb.canEncodeAudio('aac'))) throw new Error(CANNOT_MAKE_VIDEO)
+  const layer = await composeStatus(null, details, { overlay: true })
+  const got = await fetch(src)
+  if (!got.ok) throw new Error('Could not load that video.')
+  const input = new mb.Input({ formats: mb.ALL_FORMATS, source: new mb.BlobSource(await got.blob()) })
+  const output = new mb.Output({
+    format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }),
+    target: new mb.BufferTarget(),
+  })
+  const W = STATUS_VIDEO_W
+  const H = STATUS_VIDEO_H
+  const frame = document.createElement('canvas')
+  frame.width = W
+  frame.height = H
+  const ctx = frame.getContext('2d')
+  const conversion = await mb.Conversion.init({
+    input,
+    output,
+    video: {
+      width: W,
+      height: H,
+      fit: 'cover',
+      frameRate: 30,
+      codec: 'avc',
+      quality: new mb.Quality({ bitrate: 2_500_000 }),
+      hardwareAcceleration: 'prefer-hardware',
+      forceTranscode: true,
+      process: (sample) => {
+        sample.draw(ctx, 0, 0, W, H)
+        ctx.drawImage(layer.canvas, 0, 0, W, H)
+        return frame
+      },
+    },
+    audio: { codec: 'aac', quality: new mb.Quality({ bitrate: 128_000 }) },
+    tags: {},
+  })
+  if (!conversion.isValid) throw new Error(CANNOT_MAKE_VIDEO)
+  if (onProgress) conversion.onProgress = (p) => onProgress(Math.max(0, Math.min(1, p)))
+  await conversion.execute()
+  const buffer = output.target.buffer
+  if (!buffer) throw new Error(CANNOT_MAKE_VIDEO)
+  return new Blob([buffer], { type: 'video/mp4' })
+}
+
+/** The overlay alone, as an image URL for the preview over a playing video. */
+export async function statusOverlay(details) {
+  const layer = await composeStatus(null, details, { overlay: true })
+  const blob = await new Promise((resolve) => layer.canvas.toBlob(resolve, 'image/png'))
+  return { url: URL.createObjectURL(blob), marks: layer.marks }
 }
 
 function roundRect(ctx, x, y, w, h, r) {

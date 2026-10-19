@@ -29,6 +29,28 @@ VIDEO_STATUS_BYTES = 30 * 1024 * 1024
 VIDEO_EXTS = (".mp4", ".webm", ".mov", ".m4v")
 
 
+STATUS_VIDEO_SECONDS = 30
+
+
+def mp4_seconds(data):
+    """An MP4's length from its `mvhd` box, or None when it cannot be read
+    (the console has no ffprobe). Version 0 keeps 32-bit times, 1 keeps 64."""
+    import struct
+
+    at = data.find(b"mvhd")
+    if at < 0 or len(data) < at + 32:
+        return None
+    version = data[at + 4]
+    try:
+        if version == 1:
+            scale, length = struct.unpack(">IQ", data[at + 24:at + 36])
+        else:
+            scale, length = struct.unpack(">II", data[at + 16:at + 24])
+    except struct.error:
+        return None
+    return length / scale if scale else None
+
+
 def is_video(url):
     return (url or "").split("?")[0].lower().endswith(VIDEO_EXTS)
 
@@ -49,7 +71,7 @@ class BhaktiAssetForm(forms.ModelForm):
     upload = forms.FileField(
         required=False,
         label="New file",
-        help_text="A picture for status and wallpapers (a status can be a video, up to 30 MB, MP4), audio for tunes, bhajans and mantras. Replaces the current one.",
+        help_text="A picture for status and wallpapers (a status can be a video: MP4, up to 30 seconds and 30 MB), audio for tunes, bhajans and mantras. Replaces the current one.",
     )
     cover = forms.ImageField(
         required=False,
@@ -108,6 +130,14 @@ class BhaktiAssetForm(forms.ModelForm):
                 raise forms.ValidationError({"upload": "A video status can be up to 30 MB."})
             if want == "video" and not upload.name.lower().endswith(VIDEO_EXTS):
                 raise forms.ValidationError({"upload": "Upload the video as MP4."})
+            if want == "video":
+                # 30 seconds, WhatsApp's own status length, and quick for the
+                # phone to put the card on (19 Oct 2026, Rahul).
+                seconds = mp4_seconds(upload.read())
+                upload.seek(0)
+                if seconds and seconds > STATUS_VIDEO_SECONDS + 0.5:
+                    raise forms.ValidationError(
+                        {"upload": f"A video status can be up to {STATUS_VIDEO_SECONDS} seconds. This one is {round(seconds)}."})
             try:
                 media.validate_upload("reel" if want == "video" else want, upload.name, upload.size, mime)
             except media.ValidationError as exc:

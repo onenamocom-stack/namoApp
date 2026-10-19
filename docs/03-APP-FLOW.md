@@ -476,9 +476,13 @@ and a line under the grid says what to do with the file.
 WhatsApp, then Status. Their own photo goes through the identical path. Desktop
 has no file share, so it falls back to saving the composed image.
 **A status can be a video** (19 Oct 2026, Rahul), uploaded in the console
-(MP4, up to 30 MB, with an optional cover picture). Its card plays it muted,
-tap for sound; **Share** hands the video file itself to the share sheet. No
-name, photo or date is drawn on a video. Reshared to Home it shows its cover
+(MP4, up to 30 seconds and 30 MB, with an optional cover picture). Its card
+plays it muted, tap for sound, with the same card a picture status has laid
+over it (photo, name, date, tithi, the NAMO mark; the pencil changes them).
+The phone draws that card into every frame at 720×1280, starting as soon as
+the card is half on screen, one video at a time; **Share** shows
+*Preparing n%* until the file is ready, then hands it to the share sheet. A
+phone that cannot encode shares the plain video and says so. Reshared to Home it shows its cover
 or its own first frame; its WhatsApp link preview is the cover, or the site's
 card without one.
 
