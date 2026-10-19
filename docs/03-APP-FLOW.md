@@ -615,7 +615,10 @@ carry. A subcategory pill matches the product's subcategory. **Tapping a
 card opens the product's page.** Its cover photo is on the card when it has
 one, the engraved plate when it does not.
 
-**Edit, on your own post, reel or blog** (6 Oct 2026): an **Edit** button
+**Report, on somebody else's post, reel or blog**: the ⋯ beside Follow at
+the top of every feed card opens the report sheet (the reel and blog cards
+got it on 19 Oct 2026, Rahul; before that only the reel viewer had it for
+reels). **Edit, on your own post, reel or blog** (6 Oct 2026): an **Edit** button
 where somebody else's post has the ⋯ report menu — on the feed card, beside
 each piece in the Studio's "Already published", and in the blog reader's
 top bar. It opens the composer over the screen, that kind only, filled in:

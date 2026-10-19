@@ -1266,6 +1266,7 @@ function ReelCard({ reel, resharedBy }) {
   const r = edited ? { ...reel, ...edited } : reel
   const [editing, setEditing] = useState(false)
   const mine = !resharedBy && isMine(r.authorId, session?.user?.id)
+  const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(r.comments ?? 0)
   const isVideo = isVideoUrl(r.mediaUrl)
@@ -1303,6 +1304,9 @@ function ReelCard({ reel, resharedBy }) {
         name={r.consultant}
         to={authorHref(r)}
         follow={r}
+        // Report on the card too, not only inside the reel viewer (19 Oct 2026, Rahul).
+        onMore={mine ? undefined : () => setReporting(true)}
+        moreLabel="Report this post"
         onEdit={mine ? () => setEditing(true) : undefined}
       />
       {editing && <EditSheet piece={r} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
@@ -1379,6 +1383,7 @@ function ReelCard({ reel, resharedBy }) {
         postAuthorId={r.authorId}
         onCount={setComments}
       />
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} contentId={r.id} />
     </article>
   )
 }
@@ -1540,6 +1545,7 @@ function ArticleCard({ read }) {
   const b = edited ? { ...read, ...edited } : read
   const [editing, setEditing] = useState(false)
   const mine = isMine(b.authorId, session?.user?.id)
+  const [reporting, setReporting] = useState(false)
   const [commenting, setCommenting] = useState(false)
   const [comments, setComments] = useState(b.comments ?? 0)
   return (
@@ -1552,6 +1558,8 @@ function ArticleCard({ read }) {
         note={t('home.publishedArticle')}
         to={authorHref(b)}
         follow={b}
+        onMore={mine ? undefined : () => setReporting(true)}
+        moreLabel="Report this post"
         onEdit={mine ? () => setEditing(true) : undefined}
       />
       {editing && <EditSheet piece={b} onClose={() => setEditing(false)} onSaved={(f) => setEdited((e) => ({ ...e, ...f }))} />}
@@ -1593,6 +1601,7 @@ function ArticleCard({ read }) {
         postAuthorId={b.authorId}
         onCount={setComments}
       />
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} contentId={b.id} />
     </article>
   )
 }
