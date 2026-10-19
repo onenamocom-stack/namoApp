@@ -94,24 +94,19 @@ class TestTheDay:
         assert d["attended"] == {"chat": 1, "audio": 0, "video": 1}
         assert d["recharged"] == 1 and d["badge"] == "master"
 
-    def test_23_ist_writes_every_pro_once_and_tells_them(self, pro):
+    def test_10_ist_next_morning_writes_the_whole_day_once_and_tells_them(self, pro):
+        # 00:00 to 24:00, sent at 10:00 the next morning (Rahul).
         _, service = pro
         _session(service, when=at(10))
-        report.tick(now=at(22, 59))
-        assert not ProDayReport.objects.filter(day=DAY, notified_at__isnull=False).exists()
-        report.tick(now=at(23, 1))
-        report.tick(now=at(23, 2))
-        row = ProDayReport.objects.get(consultant_id=PRO, day=DAY)
-        assert row.attended_chat == 1 and row.notified_at is not None
-        assert Notification.objects.filter(profile_id=PRO, kind="pro.daily_report").count() == 1
-
-    def test_the_morning_after_writes_the_day_again_with_its_last_hour(self, pro):
-        _, service = pro
-        report.tick(now=at(23, 1))
         _session(service, when=at(23, 30))
-        report.tick(now=at(0, 40, day=DAY + timedelta(days=1)))
+        next_day = DAY + timedelta(days=1)
+        report.tick(now=at(9, 59, day=next_day))
+        assert not ProDayReport.objects.filter(day=DAY).exists()
+        report.tick(now=at(10, 1, day=next_day))
+        report.tick(now=at(10, 2, day=next_day))
         row = ProDayReport.objects.get(consultant_id=PRO, day=DAY)
-        assert row.final and row.attended_chat == 1
+        assert row.attended_chat == 2 and row.final and row.notified_at is not None
+        assert Notification.objects.filter(profile_id=PRO, kind="pro.daily_report").count() == 1
 
 
 def test_the_api_gives_the_last_seven_days(api_client, sign_hs256, hs256_mode, pro):

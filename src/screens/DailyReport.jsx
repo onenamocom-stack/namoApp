@@ -10,8 +10,9 @@ import { myDailyReport } from '../lib/consultants.js'
  * 100, customers who recharged after reaching them, and their badge. Today
  * first, then the six days before. The server does the arithmetic
  * (`apps/consultants/report.py`); a video answered weighs 2, audio 1.5,
- * chat 1, and Online time is 30% of the score, 8 hours full marks. The same
- * numbers arrive as a notification at 11 pm.
+ * chat 1, and Online time is 30% of the score, 8 hours full marks. A day is
+ * 00:00 to 24:00; yesterday's numbers arrive as a notification at 10 am.
+ * Only the Pro's own report, here; the console has everybody's.
  */
 const BADGE = { pro: 'Pro', expert: 'Expert', master: 'Master' }
 
@@ -21,7 +22,7 @@ function hm(seconds) {
 }
 
 function dayLabel(iso, i) {
-  if (i === 0) return 'Today'
+  if (i === 0) return 'Today, so far'
   if (i === 1) return 'Yesterday'
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
 }

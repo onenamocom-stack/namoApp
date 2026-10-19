@@ -638,9 +638,9 @@ class PresenceSwitch(models.Model):
 
 
 class ProDayReport(models.Model):
-    """One Pro's day, as `report.write_day` found it (19 Oct 2026, Rahul):
-    the console's daily list and what the 23:00 IST notification said.
-    Written again the next morning with the day's last hour (`final`)."""
+    """One Pro's whole day, 00:00 to 24:00 IST, as `report.write_day` found
+    it at 10:00 the next morning (19 Oct 2026, Rahul): the console's daily
+    list and what that morning's notification said."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     consultant_id = models.UUIDField()  # profiles id

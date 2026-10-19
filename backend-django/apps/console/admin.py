@@ -658,9 +658,9 @@ from apps.consultants.models import ProDayReport  # noqa: E402
 class ProDayReportAdmin(dj.ModelAdmin):
     """Every Pro's day, scored (19 Oct 2026, Rahul): Online time, calls
     received and answered (video weighs 2, audio 1.5, chat 1), customers
-    who recharged after reaching them, and the badge. Written at 23:00 IST,
-    when each Pro is sent theirs, and again the next morning with the last
-    hour (`final`). Read only; `apps/consultants/report.py` has the rules."""
+    who recharged after reaching them, and the badge. A day is 00:00 to
+    24:00 IST; it is written at 10:00 the next morning, when each Pro is
+    sent theirs. Read only; `apps/consultants/report.py` has the rules."""
 
     list_display = ("who", "day", "badge", "online", "received", "answered", "video", "recharged", "score_bar", "final")
     list_filter = ("day", "badge", "final")

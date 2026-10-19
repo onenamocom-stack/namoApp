@@ -2146,8 +2146,8 @@ rule); a day's Online time is the on spans inside it. Nothing before
 **`pro_day_reports`**: one row per approved Pro per IST `day` (unique):
 `live_seconds`, `received_chat|audio|video`, `attended_chat|audio|video`,
 `recharged`, `score` (0–100), `badge`, `final`, `notified_at`,
-`updated_at`. Written at 23:00 IST with the notification, and again after
-00:30 with the day's last hour (`final`). The rules — weights, the 70/30
+`updated_at`. A whole IST day, 00:00 to 24:00, written at 10:00 the next
+morning with the notification (`final`). The rules — weights, the 70/30
 split, what counts as a recharge — are in `apps/consultants/report.py`;
 the Pro's own screen computes live from the sources, not from this table.
 

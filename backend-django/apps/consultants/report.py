@@ -16,9 +16,10 @@ recharged. His tag").
               topped up their wallet the same day
   badge       Pro, Expert or Master, from the console
 
-Days are IST calendar days. `write_day` keeps a row per approved Pro in
-`ProDayReport` for the console and sends each their numbers at 23:00 IST;
-the next morning the row is written again with the last hour in it.
+Days are whole IST calendar days, 00:00 to 24:00. At 10:00 IST the next
+morning `write_day` keeps a row per approved Pro in `ProDayReport` for the
+console and sends each their own numbers (Rahul, same day: "00:00 se 24:00
+... notification next day 10 baje"; it was 23:00 the same night).
 """
 
 from datetime import datetime, time, timedelta
@@ -33,8 +34,7 @@ IST = ZoneInfo("Asia/Kolkata")
 WEIGHT = {"chat": 1.0, "audio": 1.5, "video": 2.0}
 FULL_DAY_SECONDS = 8 * 3600
 CALLS_SHARE = 0.7
-NOTIFY_AT = time(23, 0)
-FINAL_AFTER = time(0, 30)
+NOTIFY_AT = time(10, 0)  # IST, the morning after the day
 
 
 def ist_day(now=None):
@@ -166,8 +166,8 @@ def write_day(day, *, notify=False, final=False, now=None):
         )
         if notify and (d["received_total"] or d["live_seconds"]):
             notify_service.push(
-                cid, kind="pro.daily_report", title=f"Today's score: {d['score']}/100",
-                body=(f"Online {_hm(d['live_seconds'])} · calls {d['attended_total']} of "
+                cid, kind="pro.daily_report", title=f"Yesterday's score: {d['score']}/100",
+                body=(f"{day.strftime('%d %b')}: Online {_hm(d['live_seconds'])} · calls {d['attended_total']} of "
                       f"{d['received_total']} answered · {d['recharged']} recharged"),
                 ref_type="pro_report", ref_id=None, dedupe_key=f"pro-report:{cid}:{day.isoformat()}",
             )
@@ -178,15 +178,11 @@ def write_day(day, *, notify=False, final=False, now=None):
 
 
 def tick(now=None):
-    """From the minute sweep: today's reports and notifications at 23:00
-    IST, once; yesterday's written again after 00:30 with its last hour."""
+    """From the minute sweep: at 10:00 IST, yesterday's whole day written
+    for every Pro and each told theirs, once."""
     now = now or timezone.now()
     local = now.astimezone(IST)
-    today = local.date()
-    done = []
-    if local.time() >= NOTIFY_AT and not ProDayReport.objects.filter(day=today, notified_at__isnull=False).exists():
-        done.append(("notified", write_day(today, notify=True, now=now)))
-    yesterday = today - timedelta(days=1)
-    if local.time() >= FINAL_AFTER and not ProDayReport.objects.filter(day=yesterday, final=True).exists():
-        done.append(("final", write_day(yesterday, final=True, now=now)))
-    return done
+    yesterday = local.date() - timedelta(days=1)
+    if local.time() < NOTIFY_AT or ProDayReport.objects.filter(day=yesterday, notified_at__isnull=False).exists():
+        return []
+    return [("notified", write_day(yesterday, notify=True, final=True, now=now))]
