@@ -6492,3 +6492,26 @@ allow a zone transfer. Read GoDaddy's DNS page before switching.
 own nameserver), and the SPF record includes it. That fails SPF for mail
 from the domain today. Either add the record GoDaddy meant there or drop
 the include.
+
+## 84. The Android app (TWA), built — 19 Oct 2026
+
+`com.onenamo.app`, "Namo – Hindu Social Network" (launcher "Namo"), version
+1.0.0 (code 1), Android 7+ (API 24), a Trusted Web Activity of
+https://1namo.com/ — every web deploy is the app; no app update needed.
+
+- **Built on the owner's laptop, outside the repo:** `~/android-build/`
+  holds a portable JDK 17, the Android SDK (build-tools 36.1.0, platform
+  36), the Bubblewrap project `namo-twa/` (twa-manifest.json), and
+  `release/namo-1.0.0.apk` and `.aab`. Gradle builds it
+  (`./gradlew assembleRelease bundleRelease` from Git Bash — Bubblewrap's
+  own build step failed on Windows); `~/android-build/sign.sh` signs both.
+- **Upload key:** `~/android-build/namo-upload-key.jks`, alias `namo`, its
+  password in `namo-upload-key-PASSWORD.txt` beside it. Not in the repo.
+  **Back both up**: without them no update can be uploaded.
+- **Site:** `manifest.webmanifest` and icons (192, 512, maskable 512) in
+  `public/`; `public/.well-known/assetlinks.json` with the upload key's
+  SHA-256 (`A0:28:…:64:06`); `firebase.json` no longer ignores dot-folders,
+  so `.well-known` deploys. Google's Digital Asset Links API confirms it.
+- **Still to do:** after the first upload, add Play App Signing's SHA-256
+  (Play Console → App integrity) to `assetlinks.json`, or Play installs open
+  with an address bar. Store listing, Data safety, Content rating.
