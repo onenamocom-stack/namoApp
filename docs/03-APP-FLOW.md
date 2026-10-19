@@ -1417,8 +1417,11 @@ without the pipeline, uploads it the old way. A chosen
 photo, on a festival's days, shows a row of **festival frames** under it
 (below). A new reel
 longer than 90 seconds opens **Cut the video** (19 Oct 2026, Rahul; it was
-refused until then): the video loops the chosen stretch, *Starts at* and
-*Ends at* sliders set it, at most 90 seconds, and **Use this part** cuts it
+refused until then): the whole video plays with its controls and the
+time it is at (1:23 / 4:10); **Start here** and **End here** take that
+moment, *Starts at* and *Ends at* sliders fine-tune it, a bar shows the
+part against the whole, **Play the part** loops just it; at most 90
+seconds, and **Use this part** cuts it
 on the phone while it is made smaller, so only that part uploads. A phone
 that cannot encode is told to trim it in its gallery. Editing a reel's
 video still refuses one over 90 seconds.
