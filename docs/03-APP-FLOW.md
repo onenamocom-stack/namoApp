@@ -1847,6 +1847,14 @@ Refunds are a separate forward transition, never a mutation of the original.
   came from. A call answered in Namo Consult returns there when it ends.
 - **Busy** shows beside the consultant's name while a request rings for them or
   a session is live; it clears by itself when that ends.
+- **Back to a live call** (20 Oct 2026, Rahul). Leaving the call screen
+  does not end the call. Off the call screen, either app shows a bar over
+  every screen while the person has a live call: *Call with <name> is on*,
+  End, Return. Return opens the call screen, which joins the same room. The
+  bar appears on leaving the call screen, on opening or returning to the app,
+  and on moving between screens; it goes when the call ends. A seeker who
+  presses Call or Chat again for a Pro they are already live with is taken to
+  that session, not refused.
 - **The review ask** (17 Oct 2026, Rahul; 20 Oct: the solved question, and
   only low ratings held). When a call or chat ends, by either person or by
   the clock, the seeker gets the review sheet: a rating of 1 to 5, *Is your

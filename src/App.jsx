@@ -11,6 +11,7 @@ import Boundary from './components/Boundary.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import CartSheet from './components/CartSheet.jsx'
 import ReviewAsk from './components/ReviewAsk.jsx'
+import LiveCallBar from './components/LiveCallBar.jsx'
 import ShareSheet from './components/ShareSheet.jsx'
 
 import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
@@ -650,6 +651,7 @@ function Frame() {
         <ChatPanel />
         {!isPro && <CartSheet />}
         {!isPro && <ReviewAsk />}
+        <LiveCallBar />
         <ShareSheet />
         <Toast message={toast} />
       </div>

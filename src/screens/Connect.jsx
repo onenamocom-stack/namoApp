@@ -77,7 +77,9 @@ export default function Connect() {
     if (!alive.current) return
     if (result?.ok) {
       sessionId.current = result.session_id
-      if (via !== 'chat') {
+      // A call already live with them comes back as that session (20 Oct
+      // 2026); its mode, not the button, decides the screen.
+      if ((result.mode ?? (via === 'chat' ? 'chat' : 'call')) === 'call') {
         navigate(`/call/${result.session_id}`, { replace: true })
         return
       }

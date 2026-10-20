@@ -351,6 +351,15 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
     now = now or timezone.now()
     if str(consultant_id) == str(seeker_id):
         return {"ok": False, "reason": REFUSAL_SELF_CHAT}
+    # Already live with this consultant: the same session, to go back to
+    # (20 Oct 2026, Rahul: a seeker who left a call pressed Call again and
+    # was refused while the Pro was still on it). Nothing new is written.
+    ongoing = Session.objects.filter(
+        seeker_id=seeker_id, consultant_id=consultant_id, status=Session.Status.LIVE,
+    ).first()
+    if ongoing is not None:
+        return {"ok": True, "session_id": str(ongoing.id), "rate_paise": ongoing.rate_paise,
+                "mode": ongoing.mode, "resumed": True}
     live_rows = ConsultantService.objects.filter(
         consultant_id=consultant_id,
         active=True,

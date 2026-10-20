@@ -343,6 +343,16 @@ class TestRequest:
             assert (session.service_id, session.rate_paise) == (row.id, rate)
             Session.objects.filter(pk=session.pk).update(status=Session.Status.DECLINED)
 
+    def test_asking_again_while_live_returns_that_session(self, pro_user):
+        """20 Oct 2026, Rahul: a seeker who left the call screen pressed Call
+        again and was refused while the Pro was still on the call."""
+        session, _ = _live_session(pro_user, fund=RATE * 20)
+        before = _counts(SEEKER)
+        again = services.request_chat(SEEKER, PRO, pro_user[1].id, channel="video")
+        assert again["ok"] is True and again["resumed"] is True
+        assert again["session_id"] == str(session.id) and again["mode"] == session.mode
+        assert _counts(SEEKER) == before  # nothing written, nothing held
+
     def test_self_chat_refused(self, pro_user):
         service = pro_user[1]
         result = services.request_chat(PRO, PRO, service.id)
@@ -510,9 +520,14 @@ class TestAccept:
     def test_whole_balance_held_so_nothing_else_can_be_bought(self, pro_user):
         # 017's documented cost, proved sideways the way the check does it:
         # with the whole balance held by the live session, the same seeker's
-        # next request is refused for want of money.
+        # next request is refused for want of money. (To the SAME consultant
+        # it is the live session handed back since 20 Oct 2026, with no new
+        # hold: test_asking_again_while_live_returns_that_session.) Ended
+        # here without settling, the balance stays held and a new knock is
+        # refused.
         service = pro_user[1]
-        _live_session(pro_user, minutes=10, fund=RATE * 10)
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        Session.objects.filter(pk=session.id).update(status=Session.Status.ENDED)
         result = services.request_chat(SEEKER, PRO, service.id)
         assert result == {"ok": False, "reason": REFUSAL_SHORT_BALANCE,
                           "rate_paise": RATE}
