@@ -849,6 +849,14 @@ const DEITY_WORDS = {
   Mahavir: ['mahavir', 'navkar', 'jain'],
   Aadinath: ['aadinath', 'adinath', 'rishabh', 'navkar', 'jain'],
   Shani: ['shani'],
+  // The temple-channel deities (20 Oct 2026).
+  Krishna: ['krishna', 'krishn', 'kanha', 'govind', 'gopal', 'radhe', 'hare krishna'],
+  Ram: ['ram ', 'raam', 'shri ram', 'siya', 'ramayan'],
+  Balaji: ['balaji', 'venkatesh', 'govinda', 'vishnu', 'narayan'],
+  Jagannath: ['jagannath'],
+  'Sai Baba': ['sai'],
+  'Khatu Shyam': ['khatu', 'shyam baba', 'shyam'],
+  Saraswati: ['saraswati', 'sharada'],
 }
 function forDeity(asset, deity) {
   const hay = `${asset.deity ?? ''} ${asset.title ?? ''}`.toLowerCase()
