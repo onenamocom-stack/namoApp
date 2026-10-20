@@ -10,6 +10,7 @@ Fulfilment runs it, the tier that already runs the shop's pictures.
 
 from django import forms
 from django.contrib import admin as dj
+from django.contrib import messages
 from django.utils.html import format_html
 
 from apps.console.audit import AuditedAdmin, record
@@ -19,7 +20,7 @@ from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
 from apps.shop.admin import RupeeField
 
-from .models import BhaktiAsset, DarshanDeity, DarshanImage
+from .models import BhaktiAsset, DarshanDeity, DarshanImage, LiveDarshan
 
 AUDIO_KINDS = {BhaktiAsset.Kind.TUNE, BhaktiAsset.Kind.BHAJAN, BhaktiAsset.Kind.MANTRA}
 # A status may be a video too (19 Oct 2026, Rahul): shared to WhatsApp as
@@ -394,3 +395,78 @@ def _site_url(url):
     """The seeded murtis are files in the app (`/deities/...`); the console
     is another host, so show those from the app's own domain."""
     return f"https://1namo.com{url}" if url.startswith("/") else url
+
+
+# ── Live darshan (20 Oct 2026, Rahul) ───────────────────────────────────────
+
+
+class LiveDarshanForm(forms.ModelForm):
+    class Meta:
+        model = LiveDarshan
+        fields = ("temple", "temple_hi", "location", "location_hi", "youtube_url", "hours", "image_url",
+                  "sort", "active")
+        widgets = {name: forms.TextInput(attrs={"size": 80}) for name in
+                   ("temple", "temple_hi", "location", "location_hi", "youtube_url", "hours", "image_url")}
+        labels = {"temple": "Temple name", "temple_hi": "Temple name (Hindi)", "location_hi": "Location (Hindi)",
+                  "youtube_url": "YouTube link", "hours": "Live hours (IST)", "image_url": "Card picture URL"}
+        help_texts = {
+            "youtube_url": "The live video's link, or the temple's channel (youtube.com/@name or /channel/UC…) "
+                           "when each day's stream is a new video. Checked with YouTube on save: a stream that "
+                           "does not allow playing in other apps is refused.",
+            "hours": 'e.g. "05:00-12:00, 16:00-22:00". Empty: live all day.',
+            "image_url": "Optional. Empty: the video's own picture.",
+        }
+
+    def clean(self):
+        from . import youtube
+
+        data = super().clean()
+        try:
+            youtube.parse_hours(data.get("hours"))
+            url = data.get("youtube_url") or ""
+            if url and (not self.instance.pk or url != self.instance.youtube_url
+                        or not (self.instance.video_id or self.instance.channel_id)):
+                self.cleaned_ids = youtube.check(url)
+        except youtube.Refused as err:
+            raise forms.ValidationError(str(err)) from None
+        return data
+
+
+@dj.register(LiveDarshan, site=site)
+class LiveDarshanAdmin(AuditedAdmin, _FulfilmentRuns):
+    audit_target = "live_darshan"
+    form = LiveDarshanForm
+    list_display = ("temple", "location", "hours_shown", "source", "sort", "active")
+    list_editable = ("sort", "active")
+    ordering = ("sort", "temple")
+    readonly_fields = ("preview",)
+    fieldsets = (
+        ("Temple", {"fields": ("temple", "location", "temple_hi", "location_hi")}),
+        ("Stream", {"fields": ("youtube_url", "hours", "preview")}),
+        ("Card", {"fields": ("image_url", "sort", "active")}),
+    )
+
+    @dj.display(description="Hours")
+    def hours_shown(self, obj):
+        return obj.hours or "All day"
+
+    @dj.display(description="Plays")
+    def source(self, obj):
+        return "Video" if obj.video_id else "Channel's live stream"
+
+    @dj.display(description="Preview")
+    def preview(self, obj):
+        from . import youtube
+
+        if not (obj.video_id or obj.channel_id):
+            return "Shown after saving."
+        return format_html('<iframe src="{}" width="360" height="203" style="border:0;border-radius:8px" '
+                           'allow="autoplay; encrypted-media" allowfullscreen></iframe>', youtube.embed_url(obj))
+
+    def save_model(self, request, obj, form, change):
+        ids = getattr(form, "cleaned_ids", None)
+        if ids:
+            obj.video_id, obj.channel_id, note = ids
+            if note:
+                self.message_user(request, note, messages.WARNING)
+        super().save_model(request, obj, form, change)

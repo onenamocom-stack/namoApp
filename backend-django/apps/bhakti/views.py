@@ -107,6 +107,30 @@ def darshan(request):
     return Response(out)
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def live_darshans(request):
+    """Temples' live darshan for the darshan page (20 Oct 2026, Rahul):
+    each with whether its hours say live now and, if not, when next."""
+    from . import youtube
+    from .models import LiveDarshan
+
+    out = []
+    for row in LiveDarshan.objects.filter(active=True).order_by("sort", "temple"):
+        try:
+            live = youtube.live_now(row.hours)
+            nxt = None if live else youtube.next_start(row.hours)
+        except youtube.Refused:
+            live, nxt = True, None
+        out.append({
+            "id": str(row.id), "temple": row.temple, "temple_hi": row.temple_hi,
+            "location": row.location, "location_hi": row.location_hi,
+            "embed_url": youtube.embed_url(row), "image_url": youtube.thumbnail(row),
+            "hours": row.hours, "live": live, "next_at": nxt,
+        })
+    return Response(out)
+
+
 def _comment_row(c):
     """The shape of a post's comment (apps/content/views.py), so one sheet
     in the app draws both."""

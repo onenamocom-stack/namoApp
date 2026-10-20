@@ -12,7 +12,8 @@ import {
   Thali,
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
-import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
+import { fetchAssets, fetchDarshan, fetchLiveDarshans } from '../lib/bhakti.js'
+import LiveDarshan from '../components/LiveDarshan.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -155,6 +156,10 @@ export default function Pooja() {
   const deity = deities.find((d) => d.name === deityName) ?? deities[0]
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
+  // Temples' live YouTube darshan (20 Oct 2026, Rahul): a Live pill first in
+  // the row when the console has any; on, it takes the shrine's place.
+  const [liveRows, setLiveRows] = useState([])
+  const [liveOn, setLiveOn] = useState(false)
   // Sangeet (4 Oct 2026): the bhajans and mantras from Bhakti, played over
   // the puja. One <audio> for the screen, so starting one stops the other,
   // and leaving the shrine unmounts it and the music stops with it.
@@ -211,6 +216,12 @@ export default function Pooja() {
       ?.querySelector('[aria-pressed="true"]')
       ?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [deity])
+
+  useEffect(() => {
+    fetchLiveDarshans()
+      .then(setLiveRows)
+      .catch((err) => console.error('[darshan] live load failed:', err.message))
+  }, [])
 
   useEffect(() => {
     fetchDarshan()
@@ -409,14 +420,36 @@ export default function Pooja() {
         }}
       >
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
+          {liveRows.length > 0 && (
+            <li className="flex-none">
+              <button
+                type="button"
+                aria-pressed={liveOn}
+                onClick={() => {
+                  // The temple's own sound, not the sangeet over it.
+                  stopTrack()
+                  setLiveOn(true)
+                }}
+                className={`caps-sm flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 transition duration-150 active:scale-95 ${
+                  liveOn
+                    ? 'text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
+                    : 'text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
+                }`}
+              >
+                <span className="block h-2 w-2 animate-pulse rounded-full bg-live" />
+                {t('puja.live')}
+              </button>
+            </li>
+          )}
           {deities.map((d) => {
-            const on = d.id === deity.id
+            const on = !liveOn && d.id === deity.id
             return (
               <li key={d.id} className="flex-none">
                 <button
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
+                    setLiveOn(false)
                     setDeityName(d.name)
                     setPic(0)
                   }}
@@ -444,6 +477,9 @@ export default function Pooja() {
       {/* Image scaling: `object-contain` keeps the whole murti, over a
           blurred, darkened copy of itself so the page is filled edge to
           edge. The cropped option went on 11 Oct 2026 (Rahul). */}
+      {liveOn ? (
+        <LiveDarshan rows={liveRows} />
+      ) : (
       <section
         className="relative min-h-0 flex-1 touch-none overflow-hidden bg-[#2a1a0e] [container-type:inline-size]"
         onPointerDown={startSwipe}
@@ -726,7 +762,7 @@ export default function Pooja() {
           </span>
         </button>
       </section>
-
+      )}
 
       {/* Plays over the puja; unmounts with the screen, so the music stops. */}
       <audio ref={player} onEnded={() => setTrack(null)} className="hidden" />

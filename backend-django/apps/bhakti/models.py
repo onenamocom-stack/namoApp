@@ -160,6 +160,39 @@ class DarshanImage(models.Model):
         return self.temple or self.title or str(self.id)
 
 
+class LiveDarshan(models.Model):
+    """A temple's live YouTube darshan, played inside the darshan page
+    (20 Oct 2026, Rahul). Only a stream whose owner lets it play in other
+    apps is added: the console checks with YouTube, and the app never sends
+    anybody to YouTube. Either a video (a 24-hour stream keeps one) or the
+    channel, whose current live stream plays whatever it is today.
+
+    `hours` is when the temple is live, IST, "05:00-12:00, 16:00-22:00";
+    empty is all day."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    temple = models.TextField()
+    temple_hi = models.TextField(blank=True, default="")
+    location = models.TextField(blank=True, default="")
+    location_hi = models.TextField(blank=True, default="")
+    youtube_url = models.TextField()
+    video_id = models.TextField(blank=True, default="")
+    channel_id = models.TextField(blank=True, default="")
+    hours = models.TextField(blank=True, default="")
+    image_url = models.TextField(blank=True, default="")
+    sort = models.IntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "live_darshans"
+        ordering = ("sort", "temple")
+        verbose_name = "live darshan"
+
+    def __str__(self):
+        return self.temple
+
+
 class CommentStatus(models.TextChoices):
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"

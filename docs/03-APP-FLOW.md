@@ -563,6 +563,13 @@ top to bottom —
   follows. Tapping it opens the **murti sheet**, which is **the only place
   the image attribution appears**, so it cannot be removed without removing
   the images.
+- **Live** (20 Oct 2026, Rahul): when the console has temples' live YouTube
+  darshan (docs/05 §5.2c-ter), a **Live** pill comes first in the deity row.
+  On, the shrine gives way to a player (YouTube's, inside Namo) over a list
+  of temples; one live now carries a LIVE mark and plays on a tap, one
+  outside its hours says when it is next live and does not play. It opens on
+  the first temple live. Sangeet stops when Live is chosen. Nothing links to
+  YouTube. A deity pill goes back to the shrine.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told
