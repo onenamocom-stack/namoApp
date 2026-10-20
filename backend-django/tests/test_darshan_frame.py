@@ -183,7 +183,9 @@ class TestDataApi:
 
     def test_live_now(self):
         with self._api([self._video("l" * 11, "live", actualStartTime="2026-10-20T01:00:00Z")]):
-            assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
+            got = youtube.live_status(CHANNEL)
+            # The stream itself, not the channel's live player (20 Oct 2026).
+            assert got["live"] is True and got["last"] is None and "/embed/" + "l" * 11 in got["embed_url"]
             assert youtube.live_video(CHANNEL) == "l" * 11
 
     def test_off_air_the_next_and_the_last_that_embeds(self):
@@ -209,7 +211,8 @@ class TestDataApi:
     def test_nothing_in_the_newest_fifty_asks_whether_it_is_live(self):
         # A 24-hour stream older than the newest fifty uploads: search finds it.
         with self._api([self._video("s" * 11)], live_search=["s" * 11]):
-            assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
+            got = youtube.live_status(CHANNEL)
+            assert got["live"] is True and "/embed/" + "s" * 11 in got["embed_url"]
 
     def test_not_live_and_nothing_recent_plays_the_last_stream_search_finds(self):
         old = self._video("o" * 11, actualStartTime="2026-01-20T02:00:00Z", actualEndTime="2026-01-20T03:00:00Z")

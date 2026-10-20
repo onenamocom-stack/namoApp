@@ -128,6 +128,10 @@ export async function fetchDarshanLive(imageId) {
   const body = await response.json()
   return {
     live: Boolean(body.live),
+    // Live: the stream itself, when the server knows it. The channel's own
+    // live player can say "This video is unavailable" while the stream plays
+    // (Siddhivinayak, 20 Oct 2026).
+    embedUrl: body.live && body.embed_url ? body.embed_url : null,
     startsAt: body.starts_at ? new Date(body.starts_at * 1000) : null,
     // Off air: the temple's latest finished stream, played as a recording.
     last: body.last ? { embedUrl: body.last.embed_url, at: new Date(body.last.started_at) } : null,

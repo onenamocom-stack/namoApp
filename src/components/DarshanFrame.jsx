@@ -61,7 +61,7 @@ export default function DarshanFrame({ image, alt, onAir }) {
     onAir?.(air)
   }, [onAir, image.kind, checks, status])
 
-  if (playing) return <Player id={image.id} src={image.embedUrl} title={alt} />
+  if (playing) return <Player id={image.id} src={(checks && status?.embedUrl) || image.embedUrl} title={alt} />
   if (recording) return <Player id={`${image.id}-rec`} src={recording.embedUrl} title={alt} />
   if (image.kind === 'youtube') return image.src ? <Photo image={image} alt={alt} /> : null
   if (image.kind === 'video') {

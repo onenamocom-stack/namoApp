@@ -168,6 +168,11 @@ def live_status(channel_id):
     try:
         got = _api_status(channel_id)
         status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
+        if got["live"] and got["live_video"]:
+            # Play THE stream, not the channel's live player: for some channels
+            # (Siddhivinayak, live since 3 Oct) the channel player says "This
+            # video is unavailable" while the stream itself plays (20 Oct 2026).
+            status["embed_url"] = recording_url(got["live_video"])
         if not status["live"] and status["last"] is None:
             # Nothing among the newest fifty: a channel that uploads many
             # videos a day (Tirupati's SVBC, a 24-hour stream started weeks
@@ -177,6 +182,8 @@ def live_status(channel_id):
             # searches (100 units each), so this answer keeps three hours.
             deeper = _api_search_status(channel_id)
             status["live"], status["last"] = deeper["live"], deeper["last"]
+            if deeper.get("embed_url"):
+                status["embed_url"] = deeper["embed_url"]
             seconds = SEARCH_SECONDS
     except Refused:
         status = {"live": True, "starts_at": None, "last": None}
@@ -270,7 +277,7 @@ def _api_search_status(channel_id):
     found = _api("search", part="id", channelId=channel_id, eventType="live", type="video",
                  maxResults=1).get("items") or []
     if found:
-        return {"live": True, "last": None}
+        return {"live": True, "last": None, "embed_url": recording_url(found[0]["id"]["videoId"])}
     done = [i["id"]["videoId"] for i in _api("search", part="id", channelId=channel_id,
                                               eventType="completed", type="video", order="date",
                                               maxResults=5).get("items") or []]
