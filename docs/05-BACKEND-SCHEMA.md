@@ -1399,6 +1399,13 @@ YouTube's oEmbed on save and refuses one whose owner turned embedding off; a
 channel link plays the channel's current live stream, and a channel not live
 at that moment saves with a warning to check the preview. The read adds
 `kind` ('image' | 'video' | 'youtube'), `video_url` and `embed_url`.
+`live_hours` and `live_hours_hi` (text, default '', `bhakti/0011`) carry a
+channel's usual live timings in the console's words; the read adds them and
+`checks_live` (a channel link, not a fixed video). `GET
+/v1/bhakti/darshan/<id>/live/` answers `{live, starts_at}` for a channel
+murti from its /live and /streams pages, `starts_at` being the next stream
+the temple scheduled on YouTube (unix seconds) or null; cached three
+minutes per channel.
 
 ### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
 

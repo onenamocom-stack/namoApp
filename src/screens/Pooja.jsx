@@ -363,8 +363,10 @@ export default function Pooja() {
     setTrack(null)
   }
 
-  // A temple's YouTube darshan has its own sound: Sangeet stops for it.
-  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube'
+  // A temple's YouTube darshan has its own sound: Sangeet stops for it,
+  // unless the temple is off air (`air` false, from the frame).
+  const [air, setAir] = useState(null)
+  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && air !== false
   useEffect(() => {
     if (onYoutube) stopTrack()
   }, [onYoutube])
@@ -392,6 +394,8 @@ export default function Pooja() {
   // The console can take a murti away while it is showing.
   const at = Math.min(pic, deity.images.length - 1)
   const image = deity.images[at]
+  // A temple channel added without a photo stands on the deity's first one.
+  const cover = deity.images.find((i) => i.src)?.src
   const hi = lang === 'hi'
   const templeName =
     (hi && image.templeHi) || image.temple || t('puja.mandirOf', { name: hi ? deity.nameHi : deity.name })
@@ -457,10 +461,10 @@ export default function Pooja() {
         onPointerUp={endSwipe}
         onPointerCancel={() => (swipe.current = null)}
       >
-        {image.src && (
+        {(image.src || cover) && (
           <img
             key={`wash-${image.id}`}
-            src={image.src}
+            src={image.src || cover}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full scale-110 object-cover"
@@ -472,7 +476,8 @@ export default function Pooja() {
           style={{ top: bandCqw(BAND.body - 30), bottom: slabCqw(0.62) }}
         >
           {/* A photo, a video or a temple's YouTube video (20 Oct 2026). */}
-          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} />
+          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} onAir={setAir}
+            cover={cover} />
         </span>
 
         {/* Lamp light over the murti, always breathing. */}
@@ -551,7 +556,7 @@ export default function Pooja() {
               <span className="truncate">{place || image.title}</span>
               {/* A temple's YouTube darshan says so here, under the name
                   (20 Oct 2026, Rahul), not with a button of its own. */}
-              {image.kind === 'youtube' && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>}
+              {image.kind === 'youtube' && air === true && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>}
               {deity.images.length > 1 && (
                 <span className="flex-none opacity-80">· {at + 1}/{deity.images.length}</span>
               )}

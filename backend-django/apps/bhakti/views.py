@@ -100,6 +100,11 @@ def darshan(request):
                 "image_url": i.image_url or youtube.thumbnail(i),
                 "video_url": i.video_url,
                 "embed_url": youtube.embed_url(i),
+                # A channel link may be off air: the app asks `darshan/<id>/live/`
+                # before it plays it (20 Oct 2026, Rahul).
+                "checks_live": bool(i.youtube_channel_id and not i.youtube_video_id),
+                "live_hours": i.live_hours,
+                "live_hours_hi": i.live_hours_hi,
                 "temple": i.temple,
                 "temple_hi": i.temple_hi,
                 "location": i.location,
@@ -113,6 +118,20 @@ def darshan(request):
         if images:
             out.append({"id": str(d.id), "name": d.name, "name_hi": d.name_hi, "images": images})
     return Response(out)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def darshan_live(request, image_id):
+    """Whether a channel-link murti's temple is live now and, if not, when
+    its next scheduled stream starts (unix seconds, or null)."""
+    from . import youtube
+    from .models import DarshanImage
+
+    row = DarshanImage.objects.filter(pk=image_id, active=True).exclude(youtube_channel_id="").first()
+    if row is None:
+        return Response(refusal_body("not_found", "That darshan is not a temple channel."), status=404)
+    return Response(youtube.live_status(row.youtube_channel_id))
 
 
 def _comment_row(c):

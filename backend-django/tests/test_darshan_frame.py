@@ -106,3 +106,53 @@ class TestConsoleAndApi:
         client, _ = _admin(Tier.FULFILMENT)
         got = client.post(ADD, self._form(deity))
         assert b"Add a photo, a video or a YouTube link" in got.content
+
+
+class TestLiveStatus:
+    """When a temple's channel is off air, when it goes live (20 Oct 2026,
+    Rahul: "agar live available nahi h to time kab live hoga")."""
+
+    @pytest.fixture(autouse=True)
+    def _fresh_cache(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _status(self, live_page="", streams=""):
+        def get(url, **kw):
+            return _Got(200, live_page if url.endswith("/live") else streams)
+        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
+            return youtube.live_status(CHANNEL)
+
+    def test_live_now(self):
+        page = f'<link rel="canonical" href="https://www.youtube.com/watch?v={VIDEO}"> "isLive":true'
+        assert self._status(page) == {"live": True, "starts_at": None}
+
+    def test_a_scheduled_stream_gives_its_start(self):
+        import time
+        at = int(time.time()) + 3600
+        page = (f'<link rel="canonical" href="https://www.youtube.com/watch?v={VIDEO}"> '
+                f'"isUpcoming":true "scheduledStartTime":"{at}"')
+        assert self._status(page) == {"live": False, "starts_at": at}
+
+    def test_falls_back_to_the_streams_tab_and_skips_stale_ones(self):
+        import time
+        old, soon = int(time.time()) - 86400, int(time.time()) + 7200
+        streams = (f'"upcomingEventData":{{"startTime":"{old}"}} '
+                   f'"upcomingEventData":{{"startTime":"{soon}"}}')
+        assert self._status("<html>", streams) == {"live": False, "starts_at": soon}
+
+    def test_nothing_scheduled(self):
+        assert self._status("<html>", "<html>") == {"live": False, "starts_at": None}
+
+    @pytest.mark.django_db
+    def test_the_endpoint_and_the_list(self, api_client):
+        deity = DarshanDeity.objects.create(name="Shiva", sort=1)
+        row = DarshanImage.objects.create(deity=deity, youtube_url="https://www.youtube.com/@x",
+                                          youtube_channel_id=CHANNEL, live_hours="Daily 5-7 AM")
+        photo = DarshanImage.objects.create(deity=deity, image_url="/a.jpg", sort=1)
+        got = _mine(api_client, deity)["images"]
+        assert got[0]["checks_live"] is True and got[0]["live_hours"] == "Daily 5-7 AM"
+        assert got[1]["checks_live"] is False
+        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=lambda url, **kw: _Got(200, "")):
+            assert api_client.get(f"/v1/bhakti/darshan/{row.pk}/live/").json() == {"live": False, "starts_at": None}
+        assert api_client.get(f"/v1/bhakti/darshan/{photo.pk}/live/").status_code == 404

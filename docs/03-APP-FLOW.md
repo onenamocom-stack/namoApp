@@ -571,6 +571,13 @@ top to bottom —
   temple's name for a YouTube one, and Sangeet stops and its button hides
   there (the temple has its own sound). It replaced, the same morning, a
   separate Live pill with its own list of temples.
+  A temple's channel is asked first whether it is live. Off air, the frame
+  shows the murti's photo (or the deity's first one) with *Not live right
+  now*, the next stream's time when the temple scheduled one on YouTube,
+  and the timings the console wrote; *· Live* drops and Sangeet returns.
+  It asks again every two minutes and plays the stream once it starts. The
+  channel link plays whatever the temple streams that day: nobody changes
+  the link for a new day's video.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told

@@ -102,6 +102,10 @@ export async function fetchDarshan() {
       kind: i.kind || 'image',
       video: i.video_url || '',
       embedUrl: i.embed_url || '',
+      // A temple's channel may be off air; the frame asks first (20 Oct 2026).
+      checksLive: Boolean(i.checks_live),
+      liveHours: i.live_hours || '',
+      liveHoursHi: i.live_hours_hi || '',
       temple: i.temple,
       templeHi: i.temple_hi,
       location: i.location,
@@ -110,6 +114,18 @@ export async function fetchDarshan() {
       credit: i.credit,
     })),
   }))
+}
+
+/**
+ * Whether a temple channel's murti is live now: `{ live, startsAt }`, where
+ * `startsAt` is the next stream the temple scheduled on YouTube (a Date) or
+ * null (20 Oct 2026, Rahul). Throws on failure.
+ */
+export async function fetchDarshanLive(imageId) {
+  const response = await fetch(`${API_BASE}/bhakti/darshan/${imageId}/live/`)
+  if (!response.ok) throw new Error(`darshan live ${response.status}`)
+  const body = await response.json()
+  return { live: Boolean(body.live), startsAt: body.starts_at ? new Date(body.starts_at * 1000) : null }
 }
 
 /**

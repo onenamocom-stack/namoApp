@@ -149,6 +149,10 @@ class DarshanImage(models.Model):
     youtube_url = models.TextField(blank=True, default="")
     youtube_video_id = models.TextField(blank=True, default="")
     youtube_channel_id = models.TextField(blank=True, default="")
+    # When a channel link's temple is usually live, in its own words ("Daily
+    # 5-7 AM, 7-9 PM"), shown while it is not (20 Oct 2026, Rahul).
+    live_hours = models.TextField(blank=True, default="")
+    live_hours_hi = models.TextField(blank=True, default="")
     temple = models.TextField(blank=True, default="")
     temple_hi = models.TextField(blank=True, default="")
     location = models.TextField(blank=True, default="")

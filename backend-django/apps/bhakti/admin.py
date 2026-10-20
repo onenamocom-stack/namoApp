@@ -305,7 +305,8 @@ class DarshanImageForm(forms.ModelForm):
         model = DarshanImage
         fields = (
             "deity", "temple", "temple_hi", "location", "location_hi",
-            "image_url", "upload", "video_url", "video_upload", "youtube_url", "title", "credit", "sort", "active",
+            "image_url", "upload", "video_url", "video_upload", "youtube_url",
+            "live_hours", "live_hours_hi", "title", "credit", "sort", "active",
         )
         widgets = {
             "temple": forms.TextInput(attrs={"size": 50}),
@@ -315,6 +316,8 @@ class DarshanImageForm(forms.ModelForm):
             "image_url": forms.TextInput(attrs={"size": 80}),
             "video_url": forms.TextInput(attrs={"size": 80}),
             "youtube_url": forms.TextInput(attrs={"size": 80}),
+            "live_hours": forms.TextInput(attrs={"size": 50}),
+            "live_hours_hi": forms.TextInput(attrs={"size": 50}),
             "title": forms.TextInput(attrs={"size": 50}),
             "credit": forms.TextInput(attrs={"size": 80}),
         }
@@ -325,6 +328,8 @@ class DarshanImageForm(forms.ModelForm):
             "image_url": "Photo URL",
             "video_url": "Video URL",
             "youtube_url": "YouTube link",
+            "live_hours": "Live timings",
+            "live_hours_hi": "Live timings (Hindi)",
         }
         help_texts = {
             "temple": "On the plaque, e.g. Shri Siddhivinayak Mandir. Empty: “Shri <deity> Mandir”.",
@@ -336,6 +341,9 @@ class DarshanImageForm(forms.ModelForm):
             "youtube_url": "A temple's live darshan: the live video's link, or its channel (youtube.com/@name) "
                            "when each day's stream is a new video. Shown before a video or photo. Checked on save: "
                            "a stream that does not allow playing in other apps is refused. Clear it to stop.",
+            "live_hours": "For a channel link. Shown while the temple is not live, e.g. Daily 5–7 AM, 7–9 PM. "
+                          "A stream the temple scheduled on YouTube shows its own time first.",
+            "live_hours_hi": "Shown when the app is in Hindi, e.g. रोज़ सुबह 5–7, शाम 7–9. Empty: the English line.",
             "title": "Optional. What the photo shows, e.g. Shringar darshan — in the murti picker.",
             "credit": "Optional. Who took or owns the photo — shown in the murti picker.",
         }
@@ -401,7 +409,7 @@ class DarshanImageAdmin(AuditedAdmin, _FulfilmentRuns):
     fieldsets = (
         ("Plaque", {"fields": ("deity", "temple", "location", "temple_hi", "location_hi")}),
         ("In the frame: a photo, a video or a YouTube link", {"fields": (
-            "preview", "youtube_url", "video_upload", "video_url", "upload", "image_url")}),
+            "preview", "youtube_url", "live_hours", "live_hours_hi", "video_upload", "video_url", "upload", "image_url")}),
         ("In the murti picker", {"fields": ("title", "credit")}),
         ("Showing", {"fields": ("sort", "active")}),
     )

@@ -12,6 +12,7 @@ video id while it is live.
 """
 
 import re
+import time
 
 import requests
 
@@ -117,3 +118,41 @@ def thumbnail(row):
     if row.youtube_video_id:
         return f"https://i.ytimg.com/vi/{row.youtube_video_id}/hqdefault.jpg"
     return ""
+
+
+# What a channel's /live page says about its next stream, while none is on.
+PAGE_LIVE = re.compile(r'"isLive":true')
+PAGE_UPCOMING = re.compile(r'"isUpcoming":true')
+PAGE_START = re.compile(r'"scheduledStartTime":"(\d+)"')
+STREAMS_START = re.compile(r'"upcomingEventData":\{"startTime":"(\d+)"')
+STATUS_SECONDS = 180
+
+
+def live_status(channel_id):
+    """{"live", "starts_at"} for a channel (20 Oct 2026, Rahul: "agar live
+    available nahi h to time kab live hoga. Ye likh do"). `starts_at` is the
+    next scheduled stream's start, unix seconds, when the temple scheduled
+    one on YouTube; None otherwise. Cached three minutes per channel, and a
+    YouTube that does not answer reads as not live."""
+    from django.core.cache import cache
+
+    key = f"yt-live:{channel_id}"
+    hit = cache.get(key)
+    if hit is not None:
+        return hit
+    status = {"live": False, "starts_at": None}
+    try:
+        page = _get(f"https://www.youtube.com/channel/{channel_id}/live").text
+        if PAGE_VIDEO.search(page) and PAGE_LIVE.search(page) and not PAGE_UPCOMING.search(page):
+            status["live"] = True
+        else:
+            starts = PAGE_START.findall(page) if PAGE_UPCOMING.search(page) else []
+            if not starts:
+                starts = STREAMS_START.findall(_get(f"https://www.youtube.com/channel/{channel_id}/streams").text)
+            # A stream scheduled long ago that never started is not "next".
+            soon = sorted(int(s) for s in starts if int(s) > time.time() - 1800)
+            status["starts_at"] = soon[0] if soon else None
+    except Refused:
+        pass
+    cache.set(key, status, STATUS_SECONDS)
+    return status
