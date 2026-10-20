@@ -13,7 +13,7 @@ import {
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
-import DarshanFrame from '../components/DarshanFrame.jsx'
+import DarshanFrame, { airLine } from '../components/DarshanFrame.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -364,10 +364,10 @@ export default function Pooja() {
   }
 
   // A temple's YouTube darshan has its own sound: Sangeet stops for it,
-  // unless the temple is off air with nothing to play (`air` false, from the
-  // frame). A recording (`air` a Date) has its own sound too.
+  // live or as a recording, unless the temple is off air with nothing to
+  // play (from the frame: `air` {live: false, at: null}).
   const [air, setAir] = useState(null)
-  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && air !== false
+  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && !(air && !air.live && !air.at)
   useEffect(() => {
     if (onYoutube) stopTrack()
   }, [onYoutube])
@@ -552,17 +552,22 @@ export default function Pooja() {
             <span className="mt-0.5 flex items-center justify-center gap-1 text-[11px] leading-tight text-[#e9d6a8]">
               {place && <PinGlyph />}
               <span className="truncate">{place || image.title}</span>
-              {/* A temple's YouTube darshan says so here, under the name
-                  (20 Oct 2026, Rahul), not with a button of its own. */}
-              {image.kind === 'youtube' && air === true && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>}
-              {image.kind === 'youtube' && air instanceof Date && (
-                <span className="flex-none">· {t('puja.recording')}</span>
-              )}
               {deity.images.length > 1 && (
                 <span className="flex-none opacity-80">· {at + 1}/{deity.images.length}</span>
               )}
               <Icon name="back" size={10} weight={2.4} className="flex-none -rotate-90 opacity-80" />
             </span>
+            {/* A temple channel's third line (20 Oct 2026, Rahul: "Name plate
+                pe we can have three lines. Third line for Last recording.
+                Live timing and Live"). */}
+            {image.kind === 'youtube' && air && (
+              <span
+                className={`mt-0.5 block text-[10.5px] leading-tight ${air.live ? 'font-bold text-[#ff8a7a]' : 'text-[#e9d6a8] opacity-90'}`}
+              >
+                {air.live && <span aria-hidden="true" className="mr-1 inline-block h-1.5 w-1.5 -translate-y-px rounded-full bg-[#ff5a4a] align-middle" />}
+                {airLine(air, image, lang, t)}
+              </span>
+            )}
           </button>
         </span>
 

@@ -567,18 +567,18 @@ top to bottom —
   2026, Rahul; set per murti in the console). The video plays on a silent
   loop; the YouTube one plays in YouTube's player inside Namo, nothing links
   out. Either stands in the same frame, with the bells, dhoop, diyas,
-  flowers and aarti in front of it. The plaque adds *· Live* under the
-  temple's name for a YouTube one, and Sangeet stops and its button hides
-  there (the temple has its own sound). It replaced, the same morning, a
+  flowers and aarti in front of it. For a YouTube one the plaque takes a
+  third line (Rahul, 20 Oct) saying what plays, and Sangeet stops and its
+  button hides there (the temple has its own sound). It replaced, the same morning, a
   separate Live pill with its own list of temples.
   A temple's channel is asked first whether it is live. Off air, the frame
-  plays the temple's latest finished stream, plainly marked (Rahul, 20 Oct):
-  *· Recording* on the plaque and, over the frame, *Recording of the last
-  live · <date>* with *Next live: <time>*: the stream the temple scheduled
-  on YouTube, else the console's timings, else *not known*. With no
+  plays the temple's latest finished stream. The plaque's third line reads
+  *● Live* while live; off air, *Last live recording, <date> · Next live:
+  <time>* — the stream the temple scheduled on YouTube, else the console's
+  timings, else *not known*. Nothing is laid over the frame. With no
   recording to play, the frame shows that murti's own photo (never another
-  murti's; dark without one) with *Not live right now* and the same next
-  line, and Sangeet returns. It asks again every two minutes and plays the
+  murti's; dark without one), the line reads *Not live right now · Next
+  live: …*, and Sangeet returns. It asks again every two minutes and plays the
   live stream once it starts. The
   channel link plays whatever the temple streams that day: nobody changes
   the link for a new day's video.
