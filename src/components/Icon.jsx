@@ -231,6 +231,10 @@ const PATHS = {
       <circle cx="12" cy="12.6" r="3.3" />
     </>
   ),
+  // A handset turned down: end a call (21 Oct 2026).
+  hangup: (
+    <path d="M3.4 14.2c4.9-4.4 12.3-4.4 17.2 0 .5.5.5 1.2 0 1.7l-1.7 1.6c-.4.4-1 .4-1.5.1l-2-1.3a1.1 1.1 0 0 1-.5-1v-1.6a10.4 10.4 0 0 0-5.8 0v1.6c0 .4-.2.8-.5 1l-2 1.3c-.5.3-1.1.3-1.5-.1L3.4 15.9a1.2 1.2 0 0 1 0-1.7Z" />
+  ),
   // A microphone: speak a reply in chat (21 Oct 2026).
   mic: (
     <>

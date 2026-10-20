@@ -6,6 +6,7 @@ import { useStore } from '../store.jsx'
 import SessionRecharge from '../components/SessionRecharge.jsx'
 import ClientKundli from '../components/ClientKundli.jsx'
 import { askReview } from '../lib/reviewAsk.js'
+import Icon from '../components/Icon.jsx'
 
 /** Where hanging up lands: Namo Consult for a consultant who answered
  *  there (`?from=desk`, Phase 16), the Consult tab otherwise. */
@@ -362,41 +363,29 @@ export default function Call() {
         className="h-full w-full border-0"
       />
 
-      {/* THE BAR: one timer, one End, for both people. */}
-      <div className="absolute inset-x-3 top-3 z-30 flex items-center gap-2">
-        <div className="pointer-events-none flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 backdrop-blur-sm">
-          <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
-            {call.connecting ? 'Connecting' : paused ? 'Paused' : `${left ?? '—'} left`}
-          </span>
-        </div>
-        <span className="flex-1" />
+      {/* THE BAR: one timer, one End, for both people. The timer at the
+          top left; the buttons down the right side, one above the other
+          (21 Oct 2026, Rahul: "button wo side me आजाये. Vertically"). */}
+      <div className="pointer-events-none absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 backdrop-blur-sm">
+        <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white tnum">
+          {call.connecting ? 'Connecting' : paused ? 'Paused' : `${left ?? '—'} left`}
+        </span>
+      </div>
+      <div className="absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-4">
         {lastMinute && (
-          <button
-            type="button"
-            onClick={() => setTopup(true)}
-            className="rounded-full bg-ok px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg active:scale-95"
-          >
-            Recharge
-          </button>
+          <SideButton icon="wallet" label="Recharge" onClick={() => setTopup(true)} className="bg-ok" />
         )}
         {call.isOwner && !call.connecting && (
-          <button
-            type="button"
-            onClick={() => setKundli(true)}
-            className="rounded-full bg-white/90 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink shadow-lg active:scale-95"
-          >
-            Kundli
-          </button>
+          <SideButton icon="kundli" label="Kundli" onClick={() => setKundli(true)} className="bg-white/20 backdrop-blur-md" />
         )}
-        <button
-          type="button"
+        <SideButton
+          icon="hangup"
+          label={leaving ? 'Ending' : 'End'}
           onClick={finish}
           disabled={leaving}
-          className="rounded-full bg-live px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white shadow-lg transition-transform active:scale-95 disabled:opacity-60"
-        >
-          {leaving ? 'Ending…' : 'End call'}
-        </button>
+          className="bg-live"
+        />
       </div>
 
       {kundli && <ClientKundli sessionId={id} onClose={() => setKundli(false)} />}
@@ -459,5 +448,22 @@ export default function Call() {
         </p>
       )}
     </div>
+  )
+}
+
+/** A round button on the call's right side, its name under it. */
+function SideButton({ icon, label, onClick, disabled = false, className = '' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1 transition-transform active:scale-90 disabled:opacity-60"
+    >
+      <span className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg ring-1 ring-white/20 ${className}`}>
+        <Icon name={icon} size={22} weight={2} />
+      </span>
+      <span className="text-[11px] font-semibold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{label}</span>
+    </button>
   )
 }
