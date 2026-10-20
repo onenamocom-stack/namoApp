@@ -126,9 +126,11 @@ function TabLayout() {
       {/* A Pro's Online / Offline, above Home's + on every tab page (19 Oct
           2026, Rahul); nothing for anybody else. */}
       {/* The tab bar is fixed over the page, so this measures from the
-          screen's foot: Home's + is about 64-128 px up; this sits above it. */}
+          screen's foot: Home's + is about 64-128 px up; this sits above it.
+          On the darshan page it sat on Sangeet and the flower bowl, so it
+          rides higher there (20 Oct 2026, Rahul). */}
       <div className="pointer-events-none relative z-30 h-0">
-        <div className="absolute bottom-[142px] right-[21px]">
+        <div className={`absolute right-[21px] ${pathname === '/darshan' ? 'bottom-[270px]' : 'bottom-[142px]'}`}>
           <PresenceToggle floating />
         </div>
       </div>
