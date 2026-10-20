@@ -6574,6 +6574,7 @@ judge "live" when the uploads already say so.
   then the last finished, embeddable) instead of assumed live; nothing
   found is off air (the photo and timings), never an empty player. Those
   answers keep three hours (`SEARCH_SECONDS`) for the quota.
-- Live `namo-api-00191-drs`, web `391f644`. All 43 YouTube murtis over 15
-  deities loaded in a browser from a real origin: 43 play (live or the
-  recording), Mahakaleshwar off air with its photo.
+- Live `namo-api-00191-drs`, web `391f644`; redeployed unchanged on
+  Rahul's "ship" (`namo-api-00192-rt2`, `namo-console-00041-c9r`).
+  Checked from production after: of 43 channels 19 live, 23 with a
+  recording, 1 off air with its photo (Mahakaleshwar).
