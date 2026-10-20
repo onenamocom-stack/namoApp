@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useBirthGate } from '../components/useBirthFirst.js'
 import { askSuggestions } from '../data/mock.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
@@ -19,6 +20,7 @@ import { rupees, useStore } from '../store.jsx'
  * the send path are the server's, through `useAskAi`.
  */
 export default function Ask() {
+  useBirthGate()
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, pricePaise, outOfFree, boostFrom,

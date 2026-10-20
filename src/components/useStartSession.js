@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store.jsx'
-import { birthPath, needsBirth } from './useBirthGate.js'
+import useBirthFirst from './useBirthFirst.js'
 
 /**
  * Asking a consultant for a live session — one implementation, every
@@ -24,7 +24,8 @@ import { birthPath, needsBirth } from './useBirthGate.js'
  */
 export default function useStartSession() {
   const navigate = useNavigate()
-  const { showToast, session, profile } = useStore()
+  const { showToast, session } = useStore()
+  const birthFirst = useBirthFirst()
   const [asking, setAsking] = useState(false)
 
   /**
@@ -49,13 +50,9 @@ export default function useStartSession() {
       const via = to === 'call' ? 'video' : to
       /* Date, time and place of birth before any call or chat (21 Oct
          2026, Rahul; Astrologers only, date and time only, from 17 Oct).
-         Consult already asks on the way in (useBirthGate); this catches a
-         caller who arrived another way. The details page brings you
-         straight on to the call once they are saved. */
-      if (needsBirth(profile)) {
-        showToast('Add your date, time and place of birth first. The Pro reads from them.')
-        return navigate(birthPath(`/connect/${consultant.id}?via=${via}`))
-      }
+         The details page brings you straight on to the call once they
+         are saved. */
+      if (birthFirst(`/connect/${consultant.id}?via=${via}`)) return
 
       /* Everything after this — asking, busy and retrying, ringing, the
          chat opening on accept — lives on /connect (5 Oct 2026). A
@@ -70,7 +67,7 @@ export default function useStartSession() {
         setAsking(false)
       }
     },
-    [asking, navigate, profile, session, showToast],
+    [asking, birthFirst, navigate, session, showToast],
   )
 
   return { start, asking }

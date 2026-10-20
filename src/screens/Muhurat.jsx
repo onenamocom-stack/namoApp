@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { birthHref } from '../lib/birth.js'
 import { Link } from 'react-router-dom'
+import { useBirthGate } from '../components/useBirthFirst.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Paywall from '../components/Paywall.jsx'
 import PlaceField, { placeLabel } from '../components/PlaceField.jsx'
@@ -70,6 +71,7 @@ function months(lang = 'en') {
 }
 
 export default function Muhurat() {
+  useBirthGate()
   const { profile, session, sessionReady, t, lang } = useStore()
   const monthTabs = useMemo(() => months(lang), [lang])
 

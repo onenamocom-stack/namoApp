@@ -2,6 +2,7 @@ import { Loader } from '../components/Cosmos.jsx'
 import { birthHref } from '../lib/birth.js'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useBirthGate } from '../components/useBirthFirst.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { ChartNorth } from '../components/ChartSquare.jsx'
 import Paywall from '../components/Paywall.jsx'
@@ -48,6 +49,8 @@ const TABS = [
  */
 export default function Chart() {
   const [params, setParams] = useSearchParams()
+  // A Pro's booking opens a client's chart by ?name=; that is not yours.
+  useBirthGate({ skip: params.has('name') })
   const tab = TABS.some((x) => x.key === params.get('tab')) ? params.get('tab') : 'chart'
   const setTab = (next) => setParams(next === 'chart' ? {} : { tab: next }, { replace: true })
   const { session, sessionReady } = useStore()

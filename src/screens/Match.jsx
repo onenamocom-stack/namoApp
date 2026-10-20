@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { birthHref } from '../lib/birth.js'
 import { Link } from 'react-router-dom'
+import { useBirthGate } from '../components/useBirthFirst.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
 import { Button, Row, Ruler, Section, Stub } from '../components/Primitives.jsx'
@@ -27,6 +28,7 @@ import { useProfileFields, useStore } from '../store.jsx'
  * carrying a dosha that matters more than the total does.
  */
 export default function Match() {
+  useBirthGate()
   const { session, sessionReady, t } = useStore()
   const me = useProfileFields()
   const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })

@@ -1545,16 +1545,22 @@ on the right, no back. The Studio's own back always goes to Profile:
 a history back from it returned to the Desk, which led to Studio
 again.
 
-**Birth details before Consult (21 Oct 2026, Rahul; replaced the
+**Birth details before a service (21 Oct 2026, Rahul; replaced the
 17 Oct rule that asked only before calling an Astrologer, for date and
-time only).** A signed-in seeker with no date of birth, no time of birth
-(and not marked unknown), or no place of birth who opens `/consult` or a
-Pro's page `/consult/:id` is sent, in place, to the details page
-(`need=1&for=consult`, with `next` set to where they were); saving brings
-them back. Back from the details page goes to the screen before Consult.
-Not asked of a Pro, signed out, or in the Pro build. Pressing video, audio
-or chat with the details missing (any category) gets a toast and the same
-page; saving goes straight on to `/connect` for that Pro and channel.
+time only, and, for a few hours on 21 Oct, a gate on opening Consult
+itself).** "Missing" is no date of birth, no time of birth (and not marked
+unknown), or no place of birth. `/consult` and a Pro's page open freely.
+- Pressing video, audio or chat, or Book (any category), with the details
+  missing gets a toast and the details page (`need=1&for=consult`);
+  saving goes straight on to `/connect` for that Pro and channel, or back
+  to the Pro's page with the booking sheet open. Arriving on a Pro's page
+  by a card's Book button (`?book=1`) asks the same, in place.
+- Opening the full chart (`/chart`, not a Pro's `/chart?name=…`), Ask AI
+  (`/ask`), Muhurat or Matching, from anywhere, with the details missing
+  is replaced by the details page (`need=1`); saving returns to that
+  screen, Back goes to the screen before it. Tarot and the sign-by-sign
+  `/horoscope` need none.
+- Never in the Pro build or signed out.
 
 **The client's kundli (17 Oct 2026, Rahul).** In a live chat (beside End
 session) and on a call (in the bar), the consultant has **Kundli**: a full

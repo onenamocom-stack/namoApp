@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
-import useBirthGate from '../components/useBirthGate.js'
+import useBirthFirst from '../components/useBirthFirst.js'
 import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
 import Icon from '../components/Icon.jsx'
@@ -68,7 +68,6 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
-  useBirthGate()
   return <ConsultantPage id={id} />
 }
 
@@ -93,6 +92,7 @@ export function ConsultantPage({
   // `?book=1`: arrived from a card's Book button — open the sheet at once.
   const [params] = useSearchParams()
   const { start, asking } = useStartSession()
+  const birthFirst = useBirthFirst()
   const { showToast, hasFlag, toggleFlag, bookSession, spending, me, profile } = useStore()
   const [tab, setTab] = useState('work')
   // What they sell on the Market (15 Oct 2026, Phase 17): a Shop tab when
@@ -100,6 +100,11 @@ export function ConsultantPage({
   const shop = useSellerListings(id)
   const shopTab = own || shop?.length ? [{ key: 'shop', label: 'Market' }] : []
   const [sheet, setSheet] = useState(params.get('book') === '1')
+  // A card's Book button lands here with the sheet open: the same ask,
+  // once the profile has arrived.
+  useEffect(() => {
+    if (params.get('book') === '1' && !own && profile && birthFirst(`/consult/${id}?book=1`, { replace: true })) setSheet(false)
+  }, [birthFirst, id, own, params, profile])
   const [slot, setSlot] = useState(null)
   const [service, setService] = useState(null)
   const [c, setC] = useState(undefined)
@@ -198,6 +203,8 @@ export function ConsultantPage({
   const total = service?.price_paise ?? 0
 
   const openSheet = () => {
+    // Birth details before a booking, as before a call (21 Oct 2026, Rahul).
+    if (!own && birthFirst(`/consult/${c.id}?book=1`)) return
     setSlot(null)
     setDay(days[0].key)
     setSheet(true)
