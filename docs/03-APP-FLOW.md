@@ -703,7 +703,10 @@ session they show their rates like everyone else.
 **Recharge without leaving the conversation** (7 Oct 2026). A chat or call
 has ONE timer and ONE end button, the same row for both people (9 Oct 2026,
 Rahul: the call showed three timers and Daily's own Leave behind ours —
-Daily's Leave is hidden now). In the last minute a **Recharge** button
+Daily's Leave is hidden now). A video call shows the other person over
+the whole screen and you as a small picture in the corner, both apps
+(21 Oct 2026, Rahul: "as on WhatsApp"; Daily's speaker view, which
+replaced its two-way grid). In the last minute a **Recharge** button
 appears in that row for the seeker, and nowhere else; it opens up to four amounts — ₹100 when that buys a
 minute (10 Oct 2026), then about 5, 10 and 20 minutes at this rate — and PhonePe over the conversation; the minutes
 are added and the clock runs on. At 0:00 the session **pauses**: the call is

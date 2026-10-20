@@ -207,7 +207,18 @@ export default function Call() {
     import('@daily-co/daily-js')
       .then(({ default: Daily }) => {
         if (gone) return undefined
-        frame = Daily.wrap(el, { showLeaveButton: false, showFullscreenButton: !audioOnly })
+        /* The other person fills the screen and you are a small picture in
+           the corner, as on WhatsApp (21 Oct 2026, Rahul: "पूरी screen pe
+           video samne wale ki aur अपनी छोटी उसी screen ke side me"); until
+           then Daily's grid split the screen in two. Speaker view never
+           puts you in the big tile; the strip of others is off. */
+        frame = Daily.wrap(el, {
+          showLeaveButton: false,
+          showFullscreenButton: !audioOnly,
+          activeSpeakerMode: !audioOnly,
+          showParticipantsBar: false,
+          showLocalVideo: true,
+        })
         daily.current = frame
         // Put out of the meeting: by the server closing the room when the
         // session settled, or by something else. The heartbeat decides.
