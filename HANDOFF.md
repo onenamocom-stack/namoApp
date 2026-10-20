@@ -6557,3 +6557,23 @@ HTML waited ~0.5–1 s with `Cache-Control: no-cache`, `X-Cache: MISS`.
   still waits for its "ship"); API `00182` from main.
 - **Not done (owner chose 1 and 3):** splitting the 1.1 MB `index.js` by
   route, `media.1namo.com`, moving the API to Singapore.
+
+## 86. Darshan: "Video unavailable" fixed; every temple frame plays — 20 Oct 2026
+
+Raghu saw "Video not available" in some Ganesh frames. Cause, proved in a
+browser: the channel's own live player (`embed/live_stream?channel=…`) says
+"This video is unavailable" for some channels that ARE live — Siddhivinayak,
+streaming without a break since 3 Oct — while the stream by its video id
+plays. YouTube's search also misses such long streams, so it is not used to
+judge "live" when the uploads already say so.
+
+- `youtube.live_status` adds `embed_url` (the stream by id) when live;
+  `fetchDarshanLive`/`DarshanFrame` play it, the channel player only when
+  no id is known.
+- A channel with no stream in its newest fifty is asked by search (live,
+  then the last finished, embeddable) instead of assumed live; nothing
+  found is off air (the photo and timings), never an empty player. Those
+  answers keep three hours (`SEARCH_SECONDS`) for the quota.
+- Live `namo-api-00191-drs`, web `391f644`. All 43 YouTube murtis over 15
+  deities loaded in a browser from a real origin: 43 play (live or the
+  recording), Mahakaleshwar off air with its photo.
