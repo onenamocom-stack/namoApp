@@ -167,6 +167,12 @@ def live_status(channel_id):
     try:
         got = _api_status(channel_id)
         status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
+        if not status["live"] and status["last"] is None:
+            # Nothing found to play: a channel that uploads many videos a day
+            # (Tirupati's SVBC, a 24-hour stream started weeks ago) has its
+            # live stream outside the newest fifty, so the live player plays
+            # and says itself if nothing is on (20 Oct 2026).
+            status["live"] = True
     except Refused:
         status = {"live": True, "starts_at": None, "last": None}
     cache.set(key, status, API_SECONDS)

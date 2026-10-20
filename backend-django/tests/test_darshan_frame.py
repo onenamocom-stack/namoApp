@@ -202,3 +202,8 @@ class TestDataApi:
     def test_the_api_failing_plays_the_live_player(self):
         with self._api([self._video("x" * 11)], status=403):
             assert youtube.live_status(CHANNEL)["live"] is True
+
+    def test_nothing_found_plays_the_live_player(self):
+        # A 24-hour stream older than the newest fifty uploads.
+        with self._api([self._video("s" * 11)]):
+            assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
