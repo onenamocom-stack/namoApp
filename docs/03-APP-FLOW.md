@@ -1562,11 +1562,14 @@ write: *Namaste. Welcome to your session.*, *Please tell me your
 question.*, *Share your date, time and place of birth.*, *Give me a moment
 to look at your chart.* A tap puts one in the box to edit or send. Once
 the seeker has written, the row starts with a **सुझाव** button (20 Oct 2026,
-Rahul): a tap brings three short replies to the seeker's latest messages,
-from their chart, in the seeker's language, in place of the openers. A tap
+Rahul): a tap brings three short replies to the seeker's question, as
+somebody in the consultant's own field would answer it (counsellor,
+ayurveda, pandit, astrologer), in the seeker's language, in place of the
+openers. The seeker's chart informs them only for a consultant whose
+category reads charts. A tap
 on one puts it in the box to edit or send; nothing sends by itself and the
 seeker sees none of it. They clear when the seeker writes again or the
-consultant sends. Free to the consultant; one ask every few seconds and 300
+consultant sends. Free to the consultant; one ask every few seconds and 100
 a day (`POST /v1/chat/threads/<id>/suggest/`, `apps/ai/suggest.py`). In every live chat, both sides, **End session** is a red button in the header beside the other person's name (17 Oct 2026, Rahul; it was small text in the meter bar). On the Desk a live chat has no ✕ and no back: End session is the way out, and it closes the panel back onto the Desk. The ✕ returns once nothing is live. In a live chat the consultant has a photo button left of the box (both apps' panels; the seeker has none): the photo shows at once, uploads, and sends; one that fails is removed with a toast, not kept to retry. Both sides see it in the thread; a tap opens it full size. The
 openers and सुझाव show in the pro app's chat too; the rest is the Desk's only.
 

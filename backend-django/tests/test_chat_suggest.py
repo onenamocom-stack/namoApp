@@ -73,3 +73,25 @@ def test_too_soon_and_the_daily_ceiling(api_client, pro_user, pro_token, monkeyp
 ])
 def test_parse(text, want):
     assert ai_suggest._parse(text) == want
+
+
+@pytest.mark.parametrize("category,chart", [("Astrologer, Tarot, Life Coach", True), ("Counsellor", False),
+                                            ("Ayurveda", False), ("Pandit", True)])
+def test_the_field_decides_whether_the_chart_goes(api_client, pro_user, pro_token, monkeypatch, category, chart):
+    from apps.ai.providers import MockProvider
+    from apps.consultants.models import Consultant
+
+    Consultant.objects.filter(profile_id=PRO).update(category=category)
+    seen = {}
+    real = MockProvider.answer
+
+    def spy(self, system, history, question):
+        seen["system"], seen["question"] = system, question
+        return real(self, system, history, question)
+
+    monkeypatch.setattr(MockProvider, "answer", spy)
+    _, thread_id = _chat(pro_user)
+    assert api_client.post(_url(thread_id), **auth(pro_token)).status_code == 200
+    assert f"This\none is: {category}." in seen["system"] or f"one is: {category}." in seen["system"]
+    assert ("TODAY:" in seen["system"]) is chart
+    assert "Seeker: Meri shaadi kab hogi?" in seen["question"]

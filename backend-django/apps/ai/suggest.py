@@ -2,13 +2,19 @@
 me pro ko suggested text ... according to what is the question of seeker";
 then "सुझाव button sahi h").
 
-The Pro taps सुझाव; this reads the session's last messages and the seeker's
-chart and answers three short replies. A tap puts one in the Pro's box to
-edit; nothing is ever sent by itself and the seeker sees none of it.
+The Pro taps सुझाव; this reads the session's last messages and answers
+three short replies to the seeker's question. A tap puts one in the Pro's
+box to edit; nothing is ever sent by itself and the seeker sees none of it.
 
-Free to the Pro, so it is bounded: a few seconds between asks and a daily
-ceiling per consultant. Only the consultant of a live session on the
-thread may ask, and only for that thread.
+The replies follow the question and the Pro's own field, not astrology by
+default (Rahul: "सुझाव सवाल ke hisab se ho. जरूरी nahi h ki kundli he dekhi
+jaye ... Councilor, ayurveda, पंडित bhi"). The seeker's chart goes in only
+for a Pro whose category reads charts, and the prompt uses it only when the
+question is about it.
+
+Free to the Pro, so it is bounded: a few seconds between asks and 100 a day
+per consultant (Rahul, 20 Oct). Only the consultant of a live session on
+the thread may ask, and only for that thread.
 """
 
 import logging
@@ -24,24 +30,31 @@ logger = logging.getLogger("apps.ai")
 
 HISTORY = 12
 COOLDOWN_SECONDS = 4
-DAILY_LIMIT = 300
+DAILY_LIMIT = 100
+# A category that reads charts: only then is the seeker's chart sent.
+CHART_FIELDS = re.compile(r"astro|jyotish|kundli|kundali|vedic|vastu|numerolog|pandit|पंडित|ज्योतिष", re.I)
 
-SYSTEM = """You help an astrologer on NAMO reply to a seeker in a live paid chat.
-The astrologer reads your suggestions and chooses; you never speak to the
-seeker yourself.
+SYSTEM = """You help a professional on NAMO reply to a seeker in a live paid chat.
+The professional reads your suggestions and chooses; you never speak to the
+seeker yourself. NAMO lists many kinds of professionals: astrologers,
+pandits, counsellors, life coaches, ayurveda practitioners and more. This
+one is: {field}.
 
-Write SUGGESTED REPLIES: three different replies the astrologer could send
-next, answering the seeker's latest message.
-- Each is one or two short sentences, written as the astrologer, to the seeker.
+Write SUGGESTED REPLIES: three different replies the professional could
+send next, answering the seeker's latest message.
+- Answer what the seeker actually asked, as somebody in this professional's
+  field would. Do not turn a question to astrology unless it is about
+  astrology.
+- Each is one or two short sentences, written as the professional, to the seeker.
 - Use the seeker's own language and script: Hindi in Devanagari, Hinglish in
   Latin letters, English in English.
-- Ground them in the chart below when it speaks to the question; never invent
-  a placement the chart does not show. If the birth details are missing, one
-  reply asks for date, time and place of birth.
+- If a chart is given below and the question is about it, ground the reply
+  in it; never invent a placement the chart does not show.
 - Make the three different: one answers directly, one asks the question that
-  would sharpen the reading, one gives a remedy or next step.
-- No guarantees. No medical, legal or financial instruction. Nothing about
-  death, disease or pregnancy as a prediction.
+  would help most, one gives a practical next step.
+- No guarantees. No diagnosis and no medicine doses; for anything serious,
+  one reply says to see a doctor. No legal or financial instruction. Nothing
+  about death, disease or pregnancy as a prediction.
 - No emoji. No greeting unless the seeker only greeted.
 
 Answer with exactly three lines, each starting "1. ", "2. ", "3. ", and nothing else."""
@@ -71,7 +84,7 @@ def suggest(consultant_id, thread_id, now=None):
     from .services import _chart_for
 
     now = now or timezone.now()
-    thread = Thread.objects.filter(pk=thread_id).first()
+    thread = Thread.objects.select_related("consultant").filter(pk=thread_id).first()
     if thread is None or str(thread.consultant_id) != str(consultant_id):
         raise Refused(403, "not_consultant", "Only the consultant of this chat gets suggestions.")
     live = Session.objects.filter(
@@ -97,7 +110,10 @@ def suggest(consultant_id, thread_id, now=None):
     transcript = "\n".join(
         f"{'Seeker' if str(m.sender_id) == str(thread.seeker_id) else 'Astrologer'}: {m.body}" for m in rows
     )
-    system = f"{SYSTEM}\n\n{chart_block(_chart_for(thread.seeker_id))}"
+    field = (thread.consultant.category or "").strip() or "a consultant"
+    system = SYSTEM.format(field=field)
+    if CHART_FIELDS.search(field):
+        system += f"\n\n{chart_block(_chart_for(thread.seeker_id))}"
     try:
         got = providers.get_provider().answer(
             system, [], f"THE CHAT SO FAR, oldest first:\n{transcript}\n\nSuggest the astrologer's next reply.")
