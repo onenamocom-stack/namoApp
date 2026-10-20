@@ -333,6 +333,20 @@ export async function sendMessage(threadId, body, key = crypto.randomUUID(), ima
 /** Mark the other party's messages read. Own side untouched — the unread
  *  badge clears for the opener only. The server stamps read_at with its own
  *  clock; this sends no time and no id. */
+/**
+ * Three replies the consultant may send next, from the seeker's last
+ * messages and chart (20 Oct 2026, Rahul's सुझाव button). The consultant of
+ * a live session only. `{ok, replies}` or `{ok:false, reason}`.
+ */
+export async function suggestReplies(threadId) {
+  try {
+    const data = await api(`/chat/threads/${threadId}/suggest/`, { method: 'POST' })
+    return { ok: true, replies: data.replies || [] }
+  } catch (err) {
+    return { ok: false, reason: err.body?.message || 'Suggestions did not come. Try again.' }
+  }
+}
+
 export async function markRead(threadId) {
   try {
     await api(`/chat/threads/${threadId}/read/`, { method: 'POST' })

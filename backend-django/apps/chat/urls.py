@@ -17,4 +17,5 @@ urlpatterns = [
     path("threads/<uuid:thread_id>/messages/", views.messages, name="chat-messages"),
     path("threads/<uuid:thread_id>/messages/send/", views.send, name="chat-send"),
     path("threads/<uuid:thread_id>/read/", views.read, name="chat-read"),
+    path("threads/<uuid:thread_id>/suggest/", views.suggest, name="chat-suggest"),
 ]

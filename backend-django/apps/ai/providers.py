@@ -167,6 +167,10 @@ class MockProvider(Provider):
     def answer(self, system, history, question):
         # Stable per conversation rather than random: the same transcript
         # replays the same way, which is what makes a test worth writing.
+        if "SUGGESTED REPLIES" in system:
+            return {"text": "1. The chart shows a slow stretch until March.\n"
+                            "2. Which year did this start?\n"
+                            "3. Keep Saturday fasts for eleven weeks.", "tokens_in": None, "tokens_out": None}
         if "CARD DRAWN" in system:
             return {"text": self.TAROT_REPLY, "tokens_in": None, "tokens_out": None}
         index = len([m for m in history if m["role"] == "user"]) % len(self.REPLIES)

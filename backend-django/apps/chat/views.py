@@ -250,3 +250,16 @@ def sweep(request):
     except Exception as err:  # a report must never stop the sweep
         result["pro_reports"] = f"failed: {err}"
     return JsonResponse({"ok": True, **result})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def suggest(request, thread_id):
+    """Three replies the consultant may send next (20 Oct 2026, Rahul's
+    सुझाव button). The session's consultant only; nothing is sent."""
+    from apps.ai import suggest as ai_suggest
+
+    try:
+        return Response({"replies": ai_suggest.suggest(request.user.pk, thread_id)})
+    except ai_suggest.Refused as err:
+        return Response(refusal_body(err.code, err.message), status=err.status)

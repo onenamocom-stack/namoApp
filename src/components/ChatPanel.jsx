@@ -16,6 +16,7 @@ import {
   markRead,
   sendMessage,
   subscribeToMySessions,
+  suggestReplies,
   subscribeToThread,
 } from '../lib/chat.js'
 import MySessions, { UpcomingSessions } from './MySessions.jsx'
@@ -412,6 +413,10 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
   const [reporting, setReporting] = useState(false)
   const endRef = useRef(null)
   const [openedAt] = useState(() => new Date().toISOString())
+  /* The consultant's सुझाव (20 Oct 2026, Rahul): null, {busy} or {replies}.
+     Cleared when the seeker writes again, so a suggestion never answers an
+     older message than the one on screen. */
+  const [ai, setAi] = useState(null)
 
   useEffect(() => {
     setLive(thread.live_session_id ?? null)
@@ -520,7 +525,24 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
     [thread.id, myId, showToast],
   )
 
+  const iAmPro = thread.seeker_id !== myId
+  const seekerLines = messages.filter((m) => m.sender_id === thread.seeker_id)
+  const lastSeekerId = seekerLines.length ? seekerLines[seekerLines.length - 1].id : null
+  useEffect(() => setAi(null), [lastSeekerId])
+  const askSuggest = async () => {
+    setAi({ busy: true })
+    const res = await suggestReplies(thread.id)
+    if (res.ok && res.replies.length) {
+      setAi({ replies: res.replies })
+      return
+    }
+    setAi(null)
+    showToast(res.reason || 'Suggestions did not come. Try again.')
+  }
+  const openers = iAmPro && !messages.some((m) => m.sender_id === myId && m.created_at >= openedAt)
+
   const send = (text) => {
+    setAi(null)
     const key = crypto.randomUUID()
     setMessages((prev) => [
       ...prev,
@@ -712,11 +734,13 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
         <Composer
           onSend={send}
           placeholder="Type a message"
-          onPhoto={thread.seeker_id !== myId ? sendPhoto : null}
+          onPhoto={iAmPro ? sendPhoto : null}
           /* Openers for the consultant, until they have written in this
-             sitting (17 Oct 2026, Rahul). A tap puts one in the box, to edit
-             or send. */
-          suggestions={thread.seeker_id !== myId && !messages.some((m) => m.sender_id === myId && m.created_at >= openedAt) ? OPENERS : null}
+             sitting (17 Oct 2026, Rahul); then what सुझाव brought. A tap
+             puts one in the box, to edit or send. */
+          suggestions={ai?.replies ?? (openers ? OPENERS : null)}
+          onSuggest={iAmPro && lastSeekerId ? askSuggest : null}
+          suggesting={Boolean(ai?.busy)}
         />
       ) : (
         <div className="flex-none border-t border-rule px-4 py-4">
@@ -912,7 +936,7 @@ function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
-function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null }) {
+function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false }) {
   const [value, setValue] = useState('')
   const box = useRef(null)
   const picker = useRef(null)
@@ -934,9 +958,23 @@ function Composer({ onSend, placeholder, disabled = false, suggestions = null, o
 
   return (
     <div className="flex-none border-t border-stroke bg-white">
-    {suggestions && (
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3">
-        {suggestions.map((text) => (
+    {(suggestions || onSuggest) && (
+      <div className="no-scrollbar flex items-start gap-2 overflow-x-auto px-4 pt-3">
+        {/* The consultant's सुझाव: three replies to the seeker's last
+            message, from their chart (20 Oct 2026, Rahul). */}
+        {onSuggest && (
+          <button
+            type="button"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={onSuggest}
+            disabled={suggesting || disabled}
+            aria-label="Suggest replies"
+            className="flex-none rounded-full bg-gold-fill px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-60"
+          >
+            {suggesting ? 'सुझाव…' : 'सुझाव'}
+          </button>
+        )}
+        {(suggestions || []).map((text) => (
           <button
             key={text}
             type="button"
@@ -945,7 +983,7 @@ function Composer({ onSend, placeholder, disabled = false, suggestions = null, o
               setValue(text)
               box.current?.focus()
             }}
-            className="flex-none rounded-full bg-gold-wash px-3 py-1.5 text-[12px] gold ring-1 ring-gold-fill/30"
+            className="max-w-[240px] flex-none whitespace-normal rounded-2xl bg-gold-wash px-3 py-1.5 text-left text-[12px] leading-snug gold ring-1 ring-gold-fill/30"
           >
             {text}
           </button>
