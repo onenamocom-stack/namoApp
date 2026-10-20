@@ -572,7 +572,7 @@ top to bottom —
   there (the temple has its own sound). It replaced, the same morning, a
   separate Live pill with its own list of temples.
   A temple's channel is asked first whether it is live. Off air, the frame
-  shows the murti's photo (or the deity's first one) with *Not live right
+  shows that murti's own photo (never another murti's; dark without one) with *Not live right
   now*, the next stream's time when the temple scheduled one on YouTube,
   and the timings the console wrote; *· Live* drops and Sangeet returns.
   It asks again every two minutes and plays the stream once it starts. The

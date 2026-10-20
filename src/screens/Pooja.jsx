@@ -394,8 +394,6 @@ export default function Pooja() {
   // The console can take a murti away while it is showing.
   const at = Math.min(pic, deity.images.length - 1)
   const image = deity.images[at]
-  // A temple channel added without a photo stands on the deity's first one.
-  const cover = deity.images.find((i) => i.src)?.src
   const hi = lang === 'hi'
   const templeName =
     (hi && image.templeHi) || image.temple || t('puja.mandirOf', { name: hi ? deity.nameHi : deity.name })
@@ -461,10 +459,10 @@ export default function Pooja() {
         onPointerUp={endSwipe}
         onPointerCancel={() => (swipe.current = null)}
       >
-        {(image.src || cover) && (
+        {image.src && (
           <img
             key={`wash-${image.id}`}
-            src={image.src || cover}
+            src={image.src}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full scale-110 object-cover"
@@ -476,8 +474,7 @@ export default function Pooja() {
           style={{ top: bandCqw(BAND.body - 30), bottom: slabCqw(0.62) }}
         >
           {/* A photo, a video or a temple's YouTube video (20 Oct 2026). */}
-          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} onAir={setAir}
-            cover={cover} />
+          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} onAir={setAir} />
         </span>
 
         {/* Lamp light over the murti, always breathing. */}

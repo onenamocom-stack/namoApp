@@ -16,12 +16,13 @@ import { useStore } from '../store.jsx'
  * available nahi h to time kab live hoga. Ye likh do"). Off air, the frame
  * shows the photo and when the temple goes live instead of YouTube's own
  * error, and asks again every two minutes. `onAir(bool)` tells the page.
- * A channel added without a photo of its own stands on `cover`, the
- * deity's first photo.
+ * Off air, a channel shows only its own photo, never another murti's
+ * (Rahul: "usi deity ki image ... naki koi aur"); without one the frame
+ * stays dark behind the timings.
  */
 const RECHECK_MS = 120000
 
-export default function DarshanFrame({ image, alt, onAir, cover }) {
+export default function DarshanFrame({ image, alt, onAir }) {
   const [status, setStatus] = useState(null)
   const checks = image.kind === 'youtube' && image.checksLive
 
@@ -70,7 +71,7 @@ export default function DarshanFrame({ image, alt, onAir, cover }) {
   if (image.kind === 'youtube') {
     return (
       <>
-        {(image.src || cover) && <Photo image={image.src ? image : { id: image.id, src: cover }} alt={alt} />}
+        {image.src && <Photo image={image} alt={alt} />}
         {status && <OffAir image={image} startsAt={status.startsAt} />}
       </>
     )
