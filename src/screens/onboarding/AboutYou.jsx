@@ -218,7 +218,7 @@ export default function AboutYou() {
         <h1 className="text-title font-semibold text-t1">
           {need ? t('d.birthTitle') : edit ? t('d.editDetails') : t('d.title')}
         </h1>
-        <p className="mt-2 text-meta text-t2">{t(need ? 'd.birthHint' : edit ? 'd.editHint' : 'd.signupHint')}</p>
+        <p className="mt-2 text-meta text-t2">{t(need ? (params.get('for') === 'consult' ? 'd.birthHintConsult' : 'd.birthHint') : edit ? 'd.editHint' : 'd.signupHint')}</p>
       </div>
 
       <div className="mt-7 space-y-6">

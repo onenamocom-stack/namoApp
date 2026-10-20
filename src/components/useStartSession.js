@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store.jsx'
+import { birthPath, needsBirth } from './useBirthGate.js'
 
 /**
  * Asking a consultant for a live session — one implementation, every
@@ -46,18 +47,14 @@ export default function useStartSession() {
         return showToast(`${consultant.name} is offline right now.`)
       }
       const via = to === 'call' ? 'video' : to
-      /* Date and time of birth before calling an Astrologer (17 Oct 2026,
-         Rahul; other categories need none): the astrologer reads from them.
-         The details page brings you straight on to the call once they are
-         saved. A time marked unknown counts as given. */
-      const astrologer = String(consultant.category ?? '')
-        .split(',')
-        .some((x) => x.trim().toLowerCase() === 'astrologer')
-      if (astrologer && profile && (!profile.birth_date || (!profile.birth_time && profile.birth_time_known !== false))) {
-        showToast('Add your date and time of birth first. The astrologer reads from them.')
-        return navigate(
-          `/onboarding/details?edit=1&need=1&next=${encodeURIComponent(`/connect/${consultant.id}?via=${via}`)}`,
-        )
+      /* Date, time and place of birth before any call or chat (21 Oct
+         2026, Rahul; Astrologers only, date and time only, from 17 Oct).
+         Consult already asks on the way in (useBirthGate); this catches a
+         caller who arrived another way. The details page brings you
+         straight on to the call once they are saved. */
+      if (needsBirth(profile)) {
+        showToast('Add your date, time and place of birth first. The Pro reads from them.')
+        return navigate(birthPath(`/connect/${consultant.id}?via=${via}`))
       }
 
       /* Everything after this — asking, busy and retrying, ringing, the

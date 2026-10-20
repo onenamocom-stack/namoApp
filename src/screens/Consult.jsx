@@ -7,6 +7,7 @@ import { takeConsultReturn } from '../lib/consultReturn.js'
 import Icon from '../components/Icon.jsx'
 import Plate from '../components/Plate.jsx'
 import { Kicker, PopButton } from '../components/Pop.jsx'
+import useBirthGate from '../components/useBirthGate.js'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
@@ -127,6 +128,7 @@ const BANNERS = [
 export default function Consult() {
   const { showToast, t, lang, openChat } = useStore()
   const navigate = useNavigate()
+  useBirthGate()
   // Back from the wallet opened on the Consult list: open the list again.
   useEffect(() => {
     if (takeConsultReturn()) openChat('live')

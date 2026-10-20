@@ -965,6 +965,10 @@ export const strings = {
     en: 'Your kundli, rashifal and matching are made from these. Add them once.',
     hi: 'आपकी कुंडली, राशिफल और मिलान इन्हीं से बनते हैं। एक बार जोड़ें।',
   },
+  'd.birthHintConsult': {
+    en: 'The Pro reads your kundli from these. Add them once to use Consult.',
+    hi: 'Pro इन्हीं से आपकी कुंडली पढ़ते हैं। Consult के लिए एक बार जोड़ें।',
+  },
   'd.birthGroup': { en: 'Birth details · for your kundli', hi: 'जन्म विवरण · कुंडली के लिए' },
   'i.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
   'i.astrology': { en: 'Astrology', hi: 'ज्योतिष' },

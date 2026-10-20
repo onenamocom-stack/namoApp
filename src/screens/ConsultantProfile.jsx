@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { SESSION } from '../data/mock.js'
 import { Sheet, TopBar } from '../components/Chrome.jsx'
+import useBirthGate from '../components/useBirthGate.js'
 import useStartSession from '../components/useStartSession.js'
 import { PopButton } from '../components/Pop.jsx'
 import Icon from '../components/Icon.jsx'
@@ -67,6 +68,7 @@ function nextDays() {
 
 export default function ConsultantProfile() {
   const { id } = useParams()
+  useBirthGate()
   return <ConsultantPage id={id} />
 }
 

@@ -1545,10 +1545,16 @@ on the right, no back. The Studio's own back always goes to Profile:
 a history back from it returned to the Desk, which led to Studio
 again.
 
-**Birth details before a call (17 Oct 2026, Rahul).** Pressing video,
-audio or chat on a Pro whose categories include Astrologer (others need none), a seeker with no date of birth, or no time of
-birth and not marked unknown, gets a toast and the details page
-(`need=1`); saving goes straight on to `/connect` for that Pro and channel.
+**Birth details before Consult (21 Oct 2026, Rahul; replaced the
+17 Oct rule that asked only before calling an Astrologer, for date and
+time only).** A signed-in seeker with no date of birth, no time of birth
+(and not marked unknown), or no place of birth who opens `/consult` or a
+Pro's page `/consult/:id` is sent, in place, to the details page
+(`need=1&for=consult`, with `next` set to where they were); saving brings
+them back. Back from the details page goes to the screen before Consult.
+Not asked of a Pro, signed out, or in the Pro build. Pressing video, audio
+or chat with the details missing (any category) gets a toast and the same
+page; saving goes straight on to `/connect` for that Pro and channel.
 
 **The client's kundli (17 Oct 2026, Rahul).** In a live chat (beside End
 session) and on a call (in the bar), the consultant has **Kundli**: a full
