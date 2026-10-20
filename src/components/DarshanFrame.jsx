@@ -120,9 +120,8 @@ export function airLine(air, image, lang, t) {
   if (!air) return ''
   if (air.live) return t('puja.live')
   const locale = lang === 'hi' ? 'hi-IN' : 'en-IN'
-  const what = air.at
-    ? t('puja.lastLive', { date: air.at.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) })
-    : t('puja.offAir')
+  // No date on the recording (Rahul: "Last live recording ki date mat do").
+  const what = air.at ? t('puja.lastLive') : t('puja.offAir')
   const hours = (lang === 'hi' && image.liveHoursHi) || image.liveHours
   const next = air.startsAt
     ? t('puja.nextLive', { when: when(air.startsAt, locale, t) })

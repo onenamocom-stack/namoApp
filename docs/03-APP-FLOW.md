@@ -573,7 +573,7 @@ top to bottom —
   separate Live pill with its own list of temples.
   A temple's channel is asked first whether it is live. Off air, the frame
   plays the temple's latest finished stream. The plaque's third line reads
-  *● Live* while live; off air, *Last live recording, <date> · Next live:
+  *● Live* while live; off air, *Last live recording · Next live:
   <time>* — the stream the temple scheduled on YouTube, else the console's
   timings, else *not known*. Nothing is laid over the frame. With no
   recording to play, the frame shows that murti's own photo (never another
