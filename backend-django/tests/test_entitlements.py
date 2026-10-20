@@ -5,9 +5,9 @@ free reading that replaced the personal one on the free side.
                     grant are one write, a forever-thing is never charged
                     twice, a month bought early starts where the last ends,
                     and an empty wallet writes nothing
-  the gates      -> TestGates: the personal reading and a muhurat judged
-                    against your chart answer 402 with the price until
-                    bought; a muhurat is bought per purpose per month
+  the gates      -> TestGates: the personal reading answers 402 with the
+                    price until bought; a muhurat judged against your
+                    chart is free (21 Oct 2026)
   the free side  -> TestRashifal: twelve readings a day for everybody,
                     anonymous, and a canonical birth whose Moon is not in
                     its sign refuses instead of serving the neighbour's
@@ -159,23 +159,15 @@ class TestGates:
         wallet.buy(TEST_USER, "prediction")
         assert api_client.get("/v1/astro/horoscope/", **auth(token)).status_code == 200
 
-    def test_a_muhurat_is_bought_per_purpose_per_month(self, api_client, provider, token,
-                                                       monkeypatch):
+    def test_a_muhurat_against_your_chart_is_free(self, api_client, provider, token,
+                                                  monkeypatch):
+        """Free since 21 Oct 2026: nothing bought, nothing spent."""
         monkeypatch.setattr(astro, "ist_today", lambda: "2026-09-30")
         insert_profile()
         _wallet(20000)
-        refused = api_client.get(f"{self.URL}&mine=1", **auth(token))
-        assert refused.status_code == 402
-        assert refused.json()["ref"] == "griha_pravesh:2026-10"
-        assert refused.json()["price_paise"] == MUHURAT
-        # the shared, un-judged search stays free
-        assert api_client.get(self.URL, **auth(token)).status_code == 200
-
-        wallet.buy(TEST_USER, "muhurat", "griha_pravesh:2026-10")
         assert api_client.get(f"{self.URL}&mine=1", **auth(token)).status_code == 200
-        # another month is another purchase
-        other = self.URL.replace("2026-10", "2026-11")
-        assert api_client.get(f"{other}&mine=1", **auth(token)).status_code == 402
+        assert api_client.get(self.URL, **auth(token)).status_code == 200
+        assert wallet.balance_of(TEST_USER) == 20000
 
 
 @pytest.mark.django_db

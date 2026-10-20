@@ -122,8 +122,8 @@ export default function Muhurat() {
   const found = PURPOSES.find((p) => p.key === purpose)
   const chosen = { ...found, label: t(found.label), note: t(found.note) }
   const result = state.result
-  /* ₹49 a purpose a month since 30 Sep 2026. The server refuses with the
-     price until it is bought; the shared windows stay free. */
+  /* Free since 21 Oct 2026 (₹49 a purpose a month from 30 Sep). The
+     Paywall stays for the day the server asks for a price again. */
   const locked = state.refusal?.code === 'needs_purchase'
 
   return (
@@ -284,8 +284,7 @@ export default function Muhurat() {
 
       {/* Where "Before you act on this" was (5 Oct 2026). Only offered when
           there is a chart to judge against — a button that refuses on tap
-          is worse than none. ₹49 per purpose per month, asked by the
-          server on the first tap (the Paywall above). */}
+          is worse than none. Free since 21 Oct 2026. */}
       {hasBirth && !locked && !state.loading && (
         <section className="section">
           <PopCard raised className="p-5 text-center">

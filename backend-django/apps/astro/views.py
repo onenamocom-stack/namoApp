@@ -348,12 +348,9 @@ def muhurat(request):
     mine = request.query_params.get("mine") in ("1", "true")
     birth = None
     if mine:
-        # ₹49 per purpose per month (30 Sep 2026). Checked before the birth
-        # row, so an unpaid tap costs no upstream call.
-        refusal = _needs_purchase(request, "muhurat", f"{purpose}:{month}",
-                                  "Judging against your chart is paid.")
-        if refusal is not None:
-            return refusal
+        # Free since 21 Oct 2026 (Rahul: "payment maang raha h. wo hata do
+        # abhi"; the owner agreed); ₹49 per purpose per month from 30 Sep.
+        # The `muhurat` SKU stays in the price list, unasked.
         birth, refusal = _birth_or_refusal(request)
         if refusal is not None:
             return refusal
