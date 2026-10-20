@@ -250,7 +250,7 @@ def live_status(channel_id):
 # check, one unit each: the channel's uploads (live, upcoming and finished
 # streams are all in it, newest first) and those videos' broadcast details.
 API = "https://www.googleapis.com/youtube/v3/"
-API_SECONDS = 600
+API_SECONDS = 900
 
 
 def _key():

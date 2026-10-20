@@ -1405,7 +1405,7 @@ channel's usual live timings in the console's words; the read adds them and
 /v1/bhakti/darshan/<id>/live/` answers `{live, starts_at, last}` for a
 channel murti, from the YouTube Data API when `YOUTUBE_API_KEY` is set (the
 channel's uploads playlist and those videos' broadcast details, two units a
-check, cached ten minutes) and otherwise from its /live and /streams pages,
+check, cached fifteen minutes) and otherwise from its /live and /streams pages,
 which YouTube answers with a bot check from a data centre: `starts_at` the next
 stream the temple scheduled on YouTube (unix seconds) or null; `last`, off
 air, its latest finished stream that plays in other apps (`{video_id,
