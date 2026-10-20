@@ -564,7 +564,8 @@ top to bottom —
   the image attribution appears**, so it cannot be removed without removing
   the images.
 - **Live** (20 Oct 2026, Rahul): when the console has temples' live YouTube
-  darshan (docs/05 §5.2c-ter), a **Live** pill comes first in the deity row.
+  darshan (docs/05 §5.2c-ter), a **Live** pill sits at the start of the deity
+  row, outside its scroll (the row centres the deity on show).
   On, the shrine gives way to a player (YouTube's, inside Namo) over a list
   of temples; one live now carries a LIVE mark and plays on a tap, one
   outside its hours says when it is next live and does not play. It opens on

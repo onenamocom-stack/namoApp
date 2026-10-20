@@ -419,28 +419,28 @@ export default function Pooja() {
           boxShadow: 'inset 0 -1px 0 rgba(110,64,8,.55)',
         }}
       >
+        {/* Live stays put at the start, outside the scrolling row: the row
+            centres the deity on show, which slid Live off the edge. */}
+        {liveRows.length > 0 && (
+          <button
+            type="button"
+            aria-pressed={liveOn}
+            onClick={() => {
+              // The temple's own sound, not the sangeet over it.
+              stopTrack()
+              setLiveOn(true)
+            }}
+            className={`caps-sm flex flex-none items-center gap-1.5 rounded-full bg-white px-4 py-2.5 transition duration-150 active:scale-95 ${
+              liveOn
+                ? 'text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
+                : 'text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
+            }`}
+          >
+            <span className="block h-2 w-2 animate-pulse rounded-full bg-live" />
+            {t('puja.live')}
+          </button>
+        )}
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
-          {liveRows.length > 0 && (
-            <li className="flex-none">
-              <button
-                type="button"
-                aria-pressed={liveOn}
-                onClick={() => {
-                  // The temple's own sound, not the sangeet over it.
-                  stopTrack()
-                  setLiveOn(true)
-                }}
-                className={`caps-sm flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 transition duration-150 active:scale-95 ${
-                  liveOn
-                    ? 'text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
-                    : 'text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
-                }`}
-              >
-                <span className="block h-2 w-2 animate-pulse rounded-full bg-live" />
-                {t('puja.live')}
-              </button>
-            </li>
-          )}
           {deities.map((d) => {
             const on = !liveOn && d.id === deity.id
             return (
