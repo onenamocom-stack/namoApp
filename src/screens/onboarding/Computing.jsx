@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from '../../lib/signout.js'
 import { Button } from '../../components/Primitives.jsx'
+import { to24 } from '../../components/BirthInputs.jsx'
 import { clearBirthDraft, useStore } from '../../store.jsx'
 import { RASHIS, cachedAstro, signOf } from '../../lib/astro.js'
 
@@ -23,10 +24,7 @@ function toIsoDate(ddmmyyyy) {
  * §4.1 on why this is never combined with a UTC offset here. */
 function to24Hour(hhmmAmpm) {
   const [time, period] = hhmmAmpm.split(' ')
-  let [h, min] = time.split(':').map(Number)
-  if (period === 'PM' && h !== 12) h += 12
-  if (period === 'AM' && h === 12) h = 0
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}:00`
+  return `${to24(time, period)}:00`
 }
 
 /**

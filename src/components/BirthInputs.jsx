@@ -48,17 +48,23 @@ export function isValidDate(ddmmyyyy) {
   return at.getFullYear() === yy && at.getMonth() === mm - 1 && at.getDate() === dd
 }
 
-/** 12-hour clock: 01–12 and 00–59. */
+/**
+ * 00–23 and 00–59. Written on a 12-hour clock with AM/PM, or on a 24-hour
+ * one (21 Oct 2026, Rahul: "morning ke 00:32 minute ka time ko kya
+ * dalenge" — half past midnight was refused until you wrote 12:32 AM).
+ */
 export function isValidTime(hhmm) {
   const m = /^(\d{2}):(\d{2})$/.exec(hhmm || '')
-  return Boolean(m) && +m[1] >= 1 && +m[1] <= 12 && +m[2] <= 59
+  return Boolean(m) && +m[1] <= 23 && +m[2] <= 59
 }
 
-/** "04:35" + "PM" → "16:35". */
+/** "04:35" + "PM" → "16:35". An hour of 00 or 13–23 is already 24-hour. */
 export function to24(hhmm, ampm) {
   let [h, min] = hhmm.split(':').map(Number)
-  if (ampm === 'PM' && h !== 12) h += 12
-  if (ampm === 'AM' && h === 12) h = 0
+  if (h >= 1 && h <= 12) {
+    if (ampm === 'PM' && h !== 12) h += 12
+    if (ampm === 'AM' && h === 12) h = 0
+  }
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }
 
@@ -91,7 +97,14 @@ export function TimeField({ value, onChange, ampm, onAmpm, disabled, className =
     <div className={`flex items-center gap-3 ${disabled ? 'pointer-events-none opacity-40' : ''}`}>
       <input
         value={value}
-        onChange={(e) => onChange(maskTime(e.target.value, value))}
+        onChange={(e) => {
+          const next = maskTime(e.target.value, value)
+          onChange(next)
+          // A 24-hour hour picks its own half of the day.
+          const h = /^(\d{2})/.exec(next)?.[1]
+          if (h === '00') onAmpm('AM')
+          else if (h && +h >= 13 && +h <= 23) onAmpm('PM')
+        }}
         placeholder="HH:MM"
         inputMode="numeric"
         maxLength={5}
