@@ -26,6 +26,7 @@ import { uploadAsset } from '../lib/media.js'
 import ClientKundli from './ClientKundli.jsx'
 import { askReview } from '../lib/reviewAsk.js'
 import ReportSheet from './ReportSheet.jsx'
+import useDictation, { canDictate } from './useDictation.js'
 import {
   ago as alertAgo,
   markRead as markAlertsRead,
@@ -735,6 +736,7 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
           onSend={send}
           placeholder="Type a message"
           onPhoto={iAmPro ? sendPhoto : null}
+          voice={iAmPro && canDictate}
           /* Openers for the consultant, until they have written in this
              sitting (17 Oct 2026, Rahul); then what सुझाव brought. A tap
              puts one in the box, to edit or send. */
@@ -936,13 +938,35 @@ function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
-function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false }) {
+function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false, voice = false }) {
+  const { lang, showToast } = useStore()
   const [value, setValue] = useState('')
   const box = useRef(null)
   const picker = useRef(null)
   const composing = useRef(false)
+  /* The consultant speaks a reply (21 Oct 2026, Rahul): हि listens for
+     Hindi, EN for English, starting from the app's language and kept on
+     this device. What is heard fills the box; Send still sends it. */
+  const [speech, setSpeech] = useState(() => {
+    try {
+      return localStorage.getItem('namo:dictate-lang') || (lang === 'hi' ? 'hi-IN' : 'en-IN')
+    } catch {
+      return lang === 'hi' ? 'hi-IN' : 'en-IN'
+    }
+  })
+  const dictation = useDictation({ lang: speech, onText: setValue, onError: showToast })
+  const flipSpeech = () => {
+    const next = speech === 'hi-IN' ? 'en-IN' : 'hi-IN'
+    setSpeech(next)
+    try {
+      localStorage.setItem('namo:dictate-lang', next)
+    } catch {
+      /* the app's language next time, no worse */
+    }
+  }
 
   const submit = () => {
+    dictation.stop()
     const el = box.current
     const text = (el?.value ?? value).trim()
     if (!text || disabled) return
@@ -1034,6 +1058,31 @@ function Composer({ onSend, placeholder, disabled = false, suggestions = null, o
         aria-label="Message"
         className="min-w-0 flex-1 border-b border-rule bg-transparent pb-2 text-body t-heading outline-none transition-colors placeholder:text-t4 focus:border-gold disabled:opacity-40"
       />
+      {voice && (
+        <span onPointerDown={(e) => e.preventDefault()} className="flex flex-none items-center gap-1">
+          <button
+            type="button"
+            onClick={flipSpeech}
+            disabled={dictation.listening}
+            aria-label={speech === 'hi-IN' ? 'Speaking Hindi. Switch to English' : 'Speaking English. Switch to Hindi'}
+            className="h-9 rounded-full px-1.5 text-[12px] font-semibold t-faint disabled:opacity-40"
+          >
+            {speech === 'hi-IN' ? 'हि' : 'EN'}
+          </button>
+          <button
+            type="button"
+            aria-label={dictation.listening ? 'Stop listening' : 'Speak a reply'}
+            aria-pressed={dictation.listening}
+            disabled={disabled}
+            onClick={() => (dictation.listening ? dictation.stop() : dictation.start(box.current?.value ?? value))}
+            className={`flex h-9 w-9 items-center justify-center rounded-full disabled:opacity-40 ${
+              dictation.listening ? 'animate-pulse bg-gold-fill text-white' : 'bg-gold-wash gold'
+            }`}
+          >
+            <Icon name="mic" size={18} />
+          </button>
+        </span>
+      )}
       <span onPointerDown={(e) => e.preventDefault()} className="flex-none">
         <PopButton
           type="submit"

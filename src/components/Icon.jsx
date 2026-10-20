@@ -231,6 +231,13 @@ const PATHS = {
       <circle cx="12" cy="12.6" r="3.3" />
     </>
   ),
+  // A microphone: speak a reply in chat (21 Oct 2026).
+  mic: (
+    <>
+      <rect x="9" y="3.6" width="6" height="10.4" rx="3" />
+      <path d="M5.8 11.2a6.2 6.2 0 0 0 12.4 0M12 17.4v3" />
+    </>
+  ),
   user: (
     <>
       <circle cx="12" cy="8.6" r="3.8" />
