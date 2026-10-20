@@ -251,6 +251,12 @@ function Reviews() {
               </span>
             </div>
             {r.text && <p className="mt-3 text-meta t-sub">{r.text}</p>}
+            {/* The client's "Is your answer solved" (20 Oct 2026). */}
+            {r.solved !== null && (
+              <p className={`mt-2 caps-sm ${r.solved ? 'text-ok' : 't-faint'}`}>
+                {r.solved ? 'Answer solved' : 'Answer not solved'}
+              </p>
+            )}
           </li>
         ))}
       </ul>

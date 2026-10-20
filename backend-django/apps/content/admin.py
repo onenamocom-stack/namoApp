@@ -504,16 +504,20 @@ class PendingFirst(dj.SimpleListFilter):
 
 @dj.register(Review, site=site)
 class ReviewAdmin(AuditedAdmin, dj.ModelAdmin):
-    """Reviews of Pros, held for approval (17 Oct 2026, Rahul: "all review
-    before live should go to admin to approve"). Every review a seeker
-    leaves lands here as pending: not on the Pro's page, not in their
-    rating. Approve puts it on both at once; Reject keeps it off for good.
-    Oldest first, so nobody waits longest."""
+    """Reviews of Pros. A 1 or 2 star review lands here as pending: not on
+    the Pro's page, not in their rating (20 Oct 2026, Rahul: "send to admin
+    if the rating is below 1 or 2 star. Admin will review those ratings";
+    it replaced 17 Oct's "all review before live should go to admin").
+    Three stars and up are live already and listed under All, where they
+    can still be rejected. Approve puts a review on both at once; Reject
+    keeps it off for good. Each shows the seeker's answer to "Is your
+    answer solved" (Rahul: "Console me ha ya na bhi dikha do"). Oldest
+    first, so nobody waits longest."""
 
     audit_target = "review"
-    list_display = ("stars", "words", "pro", "seeker", "source", "status", "created_at")
-    list_filter = (PendingFirst,)
-    fields = ("pro", "seeker", "source", "rating", "body", "status", "created_at")
+    list_display = ("stars", "answer_solved", "words", "pro", "seeker", "source", "status", "created_at")
+    list_filter = (PendingFirst, "solved")
+    fields = ("pro", "seeker", "source", "rating", "answer_solved", "body", "status", "created_at")
     readonly_fields = fields
     actions = ("approve", "reject")
     list_per_page = 50
@@ -522,6 +526,10 @@ class ReviewAdmin(AuditedAdmin, dj.ModelAdmin):
     @dj.display(description="Rating")
     def stars(self, obj):
         return f"{obj.rating} / 5"
+
+    @dj.display(description="Answer solved")
+    def answer_solved(self, obj):
+        return {True: "Yes", False: "No"}.get(obj.solved, "—")
 
     @dj.display(description="Review")
     def words(self, obj):

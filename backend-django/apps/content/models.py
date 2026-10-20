@@ -248,9 +248,10 @@ class Comment(models.Model):
 
 
 class ReviewStatus(models.TextChoices):
-    # A seeker's review waits here for the console (17 Oct 2026, Rahul:
-    # "all review before live should go to admin to approve"). Pending
-    # rows are not public and do not count in the rating.
+    # A seeker's 1 or 2 star review waits here for the console (20 Oct
+    # 2026, Rahul: "send to admin if the rating is below 1 or 2 star";
+    # it replaced 17 Oct's "all review before live should go to admin").
+    # Pending rows are not public and do not count in the rating.
     PENDING = "pending", "Waiting for approval"
     LIVE = "live", "Live"
     REMOVED = "removed", "Removed"
@@ -280,6 +281,9 @@ class Review(models.Model):
     consultant_id = models.UUIDField()  # consultants.profile_id; FK deferred likewise
     rating = models.SmallIntegerField()
     body = models.TextField(null=True, blank=True)
+    # "Is your answer solved", Yes or No (20 Oct 2026, Rahul). Null on
+    # reviews written before the question, and on seeded ones.
+    solved = models.BooleanField(null=True, blank=True)
     status = models.CharField(
         max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.LIVE
     )

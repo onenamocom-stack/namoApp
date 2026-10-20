@@ -1847,13 +1847,20 @@ Refunds are a separate forward transition, never a mutation of the original.
   came from. A call answered in Namo Consult returns there when it ends.
 - **Busy** shows beside the consultant's name while a request rings for them or
   a session is live; it clears by itself when that ends.
-- **The review ask** (17 Oct 2026, Rahul). When a call or chat ends, by
-  either person or by the clock, the seeker gets the review sheet: a rating
-  of 1 to 5, optional words, Post review or Not now. It opens only for a
-  session that connected and is not yet reviewed. A skipped one can be
-  reviewed for seven days from Calls and chats in the Sessions list. A
-  posted review says it shows once Namo checks it; it waits in the
-  console's *Reviews* queue until approved.
+- **The review ask** (17 Oct 2026, Rahul; 20 Oct: the solved question, and
+  only low ratings held). When a call or chat ends, by either person or by
+  the clock, the seeker gets the review sheet: a rating of 1 to 5, *Is your
+  answer solved?* Yes or No (both required), optional words, Post review or
+  Not now. It opens only for a session that connected and is not yet
+  reviewed. If the seeker was not on the call or chat screen when it ended,
+  the sheet opens the next time they open the app or move to another screen,
+  for a session that ended in the last day and was not put off with Not now
+  on that device. A skipped one can be reviewed for seven days from Calls and
+  chats in the Sessions list. Three stars and up show on the Pro's page at
+  once (*Review posted*); 1 or 2 stars wait in the console's *Reviews* queue
+  until approved (*It shows once Namo checks it*). The Pro's own Reviews tab
+  shows each live review's *Answer solved* or *Answer not solved*; the
+  seeker's view of a Pro's page does not.
 - **A chat** opens the chat panel on that conversation for both people; **a call**
   opens the call screen. While a chat request waits the seeker sees "Request
   sent to <name>" under the saffron sky with the orbit and a 45-second ring —

@@ -1108,6 +1108,8 @@ def _recompute_rating_cache(consultant_id):
 
 # How long after a call or chat it can still be reviewed (17 Oct 2026).
 SESSION_REVIEW_DAYS = 7
+# A review of this many stars or fewer waits for the console (20 Oct 2026).
+HELD_BELOW = 2
 
 
 def _session_reviewable(session, seeker_id, consultant_id):
@@ -1120,7 +1122,7 @@ def _session_reviewable(session, seeker_id, consultant_id):
     )
 
 
-def leave_review(seeker_id, *, consultant_id, rating, body=None, booking_id=None, session_id=None):
+def leave_review(seeker_id, *, consultant_id, rating, body=None, solved=None, booking_id=None, session_id=None):
     """THE ANTI-FRAUD RULE, re-expressed. A review requires a booking that is
     the caller's own and COMPLETED — not pending, not confirmed — and names
     the same consultant as the booking. booking_id is unique: one booking
@@ -1131,9 +1133,11 @@ def leave_review(seeker_id, *, consultant_id, rating, body=None, booking_id=None
     it connected, within SESSION_REVIEW_DAYS, same consultant; session_id
     is unique the same way.
 
-    Every review arrives PENDING and waits for the console (17 Oct 2026,
-    Rahul). It is not public and not in the rating until approved, so the
-    cache does not move here."""
+    A 1 or 2 star review arrives PENDING and waits for the console: not
+    public, not in the rating until approved (20 Oct 2026, Rahul: "send to
+    admin if the rating is below 1 or 2 star"; until then every review
+    waited). Three stars and up go live at once, and the cache recomputes
+    in the same transaction."""
     if (booking_id is None) == (session_id is None):
         raise PermissionDenied(GATE_REFUSAL)
     if booking_id is not None:
@@ -1160,12 +1164,15 @@ def leave_review(seeker_id, *, consultant_id, rating, body=None, booking_id=None
                     consultant_id=consultant_id,
                     rating=rating,
                     body=body,
-                    status=Review.Status.PENDING,
+                    solved=solved,
+                    status=Review.Status.PENDING if rating <= HELD_BELOW else Review.Status.LIVE,
                 )
         except IntegrityError:
             # 23505 on reviews_booking_id_key — the check's "one booking,
             # one review", answered with its own sentence.
             raise DuplicateReview(DUPLICATE_REFUSAL) from None
+        if review.status == Review.Status.LIVE:
+            _recompute_rating_cache(consultant_id)
     return review
 
 
@@ -1238,6 +1245,7 @@ def list_reviews(consultant_id, *, limit=20):
             "consultant_id": str(r.consultant_id),
             "rating": r.rating,
             "body": r.body,
+            "solved": r.solved,
             "created_at": r.created_at,
             "verified": r.booking_id is not None or r.session_id is not None,
             "reviewer_name": _reviewer_name(names.get(str(r.seeker_id), "")),

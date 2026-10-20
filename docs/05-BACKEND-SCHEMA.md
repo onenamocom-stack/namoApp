@@ -1569,9 +1569,14 @@ seeker whose only contact was a metered call or chat could not review the
 consultant they spoke to. A session counts when it is the seeker's own, ended
 after it connected (`started_at` set), and ended within the last seven days.
 
-**Every review arrives `pending`** (17 Oct 2026, Rahul). A pending review is
-not in `reviews_public` and not in the rating caches; the console's Approve
-moves it to `live`, Reject to `removed`. Seeded reviews still go in `live`.
+**A 1 or 2 star review arrives `pending`; three and up arrive `live`** (20
+Oct 2026, Rahul: "send to admin if the rating is below 1 or 2 star"; it
+replaced 17 Oct's rule that every review arrived `pending`). A pending review
+is not in `reviews_public` and not in the rating caches; the console's Approve
+moves it to `live`, Reject to `removed`. A live one moves the caches in the
+same transaction as its insert. Seeded reviews still go in `live`. `solved`
+is the seeker's answer to "Is your answer solved", Yes or No; null on
+reviews written before 20 Oct and on seeded ones (`content/0017`).
 
 ```sql
 create table reviews (
@@ -1582,6 +1587,7 @@ create table reviews (
   consultant_id uuid not null references consultants(profile_id),
   rating        smallint not null check (rating between 1 and 5),
   body          text,
+  solved        boolean,              -- "Is your answer solved"; null before 20 Oct 2026
   status        text not null default 'live'
                 check (status in ('pending','live','removed')),
   created_at    timestamptz not null default now()

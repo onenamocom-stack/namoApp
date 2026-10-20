@@ -143,6 +143,7 @@ def _review_row(row):
         "consultant_id": row["consultant_id"],
         "rating": row["rating"],
         "body": row["body"],
+        "solved": row["solved"],
         "created_at": row["created_at"],
         "verified": row["verified"],
         "reviewer_name": row["reviewer_name"],
@@ -446,14 +447,16 @@ def publish_draft(request, content_id):
 class ReviewInput(serializers.Serializer):
     """The 020 insert grant's column list (booking_id, seeker_id,
     consultant_id, rating, body) minus seeker_id, filled from the JWT. There
-    is deliberately no `status` field: a review arrives pending and only
-    moderation moves it (17 Oct 2026). A booking or a session, not both."""
+    is deliberately no `status` field: the server decides it from the
+    rating (20 Oct 2026). A booking or a session, not both. `solved` is the
+    seeker's "Is your answer solved", Yes or No."""
 
     booking_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     session_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     consultant_id = serializers.UUIDField()
     rating = serializers.IntegerField(min_value=1, max_value=5)
     body = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None, max_length=1000)
+    solved = serializers.BooleanField(required=False, allow_null=True, default=None)
 
     def validate(self, attrs):
         if (attrs["booking_id"] is None) == (attrs["session_id"] is None):
@@ -493,6 +496,7 @@ def reviews(request):
             consultant_id=data["consultant_id"],
             rating=data["rating"],
             body=data["body"] or None,
+            solved=data["solved"],
         )
     except DuplicateReview as exc:
         return Response(refusal_body("duplicate", str(exc)), status=HTTP_409_CONFLICT)

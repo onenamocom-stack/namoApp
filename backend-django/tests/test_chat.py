@@ -1173,17 +1173,20 @@ class TestClientKundli:
 @pytest.mark.django_db
 class TestSessionReview:
     """17 Oct 2026, Rahul: the seeker is asked for a review when a call or
-    chat ends, and every review waits for the console before it shows."""
+    chat ends. Since 20 Oct only a 1 or 2 star review waits for the console
+    ("send to admin if the rating is below 1 or 2 star"); the seeker also
+    answers "Is your answer solved", Yes or No."""
 
-    def _post(self, api_client, token, session, rating=5, body="Clear and kind."):
+    def _post(self, api_client, token, session, rating=2, body="Did not listen.", solved=False):
         return api_client.post(
             "/v1/content/reviews/",
-            data={"session_id": str(session.id), "consultant_id": PRO, "rating": rating, "body": body},
+            data={"session_id": str(session.id), "consultant_id": PRO, "rating": rating, "body": body,
+                  "solved": solved},
             format="json",
             **auth(token),
         )
 
-    def test_after_the_session_it_waits_for_approval(self, pro_user, api_client, seeker_token):
+    def test_a_low_rating_waits_for_approval(self, pro_user, api_client, seeker_token):
         from apps.content import services as content_services
         from apps.content.models import Review
 
@@ -1200,12 +1203,25 @@ class TestSessionReview:
         assert api_client.get("/v1/content/reviews/reviewable-sessions/", **auth(seeker_token)).json() == []
 
         review = Review.objects.get(session_id=session.id)
-        assert review.status == Review.Status.PENDING
+        assert review.status == Review.Status.PENDING and review.solved is False
         assert api_client.get(f"/v1/content/reviews/?consultant_id={PRO}").json() == []
 
         content_services.set_review_status(review.id, Review.Status.LIVE)
         (row,) = api_client.get(f"/v1/content/reviews/?consultant_id={PRO}").json()
-        assert row["verified"] is True and row["rating"] == 5
+        assert row["verified"] is True and row["rating"] == 2 and row["solved"] is False
+
+    @pytest.mark.parametrize("rating", [3, 4, 5])
+    def test_three_stars_and_up_go_live_at_once(self, pro_user, api_client, seeker_token, rating):
+        from apps.consultants.models import Consultant
+        from apps.content.models import Review
+
+        session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)
+        services.end_session(SEEKER, session.id)
+        assert self._post(api_client, seeker_token, session, rating=rating, solved=True).status_code == 201
+        assert Review.objects.get(session_id=session.id).status == Review.Status.LIVE
+        (row,) = api_client.get(f"/v1/content/reviews/?consultant_id={PRO}").json()
+        assert row["rating"] == rating and row["solved"] is True
+        assert Consultant.objects.get(pk=PRO).rating_count_cache == 1
 
     def test_only_the_seeker_of_that_session(self, pro_user, api_client, stranger_token, pro_token):
         session, _ = _live_session(pro_user, minutes=10, fund=RATE * 10)

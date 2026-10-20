@@ -186,6 +186,7 @@ export default function MySessions({ calls: withCalls = true, pastOnly = false }
 export function ReviewSheet({ item, onClose, onDone }) {
   const { showToast, t } = useStore()
   const [rating, setRating] = useState(0)
+  const [solved, setSolved] = useState(null)
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -193,6 +194,7 @@ export function ReviewSheet({ item, onClose, onDone }) {
      are not sitting there waiting to be submitted against somebody else. */
   useEffect(() => {
     setRating(0)
+    setSolved(null)
     setBody('')
   }, [item?.id])
 
@@ -206,9 +208,11 @@ export function ReviewSheet({ item, onClose, onDone }) {
         sessionId: item.kind === 'session' ? item.id : null,
         consultantId: item.consultant_id,
         rating,
+        solved,
         body: body.trim() || null,
       })
-      showToast(t('con.reviewPosted'))
+      // A 1 or 2 star review waits for the console (20 Oct 2026).
+      showToast(t(rating <= 2 ? 'con.reviewPosted' : 'con.reviewLive'))
       onDone()
     } catch (err) {
       showToast(err.message)
@@ -239,6 +243,27 @@ export function ReviewSheet({ item, onClose, onDone }) {
           ))}
         </div>
 
+        {/* "Is your answer solved", Yes or No (20 Oct 2026, Rahul). */}
+        <p className="mt-6 text-center text-meta t-heading">{t('con.solvedQ')}</p>
+        <div className="mt-3 flex justify-center gap-3">
+          {[
+            [true, 'con.solvedYes'],
+            [false, 'con.solvedNo'],
+          ].map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={solved === value}
+              onClick={() => setSolved(value)}
+              className={`h-11 min-w-24 rounded-full border px-5 text-body transition-colors ${
+                solved === value ? 'border-gold bg-gold/10 t-heading' : 'border-rule t-faint'
+              }`}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -251,10 +276,16 @@ export function ReviewSheet({ item, onClose, onDone }) {
         <PopButton
           variant="gold"
           className="mt-6"
-          disabled={!rating || busy}
+          disabled={!rating || solved === null || busy}
           onClick={submit}
         >
-          {busy ? t('con.posting') : rating ? t('con.postReview') : t('con.pickRating')}
+          {busy
+            ? t('con.posting')
+            : !rating
+              ? t('con.pickRating')
+              : solved === null
+                ? t('con.pickSolved')
+                : t('con.postReview')}
         </PopButton>
         <button type="button" onClick={onClose} className="mt-4 block w-full text-center caps-sm t-faint">
           {t('con.notNow')}

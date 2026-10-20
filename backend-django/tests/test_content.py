@@ -188,8 +188,8 @@ def _rating_cache(pid):
 
 
 def _approve_all():
-    """The console's Approve, for every pending review (17 Oct 2026: a
-    review waits for it before it is public or counted)."""
+    """The console's Approve, for every pending review (a 1 or 2 star
+    review waits for it before it is public or counted; 20 Oct 2026)."""
     for review in Review.objects.filter(status=Review.Status.PENDING):
         services.set_review_status(review.id, Review.Status.LIVE)
 
@@ -634,10 +634,7 @@ class TestReviewGate:
             **auth(seeker_token),
         )
         assert response.status_code == 201
-        # Held for the console: not public, not counted, until approved.
-        assert api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json() == []
-        assert _rating_cache(APPROVED) == (None, 0)
-        _approve_all()
+        # Four stars: live and counted at once (20 Oct 2026).
         rows = api_client.get(f"/v1/content/reviews/?consultant_id={APPROVED}").json()
         assert len(rows) == 1
         assert rows[0]["verified"] is True
@@ -817,18 +814,18 @@ class TestReviewsPublicAndCache:
         assert any(r["reviewer_name"] == "Madonna" for r in rows)
 
     def test_rating_cache_reproduces_its_source_exactly(self, api_client, seeker_token, roster):
-        # 020 check point 5, arithmetic verbatim: two reviews, 4 and 5.
+        # 020 check point 5, arithmetic verbatim: two reviews, 2 and 5.
         bid4 = _complete_booking(SEEKER, APPROVED)
         api_client.post(
             "/v1/content/reviews/",
-            data={"booking_id": str(bid4), "consultant_id": APPROVED, "rating": 4},
+            data={"booking_id": str(bid4), "consultant_id": APPROVED, "rating": 2},
             format="json",
             **auth(seeker_token),
         )
         services.seed_review(seeker_id=SECOND_SEEKER, consultant_id=APPROVED, rating=5, body="Seeded.")
-        assert _rating_cache(APPROVED) == (5.0, 1)  # the 4 waits for the console
+        assert _rating_cache(APPROVED) == (5.0, 1)  # the 2 waits for the console
         _approve_all()
-        assert _rating_cache(APPROVED) == (4.5, 2)
+        assert _rating_cache(APPROVED) == (3.5, 2)
 
         # Removing one moves the cache; the count never counts removed rows.
         review = Review.objects.get(booking_id=bid4)
