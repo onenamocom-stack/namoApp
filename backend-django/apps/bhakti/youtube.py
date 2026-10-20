@@ -133,6 +133,7 @@ def thumbnail(row):
 # What a channel's /live page says about its next stream, while none is on.
 PAGE_LIVE = re.compile(r'"isLive":true')
 PAGE_UPCOMING = re.compile(r'"isUpcoming":true')
+PAGE_BOT_CHECK = re.compile(r'"status":"LOGIN_REQUIRED"')
 PAGE_START = re.compile(r'"scheduledStartTime":"(\d+)"')
 STREAMS_START = re.compile(r'"upcomingEventData":\{"startTime":"(\d+)"')
 STREAMS_VIDEO = re.compile(r'"videoId":"([A-Za-z0-9_-]{11})"')
@@ -199,17 +200,18 @@ def live_status(channel_id):
     try:
         got = _get(f"https://www.youtube.com/channel/{channel_id}/live")
         page = got.text
-        if "ytInitialData" not in page:
-            # Not the channel's page (a consent or check page, an error): we
-            # cannot tell, so the live player plays as it did before the
-            # check, and YouTube's own player says if nothing is on. Asked
-            # again in a minute (20 Oct 2026: from Cloud Run every channel
-            # read as off air and every frame went dark).
+        if "ytInitialData" not in page or PAGE_BOT_CHECK.search(page):
+            # Not the channel's page (a consent page, YouTube's "confirm
+            # you're not a bot", an error): we cannot tell, so the live
+            # player plays as it did before the check, and YouTube's own
+            # player says if nothing is on. 20 Oct 2026: from Cloud Run (a
+            # data centre) YouTube answers every page with the bot check,
+            # so every channel read as off air and every frame went dark.
             title = re.search(r"<title>([^<]{0,80})", page)
             logger.warning("[darshan] youtube unreadable: %s %s %s bytes %r", channel_id, got.status_code,
                            len(page), title.group(1) if title else "")
             status["live"] = True
-            cache.set(key, status, 60)
+            cache.set(key, status, STATUS_SECONDS)
             return status
         if PAGE_VIDEO.search(page) and PAGE_LIVE.search(page) and not PAGE_UPCOMING.search(page):
             status["live"] = True

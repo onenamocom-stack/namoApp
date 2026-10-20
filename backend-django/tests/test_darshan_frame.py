@@ -147,6 +147,10 @@ class TestLiveStatus:
         with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
             assert youtube.live_status(CHANNEL)["live"] is True
 
+    def test_youtubes_bot_check_plays_the_live_player(self):
+        page = 'ytInitialData "playabilityStatus":{"status":"LOGIN_REQUIRED","reason":"Sign in to confirm"}'
+        assert self._status(page)["live"] is True
+
     def test_nothing_scheduled(self):
         assert self._status("<html>", "<html>") == {"live": False, "starts_at": None, "last": None}
 
