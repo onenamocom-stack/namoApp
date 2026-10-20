@@ -467,7 +467,11 @@ post, the feed shows it once, naming the newest resharer — "Tara and 9 others
 reshared". One pencil, on the photo (the one on
 the name went the same day, since both did the same thing), opens **Your
 status details**, a page of its own: the photo (gallery,
-camera, profile picture, remove) and the name for the status. **Save keeps
+camera, profile picture, remove) and the name for the status. A photo from
+gallery, camera or the profile picture opens the adjust screen first (drag
+to place, pinch or slide to zoom, the circle shows what is kept; 21 Oct
+2026, Rahul), and tapping the photo adjusts it again. A group's photo
+(new or edit group) goes through the same screen. **Save keeps
 both for every status after it** — on this phone, keyed by user id, the photo
 a 320px data URL (26 Sep 2026); the name is the status's own and does not
 rename the account. With nothing saved, the account's name is used.

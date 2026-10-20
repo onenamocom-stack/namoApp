@@ -6,23 +6,33 @@ import { createPortal } from 'react-dom'
  * request): drag to place it, slide to zoom, and the circle shows exactly
  * what will be kept. The result is a 640px square JPEG cut from the
  * original in the browser, so only the chosen part is ever uploaded.
+ *
+ * Also the status photo and a group's photo (21 Oct 2026, Rahul: "Can we
+ * edit image here. To focus more or right left up down to set better in
+ * this circle"), and two fingers pinch to zoom. `file` is a picked File;
+ * `src` is a picture already on hand (a URL, or a data: URL), for
+ * adjusting the one you have.
  */
 const VIEW = 280 // the circle on screen, px
 const OUT = 640 // the saved square, px
 
-export default function AvatarCropper({ file, onCancel, onDone, title = 'Adjust your picture', saveLabel = 'Use photo' }) {
+export default function AvatarCropper({ file, src, onCancel, onDone, title = 'Adjust your picture', saveLabel = 'Use photo' }) {
   const [img, setImg] = useState(null)
   const [zoom, setZoom] = useState(1)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
+  const touches = useRef(new Map()) // pointerId -> {x, y}
+  const pinch = useRef(null) // {dist, zoom} when two fingers went down
 
   useEffect(() => {
-    const url = URL.createObjectURL(file)
+    const url = file ? URL.createObjectURL(file) : src
     const image = new Image()
+    // A remote picture has to come with CORS, or the canvas cannot read it.
+    if (!file && !String(src).startsWith('data:')) image.crossOrigin = 'anonymous'
     image.onload = () => setImg(image)
     image.src = url
-    return () => URL.revokeObjectURL(url)
-  }, [file])
+    return () => file && URL.revokeObjectURL(url)
+  }, [file, src])
 
   // The image always covers the circle: its shorter side fills it at zoom 1.
   const base = img ? VIEW / Math.min(img.naturalWidth, img.naturalHeight) : 1
@@ -39,16 +49,38 @@ export default function AvatarCropper({ file, onCancel, onDone, title = 'Adjust 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [img, zoom])
 
+  const spread = () => {
+    const [a, b] = [...touches.current.values()]
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
+
   function down(e) {
     e.currentTarget.setPointerCapture(e.pointerId)
-    drag.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+    touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (touches.current.size === 2) {
+      drag.current = null
+      pinch.current = { dist: spread(), zoom }
+    } else {
+      drag.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+    }
   }
   function move(e) {
+    if (!touches.current.has(e.pointerId)) return
+    touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pinch.current && touches.current.size === 2) {
+      const next = (pinch.current.zoom * spread()) / (pinch.current.dist || 1)
+      setZoom(Math.min(3, Math.max(1, next)))
+      return
+    }
     if (!drag.current) return
     setPos(clamp({ x: e.clientX - drag.current.x, y: e.clientY - drag.current.y }))
   }
-  function up() {
-    drag.current = null
+  function up(e) {
+    touches.current.delete(e.pointerId)
+    pinch.current = null
+    // The finger still down carries on dragging from where it is.
+    const [rest] = [...touches.current.values()]
+    drag.current = rest ? { x: rest.x - pos.x, y: rest.y - pos.y } : null
   }
 
   function save() {
@@ -103,7 +135,7 @@ export default function AvatarCropper({ file, onCancel, onDone, title = 'Adjust 
         </div>
       </div>
 
-      <p className="text-meta text-white/70">Drag to place it. Slide to zoom.</p>
+      <p className="text-meta text-white/70">Drag to place it. Pinch or slide to zoom.</p>
       <input
         type="range"
         min="1"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import AvatarCropper from '../components/AvatarCropper.jsx'
 import { TopBar } from '../components/Chrome.jsx'
 import { PopAvatar, PopButton } from '../components/Pop.jsx'
 import { GROUP_KINDS, createGroup, editGroup, fetchGroup } from '../lib/groups.js'
@@ -25,6 +26,7 @@ export default function NewGroup() {
   const [photo, setPhoto] = useState('')
   const [busy, setBusy] = useState(false)
   const picker = useRef(null)
+  const [chosen, setChosen] = useState(null)
 
   useEffect(() => {
     if (!id) return
@@ -44,6 +46,12 @@ export default function NewGroup() {
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) return showToast('Choose a photo.')
+    setChosen(file)
+  }
+
+  // The chosen photo, placed and zoomed in the circle, then uploaded.
+  async function upload(file) {
+    setChosen(null)
     setBusy(true)
     try {
       setPhoto(await uploadMedia(file))
@@ -80,6 +88,9 @@ export default function NewGroup() {
           <span className="text-meta font-semibold gold">{photo ? 'Change photo' : 'Add a photo'}</span>
         </button>
         <input ref={picker} type="file" accept="image/*" className="hidden" onChange={pick} />
+        {chosen && (
+          <AvatarCropper file={chosen} title="Adjust the photo" onCancel={() => setChosen(null)} onDone={upload} />
+        )}
 
         <label className="mt-6 block text-meta font-semibold t-heading">
           Name

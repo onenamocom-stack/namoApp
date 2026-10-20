@@ -6,6 +6,7 @@ import { bannerStyle, followBanner, useBanners } from '../lib/appearance.js'
 import { BackButton, TabHeader } from '../components/Chrome.jsx'
 import { createPortal } from 'react-dom'
 import Icon from '../components/Icon.jsx'
+import AvatarCropper from '../components/AvatarCropper.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard } from '../components/Pop.jsx'
 import {
@@ -1034,6 +1035,8 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
   const [nextPhoto, setNextPhoto] = useState(photo)
   const [nextName, setNextName] = useState(name)
   const [busy, setBusy] = useState(false)
+  // A picture waits here while you place and zoom it: { file } or { src }.
+  const [adjust, setAdjust] = useState(null)
 
   const attach = async (src) => {
     if (!src) return setNextPhoto(null)
@@ -1047,7 +1050,11 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
   const pick = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''   // so choosing the same file twice still fires
-    if (!file) return
+    if (file) setAdjust({ file })
+  }
+
+  const adjusted = (file) => {
+    setAdjust(null)
     const url = URL.createObjectURL(file)
     attach(url).finally(() => URL.revokeObjectURL(url))
   }
@@ -1055,7 +1062,7 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
   const options = [
     { key: 'gallery', icon: 'image', label: 'Gallery', onClick: () => gallery.current?.click() },
     { key: 'camera', icon: 'camera', label: 'Camera', onClick: () => camera.current?.click() },
-    ...(avatarUrl ? [{ key: 'profile', icon: 'user', label: 'Profile photo', onClick: () => attach(avatarUrl) }] : []),
+    ...(avatarUrl ? [{ key: 'profile', icon: 'user', label: 'Profile photo', onClick: () => setAdjust({ src: avatarUrl }) }] : []),
     ...(nextPhoto ? [{ key: 'remove', icon: 'close', label: 'Remove', onClick: () => attach(null) }] : []),
   ]
 
@@ -1068,7 +1075,14 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pt-6">
-        <div className="mx-auto h-32 w-32 overflow-hidden rounded-full ring-4 ring-white">
+        {/* Tap the photo to place and zoom it again. */}
+        <button
+          type="button"
+          disabled={!nextPhoto || busy}
+          onClick={() => setAdjust({ src: nextPhoto })}
+          aria-label="Adjust your photo"
+          className="mx-auto block h-32 w-32 overflow-hidden rounded-full ring-4 ring-white"
+        >
           {nextPhoto ? (
             <img src={nextPhoto} alt="Your photo" className="h-full w-full object-cover" />
           ) : (
@@ -1076,7 +1090,8 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
               <Icon name="user" size={40} />
             </span>
           )}
-        </div>
+        </button>
+        {nextPhoto && <p className="mt-2 text-center text-[12px] text-white/60">Tap the photo to adjust it</p>}
         <div className="mt-5 flex justify-center gap-3">
           {options.map((o) => (
             <button
@@ -1121,6 +1136,15 @@ function StatusDetails({ photo, name, avatarUrl, onClose, onSave }) {
 
       <input ref={gallery} type="file" accept="image/*" onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
       <input ref={camera} type="file" accept="image/*" capture="user" onChange={pick} className="hidden" aria-hidden="true" tabIndex={-1} />
+      {adjust && (
+        <AvatarCropper
+          file={adjust.file}
+          src={adjust.src}
+          title="Adjust your photo"
+          onCancel={() => setAdjust(null)}
+          onDone={adjusted}
+        />
+      )}
     </div>
   )
 }
