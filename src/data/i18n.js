@@ -194,7 +194,7 @@ export const strings = {
   'puja.mandirOf': { en: 'Shri {name} Mandir', hi: 'श्री {name} मंदिर' },
   'puja.live': { en: 'Live', hi: 'लाइव' },
   'puja.liveNext': { en: 'Live darshan at {at}', hi: '{at} बजे लाइव दर्शन' },
-  'puja.livePick': { en: 'No temple is live right now. Each shows when it is next live.', hi: 'अभी कोई मंदिर लाइव नहीं है। हर मंदिर पर अगला लाइव समय लिखा है।' },
+  'puja.liveTemples': { en: 'Live darshan', hi: 'लाइव दर्शन' },
   'puja.forDeity': { en: 'For {name}', hi: '{name} के लिए' },
   'puja.murti': { en: 'murti', hi: 'मूर्ति' },
   'puja.rung': { en: 'Ghanti rung', hi: 'घंटी बजी' },
