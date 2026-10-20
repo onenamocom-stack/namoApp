@@ -12,8 +12,8 @@ import {
   Thali,
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
-import { fetchAssets, fetchDarshan, fetchLiveDarshans } from '../lib/bhakti.js'
-import { LiveSheet, LiveVideo } from '../components/LiveDarshan.jsx'
+import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
+import DarshanFrame from '../components/DarshanFrame.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -156,14 +156,6 @@ export default function Pooja() {
   const deity = deities.find((d) => d.name === deityName) ?? deities[0]
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
-  // Temples' live YouTube darshan (20 Oct 2026, Rahul): a Live pill at the
-  // start of the row when the console has any; on, the temple's video takes
-  // the murti's place and the samagri stands in front of it.
-  const [liveRows, setLiveRows] = useState([])
-  const [liveOn, setLiveOn] = useState(false)
-  const [liveId, setLiveId] = useState(null)
-  const [liveSheet, setLiveSheet] = useState(false)
-  const liveRow = liveOn ? liveRows.find((r) => r.id === liveId) ?? liveRows[0] : null
   // Sangeet (4 Oct 2026): the bhajans and mantras from Bhakti, played over
   // the puja. One <audio> for the screen, so starting one stops the other,
   // and leaving the shrine unmounts it and the music stops with it.
@@ -222,12 +214,6 @@ export default function Pooja() {
   }, [deity])
 
   useEffect(() => {
-    fetchLiveDarshans()
-      .then(setLiveRows)
-      .catch((err) => console.error('[darshan] live load failed:', err.message))
-  }, [])
-
-  useEffect(() => {
     fetchDarshan()
       .then((rows) => rows.length && setDeities(rows))
       .catch((err) => console.error('[darshan] load failed:', err.message))
@@ -258,8 +244,7 @@ export default function Pooja() {
   const DOMINANCE = 1.4
 
   const startSwipe = (e) => {
-    // A live temple does not swipe: the deities are the pills there.
-    if (liveOn || e.target.closest('button')) return
+    if (e.target.closest('button')) return
     // Record before capturing. setPointerCapture throws NotFoundError if the
     // pointer is not active, and it threw here — which killed the gesture
     // before the origin was ever stored. Capture only widens where the swipe
@@ -378,6 +363,12 @@ export default function Pooja() {
     setTrack(null)
   }
 
+  // A temple's YouTube darshan has its own sound: Sangeet stops for it.
+  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube'
+  useEffect(() => {
+    if (onYoutube) stopTrack()
+  }, [onYoutube])
+
   const openMusic = () => {
     setMusicOpen(true)
     if (library === null) {
@@ -405,8 +396,6 @@ export default function Pooja() {
   const templeName =
     (hi && image.templeHi) || image.temple || t('puja.mandirOf', { name: hi ? deity.nameHi : deity.name })
   const place = (hi && image.locationHi) || image.location
-  const plaqueName = liveRow ? (hi ? liveRow.templeHi : liveRow.temple) : templeName
-  const plaquePlace = liveRow ? (hi ? liveRow.locationHi : liveRow.location) : place
 
   return (
     /* relative, because the murti sheet is absolute against this screen
@@ -426,38 +415,15 @@ export default function Pooja() {
           boxShadow: 'inset 0 -1px 0 rgba(110,64,8,.55)',
         }}
       >
-        {/* Live stays put at the start, outside the scrolling row: the row
-            centres the deity on show, which slid Live off the edge. */}
-        {liveRows.length > 0 && (
-          <button
-            type="button"
-            aria-pressed={liveOn}
-            onClick={() => {
-              // The temple's own sound, not the sangeet over it.
-              stopTrack()
-              setLiveId((id) => id ?? (liveRows.find((r) => r.live) ?? liveRows[0]).id)
-              setLiveOn(true)
-            }}
-            className={`caps-sm flex flex-none items-center gap-1.5 rounded-full bg-white px-4 py-2.5 transition duration-150 active:scale-95 ${
-              liveOn
-                ? 'text-[#b4400a] shadow-md ring-2 ring-[#7a4a10]/55'
-                : 'text-[#4a3214] shadow-[0_1px_2px_rgba(90,50,0,.35)]'
-            }`}
-          >
-            <span className="block h-2 w-2 animate-pulse rounded-full bg-live" />
-            {t('puja.live')}
-          </button>
-        )}
         <ul ref={pills} className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
           {deities.map((d) => {
-            const on = !liveOn && d.id === deity.id
+            const on = d.id === deity.id
             return (
               <li key={d.id} className="flex-none">
                 <button
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setLiveOn(false)
                     setDeityName(d.name)
                     setPic(0)
                   }}
@@ -491,10 +457,10 @@ export default function Pooja() {
         onPointerUp={endSwipe}
         onPointerCancel={() => (swipe.current = null)}
       >
-        {(!liveRow || liveRow.imageUrl) && (
+        {image.src && (
           <img
-            key={`wash-${liveRow ? liveRow.id : image.id}`}
-            src={liveRow ? liveRow.imageUrl : image.src}
+            key={`wash-${image.id}`}
+            src={image.src}
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full scale-110 object-cover"
@@ -505,17 +471,8 @@ export default function Pooja() {
           className="absolute inset-x-0 block"
           style={{ top: bandCqw(BAND.body - 30), bottom: slabCqw(0.62) }}
         >
-          {liveRow ? (
-            <LiveVideo row={liveRow} />
-          ) : (
-            <img
-              key={image.id}
-              src={image.src}
-              alt={`${deity.name} — ${templeName}`}
-              className="animate-fade absolute inset-0 h-full w-full object-contain"
-              style={{ objectPosition: '50% 45%' }}
-            />
-          )}
+          {/* A photo, a video or a temple's YouTube video (20 Oct 2026). */}
+          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} />
         </span>
 
         {/* Lamp light over the murti, always breathing. */}
@@ -550,7 +507,7 @@ export default function Pooja() {
         {/* Sangeet, low on the right, just above the pushpanjali bowl (8 Oct
             2026, owner; it was on the band's right corner). White, like the
             pills; gold while something plays. */}
-        {!liveRow && (
+        {!onYoutube && (
         <button
           type="button"
           onClick={openMusic}
@@ -574,9 +531,9 @@ export default function Pooja() {
         >
           <button
             type="button"
-            onClick={() => (liveRow ? setLiveSheet(true) : setSheet(true))}
+            onClick={() => setSheet(true)}
             aria-haspopup="dialog"
-            aria-label={`${plaqueName}${plaquePlace ? `, ${plaquePlace}` : ''} · ${t(liveRow ? 'puja.liveTemples' : 'puja.chooseMurti')}`}
+            aria-label={`${templeName}${place ? `, ${place}` : ''} · ${t('puja.chooseMurti')}`}
             className="pointer-events-auto max-w-full rounded-md px-4 py-1.5 text-center shadow-lg transition active:scale-95"
             style={{
               background: 'linear-gradient(180deg, rgba(40,26,14,.94) 0%, rgba(22,14,8,.94) 100%)',
@@ -585,16 +542,17 @@ export default function Pooja() {
             }}
           >
             <span className="block truncate font-serif text-[17px] font-semibold leading-tight text-[#fff6e3]">
-              {plaqueName}
+              {templeName}
             </span>
             {/* The temple's place when the console has one (with a pin, as
                 on the owner's reference); otherwise what the photo shows. */}
             <span className="mt-0.5 flex items-center justify-center gap-1 text-[11px] leading-tight text-[#e9d6a8]">
-              {plaquePlace && <PinGlyph />}
-              <span className="truncate">{plaquePlace || image.title}</span>
-              {liveRow ? (
-                liveRow.live && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>
-              ) : deity.images.length > 1 && (
+              {place && <PinGlyph />}
+              <span className="truncate">{place || image.title}</span>
+              {/* A temple's YouTube darshan says so here, under the name
+                  (20 Oct 2026, Rahul), not with a button of its own. */}
+              {image.kind === 'youtube' && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>}
+              {deity.images.length > 1 && (
                 <span className="flex-none opacity-80">· {at + 1}/{deity.images.length}</span>
               )}
               <Icon name="back" size={10} weight={2.4} className="flex-none -rotate-90 opacity-80" />
@@ -778,6 +736,7 @@ export default function Pooja() {
         </button>
       </section>
 
+
       {/* Plays over the puja; unmounts with the screen, so the music stops. */}
       <audio ref={player} onEnded={() => setTrack(null)} className="hidden" />
 
@@ -792,18 +751,6 @@ export default function Pooja() {
           }}
           onStop={stopTrack}
           onClose={() => setMusicOpen(false)}
-        />
-      )}
-
-      {liveSheet && liveRow && (
-        <LiveSheet
-          rows={liveRows}
-          onId={liveRow.id}
-          onPick={(id) => {
-            setLiveId(id)
-            setLiveSheet(false)
-          }}
-          onClose={() => setLiveSheet(false)}
         />
       )}
 
@@ -860,12 +807,11 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
                   pic === i ? 'border-ink shadow-md' : 'border-stroke opacity-60'
                 }`}
               >
-                <img
-                  src={im.src}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-contain"
-                />
+                {im.src ? (
+                  <img src={im.src} alt="" loading="lazy" className="h-full w-full object-contain" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-ink text-white">▶</span>
+                )}
               </button>
             </li>
           ))}

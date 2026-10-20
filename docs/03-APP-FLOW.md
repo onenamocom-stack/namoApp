@@ -563,18 +563,14 @@ top to bottom —
   follows. Tapping it opens the **murti sheet**, which is **the only place
   the image attribution appears**, so it cannot be removed without removing
   the images.
-- **Live** (20 Oct 2026, Rahul): when the console has temples' live YouTube
-  darshan (docs/05 §5.2c-ter), a **Live** pill sits at the start of the deity
-  row, outside its scroll (the row centres the deity on show). On, the
-  temple's video (YouTube's player, inside Namo) takes the murti's place in
-  the same shrine: the bells, dhoop, diyas, flowers and the aarti thali stand
-  in front of it and work as before a murti (Rahul: "put aarti diya etc in
-  front of this yt video"). It opens on the first temple live. The plaque
-  names the temple and says Live; tapping it opens the list of temples — one
-  live carries a LIVE mark, one outside its hours says when it is next live
-  and shows that in the shrine instead of a video. No swipe and no Sangeet
-  while Live (the temple has its own sound; Sangeet stops). Nothing links to
-  YouTube. A deity pill goes back to the murti.
+- **A murti can be a photo, a video or a temple's YouTube video** (20 Oct
+  2026, Rahul; set per murti in the console). The video plays on a silent
+  loop; the YouTube one plays in YouTube's player inside Namo, nothing links
+  out. Either stands in the same frame, with the bells, dhoop, diyas,
+  flowers and aarti in front of it. The plaque adds *· Live* under the
+  temple's name for a YouTube one, and Sangeet stops and its button hides
+  there (the temple has its own sound). It replaced, the same morning, a
+  separate Live pill with its own list of temples.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told

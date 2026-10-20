@@ -80,31 +80,11 @@ export function toAsset(row) {
  * panchang cache exists to avoid elsewhere.
  */
 /**
- * Temples' live YouTube darshan (20 Oct 2026, Rahul): [{id, temple, templeHi,
- * location, locationHi, embedUrl, imageUrl, live, nextAt}]. Only streams
- * that play inside other apps are in the console, and nothing here links
- * out to YouTube. Throws on failure; the page then has no Live pill.
- */
-export async function fetchLiveDarshans() {
-  const response = await fetch(`${API_BASE}/bhakti/darshan/live/`)
-  if (!response.ok) throw new Error(`live darshan ${response.status}`)
-  return (await response.json()).map((r) => ({
-    id: r.id,
-    temple: r.temple,
-    templeHi: r.temple_hi || r.temple,
-    location: r.location,
-    locationHi: r.location_hi || r.location,
-    embedUrl: r.embed_url,
-    imageUrl: r.image_url,
-    live: r.live,
-    nextAt: r.next_at,
-  }))
-}
-
-/**
  * The darshan page's deities and murtis, as the console has them (8 Oct
- * 2026): [{id, name, nameHi, images:[{id, src, temple, templeHi, location,
- * locationHi, title, credit}]}]. Throws on failure; the screen keeps the
+ * 2026): [{id, name, nameHi, images:[{id, kind, src, video, embedUrl,
+ * temple, templeHi, location, locationHi, title, credit}]}]. `kind` is what
+ * the frame shows: 'image', 'video' or 'youtube' (20 Oct 2026); `src` is the
+ * photo, the cover of the other two. Throws on failure; the screen keeps the
  * deities it shipped with.
  */
 export async function fetchDarshan() {
@@ -119,6 +99,9 @@ export async function fetchDarshan() {
       // The seeded murtis are files in `public/`, site-relative; uploads are
       // absolute bucket URLs. Same rule as toAsset.
       src: i.image_url?.startsWith('/') ? `${import.meta.env.BASE_URL}${i.image_url.slice(1)}` : i.image_url,
+      kind: i.kind || 'image',
+      video: i.video_url || '',
+      embedUrl: i.embed_url || '',
       temple: i.temple,
       templeHi: i.temple_hi,
       location: i.location,

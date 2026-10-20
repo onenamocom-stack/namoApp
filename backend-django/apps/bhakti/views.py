@@ -85,13 +85,21 @@ def asset_file(request, asset_id):
 def darshan(request):
     """The darshan page's deities and their murtis, as the console has them
     (8 Oct 2026). Active deities with at least one active murti, in order."""
+    from . import youtube
+
     out = []
     deities = DarshanDeity.objects.filter(active=True).prefetch_related("images").order_by("sort", "name")
     for d in deities:
         images = [
             {
                 "id": str(i.id),
-                "image_url": i.image_url,
+                # A photo, a video or a YouTube link (20 Oct 2026, Rahul);
+                # `kind` says which the frame shows. The photo (or the
+                # YouTube video's own picture) is the cover either way.
+                "kind": "youtube" if youtube.embed_url(i) else "video" if i.video_url else "image",
+                "image_url": i.image_url or youtube.thumbnail(i),
+                "video_url": i.video_url,
+                "embed_url": youtube.embed_url(i),
                 "temple": i.temple,
                 "temple_hi": i.temple_hi,
                 "location": i.location,
@@ -104,30 +112,6 @@ def darshan(request):
         ]
         if images:
             out.append({"id": str(d.id), "name": d.name, "name_hi": d.name_hi, "images": images})
-    return Response(out)
-
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def live_darshans(request):
-    """Temples' live darshan for the darshan page (20 Oct 2026, Rahul):
-    each with whether its hours say live now and, if not, when next."""
-    from . import youtube
-    from .models import LiveDarshan
-
-    out = []
-    for row in LiveDarshan.objects.filter(active=True).order_by("sort", "temple"):
-        try:
-            live = youtube.live_now(row.hours)
-            nxt = None if live else youtube.next_start(row.hours)
-        except youtube.Refused:
-            live, nxt = True, None
-        out.append({
-            "id": str(row.id), "temple": row.temple, "temple_hi": row.temple_hi,
-            "location": row.location, "location_hi": row.location_hi,
-            "embed_url": youtube.embed_url(row), "image_url": youtube.thumbnail(row),
-            "hours": row.hours, "live": live, "next_at": nxt,
-        })
     return Response(out)
 
 

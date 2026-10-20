@@ -1389,31 +1389,16 @@ location, Hindi, order, active; Fulfilment tier; nothing deleted). Read by
 active murti, in order. Seeded by `bhakti/0004` with the eight deities and 28
 murtis the app shipped with. RLS on, no policies.
 
-### 5.2c-ter `live_darshans` — temples' live YouTube darshan (20 Oct 2026)
-
-```sql
-create table live_darshans (
-  id          uuid primary key,
-  temple      text not null,  temple_hi text not null default '',
-  location    text not null default '',  location_hi text not null default '',
-  youtube_url text not null,              -- what the console pasted
-  video_id    text not null default '',   -- a video's id, or
-  channel_id  text not null default '',   -- the channel whose live stream plays
-  hours       text not null default '',   -- IST, "05:00-12:00, 16:00-22:00"; '' all day
-  image_url   text not null default '',   -- '' = the video's own thumbnail
-  sort        int not null default 0,
-  active      boolean not null default true,
-  created_at  timestamptz not null default now()
-);
-```
-
-Console **Live darshan (YouTube)** (Fulfilment; nothing deleted). On save the
-link is checked with YouTube's oEmbed: a stream whose owner turned embedding
-off is refused (Rahul: nothing that cannot play inside Namo is added); a
-channel not live at that moment saves with a warning to check the preview.
-`GET /v1/bhakti/darshan/live/` (anonymous): active rows in order, each with
-`embed_url`, `image_url`, `live` (inside its hours now) and `next_at`.
-`bhakti/0010`. RLS on, no policies.
+**A photo, a video or a YouTube link (20 Oct 2026, Rahul).** `darshan_images`
+also carries `video_url`, `youtube_url`, `youtube_video_id` and
+`youtube_channel_id` (all text, default ''), and `image_url` may be empty
+(`bhakti/0010`). The frame shows the YouTube link first, then the video, then
+the photo; the photo is the cover of the other two (a YouTube one without a
+photo uses the video's own picture). The console checks a YouTube link with
+YouTube's oEmbed on save and refuses one whose owner turned embedding off; a
+channel link plays the channel's current live stream, and a channel not live
+at that moment saves with a warning to check the preview. The read adds
+`kind` ('image' | 'video' | 'youtube'), `video_url` and `embed_url`.
 
 ### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
 

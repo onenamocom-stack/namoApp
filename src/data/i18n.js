@@ -193,8 +193,6 @@ export const strings = {
   'puja.touchHint': { en: 'Touch the ghanti, diya, dhoop or flowers to offer', hi: 'अर्पण के लिए घंटी, दीया, धूप या पुष्प को छुएँ' },
   'puja.mandirOf': { en: 'Shri {name} Mandir', hi: 'श्री {name} मंदिर' },
   'puja.live': { en: 'Live', hi: 'लाइव' },
-  'puja.liveNext': { en: 'Live darshan at {at}', hi: '{at} बजे लाइव दर्शन' },
-  'puja.liveTemples': { en: 'Live darshan', hi: 'लाइव दर्शन' },
   'puja.forDeity': { en: 'For {name}', hi: '{name} के लिए' },
   'puja.murti': { en: 'murti', hi: 'मूर्ति' },
   'puja.rung': { en: 'Ghanti rung', hi: 'घंटी बजी' },

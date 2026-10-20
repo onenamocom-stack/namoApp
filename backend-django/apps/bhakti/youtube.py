@@ -1,4 +1,4 @@
-"""A temple's YouTube live darshan (20 Oct 2026, Rahul).
+"""A darshan murti shown as a temple's YouTube video (20 Oct 2026, Rahul).
 
 Only what plays inside Namo is added. YouTube's oEmbed answers 401 for a
 video whose owner turned embedding off, and that is the check: such a
@@ -12,12 +12,9 @@ video id while it is live.
 """
 
 import re
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import requests
 
-IST = ZoneInfo("Asia/Kolkata")
 TIMEOUT = 8
 HEADERS = {"User-Agent": "Mozilla/5.0 (Namo console)", "Accept-Language": "en"}
 
@@ -32,7 +29,6 @@ PAGE_CHANNEL = (
     re.compile(r'"browseId":"(UC[A-Za-z0-9_-]{22})"'),
 )
 PAGE_VIDEO = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})"')
-HOURS = re.compile(r"^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$")
 
 
 class Refused(Exception):
@@ -106,54 +102,18 @@ def check(url):
                             "checked. Open the preview here while it is live; if it does not play, untick Active.")
 
 
-def parse_hours(text):
-    """[(start_minute, end_minute)] from "05:00-12:00, 16:00-22:00", IST;
-    [] is all day. Refused on anything else."""
-    spans = []
-    for part in [p.strip() for p in (text or "").split(",") if p.strip()]:
-        m = HOURS.match(part)
-        if not m:
-            raise Refused('Write the hours like "05:00-12:00, 16:00-22:00", or leave it empty for all day.')
-        h1, m1, h2, m2 = (int(g) for g in m.groups())
-        if h1 > 23 or h2 > 24 or m1 > 59 or m2 > 59:
-            raise Refused(f"{part} is not a time of day.")
-        start, end = h1 * 60 + m1, h2 * 60 + m2
-        if end <= start:
-            raise Refused(f"{part}: the end is before the start.")
-        spans.append((start, end))
-    return spans
-
-
-def live_now(hours, now=None):
-    spans = parse_hours(hours)
-    if not spans:
-        return True
-    local = (now or datetime.now(IST)).astimezone(IST)
-    minute = local.hour * 60 + local.minute
-    return any(start <= minute < end for start, end in spans)
-
-
-def next_start(hours, now=None):
-    """"HH:MM" of the next span's start today or tomorrow, or None."""
-    spans = parse_hours(hours)
-    if not spans:
-        return None
-    local = (now or datetime.now(IST)).astimezone(IST)
-    minute = local.hour * 60 + local.minute
-    later = [s for s, _ in spans if s > minute]
-    start = min(later) if later else min(s for s, _ in spans)
-    return f"{start // 60:02d}:{start % 60:02d}"
-
-
 def embed_url(row):
-    if row.video_id:
-        return f"https://www.youtube-nocookie.com/embed/{row.video_id}?autoplay=1&playsinline=1&rel=0&modestbranding=1"
-    return f"https://www.youtube.com/embed/live_stream?channel={row.channel_id}&autoplay=1&playsinline=1&rel=0"
+    """The player for a DarshanImage's YouTube link, or ""."""
+    if row.youtube_video_id:
+        return (f"https://www.youtube-nocookie.com/embed/{row.youtube_video_id}"
+                "?autoplay=1&playsinline=1&rel=0&modestbranding=1")
+    if row.youtube_channel_id:
+        return f"https://www.youtube.com/embed/live_stream?channel={row.youtube_channel_id}&autoplay=1&playsinline=1&rel=0"
+    return ""
 
 
 def thumbnail(row):
-    if row.image_url:
-        return row.image_url
-    if row.video_id:
-        return f"https://i.ytimg.com/vi/{row.video_id}/hqdefault.jpg"
+    """The video's own picture, for a YouTube murti with no photo."""
+    if row.youtube_video_id:
+        return f"https://i.ytimg.com/vi/{row.youtube_video_id}/hqdefault.jpg"
     return ""

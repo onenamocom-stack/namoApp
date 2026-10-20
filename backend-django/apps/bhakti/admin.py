@@ -20,7 +20,7 @@ from apps.media import providers as media
 from apps.media.models import MediaAsset, MediaKind, MediaStatus
 from apps.shop.admin import RupeeField
 
-from .models import BhaktiAsset, DarshanDeity, DarshanImage, LiveDarshan
+from .models import BhaktiAsset, DarshanDeity, DarshanImage
 
 AUDIO_KINDS = {BhaktiAsset.Kind.TUNE, BhaktiAsset.Kind.BHAJAN, BhaktiAsset.Kind.MANTRA}
 # A status may be a video too (19 Oct 2026, Rahul): shared to WhatsApp as
@@ -282,18 +282,30 @@ class DarshanDeityAdmin(AuditedAdmin, _FulfilmentRuns):
 
 
 class DarshanImageForm(forms.ModelForm):
+    """One murti's frame: a photo, a video or a YouTube link (20 Oct 2026,
+    Rahul: "either image or video or yt video link in darshan deity. Anyone
+    ... will show in this frame"). A YouTube link is checked with YouTube on
+    save and refused when it does not play inside other apps: the app never
+    sends anybody to YouTube."""
+
     upload = forms.ImageField(
         required=False,
         label="New photo",
         help_text="Portrait, about 1080 × 1440 (3:4). Keep the murti in the middle — the plaque covers the top "
-        "tenth and the thali the bottom sixth. Replaces the current photo.",
+        "tenth and the thali the bottom sixth. Replaces the current photo. With a video or YouTube link it is "
+        "only the cover and the picture in the murti picker.",
+    )
+    video_upload = forms.FileField(
+        required=False,
+        label="New video",
+        help_text="MP4, up to 30 MB. Plays on a loop in the frame, without sound. Replaces the current video.",
     )
 
     class Meta:
         model = DarshanImage
         fields = (
             "deity", "temple", "temple_hi", "location", "location_hi",
-            "image_url", "upload", "title", "credit", "sort", "active",
+            "image_url", "upload", "video_url", "video_upload", "youtube_url", "title", "credit", "sort", "active",
         )
         widgets = {
             "temple": forms.TextInput(attrs={"size": 50}),
@@ -301,6 +313,8 @@ class DarshanImageForm(forms.ModelForm):
             "location": forms.TextInput(attrs={"size": 50}),
             "location_hi": forms.TextInput(attrs={"size": 50}),
             "image_url": forms.TextInput(attrs={"size": 80}),
+            "video_url": forms.TextInput(attrs={"size": 80}),
+            "youtube_url": forms.TextInput(attrs={"size": 80}),
             "title": forms.TextInput(attrs={"size": 50}),
             "credit": forms.TextInput(attrs={"size": 80}),
         }
@@ -309,6 +323,8 @@ class DarshanImageForm(forms.ModelForm):
             "temple_hi": "Temple name (Hindi)",
             "location_hi": "Location (Hindi)",
             "image_url": "Photo URL",
+            "video_url": "Video URL",
+            "youtube_url": "YouTube link",
         }
         help_texts = {
             "temple": "On the plaque, e.g. Shri Siddhivinayak Mandir. Empty: “Shri <deity> Mandir”.",
@@ -316,26 +332,58 @@ class DarshanImageForm(forms.ModelForm):
             "temple_hi": "Shown when the app is in Hindi. Empty: the English name.",
             "location_hi": "Shown when the app is in Hindi. Empty: the English location.",
             "image_url": "Leave empty when you upload a photo: it fills itself. Or paste a link to a photo.",
+            "video_url": "Leave empty when you upload a video. Clear it to stop showing the video.",
+            "youtube_url": "A temple's live darshan: the live video's link, or its channel (youtube.com/@name) "
+                           "when each day's stream is a new video. Shown before a video or photo. Checked on save: "
+                           "a stream that does not allow playing in other apps is refused. Clear it to stop.",
             "title": "Optional. What the photo shows, e.g. Shringar darshan — in the murti picker.",
             "credit": "Optional. Who took or owns the photo — shown in the murti picker.",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["image_url"].required = False
+        for name in ("image_url", "video_url", "youtube_url"):
+            self.fields[name].required = False
 
     def clean(self):
+        from . import youtube
+
         data = super().clean()
-        upload = data.get("upload")
+        upload, video = data.get("upload"), data.get("video_upload")
         if upload:
             mime = getattr(upload, "content_type", "") or ""
             try:
                 media.validate_upload("image", upload.name, upload.size, mime)
             except media.ValidationError as exc:
                 raise forms.ValidationError({"upload": str(exc)}) from None
-        elif not data.get("image_url"):
-            raise forms.ValidationError({"upload": "Add a photo, or paste its URL above."})
-        data["image_url"] = data.get("image_url") or ""
+        if video:
+            mime = getattr(video, "content_type", "") or ""
+            if video.size > VIDEO_STATUS_BYTES:
+                raise forms.ValidationError({"video_upload": "A video can be up to 30 MB."})
+            if not video.name.lower().endswith(VIDEO_EXTS) or not mime.startswith("video/"):
+                raise forms.ValidationError({"video_upload": "Upload the video as MP4."})
+            try:
+                media.validate_upload("reel", video.name, video.size, mime)
+            except media.ValidationError as exc:
+                raise forms.ValidationError({"video_upload": str(exc)}) from None
+        link = (data.get("youtube_url") or "").strip()
+        self.youtube_ids = ("", "")
+        if link:
+            same = self.instance.pk and link == self.instance.youtube_url and (
+                self.instance.youtube_video_id or self.instance.youtube_channel_id)
+            try:
+                if same:
+                    self.youtube_ids = (self.instance.youtube_video_id, self.instance.youtube_channel_id)
+                else:
+                    video_id, channel_id, self.youtube_note = youtube.check(link)
+                    self.youtube_ids = (video_id, channel_id)
+            except youtube.Refused as err:
+                raise forms.ValidationError({"youtube_url": str(err)}) from None
+        if not (upload or video or link or data.get("image_url") or data.get("video_url")):
+            raise forms.ValidationError({"upload": "Add a photo, a video or a YouTube link."})
+        for name in ("image_url", "video_url"):
+            data[name] = data.get(name) or ""
+        data["youtube_url"] = link
         return data
 
 
@@ -343,7 +391,7 @@ class DarshanImageForm(forms.ModelForm):
 class DarshanImageAdmin(AuditedAdmin, _FulfilmentRuns):
     audit_target = "darshan_image"
     form = DarshanImageForm
-    list_display = ("thumb", "plaque", "deity", "sort", "active")
+    list_display = ("thumb", "plaque", "shows", "deity", "sort", "active")
     list_display_links = ("thumb", "plaque")
     list_filter = ("deity", "active")
     list_editable = ("sort", "active")
@@ -352,16 +400,24 @@ class DarshanImageAdmin(AuditedAdmin, _FulfilmentRuns):
     readonly_fields = ("preview",)
     fieldsets = (
         ("Plaque", {"fields": ("deity", "temple", "location", "temple_hi", "location_hi")}),
-        ("Photo", {"fields": ("preview", "upload", "image_url")}),
+        ("In the frame: a photo, a video or a YouTube link", {"fields": (
+            "preview", "youtube_url", "video_upload", "video_url", "upload", "image_url")}),
         ("In the murti picker", {"fields": ("title", "credit")}),
         ("Showing", {"fields": ("sort", "active")}),
     )
 
     @dj.display(description="")
     def thumb(self, obj):
-        return format_html(
-            '<img src="{}" style="width:48px;height:64px;object-fit:cover;border-radius:8px">', _site_url(obj.image_url),
-        )
+        from . import youtube
+
+        src = _site_url(obj.image_url) or youtube.thumbnail(obj)
+        if not src:
+            return "▶"
+        return format_html('<img src="{}" style="width:48px;height:64px;object-fit:cover;border-radius:8px">', src)
+
+    @dj.display(description="Shows")
+    def shows(self, obj):
+        return "YouTube" if obj.youtube_url else "Video" if obj.video_url else "Photo"
 
     @dj.display(description="Plaque")
     def plaque(self, obj):
@@ -369,104 +425,45 @@ class DarshanImageAdmin(AuditedAdmin, _FulfilmentRuns):
             "{}<br><small>{}</small>", obj.temple or f"Shri {obj.deity.name} Mandir", obj.location or obj.title,
         )
 
-    @dj.display(description="Current photo")
+    @dj.display(description="In the frame now")
     def preview(self, obj):
+        from . import youtube
+
+        if obj.youtube_video_id or obj.youtube_channel_id:
+            return format_html('<iframe src="{}" width="360" height="203" style="border:0;border-radius:8px" '
+                               'allow="autoplay; encrypted-media" allowfullscreen></iframe>', youtube.embed_url(obj))
+        if obj.video_url:
+            return format_html('<video controls muted src="{}" poster="{}" style="max-width:240px;border-radius:12px">'
+                               '</video>', obj.video_url, _site_url(obj.image_url))
         if not obj.image_url:
             return "—"
         return format_html('<img src="{}" style="max-width:240px;border-radius:12px">', _site_url(obj.image_url))
 
+    def _put(self, request, obj, upload, kind, media_kind, mime):
+        admin = admin_row(request)
+        owner = str(admin.profile_id) if admin else "console"
+        key = media.make_bucket_key(owner, kind, upload.name)
+        url = media.get_provider().put_bytes(key, upload.read(), mime)
+        MediaAsset.objects.create(owner=owner, kind=media_kind, bucket_key=key, mime=mime,
+                                  size_bytes=upload.size, status=MediaStatus.READY)
+        record(request, "darshan_image.file", "darshan_image", target_id=obj.pk, bucket_key=key)
+        return url
+
     def save_model(self, request, obj, form, change):
-        upload = form.cleaned_data.get("upload")
+        upload, video = form.cleaned_data.get("upload"), form.cleaned_data.get("video_upload")
         if upload:
-            admin = admin_row(request)
-            owner = str(admin.profile_id) if admin else "console"
-            mime = upload.content_type or "image/jpeg"
-            key = media.make_bucket_key(owner, "image", upload.name)
-            obj.image_url = media.get_provider().put_bytes(key, upload.read(), mime)
-            MediaAsset.objects.create(
-                owner=owner, kind=MediaKind.IMAGE, bucket_key=key, mime=mime,
-                size_bytes=upload.size, status=MediaStatus.READY,
-            )
-            record(request, "darshan_image.file", "darshan_image", target_id=obj.pk, bucket_key=key)
+            obj.image_url = self._put(request, obj, upload, "image", MediaKind.IMAGE, upload.content_type or "image/jpeg")
+        if video:
+            obj.video_url = self._put(request, obj, video, "reel", MediaKind.REEL, video.content_type or "video/mp4")
+        obj.youtube_video_id, obj.youtube_channel_id = form.youtube_ids
+        note = getattr(form, "youtube_note", "")
+        if note:
+            self.message_user(request, note, messages.WARNING)
         super().save_model(request, obj, form, change)
 
 
 def _site_url(url):
     """The seeded murtis are files in the app (`/deities/...`); the console
     is another host, so show those from the app's own domain."""
-    return f"https://1namo.com{url}" if url.startswith("/") else url
+    return f"https://1namo.com{url}" if (url or "").startswith("/") else url
 
-
-# ── Live darshan (20 Oct 2026, Rahul) ───────────────────────────────────────
-
-
-class LiveDarshanForm(forms.ModelForm):
-    class Meta:
-        model = LiveDarshan
-        fields = ("temple", "temple_hi", "location", "location_hi", "youtube_url", "hours", "image_url",
-                  "sort", "active")
-        widgets = {name: forms.TextInput(attrs={"size": 80}) for name in
-                   ("temple", "temple_hi", "location", "location_hi", "youtube_url", "hours", "image_url")}
-        labels = {"temple": "Temple name", "temple_hi": "Temple name (Hindi)", "location_hi": "Location (Hindi)",
-                  "youtube_url": "YouTube link", "hours": "Live hours (IST)", "image_url": "Card picture URL"}
-        help_texts = {
-            "youtube_url": "The live video's link, or the temple's channel (youtube.com/@name or /channel/UC…) "
-                           "when each day's stream is a new video. Checked with YouTube on save: a stream that "
-                           "does not allow playing in other apps is refused.",
-            "hours": 'e.g. "05:00-12:00, 16:00-22:00". Empty: live all day.',
-            "image_url": "Optional. Empty: the video's own picture.",
-        }
-
-    def clean(self):
-        from . import youtube
-
-        data = super().clean()
-        try:
-            youtube.parse_hours(data.get("hours"))
-            url = data.get("youtube_url") or ""
-            if url and (not self.instance.pk or url != self.instance.youtube_url
-                        or not (self.instance.video_id or self.instance.channel_id)):
-                self.cleaned_ids = youtube.check(url)
-        except youtube.Refused as err:
-            raise forms.ValidationError(str(err)) from None
-        return data
-
-
-@dj.register(LiveDarshan, site=site)
-class LiveDarshanAdmin(AuditedAdmin, _FulfilmentRuns):
-    audit_target = "live_darshan"
-    form = LiveDarshanForm
-    list_display = ("temple", "location", "hours_shown", "source", "sort", "active")
-    list_editable = ("sort", "active")
-    ordering = ("sort", "temple")
-    readonly_fields = ("preview",)
-    fieldsets = (
-        ("Temple", {"fields": ("temple", "location", "temple_hi", "location_hi")}),
-        ("Stream", {"fields": ("youtube_url", "hours", "preview")}),
-        ("Card", {"fields": ("image_url", "sort", "active")}),
-    )
-
-    @dj.display(description="Hours")
-    def hours_shown(self, obj):
-        return obj.hours or "All day"
-
-    @dj.display(description="Plays")
-    def source(self, obj):
-        return "Video" if obj.video_id else "Channel's live stream"
-
-    @dj.display(description="Preview")
-    def preview(self, obj):
-        from . import youtube
-
-        if not (obj.video_id or obj.channel_id):
-            return "Shown after saving."
-        return format_html('<iframe src="{}" width="360" height="203" style="border:0;border-radius:8px" '
-                           'allow="autoplay; encrypted-media" allowfullscreen></iframe>', youtube.embed_url(obj))
-
-    def save_model(self, request, obj, form, change):
-        ids = getattr(form, "cleaned_ids", None)
-        if ids:
-            obj.video_id, obj.channel_id, note = ids
-            if note:
-                self.message_user(request, note, messages.WARNING)
-        super().save_model(request, obj, form, change)
