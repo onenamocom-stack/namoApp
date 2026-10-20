@@ -164,18 +164,23 @@ def live_status(channel_id):
     hit = cache.get(key)
     if hit is not None:
         return hit
+    seconds = API_SECONDS
     try:
         got = _api_status(channel_id)
         status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
         if not status["live"] and status["last"] is None:
-            # Nothing found to play: a channel that uploads many videos a day
-            # (Tirupati's SVBC, a 24-hour stream started weeks ago) has its
-            # live stream outside the newest fifty, so the live player plays
-            # and says itself if nothing is on (20 Oct 2026).
-            status["live"] = True
+            # Nothing among the newest fifty: a channel that uploads many
+            # videos a day (Tirupati's SVBC, a 24-hour stream started weeks
+            # ago) keeps its stream further back. ASK, rather than assume
+            # it is live: the live player of a channel with nothing on says
+            # "Video unavailable" (Siddhivinayak, 20 Oct 2026, Raghu). Two
+            # searches (100 units each), so this answer keeps three hours.
+            deeper = _api_search_status(channel_id)
+            status["live"], status["last"] = deeper["live"], deeper["last"]
+            seconds = SEARCH_SECONDS
     except Refused:
         status = {"live": True, "starts_at": None, "last": None}
-    cache.set(key, status, API_SECONDS)
+    cache.set(key, status, seconds)
     return status
 
 
@@ -187,6 +192,10 @@ def live_status(channel_id):
 # streams are all in it, newest first) and those videos' broadcast details.
 API = "https://www.googleapis.com/youtube/v3/"
 API_SECONDS = 900
+# A channel whose newest fifty hold no stream is searched instead (two calls,
+# 100 units each), so its answer keeps longer: 43 channels and a few of them
+# searched at most eight times a day stay inside the 10,000 free units.
+SEARCH_SECONDS = 3 * 3600
 
 
 def _key():
@@ -251,3 +260,25 @@ def _api_status(channel_id):
                               "embed_url": recording_url(video_id)}
     status["starts_at"] = min(soon) if soon else None
     return status
+
+
+def _api_search_status(channel_id):
+    """{"live", "last"} for a channel whose recent uploads hold no stream:
+    YouTube's search for its live broadcast, then for its latest finished
+    one that may be embedded. Neither: off air with nothing to play, so the
+    frame shows the murti's photo and the timings, never an empty player."""
+    found = _api("search", part="id", channelId=channel_id, eventType="live", type="video",
+                 maxResults=1).get("items") or []
+    if found:
+        return {"live": True, "last": None}
+    done = [i["id"]["videoId"] for i in _api("search", part="id", channelId=channel_id,
+                                              eventType="completed", type="video", order="date",
+                                              maxResults=5).get("items") or []]
+    if not done:
+        return {"live": False, "last": None}
+    for v in _api("videos", part="status,liveStreamingDetails", id=",".join(done)).get("items") or []:
+        details = v.get("liveStreamingDetails") or {}
+        if v.get("status", {}).get("embeddable") and details.get("actualStartTime"):
+            return {"live": False, "last": {"video_id": v["id"], "started_at": details["actualStartTime"],
+                                            "embed_url": recording_url(v["id"])}}
+    return {"live": False, "last": None}

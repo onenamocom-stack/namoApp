@@ -148,7 +148,7 @@ class TestDataApi:
         settings.YOUTUBE_API_KEY = "test-key"
         cache.clear()
 
-    def _api(self, videos, handle_id=CHANNEL, status=200):
+    def _api(self, videos, handle_id=CHANNEL, status=200, live_search=(), done_search=()):
         class _J(_Got):
             def __init__(self, body, code=200):
                 super().__init__(code, "")
@@ -166,6 +166,9 @@ class TestDataApi:
                 return _J({"items": [{"contentDetails": {"videoId": v["id"]}} for v in videos]}, status)
             if url.endswith("/videos"):
                 return _J({"items": videos})
+            if url.endswith("/search"):
+                found = live_search if params["eventType"] == "live" else done_search
+                return _J({"items": [{"id": {"videoId": v}} for v in found]})
             raise AssertionError(url)
         return mock.patch("apps.bhakti.youtube.requests.get", side_effect=get)
 
@@ -203,7 +206,19 @@ class TestDataApi:
         with self._api([self._video("x" * 11)], status=403):
             assert youtube.live_status(CHANNEL)["live"] is True
 
-    def test_nothing_found_plays_the_live_player(self):
-        # A 24-hour stream older than the newest fifty uploads.
-        with self._api([self._video("s" * 11)]):
+    def test_nothing_in_the_newest_fifty_asks_whether_it_is_live(self):
+        # A 24-hour stream older than the newest fifty uploads: search finds it.
+        with self._api([self._video("s" * 11)], live_search=["s" * 11]):
             assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
+
+    def test_not_live_and_nothing_recent_plays_the_last_stream_search_finds(self):
+        old = self._video("o" * 11, actualStartTime="2026-01-20T02:00:00Z", actualEndTime="2026-01-20T03:00:00Z")
+        with self._api([self._video("s" * 11), old], done_search=["o" * 11]):
+            got = youtube.live_status(CHANNEL)
+        assert got["live"] is False and got["last"]["video_id"] == "o" * 11
+
+    def test_not_live_and_no_stream_at_all_is_off_air_not_an_empty_player(self):
+        """Siddhivinayak, 20 Oct 2026: the live player of a channel with nothing
+        on shows "Video unavailable". Off air, the frame shows the photo."""
+        with self._api([self._video("s" * 11)]):
+            assert youtube.live_status(CHANNEL) == {"live": False, "starts_at": None, "last": None}
