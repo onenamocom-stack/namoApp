@@ -119,7 +119,7 @@ class TestLiveStatus:
 
     def _status(self, live_page="", streams=""):
         def get(url, **kw):
-            return _Got(200, live_page if url.endswith("/live") else streams)
+            return _Got(200, "ytInitialData " + live_page if url.endswith("/live") else streams)
         with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
             return youtube.live_status(CHANNEL)
 
@@ -141,6 +141,12 @@ class TestLiveStatus:
                    f'"upcomingEventData":{{"startTime":"{soon}"}}')
         assert self._status("<html>", streams) == {"live": False, "starts_at": soon, "last": None}
 
+    def test_a_page_it_cannot_read_plays_the_live_player(self):
+        def get(url, **kw):
+            return _Got(200, "<title>Before you continue to YouTube</title>")
+        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
+            assert youtube.live_status(CHANNEL)["live"] is True
+
     def test_nothing_scheduled(self):
         assert self._status("<html>", "<html>") == {"live": False, "starts_at": None, "last": None}
 
@@ -153,7 +159,7 @@ class TestLiveStatus:
         got = _mine(api_client, deity)["images"]
         assert got[0]["checks_live"] is True and got[0]["live_hours"] == "Daily 5-7 AM"
         assert got[1]["checks_live"] is False
-        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=lambda url, **kw: _Got(200, "")):
+        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=lambda url, **kw: _Got(200, "ytInitialData")):
             assert api_client.get(f"/v1/bhakti/darshan/{row.pk}/live/").json() == {"live": False, "starts_at": None, "last": None}
         assert api_client.get(f"/v1/bhakti/darshan/{photo.pk}/live/").status_code == 404
 
@@ -172,7 +178,7 @@ class TestLastStream:
 
         def get(url, **kw):
             if url.endswith("/live"):
-                return _Got(200, "<html>")
+                return _Got(200, "ytInitialData <html>")
             if url.endswith("/streams"):
                 return _Got(200, f'"videoId":"{new}" "videoId":"{new}" "videoId":"{old}"')
             return _Got(200, watch.get(url.rsplit("=", 1)[1], ""))

@@ -11,13 +11,23 @@ current stream is read from its /live page, which carries the stream's
 video id while it is live.
 """
 
+import logging
 import re
 import time
 
 import requests
 
 TIMEOUT = 8
-HEADERS = {"User-Agent": "Mozilla/5.0 (Namo console)", "Accept-Language": "en"}
+logger = logging.getLogger("apps.bhakti")
+
+# A browser's agent and the consent cookies: from a data centre YouTube may
+# otherwise answer a consent or check page instead of the channel.
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/141.0.0.0 Safari/537.36",
+    "Accept-Language": "en-IN,en;q=0.9",
+    "Cookie": "CONSENT=YES+cb; SOCS=CAI",
+}
 
 VIDEO = re.compile(r"(?:v=|youtu\.be/|/live/|/embed/|/shorts/)([A-Za-z0-9_-]{11})")
 CHANNEL = re.compile(r"/channel/(UC[A-Za-z0-9_-]{22})")
@@ -187,7 +197,20 @@ def live_status(channel_id):
         return hit
     status = {"live": False, "starts_at": None, "last": None}
     try:
-        page = _get(f"https://www.youtube.com/channel/{channel_id}/live").text
+        got = _get(f"https://www.youtube.com/channel/{channel_id}/live")
+        page = got.text
+        if "ytInitialData" not in page:
+            # Not the channel's page (a consent or check page, an error): we
+            # cannot tell, so the live player plays as it did before the
+            # check, and YouTube's own player says if nothing is on. Asked
+            # again in a minute (20 Oct 2026: from Cloud Run every channel
+            # read as off air and every frame went dark).
+            title = re.search(r"<title>([^<]{0,80})", page)
+            logger.warning("[darshan] youtube unreadable: %s %s %s bytes %r", channel_id, got.status_code,
+                           len(page), title.group(1) if title else "")
+            status["live"] = True
+            cache.set(key, status, 60)
+            return status
         if PAGE_VIDEO.search(page) and PAGE_LIVE.search(page) and not PAGE_UPCOMING.search(page):
             status["live"] = True
         else:
