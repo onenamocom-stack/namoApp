@@ -266,6 +266,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 # models listing but answers 404 "no longer available to new users" when
 # actually called. A listing is not an entitlement — call the thing.
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+# The darshan page's temple channels (20 Oct 2026; apps/bhakti/youtube.py):
+# live status, schedules and recordings. Empty: the public pages are read,
+# which YouTube answers with a bot check from a data centre.
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 GEMINI_BASE_URL = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com")
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 # The ceiling on one answer. The prompt asks for three to six sentences;

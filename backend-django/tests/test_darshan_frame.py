@@ -197,3 +197,70 @@ class TestLastStream:
 
     def test_none_when_nothing_finished(self):
         assert self._status({"b" * 11: '"startTimestamp":"x" "playableInEmbed":true'})["last"] is None
+
+
+class TestDataApi:
+    """With YOUTUBE_API_KEY set, channels, live streams, schedules and
+    recordings come from the Data API: a data centre gets YouTube's bot check
+    on the public pages (20 Oct 2026)."""
+
+    @pytest.fixture(autouse=True)
+    def _key_and_cache(self, settings):
+        from django.core.cache import cache
+        settings.YOUTUBE_API_KEY = "test-key"
+        cache.clear()
+
+    def _api(self, videos, handle_id=CHANNEL, status=200):
+        class _J(_Got):
+            def __init__(self, body, code=200):
+                super().__init__(code, "")
+                self.body = body
+
+            def json(self):
+                return self.body
+
+        def get(url, params=None, **kw):
+            assert params["key"] == "test-key"
+            if url.endswith("/channels"):
+                return _J({"items": [{"id": handle_id}]})
+            if url.endswith("/playlistItems"):
+                assert params["playlistId"] == "UU" + CHANNEL[2:]
+                return _J({"items": [{"contentDetails": {"videoId": v["id"]}} for v in videos]}, status)
+            if url.endswith("/videos"):
+                return _J({"items": videos})
+            raise AssertionError(url)
+        return mock.patch("apps.bhakti.youtube.requests.get", side_effect=get)
+
+    @staticmethod
+    def _video(vid, state="none", embeddable=True, **details):
+        return {"id": vid, "snippet": {"liveBroadcastContent": state}, "status": {"embeddable": embeddable},
+                "liveStreamingDetails": details}
+
+    def test_a_handle(self):
+        with self._api([]):
+            assert youtube.parse("https://www.youtube.com/@ShriMahakal") == ("", CHANNEL)
+
+    def test_live_now(self):
+        with self._api([self._video("l" * 11, "live", actualStartTime="2026-10-20T01:00:00Z")]):
+            assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
+            assert youtube.live_video(CHANNEL) == "l" * 11
+
+    def test_off_air_the_next_and_the_last_that_embeds(self):
+        import time
+        soon = int(time.time()) + 3600
+        from datetime import datetime, timezone
+        iso = datetime.fromtimestamp(soon, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        videos = [
+            self._video("u" * 11, "upcoming", scheduledStartTime=iso),
+            self._video("n" * 11, embeddable=False, actualStartTime="2026-10-19T02:00:00Z",
+                        actualEndTime="2026-10-19T03:00:00Z"),
+            self._video("r" * 11, actualStartTime="2026-10-18T02:00:00Z", actualEndTime="2026-10-18T03:00:00Z"),
+        ]
+        with self._api(videos):
+            got = youtube.live_status(CHANNEL)
+        assert got["live"] is False and got["starts_at"] == soon
+        assert got["last"]["video_id"] == "r" * 11 and got["last"]["started_at"] == "2026-10-18T02:00:00Z"
+
+    def test_the_api_failing_plays_the_live_player(self):
+        with self._api([self._video("x" * 11)], status=403):
+            assert youtube.live_status(CHANNEL)["live"] is True

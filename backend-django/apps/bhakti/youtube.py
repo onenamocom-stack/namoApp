@@ -6,9 +6,9 @@ temple is refused in the console, because the app never sends anybody to
 YouTube (Rahul: "jo log chalane nahi dete apni app me unhe nahi add
 karenge").
 
-No API key: oEmbed and the public channel page are enough. A channel's
-current stream is read from its /live page, which carries the stream's
-video id while it is live.
+Embedding is checked with oEmbed. Channels, live streams, schedules and
+recordings come from the YouTube Data API when YOUTUBE_API_KEY is set, and
+from the public pages otherwise (which a data centre cannot read; below).
 """
 
 import logging
@@ -61,7 +61,7 @@ def parse(url):
         return "", m.group(1)
     m = HANDLE.search(url)
     if m:
-        return "", _channel_of(f"https://www.youtube.com/{m.group(1)}")
+        return "", _channel_of(m.group(1))
     raise Refused("That link is not a YouTube video or channel.")
 
 
@@ -72,8 +72,10 @@ def _get(url):
         raise Refused("YouTube did not answer. Try again in a minute.") from None
 
 
-def _channel_of(page_url):
-    page = _get(page_url).text
+def _channel_of(handle):
+    if _key():
+        return _api_channel(handle)
+    page = _get(f"https://www.youtube.com/{handle}").text
     for pattern in PAGE_CHANNEL:
         m = pattern.search(page)
         if m:
@@ -83,6 +85,8 @@ def _channel_of(page_url):
 
 def live_video(channel_id):
     """The video id of the channel's stream if it is live now, else ""."""
+    if _key():
+        return _api_status(channel_id)["live_video"]
     m = PAGE_VIDEO.search(_get(f"https://www.youtube.com/channel/{channel_id}/live").text)
     return m.group(1) if m else ""
 
@@ -196,6 +200,15 @@ def live_status(channel_id):
     hit = cache.get(key)
     if hit is not None:
         return hit
+    if _key():
+        try:
+            got = _api_status(channel_id)
+            status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
+        except Refused:
+            # The API failing must not darken the frame: play the live player.
+            status = {"live": True, "starts_at": None, "last": None}
+        cache.set(key, status, API_SECONDS)
+        return status
     status = {"live": False, "starts_at": None, "last": None}
     try:
         got = _get(f"https://www.youtube.com/channel/{channel_id}/live")
@@ -227,4 +240,78 @@ def live_status(channel_id):
     except Refused:
         pass
     cache.set(key, status, STATUS_SECONDS)
+    return status
+
+
+# YouTube Data API v3 (20 Oct 2026). A data centre gets YouTube's "confirm
+# you're not a bot" on every channel and watch page, so from Cloud Run the
+# pages above say nothing; the API does. Used whenever YOUTUBE_API_KEY is
+# set (the owner sets it by hand in the server's secrets). Two calls a
+# check, one unit each: the channel's uploads (live, upcoming and finished
+# streams are all in it, newest first) and those videos' broadcast details.
+API = "https://www.googleapis.com/youtube/v3/"
+API_SECONDS = 600
+
+
+def _key():
+    from django.conf import settings
+
+    return getattr(settings, "YOUTUBE_API_KEY", "")
+
+
+def _api(endpoint, **params):
+    try:
+        got = requests.get(API + endpoint, params={**params, "key": _key()}, timeout=TIMEOUT)
+    except requests.RequestException:
+        raise Refused("YouTube did not answer. Try again in a minute.") from None
+    if got.status_code != 200:
+        # Never the body: an error can carry the key back.
+        logger.warning("[darshan] youtube api %s answered %s", endpoint, got.status_code)
+        raise Refused("YouTube did not answer. Try again in a minute.")
+    return got.json()
+
+
+def _api_channel(handle):
+    items = _api("channels", part="id", forHandle=handle).get("items") or []
+    if not items:
+        raise Refused("Could not find that channel on YouTube.")
+    return items[0]["id"]
+
+
+def _unix(stamp):
+    from datetime import datetime
+
+    return int(datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp())
+
+
+def _api_status(channel_id):
+    """{"live", "live_video", "starts_at", "last"} from the API."""
+    uploads = "UU" + channel_id[2:]
+    items = _api("playlistItems", part="contentDetails", playlistId=uploads, maxResults=50).get("items") or []
+    ids = [i["contentDetails"]["videoId"] for i in items]
+    status = {"live": False, "live_video": "", "starts_at": None, "last": None}
+    if not ids:
+        return status
+    videos = {
+        v["id"]: v
+        for v in _api("videos", part="snippet,liveStreamingDetails,status", id=",".join(ids)).get("items") or []
+    }
+    now = time.time()
+    soon = []
+    for video_id in ids:  # newest first
+        v = videos.get(video_id)
+        if not v or not v.get("status", {}).get("embeddable"):
+            continue
+        state = v.get("snippet", {}).get("liveBroadcastContent")
+        details = v.get("liveStreamingDetails") or {}
+        if state == "live" and not status["live"]:
+            status["live"], status["live_video"] = True, video_id
+        elif state == "upcoming" and details.get("scheduledStartTime"):
+            at = _unix(details["scheduledStartTime"])
+            if at > now - 1800:
+                soon.append(at)
+        elif status["last"] is None and details.get("actualEndTime") and details.get("actualStartTime"):
+            status["last"] = {"video_id": video_id, "started_at": details["actualStartTime"],
+                              "embed_url": recording_url(video_id)}
+    status["starts_at"] = min(soon) if soon else None
     return status
