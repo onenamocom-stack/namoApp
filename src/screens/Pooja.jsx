@@ -364,7 +364,8 @@ export default function Pooja() {
   }
 
   // A temple's YouTube darshan has its own sound: Sangeet stops for it,
-  // unless the temple is off air (`air` false, from the frame).
+  // unless the temple is off air with nothing to play (`air` false, from the
+  // frame). A recording (`air` a Date) has its own sound too.
   const [air, setAir] = useState(null)
   const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && air !== false
   useEffect(() => {
@@ -554,6 +555,9 @@ export default function Pooja() {
               {/* A temple's YouTube darshan says so here, under the name
                   (20 Oct 2026, Rahul), not with a button of its own. */}
               {image.kind === 'youtube' && air === true && <span className="flex-none font-bold text-[#ff8a7a]">· {t('puja.live')}</span>}
+              {image.kind === 'youtube' && air instanceof Date && (
+                <span className="flex-none">· {t('puja.recording')}</span>
+              )}
               {deity.images.length > 1 && (
                 <span className="flex-none opacity-80">· {at + 1}/{deity.images.length}</span>
               )}

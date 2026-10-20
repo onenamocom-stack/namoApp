@@ -119,13 +119,19 @@ export async function fetchDarshan() {
 /**
  * Whether a temple channel's murti is live now: `{ live, startsAt }`, where
  * `startsAt` is the next stream the temple scheduled on YouTube (a Date) or
- * null (20 Oct 2026, Rahul). Throws on failure.
+ * null (20 Oct 2026, Rahul); `last` its latest finished stream `{ embedUrl,
+ * at }`, or null. Throws on failure.
  */
 export async function fetchDarshanLive(imageId) {
   const response = await fetch(`${API_BASE}/bhakti/darshan/${imageId}/live/`)
   if (!response.ok) throw new Error(`darshan live ${response.status}`)
   const body = await response.json()
-  return { live: Boolean(body.live), startsAt: body.starts_at ? new Date(body.starts_at * 1000) : null }
+  return {
+    live: Boolean(body.live),
+    startsAt: body.starts_at ? new Date(body.starts_at * 1000) : null,
+    // Off air: the temple's latest finished stream, played as a recording.
+    last: body.last ? { embedUrl: body.last.embed_url, at: new Date(body.last.started_at) } : null,
+  }
 }
 
 /**

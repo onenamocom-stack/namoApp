@@ -125,33 +125,80 @@ PAGE_LIVE = re.compile(r'"isLive":true')
 PAGE_UPCOMING = re.compile(r'"isUpcoming":true')
 PAGE_START = re.compile(r'"scheduledStartTime":"(\d+)"')
 STREAMS_START = re.compile(r'"upcomingEventData":\{"startTime":"(\d+)"')
+STREAMS_VIDEO = re.compile(r'"videoId":"([A-Za-z0-9_-]{11})"')
+# A finished stream's watch page: when it ran, and whether it plays in
+# other apps.
+WATCH_STARTED = re.compile(r'"startTimestamp":"([^"]+)"')
+WATCH_ENDED = re.compile(r'"endTimestamp":"([^"]+)"')
+WATCH_EMBEDS = re.compile(r'"playableInEmbed":true')
 STATUS_SECONDS = 180
+LAST_SECONDS = 1800
+LAST_TRIES = 4
+
+
+def recording_url(video_id):
+    """The player for a temple's past stream, started at its beginning."""
+    return (f"https://www.youtube-nocookie.com/embed/{video_id}"
+            "?autoplay=1&playsinline=1&rel=0&modestbranding=1")
+
+
+def _last_stream(channel_id, streams_page):
+    """{"video_id", "started_at"} of the channel's latest finished stream
+    that plays in other apps, or None. Cached half an hour: it changes once
+    a stream ends, not every minute."""
+    from django.core.cache import cache
+
+    key = f"yt-last:{channel_id}"
+    hit = cache.get(key)
+    if hit is not None:
+        return hit or None
+    found = {}
+    seen = []
+    for video_id in STREAMS_VIDEO.findall(streams_page):
+        if video_id in seen:
+            continue
+        seen.append(video_id)
+        if len(seen) > LAST_TRIES:
+            break
+        page = _get(f"https://www.youtube.com/watch?v={video_id}").text
+        started = WATCH_STARTED.search(page)
+        if started and WATCH_ENDED.search(page) and WATCH_EMBEDS.search(page):
+            found = {"video_id": video_id, "started_at": started.group(1)}
+            break
+    cache.set(key, found, LAST_SECONDS)
+    return found or None
 
 
 def live_status(channel_id):
-    """{"live", "starts_at"} for a channel (20 Oct 2026, Rahul: "agar live
-    available nahi h to time kab live hoga. Ye likh do"). `starts_at` is the
-    next scheduled stream's start, unix seconds, when the temple scheduled
-    one on YouTube; None otherwise. Cached three minutes per channel, and a
-    YouTube that does not answer reads as not live."""
+    """{"live", "starts_at", "last"} for a channel (20 Oct 2026, Rahul: "agar
+    live available nahi h to time kab live hoga. Ye likh do"). `starts_at`
+    is the next scheduled stream's start, unix seconds, when the temple
+    scheduled one on YouTube; None otherwise. `last`, while off air, is the
+    temple's latest finished stream, played as a recording (Rahul: "jinka
+    nahi h live unka jo last live available h wo dikha de"):
+    {"video_id", "started_at" (ISO), "embed_url"}, or None. Cached three
+    minutes per channel, and a YouTube that does not answer reads as not
+    live."""
     from django.core.cache import cache
 
     key = f"yt-live:{channel_id}"
     hit = cache.get(key)
     if hit is not None:
         return hit
-    status = {"live": False, "starts_at": None}
+    status = {"live": False, "starts_at": None, "last": None}
     try:
         page = _get(f"https://www.youtube.com/channel/{channel_id}/live").text
         if PAGE_VIDEO.search(page) and PAGE_LIVE.search(page) and not PAGE_UPCOMING.search(page):
             status["live"] = True
         else:
-            starts = PAGE_START.findall(page) if PAGE_UPCOMING.search(page) else []
-            if not starts:
-                starts = STREAMS_START.findall(_get(f"https://www.youtube.com/channel/{channel_id}/streams").text)
+            streams = _get(f"https://www.youtube.com/channel/{channel_id}/streams").text
+            starts = (PAGE_START.findall(page) if PAGE_UPCOMING.search(page) else []) or STREAMS_START.findall(streams)
             # A stream scheduled long ago that never started is not "next".
             soon = sorted(int(s) for s in starts if int(s) > time.time() - 1800)
             status["starts_at"] = soon[0] if soon else None
+            last = _last_stream(channel_id, streams)
+            if last:
+                status["last"] = {**last, "embed_url": recording_url(last["video_id"])}
     except Refused:
         pass
     cache.set(key, status, STATUS_SECONDS)

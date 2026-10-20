@@ -1402,10 +1402,13 @@ at that moment saves with a warning to check the preview. The read adds
 `live_hours` and `live_hours_hi` (text, default '', `bhakti/0011`) carry a
 channel's usual live timings in the console's words; the read adds them and
 `checks_live` (a channel link, not a fixed video). `GET
-/v1/bhakti/darshan/<id>/live/` answers `{live, starts_at}` for a channel
-murti from its /live and /streams pages, `starts_at` being the next stream
-the temple scheduled on YouTube (unix seconds) or null; cached three
-minutes per channel.
+/v1/bhakti/darshan/<id>/live/` answers `{live, starts_at, last}` for a
+channel murti from its /live and /streams pages: `starts_at` the next
+stream the temple scheduled on YouTube (unix seconds) or null; `last`, off
+air, its latest finished stream that plays in other apps (`{video_id,
+started_at, embed_url}`, from the watch page's broadcast times and
+`playableInEmbed`) or null. Cached three minutes per channel, `last` half
+an hour.
 
 ### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
 

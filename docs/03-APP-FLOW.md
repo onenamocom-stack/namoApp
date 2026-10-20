@@ -572,10 +572,14 @@ top to bottom —
   there (the temple has its own sound). It replaced, the same morning, a
   separate Live pill with its own list of temples.
   A temple's channel is asked first whether it is live. Off air, the frame
-  shows that murti's own photo (never another murti's; dark without one) with *Not live right
-  now*, the next stream's time when the temple scheduled one on YouTube,
-  and the timings the console wrote; *· Live* drops and Sangeet returns.
-  It asks again every two minutes and plays the stream once it starts. The
+  plays the temple's latest finished stream, plainly marked (Rahul, 20 Oct):
+  *· Recording* on the plaque and, over the frame, *Recording of the last
+  live · <date>* with *Next live: <time>*: the stream the temple scheduled
+  on YouTube, else the console's timings, else *not known*. With no
+  recording to play, the frame shows that murti's own photo (never another
+  murti's; dark without one) with *Not live right now* and the same next
+  line, and Sangeet returns. It asks again every two minutes and plays the
+  live stream once it starts. The
   channel link plays whatever the temple streams that day: nobody changes
   the link for a new day's video.
 - The deities, their murtis and every plaque come from the console
