@@ -8,7 +8,8 @@ karenge").
 
 Embedding is checked with oEmbed. Channels, live streams, schedules and
 recordings come from the YouTube Data API when YOUTUBE_API_KEY is set, and
-from the public pages otherwise (which a data centre cannot read; below).
+the console's checks fall back to the public pages without it (which a data
+centre cannot read reliably; see live_status).
 """
 
 import logging
@@ -134,54 +135,10 @@ def thumbnail(row):
     return ""
 
 
-# What a channel's /live page says about its next stream, while none is on.
-PAGE_LIVE = re.compile(r'"isLive":true')
-PAGE_UPCOMING = re.compile(r'"isUpcoming":true')
-PAGE_BOT_CHECK = re.compile(r'"status":"LOGIN_REQUIRED"')
-PAGE_START = re.compile(r'"scheduledStartTime":"(\d+)"')
-STREAMS_START = re.compile(r'"upcomingEventData":\{"startTime":"(\d+)"')
-STREAMS_VIDEO = re.compile(r'"videoId":"([A-Za-z0-9_-]{11})"')
-# A finished stream's watch page: when it ran, and whether it plays in
-# other apps.
-WATCH_STARTED = re.compile(r'"startTimestamp":"([^"]+)"')
-WATCH_ENDED = re.compile(r'"endTimestamp":"([^"]+)"')
-WATCH_EMBEDS = re.compile(r'"playableInEmbed":true')
-STATUS_SECONDS = 180
-LAST_SECONDS = 1800
-LAST_TRIES = 4
-
-
 def recording_url(video_id):
     """The player for a temple's past stream, started at its beginning."""
     return (f"https://www.youtube-nocookie.com/embed/{video_id}"
             "?autoplay=1&playsinline=1&rel=0&modestbranding=1")
-
-
-def _last_stream(channel_id, streams_page):
-    """{"video_id", "started_at"} of the channel's latest finished stream
-    that plays in other apps, or None. Cached half an hour: it changes once
-    a stream ends, not every minute."""
-    from django.core.cache import cache
-
-    key = f"yt-last:{channel_id}"
-    hit = cache.get(key)
-    if hit is not None:
-        return hit or None
-    found = {}
-    seen = []
-    for video_id in STREAMS_VIDEO.findall(streams_page):
-        if video_id in seen:
-            continue
-        seen.append(video_id)
-        if len(seen) > LAST_TRIES:
-            break
-        page = _get(f"https://www.youtube.com/watch?v={video_id}").text
-        started = WATCH_STARTED.search(page)
-        if started and WATCH_ENDED.search(page) and WATCH_EMBEDS.search(page):
-            found = {"video_id": video_id, "started_at": started.group(1)}
-            break
-    cache.set(key, found, LAST_SECONDS)
-    return found or None
 
 
 def live_status(channel_id):
@@ -191,61 +148,34 @@ def live_status(channel_id):
     scheduled one on YouTube; None otherwise. `last`, while off air, is the
     temple's latest finished stream, played as a recording (Rahul: "jinka
     nahi h live unka jo last live available h wo dikha de"):
-    {"video_id", "started_at" (ISO), "embed_url"}, or None. Cached three
-    minutes per channel, and a YouTube that does not answer reads as not
-    live."""
+    {"video_id", "started_at" (ISO), "embed_url"}, or None.
+
+    From the Data API only. The public pages were read for this first, and
+    from Cloud Run YouTube answers them with "confirm you're not a bot" (on
+    every page, or on some and not others), so channels read as off air with
+    nothing to play and the frames went dark (20 Oct 2026). Without a key,
+    or when the API fails, every channel plays YouTube's live player, which
+    says itself when nothing is on."""
     from django.core.cache import cache
 
+    if not _key():
+        return {"live": True, "starts_at": None, "last": None}
     key = f"yt-live:{channel_id}"
     hit = cache.get(key)
     if hit is not None:
         return hit
-    if _key():
-        try:
-            got = _api_status(channel_id)
-            status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
-        except Refused:
-            # The API failing must not darken the frame: play the live player.
-            status = {"live": True, "starts_at": None, "last": None}
-        cache.set(key, status, API_SECONDS)
-        return status
-    status = {"live": False, "starts_at": None, "last": None}
     try:
-        got = _get(f"https://www.youtube.com/channel/{channel_id}/live")
-        page = got.text
-        if "ytInitialData" not in page or PAGE_BOT_CHECK.search(page):
-            # Not the channel's page (a consent page, YouTube's "confirm
-            # you're not a bot", an error): we cannot tell, so the live
-            # player plays as it did before the check, and YouTube's own
-            # player says if nothing is on. 20 Oct 2026: from Cloud Run (a
-            # data centre) YouTube answers every page with the bot check,
-            # so every channel read as off air and every frame went dark.
-            title = re.search(r"<title>([^<]{0,80})", page)
-            logger.warning("[darshan] youtube unreadable: %s %s %s bytes %r", channel_id, got.status_code,
-                           len(page), title.group(1) if title else "")
-            status["live"] = True
-            cache.set(key, status, STATUS_SECONDS)
-            return status
-        if PAGE_VIDEO.search(page) and PAGE_LIVE.search(page) and not PAGE_UPCOMING.search(page):
-            status["live"] = True
-        else:
-            streams = _get(f"https://www.youtube.com/channel/{channel_id}/streams").text
-            starts = (PAGE_START.findall(page) if PAGE_UPCOMING.search(page) else []) or STREAMS_START.findall(streams)
-            # A stream scheduled long ago that never started is not "next".
-            soon = sorted(int(s) for s in starts if int(s) > time.time() - 1800)
-            status["starts_at"] = soon[0] if soon else None
-            last = _last_stream(channel_id, streams)
-            if last:
-                status["last"] = {**last, "embed_url": recording_url(last["video_id"])}
+        got = _api_status(channel_id)
+        status = {"live": got["live"], "starts_at": got["starts_at"], "last": None if got["live"] else got["last"]}
     except Refused:
-        pass
-    cache.set(key, status, STATUS_SECONDS)
+        status = {"live": True, "starts_at": None, "last": None}
+    cache.set(key, status, API_SECONDS)
     return status
 
 
 # YouTube Data API v3 (20 Oct 2026). A data centre gets YouTube's "confirm
-# you're not a bot" on every channel and watch page, so from Cloud Run the
-# pages above say nothing; the API does. Used whenever YOUTUBE_API_KEY is
+# you're not a bot" on channel and watch pages, so from Cloud Run the pages
+# say nothing reliable; the API does. Used whenever YOUTUBE_API_KEY is
 # set (the owner sets it by hand in the server's secrets). Two calls a
 # check, one unit each: the channel's uploads (live, upcoming and finished
 # streams are all in it, newest first) and those videos' broadcast details.

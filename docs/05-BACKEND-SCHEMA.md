@@ -1405,13 +1405,13 @@ channel's usual live timings in the console's words; the read adds them and
 /v1/bhakti/darshan/<id>/live/` answers `{live, starts_at, last}` for a
 channel murti, from the YouTube Data API when `YOUTUBE_API_KEY` is set (the
 channel's uploads playlist and those videos' broadcast details, two units a
-check, cached fifteen minutes) and otherwise from its /live and /streams pages,
-which YouTube answers with a bot check from a data centre: `starts_at` the next
-stream the temple scheduled on YouTube (unix seconds) or null; `last`, off
-air, its latest finished stream that plays in other apps (`{video_id,
-started_at, embed_url}`, from the watch page's broadcast times and
-`playableInEmbed`) or null. Cached three minutes per channel, `last` half
-an hour.
+check, cached fifteen minutes): `starts_at` the next stream the temple
+scheduled on YouTube (unix seconds) or null; `last`, off air, its newest
+finished stream that plays in other apps (`{video_id, started_at,
+embed_url}`) or null. Without the key, or when the API fails, it answers
+`live: true` and fetches nothing, so the frame plays YouTube's live player:
+the public pages were read for this first and YouTube answers a data centre
+with a bot check.
 
 ### 5.2d `content_comments` — comments on posts and reels (30 Sep 2026)
 

@@ -110,49 +110,19 @@ class TestConsoleAndApi:
 
 class TestLiveStatus:
     """When a temple's channel is off air, when it goes live (20 Oct 2026,
-    Rahul: "agar live available nahi h to time kab live hoga")."""
+    Rahul: "agar live available nahi h to time kab live hoga"). Without the
+    Data API key nothing is fetched: the public pages answer a data centre
+    with a bot check, so every channel plays the live player."""
 
     @pytest.fixture(autouse=True)
-    def _fresh_cache(self):
+    def _fresh_cache(self, settings):
         from django.core.cache import cache
+        settings.YOUTUBE_API_KEY = ""
         cache.clear()
 
-    def _status(self, live_page="", streams=""):
-        def get(url, **kw):
-            return _Got(200, "ytInitialData " + live_page if url.endswith("/live") else streams)
-        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
-            return youtube.live_status(CHANNEL)
-
-    def test_live_now(self):
-        page = f'<link rel="canonical" href="https://www.youtube.com/watch?v={VIDEO}"> "isLive":true'
-        assert self._status(page) == {"live": True, "starts_at": None, "last": None}
-
-    def test_a_scheduled_stream_gives_its_start(self):
-        import time
-        at = int(time.time()) + 3600
-        page = (f'<link rel="canonical" href="https://www.youtube.com/watch?v={VIDEO}"> '
-                f'"isUpcoming":true "scheduledStartTime":"{at}"')
-        assert self._status(page) == {"live": False, "starts_at": at, "last": None}
-
-    def test_falls_back_to_the_streams_tab_and_skips_stale_ones(self):
-        import time
-        old, soon = int(time.time()) - 86400, int(time.time()) + 7200
-        streams = (f'"upcomingEventData":{{"startTime":"{old}"}} '
-                   f'"upcomingEventData":{{"startTime":"{soon}"}}')
-        assert self._status("<html>", streams) == {"live": False, "starts_at": soon, "last": None}
-
-    def test_a_page_it_cannot_read_plays_the_live_player(self):
-        def get(url, **kw):
-            return _Got(200, "<title>Before you continue to YouTube</title>")
-        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
-            assert youtube.live_status(CHANNEL)["live"] is True
-
-    def test_youtubes_bot_check_plays_the_live_player(self):
-        page = 'ytInitialData "playabilityStatus":{"status":"LOGIN_REQUIRED","reason":"Sign in to confirm"}'
-        assert self._status(page)["live"] is True
-
-    def test_nothing_scheduled(self):
-        assert self._status("<html>", "<html>") == {"live": False, "starts_at": None, "last": None}
+    def test_without_a_key_every_channel_plays_and_nothing_is_fetched(self):
+        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=AssertionError("fetched")):
+            assert youtube.live_status(CHANNEL) == {"live": True, "starts_at": None, "last": None}
 
     @pytest.mark.django_db
     def test_the_endpoint_and_the_list(self, api_client):
@@ -163,40 +133,8 @@ class TestLiveStatus:
         got = _mine(api_client, deity)["images"]
         assert got[0]["checks_live"] is True and got[0]["live_hours"] == "Daily 5-7 AM"
         assert got[1]["checks_live"] is False
-        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=lambda url, **kw: _Got(200, "ytInitialData")):
-            assert api_client.get(f"/v1/bhakti/darshan/{row.pk}/live/").json() == {"live": False, "starts_at": None, "last": None}
+        assert api_client.get(f"/v1/bhakti/darshan/{row.pk}/live/").json() == {"live": True, "starts_at": None, "last": None}
         assert api_client.get(f"/v1/bhakti/darshan/{photo.pk}/live/").status_code == 404
-
-
-class TestLastStream:
-    """Off air, the temple's latest finished stream plays as a recording
-    (20 Oct 2026, Rahul: "jo last live available h wo dikha de")."""
-
-    @pytest.fixture(autouse=True)
-    def _fresh_cache(self):
-        from django.core.cache import cache
-        cache.clear()
-
-    def _status(self, watch):
-        old, new = "a" * 11, "b" * 11
-
-        def get(url, **kw):
-            if url.endswith("/live"):
-                return _Got(200, "ytInitialData <html>")
-            if url.endswith("/streams"):
-                return _Got(200, f'"videoId":"{new}" "videoId":"{new}" "videoId":"{old}"')
-            return _Got(200, watch.get(url.rsplit("=", 1)[1], ""))
-        with mock.patch("apps.bhakti.youtube.requests.get", side_effect=get):
-            return youtube.live_status(CHANNEL)
-
-    def test_the_latest_finished_stream_that_embeds(self):
-        done = '"startTimestamp":"2026-10-19T02:00:00+00:00" "endTimestamp":"2026-10-19T03:00:00+00:00"'
-        got = self._status({"b" * 11: done, "a" * 11: done + ' "playableInEmbed":true'})["last"]
-        assert got["video_id"] == "a" * 11 and got["started_at"] == "2026-10-19T02:00:00+00:00"
-        assert got["embed_url"].startswith("https://www.youtube-nocookie.com/embed/" + "a" * 11)
-
-    def test_none_when_nothing_finished(self):
-        assert self._status({"b" * 11: '"startTimestamp":"x" "playableInEmbed":true'})["last"] is None
 
 
 class TestDataApi:
