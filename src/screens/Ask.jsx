@@ -4,7 +4,7 @@ import { useBirthGate } from '../components/useBirthFirst.js'
 import { aiLine, copyFor } from '../data/aiBots.js'
 import { fetchBots } from '../lib/ai.js'
 import { BackButton } from '../components/Chrome.jsx'
-import { Bubble, Composer, DayMark, marksAt } from '../components/ChatPanel.jsx'
+import { Bubble, Composer, DayMark, canDictate, marksAt } from '../components/ChatPanel.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import { PopAvatar } from '../components/Pop.jsx'
 import useAskAi from '../components/useAskAi.js'
@@ -82,18 +82,24 @@ export default function Ask() {
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {loading && <Loader label={t('ask.opening')} />}
 
-        {empty && (
-          <div className="pb-4 pt-6 text-center">
-            <p className="text-lead font-semibold t-heading">{t(bot.title)}</p>
-            <p className="mt-1.5 text-meta t-faint">{t(bot.sub)}</p>
-            <p className="mt-2 text-micro t-faint">{t('legal.astro')}</p>
-          </div>
+        {!loading && (
+          <>
+            {empty && <p className="pb-2 pt-2 text-center text-micro t-faint">{t('legal.astro')}</p>}
+            {/* The counsellor's help line, always on its screen. */}
+            {key === 'therapist' && (
+              <p className="mb-3 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{t('bot.therapist.sub')}</p>
+            )}
+            {/* The welcome, as in Rahul's reference (21 Oct 2026): the AI
+                Pro greets on open. Drawn here, never sent or counted. */}
+            <Bubble mine={false} heart text={t('bot.hello', { name, intro: t(bot.hello) })} />
+            <Bubble mine={false} heart text={t(bot.ask)} />
+          </>
         )}
 
         {messages.map((m, i) => (
           <Fragment key={m.id}>
             {marksAt(messages, i) && <DayMark iso={m.created_at} lang={lang} />}
-            <Bubble mine={m.role !== 'model'} text={m.text} />
+            <Bubble mine={m.role !== 'model'} heart text={m.text} />
           </Fragment>
         ))}
         {thinking && <Bubble mine={false} text={t(bot.thinking)} state="sending" />}
@@ -126,9 +132,12 @@ export default function Ask() {
 
       <Composer
         onSend={(text) => send(text)}
-        placeholder="Type a message"
+        placeholder={t('bot.ph')}
         disabled={thinking || (outOfFree && !price)}
-        suggestions={empty ? bot.suggestions : null}
+        // The AI Pro's own questions, always there (21 Oct 2026, Rahul).
+        suggestions={outOfFree && !price ? null : bot.suggestions[lang === 'hi' ? 'hi' : 'en']}
+        // Speak the question; it lands in the box as text (21 Oct 2026).
+        voice={canDictate}
       />
     </div>
   )

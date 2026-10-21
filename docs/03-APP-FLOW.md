@@ -2039,8 +2039,14 @@ holds the state; neither it nor the screen owns a number.
 **The chat looks like a chat with a Pro since 21 Oct 2026** (Rahul): the
 Pro chat's own header (picture, name, and the AI line where "In session"
 would be, the free count at the right), its messages with a time mark
-between them, and its composer, the suggestions as its chips. The astrologer keeps *Someone else*
-above the composer.
+between them, and its composer. On open the AI Pro greets ("Namaste, I am
+<name>. …" and a question of its own), drawn by the screen, never sent or
+counted. Its suggested questions (English or Hindi, by the app's language) sit
+over the composer the whole time, until the day's free question is spent. The
+seeker can speak a question: with the box empty the round button is the mic
+(हि/EN beside it), what is heard lands in the box as text, then Send. The
+counsellor's screen always carries the Tele-MANAS line. The astrologer keeps
+*Someone else* above the composer.
 
 **The AI Pros since 21 Oct 2026** (Rahul): `/ask` is the astrologer;
 `/ask?as=<key>` is any other AI Pro (tarot, life_coach, therapist, or a later

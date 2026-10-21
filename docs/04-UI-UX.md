@@ -109,7 +109,10 @@ no bubble, your own in a soft saffron bubble (`bg-gold-wash`, dark text,
 hairline ring) on the right, the time as a centred mark ("Today, 2:15 pm")
 before the first message and after any half-hour gap, and the composer as a
 round field beside a 48px round saffron Send with an arrow. The AI chat's
-header has a 44px picture. `.bubble-mine` and `.bubble-theirs` (saffron
+header has a 44px picture; an AI message carries an outline heart under it
+that fills red on a tap and is saved nowhere (design only, Rahul). In both
+chats, where dictation is on, the round button is a mic while the box is
+empty or listening (pulsing), and the arrow once there is text. `.bubble-mine` and `.bubble-theirs` (saffron
 gradient; white with a hairline) remain on the old Namo AI suggestions and
 elsewhere. Text pages stay plain so
 the effect stays special. `.glass-panel` is no longer used for anything over

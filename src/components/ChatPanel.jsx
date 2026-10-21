@@ -892,7 +892,9 @@ function Alerts() {
 /* The other person's words as plain text on the page, yours in a soft
    saffron bubble on the right (21 Oct 2026, Rahul's reference screenshot).
    The time is a mark between messages (DayMark), not under each one. */
-export function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
+export function Bubble({ mine, text, image, time, state, onRetry, small = false, heart = false }) {
+  // Design only (21 Oct 2026, Rahul): fills on a tap, saved nowhere.
+  const [liked, setLiked] = useState(false)
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${small ? 'mb-2' : 'mb-4'}`}>
       <div className={mine ? 'max-w-[85%]' : 'max-w-[92%]'}>
@@ -910,6 +912,17 @@ export function Bubble({ mine, text, image, time, state, onRetry, small = false 
           )}
           {text && <span className={image ? 'block px-1.5 pb-1 pt-1.5' : ''}>{text}</span>}
         </div>
+        {heart && !mine && (
+          <button
+            type="button"
+            onClick={() => setLiked((v) => !v)}
+            aria-label={liked ? 'Unlike' : 'Like'}
+            aria-pressed={liked}
+            className={`mt-2 block ${liked ? 'text-live' : 't-faint'}`}
+          >
+            <Icon name="heart" size={24} filled={liked} />
+          </button>
+        )}
         {state === 'failed' ? (
           <button
             type="button"
@@ -964,6 +977,8 @@ export function marksAt(list, i, at = (m) => m.created_at) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
+export { canDictate }
+
 export function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false, voice = false }) {
   const { lang, showToast } = useStore()
   const [value, setValue] = useState('')
@@ -1087,39 +1102,45 @@ export function Composer({ onSend, placeholder, disabled = false, suggestions = 
         className="min-w-0 flex-1 rounded-full border border-stroke bg-surface px-5 py-3 text-body t-heading outline-none transition-colors placeholder:text-t4 focus:border-gold disabled:opacity-40"
       />
       {voice && (
-        <span onPointerDown={(e) => e.preventDefault()} className="flex flex-none items-center gap-1">
-          <button
-            type="button"
-            onClick={flipSpeech}
-            disabled={dictation.listening}
-            aria-label={speech === 'hi-IN' ? 'Speaking Hindi. Switch to English' : 'Speaking English. Switch to Hindi'}
-            className="h-9 rounded-full px-1.5 text-[12px] font-semibold t-faint disabled:opacity-40"
-          >
-            {speech === 'hi-IN' ? 'हि' : 'EN'}
-          </button>
-          <button
-            type="button"
-            aria-label={dictation.listening ? 'Stop listening' : 'Speak a reply'}
-            aria-pressed={dictation.listening}
-            disabled={disabled}
-            onClick={() => (dictation.listening ? dictation.stop() : dictation.start(box.current?.value ?? value))}
-            className={`flex h-9 w-9 items-center justify-center rounded-full disabled:opacity-40 ${
-              dictation.listening ? 'animate-pulse bg-gold-fill text-white' : 'bg-gold-wash gold'
-            }`}
-          >
-            <Icon name="mic" size={18} />
-          </button>
-        </span>
+        <button
+          type="button"
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={flipSpeech}
+          disabled={dictation.listening}
+          aria-label={speech === 'hi-IN' ? 'Speaking Hindi. Switch to English' : 'Speaking English. Switch to Hindi'}
+          className="h-9 flex-none rounded-full px-1 text-[13px] font-semibold t-faint disabled:opacity-40"
+        >
+          {speech === 'hi-IN' ? 'हि' : 'EN'}
+        </button>
       )}
-      <button
-        type="submit"
-        onPointerDown={(e) => e.preventDefault()}
-        disabled={disabled || !value.trim()}
-        aria-label="Send"
-        className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-md transition active:scale-95 disabled:opacity-50"
-      >
-        <Icon name="send" size={22} />
-      </button>
+      {/* One round button, as in Rahul's reference (21 Oct 2026): the mic
+          while the box is empty or it is listening — what is heard lands in
+          the box as text — and Send once there is something to send. */}
+      {voice && (!value.trim() || dictation.listening) ? (
+        <button
+          type="button"
+          onPointerDown={(e) => e.preventDefault()}
+          aria-label={dictation.listening ? 'Stop listening' : 'Speak'}
+          aria-pressed={dictation.listening}
+          disabled={disabled}
+          onClick={() => (dictation.listening ? dictation.stop() : dictation.start(box.current?.value ?? value))}
+          className={`flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-md transition active:scale-95 disabled:opacity-50 ${
+            dictation.listening ? 'animate-pulse' : ''
+          }`}
+        >
+          <Icon name="mic" size={22} />
+        </button>
+      ) : (
+        <button
+          type="submit"
+          onPointerDown={(e) => e.preventDefault()}
+          disabled={disabled || !value.trim()}
+          aria-label="Send"
+          className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-md transition active:scale-95 disabled:opacity-50"
+        >
+          <Icon name="send" size={22} />
+        </button>
+      )}
     </form>
     </div>
   )
