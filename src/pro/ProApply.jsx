@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { Button, Label, Section } from '../components/Primitives.jsx'
 import { Kicker, PopCard } from '../components/Pop.jsx'
 import Plate from '../components/Plate.jsx'
@@ -159,10 +159,14 @@ function UnderReview({ status }) {
    primary key, and the JWT is the identity now. The caller stopped passing
    it in the same commit. */
 function Application({ onDone, toast }) {
+  const [params] = useSearchParams()
+  const asked = params.get('category')
+  const chosen = categories.includes(asked) ? asked : categories[0]
   const [form, setForm] = useState({
     // More than one practice (5 Oct 2026, owner's request): saved as one
     // comma-separated `category`, "Astrologer, Tarot", read back as a list.
-    categories: [categories[0]],
+    // A category chosen on Home's Join banner (21 Oct 2026) comes first.
+    categories: [chosen],
     specialization: '',
     languages: 'Hindi, English',
     experience: '',

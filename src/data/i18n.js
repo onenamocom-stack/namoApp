@@ -842,6 +842,10 @@ export const strings = {
   'bot.therapist.ask': { en: 'How are you feeling today?', hi: 'आज मन कैसा है?' },
   'bot.generic.hello': { en: 'Ask me your question.', hi: 'अपना सवाल पूछिए।' },
   'bot.generic.ask': { en: 'How can I help today?', hi: 'आज मैं कैसे मदद करूँ?' },
+  // Home's Join as a Pro banner (21 Oct 2026, Rahul).
+  'join.title': { en: 'Join NAMO as a Pro', hi: 'NAMO पर Pro बनें' },
+  'join.line': { en: 'Give readings and advice on chat and calls. You set your price. Pick what you practise.', hi: 'चैट और कॉल पर सलाह दीजिए, दाम आप तय करें। अपना काम चुनिए।' },
+  'join.apply': { en: 'Apply', hi: 'आवेदन करें' },
   'bot.free': { en: 'Free', hi: 'मुफ़्त' },
   'bot.daily': { en: '1 free question every day, with any AI Pro', hi: 'रोज़ 1 सवाल मुफ़्त, किसी भी AI Pro से' },
   'bot.todayLeft': { en: "Today's free question is waiting", hi: 'आज का मुफ़्त सवाल बाक़ी है' },

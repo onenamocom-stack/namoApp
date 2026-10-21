@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { birthHref } from '../lib/birth.js'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { courses, feed } from '../data/mock.js'
+import { categories, courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, fetchSuggestions, isMine, noteSeen, productHref, recordView, reshareToLead } from '../lib/content.js'
@@ -387,10 +387,11 @@ export default function Home() {
                 } })()
                 // People to follow, once, after the fifth card (Phase 15a);
                 // Groups for you after the twelfth (14 Oct 2026, Rahul).
-                return i === 4 || i === 11 ? (
+                // Join as a Pro after the second (21 Oct 2026, Rahul).
+                return i === 1 || i === 4 || i === 11 ? (
                   <Fragment key={item.id}>
                     {card}
-                    {i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
+                    {i === 1 ? <JoinAsPro /> : i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
                   </Fragment>
                 ) : (
                   card
@@ -609,6 +610,62 @@ function FollowSuggestions() {
 /** "Groups for you" (14 Oct 2026, Rahul): the same strip as People to
  *  follow, of live groups you are not in, busiest first, each with Join.
  *  Joining opens nothing; the card itself opens the group. */
+/**
+ * "Join NAMO as an Astrologer, Tarot reader…" in the feed (21 Oct 2026,
+ * Rahul): one chip per category, each opening the Pro form with that
+ * category chosen. For anybody signed in who has not applied; a cross
+ * hides it on this device.
+ */
+const JOIN_HIDDEN = 'namo:join-pro-hidden'
+
+function JoinAsPro() {
+  const { session, consultant, consultantLoading, t } = useStore()
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(JOIN_HIDDEN) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (!session || consultantLoading || consultant || hidden) return null
+  const hide = () => {
+    setHidden(true)
+    try {
+      localStorage.setItem(JOIN_HIDDEN, '1')
+    } catch {
+      /* hidden for this visit, no worse */
+    }
+  }
+  return (
+    <section className="border-b border-rule bg-white px-3 py-3">
+      <div className="relative overflow-hidden rounded-2xl bg-gold-wash p-4 ring-1 ring-gold-fill/25">
+        <button type="button" onClick={hide} aria-label="Hide" className="absolute right-2 top-2 px-2 text-lead leading-none t-faint">
+          ×
+        </button>
+        <p className="pr-6 text-body font-semibold t-heading">{t('join.title')}</p>
+        <p className="mt-1 text-meta t-body">{t('join.line')}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <Link
+              key={c}
+              to={`/earn/pro?category=${encodeURIComponent(c)}`}
+              className="rounded-full border border-gold-fill/50 bg-white px-3 py-1.5 text-[13px] font-semibold gold"
+            >
+              {c}
+            </Link>
+          ))}
+        </div>
+        <Link
+          to="/earn/pro"
+          className="mt-3 flex items-center justify-center rounded-xl bg-gold-fill py-2 text-[13px] font-semibold text-white"
+        >
+          {t('join.apply')}
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 function GroupSuggestions() {
   const { session, showToast } = useStore()
   const [groups, setGroups] = useState([])
