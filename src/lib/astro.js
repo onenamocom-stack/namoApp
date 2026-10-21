@@ -634,6 +634,46 @@ export function clockOf(iso) {
 }
 
 /** The almanac card. `ends_at` runs past 24:00 on purpose — left verbatim. */
+/* Which eighth of the daylight each window takes, by weekday (1 = the
+   first after sunrise) — the table every almanac prints. */
+const EIGHTHS = {
+  rahu: { Sunday: 8, Monday: 2, Tuesday: 7, Wednesday: 5, Thursday: 6, Friday: 4, Saturday: 3 },
+  yamaganda: { Sunday: 5, Monday: 4, Tuesday: 3, Wednesday: 2, Thursday: 1, Friday: 7, Saturday: 6 },
+  gulika: { Sunday: 7, Monday: 6, Tuesday: 5, Wednesday: 4, Thursday: 3, Friday: 2, Saturday: 1 },
+}
+
+const hhmm = (mins) => {
+  const m = Math.floor(mins)
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+/**
+ * Rahu kalam, Yamaganda, Gulika and Abhijit from the day itself: the
+ * daylight cut into eight, the weekday picking each window's eighth;
+ * Abhijit the fifteenth of the day centred on midday. Rahu kalam this way
+ * agrees with the provider's to the minute (checked 21 Oct 2026, Ujjain).
+ */
+export function reckonWindows(p) {
+  const at = (s) => {
+    const m = /^(\d{1,2}):(\d{2})/.exec(s || '')
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null
+  }
+  const rise = at(p?.sunrise)
+  const set = at(p?.sunset)
+  const day = p?.weekday?.name
+  if (rise == null || set == null || set <= rise || !day) return {}
+  const eighth = (set - rise) / 8
+  const out = {}
+  for (const [key, table] of Object.entries(EIGHTHS)) {
+    const n = table[day]
+    if (n) out[key] = { start: hhmm(rise + (n - 1) * eighth), end: hhmm(rise + n * eighth) }
+  }
+  const noon = (rise + set) / 2
+  const half = (set - rise) / 30
+  out.abhijit = { start: hhmm(noon - half), end: hhmm(noon + half) }
+  return out
+}
+
 export function panchangFrom(p) {
   if (!p) return null
   return {
@@ -648,6 +688,10 @@ export function panchangFrom(p) {
     sunrise: (p.sunrise ?? '').slice(0, 5),
     sunset: (p.sunset ?? '').slice(0, 5),
     rahuKaal: p.rahu_kalam ? `${p.rahu_kalam.start} – ${p.rahu_kalam.end}` : '',
+    // The day's windows, for Home's timeline (21 Oct 2026): each { start,
+    // end } as HH:MM. The provider sends Rahu kalam alone; the rest are
+    // reckoned from sunrise, sunset and the weekday (`reckonWindows`).
+    windows: { ...reckonWindows(p), ...(p.rahu_kalam ? { rahu: p.rahu_kalam } : {}) },
     lunarMonth: p.lunar_month?.name ?? '',
     samvat: p.lunar_month?.vikram_samvat ?? null,
   }

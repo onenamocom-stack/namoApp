@@ -1189,9 +1189,15 @@ row of icon buttons — Gallery, Camera, Profile photo, Remove — and **Share
 this** pinned to the bottom.
 
 ### Home, Today
-The reading under the panchang is **your rashifal only** — your Moon sign's
-day, with no picker for the other eleven (4 Oct 2026; they remain on
-`/horoscope`). The panchang header no longer says "Computed at Ujjain".
+**The panchang alone** since 21 Oct 2026 (Rahul): the rashifal card that sat
+under it is gone (it was your Moon sign's day from 4 Oct; the twelve signs
+remain on `/horoscope`). Under the six figures, the sun's day as an arc from
+sunrise to sunset with the sun where it is now and how long until sunrise or
+sunset, then the day's windows — Rahu kaal first, Yamaganda, Gulika, Abhijit
+— on one bar with a tick for now, and a row each saying Now, in how long, or
+Over. The provider sends Rahu kaal alone; the other three are reckoned from
+sunrise, sunset and the weekday (`reckonWindows` in `src/lib/astro.js`). All
+at Ujjain. The panchang header no longer says "Computed at Ujjain".
 
 ### Sign-up links
 `/onboarding?ref=…` stores the code for the visit; the details page opens its

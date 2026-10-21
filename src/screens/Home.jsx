@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { birthHref } from '../lib/birth.js'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
@@ -28,7 +27,7 @@ import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { PhotoSwiper } from '../components/Pieces.jsx'
 import { useStore } from '../store.jsx'
-import { longDate, panchangFrom, readingFrom, useAstro, useMyChart } from '../lib/astro.js'
+import { longDate, panchangFrom, useAstro } from '../lib/astro.js'
 
 /**
  * Where an author's name links to.
@@ -357,10 +356,10 @@ export default function Home() {
             {/* Both fetch for themselves rather than being handed data, and
                 both memoise through `cachedAstro`, so mounting them here costs
                 nothing a hoisted card was not already costing. */}
-            {/* Panchang first, the day's reading and windows under it
-                (30 Sep, owner's call). */}
+            {/* The panchang alone since 21 Oct 2026 (Rahul: "Ye राशिफल wala
+                portion हटा do"); the rashifal card under it is gone, and
+                the sign's reading stays on /horoscope. */}
             <PanchangCard />
-            <ReadingCard />
           </div>
         ) : (
           <>
@@ -1501,90 +1500,28 @@ function ReelCard({ reel, resharedBy }) {
 }
 
 /**
- * The day's reading for a sign — free, the same for everybody with the Moon
- * there (30 Sep 2026). Opens on the reader's own moon sign, off their chart;
- * the other eleven are one tap. The reader's OWN reading is paid and lives on
- * /chart's Prediction tab, which the last line names.
+ * Today's panchang, the Today tab's only card.
  *
- * It was the reader's own from 22 to 30 Sep, and between 9 and 22 Sep a
- * canonical-birth reading cut down to its mood line because a sign was not
- * named on it. The sign IS named now, which is what makes showing the whole
- * reading honest: it says whose it is.
- */
-function ReadingCard() {
-  const { session, sessionReady, t } = useStore()
-  const mine = useMyChart({ ready: sessionReady, who: session?.user?.id ?? null })
-  /* Only your own sign since 4 Oct 2026 (owner's call): the twelve-sign
-     picker is gone from Home; the other signs are still on /horoscope. */
-  const sign = mine.rashi
-  const reading = useAstro('rashifal', {
-    sign: sign ?? 'Aries',
-    ready: Boolean(sessionReady && !mine.loading && sign),
-  })
-  const day = readingFrom(reading.payload, 'today', null)
-
-  return (
-    <article className="pop-card p-4">
-      <Kicker>{t('home.yourRashifal')}</Kicker>
-      <div className="pop-inset mt-3 p-4">
-        {!sign && !mine.loading && (
-          <Link to={birthHref()} className="text-meta t-body underline">{t('a.addBirth')}</Link>
-        )}
-        {reading.loading && <p className="text-meta t-faint">{t('home.readingSky')}</p>}
-        {reading.refusal && <p className="text-meta t-body">{reading.refusal.reason}</p>}
-
-        {day && !reading.loading && (
-          <>
-            <p className="caps-sm gold">
-              {t(`sign.${sign}`)} · {longDate(day.date)}
-            </p>
-            {day.headline && <p className="mt-3 text-body font-semibold t-heading">{day.headline}</p>}
-            <p className="mt-2 text-body t-body">{day.body || day.dayMood}</p>
-
-            {day.windows.length > 0 && (
-              <div className="mt-5 border-t border-stroke pt-4">
-                <span className="caps-sm t-faint">{t('home.windowsUjjain')}</span>
-                <ul className="mt-2">
-                  {day.windows.map((w) => (
-                    <li key={w.key} className="flex items-baseline justify-between py-1">
-                      <span className="text-meta t-body">{w.label}</span>
-                      <span className="text-meta t-faint tnum">
-                        {w.start} – {w.end}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-      <Link to="/chart?tab=prediction" className="mt-3 block text-center text-meta t-body underline">
-        {t('home.ownPredictions')}
-      </Link>
-    </article>
-  )
-}
-
-/**
- * Today's panchang, as the second card.
- *
- * Six figures in a grid and the window anyone actually checks. Rahu kaal gets
- * the warning colour because it is the only line here that tells you not to do
- * something. Abhijit used to sit beside it and has moved to the reading's own
- * Windows section, which is where the API computes it.
+ * Six figures in a grid, then the sun's day drawn as an arc — sunrise to
+ * sunset, the sun where it is now — and the day's windows on one bar under
+ * it, Rahu kaal first and in the warning colour because it is the only line
+ * here that tells you not to do something (21 Oct 2026, Rahul: "make a better
+ * ui for Sun rise and sun set And rahu kal info"; until then two lines of
+ * small type). Abhijit, Yamaganda and Gulika moved here from the rashifal
+ * card, which went the same day.
  *
  * **This is the one computed thing on the screen that works signed out**, and
  * it should: a panchang is a function of a date and a place, not of a person.
  * The server anchors it on the birth place when there is one and on Pune when
- * there is not. Anchoring it the same way the reading is anchored is what stops
- * the two cards naming different tithis — which is exactly what the mock they
- * replace did, a week apart.
+ * there is not.
  */
 function PanchangCard() {
   const { session, sessionReady, t } = useStore()
   const got = useAstro('panchang', { ready: sessionReady, who: session?.user?.id ?? null })
   const p = panchangFrom(got.payload)
+  const now = useIstMinutes()
+  // The arc and the bar say "now" only on the day they describe.
+  const today = p?.date === istToday()
 
   return (
     <article className="pop-card p-4">
@@ -1602,14 +1539,6 @@ function PanchangCard() {
             {p.lunarMonth && ` · ${p.lunarMonth}`}
             {p.samvat && ` · ${t('home.samvat', { n: p.samvat })}`}
           </p>
-          {/* Named, not implied. One almanac serves every user and it is
-              computed at Ujjain — the classical meridian of Indian astronomy —
-              so a reader in Chennai is looking at a sunrise about forty minutes
-              from their own. Saying so is the difference between a simplifying
-              choice and a quiet inaccuracy. */}
-          {/* "Computed at Ujjain" was a line here until 4 Oct 2026 (owner's
-              call). The almanac is still Ujjain's; the Windows heading below
-              still names it. */}
 
           <dl className="mt-4 grid grid-cols-3 gap-y-4">
             {[
@@ -1627,21 +1556,190 @@ function PanchangCard() {
             ))}
           </dl>
 
-          {p.rahuKaal && (
-            <div className="pop-inset mt-4 p-3">
-              <p className="caps-sm text-live">{t('pc.rahuKaal')}</p>
-              <p className="mt-1 text-meta tnum t-heading">{p.rahuKaal}</p>
-            </div>
-          )}
-
-          <div className="mt-3 flex items-center gap-3 caps-sm t-faint tnum">
-            <span>{t('pc.sunrise', { time: p.sunrise })}</span>
-            <span aria-hidden="true">·</span>
-            <span>{t('pc.sunset', { time: p.sunset })}</span>
-          </div>
+          {p.sunrise && p.sunset && <SunArc rise={p.sunrise} set={p.sunset} now={today ? now : null} />}
+          <DayWindows p={p} now={today ? now : null} />
         </>
       )}
     </article>
+  )
+}
+
+/** "HH:MM" as minutes past midnight; null for anything else. */
+function minutesOf(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || '')
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+
+/** The clock in India, whatever the phone's zone, as minutes past midnight. */
+function istNow() {
+  const d = new Date(Date.now() + 330 * 60000)
+  return d.getUTCHours() * 60 + d.getUTCMinutes()
+}
+
+function istToday() {
+  return new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
+}
+
+/** IST minutes past midnight, moving once a minute. */
+function useIstMinutes() {
+  const [now, setNow] = useState(istNow)
+  useEffect(() => {
+    const id = setInterval(() => setNow(istNow()), 60000)
+    return () => clearInterval(id)
+  }, [])
+  return now
+}
+
+/** "3h 10m", "45m". */
+function span(mins) {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`
+}
+
+/**
+ * The sun's day as an arc over a horizon: sunrise on the left, sunset on the
+ * right, the part already travelled in saffron and the sun where it is now.
+ * Before sunrise it waits on the left; after sunset it rests, dimmed, on the
+ * right.
+ */
+function SunArc({ rise, set, now }) {
+  const { t } = useStore()
+  const r = minutesOf(rise)
+  const s = minutesOf(set)
+  if (r == null || s == null || s <= r) return null
+  const length = s - r
+  const f = now == null ? null : Math.min(1, Math.max(0, (now - r) / length))
+  const up = now != null && now >= r && now <= s
+  // The arc: an ellipse's top half, 260 wide and 92 tall, over y = 112.
+  const at = (x) => {
+    const a = Math.PI * (1 - x)
+    return [150 + 130 * Math.cos(a), 112 - 92 * Math.sin(a)]
+  }
+  const [sx, sy] = f == null ? at(0.5) : at(f)
+  const status =
+    now == null
+      ? t('pc.daylight', { t: span(length) })
+      : now < r
+        ? t('pc.riseIn', { t: span(r - now) })
+        : now <= s
+          ? t('pc.setIn', { t: span(s - now) })
+          : t('pc.setDone')
+
+  return (
+    <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-b from-gold-wash to-white ring-1 ring-gold-fill/20">
+      <svg viewBox="0 0 300 124" className="block w-full" aria-hidden="true">
+        <defs>
+          <radialGradient id="sun-glow">
+            <stop offset="0%" stopColor="var(--gold-fill)" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="var(--gold-fill)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <path d="M20 112 A130 92 0 0 1 280 112" fill="none" className="stroke-gold-fill/35" strokeWidth="2" strokeDasharray="4 5" />
+        {f != null && f > 0 && (
+          <path
+            d={`M20 112 A130 92 0 0 1 ${at(f)[0].toFixed(1)} ${at(f)[1].toFixed(1)}`}
+            fill="none"
+            className="stroke-gold-fill"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        )}
+        <line x1="8" y1="112" x2="292" y2="112" className="stroke-t4" strokeWidth="1.5" />
+        {(f == null || up) && <circle cx={sx} cy={sy} r="22" fill="url(#sun-glow)" />}
+        <circle cx={sx} cy={sy} r="9" className={up || f == null ? 'fill-gold-fill' : 'fill-t4'} />
+      </svg>
+      <div className="flex items-end justify-between px-4 pb-3">
+        <div>
+          <p className="caps-sm t-faint">{t('pc.sunriseLabel')}</p>
+          <p className="mt-0.5 text-lead font-semibold tnum t-heading">{rise}</p>
+        </div>
+        <p className="pb-1 text-micro font-semibold gold">{status}</p>
+        <div className="text-right">
+          <p className="caps-sm t-faint">{t('pc.sunsetLabel')}</p>
+          <p className="mt-0.5 text-lead font-semibold tnum t-heading">{set}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const WINDOWS = [
+  { key: 'rahu', label: 'pc.rahuKaal', note: 'pc.avoid', bar: 'bg-live', dot: 'bg-live' },
+  { key: 'yamaganda', label: 'pc.yamaganda', note: 'pc.avoid', bar: 'bg-live/45', dot: 'bg-live/45' },
+  { key: 'gulika', label: 'pc.gulika', note: 'pc.gulikaNote', bar: 'bg-t3/50', dot: 'bg-t3/50' },
+  { key: 'abhijit', label: 'pc.abhijit', note: 'pc.good', bar: 'bg-ok', dot: 'bg-ok' },
+]
+
+/**
+ * The day's windows on one bar from sunrise to sunset, each a coloured
+ * stretch, a tick where now is; under it a row each — Rahu kaal first and
+ * larger — with whether it is on now, how long until it starts, or over.
+ */
+function DayWindows({ p, now }) {
+  const { t } = useStore()
+  const r = minutesOf(p.sunrise)
+  const s = minutesOf(p.sunset)
+  const rows = WINDOWS.map((w) => {
+    const win = p.windows?.[w.key]
+    const a = minutesOf(win?.start)
+    const b = minutesOf(win?.end)
+    return a == null || b == null ? null : { ...w, start: win.start, end: win.end, a, b }
+  }).filter(Boolean)
+  if (!rows.length) return null
+  const bar = r != null && s != null && s > r
+  const pct = (m) => `${Math.min(100, Math.max(0, ((m - r) / (s - r)) * 100))}%`
+  const state = (w) =>
+    now == null ? null : now >= w.a && now < w.b ? 'now' : now < w.a ? 'soon' : 'over'
+
+  return (
+    <div className="mt-4">
+      <p className="caps-sm t-faint">{t('pc.windows')}</p>
+      {bar && (
+        <div className="relative mt-3 h-3 rounded-full bg-surface2">
+          {rows.map((w) => (
+            <span
+              key={w.key}
+              className={`absolute inset-y-0 rounded-full ${w.bar}`}
+              style={{ left: pct(w.a), width: `calc(${pct(w.b)} - ${pct(w.a)})` }}
+            />
+          ))}
+          {now != null && now >= r && now <= s && (
+            <span className="absolute -inset-y-1 w-0.5 rounded-full bg-ink" style={{ left: pct(now) }} />
+          )}
+        </div>
+      )}
+      <ul className="mt-3 space-y-2">
+        {rows.map((w) => {
+          const st = state(w)
+          const rahu = w.key === 'rahu'
+          return (
+            <li
+              key={w.key}
+              className={`flex items-center gap-3 rounded-xl px-3 ${
+                rahu ? 'bg-live/10 py-3 ring-1 ring-live/25' : 'bg-surface2/60 py-2.5'
+              }`}
+            >
+              <span className={`h-2.5 w-2.5 flex-none rounded-full ${w.dot}`} />
+              <div className="min-w-0 flex-1">
+                <p className={`${rahu ? 'text-body text-live' : 'text-meta t-heading'} font-semibold`}>{t(w.label)}</p>
+                <p className="text-micro t-faint">{t(w.note)}</p>
+              </div>
+              <div className="flex-none text-right">
+                <p className={`${rahu ? 'text-body' : 'text-meta'} font-semibold tnum t-heading`}>
+                  {w.start} – {w.end}
+                </p>
+                {st && (
+                  <p className={`text-micro font-semibold ${st === 'now' ? (w.key === 'abhijit' ? 'text-ok' : 'text-live') : 't-faint'}`}>
+                    {st === 'now' ? t('pc.now') : st === 'soon' ? t('pc.in', { t: span(w.a - now) }) : t('pc.over')}
+                  </p>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
