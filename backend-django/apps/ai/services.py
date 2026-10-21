@@ -49,6 +49,10 @@ REFUSAL_EMPTY = "Type a question first."
 REFUSAL_COME_BACK = "That was today's free question. Come back tomorrow for the next one."
 REFUSAL_TAROT_COME_BACK = "That was today's free card. Come back tomorrow for the next one."
 REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
+# The AI Pros on Consult take the welcome questions only (21 Oct 2026,
+# Rahul): past them, nothing until paid questions are switched on.
+REFUSAL_BOTS_DONE = "Your free questions are used up."
+REFUSAL_NO_BOT = "That chat is not available."
 
 # How many past messages the model sees. The seeker asked for "last 20,
 # flushed after a month". Twenty is also what keeps the bill flat: every
@@ -215,8 +219,9 @@ def quota_state(profile_id):
     }
 
 
-def _take_free(profile_id):
+def _take_free(profile_id, welcome_only=False):
     """Spend one free message if there is one. Returns True if it did.
+    `welcome_only` (an AI Pro's chat, 21 Oct 2026) never reaches the daily one.
 
     Inside the caller's transaction and behind a row lock: two taps in the
     same second must not both find the last free message. select_for_update
@@ -252,6 +257,9 @@ def _take_free(profile_id):
             open_bonus_window(row)
         return True
 
+    if welcome_only:
+        return False
+
     if row.last_free_on != today:
         row.last_free_on = today
         row.daily_used = 1
@@ -278,6 +286,75 @@ def _take_free(profile_id):
 # during the metered fortnight stay readable. Nothing writes them.
 #
 # git show 6419773 has the whole thing if per-minute ever comes back.
+
+
+# ── the AI Pros on Consult (21 Oct 2026) ─────────────────────────────────────
+
+
+def _categories():
+    """The app's categories, then any an approved Pro has that is not one
+    of them — so a new category brings its AI Pro without anybody adding it."""
+    from apps.consultants.models import Consultant, ConsultantStatus
+
+    seen = list(personas.CATEGORY_KEYS)
+    for raw in Consultant.objects.filter(status=ConsultantStatus.APPROVED).values_list("category", flat=True):
+        for name in (raw or "").split(","):
+            name = name.strip()
+            if name and name not in seen:
+                seen.append(name)
+    return seen
+
+
+def ai_bots():
+    """The active AI Pros, a row made for any category that has none."""
+    from .models import AiBot
+
+    have = set(AiBot.objects.values_list("category", flat=True))
+    keys = set(AiBot.objects.values_list("key", flat=True))
+    for i, category in enumerate(_categories()):
+        if category in have:
+            continue
+        key = personas.key_for(category)
+        if key in keys:
+            continue
+        AiBot.objects.get_or_create(
+            category=category,
+            defaults={"key": key, "name": f"NAMO AI · {category}", "sort": i},
+        )
+        keys.add(key)
+    return list(AiBot.objects.filter(active=True))
+
+
+def _bot(key):
+    from .models import AiBot
+
+    return AiBot.objects.filter(key=key, active=True).first()
+
+
+def system_for(bot):
+    """How an AI Pro talks: the console's prompt, else the built-in one for
+    its category, else a professional of that kind."""
+    if bot.prompt.strip():
+        return personas.custom(bot.prompt, bot.category)
+    return personas.SYSTEMS.get(bot.key) or personas.generic(bot.category)
+
+
+def bots_state(profile_id):
+    """What Consult shows: the AI Pros, and whether to show them at all —
+    only to somebody with welcome questions left (signed out counts)."""
+    left = None
+    if profile_id:
+        row = Quota.objects.filter(profile_id=profile_id).first()
+        left = max(0, welcome_left(row))
+    return {
+        "show": left is None or left > 0,
+        "free_left": left,
+        "bots": [
+            {"key": b.key, "category": b.category, "name": b.name, "image_url": b.image_url,
+             "label": b.label, "label_hi": b.label_hi}
+            for b in ai_bots()
+        ],
+    }
 
 
 # ── the conversation ─────────────────────────────────────────────────────────
@@ -350,13 +427,23 @@ def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
     question = (question or "").strip()
     if not question:
         return {"ok": False, "reason": REFUSAL_EMPTY}
+    # An AI Pro (21 Oct 2026): welcome questions only, its own words. The
+    # astrologer box is the Namo AI chat itself and keeps its daily one.
+    bot = None
+    if persona != ASTROLOGER_KEY:
+        bot = _bot(persona)
+        if bot is None:
+            return {"ok": False, "reason": REFUSAL_NO_BOT}
 
     now = timezone.now()
     price = _price_paise() if paid_on() else None
     charged = 0
 
     with transaction.atomic():
-        used_free = _take_free(profile_id)
+        used_free = _take_free(profile_id, welcome_only=bot is not None)
+        if not used_free and bot is not None:
+            return {"ok": False, "reason": REFUSAL_BOTS_DONE, "bots_done": True,
+                    "free_left": 0, "price_paise": None}
         if not used_free and not paid_on():
             # Free only for now (19 Oct 2026, Rahul): nothing is charged.
             state = quota_state(profile_id)
@@ -402,10 +489,10 @@ def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
         block = chart_block(_chart_for(profile_id))
 
     try:
-        if persona == ASTROLOGER_KEY:
+        if bot is None:
             answer = providers.ask(history, question, block)
         else:
-            answer = providers.ask(history, question, block, system=personas.SYSTEMS[persona])
+            answer = providers.ask(history, question, block, system=system_for(bot))
     except providers.UpstreamError as exc:
         logger.error("[ai] upstream: %s", exc)
         # THE MONEY COMES BACK. Somebody who paid ₹9 and got "could not
@@ -431,6 +518,9 @@ def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
     )
 
     state = quota_state(profile_id)
+    if bot is not None:
+        # An AI Pro counts the welcome questions only.
+        state = {"free_left": state["free_left"] if state["kind"] == "welcome" else 0}
     return {
         "ok": True,
         "id": str(reply.id),

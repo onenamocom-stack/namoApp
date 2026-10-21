@@ -67,7 +67,7 @@ class Message(models.Model):
     # Which Namo AI chat (21 Oct 2026): the astrologer, or the tarot reader,
     # life coach or therapist on Consult (personas.KEYS). Each its own
     # conversation; the free questions are shared.
-    persona = models.CharField(max_length=16, default="astrologer", db_default="astrologer")
+    persona = models.CharField(max_length=40, default="astrologer", db_default="astrologer")
     body = models.TextField()
     # What the answer cost us, in the provider's own units. Not shown to
     # anyone; it is how "is this priced sanely" stops being a guess.
@@ -157,3 +157,40 @@ class Quota(models.Model):
 
     class Meta:
         db_table = "ai_quota"
+
+
+AI_LABEL = "This is an AI, not a person."
+
+
+class AiBot(models.Model):
+    """One AI Pro on Consult, a box over its category (21 Oct 2026, Rahul).
+    A row for every category exists by itself (services.ai_bots creates the
+    missing ones), so a new category brings its own; the console changes the
+    name, the picture and the AI line. `key` is the chat's persona."""
+
+    key = models.SlugField(max_length=40, unique=True, editable=False)
+    category = models.CharField(max_length=60, unique=True, editable=False)
+    name = models.CharField(max_length=60, help_text="Shown on the box and over the chat.")
+    image_url = models.TextField(blank=True, default="", help_text="Set by uploading below. Empty shows AI.")
+    label = models.CharField(
+        "AI line", max_length=120, default=AI_LABEL,
+        help_text="Shown on the box and in the chat, so nobody takes it for a person.")
+    label_hi = models.CharField("AI line in Hindi", max_length=120, blank=True, default="",
+                                help_text="Optional; the English line is used where empty.")
+    prompt = models.TextField(
+        blank=True, default="",
+        help_text="How it talks. Empty uses the built-in one for this category. "
+                  "The rules every AI Pro follows (says it is an AI, answers in the person's language, "
+                  "no medical, legal or money instruction) are added either way.")
+    active = models.BooleanField(default=True, help_text="Untick to hide this AI Pro.")
+    sort = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "ai_bots"
+        ordering = ("sort", "created_at")
+        verbose_name = "AI Pro"
+        verbose_name_plural = "AI Pros"
+
+    def __str__(self):
+        return self.name

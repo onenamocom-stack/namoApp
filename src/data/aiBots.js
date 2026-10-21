@@ -1,16 +1,15 @@
 /**
- * The Namo AI chats on Consult, one for each kind of Pro (21 Oct 2026,
- * Rahul): a box over each category's list, chat only, marked AI. The key is
- * the server's persona (apps/ai/personas.py); everything a chat says is the
- * server's — this holds only what the screens print around it.
+ * The AI Pros on Consult (21 Oct 2026, Rahul): a box over each category's
+ * list, chat only. Which ones exist, their names, pictures and AI line are
+ * the console's (`GET /v1/ai/bots/`); this holds only what the chat screen
+ * prints around a conversation, by the AI Pro's key. A category added later
+ * has no entry here and gets GENERIC.
  *
  * The astrologer is the original Namo AI and reads the seeker's chart; the
- * others read only what is typed. All four spend the same free questions.
+ * others read only what is typed.
  */
-export const AI_BOTS = {
-  Astrologer: {
-    key: 'astrologer',
-    name: 'bot.astrologer',
+const COPY = {
+  astrologer: {
     hue: '#7c4dff',
     title: 'ask.title',
     sub: 'ask.sub',
@@ -22,9 +21,7 @@ export const AI_BOTS = {
       'Which remedies suit me?',
     ],
   },
-  Tarot: {
-    key: 'tarot',
-    name: 'bot.tarot',
+  tarot: {
     hue: '#d81b60',
     title: 'bot.tarot.title',
     sub: 'bot.tarot.sub',
@@ -36,9 +33,7 @@ export const AI_BOTS = {
       'Should I take the offer I got?',
     ],
   },
-  'Life Coach': {
-    key: 'life_coach',
-    name: 'bot.life_coach',
+  life_coach: {
     hue: '#1e9e5a',
     title: 'bot.life_coach.title',
     sub: 'bot.life_coach.sub',
@@ -50,9 +45,7 @@ export const AI_BOTS = {
       'I want to build a morning routine.',
     ],
   },
-  Therapist: {
-    key: 'therapist',
-    name: 'bot.therapist',
+  therapist: {
     hue: '#0288d1',
     title: 'bot.therapist.title',
     sub: 'bot.therapist.sub',
@@ -66,7 +59,20 @@ export const AI_BOTS = {
   },
 }
 
-/** The chat for a persona key, the astrologer when unknown. */
-export function botFor(key) {
-  return Object.values(AI_BOTS).find((b) => b.key === key) ?? AI_BOTS.Astrologer
+const GENERIC = {
+  hue: '#f08a24',
+  title: 'bot.generic.title',
+  sub: 'bot.generic.sub',
+  thinking: 'bot.thinking',
+  suggestions: [],
+}
+
+/** What the chat screen shows around an AI Pro's conversation. */
+export function copyFor(key) {
+  return COPY[key] ?? GENERIC
+}
+
+/** The AI line in the reader's language: the console's Hindi if it has one. */
+export function aiLine(bot, lang) {
+  return (lang === 'hi' && bot?.label_hi) || bot?.label || ''
 }

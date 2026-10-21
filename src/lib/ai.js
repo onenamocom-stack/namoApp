@@ -65,6 +65,12 @@ export function fetchState(persona = 'astrologer') {
   return api(persona === 'astrologer' ? '/' : `/?persona=${encodeURIComponent(persona)}`)
 }
 
+/** The AI Pros for Consult and whether to show them (21 Oct 2026): only
+ *  while the welcome questions last. Open signed out. */
+export function fetchBots() {
+  return api('/bots/')
+}
+
 /** One question. Resolves to {ok:true, text, free_left} or {ok:false,
  *  reason, needs_session?} — a refusal is an answer, not an exception. */
 /** `subject` is somebody else's birth details, typed by the seeker. It is

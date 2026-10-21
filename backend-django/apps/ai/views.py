@@ -15,7 +15,7 @@ invents no refusal text of its own.
 
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.astro.serializers import SubjectInput, subject_birth
@@ -31,8 +31,8 @@ class AskInput(serializers.Serializer):
 
     question = serializers.CharField(max_length=2000, allow_blank=False, trim_whitespace=True)
     subject = SubjectInput(required=False, allow_null=True)
-    # Which chat (21 Oct 2026): a key, never a prompt.
-    persona = serializers.ChoiceField(choices=personas.KEYS, default=personas.ASTROLOGER_KEY)
+    # Which chat (21 Oct 2026): an AI Pro's key, never a prompt.
+    persona = serializers.SlugField(max_length=40, default=personas.ASTROLOGER_KEY)
 
 
 def _state(profile_id):
@@ -62,12 +62,22 @@ def state(request):
     what is still free, and whether a clock is already running (a tab
     reopened mid-session must find its meter, not start a second one)."""
     profile_id = request.user.id
-    persona = request.query_params.get("persona") or personas.ASTROLOGER_KEY
-    if persona not in personas.KEYS:
-        persona = personas.ASTROLOGER_KEY
+    persona = (request.query_params.get("persona") or personas.ASTROLOGER_KEY)[:40]
     body = _state(profile_id)
+    if persona != personas.ASTROLOGER_KEY:
+        # An AI Pro counts the welcome questions only (21 Oct 2026).
+        body["free_left"] = body["free_left"] if body["free_kind"] == "welcome" else 0
     body["messages"] = services.transcript(profile_id, persona=persona)
     return Response(body)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def bots(request):
+    """The AI Pros for Consult, and whether this person sees them (21 Oct
+    2026): only with welcome questions left. Open signed out."""
+    me = request.user.id if getattr(request.user, "is_authenticated", False) else None
+    return Response(services.bots_state(me))
 
 
 @api_view(["POST"])

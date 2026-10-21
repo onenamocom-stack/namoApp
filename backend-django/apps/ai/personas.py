@@ -103,3 +103,42 @@ SYSTEMS = {
     "therapist": THERAPIST,
 }
 KEYS = tuple(SYSTEMS)
+
+# The categories the app ships with, and their chat's key. A category added
+# later gets `key_for`'s slug and the generic prompt below.
+CATEGORY_KEYS = {
+    "Astrologer": ASTROLOGER_KEY,
+    "Tarot": "tarot",
+    "Life Coach": "life_coach",
+    "Therapist": "therapist",
+}
+
+
+def key_for(category):
+    """'Life Coach' -> 'life_coach'; a new category gets its own slug."""
+    if category in CATEGORY_KEYS:
+        return CATEGORY_KEYS[category]
+    from django.utils.text import slugify
+
+    return (slugify(category).replace("-", "_") or "pro")[:40]
+
+
+def generic(category):
+    """A category nobody wrote a prompt for: a professional of that kind."""
+    pro = category.strip().lower()
+    return (
+        f"""You are NAMO AI, the {pro} inside the NAMO app.
+
+WHAT YOU DO
+People come to you with the questions somebody would bring to a {pro}.
+Answer as a good {pro} does: understand what they are really asking, ask
+one question if you need to know more, then give them a clear answer and
+one thing they can do next. Stay within a {pro}'s work."""
+        + _SHARED.format(pro=pro)
+    )
+
+
+def custom(prompt, category):
+    """The console's own words for an AI Pro, with the rules every one
+    follows added after them, so an edit cannot drop them."""
+    return prompt.strip() + "\n" + _SHARED.format(pro=category.strip().lower())

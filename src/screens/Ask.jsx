@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useBirthGate } from '../components/useBirthFirst.js'
-import { botFor } from '../data/aiBots.js'
+import { aiLine, copyFor } from '../data/aiBots.js'
+import { fetchBots } from '../lib/ai.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { Loader, Orbit, Stars } from '../components/Cosmos.jsx'
@@ -25,15 +26,28 @@ export default function Ask() {
      therapist; none is the astrologer. Only the astrologer reads a chart,
      so only it asks for birth details and offers somebody else's. */
   const [params] = useSearchParams()
-  const bot = botFor(params.get('as'))
-  const astro = bot.key === 'astrologer'
+  const key = params.get('as') || 'astrologer'
+  const astro = key === 'astrologer'
+  const bot = copyFor(key)
+  // The AI Pro's name and AI line, from the console.
+  const [pro, setPro] = useState(null)
+  useEffect(() => {
+    if (astro) return undefined
+    let live = true
+    fetchBots()
+      .then((s) => live && setPro((s.bots ?? []).find((b) => b.key === key) ?? null))
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [astro, key])
   useBirthGate({ skip: !astro })
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, pricePaise, outOfFree, boostFrom,
     subject, asking, setAsking, askAbout,
-  } = useAskAi(bot.key)
-  const { t } = useStore()
+  } = useAskAi(key)
+  const { t, lang } = useStore()
   const endRef = useRef(null)
 
   useEffect(() => {
@@ -49,12 +63,12 @@ export default function Ask() {
     <div className="cosmic-dawn relative flex min-h-full flex-col">
       <Stars />
       <TopBar
-        title={astro ? t('tool.ai') : `${t(bot.name)} · AI`}
+        title={astro ? t('tool.ai') : pro?.name ?? ''}
         back
         backTo="/consult"
         right={
           <span className="whitespace-nowrap text-micro uppercase tracking-label tnum text-t2">
-            {loading ? '' : outOfFree ? (price ? t('ask.each', { price }) : t('ask.tomorrow')) : t('ask.free', { n: freeLeft })}
+            {loading ? '' : outOfFree ? (!astro ? t('bot.done') : price ? t('ask.each', { price }) : t('ask.tomorrow')) : t('ask.free', { n: freeLeft })}
           </span>
         }
       />
@@ -67,7 +81,7 @@ export default function Ask() {
             <Orbit size={72} className="mb-6" />
             <p className="text-title font-semibold t-heading">{t(bot.title)}</p>
             <p className="mt-2 text-meta t-faint">{t(bot.sub)}</p>
-            {!astro && <p className="mt-3 text-micro font-semibold t-sub">{t('bot.isAi')}</p>}
+            {!astro && pro && <p className="mt-3 text-micro font-semibold text-live">{aiLine(pro, lang)}</p>}
             <p className="mt-3 text-micro t-faint">{t('legal.astro')}</p>
             <div className="mt-8 flex w-full flex-col gap-2">
               {bot.suggestions.map((s) => (
@@ -136,7 +150,7 @@ export default function Ask() {
         {/* Free only for now (19 Oct 2026, Rahul): no price, no wallet —
             past the free ones it is tomorrow. */}
         {outOfFree && !price && (
-          <p className="mb-2 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{t('ask.comeBack')}</p>
+          <p className="mb-2 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{astro ? t('ask.comeBack') : t('bot.doneLine')}</p>
         )}
         <form
           onSubmit={(e) => {

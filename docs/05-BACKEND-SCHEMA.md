@@ -2057,9 +2057,17 @@ latter built for a sweeper that no longer runs — stay with it.
 Drop it only when the ledger rows it explains are themselves out of
 retention, and drop both together or neither.
 
-**`ai_messages.persona`** (text, default `astrologer`, `ai/0007`, 21 Oct
-2026) — which chat the row belongs to: `astrologer`, `tarot`, `life_coach`
-or `therapist`. Each is its own transcript; `ai_quota` is shared by all four.
+**`ai_messages.persona`** (varchar 40, default `astrologer`, `ai/0007`, 21 Oct
+2026) — which chat the row belongs to: an `ai_bots.key`. Each is its own
+transcript; `ai_quota` is shared.
+
+**`ai_bots`** (`ai/0007`, 21 Oct 2026) — one AI Pro per Consult category.
+`key` (slug, unique; the persona), `category` (unique), `name`, `image_url`,
+`label` (the AI line, default "This is an AI, not a person."), `label_hi`,
+`prompt` (blank = the built-in one for the key, else a generic professional of
+the category; the shared rules are appended either way), `active`, `sort`,
+`created_at`. Rows are created on read for the app's four categories and any
+other category an approved consultant lists; never deleted.
 
 **`ai_messages`** — the transcript. `session_id` is **nullable**, which was
 for free messages that belonged to nobody's clock. Since the meter was

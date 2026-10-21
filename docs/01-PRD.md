@@ -284,16 +284,24 @@ An astrologer that reads the seeker's own chart, answers only about
 astrology, and refuses to be a general assistant. Never a guarantee — the
 chart is timing, not permission.
 
-**One Namo AI for each kind of Pro — decided 21 Oct 2026 (Rahul).** Beside
-the astrologer there is a tarot reader, a life coach and a counsellor (the
-Therapist category), each talking as that professional and nothing else.
-Each sits in a box over its category on Consult, chat only, and says on the
-card and in the chat that it is an AI, not a person. They read no chart,
-only what is typed. They spend **the same free questions** as the
-astrologer (the welcome five, then one a day): four chats, one allowance.
-The counsellor never diagnoses or touches medicine, sends anything lasting
-or serious to a real therapist, and answers any talk of self-harm with
-Tele-MANAS (14416) and 112.
+**An AI Pro for each kind of Pro — decided 21 Oct 2026 (Rahul).** Every
+category on Consult has an AI Pro in a box over its list, chat only: the
+astrologer (the Namo AI chat itself), a tarot reader, a life coach and a
+counsellor (Therapist), each talking as that professional and nothing else.
+A category added later gets its own, talking as a professional of that
+kind. The console sets each one's **name, picture and AI line** ("This is
+an AI, not a person.", shown on the box and in the chat), can rewrite how
+it talks, and can hide it. They read no chart, only what is typed.
+
+**Only for first-time users, and only the five.** The boxes show while the
+seeker still has welcome questions (signed out counts as new). The AI Pros
+share **the welcome five** and nothing else: once the five are spent the
+boxes disappear and their chats refuse — no question a day, no paid
+question. Paid use for everybody else waits for Google's approval for
+digital products. The Namo AI tool (`/ask`, from the circles) keeps its
+question a day as before. The counsellor never diagnoses or touches
+medicine, sends anything lasting or serious to a real therapist, and
+answers any talk of self-harm with Tele-MANAS (14416) and 112.
 
 **Four paragraphs, 150–250 words — lengthened 23 Sep 2026.** It was three
 to five sentences, and three to five sentences is not worth ₹9. The shape

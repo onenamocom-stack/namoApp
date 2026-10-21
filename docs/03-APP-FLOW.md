@@ -2036,14 +2036,17 @@ next rather than showing an empty list.
 One surface since 30 Sep 2026 — the chat panel's Ask AI tab is gone. `useAskAi`
 holds the state; neither it nor the screen owns a number.
 
-**Four chats on one screen since 21 Oct 2026** (Rahul): `/ask` is the
-astrologer, `/ask?as=tarot`, `?as=life_coach` and `?as=therapist` the other
-three. Consult shows a box over the roster for the chosen category — on All,
-the four side by side — with the AI's name, "This is an AI, not a person",
-the free questions left, and one Chat button. The three others open straight
-into the chat (no birth details asked, no *Someone else*), with their own
-title, suggestions and conversation; the counsellor's empty screen carries
-the Tele-MANAS line.
+**The AI Pros since 21 Oct 2026** (Rahul): `/ask` is the astrologer;
+`/ask?as=<key>` is any other AI Pro (tarot, life_coach, therapist, or a later
+category's slug). Consult shows a box over the roster for the chosen category
+— on All, every one side by side, also over the empty-roster card — with the
+console's picture (or "AI"), name and AI line, "N free questions", and one
+Chat button. The boxes are drawn only while the seeker has welcome questions
+left (signed out: always). The other AI Pros open straight into the chat (no
+birth details, no *Someone else*), with the console's name in the header and
+its AI line on the empty screen; the counsellor's empty screen carries the
+Tele-MANAS line. Past the five, an AI Pro's chat reads "No free questions
+left" and refuses ("Your free questions are used up.").
 
 **`/ask` is a plain chat since 30 Sep 2026** (owner's call — it was a reading
 column with section labels): bubbles, a composer pinned to the bottom, Enter
