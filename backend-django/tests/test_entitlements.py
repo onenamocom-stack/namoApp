@@ -5,9 +5,8 @@ free reading that replaced the personal one on the free side.
                     grant are one write, a forever-thing is never charged
                     twice, a month bought early starts where the last ends,
                     and an empty wallet writes nothing
-  the gates      -> TestGates: the personal reading answers 402 with the
-                    price until bought; a muhurat judged against your
-                    chart is free (21 Oct 2026)
+  the gates      -> TestGates: the personal reading and a muhurat judged
+                    against your chart are both free (21 Oct 2026)
   the free side  -> TestRashifal: twelve readings a day for everybody,
                     anonymous, and a canonical birth whose Moon is not in
                     its sign refuses instead of serving the neighbour's
@@ -147,17 +146,12 @@ class TestBuy:
 class TestGates:
     URL = "/v1/astro/muhurat/?purpose=griha_pravesh&lat=18.5&lng=73.9&month=2026-10"
 
-    def test_the_personal_reading_is_402_until_bought(self, api_client, provider, token):
+    def test_the_personal_reading_is_free(self, api_client, provider, token):
+        """Free since 21 Oct 2026: nothing bought, nothing spent."""
         insert_profile()
         _wallet(20000)
-        refused = api_client.get("/v1/astro/horoscope/", **auth(token))
-        assert refused.status_code == 402
-        assert refused.json()["reason"] == "needs_purchase"
-        assert refused.json()["price_paise"] == PREDICTION
-        assert provider.calls["daily_horoscope"] == 0  # nothing spent upstream on a refusal
-
-        wallet.buy(TEST_USER, "prediction")
         assert api_client.get("/v1/astro/horoscope/", **auth(token)).status_code == 200
+        assert wallet.balance_of(TEST_USER) == 20000
 
     def test_a_muhurat_against_your_chart_is_free(self, api_client, provider, token,
                                                   monkeypatch):

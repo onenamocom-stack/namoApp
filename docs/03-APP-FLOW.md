@@ -1002,11 +1002,10 @@ forever, so opening the tab computes nothing. Without a birth time every
 diagram is drawn empty with the reason. The ayanamsa and house system stay
 printed under *Birth data*.
 
-**Prediction** is the reader's own yesterday / today / tomorrow — the full
-reading that was `/horoscope` from 22 to 30 Sep. **₹99 for 30 days**
-(`01-PRD.md` §4.11): unbought, the server answers 402 with the price and the tab
-shows the offer, with a link to the free reading by sign; bought, it shows when
-the plan runs to. `/chart/:id` placement pages still exist but nothing on
+**Prediction** is the reader's own reading for **today only, free** (21 Oct
+2026, Rahul) — the full reading that was `/horoscope` from 22 to 30 Sep. No
+Yesterday / Today / Tomorrow switch, no plan end date, no offer; from 30 Sep
+to 21 Oct it was the three days, paid (`01-PRD.md` §4.11). `/chart/:id` placement pages still exist but nothing on
 `/chart` links to them now.
 
 ### `/match`
@@ -1247,8 +1246,8 @@ stamped with the IST day. What that changes on screen:
 **The daily reading is two readings since 30 Sep 2026** (`02-TRD.md` §8 owns
 the decision). **Free, by sign**: Home's Today card and `/horoscope`, twelve
 sign chips opening on the reader's own moon sign, the sign named on every
-surface, the dasha line dropped and the windows named as Ujjain's. **Paid, your
-own**: `/chart`'s Prediction tab, computed from the reader's birth, windows at
+surface, the dasha line dropped and the windows named as Ujjain's. **Free too
+since 21 Oct 2026, your own, today only**: `/chart`'s Prediction tab, computed from the reader's birth, windows at
 the birth place.
 
 **`/horoscope` names its places.** The almanac line under the date is Ujjain,

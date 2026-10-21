@@ -528,7 +528,7 @@ Three things the wallet buys that stay bought. The price is the server's
 
 | Unlock | Price | Keeps |
 |---|---|---|
-| **Your own predictions** — yesterday, today, tomorrow, read from your birth (`/chart`, Prediction tab) | **₹99** | 30 days; buying again early starts where the last ends. No auto-renewal |
+| **Your own prediction** — today's, read from your birth (`/chart`, Prediction tab) | **Free** (21 Oct 2026, Rahul: "There will no payment gateway for prediction"; ₹99 for 30 days of yesterday, today and tomorrow from 30 Sep) | Today only. The `prediction` price stays in the list, unasked |
 | **Muhurat judged against your zodiac** | **Free** (21 Oct 2026, Rahul, owner agreed; ₹49 per purpose per month from 30 Sep) | Shows only the best quarter of that month's windows for the reader's chart (5 Oct 2026). The `muhurat` price stays in the list, unasked |
 | **A priced e-book** — the first is *A Complete Guide to Beej Mantra* (a Market download of the seller Rahul Jain since 18 Oct 2026) | **₹99** | Forever, on any device the account signs in on |
 

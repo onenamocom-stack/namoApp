@@ -1,11 +1,10 @@
 import { Loader } from '../components/Cosmos.jsx'
 import { birthHref } from '../lib/birth.js'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useBirthGate } from '../components/useBirthFirst.js'
 import { TopBar } from '../components/Chrome.jsx'
 import { ChartNorth } from '../components/ChartSquare.jsx'
-import Paywall from '../components/Paywall.jsx'
 import { useStore, useProfileFields } from '../store.jsx'
 import {
   dashaFrom,
@@ -16,9 +15,8 @@ import {
   useAstro,
   vargasFrom,
 } from '../lib/astro.js'
-import { entitlement } from '../lib/wallet.js'
 import { Field, Section, Segmented, firstName } from '../components/Primitives.jsx'
-import { DAY_OFFSET, DAY_TABS, ReadingView, dayFrom } from './Horoscope.jsx'
+import { DAY_OFFSET, ReadingView, dayFrom } from './Horoscope.jsx'
 
 const TABS = [
   { key: 'chart', label: 'Chart' },
@@ -299,53 +297,23 @@ function DashaTab({ who, ready }) {
   )
 }
 
+/* Today only, and free (21 Oct 2026, Rahul): the Yesterday / Today /
+   Tomorrow switch, the monthly plan's end date and its paywall are gone. */
 function PredictionTab({ who, ready, me }) {
-  const [key, setKey] = useState('today')
-  // Bumped after a purchase, so the refused reading is asked for again.
-  const [attempt, setAttempt] = useState(0)
-  const [until, setUntil] = useState(null)
-  const date = useMemo(() => istDate(DAY_OFFSET[key]), [key])
+  const key = 'today'
+  const date = useMemo(() => istDate(DAY_OFFSET[key]), [])
 
-  const reading = useAstro('horoscope', { date, ready, who, attempt })
+  const reading = useAstro('horoscope', { date, ready, who })
   const almanac = useAstro('panchang', { date, ready })
   const day = dayFrom(reading.payload, key)
-  const locked = reading.refusal?.code === 'needs_purchase'
-
-  /* How long the plan runs, said once under the tabs — a monthly plan whose
-     end date is nowhere on screen is one people find out about by losing. */
-  useEffect(() => {
-    if (!ready || !who || locked || reading.loading) return
-    entitlement('prediction').then((s) => setUntil(s.owned ? s.expires_at : null))
-  }, [ready, who, locked, reading.loading, attempt])
 
   return (
     <div className="animate-fade">
-      <Segmented items={DAY_TABS} value={key} onChange={setKey} />
-
-      {until && (
-        <p className="mt-3 text-center caps-sm t-faint">Your plan runs to {longDate(until)}</p>
-      )}
-
       {reading.loading && (
         <p className="section text-meta text-t3">Reading the sky for {longDate(date)}.</p>
       )}
 
-      {locked && (
-        <section className="section">
-          <Paywall
-            title="Your own predictions"
-            note="Yesterday, today and tomorrow, read from the minute and place you were born — not your sign's. Thirty days."
-            sku="prediction"
-            pricePaise={reading.refusal.pricePaise}
-            onBought={() => setAttempt((a) => a + 1)}
-          />
-          <Link to="/horoscope" className="mt-5 block text-center text-meta text-t2 underline">
-            Read your sign&apos;s free reading instead
-          </Link>
-        </section>
-      )}
-
-      {reading.refusal && !locked && (
+      {reading.refusal && (
         <div className="section">
           <p className="text-body text-t1">{reading.refusal.reason}</p>
           {reading.refusal.code === 'no_birth' && (

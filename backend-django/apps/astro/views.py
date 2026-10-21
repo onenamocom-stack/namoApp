@@ -249,13 +249,11 @@ def rashifal(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def horoscope(request):
-    """The reader's OWN daily reading — paid since 30 Sep 2026 (₹99 for 30
-    days, apps.wallet `prediction`). The free reading is `rashifal`."""
+    """The reader's OWN daily reading — free since 21 Oct 2026 (Rahul: "There
+    will no payment gateway for prediction"); from 30 Sep it was ₹99 for 30
+    days, apps.wallet `prediction`, which stays listed and is asked for by
+    nothing. The sign's reading is `rashifal`."""
     date_string, refusal = _resolve_date(request)
-    if refusal is not None:
-        return refusal
-    refusal = _needs_purchase(request, "prediction", "",
-                              "Your own predictions are part of the monthly plan.")
     if refusal is not None:
         return refusal
     birth, refusal = _birth_or_refusal(request)
