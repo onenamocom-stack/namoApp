@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { tarotDecks } from '../data/mock.js'
+import { tarotDecks } from '../data/tarot.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Plate from '../components/Plate.jsx'
 import { PopButton, PopCard } from '../components/Pop.jsx'

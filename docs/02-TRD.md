@@ -736,8 +736,15 @@ graph and only the one on screen is fetched. That property must survive the
 move to a storage bucket: signed or public URLs, still lazy, still one at a
 time.
 
-The JS bundle is ~458 kB raw / ~142 kB gzipped today. Adding a Supabase client
-and a payment SDK is the first real growth; watch it rather than assume it.
+**Every screen is its own chunk** (21 Oct 2026; `src/App.jsx`,
+`src/lib/lazy.js`). The first load carries the shell, Home, Consult and
+Welcome: 769 kB raw / 234 kB gzipped (it was one 1,112 kB / 339 kB file).
+Daily, hls.js and mediabunny load only with the screen that uses them. A
+chunk that fails to load (a tab opened before a deploy asks for a file the
+new build renamed) reloads the page once; a second failure in the tab shows
+the screen's Boundary. Content a single screen needs lives in its own data
+file, not in `mock.js`, which the first load imports: the tarot decks and
+the Bhaktamar text are `src/data/tarot.js`.
 
 **Measured capacity — 5 Oct 2026** (read-only load test of the live API,
 `namo-api` at 4 instances max, 1 CPU / 512 MB, gunicorn 2 × 8):

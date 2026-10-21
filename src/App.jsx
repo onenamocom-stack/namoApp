@@ -1,6 +1,6 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
 import { catchAffiliateLink, sendAffiliateVisit, takeReturnPath } from './lib/referrals.js'
-import { Suspense, lazy, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
 import { isPro } from './side.js'
@@ -15,83 +15,85 @@ import LiveCallBar from './components/LiveCallBar.jsx'
 import ShareSheet from './components/ShareSheet.jsx'
 
 import Welcome, { signedUp } from './screens/onboarding/Welcome.jsx'
-import AboutYou from './screens/onboarding/AboutYou.jsx'
-import AskName from './screens/onboarding/AskName.jsx'
-import AskPhone from './screens/onboarding/AskPhone.jsx'
-import VerifyOtp from './screens/onboarding/VerifyOtp.jsx'
-import Computing from './screens/onboarding/Computing.jsx'
 
 import Home from './screens/Home.jsx'
 import Consult from './screens/Consult.jsx'
-import Pooja from './screens/Pooja.jsx'
-import Bhakti from './screens/Bhakti.jsx'
-import Shop from './screens/Shop.jsx'
-import Tarot from './screens/Tarot.jsx'
 
-import ProEarnings from './pro/ProEarnings.jsx'
-import ProStudio from './pro/ProStudio.jsx'
-import ProRing from './pro/ProRing.jsx'
-import ProConsult from './pro/ProConsult.jsx'
-import ProProfile from './pro/ProProfile.jsx'
-import ProApply from './pro/ProApply.jsx'
-import Support from './screens/Support.jsx'
-import ProPayoutDetails from './pro/ProPayoutDetails.jsx'
-import ProAffiliate from './pro/ProAffiliate.jsx'
-
-import Profile from './screens/Profile.jsx'
-import Wallet from './screens/Wallet.jsx'
-import Orders from './screens/Orders.jsx'
-import Call from './screens/Call.jsx'
-import Connect from './screens/Connect.jsx'
 import { useReloadIntoNewBuild } from './lib/update.js'
 import IncomingCall from './components/IncomingCall.jsx'
 import PresenceToggle, { PresenceKeeper } from './components/PresenceToggle.jsx'
-import Horoscope from './screens/Horoscope.jsx'
-import Ask from './screens/Ask.jsx'
-import Chart from './screens/Chart.jsx'
-import Placement from './screens/Placement.jsx'
-import Match from './screens/Match.jsx'
-import Muhurat from './screens/Muhurat.jsx'
-import Invite from './screens/Invite.jsx'
-import Article from './screens/Article.jsx'
-import ProductPage from './screens/ProductPage.jsx'
-import DownloadPage from './screens/DownloadPage.jsx'
-import ListingRoute from './screens/ListingPage.jsx'
-import TagScreen from './screens/TagScreen.jsx'
-import Messages from './screens/Messages.jsx'
-import Conversation from './screens/Conversation.jsx'
-import Group from './screens/Group.jsx'
-import NewGroup from './screens/NewGroup.jsx'
-import GroupsPage from './screens/GroupsPage.jsx'
-import SearchScreen from './screens/SearchScreen.jsx'
-import UserProfile from './screens/UserProfile.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
-import ReelViewer from './screens/ReelViewer.jsx'
-import ConsultantProfile from './screens/ConsultantProfile.jsx'
-import EditPractice from './screens/EditPractice.jsx'
 import { Loader } from './components/Cosmos.jsx'
+import { lazyScreen } from './lib/lazy.js'
+
+/* Every screen but Home, Consult, Welcome and the shell is its own chunk
+   (21 Oct 2026): the first page downloads only what it shows. */
+const Pooja = lazyScreen(() => import('./screens/Pooja.jsx'))
+const Bhakti = lazyScreen(() => import('./screens/Bhakti.jsx'))
+const Shop = lazyScreen(() => import('./screens/Shop.jsx'))
+const Tarot = lazyScreen(() => import('./screens/Tarot.jsx'))
+const ProEarnings = lazyScreen(() => import('./pro/ProEarnings.jsx'))
+const ProStudio = lazyScreen(() => import('./pro/ProStudio.jsx'))
+const ProRing = lazyScreen(() => import('./pro/ProRing.jsx'))
+const ProConsult = lazyScreen(() => import('./pro/ProConsult.jsx'))
+const ProProfile = lazyScreen(() => import('./pro/ProProfile.jsx'))
+const ProApply = lazyScreen(() => import('./pro/ProApply.jsx'))
+const Support = lazyScreen(() => import('./screens/Support.jsx'))
+const ProPayoutDetails = lazyScreen(() => import('./pro/ProPayoutDetails.jsx'))
+const ProAffiliate = lazyScreen(() => import('./pro/ProAffiliate.jsx'))
+const Profile = lazyScreen(() => import('./screens/Profile.jsx'))
+const Wallet = lazyScreen(() => import('./screens/Wallet.jsx'))
+const Orders = lazyScreen(() => import('./screens/Orders.jsx'))
+const Call = lazyScreen(() => import('./screens/Call.jsx'))
+const Connect = lazyScreen(() => import('./screens/Connect.jsx'))
+const Horoscope = lazyScreen(() => import('./screens/Horoscope.jsx'))
+const Ask = lazyScreen(() => import('./screens/Ask.jsx'))
+const Chart = lazyScreen(() => import('./screens/Chart.jsx'))
+const Placement = lazyScreen(() => import('./screens/Placement.jsx'))
+const Match = lazyScreen(() => import('./screens/Match.jsx'))
+const Muhurat = lazyScreen(() => import('./screens/Muhurat.jsx'))
+const Invite = lazyScreen(() => import('./screens/Invite.jsx'))
+const Article = lazyScreen(() => import('./screens/Article.jsx'))
+const ProductPage = lazyScreen(() => import('./screens/ProductPage.jsx'))
+const DownloadPage = lazyScreen(() => import('./screens/DownloadPage.jsx'))
+const ListingRoute = lazyScreen(() => import('./screens/ListingPage.jsx'))
+const TagScreen = lazyScreen(() => import('./screens/TagScreen.jsx'))
+const Messages = lazyScreen(() => import('./screens/Messages.jsx'))
+const Conversation = lazyScreen(() => import('./screens/Conversation.jsx'))
+const Group = lazyScreen(() => import('./screens/Group.jsx'))
+const NewGroup = lazyScreen(() => import('./screens/NewGroup.jsx'))
+const GroupsPage = lazyScreen(() => import('./screens/GroupsPage.jsx'))
+const SearchScreen = lazyScreen(() => import('./screens/SearchScreen.jsx'))
+const UserProfile = lazyScreen(() => import('./screens/UserProfile.jsx'))
+const ReelViewer = lazyScreen(() => import('./screens/ReelViewer.jsx'))
+const ConsultantProfile = lazyScreen(() => import('./screens/ConsultantProfile.jsx'))
+const EditPractice = lazyScreen(() => import('./screens/EditPractice.jsx'))
+const Notifications = lazyScreen(() => import('./screens/Notifications.jsx'))
+const AboutYou = lazyScreen(() => import('./screens/onboarding/AboutYou.jsx'))
+const AskName = lazyScreen(() => import('./screens/onboarding/AskName.jsx'))
+const AskPhone = lazyScreen(() => import('./screens/onboarding/AskPhone.jsx'))
+const VerifyOtp = lazyScreen(() => import('./screens/onboarding/VerifyOtp.jsx'))
+const Computing = lazyScreen(() => import('./screens/onboarding/Computing.jsx'))
 
 /* Dashboard (Phase 16): the consultant screens inside the main app, loaded
    only when a Pro or a Creator opens one, so a Seeker downloads none of it. */
-const Dashboard = lazy(() => import('./screens/Dashboard.jsx'))
-const DashboardGate = lazy(() =>
-  import('./screens/Dashboard.jsx').then((m) => ({ default: m.DashboardGate })),
-)
-const DashConsulting = lazy(() => import('./screens/ConsultingEarnings.jsx'))
-const DashReport = lazy(() => import('./screens/DailyReport.jsx'))
-const MarketEarnings = lazy(() => import('./screens/MarketEarnings.jsx'))
-const ContentEarnings = lazy(() => import('./screens/ContentEarnings.jsx'))
-const DashAffiliate = lazy(() => import('./pro/ProAffiliate.jsx'))
-const DashPayout = lazy(() => import('./pro/ProPayoutDetails.jsx'))
-const ProCalendar = lazy(() => import('./pro/ProCalendar.jsx'))
+const Dashboard = lazyScreen(() => import('./screens/Dashboard.jsx'))
+const DashboardGate = lazyScreen(() => import('./screens/Dashboard.jsx'), 'DashboardGate')
+const DashConsulting = lazyScreen(() => import('./screens/ConsultingEarnings.jsx'))
+const DashReport = lazyScreen(() => import('./screens/DailyReport.jsx'))
+const MarketEarnings = lazyScreen(() => import('./screens/MarketEarnings.jsx'))
+const ContentEarnings = lazyScreen(() => import('./screens/ContentEarnings.jsx'))
+const DashAffiliate = lazyScreen(() => import('./pro/ProAffiliate.jsx'))
+const DashPayout = lazyScreen(() => import('./pro/ProPayoutDetails.jsx'))
+const ProCalendar = lazyScreen(() => import('./pro/ProCalendar.jsx'))
 // Sell on the Market (15 Oct 2026, Phase 17): a Pro's or a Creator's listings.
-const SellHome = lazy(() => import('./screens/Sell.jsx'))
-const SellForm = lazy(() => import('./screens/Sell.jsx').then((m) => ({ default: m.SellForm })))
-const SellBank = lazy(() => import('./screens/Sell.jsx').then((m) => ({ default: m.SellBank })))
+const SellHome = lazyScreen(() => import('./screens/Sell.jsx'))
+const SellForm = lazyScreen(() => import('./screens/Sell.jsx'), 'SellForm')
+const SellBank = lazyScreen(() => import('./screens/Sell.jsx'), 'SellBank')
 // Namo Consult, `/desk`: where a Pro takes calls in the main app.
-const DeskLayout = lazy(() => import('./screens/Desk.jsx'))
-const DeskQueue = lazy(() => import('./pro/ProConsult.jsx'))
-const DeskRing = lazy(() => import('./pro/ProRing.jsx'))
+const DeskLayout = lazyScreen(() => import('./screens/Desk.jsx'))
+const DeskQueue = lazyScreen(() => import('./pro/ProConsult.jsx'))
+const DeskRing = lazyScreen(() => import('./pro/ProRing.jsx'))
 
 /** `/dashboard/...` became `/studio/...` (17 Oct 2026): old links,
  *  notifications and bookmarks land on the same screen. */
@@ -107,7 +109,6 @@ function Dash({ need = 'pro', children }) {
     </Suspense>
   )
 }
-import Notifications from './screens/Notifications.jsx'
 
 /**
  * Tab shell. The nav takes real layout space; the floating Ask AI button sits
@@ -121,7 +122,9 @@ function TabLayout() {
         {/* Inside the shell, not around it: a screen that throws must not take
             the bottom nav with it, or there is no way out of the crash. */}
         <Boundary resetKey={pathname}>
-          <Outlet />
+          <Suspense fallback={<Loader />}>
+            <Outlet />
+          </Suspense>
         </Boundary>
       </main>
       {/* A Pro's Online / Offline, above Home's + on every tab page (19 Oct
@@ -159,7 +162,9 @@ function ProLayout() {
         {/* Inside the shell, not around it: a screen that throws must not take
             the bottom nav with it, or there is no way out of the crash. */}
         <Boundary resetKey={pathname}>
-          <Outlet />
+          <Suspense fallback={<Loader />}>
+            <Outlet />
+          </Suspense>
         </Boundary>
       </main>
       <BottomNav tabs={PRO_TABS} />
@@ -233,7 +238,9 @@ function PlainLayout() {
   return (
     <main key={pathname} className="deal no-scrollbar min-h-0 flex-1 overflow-y-auto">
       <Boundary resetKey={pathname}>
-        <Outlet />
+        <Suspense fallback={<Loader />}>
+          <Outlet />
+        </Suspense>
       </Boundary>
     </main>
   )
@@ -396,250 +403,253 @@ function Frame() {
             Both gate themselves on an approved consultant. */}
         <PresenceKeeper />
         <IncomingCall />
-        <Routes>
-          <Route
-            path="/"
-            element={<Navigate to={isPro ? '/pro/studio' : '/onboarding'} replace />}
-          />
-
-          <Route element={<PlainLayout />}>
-            {/* THE CALL IS IN BOTH APPS. It is the one screen a seeker and
-                a consultant are on at the same time — full-bleed, its own
-                controls over the video, no bottom nav on either side. It
-                shipped inside the seeker-only block below, so the
-                consultant's Answer button navigated to a route their
-                build did not have. */}
-            <Route path="/call/:id" element={<Call />} />
-            {/* Reaching a consultant: busy, ringing, answered (5 Oct 2026). */}
-            <Route path="/connect/:id" element={<Connect />} />
-
-            {/* The seeker's screens. Absent from the consultant build —
-                a consultant who needs the seeker app follows a link out to
-                the deployed seeker site. */}
-            {!isPro && (
-              <>
-                {/* Sign-up is two pages since 3 Oct 2026: Welcome (phone and
-                    code — the one door in) and About you (every birth detail).
-                    The old one-question paths land on Welcome, so a stale link
-                    or a half-finished tab still finds the door. */}
-                <Route path="/onboarding" element={<Welcome />} />
-                <Route path="/onboarding/details" element={<AboutYou />} />
-                <Route path="/onboarding/computing" element={<Computing />} />
-                {['name', 'gender', 'date', 'time', 'place', 'phone', 'verify'].map((old) => (
-                  <Route key={old} path={`/onboarding/${old}`} element={<Navigate to="/onboarding" replace />} />
-                ))}
-
-                {/* Profile carries its tab in the URL so it stays deep-linkable. */}
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/profile/:tab" element={<Profile />} />
-                <Route path="/wallet" element={<Wallet />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/support" element={<Support />} />
-                <Route path="/horoscope" element={<Horoscope />} />
-                <Route path="/ask" element={<Ask />} />
-                <Route path="/chart" element={<Chart />} />
-                <Route path="/chart/:id" element={<Placement />} />
-                <Route path="/match" element={<Match />} />
-                <Route path="/muhurat" element={<Muhurat />} />
-                <Route path="/people/invite" element={<Invite />} />
-                {/* `/people` was a list of mock friends with mock compatibility
-                    scores, and `/people/:id` their synastry. Ashtakoota on
-                    /match is the real version of both, and it holds nobody's
-                    details on file — so the old links land there rather than
-                    404, including any that are already shared. */}
-                <Route path="/people" element={<Navigate to="/match" replace />} />
-                <Route path="/people/:id" element={<Navigate to="/match" replace />} />
-                <Route path="/read/:id" element={<Article />} />
-                {/* A product's own page (6 Oct 2026), by slug or id. */}
-                <Route path="/shop/p/:key" element={<ProductPage />} />
-                {/* A download's own page (15 Oct 2026, Rahul). */}
-                <Route path="/shop/d/:id" element={<DownloadPage />} />
-                {/* A seller's download, course or event (15 Oct 2026, Phase 17). */}
-                <Route path="/shop/l/:id" element={<ListingRoute />} />
-                {/* A shared Bhakti item's address: the link previews with
-                    its picture; opened, it is that item on its shelf, with
-                    "See all" under it (12 Oct 2026, Rahul — it opened the
-                    shelf, and the item was somewhere in it). */}
-                <Route path="/bhakti/s/:id" element={<Bhakti />} />
-                <Route path="/search" element={<SearchScreen />} />
-                {/* A hashtag's own page (13 Oct 2026, Phase 15a). */}
-                <Route path="/tag/:tag" element={<TagScreen />} />
-                {/* Free messages between people (13 Oct 2026, Phase 15b);
-                    the list is a tab, below. */}
-                <Route path="/messages/:id" element={<Conversation />} />
-                {/* Groups (14 Oct 2026, Phase 15c); the list is Chat's Groups. */}
-                {/* Home's Groups button (14 Oct 2026, Rahul). */}
-                <Route path="/groups" element={<GroupsPage />} />
-                <Route path="/groups/new" element={<NewGroup />} />
-                <Route path="/groups/:id" element={<Group />} />
-                <Route path="/groups/:id/edit" element={<NewGroup />} />
-                {/* A person who posts. Deliberately not /consult/:id — that screen
-                    sells a practitioner, and publishing a photo does not make
-                    anybody bookable. */}
-                <Route path="/u/:id" element={<UserProfile />} />
-                <Route path="/reels/:id" element={<ReelViewer />} />
-                <Route path="/consult/:id" element={<ConsultantProfile />} />
-                {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
-                <Route path="/practice/edit" element={<EditPractice />} />
-                <Route path="/notifications" element={<Notifications />} />
-                {/* Premium is not offered (11 Oct 2026, Rahul); an old link lands on Home. */}
-                <Route path="/premium" element={<Navigate to="/home" replace />} />
-                {/* Hidden 14 Oct 2026 (owner): mock reports charged the wallet and
-                    produced nothing. Back when a real report exists. */}
-                <Route path="/reports" element={<Navigate to="/home" replace />} />
-                <Route path="/tarot" element={<Tarot />} />
-
-                {/* Studio (Rahul, 17 Oct 2026; it was Dashboard, /dashboard,
-                    from 14 Oct): a Pro's, a Creator's and a Seller's own
-                    screens. Not under /pro — see lib/dashboard.js. Old
-                    /dashboard links land on the same screen here. */}
-                <Route
-                  path="/studio"
-                  element={
-                    <Suspense fallback={<Loader />}>
-                      <Dashboard />
-                    </Suspense>
-                  }
-                />
-                {/* The posting screen went from the Dashboard (14 Oct 2026, Rahul). */}
-                <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
-                <Route path="/dashboard/*" element={<OldDashboard />} />
-                {/* The mixed page went into the Dashboard's three sections (16 Oct 2026, Rahul). */}
-                <Route path="/studio/earnings" element={<Navigate to="/studio" replace />} />
-                <Route path="/studio/content" element={<Dash need="referrer"><ContentEarnings /></Dash>} />
-                {/* The three modules (docs/06 Phase 18): ask here; a Pro applies at /earn/pro. */}
-                <Route path="/earn" element={<Navigate to="/studio" replace />} />
-                <Route path="/earn/pro" element={<ProApply />} />
-                <Route path="/studio/consulting" element={<Dash><DashConsulting /></Dash>} />
-                <Route path="/studio/report" element={<Dash><DashReport /></Dash>} />
-                {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
-                <Route path="/studio/profile" element={<Navigate to="/studio" replace />} />
-                <Route path="/studio/profile/:tab" element={<Navigate to="/studio" replace />} />
-                <Route path="/studio/affiliate" element={<Dash need="referrer"><DashAffiliate /></Dash>} />
-                <Route path="/studio/payout-details" element={<Dash><DashPayout /></Dash>} />
-                <Route path="/studio/calendar" element={<Dash><ProCalendar /></Dash>} />
-                <Route path="/studio/market" element={<Dash need="seller"><SellHome /></Dash>} />
-                <Route path="/studio/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
-                <Route path="/studio/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
-                <Route path="/studio/market/new/:kind" element={<Dash need="seller"><SellForm /></Dash>} />
-                <Route path="/studio/market/:id" element={<Dash need="seller"><SellForm /></Dash>} />
-
-              </>
-            )}
-
-            {/* Routes the consultant build also carries: ProApply signs a new
-                consultant in, so it needs the three auth steps of the
-                onboarding chain (`?next=pro` skips the birth steps and lands
-                back on /pro/apply). ProConsult opens /chart?name=… for a
-                booking, and ProProfile previews its own public page at
-                /consult/:id. */}
-            {isPro && (
-              <>
-                <Route path="/pro/apply" element={<ProApply />} />
-                <Route path="/onboarding/name" element={<AskName />} />
-                <Route path="/onboarding/phone" element={<AskPhone />} />
-                <Route path="/onboarding/verify" element={<VerifyOtp />} />
-                <Route path="/chart" element={<Chart />} />
-                <Route path="/consult/:id" element={<ConsultantProfile />} />
-                {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
-                <Route path="/practice/edit" element={<EditPractice />} />
-                <Route path="/support" element={<Support />} />
-                {/* A consultant's own reels and blog posts, opened from Studio
-                    and Insights (4 Oct 2026) — both screens show only theirs. */}
-                <Route path="/reels/:id" element={<ReelViewer />} />
-                <Route path="/read/:id" element={<Article />} />
-                {/* A hashtag in the pro app's feed opens its page too. */}
-                <Route path="/tag/:tag" element={<TagScreen />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/messages/:id" element={<Conversation />} />
-              </>
-            )}
-          </Route>
-
-          {/* The five destinations. Seeker only — the consultant's nav is
-              PRO_TABS inside ProLayout. */}
-          {!isPro && (
-            <Route element={<TabLayout />}>
-              {/* The shrine is back under the tab bar (5 Oct 2026, owner's
-                  request, after Sri Mandir's): the deity row moved into the
-                  header, which pays for the 56px the nav takes. */}
-              <Route path="/darshan" element={<Pooja />} />
-              {/* Home carries its tab in the URL, same as Profile — a tab worth
-                  switching to is worth linking to, and Back should undo the switch.
-                  Without the `:tab` route, `/home/today` falls through the catch-all
-                  and bounces straight back to the feed. */}
-              <Route path="/home" element={<Home />} />
-              <Route path="/home/:tab" element={<Home />} />
-              <Route path="/consult" element={<Consult />} />
-              <Route path="/bhakti" element={<Bhakti />} />
-              {/* Academy is in the Market now (14 Oct 2026, Rahul): its old
-                  address, and a shared book's ?book=, open the E-books tile. */}
-              <Route path="/academy" element={<AcademyMoved />} />
-              <Route path="/shop" element={<Shop />} />
-              {/* Messages took Academy's slot in the bar (13 Oct 2026). */}
-              <Route path="/messages" element={<Messages />} />
-            </Route>
-          )}
-
-          {/* Namo Consult (14 Oct 2026, Phase 16): the main app's one
-              screen where a Pro is on duty — online switch, ringing,
-              queue, slots. Its own shell: no tab bar, so nothing leads
-              away from a call by accident. */}
-          {!isPro && (
+        {/* The outer fallback, for a lazy screen outside a layout. */}
+        <Suspense fallback={<Loader />}>
+          <Routes>
             <Route
-              element={
-                <Dash>
-                  <DeskLayout />
-                </Dash>
-              }
-            >
-              <Route path="/desk" element={<Suspense fallback={<Loader />}><DeskQueue /></Suspense>} />
-              {/* Where a call notification's Answer / Decline lands. */}
-              <Route path="/desk/ring/:id" element={<Suspense fallback={<Loader />}><DeskRing /></Suspense>} />
-            </Route>
-          )}
+              path="/"
+              element={<Navigate to={isPro ? '/pro/studio' : '/onboarding'} replace />}
+            />
 
-          {/* The consultant's five destinations — consultant build only. In
-              the seeker build there is nothing at /pro: the catch-all below
-              sends those paths home. */}
-          {isPro && (
-            <Route element={<ProLayout />}>
-              <Route path="/pro/earnings" element={<ProEarnings />} />
-              <Route path="/pro/studio" element={<ProStudio />} />
-              {/* Where a call notification's Answer / Decline lands (6 Oct 2026). */}
-              <Route path="/pro/ring/:id" element={<ProRing />} />
-              <Route path="/pro/affiliate" element={<ProAffiliate />} />
-              <Route path="/pro/payout-details" element={<ProPayoutDetails />} />
-              <Route path="/pro/calendar" element={<Suspense fallback={<Loader />}><ProCalendar /></Suspense>} />
-              <Route path="/pro/consult" element={<ProConsult />} />
-              {/* Profile carries its tab in the URL too, same reason as the
-                  seeker's — Earnings needs to stay deep-linkable now that it
-                  is a segment rather than a route. */}
-              <Route path="/pro/profile" element={<ProProfile />} />
-              <Route path="/pro/profile/:tab" element={<ProProfile />} />
-            </Route>
-          )}
-
-          {/* Must sit above the global catch-all. Without it a mistyped pro
-              path falls through to `*` and lands in the wrong app with no
-              error — the most confusing failure available here. Consultant
-              build only; the seeker build's catch-all covers /pro itself. */}
-          {isPro && <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />}
-
-          {/* 1namo.com/<username> (11 Oct 2026, Rahul). Seeker build only:
-              every username link is on 1namo.com. A static route always
-              outranks this, so no page is ever read as a name. */}
-          {!isPro && (
             <Route element={<PlainLayout />}>
-              <Route path="/:handle" element={<Handle />} />
-            </Route>
-          )}
+              {/* THE CALL IS IN BOTH APPS. It is the one screen a seeker and
+                  a consultant are on at the same time — full-bleed, its own
+                  controls over the video, no bottom nav on either side. It
+                  shipped inside the seeker-only block below, so the
+                  consultant's Answer button navigated to a route their
+                  build did not have. */}
+              <Route path="/call/:id" element={<Call />} />
+              {/* Reaching a consultant: busy, ringing, answered (5 Oct 2026). */}
+              <Route path="/connect/:id" element={<Connect />} />
 
-          <Route
-            path="*"
-            element={<Navigate to={isPro ? '/pro/studio' : '/home'} replace />}
-          />
-        </Routes>
+              {/* The seeker's screens. Absent from the consultant build —
+                  a consultant who needs the seeker app follows a link out to
+                  the deployed seeker site. */}
+              {!isPro && (
+                <>
+                  {/* Sign-up is two pages since 3 Oct 2026: Welcome (phone and
+                      code — the one door in) and About you (every birth detail).
+                      The old one-question paths land on Welcome, so a stale link
+                      or a half-finished tab still finds the door. */}
+                  <Route path="/onboarding" element={<Welcome />} />
+                  <Route path="/onboarding/details" element={<AboutYou />} />
+                  <Route path="/onboarding/computing" element={<Computing />} />
+                  {['name', 'gender', 'date', 'time', 'place', 'phone', 'verify'].map((old) => (
+                    <Route key={old} path={`/onboarding/${old}`} element={<Navigate to="/onboarding" replace />} />
+                  ))}
+
+                  {/* Profile carries its tab in the URL so it stays deep-linkable. */}
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile/:tab" element={<Profile />} />
+                  <Route path="/wallet" element={<Wallet />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/horoscope" element={<Horoscope />} />
+                  <Route path="/ask" element={<Ask />} />
+                  <Route path="/chart" element={<Chart />} />
+                  <Route path="/chart/:id" element={<Placement />} />
+                  <Route path="/match" element={<Match />} />
+                  <Route path="/muhurat" element={<Muhurat />} />
+                  <Route path="/people/invite" element={<Invite />} />
+                  {/* `/people` was a list of mock friends with mock compatibility
+                      scores, and `/people/:id` their synastry. Ashtakoota on
+                      /match is the real version of both, and it holds nobody's
+                      details on file — so the old links land there rather than
+                      404, including any that are already shared. */}
+                  <Route path="/people" element={<Navigate to="/match" replace />} />
+                  <Route path="/people/:id" element={<Navigate to="/match" replace />} />
+                  <Route path="/read/:id" element={<Article />} />
+                  {/* A product's own page (6 Oct 2026), by slug or id. */}
+                  <Route path="/shop/p/:key" element={<ProductPage />} />
+                  {/* A download's own page (15 Oct 2026, Rahul). */}
+                  <Route path="/shop/d/:id" element={<DownloadPage />} />
+                  {/* A seller's download, course or event (15 Oct 2026, Phase 17). */}
+                  <Route path="/shop/l/:id" element={<ListingRoute />} />
+                  {/* A shared Bhakti item's address: the link previews with
+                      its picture; opened, it is that item on its shelf, with
+                      "See all" under it (12 Oct 2026, Rahul — it opened the
+                      shelf, and the item was somewhere in it). */}
+                  <Route path="/bhakti/s/:id" element={<Bhakti />} />
+                  <Route path="/search" element={<SearchScreen />} />
+                  {/* A hashtag's own page (13 Oct 2026, Phase 15a). */}
+                  <Route path="/tag/:tag" element={<TagScreen />} />
+                  {/* Free messages between people (13 Oct 2026, Phase 15b);
+                      the list is a tab, below. */}
+                  <Route path="/messages/:id" element={<Conversation />} />
+                  {/* Groups (14 Oct 2026, Phase 15c); the list is Chat's Groups. */}
+                  {/* Home's Groups button (14 Oct 2026, Rahul). */}
+                  <Route path="/groups" element={<GroupsPage />} />
+                  <Route path="/groups/new" element={<NewGroup />} />
+                  <Route path="/groups/:id" element={<Group />} />
+                  <Route path="/groups/:id/edit" element={<NewGroup />} />
+                  {/* A person who posts. Deliberately not /consult/:id — that screen
+                      sells a practitioner, and publishing a photo does not make
+                      anybody bookable. */}
+                  <Route path="/u/:id" element={<UserProfile />} />
+                  <Route path="/reels/:id" element={<ReelViewer />} />
+                  <Route path="/consult/:id" element={<ConsultantProfile />} />
+                  {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
+                  <Route path="/practice/edit" element={<EditPractice />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  {/* Premium is not offered (11 Oct 2026, Rahul); an old link lands on Home. */}
+                  <Route path="/premium" element={<Navigate to="/home" replace />} />
+                  {/* Hidden 14 Oct 2026 (owner): mock reports charged the wallet and
+                      produced nothing. Back when a real report exists. */}
+                  <Route path="/reports" element={<Navigate to="/home" replace />} />
+                  <Route path="/tarot" element={<Tarot />} />
+
+                  {/* Studio (Rahul, 17 Oct 2026; it was Dashboard, /dashboard,
+                      from 14 Oct): a Pro's, a Creator's and a Seller's own
+                      screens. Not under /pro — see lib/dashboard.js. Old
+                      /dashboard links land on the same screen here. */}
+                  <Route
+                    path="/studio"
+                    element={
+                      <Suspense fallback={<Loader />}>
+                        <Dashboard />
+                      </Suspense>
+                    }
+                  />
+                  {/* The posting screen went from the Dashboard (14 Oct 2026, Rahul). */}
+                  <Route path="/dashboard/studio" element={<Navigate to="/home?compose=1" replace />} />
+                  <Route path="/dashboard/*" element={<OldDashboard />} />
+                  {/* The mixed page went into the Dashboard's three sections (16 Oct 2026, Rahul). */}
+                  <Route path="/studio/earnings" element={<Navigate to="/studio" replace />} />
+                  <Route path="/studio/content" element={<Dash need="referrer"><ContentEarnings /></Dash>} />
+                  {/* The three modules (docs/06 Phase 18): ask here; a Pro applies at /earn/pro. */}
+                  <Route path="/earn" element={<Navigate to="/studio" replace />} />
+                  <Route path="/earn/pro" element={<ProApply />} />
+                  <Route path="/studio/consulting" element={<Dash><DashConsulting /></Dash>} />
+                  <Route path="/studio/report" element={<Dash><DashReport /></Dash>} />
+                  {/* "Practice and reviews" went from the Dashboard (14 Oct 2026, Rahul). */}
+                  <Route path="/studio/profile" element={<Navigate to="/studio" replace />} />
+                  <Route path="/studio/profile/:tab" element={<Navigate to="/studio" replace />} />
+                  <Route path="/studio/affiliate" element={<Dash need="referrer"><DashAffiliate /></Dash>} />
+                  <Route path="/studio/payout-details" element={<Dash><DashPayout /></Dash>} />
+                  <Route path="/studio/calendar" element={<Dash><ProCalendar /></Dash>} />
+                  <Route path="/studio/market" element={<Dash need="seller"><SellHome /></Dash>} />
+                  <Route path="/studio/market/bank" element={<Dash need="any"><SellBank /></Dash>} />
+                  <Route path="/studio/market/earnings" element={<Dash need="any"><MarketEarnings /></Dash>} />
+                  <Route path="/studio/market/new/:kind" element={<Dash need="seller"><SellForm /></Dash>} />
+                  <Route path="/studio/market/:id" element={<Dash need="seller"><SellForm /></Dash>} />
+
+                </>
+              )}
+
+              {/* Routes the consultant build also carries: ProApply signs a new
+                  consultant in, so it needs the three auth steps of the
+                  onboarding chain (`?next=pro` skips the birth steps and lands
+                  back on /pro/apply). ProConsult opens /chart?name=… for a
+                  booking, and ProProfile previews its own public page at
+                  /consult/:id. */}
+              {isPro && (
+                <>
+                  <Route path="/pro/apply" element={<ProApply />} />
+                  <Route path="/onboarding/name" element={<AskName />} />
+                  <Route path="/onboarding/phone" element={<AskPhone />} />
+                  <Route path="/onboarding/verify" element={<VerifyOtp />} />
+                  <Route path="/chart" element={<Chart />} />
+                  <Route path="/consult/:id" element={<ConsultantProfile />} />
+                  {/* A consultant editing their own page (13 Oct 2026, Rahul). */}
+                  <Route path="/practice/edit" element={<EditPractice />} />
+                  <Route path="/support" element={<Support />} />
+                  {/* A consultant's own reels and blog posts, opened from Studio
+                      and Insights (4 Oct 2026) — both screens show only theirs. */}
+                  <Route path="/reels/:id" element={<ReelViewer />} />
+                  <Route path="/read/:id" element={<Article />} />
+                  {/* A hashtag in the pro app's feed opens its page too. */}
+                  <Route path="/tag/:tag" element={<TagScreen />} />
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/messages/:id" element={<Conversation />} />
+                </>
+              )}
+            </Route>
+
+            {/* The five destinations. Seeker only — the consultant's nav is
+                PRO_TABS inside ProLayout. */}
+            {!isPro && (
+              <Route element={<TabLayout />}>
+                {/* The shrine is back under the tab bar (5 Oct 2026, owner's
+                    request, after Sri Mandir's): the deity row moved into the
+                    header, which pays for the 56px the nav takes. */}
+                <Route path="/darshan" element={<Pooja />} />
+                {/* Home carries its tab in the URL, same as Profile — a tab worth
+                    switching to is worth linking to, and Back should undo the switch.
+                    Without the `:tab` route, `/home/today` falls through the catch-all
+                    and bounces straight back to the feed. */}
+                <Route path="/home" element={<Home />} />
+                <Route path="/home/:tab" element={<Home />} />
+                <Route path="/consult" element={<Consult />} />
+                <Route path="/bhakti" element={<Bhakti />} />
+                {/* Academy is in the Market now (14 Oct 2026, Rahul): its old
+                    address, and a shared book's ?book=, open the E-books tile. */}
+                <Route path="/academy" element={<AcademyMoved />} />
+                <Route path="/shop" element={<Shop />} />
+                {/* Messages took Academy's slot in the bar (13 Oct 2026). */}
+                <Route path="/messages" element={<Messages />} />
+              </Route>
+            )}
+
+            {/* Namo Consult (14 Oct 2026, Phase 16): the main app's one
+                screen where a Pro is on duty — online switch, ringing,
+                queue, slots. Its own shell: no tab bar, so nothing leads
+                away from a call by accident. */}
+            {!isPro && (
+              <Route
+                element={
+                  <Dash>
+                    <DeskLayout />
+                  </Dash>
+                }
+              >
+                <Route path="/desk" element={<Suspense fallback={<Loader />}><DeskQueue /></Suspense>} />
+                {/* Where a call notification's Answer / Decline lands. */}
+                <Route path="/desk/ring/:id" element={<Suspense fallback={<Loader />}><DeskRing /></Suspense>} />
+              </Route>
+            )}
+
+            {/* The consultant's five destinations — consultant build only. In
+                the seeker build there is nothing at /pro: the catch-all below
+                sends those paths home. */}
+            {isPro && (
+              <Route element={<ProLayout />}>
+                <Route path="/pro/earnings" element={<ProEarnings />} />
+                <Route path="/pro/studio" element={<ProStudio />} />
+                {/* Where a call notification's Answer / Decline lands (6 Oct 2026). */}
+                <Route path="/pro/ring/:id" element={<ProRing />} />
+                <Route path="/pro/affiliate" element={<ProAffiliate />} />
+                <Route path="/pro/payout-details" element={<ProPayoutDetails />} />
+                <Route path="/pro/calendar" element={<Suspense fallback={<Loader />}><ProCalendar /></Suspense>} />
+                <Route path="/pro/consult" element={<ProConsult />} />
+                {/* Profile carries its tab in the URL too, same reason as the
+                    seeker's — Earnings needs to stay deep-linkable now that it
+                    is a segment rather than a route. */}
+                <Route path="/pro/profile" element={<ProProfile />} />
+                <Route path="/pro/profile/:tab" element={<ProProfile />} />
+              </Route>
+            )}
+
+            {/* Must sit above the global catch-all. Without it a mistyped pro
+                path falls through to `*` and lands in the wrong app with no
+                error — the most confusing failure available here. Consultant
+                build only; the seeker build's catch-all covers /pro itself. */}
+            {isPro && <Route path="/pro/*" element={<Navigate to="/pro/studio" replace />} />}
+
+            {/* 1namo.com/<username> (11 Oct 2026, Rahul). Seeker build only:
+                every username link is on 1namo.com. A static route always
+                outranks this, so no page is ever read as a name. */}
+            {!isPro && (
+              <Route element={<PlainLayout />}>
+                <Route path="/:handle" element={<Handle />} />
+              </Route>
+            )}
+
+            <Route
+              path="*"
+              element={<Navigate to={isPro ? '/pro/studio' : '/home'} replace />}
+            />
+          </Routes>
+        </Suspense>
 
         {/* Global overlays — above every screen, inside the phone frame.
             The chat panel mounts in BOTH builds: it is the consultant's only

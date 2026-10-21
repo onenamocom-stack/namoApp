@@ -6546,7 +6546,7 @@ https://1namo.com/ — every web deploy is the app; no app update needed.
   (Play Console → App integrity) to `assetlinks.json`, or Play installs open
   with an address bar. Store listing, Data safety, Content rating.
 
-## 85. Faster first loads: the API stays warm, pages cached at the CDN — 19 Oct 2026
+## 85. Faster first loads: the API stays warm, pages cached at the CDN, code split — 19–21 Oct 2026
 
 Owner's yes (both, and the cost). Measured before: `/` and the share pages
 are served by the API (firebase.json rewrites), and with `minScale=0` the
@@ -6564,8 +6564,20 @@ HTML waited ~0.5–1 s with `Cache-Control: no-cache`, `X-Cache: MISS`.
 - Shipped from a worktree of the live web commit `3944d20` with only
   `firebase.json` changed (`8e815fd`, the chat Report, was not live and
   still waits for its "ship"); API `00182` from main.
-- **Not done (owner chose 1 and 3):** splitting the 1.1 MB `index.js` by
-  route, `media.1namo.com`, moving the API to Singapore.
+- **Code split by screen, 21 Oct** (owner's "go ahead"): first-load JS
+  1,112 kB → 769 kB (gzip 339 → 234 kB). Every screen but Home, Consult and
+  Welcome is a lazy chunk (`lib/lazy.js` `lazyScreen`: a failed chunk
+  reloads once, then the Boundary); Suspense sits inside each layout, so the
+  tab bar stays while a screen loads. The tarot decks moved out of
+  `mock.js` to `src/data/tarot.js`, taking Bhaktamar's 65 kB off the first
+  load (`tools/verify-tarot-decks.mjs` reads the new file). Proved on the
+  local build in Chrome, signed in as test number 9000000101: 42 routes by
+  full load and by in-app navigation, no page error, no broken screen, no
+  reload; a 404'd chunk reloads once into the screen; a chunk that never
+  loads shows the Boundary without looping. Not walked as a Pro (Studio
+  sub-pages and `/desk` were already lazy and unchanged).
+- **Not done:** `media.1namo.com` (waits for the nameserver move), moving
+  the API to Singapore.
 
 ## 86. Darshan: "Video unavailable" fixed; every temple frame plays — 20 Oct 2026
 

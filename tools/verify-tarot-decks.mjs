@@ -19,7 +19,7 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 /* ── the client's decks ──────────────────────────────────────────────────── */
 
-const mock = read('../src/data/mock.js')
+const mock = read('../src/data/tarot.js')
 
 
 /** Ids and names out of an array of `{ id: 'x', name: 'y' }` objects.
@@ -41,7 +41,7 @@ function cardsIn(source) {
  *  to come after it in the file. */
 function deckSlice(key) {
   const start = mock.indexOf(`key: '${key}'`)
-  assert.notEqual(start, -1, `${key} is in DECKS but not in src/data/mock.js — renamed?`)
+  assert.notEqual(start, -1, `${key} is in DECKS but not in src/data/tarot.js — renamed?`)
   const next = mock.indexOf("key: '", start + 10)
   const close = mock.indexOf('\n]', start)
   const end = next !== -1 && next < close ? next : close
@@ -86,7 +86,7 @@ function clientCards(key) {
   const named = slice.match(/cards:\s*(\w+),/)
   if (!named) return cardsIn(slice)          // written inline
   const file = imports.get(named[1])
-  assert.ok(file, `${key}: cards come from ${named[1]}, which mock.js does not import`)
+  assert.ok(file, `${key}: cards come from ${named[1]}, which tarot.js does not import`)
   return cardsIn(read(`../src/data/${file}`))
 }
 
