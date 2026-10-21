@@ -215,13 +215,31 @@ export function catchAffiliateLink(search, pathname = '') {
   return true
 }
 
+/* The pages a link may bring somebody back to after sign-in: the Market's,
+   and the three Earn forms (21 Oct 2026, Rahul: "give direct links here to
+   each form. So that this can be attached / send directly"). */
+const RETURNABLE = ['/shop', '/earn/pro', '/studio']
+const returnable = (path) => RETURNABLE.some((p) => path?.startsWith(p))
+
+/** Note a page opened signed out, so sign-in ends on it rather than Home.
+ *  Only the pages in RETURNABLE. */
+export function noteReturnPath(path) {
+  if (!returnable(path)) return
+  try {
+    localStorage.setItem(RETURN_KEY, JSON.stringify({ path, at: Date.now() }))
+  } catch {
+    /* no storage: they land on Home, as before */
+  }
+}
+
 /** Where a link brought somebody who then had to sign in, once: the page,
- *  or null (none, older than a day, or not a Market page). Cleared on read. */
+ *  or null (none, older than a day, or not a returnable page). Cleared on
+ *  read. */
 export function takeReturnPath() {
   try {
     const note = JSON.parse(localStorage.getItem(RETURN_KEY) || 'null')
     localStorage.removeItem(RETURN_KEY)
-    if (!note?.path?.startsWith('/shop') || Date.now() - note.at > RETURN_HOURS * 3600_000) return null
+    if (!returnable(note?.path) || Date.now() - note.at > RETURN_HOURS * 3600_000) return null
     return note.path
   } catch {
     return null

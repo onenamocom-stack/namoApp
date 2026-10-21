@@ -1,5 +1,5 @@
 import { applyTheme, loadAppearance } from './lib/appearance.js'
-import { catchAffiliateLink, sendAffiliateVisit, takeReturnPath } from './lib/referrals.js'
+import { catchAffiliateLink, noteReturnPath, sendAffiliateVisit, takeReturnPath } from './lib/referrals.js'
 import { Suspense, useEffect, useRef } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider, useStore } from './store.jsx'
@@ -361,6 +361,9 @@ function SessionGate() {
       navigate(`/onboarding${window.location.search}`, { replace: true })
       return
     }
+    // An Earn form's link (`/earn/pro`, `/studio?ask=…`) opens again once
+    // signed in (21 Oct 2026, Rahul).
+    noteReturnPath(`${pathname}${window.location.search}`)
     navigate('/onboarding', { replace: true })
   }, [
     session,

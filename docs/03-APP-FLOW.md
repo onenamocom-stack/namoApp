@@ -263,8 +263,9 @@ another, and every fifth post is a random pick. Signed out, or with nothing
 liked or followed yet, the feed is fresh and popular posts. If the ranked
 feed fails to load, the old random deal stands in.
 
-**Earn on NAMO — 21 Oct 2026 (Rahul).** Signed in, the feed carries a
-sideways strip after its second post: three short cards — Join as a Pro,
+**Earn on NAMO — 21 Oct 2026 (Rahul).** Signed in, the feed opens with a
+sideways strip, above the first post (after the second until the same
+evening): three short cards — Join as a Pro,
 Join as a Seller, Join as a Content creator — each a heading, one line and
 Apply, the next card showing at the edge. Apply opens the Pro form
 (`/earn/pro`), Studio with the Seller form open (`/studio?ask=seller`), or
@@ -272,7 +273,10 @@ Studio at Content & Referrals (`/studio?ask=content`). The category is chosen
 on the Pro form. A card for a role already held (a consultant row, a seller,
 a creator) is left out; with none left the strip is gone. A cross hides the
 strip on that device. It replaced, the same day, one Pro card with a chip
-per category.
+per category. The three addresses — `1namo.com/earn/pro`,
+`1namo.com/studio?ask=seller`, `1namo.com/studio?ask=content` — are links to
+send on their own: opened signed out, sign-in (or sign-up) ends on that form,
+not Home (see Sign-up links).
 
 **People to follow — 13 Oct 2026 (Phase 15a).** Signed in, the feed carries
 one sideways strip after its fifth card: people followed by the people you
@@ -1204,6 +1208,10 @@ at Ujjain. The panchang header no longer says "Computed at Ujjain".
 referral field already filled, and claims it on submit. Codes are four
 characters, one per person, since 19 Oct 2026 (Rahul): a Pro's code works at
 sign-up too, and the server decides whether it applies.
+
+**An Earn form's link opened signed out** (21 Oct 2026, Rahul) — `/earn/pro`
+or `/studio…` — is noted the same way as a Market link below and opened after
+sign-in.
 
 **A Pro's or Creator's Market link opened signed out** (16 Oct 2026, Rahul):
 the app notes the page (`/shop/p/…`, `/shop/l/…`, `/shop/d/…`, with its

@@ -367,6 +367,9 @@ export default function Home() {
                 edge to edge, as Instagram's is. The stories strip of authors
                 that sat on top was removed on 30 Sep (owner's call). */}
             <div className="mt-3 bg-white">
+              {/* The Earn strip on top, before the first post (21 Oct
+                  2026, Rahul: "Show on top"; after the second until then). */}
+              <JoinAsPro />
               {items.map((item, i) => {
                 const card = (() => { switch (item.kind) {
                   case 'post':
@@ -386,11 +389,10 @@ export default function Home() {
                 } })()
                 // People to follow, once, after the fifth card (Phase 15a);
                 // Groups for you after the twelfth (14 Oct 2026, Rahul).
-                // Join as a Pro after the second (21 Oct 2026, Rahul).
-                return i === 1 || i === 4 || i === 11 ? (
+                return i === 4 || i === 11 ? (
                   <Fragment key={item.id}>
                     {card}
-                    {i === 1 ? <JoinAsPro /> : i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
+                    {i === 4 ? <FollowSuggestions /> : <GroupSuggestions />}
                   </Fragment>
                 ) : (
                   card
