@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { birthHref } from '../lib/birth.js'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { categories, courses, feed } from '../data/mock.js'
+import { courses, feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, fetchSuggestions, isMine, noteSeen, productHref, recordView, reshareToLead } from '../lib/content.js'
@@ -607,19 +607,24 @@ function FollowSuggestions() {
   )
 }
 
-/** "Groups for you" (14 Oct 2026, Rahul): the same strip as People to
- *  follow, of live groups you are not in, busiest first, each with Join.
- *  Joining opens nothing; the card itself opens the group. */
 /**
- * "Join NAMO as an Astrologer, Tarot reader…" in the feed (21 Oct 2026,
- * Rahul): one chip per category, each opening the Pro form with that
- * category chosen. For anybody signed in who has not applied; a cross
- * hides it on this device.
+ * The Join strip in the feed (21 Oct 2026, Rahul): three short cards side
+ * by side — Pro, Seller, Content creator — each a heading, a line and Apply
+ * to its own form; the next card shows at the edge, so there is plainly
+ * more. The category is chosen on the form, not here. A card for a role you
+ * already hold or asked for is left out; a cross hides the strip on this
+ * device.
  */
 const JOIN_HIDDEN = 'namo:join-pro-hidden'
 
+const JOIN_CARDS = [
+  { key: 'pro', to: '/earn/pro', icon: 'phone' },
+  { key: 'seller', to: '/studio?ask=seller', icon: 'cart' },
+  { key: 'creator', to: '/studio?ask=content', icon: 'play' },
+]
+
 function JoinAsPro() {
-  const { session, consultant, consultantLoading, t } = useStore()
+  const { session, consultant, consultantLoading, profile, profileLoading, t } = useStore()
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem(JOIN_HIDDEN) === '1'
@@ -627,7 +632,10 @@ function JoinAsPro() {
       return false
     }
   })
-  if (!session || consultantLoading || consultant || hidden) return null
+  if (!session || consultantLoading || profileLoading || hidden) return null
+  const held = { pro: Boolean(consultant), seller: Boolean(profile?.seller), creator: Boolean(profile?.influencer) }
+  const cards = JOIN_CARDS.filter((c) => !held[c.key])
+  if (!cards.length) return null
   const hide = () => {
     setHidden(true)
     try {
@@ -637,35 +645,39 @@ function JoinAsPro() {
     }
   }
   return (
-    <section className="border-b border-rule bg-white px-3 py-3">
-      <div className="relative overflow-hidden rounded-2xl bg-gold-wash p-4 ring-1 ring-gold-fill/25">
-        <button type="button" onClick={hide} aria-label="Hide" className="absolute right-2 top-2 px-2 text-lead leading-none t-faint">
+    <section className="border-b border-rule bg-white py-3">
+      <div className="flex items-center justify-between px-3">
+        <p className="text-meta font-semibold text-t1">{t('join.kicker')}</p>
+        <button type="button" onClick={hide} aria-label="Hide" className="px-1 text-lead leading-none t-faint">
           ×
         </button>
-        <p className="pr-6 text-body font-semibold t-heading">{t('join.title')}</p>
-        <p className="mt-1 text-meta t-body">{t('join.line')}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <Link
-              key={c}
-              to={`/earn/pro?category=${encodeURIComponent(c)}`}
-              className="rounded-full border border-gold-fill/50 bg-white px-3 py-1.5 text-[13px] font-semibold gold"
-            >
-              {c}
+      </div>
+      <div className="no-scrollbar mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-px-3 px-3">
+        {cards.map((c) => (
+          <div
+            key={c.key}
+            className="flex w-[82%] flex-none snap-start items-center gap-3 rounded-2xl bg-gold-wash p-3.5 ring-1 ring-gold-fill/25"
+          >
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gold-fill text-white">
+              <Icon name={c.icon} size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-body font-semibold t-heading">{t(`join.${c.key}.title`)}</p>
+              <p className="mt-0.5 text-micro t-body">{t(`join.${c.key}.line`)}</p>
+            </div>
+            <Link to={c.to} className="flex-none rounded-full bg-gold-fill px-3.5 py-1.5 text-[13px] font-semibold text-white">
+              {t('join.apply')}
             </Link>
-          ))}
-        </div>
-        <Link
-          to="/earn/pro"
-          className="mt-3 flex items-center justify-center rounded-xl bg-gold-fill py-2 text-[13px] font-semibold text-white"
-        >
-          {t('join.apply')}
-        </Link>
+          </div>
+        ))}
       </div>
     </section>
   )
 }
 
+/** "Groups for you" (14 Oct 2026, Rahul): the same strip as People to
+ *  follow, of live groups you are not in, busiest first, each with Join.
+ *  Joining opens nothing; the card itself opens the group. */
 function GroupSuggestions() {
   const { session, showToast } = useStore()
   const [groups, setGroups] = useState([])

@@ -263,12 +263,16 @@ another, and every fifth post is a random pick. Signed out, or with nothing
 liked or followed yet, the feed is fresh and popular posts. If the ranked
 feed fails to load, the old random deal stands in.
 
-**Join as a Pro — 21 Oct 2026 (Rahul).** Signed in and never applied (no
-consultant row), the feed carries a card after its second post: "Join NAMO
-as a Pro", a line on what a Pro does, one chip per category (Astrologer,
-Tarot, Life Coach, Therapist) and Apply. A chip opens the Pro form
-(`/earn/pro?category=<name>`) with that category already chosen; Apply opens
-it as it is. A cross hides the card on that device.
+**Earn on NAMO — 21 Oct 2026 (Rahul).** Signed in, the feed carries a
+sideways strip after its second post: three short cards — Join as a Pro,
+Join as a Seller, Join as a Content creator — each a heading, one line and
+Apply, the next card showing at the edge. Apply opens the Pro form
+(`/earn/pro`), Studio with the Seller form open (`/studio?ask=seller`), or
+Studio at Content & Referrals (`/studio?ask=content`). The category is chosen
+on the Pro form. A card for a role already held (a consultant row, a seller,
+a creator) is left out; with none left the strip is gone. A cross hides the
+strip on that device. It replaced, the same day, one Pro card with a chip
+per category.
 
 **People to follow — 13 Oct 2026 (Phase 15a).** Signed in, the feed carries
 one sideways strip after its fifth card: people followed by the people you

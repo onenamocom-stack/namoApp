@@ -1,4 +1,4 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/Chrome.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import Icon from '../components/Icon.jsx'
@@ -68,7 +68,11 @@ export default function Dashboard() {
   const [rating, setRating] = useState(false)
   // The modules' requests and questions, for the cards of those not held.
   const [asks, setAsks] = useState(null)
-  const [open, setOpen] = useState(null)
+  // Home's Join strip (21 Oct 2026) comes as `?ask=seller` — the Seller
+  // form open — or `?ask=content`; either scrolls to its section.
+  const [params] = useSearchParams()
+  const asked = params.get('ask')
+  const [open, setOpen] = useState(asked === 'seller' ? 'seller' : null)
   const signedIn = Boolean(session)
 
   const loadAsks = () => {
@@ -79,6 +83,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (signedIn) loadAsks()
   }, [signedIn])
+  useEffect(() => {
+    if (asks && asked) document.getElementById(`studio-${asked}`)?.scrollIntoView({ block: 'start' })
+  }, [asks, asked])
 
   if (m === 'loading') return <Loader />
   if (!signedIn) return <Navigate to="/profile" replace />
@@ -142,7 +149,7 @@ export default function Dashboard() {
           each one not held (16 Oct 2026, Rahul). */}
       {/* Content, two steps (17 Oct 2026, Rahul): the bars, step 1's
           start, step 2's request, and the links once step 1 is held. */}
-      <section className="px-5 py-5">
+      <section id="studio-content" className="scroll-mt-14 px-5 py-5">
         <Kicker>Content &amp; Referrals</Kicker>
         <div className="mt-3">
           {asks === null ? (
@@ -165,7 +172,7 @@ export default function Dashboard() {
       </section>
 
       {!m.seller && (
-        <section className="px-5 py-5">
+        <section id="studio-seller" className="scroll-mt-14 px-5 py-5">
           <Kicker>Market</Kicker>
           <div className="mt-3">{ask('seller')}</div>
         </section>
