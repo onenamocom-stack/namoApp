@@ -353,6 +353,15 @@ class TestRequest:
         assert again["session_id"] == str(session.id) and again["mode"] == session.mode
         assert _counts(SEEKER) == before  # nothing written, nothing held
 
+    def test_a_channel_switched_off_is_refused(self, pro_user):
+        """The Desk's four switches (21 Oct 2026, Rahul): online, but not
+        taking chats, refuses a chat, named or by the row's mode."""
+        Consultant.objects.filter(pk=PRO).update(takes_chat=False)
+        refused = {"ok": False, "reason": "They are not taking chats right now."}
+        assert services.request_chat(SEEKER, PRO, pro_user[1].id, channel="chat") == refused
+        assert services.request_chat(SEEKER, PRO, pro_user[1].id) == refused
+        assert not Session.objects.filter(seeker_id=SEEKER).exists()
+
     def test_self_chat_refused(self, pro_user):
         service = pro_user[1]
         result = services.request_chat(PRO, PRO, service.id)

@@ -48,6 +48,11 @@ export default function useStartSession() {
         return showToast(`${consultant.name} is offline right now.`)
       }
       const via = to === 'call' ? 'video' : to
+      // The Desk's switch for this channel (21 Oct 2026).
+      if (consultant.takes && consultant.takes[via] === false) {
+        const what = { video: 'video calls', audio: 'audio calls', chat: 'chats' }[via]
+        return showToast(`${consultant.name} is not taking ${what} right now.`)
+      }
       /* Date, time and place of birth before any call or chat (21 Oct
          2026, Rahul; Astrologers only, date and time only, from 17 Oct).
          The details page brings you straight on to the call once they

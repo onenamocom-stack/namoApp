@@ -203,6 +203,7 @@ export function ConsultantPage({
   const total = service?.price_paise ?? 0
 
   const openSheet = () => {
+    if (!own && !c.takes.booking) return showToast(`${firstName(c.name)} is not taking bookings right now.`)
     // Birth details before a booking, as before a call (21 Oct 2026, Rahul).
     if (!own && birthFirst(`/consult/${c.id}?book=1`)) return
     setSlot(null)
@@ -408,8 +409,8 @@ export function ConsultantPage({
               point of saying it here. */}
           {!own && !c.online && (
             <p className="mt-3 text-micro t-faint">
-              {firstName(c.name)} is offline right now. You can still book a
-              session.
+              {firstName(c.name)} is offline right now.
+              {c.takes.booking ? ' You can still book a session.' : ''}
             </p>
           )}
           {!own && c.online && c.busy && (
@@ -490,20 +491,24 @@ export function ConsultantPage({
           const book = key === 'book'
           const row = book ? null : c.channels?.[key]
           const price = book
-            ? c.pricePaise != null
+            ? !c.takes.booking && !own
+              ? 'Not taking'
+              : c.pricePaise != null
               ? `₹${rupees(c.pricePaise)}`
               : '—'
             : !c.online && !own
               ? 'Offline'
-              : c.freeFirst && !own
+              : !c.takes[key] && !own
+                ? 'Not taking'
+                : c.freeFirst && !own
                 ? '3 min free'
                 : row
                   ? `₹${rupees(row.price_paise)}/min`
                   : '—'
           // The rate under "Offline" or "3 min free", which replace it — the
           // tile is the only place the rate shows (13 Oct 2026).
-          const rate = !book && row && /Offline|free/.test(price) ? `₹${rupees(row.price_paise)}/min` : null
-          const dead = !own && (book ? !c.fixed.length : !row || !c.online || asking)
+          const rate = !book && row && /Offline|free|Not taking/.test(price) ? `₹${rupees(row.price_paise)}/min` : null
+          const dead = !own && (!c.takes[book ? 'booking' : key] || (book ? !c.fixed.length : !row || !c.online || asking))
           return (
             <button
               key={key}

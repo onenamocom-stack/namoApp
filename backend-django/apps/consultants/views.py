@@ -63,6 +63,8 @@ def _consultant_row(consultant, service_rows):
         # disagree about the same dot.
         "online": bool(getattr(consultant, "online", False)),
         "busy": bool(getattr(consultant, "busy", False)),
+        # Which of chat, audio, video and booking they take (21 Oct 2026).
+        "takes": services.takes_of(consultant),
         "rating_avg_cache": consultant.rating_avg_cache,
         "rating_count_cache": consultant.rating_count_cache,
         # Pro, Expert or Master, set in the console (13 Oct 2026).
@@ -666,6 +668,9 @@ class PresenceInput(serializers.Serializer):
     switch where it is. Sending it is the toggle."""
 
     accepting = serializers.BooleanField(required=False, allow_null=True)
+    # The Desk's four switches (21 Oct 2026): any of chat, audio, video,
+    # booking; the ones left out stay as they are.
+    takes = serializers.DictField(child=serializers.BooleanField(), required=False)
 
 
 @api_view(["POST"])
@@ -681,7 +686,9 @@ def presence(request):
     serializer = PresenceInput(data=request.data)
     serializer.is_valid(raise_exception=True)
     state = services.touch_presence(
-        request.user.pk, accepting=serializer.validated_data.get("accepting")
+        request.user.pk,
+        accepting=serializer.validated_data.get("accepting"),
+        takes=serializer.validated_data.get("takes"),
     )
     if state is None:
         return Response(

@@ -136,6 +136,20 @@ class TestTheEndpoint:
         assert response.status_code == 403
         assert services.is_online(PRO) is False
 
+    def test_the_four_switches_save_and_come_back(self, pro, client, pro_token):
+        """Chat, audio, video, booking (21 Oct 2026): all on at first; any
+        sent changes, the rest stay, and every beat reports them."""
+        first = client.post("/v1/consultants/presence/", data={},
+                            content_type="application/json", **auth(pro_token)).json()
+        assert first["takes"] == {"chat": True, "audio": True, "video": True, "booking": True}
+        body = client.post("/v1/consultants/presence/",
+                           data={"takes": {"video": False, "booking": False}},
+                           content_type="application/json", **auth(pro_token)).json()
+        assert body["takes"] == {"chat": True, "audio": True, "video": False, "booking": False}
+        assert body["accepting_now"] is False  # the switches are not the toggle
+        pro.refresh_from_db()
+        assert (pro.takes_video, pro.takes_booking, pro.takes_chat) == (False, False, True)
+
     def test_signing_out_takes_the_dot_down(self, pro):
         _online(pro)
         assert services.go_offline(PRO) is True

@@ -162,6 +162,14 @@ function shape(row, services = []) {
     // Ringing for somebody or in a session (5 Oct 2026). Still callable:
     // the call waits and retries instead of failing.
     busy: row.busy === true,
+    // Which of chat, audio, video and booking they take, from the Desk's
+    // switches (21 Oct 2026). Missing means on.
+    takes: {
+      chat: row.takes?.chat !== false,
+      audio: row.takes?.audio !== false,
+      video: row.takes?.video !== false,
+      booking: row.takes?.booking !== false,
+    },
     rating: row.rating_avg_cache,
     reviewCount: row.rating_count_cache,
     // Pro, Expert or Master, set in the console (13 Oct 2026).
@@ -606,14 +614,15 @@ export async function listPriceBands() {
  * the caller is not an approved consultant, which is the seeker app
  * calling a route that is not for it.
  */
-export async function beat(accepting) {
+export async function beat(accepting, takes) {
   const token = await accessToken()
   if (!token) return null
   try {
     return await api('/consultants/presence/', {
       method: 'POST',
       token,
-      body: accepting === undefined ? {} : { accepting },
+      // `takes`: any of the Desk's four switches (21 Oct 2026).
+      body: { ...(accepting === undefined ? {} : { accepting }), ...(takes ? { takes } : {}) },
     })
   } catch (err) {
     // A dropped beat is not an error worth showing. The grace window

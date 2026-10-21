@@ -30,8 +30,8 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
-    list_display = ("who", "category", "specialization", "rates", "status", "verified", "badge", "free_first", "created_at")
-    list_filter = ("status", "verified", "badge", "free_first", "category")
+    list_display = ("who", "category", "specialization", "rates", "live_now", "status", "verified", "badge", "free_first", "created_at")
+    list_filter = ("status", "accepting_now", "verified", "badge", "free_first", "category")
     # Ticked here, straight from the list: the in-house consultants a new
     # seeker sees free for their first session (7 Oct 2026), and the badge
     # seekers see — Pro, Expert or Master (13 Oct 2026).
@@ -42,7 +42,7 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     ordering = ("status", "-created_at")
     readonly_fields = (
         "profile_id", "created_at", "rating_avg_cache", "rating_count_cache",
-        "rank_score_cache", "legacy_id", "who", "certificate", "rates",
+        "rank_score_cache", "legacy_id", "who", "certificate", "rates", "live_now",
     )
     actions = ("approve", "block", "unblock")
     # Approve on the applicant's own page (18 Oct 2026, Rahul could not find it).
@@ -58,6 +58,18 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
         if p is None:
             return str(obj.profile_id)
         return format_html("<strong>{}</strong><br><small>{}</small>", p.name or "—", p.phone or "")
+
+    @dj.display(description="Live now")
+    def live_now(self, obj):
+        """The Desk's switches (21 Oct 2026): live or not, and which of chat,
+        audio, video and booking they take. Read only: the consultant's own."""
+        takes = consultant_services.takes_of(obj)
+        names = {"chat": "Chat", "audio": "Audio", "video": "Video", "booking": "Booking"}
+        on = " · ".join(names[k] for k, v in takes.items() if v) or "nothing"
+        return format_html(
+            "<strong>{}</strong><br><small>Takes {}</small>",
+            "Live" if obj.accepting_now else "Offline", on,
+        )
 
     @dj.display(description="Rates (₹/min)")
     def rates(self, obj):

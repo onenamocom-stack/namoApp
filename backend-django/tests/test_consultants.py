@@ -845,6 +845,16 @@ class TestBookSession:
         body = _book(api_client, pro_token, PRO, service.id, at).json()
         assert body == {"ok": False, "reason": "You cannot book yourself."}
 
+    def test_booking_switched_off_is_refused_before_money(self, api_client, seeker_token,
+                                                          roster):
+        """The Desk's Booking switch (21 Oct 2026, Rahul)."""
+        _fund(SEEKER, 100000)
+        Consultant.objects.filter(pk=PRO).update(takes_booking=False)
+        _, service = roster
+        at = _combine(_open_day(PRO), SIX_SLOTS[0])
+        body = _book(api_client, seeker_token, PRO, service.id, at).json()
+        assert body == {"ok": False, "reason": "They are not taking bookings right now."}
+
     def test_pending_consultants_service_is_not_available(self, api_client,
                                                           seeker_token, roster):
         _availability(PENDING_PRO, slots=["09:30"], weekdays=[1])

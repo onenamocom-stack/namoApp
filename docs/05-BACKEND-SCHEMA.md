@@ -2190,10 +2190,16 @@ the Pro's own screen computes live from the sources, not from this table.
 |---|---|
 | `accepting_now` | `boolean not null default false`. **Intent** — the switch the consultant flips |
 | `last_seen_at` | `timestamptz null`. **Reality** — their app said hello |
+| `takes_chat`, `takes_audio`, `takes_video`, `takes_booking` | `boolean not null default true` each (`0014_consultant_takes`, 21 Oct 2026). The Desk's four switches. Chat, audio and video need `accepting_now` as well; booking does not |
 
 ```
-online = accepting_now AND last_seen_at >= now() - interval '90 seconds'
+online = accepting_now
 ```
+
+**Online is the switch alone since 6 Oct 2026** (it was `accepting_now AND
+last_seen_at` within 90 seconds). The beat still writes `last_seen_at`;
+nothing that decides online reads it. The reasoning below is the original
+design.
 
 **Two columns, not one, and the pair is the design.** Either alone ends
 the same way — a green dot, a seeker pressing it, and nobody answering:

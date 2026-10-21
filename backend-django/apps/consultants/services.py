@@ -96,6 +96,7 @@ def _combine_ist(day, slot):
 
 REFUSAL_BOOK_SELF = "You cannot book yourself."
 REFUSAL_NOT_AVAILABLE = "That session is not available any more."
+REFUSAL_NOT_TAKING_BOOKINGS = "They are not taking bookings right now."
 REFUSAL_NOT_BOOKABLE = "Instant calls are not bookable yet."
 REFUSAL_NOT_PRICED = "That session is not priced yet."
 REFUSAL_TIME_NOT_OPEN = "That time is no longer open. Pick another."
@@ -727,6 +728,9 @@ def book_session(seeker_id, *, consultant_id, service_id, starts_at):
     )
     if service is None:
         return {"ok": False, "reason": REFUSAL_NOT_AVAILABLE}
+    # Booking switched off on the Desk (21 Oct 2026). Before any money.
+    if not service.consultant.takes_booking:
+        return {"ok": False, "reason": REFUSAL_NOT_TAKING_BOOKINGS}
     # Per-minute is metered in module 7's chat, where the session with join
     # and leave timestamps lives. Refused by name rather than charged as
     # though one minute were the whole call (012).
@@ -1074,7 +1078,15 @@ def is_online(consultant_id, now=None):
     ).exists()
 
 
-def touch_presence(consultant_id, accepting=None, now=None):
+TAKES = ("chat", "audio", "video", "booking")
+
+
+def takes_of(consultant):
+    """The four switches as one dict, from a Consultant row."""
+    return {k: bool(getattr(consultant, f"takes_{k}", True)) for k in TAKES}
+
+
+def touch_presence(consultant_id, accepting=None, now=None, takes=None):
     """The pro app checking in, and optionally flipping the switch.
 
     One endpoint for both because they travel together: every heartbeat
@@ -1093,6 +1105,10 @@ def touch_presence(consultant_id, accepting=None, now=None):
     fields = {"last_seen_at": stamp}
     if accepting is not None:
         fields["accepting_now"] = bool(accepting)
+    # Any of the four switches sent (21 Oct 2026); the others stay.
+    for key, value in (takes or {}).items():
+        if key in TAKES and value is not None:
+            fields[f"takes_{key}"] = bool(value)
 
     was = Consultant.objects.filter(
         profile_id=consultant_id, status=ConsultantStatus.APPROVED
@@ -1109,10 +1125,11 @@ def touch_presence(consultant_id, accepting=None, now=None):
         log_switch(consultant_id, accepting, stamp)
 
     row = Consultant.objects.filter(profile_id=consultant_id).values(
-        "accepting_now", "last_seen_at"
+        "accepting_now", "last_seen_at", *(f"takes_{k}" for k in TAKES)
     ).first()
     return {
         "accepting_now": row["accepting_now"],
+        "takes": {k: row[f"takes_{k}"] for k in TAKES},
         "online": bool(row["accepting_now"]),  # the switch alone (6 Oct 2026)
         "last_seen_at": row["last_seen_at"].isoformat(),
         "grace_seconds": PRESENCE_GRACE_SECONDS,

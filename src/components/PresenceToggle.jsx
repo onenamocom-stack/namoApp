@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { beat } from '../lib/consultants.js'
+import { isPro as proBuild } from '../side.js'
 import { enablePush, keepPushFresh } from '../lib/push.js'
 import { useStore } from '../store.jsx'
 
@@ -25,8 +27,24 @@ import { useStore } from '../store.jsx'
  */
 const BEAT_MS = 30_000
 
+// Where the Desk is: its own path in the main app, the queue in the pro build.
+const DESK = proBuild ? '/pro/consult' : '/desk'
+
+/* The Desk's four switches (21 Oct 2026, Rahul: "When pro go live he can
+   choose which services he is going live like chat audio or video. Booking
+   can be live all the time"). */
+const TAKES = [
+  { key: 'chat', label: 'Chat', note: 'Clients can start a chat.' },
+  { key: 'audio', label: 'Audio call', note: 'Clients can call you, voice only.' },
+  { key: 'video', label: 'Video call', note: 'Clients can video call you.' },
+  { key: 'booking', label: 'Booking', note: 'Clients can book a slot. Works while you are offline too.' },
+]
+
 export default function PresenceToggle({ big = false, floating = false }) {
   const { isPro: proSide, session, showToast, consultant } = useStore()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const onDesk = pathname === DESK || pathname.startsWith(`${DESK}/`)
   // The floating pill shows on the main app's pages too, to an approved
   // consultant only (19 Oct 2026, Rahul).
   const isPro = proSide || (floating && consultant?.status === 'approved')
@@ -65,9 +83,26 @@ export default function PresenceToggle({ big = false, floating = false }) {
   if (!isPro || !signedIn || !state) return null
 
   const on = state.accepting_now
+  const takes = state.takes ?? { chat: true, audio: true, video: true, booking: true }
+
+  async function setTake(key) {
+    if (busy) return
+    setBusy(true)
+    const answer = await beat(undefined, { [key]: !takes[key] })
+    setBusy(false)
+    if (!answer) return showToast('Could not reach the server. Try again.')
+    setState(answer)
+  }
 
   async function flip() {
     if (busy) return
+    /* Going live starts on the Desk (21 Oct 2026, Rahul: "When he press the
+       button. It takes to namo desk"), where the four switches are. Going
+       offline is one tap from anywhere. */
+    if (!on && !onDesk) {
+      navigate(DESK)
+      return
+    }
     setBusy(true)
     const answer = await send(!on)
     setBusy(false)
@@ -121,9 +156,11 @@ export default function PresenceToggle({ big = false, floating = false }) {
     )
   }
 
-  // NAMO Desk's big button (16 Oct 2026, Rahul): Go live, green once live.
+  // NAMO Desk's big button (16 Oct 2026, Rahul): Go live, green once live,
+  // and under it what you take (21 Oct 2026).
   if (big) {
     return (
+      <>
       <button
         type="button"
         onClick={flip}
@@ -147,6 +184,42 @@ export default function PresenceToggle({ big = false, floating = false }) {
           </span>
         </span>
       </button>
+      <section className="mt-4 overflow-hidden rounded-3xl bg-white ring-1 ring-stroke">
+        <p className="px-5 pt-4 text-meta font-semibold t-heading">What you take</p>
+        <ul>
+          {TAKES.map((x) => (
+            <li key={x.key} className="flex items-center gap-3 border-b border-rule px-5 py-3 last:border-b-0">
+              <span className="min-w-0 flex-1">
+                <span className="block text-body font-semibold t-heading">{x.label}</span>
+                <span className="block text-micro t-faint">{x.note}</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={takes[x.key]}
+                aria-label={x.label}
+                disabled={busy}
+                onClick={() => setTake(x.key)}
+                className={`relative h-7 w-12 flex-none rounded-full transition-colors disabled:opacity-60 ${
+                  takes[x.key] ? 'bg-ok' : 'bg-stroke'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-all ${
+                    takes[x.key] ? 'left-[22px]' : 'left-0.5'
+                  }`}
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+        {on && !takes.chat && !takes.audio && !takes.video && (
+          <p className="px-5 pb-4 text-micro font-semibold text-live">
+            Chat, audio and video are all off, so no client can reach you live.
+          </p>
+        )}
+      </section>
+      </>
     )
   }
 

@@ -123,6 +123,7 @@ REFUSAL_SIGN_IN = "Sign in to start a chat."
 REFUSAL_SELF_CHAT = "You cannot chat with yourself."
 REFUSAL_NOT_TAKING = "That consultant is not taking chats."
 REFUSAL_OFFLINE = "That astrologer is offline right now."
+REFUSAL_CHANNEL_OFF = "They are not taking {what} right now."
 REFUSAL_NOT_PRICED = "That session is not priced yet."
 REFUSAL_BAD_MODE = "That service cannot be started live."
 REFUSAL_SHORT_BALANCE = "Not enough balance"
@@ -379,6 +380,12 @@ def request_chat(seeker_id, consultant_id, service_id, now=None, audio_only=Fals
         return {"ok": False, "reason": REFUSAL_NOT_TAKING}
     if not consultant_services.is_online(consultant_id, now=now):
         return {"ok": False, "reason": REFUSAL_OFFLINE}
+    # The Desk's switch for this channel (21 Oct 2026). A client naming no
+    # channel is judged by the row's own mode.
+    named = channel or {"chat": "chat", "audio": "audio"}.get(service.mode, "video")
+    if not getattr(service.consultant, f"takes_{named}", True):
+        what = {"chat": "chats", "audio": "audio calls", "video": "video calls"}[named]
+        return {"ok": False, "reason": REFUSAL_CHANNEL_OFF.format(what=what)}
     if service.price_paise <= 0:
         return {"ok": False, "reason": REFUSAL_NOT_PRICED}
     if channel in ("video", "audio"):

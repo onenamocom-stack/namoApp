@@ -103,6 +103,13 @@ class Consultant(models.Model):
     # within ninety seconds with no sweeper to arrive in time.
     accepting_now = models.BooleanField(default=False)
     last_seen_at = models.DateTimeField(null=True, blank=True)
+    # What they take (21 Oct 2026, Rahul): four switches on the Desk. Chat,
+    # audio and video need the main switch on as well; booking does not,
+    # since a booking is for later. All on until the consultant says not.
+    takes_chat = models.BooleanField(default=True)
+    takes_audio = models.BooleanField(default=True)
+    takes_video = models.BooleanField(default=True)
+    takes_booking = models.BooleanField(default=True)
     # The three named exceptions to §1.3, written by the reviews trigger and a
     # nightly job in Supabase. Nothing in this module writes them (020 owns
     # the review-side recompute; it reads this row through its own gateway).

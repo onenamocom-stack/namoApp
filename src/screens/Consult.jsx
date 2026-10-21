@@ -411,10 +411,10 @@ export default function Consult() {
                   <button
                     key={kind}
                     type="button"
-                    disabled={!c.online || asking}
+                    disabled={!c.online || !c.takes[kind] || asking}
                     onClick={() => start(c, kind)}
                     className={`flex flex-col items-center justify-center rounded-xl py-1.5 leading-tight transition active:scale-[0.98] disabled:pointer-events-none ${
-                      !c.online
+                      !c.online || !c.takes[kind]
                         ? 'bg-stroke/70 text-t2'
                         : kind === 'chat'
                           ? 'bg-gold-fill text-white'
@@ -427,22 +427,32 @@ export default function Consult() {
                     <span className="text-[10px] tnum opacity-90">
                       {!c.online
                         ? 'Offline'
-                        : c.freeFirst
+                        : !c.takes[kind]
+                          ? // Switched off on the Desk (21 Oct 2026).
+                            'Not taking'
+                          : c.freeFirst
                           ? '3 min free'
                           : // Each button its own rate (10 Oct 2026).
                             `₹${c.channels?.[kind] ? rupees(c.channels[kind].price_paise) : '—'}${t('con.perMin')}`}
                     </span>
                   </button>
                 ))}
-                <Link
-                  to={`/consult/${c.id}?book=1`}
-                  className="flex flex-col items-center justify-center rounded-xl border border-gold py-1.5 leading-tight text-gold transition active:scale-[0.98]"
-                >
-                  <span className="text-[13px] font-semibold">{t('con.book')}</span>
-                  <span className="text-[10px] tnum opacity-90">
-                    {c.pricePaise != null ? `₹${rupees(c.pricePaise)}` : 'A slot'}
+                {c.takes.booking ? (
+                  <Link
+                    to={`/consult/${c.id}?book=1`}
+                    className="flex flex-col items-center justify-center rounded-xl border border-gold py-1.5 leading-tight text-gold transition active:scale-[0.98]"
+                  >
+                    <span className="text-[13px] font-semibold">{t('con.book')}</span>
+                    <span className="text-[10px] tnum opacity-90">
+                      {c.pricePaise != null ? `₹${rupees(c.pricePaise)}` : 'A slot'}
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="flex flex-col items-center justify-center rounded-xl bg-stroke/70 py-1.5 leading-tight text-t2">
+                    <span className="text-[13px] font-semibold">{t('con.book')}</span>
+                    <span className="text-[10px] tnum opacity-90">Not taking</span>
                   </span>
-                </Link>
+                )}
               </div>
             </li>
           ))}

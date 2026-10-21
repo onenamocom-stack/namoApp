@@ -2135,13 +2135,28 @@ Answer right, ringing and vibrating. Others waiting show as a line under it.
 On a call already, a new request is a quiet line at the top instead.
 The switch is in sight there too: an approved consultant sees a small
 **Online / Offline** pill (green when online) over every tab page of the main
-app, above Home's + (not on the darshan page, where it sat on Sangeet and the flower bowl); a tap flips it, the same switch as the Desk's.
+app, above Home's + (not on the darshan page, where it sat on Sangeet and the flower bowl). Online, a tap goes offline. Offline, a tap
+opens the Desk instead (21 Oct 2026, Rahul), where **Go live** is and,
+under it, **What you take**: four switches, Chat, Audio call, Video call
+and Booking, all on until changed, each saved on its tap whether live or
+not. Live with chat, audio and video all off, the Desk says no client can
+reach you live. The pro app's header pill does the same.
+
+**What you take** decides the seeker's buttons: a channel switched off
+reads *Not taking* on the Consult card and the Pro's page, greyed, and a
+press toasts *<name> is not taking video calls right now*. Booking needs
+only its own switch, not Go live; switched off, Book reads *Not taking*
+and the offline line drops "You can still book a session". The server
+refuses an off channel after the offline check (*They are not taking
+chats right now.*) and an off booking before any money (*They are not
+taking bookings right now.*).
 
 | What the seeker sees | When |
 |---|---|
 | Green dot on the avatar | `online` from the roster — the server's boolean, not the client's arithmetic |
-| Chat and Call live | online |
-| Chat and Call faded, and a line saying so | offline, with Book still working |
+| Chat and Call live | online, and that channel switched on |
+| Chat and Call faded, and a line saying so | offline, with Book still working while Booking is on |
+| One channel faded, *Not taking* | online, that channel switched off on the Desk |
 
 **The line is said, not implied.** Grey tiles and nothing else
 produces "nothing happens when I tap". *"<name> is offline right now. You
