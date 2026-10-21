@@ -6576,6 +6576,14 @@ HTML waited ~0.5–1 s with `Cache-Control: no-cache`, `X-Cache: MISS`.
   reload; a 404'd chunk reloads once into the screen; a chunk that never
   loads shows the Boundary without looping. Not walked as a Pro (Studio
   sub-pages and `/desk` were already lazy and unchanged).
+- **Measured, 21 Oct:** old build (`d68d5ad`) against new on 1namo.com,
+  files from disk with a simulated link (round trip + gzipped size), the
+  real API, CPU slowed 4x, no cache; median of 5 alternating runs, time to
+  real content. 4G (12 Mbit/s, 70 ms): sign-up page 1.54 → 1.31 s, Home
+  3.81 → 3.11 s, Wallet 1.05 → 0.92 s, Market 1.73 → 1.87 s (noise, or the
+  one extra round trip for its chunk). Slow link (1.6 Mbit/s, 150 ms):
+  3.13 → 2.71, 5.07 → 3.94, 3.16 → 2.87, 3.40 → 2.71 s. Not measured on a
+  real phone.
 - **Not done:** `media.1namo.com` (waits for the nameserver move), moving
   the API to Singapore.
 
