@@ -559,7 +559,13 @@ carries a larger flickering flame over the photo's own; the pair face the thali.
 
 Beginning the aarti lights everything on the altar: five flames on the thali's
 lamp, both diyas and the agarbatti. Ending it leaves the diyas and agarbatti
-lit. The Bell offering rings a real ghanta: one 4.2 s strike, `public/puja/ghanta.mp3`, cut
+lit. **The aarti has its own music** (21 Oct 2026, Rahul): while the thali
+circles, a tabla plays keherwa over a tanpura's Sa and Pa, a manjira on the
+off-beats and the ghanta below on each bar's first beat, made in the browser
+(`src/lib/aartiSangeet.js`; no free recording of bells and tabla alone was
+found). It fades in on the tap and out when the thali settles. It does not
+start while Sangeet or a temple's YouTube darshan is playing, and either
+starting stops it; leaving the shrine stops it. The Bell offering rings a real ghanta: one 4.2 s strike, `public/puja/ghanta.mp3`, cut
 from "Indian Temple Bell" by ganiket (Freesound #466652, CC0) on 5 Oct 2026 — the
 synthesised bell before it did not sound like one.
 

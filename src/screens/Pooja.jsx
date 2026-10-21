@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities as SHIPPED, offerings } from '../data/mock.js'
 import { markSadhana } from '../lib/streak.js'
+import { startAartiSangeet, stopAartiSangeet } from '../lib/aartiSangeet.js'
 import { BackButton, useGoBack } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import {
@@ -344,6 +345,8 @@ export default function Pooja() {
   const playTrack = (asset) => {
     const el = player.current
     if (!el) return
+    // A bhajan or aarti from Sangeet takes over from the aarti's music.
+    stopAartiSangeet()
     el.src = asset.url
     el.loop = asset.kind === 'mantra'
     el.play().catch(() => {
@@ -369,8 +372,13 @@ export default function Pooja() {
   const [air, setAir] = useState(null)
   const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && !(air && !air.live && !air.at)
   useEffect(() => {
-    if (onYoutube) stopTrack()
+    if (onYoutube) {
+      stopTrack()
+      stopAartiSangeet()
+    }
   }, [onYoutube])
+  // Leaving the shrine ends the aarti's music with it.
+  useEffect(() => stopAartiSangeet, [])
 
   const openMusic = () => {
     setMusicOpen(true)
@@ -388,6 +396,11 @@ export default function Pooja() {
     if (!aarti) setLit({ diya: true, incense: true })
     // Beginning an aarti counts today's sadhana (14 Oct 2026, Phase 15c).
     if (!aarti) markSadhana('aarti')
+    // Ghanti and tabla while the thali turns (21 Oct 2026, Rahul), unless
+    // Sangeet or the temple's own broadcast is already playing. Started in
+    // the tap: a phone refuses sound that starts later.
+    if (!aarti && !track && !onYoutube) startAartiSangeet()
+    if (aarti) stopAartiSangeet()
     setAarti((a) => !a)
     ripple()
   }
