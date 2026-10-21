@@ -132,7 +132,7 @@ with the icon in the colour, and the full colour with a halo when selected. The 
 WhatsApp's bubble and **Mobile / Wallpaper** with a phone (14 Oct 2026,
 Rahul; they were Status with a paper plane and Wallpapers with a picture).
 **The Consult card** (8 Oct 2026): a 76 px square photo with rounded corners
-and a gold border, the online dot on its corner; the tick, a white check in a blue `#1d9bf0` circle — one tick, for a Pro
+and a soft grey border (the meta text's grey at half strength, since 21 Oct 2026, Rahul: the gold read as too colourful; the AI Pro card the same), the online dot on its corner; the tick, a white check in a blue `#1d9bf0` circle — one tick, for a Pro
 or Content step 2 only (Rahul, 17 Oct 2026; 16–17 Oct anybody holding a
 module, Seller too; 13–16 Oct a Pro's was orange `#f5782c`; round since 13 Oct, it was a scalloped
 rosette);

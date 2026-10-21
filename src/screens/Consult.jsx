@@ -356,7 +356,7 @@ export default function Consult() {
             <li key={c.id} className="pop-card p-3">
               <Link to={`/consult/${c.id}`} className="flex items-start gap-3 transition-opacity hover:opacity-70">
                 <span className="relative flex-none">
-                  <span className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-gold bg-surface-2 text-lead font-semibold t-sub">
+                  <span className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-t3/50 bg-surface-2 text-lead font-semibold t-sub">
                     {c.avatarUrl ? (
                       <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
                     ) : (
@@ -536,7 +536,7 @@ function AiBots({ cat }) {
           >
             <span className="relative flex-none">
               <span
-                className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-gold bg-surface-2 text-title font-bold"
+                className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-t3/50 bg-surface-2 text-title font-bold"
                 style={b.image_url ? undefined : { color: copyFor(b.key).hue }}
               >
                 {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : 'AI'}
