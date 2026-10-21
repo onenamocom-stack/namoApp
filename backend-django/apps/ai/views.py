@@ -64,9 +64,6 @@ def state(request):
     profile_id = request.user.id
     persona = (request.query_params.get("persona") or personas.ASTROLOGER_KEY)[:40]
     body = _state(profile_id)
-    if persona != personas.ASTROLOGER_KEY:
-        # An AI Pro counts the welcome questions only (21 Oct 2026).
-        body["free_left"] = body["free_left"] if body["free_kind"] == "welcome" else 0
     body["messages"] = services.transcript(profile_id, persona=persona)
     return Response(body)
 
@@ -74,8 +71,8 @@ def state(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def bots(request):
-    """The AI Pros for Consult, and whether this person sees them (21 Oct
-    2026): only with welcome questions left. Open signed out."""
+    """The AI Pros for Consult and what is free (21 Oct 2026). Open signed
+    out."""
     me = request.user.id if getattr(request.user, "is_authenticated", False) else None
     return Response(services.bots_state(me))
 

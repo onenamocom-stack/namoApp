@@ -2040,13 +2040,14 @@ holds the state; neither it nor the screen owns a number.
 `/ask?as=<key>` is any other AI Pro (tarot, life_coach, therapist, or a later
 category's slug). Consult shows a box over the roster for the chosen category
 — on All, every one side by side, also over the empty-roster card — with the
-console's picture (or "AI"), name and AI line, "N free questions", and one
-Chat button. The boxes are drawn only while the seeker has welcome questions
-left (signed out: always). The other AI Pros open straight into the chat (no
+console's picture (or "AI"), name and AI line, what is free ("N free
+questions" while the welcome five last, then "Today's free question is
+waiting" or "Next free question tomorrow"), "1 free question every day, with
+any AI Pro", and one Chat button. Shown to every seeker. The other AI Pros open straight into the chat (no
 birth details, no *Someone else*), with the console's name in the header and
 its AI line on the empty screen; the counsellor's empty screen carries the
-Tele-MANAS line. Past the five, an AI Pro's chat reads "No free questions
-left" and refuses ("Your free questions are used up.").
+Tele-MANAS line. With the day's question spent, an AI Pro's chat says to come
+back tomorrow, never a price.
 
 **`/ask` is a plain chat since 30 Sep 2026** (owner's call — it was a reading
 column with section labels): bubbles, a composer pinned to the bottom, Enter

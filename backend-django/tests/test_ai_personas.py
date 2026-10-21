@@ -1,7 +1,7 @@
 """The AI Pros on Consult (21 Oct 2026, Rahul): a box over every category,
 each talking as that professional, its own conversation, set in the console
-(name, picture, AI line). Only for somebody with welcome questions left,
-and those five are all they get."""
+(name, picture, AI line). They share the Namo AI allowance — the welcome
+five, then one a day with any of them — and are never paid."""
 
 import pytest
 
@@ -73,17 +73,17 @@ def test_conversations_are_separate_and_the_five_are_shared():
     assert services.bots_state(TEST_USER)["free_left"] == 3
 
 
-def test_after_the_five_they_are_hidden_and_refuse_with_no_daily_question(monkeypatch):
+def test_after_the_five_one_a_day_with_any_of_them_and_never_paid(settings, monkeypatch):
+    settings.AI_PAID = True
     monkeypatch.setattr(services.wallet_services, "debit", lambda *a, **k: (_ for _ in ()).throw(AssertionError()))
     services.ai_bots()
     Quota.objects.create(profile_id=TEST_USER, welcome_used=5)
     state = services.bots_state(TEST_USER)
-    assert state["show"] is False and state["free_left"] == 0
-    refused = services.ask(TEST_USER, "One more?", persona="tarot")
-    assert not refused["ok"] and refused["bots_done"]
-    assert not Message.objects.filter(persona="tarot").exists()
-    # The Namo AI chat itself keeps its question a day.
-    assert services.ask(TEST_USER, "And my chart?")["ok"]
+    assert state["show"] is True and state["free_left"] == 1 and state["free_kind"] == "daily"
+    assert services.ask(TEST_USER, "One for today", persona="tarot")["ok"]
+    refused = services.ask(TEST_USER, "One more?", persona="life_coach")
+    assert not refused["ok"] and refused["come_back"]
+    assert services.bots_state(TEST_USER)["free_left"] == 0
 
 
 def test_signed_out_sees_them_and_a_hidden_one_is_not_offered():

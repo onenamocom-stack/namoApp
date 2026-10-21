@@ -293,13 +293,14 @@ kind. The console sets each one's **name, picture and AI line** ("This is
 an AI, not a person.", shown on the box and in the chat), can rewrite how
 it talks, and can hide it. They read no chart, only what is typed.
 
-**Only for first-time users, and only the five.** The boxes show while the
-seeker still has welcome questions (signed out counts as new). The AI Pros
-share **the welcome five** and nothing else: once the five are spent the
-boxes disappear and their chats refuse — no question a day, no paid
-question. Paid use for everybody else waits for Google's approval for
-digital products. The Namo AI tool (`/ask`, from the circles) keeps its
-question a day as before. The counsellor never diagnoses or touches
+**Free questions only: five, then one a day — decided 21 Oct 2026 (Rahul).**
+Every seeker sees the boxes. The AI Pros share the Namo AI allowance: **five
+on arrival, then one a day with any of them** (the Namo AI tool counts in the
+same allowance). Nothing carries forward: a day not used is not two
+tomorrow. The box says so ("1 free question every day, with any AI Pro").
+An AI Pro never takes a paid question; paid use waits for Google's approval
+for digital products. (Earlier the same day it was the five only, shown to
+new users only; Rahul reversed it.) The counsellor never diagnoses or touches
 medicine, sends anything lasting or serious to a real therapist, and
 answers any talk of self-harm with Tele-MANAS (14416) and 112.
 

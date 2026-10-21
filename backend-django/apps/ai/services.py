@@ -49,9 +49,6 @@ REFUSAL_EMPTY = "Type a question first."
 REFUSAL_COME_BACK = "That was today's free question. Come back tomorrow for the next one."
 REFUSAL_TAROT_COME_BACK = "That was today's free card. Come back tomorrow for the next one."
 REFUSAL_UPSTREAM = "Could not reach the astrologer. Try again."
-# The AI Pros on Consult take the welcome questions only (21 Oct 2026,
-# Rahul): past them, nothing until paid questions are switched on.
-REFUSAL_BOTS_DONE = "Your free questions are used up."
 REFUSAL_NO_BOT = "That chat is not available."
 
 # How many past messages the model sees. The seeker asked for "last 20,
@@ -219,9 +216,8 @@ def quota_state(profile_id):
     }
 
 
-def _take_free(profile_id, welcome_only=False):
+def _take_free(profile_id):
     """Spend one free message if there is one. Returns True if it did.
-    `welcome_only` (an AI Pro's chat, 21 Oct 2026) never reaches the daily one.
 
     Inside the caller's transaction and behind a row lock: two taps in the
     same second must not both find the last free message. select_for_update
@@ -256,9 +252,6 @@ def _take_free(profile_id, welcome_only=False):
         if welcome_left(row) <= 0 and row.bonus_days and row.bonus_from is None:
             open_bonus_window(row)
         return True
-
-    if welcome_only:
-        return False
 
     if row.last_free_on != today:
         row.last_free_on = today
@@ -340,15 +333,14 @@ def system_for(bot):
 
 
 def bots_state(profile_id):
-    """What Consult shows: the AI Pros, and whether to show them at all —
-    only to somebody with welcome questions left (signed out counts)."""
-    left = None
-    if profile_id:
-        row = Quota.objects.filter(profile_id=profile_id).first()
-        left = max(0, welcome_left(row))
+    """What Consult shows: the AI Pros and what is free — the Namo AI
+    allowance, shared by all of them: the welcome five, then one a day with
+    any of them (21 Oct 2026, Rahul). Shown to everybody."""
+    quota = quota_state(profile_id) if profile_id else None
     return {
-        "show": left is None or left > 0,
-        "free_left": left,
+        "show": True,
+        "free_left": quota["free_left"] if quota else None,
+        "free_kind": quota["kind"] if quota else None,
         "bots": [
             {"key": b.key, "category": b.category, "name": b.name, "image_url": b.image_url,
              "label": b.label, "label_hi": b.label_hi}
@@ -440,11 +432,10 @@ def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
     charged = 0
 
     with transaction.atomic():
-        used_free = _take_free(profile_id, welcome_only=bot is not None)
-        if not used_free and bot is not None:
-            return {"ok": False, "reason": REFUSAL_BOTS_DONE, "bots_done": True,
-                    "free_left": 0, "price_paise": None}
-        if not used_free and not paid_on():
+        used_free = _take_free(profile_id)
+        # An AI Pro is free questions only, paid or not (21 Oct 2026): paid
+        # questions with them wait for Google's approval.
+        if not used_free and (bot is not None or not paid_on()):
             # Free only for now (19 Oct 2026, Rahul): nothing is charged.
             state = quota_state(profile_id)
             return {"ok": False, "reason": REFUSAL_COME_BACK, "come_back": True,
@@ -518,9 +509,6 @@ def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
     )
 
     state = quota_state(profile_id)
-    if bot is not None:
-        # An AI Pro counts the welcome questions only.
-        state = {"free_left": state["free_left"] if state["kind"] == "welcome" else 0}
     return {
         "ok": True,
         "id": str(reply.id),

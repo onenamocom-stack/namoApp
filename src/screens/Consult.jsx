@@ -511,8 +511,17 @@ function AiBots({ cat }) {
   if (!state?.show) return null
   const bots = (state.bots ?? []).filter((b) => cat === 'All' || b.category === cat)
   if (bots.length === 0) return null
+  // The Namo AI allowance, shared by every AI Pro: the welcome five, then
+  // one a day with any of them (21 Oct 2026, Rahul: written on the box).
   const free = state.free_left
-  const note = free == null ? t('bot.freeStart') : t('bot.freeLeft', { n: free })
+  const note =
+    free == null
+      ? t('bot.freeStart')
+      : state.free_kind === 'welcome'
+        ? t('bot.freeLeft', { n: free })
+        : free > 0
+          ? t('bot.todayLeft')
+          : t('bot.tomorrow')
   const one = bots.length === 1
   return (
     <div className={one ? 'mt-4' : 'no-scrollbar -mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-1'}>
@@ -532,6 +541,7 @@ function AiBots({ cat }) {
                 {aiLine(b, lang)}
               </span>
               <span className="mt-1 block text-[12px] text-t3 tnum">{note}</span>
+              <span className="block text-[12px] font-semibold text-ok">{t('bot.daily')}</span>
             </span>
           </div>
           <Link

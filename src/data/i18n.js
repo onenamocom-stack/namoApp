@@ -829,8 +829,9 @@ export const strings = {
   },
   'ask.ph': { en: 'Message NAMO AI', hi: 'नमो AI से पूछें' },
   // The Consult chats, one per kind of Pro (21 Oct 2026, Rahul).
-  'bot.done': { en: 'No free questions left', hi: 'मुफ़्त सवाल ख़त्म' },
-  'bot.doneLine': { en: 'Your free questions are used up.', hi: 'आपके मुफ़्त सवाल ख़त्म हो गए।' },
+  'bot.daily': { en: '1 free question every day, with any AI Pro', hi: 'रोज़ 1 सवाल मुफ़्त, किसी भी AI Pro से' },
+  'bot.todayLeft': { en: "Today's free question is waiting", hi: 'आज का मुफ़्त सवाल बाक़ी है' },
+  'bot.tomorrow': { en: 'Next free question tomorrow', hi: 'अगला मुफ़्त सवाल कल' },
   'bot.generic.title': { en: 'Ask your question', hi: 'अपना सवाल पूछिए' },
   'bot.generic.sub': { en: 'Answered by an AI.', hi: 'जवाब AI देता है।' },
   'bot.freeLeft': { en: '{n} free questions', hi: '{n} मुफ़्त सवाल' },

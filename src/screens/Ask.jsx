@@ -54,7 +54,8 @@ export default function Ask() {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [messages, thinking])
 
-  const price = pricePaise ? `₹${rupees(pricePaise)}` : ''
+  // An AI Pro is free questions only (21 Oct 2026): no price, ever.
+  const price = astro && pricePaise ? `₹${rupees(pricePaise)}` : ''
   const empty = !loading && messages.length === 0
 
   /* The dawn wash and a few stars behind the conversation, and your own
@@ -68,7 +69,7 @@ export default function Ask() {
         backTo="/consult"
         right={
           <span className="whitespace-nowrap text-micro uppercase tracking-label tnum text-t2">
-            {loading ? '' : outOfFree ? (!astro ? t('bot.done') : price ? t('ask.each', { price }) : t('ask.tomorrow')) : t('ask.free', { n: freeLeft })}
+            {loading ? '' : outOfFree ? (price ? t('ask.each', { price }) : t('ask.tomorrow')) : t('ask.free', { n: freeLeft })}
           </span>
         }
       />
@@ -150,7 +151,7 @@ export default function Ask() {
         {/* Free only for now (19 Oct 2026, Rahul): no price, no wallet —
             past the free ones it is tomorrow. */}
         {outOfFree && !price && (
-          <p className="mb-2 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{astro ? t('ask.comeBack') : t('bot.doneLine')}</p>
+          <p className="mb-2 rounded-2xl bg-white/80 px-3 py-2 text-center text-micro t-sub">{t('ask.comeBack')}</p>
         )}
         <form
           onSubmit={(e) => {
