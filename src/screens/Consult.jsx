@@ -10,6 +10,8 @@ import { Kicker, PopButton } from '../components/Pop.jsx'
 import useStartSession from '../components/useStartSession.js'
 import { rupees, useStore } from '../store.jsx'
 import { listConsultants } from '../lib/consultants.js'
+import { fetchState as aiState } from '../lib/ai.js'
+import { AI_BOTS } from '../data/aiBots.js'
 import { toolStyle } from '../lib/tiles.js'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 
@@ -340,6 +342,8 @@ export default function Consult() {
           }`}
         </Kicker>
 
+        <AiBots cat={cat} />
+
         <ul className="mt-4 space-y-3">
           {list.map((c) => (
             /* The compact card (8 Oct 2026, Rahul's reference): photo left,
@@ -478,6 +482,65 @@ export default function Consult() {
 
       <div className="h-24" />
     </>
+  )
+}
+
+/**
+ * The Namo AI chats over the roster (21 Oct 2026, Rahul): on a category, its
+ * own box on top; on All, the four side by side. Chat only, and marked AI on
+ * the card itself so nobody takes it for a Pro. The free count is the
+ * server's, the same questions for all four.
+ */
+function AiBots({ cat }) {
+  const { t, session } = useStore()
+  const [free, setFree] = useState(null)
+  const bots = cat === 'All' ? Object.values(AI_BOTS) : AI_BOTS[cat] ? [AI_BOTS[cat]] : []
+
+  useEffect(() => {
+    if (!session) return undefined
+    let live = true
+    aiState()
+      .then((s) => live && setFree(s.free_left ?? null))
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [session])
+
+  if (bots.length === 0) return null
+  const note = free == null ? t('bot.freeStart') : free > 0 ? t('bot.freeLeft', { n: free }) : t('ask.tomorrow')
+  const one = bots.length === 1
+  return (
+    <div className={one ? 'mt-4' : 'no-scrollbar -mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-1'}>
+      {bots.map((b) => (
+        <div key={b.key} className={`pop-card p-3 ${one ? '' : 'w-[78%] flex-none'}`}>
+          <div className="flex items-start gap-3">
+            <span
+              className="flex h-[64px] w-[64px] flex-none items-center justify-center rounded-xl text-lead font-bold text-white"
+              style={toolStyle(b.hue)}
+              aria-hidden="true"
+            >
+              AI
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body font-semibold text-t1">
+                {t('bot.card', { name: t(b.name) })}
+              </span>
+              <span className="mt-1 inline-block rounded-md bg-live/10 px-2 py-0.5 text-[11px] font-semibold text-live">
+                {t('bot.isAi')}
+              </span>
+              <span className="mt-1 block text-[12px] text-t3 tnum">{note}</span>
+            </span>
+          </div>
+          <Link
+            to={b.key === 'astrologer' ? '/ask' : `/ask?as=${b.key}`}
+            className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-gold-fill py-2 text-[13px] font-semibold text-white transition active:scale-[0.98]"
+          >
+            {t('con.chat')}
+          </Link>
+        </div>
+      ))}
+    </div>
   )
 }
 

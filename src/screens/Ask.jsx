@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useBirthGate } from '../components/useBirthFirst.js'
-import { askSuggestions } from '../data/mock.js'
+import { botFor } from '../data/aiBots.js'
 import { TopBar } from '../components/Chrome.jsx'
 import Icon from '../components/Icon.jsx'
 import { Loader, Orbit, Stars } from '../components/Cosmos.jsx'
@@ -20,12 +21,18 @@ import { rupees, useStore } from '../store.jsx'
  * the send path are the server's, through `useAskAi`.
  */
 export default function Ask() {
-  useBirthGate()
+  /* `?as=` picks the Consult chat (21 Oct 2026): tarot, life_coach,
+     therapist; none is the astrologer. Only the astrologer reads a chart,
+     so only it asks for birth details and offers somebody else's. */
+  const [params] = useSearchParams()
+  const bot = botFor(params.get('as'))
+  const astro = bot.key === 'astrologer'
+  useBirthGate({ skip: !astro })
   const {
     messages, draft, setDraft, send, thinking, loading,
     freeLeft, pricePaise, outOfFree, boostFrom,
     subject, asking, setAsking, askAbout,
-  } = useAskAi()
+  } = useAskAi(bot.key)
   const { t } = useStore()
   const endRef = useRef(null)
 
@@ -42,7 +49,7 @@ export default function Ask() {
     <div className="cosmic-dawn relative flex min-h-full flex-col">
       <Stars />
       <TopBar
-        title={t('tool.ai')}
+        title={astro ? t('tool.ai') : `${t(bot.name)} · AI`}
         back
         backTo="/consult"
         right={
@@ -58,18 +65,19 @@ export default function Ask() {
         {empty && (
           <div className="flex flex-col items-center pt-12 text-center">
             <Orbit size={72} className="mb-6" />
-            <p className="text-title font-semibold t-heading">{t('ask.title')}</p>
-            <p className="mt-2 text-meta t-faint">{t('ask.sub')}</p>
+            <p className="text-title font-semibold t-heading">{t(bot.title)}</p>
+            <p className="mt-2 text-meta t-faint">{t(bot.sub)}</p>
+            {!astro && <p className="mt-3 text-micro font-semibold t-sub">{t('bot.isAi')}</p>}
             <p className="mt-3 text-micro t-faint">{t('legal.astro')}</p>
             <div className="mt-8 flex w-full flex-col gap-2">
-              {askSuggestions.slice(0, 4).map((s) => (
+              {bot.suggestions.map((s) => (
                 <button
-                  key={s.id}
+                  key={s}
                   type="button"
-                  onClick={() => send(s.text)}
+                  onClick={() => send(s)}
                   className="bubble-theirs rounded-2xl px-4 py-3 text-left text-meta transition-colors hover:bg-surface"
                 >
-                  {s.text}
+                  {s}
                 </button>
               ))}
             </div>
@@ -92,7 +100,7 @@ export default function Ask() {
             <li className="flex justify-start">
               <p className="bubble-theirs flex items-center gap-2.5 rounded-2xl rounded-bl-md px-4 py-2.5 text-meta t-faint">
                 <Orbit size={22} />
-                {t('ask.thinking')}
+                {t(bot.thinking)}
               </p>
             </li>
           )}
@@ -104,7 +112,7 @@ export default function Ask() {
 
       {/* Pinned to the bottom of the scroll, like every chat. */}
       <div className="sticky bottom-0 border-t border-rule bg-bg px-4 pb-4 pt-3">
-        {asking ? (
+        {!astro ? null : asking ? (
           <SubjectForm onDone={askAbout} onCancel={() => setAsking(false)} />
         ) : (
           <p className="mb-2 flex items-center justify-between text-micro t-faint">

@@ -2057,6 +2057,10 @@ latter built for a sweeper that no longer runs — stay with it.
 Drop it only when the ledger rows it explains are themselves out of
 retention, and drop both together or neither.
 
+**`ai_messages.persona`** (text, default `astrologer`, `ai/0007`, 21 Oct
+2026) — which chat the row belongs to: `astrologer`, `tarot`, `life_coach`
+or `therapist`. Each is its own transcript; `ai_quota` is shared by all four.
+
 **`ai_messages`** — the transcript. `session_id` is **nullable**, which was
 for free messages that belonged to nobody's clock. Since the meter was
 retired it is null on **every** row, and the column is what makes the old

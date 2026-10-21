@@ -188,9 +188,10 @@ def get_provider():
     return provider()
 
 
-def ask(history, question, chart_block):
-    """One turn. `history` is oldest-first [{role, body}]."""
-    return get_provider().answer(f"{SYSTEM}\n\n{chart_block}", history, question)
+def ask(history, question, chart_block, system=SYSTEM):
+    """One turn. `history` is oldest-first [{role, body}]. `system` is the
+    astrologer's unless a Consult persona's is passed (personas.py)."""
+    return get_provider().answer(f"{system}\n\n{chart_block}", history, question)
 
 
 def read_card(card_block, question):

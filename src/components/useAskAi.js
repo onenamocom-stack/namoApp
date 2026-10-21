@@ -16,7 +16,9 @@ import { ask, fetchState } from '../lib/ai.js'
 import { useStore } from '../store.jsx'
 import { track } from '../lib/analytics.js'
 
-export default function useAskAi() {
+/** `persona` is which Consult chat (21 Oct 2026); each has its own
+ *  transcript, and the free questions are shared. */
+export default function useAskAi(persona = 'astrologer') {
   const { showToast, refreshWallet, session } = useStore()
 
   const [messages, setMessages] = useState([])
@@ -46,7 +48,8 @@ export default function useAskAi() {
 
   useEffect(() => {
     let active = true
-    fetchState()
+    setLoading(true)
+    fetchState(persona)
       .then((state) => {
         if (!active) return
         setMessages(state.messages ?? [])
@@ -59,7 +62,7 @@ export default function useAskAi() {
     return () => {
       active = false
     }
-  }, [])
+  }, [persona])
 
   const send = useCallback(
     async (text) => {
@@ -71,7 +74,7 @@ export default function useAskAi() {
       setDraft('')
       setThinking(true)
       try {
-        const result = await ask(question, subject)
+        const result = await ask(question, subject, persona)
         if (!result.ok) {
           /* The question goes back in the box rather than staying in the
              transcript: it was not asked, and leaving it on screen above a
@@ -91,7 +94,7 @@ export default function useAskAi() {
         /* Whether it was free or paid, and whether it was about somebody
            else — three flags, no question text. What people ASK is theirs;
            how often the feature is used is ours to know. */
-        track('ai_question', { paid: Boolean(result.charged_paise), about_other: Boolean(subject) })
+        track('ai_question', { paid: Boolean(result.charged_paise), about_other: Boolean(subject), persona })
       } catch (err) {
         setMessages((m) => m.filter((x) => x.id !== asked.id))
         setDraft(question)
@@ -100,7 +103,7 @@ export default function useAskAi() {
         setThinking(false)
       }
     },
-    [draft, thinking, showToast, subject, refreshWallet, session],
+    [draft, thinking, showToast, subject, refreshWallet, session, persona],
   )
 
   /* Switching subject mid-conversation. The transcript stays — it is the

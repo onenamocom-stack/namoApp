@@ -20,7 +20,7 @@ from rest_framework.response import Response
 
 from apps.astro.serializers import SubjectInput, subject_birth
 
-from . import services
+from . import personas, services
 
 
 class AskInput(serializers.Serializer):
@@ -31,6 +31,8 @@ class AskInput(serializers.Serializer):
 
     question = serializers.CharField(max_length=2000, allow_blank=False, trim_whitespace=True)
     subject = SubjectInput(required=False, allow_null=True)
+    # Which chat (21 Oct 2026): a key, never a prompt.
+    persona = serializers.ChoiceField(choices=personas.KEYS, default=personas.ASTROLOGER_KEY)
 
 
 def _state(profile_id):
@@ -60,8 +62,11 @@ def state(request):
     what is still free, and whether a clock is already running (a tab
     reopened mid-session must find its meter, not start a second one)."""
     profile_id = request.user.id
+    persona = request.query_params.get("persona") or personas.ASTROLOGER_KEY
+    if persona not in personas.KEYS:
+        persona = personas.ASTROLOGER_KEY
     body = _state(profile_id)
-    body["messages"] = services.transcript(profile_id)
+    body["messages"] = services.transcript(profile_id, persona=persona)
     return Response(body)
 
 
@@ -73,7 +78,11 @@ def ask(request):
     subject = form.validated_data.get("subject")
     if subject:
         subject = subject_birth(subject)
-    result = services.ask(request.user.id, form.validated_data["question"], subject=subject)
+    persona = form.validated_data["persona"]
+    result = services.ask(
+        request.user.id, form.validated_data["question"],
+        subject=subject if persona == personas.ASTROLOGER_KEY else None, persona=persona,
+    )
     # 200 on a refusal, deliberately: a refusal is an answer the interface
     # shows, not a transport failure, and byte-parity with the rest of the
     # API means the client's one error path stays the network one.

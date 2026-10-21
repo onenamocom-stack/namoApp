@@ -33,9 +33,10 @@ from apps.chat.services import _billable_paise, _minutes_held
 from apps.consultants import gateway
 from apps.wallet import services as wallet_services
 
-from . import providers, tarot, tarot_decks
+from . import personas, providers, tarot, tarot_decks
 from .models import Message, Quota, Session
-from .prompt import chart_block
+from .personas import ASTROLOGER_KEY
+from .prompt import chart_block, today_line
 
 logger = logging.getLogger("apps.ai")
 
@@ -282,10 +283,11 @@ def _take_free(profile_id):
 # ── the conversation ─────────────────────────────────────────────────────────
 
 
-def history_for(profile_id, limit=HISTORY_LIMIT):
-    """The last `limit` messages, oldest-first — the order a model reads."""
+def history_for(profile_id, limit=HISTORY_LIMIT, persona=ASTROLOGER_KEY):
+    """The last `limit` messages of one chat, oldest-first — the order a
+    model reads."""
     rows = list(
-        Message.objects.filter(profile_id=profile_id)
+        Message.objects.filter(profile_id=profile_id, persona=persona)
         .order_by("-created_at", "-id")[:limit]
     )
     rows.reverse()
@@ -329,7 +331,7 @@ def _subject_chart(subject):
         return None
 
 
-def ask(profile_id, question, subject=None):
+def ask(profile_id, question, subject=None, persona=ASTROLOGER_KEY):
     """One question, one answer.
 
     Free first: the welcome five, then one a day. Only when neither is left
@@ -383,20 +385,27 @@ def ask(profile_id, question, subject=None):
         # The subject's birth details are not in it and are never stored.
         Message.objects.create(
             profile_id=profile_id, session=None, role=Message.Role.USER,
-            body=question, created_at=now,
+            persona=persona, body=question, created_at=now,
         )
 
     history = [
-        {"role": m.role, "body": m.body} for m in history_for(profile_id)[:-1]
+        {"role": m.role, "body": m.body}
+        for m in history_for(profile_id, persona=persona)[:-1]
     ]
 
-    if subject:
+    if persona != ASTROLOGER_KEY:
+        # The Consult chats read no chart (21 Oct 2026): only the date.
+        block = today_line()
+    elif subject:
         block = chart_block(_subject_chart(subject), subject_name=subject.get("name"))
     else:
         block = chart_block(_chart_for(profile_id))
 
     try:
-        answer = providers.ask(history, question, block)
+        if persona == ASTROLOGER_KEY:
+            answer = providers.ask(history, question, block)
+        else:
+            answer = providers.ask(history, question, block, system=personas.SYSTEMS[persona])
     except providers.UpstreamError as exc:
         logger.error("[ai] upstream: %s", exc)
         # THE MONEY COMES BACK. Somebody who paid ₹9 and got "could not
@@ -417,7 +426,7 @@ def ask(profile_id, question, subject=None):
 
     reply = Message.objects.create(
         profile_id=profile_id, session=None, role=Message.Role.MODEL,
-        body=answer["text"], tokens_in=answer.get("tokens_in"),
+        persona=persona, body=answer["text"], tokens_in=answer.get("tokens_in"),
         tokens_out=answer.get("tokens_out"),
     )
 
@@ -433,7 +442,7 @@ def ask(profile_id, question, subject=None):
     }
 
 
-def transcript(profile_id, limit=HISTORY_LIMIT):
+def transcript(profile_id, limit=HISTORY_LIMIT, persona=ASTROLOGER_KEY):
     """What the panel renders on open."""
     return [
         {
@@ -442,7 +451,7 @@ def transcript(profile_id, limit=HISTORY_LIMIT):
             "text": m.body,
             "created_at": m.created_at.isoformat(),
         }
-        for m in history_for(profile_id, limit)
+        for m in history_for(profile_id, limit, persona=persona)
     ]
 
 

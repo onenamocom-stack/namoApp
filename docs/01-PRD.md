@@ -284,6 +284,17 @@ An astrologer that reads the seeker's own chart, answers only about
 astrology, and refuses to be a general assistant. Never a guarantee — the
 chart is timing, not permission.
 
+**One Namo AI for each kind of Pro — decided 21 Oct 2026 (Rahul).** Beside
+the astrologer there is a tarot reader, a life coach and a counsellor (the
+Therapist category), each talking as that professional and nothing else.
+Each sits in a box over its category on Consult, chat only, and says on the
+card and in the chat that it is an AI, not a person. They read no chart,
+only what is typed. They spend **the same free questions** as the
+astrologer (the welcome five, then one a day): four chats, one allowance.
+The counsellor never diagnoses or touches medicine, sends anything lasting
+or serious to a real therapist, and answers any talk of self-harm with
+Tele-MANAS (14416) and 112.
+
 **Four paragraphs, 150–250 words — lengthened 23 Sep 2026.** It was three
 to five sentences, and three to five sentences is not worth ₹9. The shape
 is: the answer, then what this person is like, then what this period is

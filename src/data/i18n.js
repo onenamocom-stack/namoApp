@@ -828,6 +828,26 @@ export const strings = {
     hi: 'आपका रेफ़रल लग गया। कल से रोज़ 3 मुफ़्त सवाल।',
   },
   'ask.ph': { en: 'Message NAMO AI', hi: 'नमो AI से पूछें' },
+  // The Consult chats, one per kind of Pro (21 Oct 2026, Rahul).
+  'bot.astrologer': { en: 'Astrologer', hi: 'ज्योतिषी' },
+  'bot.tarot': { en: 'Tarot reader', hi: 'टैरो रीडर' },
+  'bot.life_coach': { en: 'Life coach', hi: 'लाइफ़ कोच' },
+  'bot.therapist': { en: 'Counsellor', hi: 'काउंसलर' },
+  'bot.card': { en: 'NAMO AI · {name}', hi: 'नमो AI · {name}' },
+  'bot.isAi': { en: 'This is an AI, not a person.', hi: 'यह AI है, कोई इंसान नहीं।' },
+  'bot.freeLeft': { en: '{n} free questions', hi: '{n} मुफ़्त सवाल' },
+  'bot.freeStart': { en: 'Free questions to start', hi: 'शुरू के सवाल मुफ़्त' },
+  'bot.thinking': { en: 'Thinking…', hi: 'सोच रहे हैं…' },
+  'bot.tarot.title': { en: 'Ask the cards', hi: 'कार्ड से पूछें' },
+  'bot.tarot.sub': { en: 'Ask a question. The cards are drawn for it.', hi: 'सवाल पूछिए। उसी के लिए कार्ड निकाले जाते हैं।' },
+  'bot.tarot.thinking': { en: 'Drawing the cards…', hi: 'कार्ड निकाल रहे हैं…' },
+  'bot.life_coach.title': { en: 'Talk it through', hi: 'खुलकर बात करें' },
+  'bot.life_coach.sub': { en: 'Say where you are stuck. Leave with one next step.', hi: 'बताइए कहाँ अटके हैं। अगला एक कदम लेकर जाइए।' },
+  'bot.therapist.title': { en: 'Say what is on your mind', hi: 'मन की बात कहिए' },
+  'bot.therapist.sub': {
+    en: 'Not a doctor. In crisis, call Tele-MANAS on 14416, free, any hour.',
+    hi: 'डॉक्टर नहीं है। संकट में Tele-MANAS को 14416 पर कॉल करें, मुफ़्त, किसी भी समय।',
+  },
   /* One sentence around a link: "{canBeWrong} [pros]{end}". */
 
   // ── Premium ──────────────────────────────────────────────────────────────

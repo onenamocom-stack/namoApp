@@ -64,6 +64,10 @@ class Message(models.Model):
         Session, null=True, blank=True, on_delete=models.SET_NULL, related_name="messages"
     )
     role = models.CharField(max_length=8, choices=Role.choices)
+    # Which Namo AI chat (21 Oct 2026): the astrologer, or the tarot reader,
+    # life coach or therapist on Consult (personas.KEYS). Each its own
+    # conversation; the free questions are shared.
+    persona = models.CharField(max_length=16, default="astrologer", db_default="astrologer")
     body = models.TextField()
     # What the answer cost us, in the provider's own units. Not shown to
     # anyone; it is how "is this priced sanely" stops being a guess.

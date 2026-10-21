@@ -61,8 +61,8 @@ async function api(path, { method = 'GET', body, keepalive = false } = {}) {
 /** Transcript, quota and any session already running. A tab reopened
  *  mid-session must find its meter rather than start a second one, which is
  *  why the live session comes back with the transcript and not separately. */
-export function fetchState() {
-  return api('/')
+export function fetchState(persona = 'astrologer') {
+  return api(persona === 'astrologer' ? '/' : `/?persona=${encodeURIComponent(persona)}`)
 }
 
 /** One question. Resolves to {ok:true, text, free_left} or {ok:false,
@@ -71,10 +71,12 @@ export function fetchState() {
  *  sent with EVERY question about that person rather than once, because the
  *  server stores none of it — the conversation here is the only place it
  *  lives, and a reload is meant to lose it. */
-export function ask(question, subject = null) {
+/** `persona` picks the chat (21 Oct 2026): 'astrologer', 'tarot',
+ *  'life_coach' or 'therapist'. A key, never a prompt. */
+export function ask(question, subject = null, persona = 'astrologer') {
   return api('/ask/', {
     method: 'POST',
-    body: subject ? { question, subject } : { question },
+    body: { question, persona, ...(subject ? { subject } : {}) },
   })
 }
 
