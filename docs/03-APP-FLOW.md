@@ -2036,6 +2036,12 @@ next rather than showing an empty list.
 One surface since 30 Sep 2026 — the chat panel's Ask AI tab is gone. `useAskAi`
 holds the state; neither it nor the screen owns a number.
 
+**The chat looks like a chat with a Pro since 21 Oct 2026** (Rahul): the
+Pro chat's own header (picture, name, and the AI line where "In session"
+would be, the free count at the right), its bubbles with their times, and its
+composer, the suggestions as its chips. The astrologer keeps *Someone else*
+above the composer.
+
 **The AI Pros since 21 Oct 2026** (Rahul): `/ask` is the astrologer;
 `/ask?as=<key>` is any other AI Pro (tarot, life_coach, therapist, or a later
 category's slug). Consult shows a box over the roster for the chosen category

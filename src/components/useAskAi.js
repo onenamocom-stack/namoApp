@@ -69,7 +69,7 @@ export default function useAskAi(persona = 'astrologer') {
       const question = (text ?? draft).trim()
       if (!question || thinking) return
 
-      const asked = { id: `u${Date.now()}`, role: 'user', text: question }
+      const asked = { id: `u${Date.now()}`, role: 'user', text: question, created_at: new Date().toISOString() }
       setMessages((m) => [...m, asked])
       setDraft('')
       setThinking(true)
@@ -86,7 +86,7 @@ export default function useAskAi(persona = 'astrologer') {
           showToast(result.reason)
           return
         }
-        setMessages((m) => [...m, { id: result.id, role: 'model', text: result.text }])
+        setMessages((m) => [...m, { id: result.id, role: 'model', text: result.text, created_at: result.created_at }])
         setFreeLeft(result.free_left)
         /* The debit happened server-side. Refresh so the wallet figure on
            screen is not one question behind. */

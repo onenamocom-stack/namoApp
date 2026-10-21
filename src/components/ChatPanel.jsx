@@ -799,7 +799,7 @@ function saveOutbox(threadId, messages) {
   }
 }
 
-function stamp(iso) {
+export function stamp(iso) {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -890,7 +890,7 @@ function Alerts() {
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
-function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
+export function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>
       <div className="max-w-[85%]">
@@ -938,7 +938,7 @@ function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
  * composition ends it first — blur, then focus — and the Send button never
  * takes focus from the box, so the keyboard stays up between messages.
  */
-function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false, voice = false }) {
+export function Composer({ onSend, placeholder, disabled = false, suggestions = null, onPhoto = null, onSuggest = null, suggesting = false, voice = false }) {
   const { lang, showToast } = useStore()
   const [value, setValue] = useState('')
   const box = useRef(null)
