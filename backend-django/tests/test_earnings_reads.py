@@ -225,7 +225,7 @@ class TestApi:
             f"/v1/consultants/{PRO}/earnings/summary/?range=this_month", **auth(pro_token)
         ).json()
         assert body["net_paise"] == 41000
-        assert [s["source"] for s in body["by_source"]] == ["sessions", "bookings", "shop", "reversals"]
+        assert [s["source"] for s in body["by_source"]] == ["sessions", "bookings", "bonus", "shop", "reversals"]
         assert len(body["last_7_days"]) == 7
         assert body["pays_on"].endswith("-07")
 

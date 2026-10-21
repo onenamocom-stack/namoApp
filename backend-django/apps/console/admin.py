@@ -15,7 +15,9 @@ from apps.consultants import payout_details as payout_crypto
 from apps.consultants import services as consultant_services
 from django import forms
 
-from apps.consultants.models import Consultant, PayoutDetails, PayoutDetailsStatus, ProfileReview
+from apps.consultants.models import (
+    Consultant, FreeFirstSettings, PayoutDetails, PayoutDetailsStatus, ProfileReview,
+)
 from apps.media.models import MediaAsset
 from apps.media.providers import bucket_for, get_provider
 from apps.profiles.models import Profile
@@ -30,10 +32,11 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     """The queue. Pending first, because that is the job."""
 
     audit_target = "consultant"
-    list_display = ("who", "category", "specialization", "rates", "live_now", "status", "verified", "badge", "free_first", "created_at")
+    list_display = ("who", "category", "specialization", "rates", "live_now", "status", "verified", "badge", "free_first", "conversions", "created_at")
     list_filter = ("status", "accepting_now", "verified", "badge", "free_first", "category")
-    # Ticked here, straight from the list: the in-house consultants a new
-    # seeker sees free for their first session (7 Oct 2026), and the badge
+    # Ticked here, straight from the list: the consultants a new seeker sees
+    # free for their first minutes (7 Oct 2026; only here, the Pro has no
+    # switch, 21 Oct 2026), and the badge
     # seekers see — Pro, Expert or Master (13 Oct 2026).
     list_editable = ("badge", "free_first")
     # Tags are what a seeker searches by, so they are what an
@@ -42,7 +45,7 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
     ordering = ("status", "-created_at")
     readonly_fields = (
         "profile_id", "created_at", "rating_avg_cache", "rating_count_cache",
-        "rank_score_cache", "legacy_id", "who", "certificate", "rates", "live_now",
+        "rank_score_cache", "legacy_id", "who", "certificate", "rates", "live_now", "conversions",
     )
     actions = ("approve", "block", "unblock")
     # Approve on the applicant's own page (18 Oct 2026, Rahul could not find it).
@@ -70,6 +73,21 @@ class ConsultantAdmin(DecideButtons, AuditedAdmin, dj.ModelAdmin):
             "<strong>{}</strong><br><small>Takes {}</small>",
             "Live" if obj.accepting_now else "Offline", on,
         )
+
+    @dj.display(description="Conversions")
+    def conversions(self, obj):
+        """New seekers who added money during their free minutes with this
+        Pro (21 Oct 2026): this month, and ever. Each earned the bonus."""
+        from apps.chat.models import Session
+        from apps.consultants.payouts import month_of
+
+        mine = Session.objects.filter(consultant_id=obj.profile_id, converted_at__isnull=False)
+        ever = mine.count()
+        if not ever:
+            return "—"
+        start = month_of(timezone.now())
+        month = mine.filter(converted_at__date__gte=start).count()
+        return format_html("<strong>{}</strong> this month<br><small>{} ever</small>", month, ever)
 
     @dj.display(description="Rates (₹/min)")
     def rates(self, obj):
@@ -727,3 +745,34 @@ class ProDayReportAdmin(dj.ModelAdmin):
 
     def has_view_permission(self, request, obj=None):
         return at_least(request, Tier.SUPPORT, Tier.FINANCE)
+
+
+@dj.register(FreeFirstSettings, site=site)
+class FreeFirstSettingsAdmin(AuditedAdmin, dj.ModelAdmin):
+    """How many minutes are free on a new seeker's first session, and what
+    a Pro earns for each seeker who adds money during them (21 Oct 2026,
+    Rahul). One row; which Pros offer it is the Free first tick on the
+    consultant list."""
+
+    audit_target = "free first minutes"
+    list_display = ("free_seconds", "conversion_bonus_paise", "updated_at")
+    fields = ("free_seconds", "conversion_bonus_paise")
+
+    def has_module_permission(self, request):
+        return at_least(request, Tier.FINANCE)
+
+    def has_view_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_change_permission(self, request, obj=None):
+        return at_least(request, Tier.FINANCE)
+
+    def has_add_permission(self, request):
+        return at_least(request, Tier.FINANCE) and not FreeFirstSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.pk = 1   # the one row
+        super().save_model(request, obj, form, change)

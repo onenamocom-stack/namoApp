@@ -621,6 +621,11 @@ def payment_capture(event_id, order_id, payment_id, amount_paise, status, raw):
                     "Added money",
                     ref_type=RefType.PAYMENT,
                 )
+                # Money added during a free first session converts the
+                # seeker for that consultant (21 Oct 2026).
+                from apps.chat.services import record_conversion
+
+                record_conversion(profile_id)
     except IntegrityError:
         # A retried delivery: provider_payment_id or provider_event_id
         # already exists. The ordinary case, not an error — everything

@@ -116,6 +116,12 @@ export function channelsOf(services = []) {
   return { chat: of('chat'), video: of('call'), audio: of('audio') }
 }
 
+/** 120 → "2 min free"; 90 → "90 sec free". The server's own length. */
+function freeLabel(seconds) {
+  const s = Number(seconds) || 120
+  return s % 60 ? `${s} sec free` : `${s / 60} min free`
+}
+
 function shape(row, services = []) {
   const fixed = services
     .filter((s) => s.billing === 'fixed')
@@ -159,6 +165,8 @@ function shape(row, services = []) {
     // Free for this seeker's first session (7 Oct 2026) — the server says
     // so only to a signed-in seeker who has not had one.
     freeFirst: row.free_first_offer === true,
+    // "2 min free" — the console sets the length (21 Oct 2026).
+    freeLabel: freeLabel(row.free_first_seconds),
     // Ringing for somebody or in a session (5 Oct 2026). Still callable:
     // the call waits and retries instead of failing.
     busy: row.busy === true,

@@ -209,11 +209,50 @@ def free_first_eligible(seeker_id):
 
 
 def _free_seconds(seeker_id, consultant):
-    from django.conf import settings
+    from apps.consultants.services import free_first_seconds
 
     if getattr(consultant, "free_first", False) and free_first_eligible(seeker_id):
-        return settings.FREE_FIRST_SECONDS
+        return free_first_seconds()
     return 0
+
+
+# A recharge counts for the free session it was made in, or one that ended
+# this recently: paying takes the seeker out to the gateway and back, and the
+# session may have run out and ended while they were there.
+CONVERSION_GRACE_SECONDS = 15 * 60
+
+
+def record_conversion(seeker_id, now=None):
+    """A seeker added money during their free session (21 Oct 2026, Rahul):
+    the consultant converted a new customer. Marks the session once and adds
+    the console's bonus to the consultant's earnings, where the month's
+    payout picks it up. Runs inside the recharge's transaction, so a
+    retried capture that rolls back writes nothing here either."""
+    from apps.consultants.earnings import BONUS_KIND
+    from apps.consultants.services import conversion_bonus_paise
+
+    now = now or timezone.now()
+    session = (
+        Session.objects.select_for_update()
+        .filter(seeker_id=seeker_id, free_seconds__gt=0, started_at__isnull=False,
+                converted_at__isnull=True)
+        .filter(Q(status=Session.Status.LIVE)
+                | Q(ended_at__gte=now - timezone.timedelta(seconds=CONVERSION_GRACE_SECONDS)))
+        .order_by("-started_at")
+        .first()
+    )
+    if session is None:
+        return None
+    Session.objects.filter(pk=session.pk).update(converted_at=now)
+    bonus = conversion_bonus_paise()
+    if bonus > 0:
+        name = gateway.profile_name(seeker_id)
+        EarningsLedger.objects.create(
+            consultant_id=session.consultant_id, booking=None,
+            gross_paise=bonus, fee_bps=0, fee_paise=0, net_paise=bonus,
+            kind=f"{BONUS_KIND} · {name or 'New customer'}",
+        )
+    return session.pk
 
 
 def _touch_thread(thread_id, created_at, body):
@@ -648,9 +687,10 @@ def end_session(actor_id, session_id, reason=None, now=None):
             # A pause that ended in a recharge is skipped, not billed: the
             # meter counts from the start moved on by every paused second.
             start = session.started_at + timezone.timedelta(seconds=session.paused_seconds or 0)
-            # The free seconds of a first session (7 Oct 2026) are Namo's:
-            # the time is worth `free_value`, the seeker pays only past it,
-            # and the consultant earns on every second (`gross`).
+            # The free seconds of a first session (7 Oct 2026): the time is
+            # worth `free_value` and the seeker pays only past it. The
+            # consultant earns only what the seeker pays (21 Oct 2026, Rahul;
+            # Namo paid them for the free seconds before).
             free_value = ((session.free_seconds or 0) * session.rate_paise) // 60
             gross = _billable_paise(
                 start, stop, session.hold_paise + free_value, session.rate_paise
@@ -693,7 +733,7 @@ def end_session(actor_id, session_id, reason=None, now=None):
         # The consultant earns what was USED — this is why earnings are
         # written here and not at accept: at accept nobody knows how long
         # anyone will talk.
-        earned = charged if session.started_at is None else gross
+        earned = charged
         if earned > 0:
             seeker_name = gateway.profile_name(session.seeker_id)
             from apps.consultants.services import fee_bps_for

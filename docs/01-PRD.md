@@ -203,15 +203,25 @@ show what they take home, not the share taken; the console shows it.
 sessions settled from then on; every earnings row keeps the rate it was
 written at. The per-astrologer share (13 Oct) is withdrawn.
 
-**A free first session — decided 7 Oct 2026.** The console ticks "free
-first" on chosen consultants (the in-house ones, four or five). A seeker
-who has never had a session sees them **at the top of Consult, marked
-"First 3 min free"**; the **first 3 minutes** of that seeker's first session
-with one of them cost nothing — it can start with an empty wallet — and the
-rest is the normal rate. **Namo pays the consultant for the free minutes**,
-their usual 60%. Once that first session has started and ended, nobody is
-free for that seeker. A request never answered, or a call that never
-connected, does not use it up. (`FREE_FIRST_SECONDS`, 180.)
+**A free first session — decided 7 Oct 2026, reworked 21 Oct 2026 (Rahul).**
+The console ticks "free first" on chosen consultants, after the team has
+talked them into it; the Pro has no switch of their own. A seeker who has
+never had a session sees them **at the top of Consult (the online ones above
+everybody), their buttons reading "2 min free"**; the **first 2 minutes** of
+that seeker's first session with one of them cost nothing — it can start with
+an empty wallet — and from the third minute it is the Pro's normal rate,
+which the Pro earns as on any session. **The Pro is not paid for the free
+minutes** (until 21 Oct Namo paid them, at 3 minutes). Once that first
+session has started, nobody is free for that seeker. A request never
+answered, or a call that never connected, does not use it up.
+
+**A conversion pays the Pro a bonus — decided 21 Oct 2026 (Rahul).** A seeker
+who adds money during their free session (or within 15 minutes of it ending,
+the time a trip to the payment page takes) is a **conversion** for that Pro:
+**₹50** goes into the Pro's consulting income, once per free session, and is
+paid with that month's payout. The console counts each Pro's conversions.
+The free length (2 minutes) and the bonus (₹50) are both console settings,
+"Free minutes and conversion bonus"; a bonus of 0 pays nothing.
 
 **Out of money pauses, it does not hang up — decided 7 Oct 2026.** In the
 last minute of a chat or call the seeker sees the time left and a Recharge

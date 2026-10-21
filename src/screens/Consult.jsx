@@ -179,6 +179,7 @@ export default function Consult() {
   const scrollToList = () => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   const filters = ['All', ...categories]
+  const rank = (c) => (c.online ? 2 : 0) + (c.online && c.freeFirst ? 1 : 0)
   const q = query.trim().toLowerCase()
   const roster = consultants ?? []
   const list = roster.filter((c) => {
@@ -191,8 +192,10 @@ export default function Consult() {
     return inCat && inQuery
   })
     // Whoever is online right now comes first (5 Oct 2026, owner's request);
-    // within each group the server's order — best rated first — stands.
-    .sort((a, b) => Number(b.online) - Number(a.online))
+    // within each group the server's order — best rated first — stands. For a
+    // new seeker the free-first Pros who are online come above everybody
+    // (21 Oct 2026, Rahul: "selected pros on top of category").
+    .sort((a, b) => rank(b) - rank(a))
 
   /* The dot is PRESENCE now (24 Sep 2026), not `verified`. It stood in for
      online while there was no presence — a dot that is always green is
@@ -422,8 +425,8 @@ export default function Consult() {
                     }`}
                   >
                     <span className="text-[13px] font-semibold">{t(`con.${kind}`)}</span>
-                    {/* A new seeker's first session with this consultant is
-                        free for three minutes (7 Oct 2026). */}
+                    {/* A new seeker's first minutes with this consultant are
+                        free (7 Oct 2026; the console sets how many). */}
                     <span className="text-[10px] tnum opacity-90">
                       {!c.online
                         ? 'Offline'
@@ -431,7 +434,7 @@ export default function Consult() {
                           ? // Switched off on the Desk (21 Oct 2026).
                             'Not taking'
                           : c.freeFirst
-                          ? '3 min free'
+                          ? c.freeLabel
                           : // Each button its own rate (10 Oct 2026).
                             `₹${c.channels?.[kind] ? rupees(c.channels[kind].price_paise) : '—'}${t('con.perMin')}`}
                     </span>

@@ -124,8 +124,10 @@ class Consultant(models.Model):
     Status = ConsultantStatus
 
     # Shown free for a new seeker's first session (7 Oct 2026, owner): the
-    # console ticks the in-house consultants who carry it. FREE_FIRST_SECONDS
-    # of that first session are on Namo; the consultant is paid for them.
+    # console ticks the consultants who carry it, after talking to them; the
+    # Pro has no switch (21 Oct 2026, Rahul). The free seconds
+    # (FreeFirstSettings) earn the consultant nothing since 21 Oct 2026 —
+    # Namo paid them before; a conversion earns them a bonus instead.
     free_first = models.BooleanField(default=False, db_default=False)
 
     # UNUSED since 15 Oct 2026: Namo's share of a consultation is the
@@ -422,6 +424,30 @@ class Booking(models.Model):
 # 30% since 15 Oct 2026 (it was 40%): what a consultation pays Namo when
 # the console's consultation rate is blank (services.fee_bps_for).
 FEE_BPS = 3000
+
+
+class FreeFirstSettings(models.Model):
+    """One row (pk 1): the free first minutes and the conversion bonus
+    (21 Oct 2026, Rahul). Read through services.free_first_seconds() and
+    services.conversion_bonus_paise(), which fall back to the defaults."""
+
+    free_seconds = models.PositiveIntegerField(
+        "Free seconds", default=120,
+        help_text="120 is 2 minutes, free on a new seeker's first session with a ticked Pro. "
+                  "The Pro is not paid for them.")
+    conversion_bonus_paise = models.PositiveIntegerField(
+        "Bonus per conversion (paise)", default=5000,
+        help_text="5000 is ₹50, added to the Pro's income when a seeker adds money during their "
+                  "free session. Paid with the month's payout. 0 pays nothing.")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "free_first_settings"
+        verbose_name = "Free first minutes and conversion bonus"
+        verbose_name_plural = "Free first minutes and conversion bonus"
+
+    def __str__(self):
+        return f"{self.free_seconds // 60} min free · ₹{self.conversion_bonus_paise // 100} a conversion"
 
 
 class EarningsLedger(models.Model):

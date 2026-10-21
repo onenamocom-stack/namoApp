@@ -683,6 +683,27 @@ def apply(profile_id, *, category, specialization, languages, experience_yrs, bi
     return consultant
 
 
+# ── the free first minutes (7 Oct; console-set since 21 Oct 2026) ───────────
+
+
+def free_first_seconds():
+    """How many seconds of a new seeker's first session are free."""
+    from django.conf import settings
+
+    from .models import FreeFirstSettings
+
+    row = FreeFirstSettings.objects.filter(pk=1).first()
+    return row.free_seconds if row else settings.FREE_FIRST_SECONDS
+
+
+def conversion_bonus_paise():
+    """What a Pro earns when a seeker adds money during the free session."""
+    from .models import FreeFirstSettings
+
+    row = FreeFirstSettings.objects.filter(pk=1).first()
+    return row.conversion_bonus_paise if row else 5000
+
+
 # ── the booking transaction (012 as amended by 013) ──────────────────────────
 
 

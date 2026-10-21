@@ -38,7 +38,10 @@ from .models import EarningsLedger
 from .services import IST
 
 RANGES = ("this_month", "last_month", "fy", "last_fy", "lifetime", "custom")
-SOURCES = ("sessions", "bookings", "shop", "reversals")
+SOURCES = ("sessions", "bookings", "bonus", "shop", "reversals")
+# The row a conversion writes (21 Oct 2026); `_rows` reads it as "bonus".
+BONUS_KIND = "Conversion bonus"
+
 PAGE = 50
 PAGE_MAX = 200
 # Paid on this day of the month after the period (owner's call, 3 Oct 2026).
@@ -103,6 +106,7 @@ def _rows(consultant_id):
             When(net_paise__lt=0, then=Value("reversals")),
             When(booking__isnull=False, then=Value("bookings")),
             When(kind__startswith="Referral", then=Value("shop")),
+            When(kind__startswith=BONUS_KIND, then=Value("bonus")),
             default=Value("sessions"),
             output_field=CharField(),
         ),

@@ -106,10 +106,12 @@ def list_consultants(request):
 
     me = getattr(request.user, "pk", None) if getattr(request.user, "is_authenticated", False) else None
     offer = bool(me) and free_first_eligible(me)
+    free = services.free_first_seconds() if offer else 0
     rows = []
     for c in consultants:
         row = _consultant_row(c, _service_rows(by_owner.get(c.profile_id, [])))
         row["free_first_offer"] = offer and bool(c.free_first)
+        row["free_first_seconds"] = free if row["free_first_offer"] else 0
         rows.append(row)
     if offer:
         rows.sort(key=lambda r: not r["free_first_offer"])  # stable: keeps online-first within each
@@ -135,6 +137,7 @@ def detail(request, consultant_id):
     )
     me = getattr(request.user, "pk", None) if getattr(request.user, "is_authenticated", False) else None
     row["free_first_offer"] = bool(me) and bool(consultant.free_first) and free_first_eligible(me)
+    row["free_first_seconds"] = services.free_first_seconds() if row["free_first_offer"] else 0
     return Response(row)
 
 

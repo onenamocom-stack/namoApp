@@ -65,6 +65,8 @@ export const RANGES = [
 const SOURCE_LABEL = {
   sessions: 'Chat, call and video',
   bookings: 'Booked sessions',
+  // A new seeker who added money in their free minutes (21 Oct 2026).
+  bonus: 'New customer bonus',
   shop: 'Shop and Market commission',
   reversals: 'Reversals',
 }

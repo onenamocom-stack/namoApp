@@ -778,7 +778,15 @@ default false, migration `consultants/0005`) and `sessions.free_seconds`
 (integer, default 0, `chat/0004`). A session's free seconds extend its
 `expires_at` beyond the held minutes; at the settle the seeker is charged
 `max(0, gross − free value)` (never more than the hold) and the earnings
-row's gross is every billed second, the free ones included.
+row's gross is what the seeker was charged — the free seconds earn nothing
+(21 Oct 2026; before, they were included). `sessions.converted_at`
+(timestamptz, null, `chat/0008`) is set once when the seeker adds money during
+that free session or within 15 minutes of its end; the same transaction
+writes an `earnings_ledger` row of kind `Conversion bonus · <name>`, fee 0,
+which the earnings reads count as source `bonus`. `free_first_settings`
+(`consultants/0015`, one row, pk 1): `free_seconds` (default 120) and
+`conversion_bonus_paise` (default 5000), read with fallbacks to
+`FREE_FIRST_SECONDS` and 5000 when the row does not exist.
 
 **The pause for a recharge** (7 Oct 2026): `sessions.paused_seconds`
 (integer, default 0, `chat/0005`) — the seconds of every pause that ended in

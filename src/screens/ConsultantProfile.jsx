@@ -501,11 +501,11 @@ export function ConsultantPage({
               : !c.takes[key] && !own
                 ? 'Not taking'
                 : c.freeFirst && !own
-                ? '3 min free'
+                ? c.freeLabel
                 : row
                   ? `₹${rupees(row.price_paise)}/min`
                   : '—'
-          // The rate under "Offline" or "3 min free", which replace it — the
+          // The rate under "Offline" or "2 min free", which replace it — the
           // tile is the only place the rate shows (13 Oct 2026).
           const rate = !book && row && /Offline|free|Not taking/.test(price) ? `₹${rupees(row.price_paise)}/min` : null
           const dead = !own && (!c.takes[book ? 'booking' : key] || (book ? !c.fixed.length : !row || !c.online || asking))

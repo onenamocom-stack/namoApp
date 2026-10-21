@@ -147,8 +147,8 @@ function Earned({ rows, range, upcoming, week }) {
   const total = rows.reduce((s, r) => s + r.net_paise, 0)
 
   const sources = useMemo(() => {
-    const order = ['chat', 'audio call', 'video call', 'bookings', 'reversals']
-    const label = { ...MODE_LABEL, bookings: 'Booked sessions', reversals: 'Reversals' }
+    const order = ['chat', 'audio call', 'video call', 'bookings', 'bonus', 'reversals']
+    const label = { ...MODE_LABEL, bookings: 'Booked sessions', bonus: 'New customer bonus', reversals: 'Reversals' }
     const by = {}
     for (const r of rows) {
       const k = r.net_paise < 0 ? 'reversals' : r.what

@@ -381,7 +381,7 @@ with a tick when verified and "Busy" when they are on a session, the
 specialty, the stars and the rating ("New" with none; the review count is
 hidden for now, here and on the profile), and experience and languages on
 one line. Under a dashed rule, the same four actions as before: **Video,
-Audio, Chat** with the per-minute rate ("3 min free" for a new seeker's
+Audio, Chat** with the per-minute rate ("2 min free" for a new seeker's
 free-first consultant) and **Book** with the session price. Offline, the
 three live ones read "Offline" and do nothing; Book still opens the booking
 sheet. The card opens the profile.
@@ -694,11 +694,16 @@ day, never the author — the reel rule with a longer wait. The reader shows the
 count beside the read time once it is above zero; it showed none before, and
 Studio's blog rows read 0 because nothing sent one.
 
-**A new seeker's free first session** (7 Oct 2026): consultants ticked
-"free first" in the console come first on Consult with a green "First 3
-min free" in place of their rate, and their page says "your first 3 minutes
-free"; a request goes through with an empty wallet. After the seeker's first
-session they show their rates like everyone else.
+**A new seeker's free first session** (7 Oct 2026; 21 Oct 2026): consultants
+ticked "free first" in the console come first on Consult for a seeker who has
+never had a session — online ones above every other online Pro — and their
+Video, Audio and Chat buttons read "2 min free" (the console's length) in
+place of the rate, on the card and on their page; a request goes through with
+an empty wallet. When the free time runs out the session pauses for a
+recharge as any session does. Money added in that session, or within 15
+minutes of it ending, is a conversion: the Pro's earnings gain a "Conversion
+bonus" row, shown as "New customer bonus" under Where it came from. After the
+seeker's first session the Pros show their rates like everyone else.
 
 **Recharge without leaving the conversation** (7 Oct 2026). A chat or call
 has ONE timer and ONE end button, the same row for both people (9 Oct 2026,
@@ -791,7 +796,7 @@ post in full, as the feed does (11 Oct 2026). **About** is the facts without a
 heading (speaks, category, experience, verified). No Rates section since 13
 Oct 2026 (Rahul: it repeated the footer); no Book section since 11 Oct. The
 footer's four buttons are the way in and carry every rate — a tile that says
-"Offline" or "3 min free" shows its per-minute rate on a second line. A reel's caption in the reels viewer folds to two lines; a tap
+"Offline" or "2 min free" shows its per-minute rate on a second line. A reel's caption in the reels viewer folds to two lines; a tap
 opens it.
 
 ### `/shop/p/:key` — a product's page (6 Oct 2026)
