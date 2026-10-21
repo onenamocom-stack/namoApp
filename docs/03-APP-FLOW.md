@@ -2050,12 +2050,15 @@ counsellor's screen always carries the Tele-MANAS line. The astrologer keeps
 
 **The AI Pros since 21 Oct 2026** (Rahul): `/ask` is the astrologer;
 `/ask?as=<key>` is any other AI Pro (tarot, life_coach, therapist, or a later
-category's slug). Consult shows a box over the roster for the chosen category
-— on All, every one side by side, also over the empty-roster card — with the
-console's picture (or "AI"), name and AI line, what is free ("N free
+category's slug). Consult shows a card over the roster for the chosen category,
+shaped like a Pro's card since 21 Oct 2026 (Rahul) — on All, one per swipe,
+each the list's width, also over the empty-roster card — with the console's
+picture (or "AI") and an online dot, the name with an AI tag, the AI line as
+its tag, what is free ("N free
 questions" while the welcome five last, then "Today's free question is
 waiting" or "Next free question tomorrow"), "1 free question every day, with
-any AI Pro", and one Chat button. Shown to every seeker. The other AI Pros open straight into the chat (no
+any AI Pro", and under a dashed rule one Chat tile reading "Free" (or "Next
+free question tomorrow"). Shown to every seeker. The other AI Pros open straight into the chat (no
 birth details, no *Someone else*), with the console's name in the header and
 its AI line on the empty screen; the counsellor's empty screen carries the
 Tele-MANAS line. With the day's question spent, an AI Pro's chat says to come

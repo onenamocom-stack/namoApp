@@ -522,34 +522,50 @@ function AiBots({ cat }) {
         : free > 0
           ? t('bot.todayLeft')
           : t('bot.tomorrow')
-  const one = bots.length === 1
+  const open = free == null || free > 0
+  /* The Pro card's own shape (21 Oct 2026, Rahul's screenshot): the 76px
+     framed picture with its dot, the name, a tag, two lines, a dashed rule
+     and the Chat tile. On All, one card per swipe, each the list's width. */
   return (
-    <div className={one ? 'mt-4' : 'no-scrollbar -mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-1'}>
+    <div className={`no-scrollbar mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto ${bots.length > 1 ? '-mx-5 px-5' : ''}`}>
       {bots.map((b) => (
-        <div key={b.key} className={`pop-card p-3 ${one ? '' : 'w-[78%] flex-none'}`}>
-          <div className="flex items-start gap-3">
-            <span
-              className="flex h-[64px] w-[64px] flex-none items-center justify-center overflow-hidden rounded-xl text-lead font-bold"
-              style={b.image_url ? undefined : toolStyle(copyFor(b.key).hue)}
-              aria-hidden="true"
-            >
-              {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : 'AI'}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-body font-semibold text-t1">{b.name}</span>
-              <span className="mt-1 inline-block rounded-md bg-live/10 px-2 py-0.5 text-[11px] font-semibold text-live">
-                {aiLine(b, lang)}
-              </span>
-              <span className="mt-1 block text-[12px] text-t3 tnum">{note}</span>
-              <span className="block text-[12px] font-semibold text-ok">{t('bot.daily')}</span>
-            </span>
-          </div>
+        <div key={b.key} className="pop-card w-full flex-none snap-center p-3">
           <Link
             to={b.key === 'astrologer' ? '/ask' : `/ask?as=${b.key}`}
-            className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-gold-fill py-2 text-[13px] font-semibold text-white transition active:scale-[0.98]"
+            className="flex items-start gap-3 transition-opacity hover:opacity-70"
           >
-            {t('con.chat')}
+            <span className="relative flex-none">
+              <span
+                className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-xl border-2 border-gold bg-surface-2 text-title font-bold"
+                style={b.image_url ? undefined : { color: copyFor(b.key).hue }}
+              >
+                {b.image_url ? <img src={b.image_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : 'AI'}
+              </span>
+              <span className="absolute -bottom-1 -right-1 block h-3.5 w-3.5 rounded-full bg-ok ring-2 ring-surface" aria-label="Online" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5">
+                <span className="truncate text-body font-semibold text-t1">{b.name}</span>
+                <span className="flex-none rounded-full bg-gold-wash px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] gold">
+                  AI
+                </span>
+              </span>
+              <span className="mt-1 inline-block max-w-full truncate rounded-md border border-live/40 px-2 py-0.5 text-[11px] text-live">
+                {aiLine(b, lang)}
+              </span>
+              <span className="mt-1 block truncate text-[12px] text-ok">{note}</span>
+              <span className="mt-0.5 block truncate text-[12px] text-t3">{t('bot.daily')}</span>
+            </span>
           </Link>
+          <div className="mt-3 border-t border-dashed border-stroke pt-3">
+            <Link
+              to={b.key === 'astrologer' ? '/ask' : `/ask?as=${b.key}`}
+              className="flex flex-col items-center justify-center rounded-xl bg-gold-fill py-1.5 leading-tight text-white transition active:scale-[0.98]"
+            >
+              <span className="text-[13px] font-semibold">{t('con.chat')}</span>
+              <span className="text-[10px] opacity-90">{open ? t('bot.free') : t('bot.tomorrow')}</span>
+            </Link>
+          </div>
         </div>
       ))}
     </div>

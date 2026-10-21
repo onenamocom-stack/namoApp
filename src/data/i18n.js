@@ -842,6 +842,7 @@ export const strings = {
   'bot.therapist.ask': { en: 'How are you feeling today?', hi: 'आज मन कैसा है?' },
   'bot.generic.hello': { en: 'Ask me your question.', hi: 'अपना सवाल पूछिए।' },
   'bot.generic.ask': { en: 'How can I help today?', hi: 'आज मैं कैसे मदद करूँ?' },
+  'bot.free': { en: 'Free', hi: 'मुफ़्त' },
   'bot.daily': { en: '1 free question every day, with any AI Pro', hi: 'रोज़ 1 सवाल मुफ़्त, किसी भी AI Pro से' },
   'bot.todayLeft': { en: "Today's free question is waiting", hi: 'आज का मुफ़्त सवाल बाक़ी है' },
   'bot.tomorrow': { en: 'Next free question tomorrow', hi: 'अगला मुफ़्त सवाल कल' },
