@@ -37,7 +37,12 @@ def _spy(monkeypatch):
 
 def test_every_category_has_an_ai_pro_and_a_new_one_gets_its_own():
     keys = [b["key"] for b in services.bots_state(None)["bots"]]
-    assert keys == ["astrologer", "tarot", "life_coach", "therapist"]
+    assert keys == [
+        "astrologer", "tarot", "vedic_wisdom", "energy_healing", "meditation", "therapist",
+        "puja_seva", "numerology", "telepathy", "vastu", "life_coach",
+    ]
+    names = {b["key"]: b["category"] for b in services.bots_state(None)["bots"]}
+    assert names["therapist"] == "Mental health" and names["life_coach"] == "Life coach"
     Consultant.objects.create(profile_id=TEST_USER, category="Numerologist, Tarot", status="approved")
     services.ai_bots()
     bot = AiBot.objects.get(category="Numerologist")
@@ -96,9 +101,36 @@ def test_signed_out_sees_them_and_a_hidden_one_is_not_offered():
 
 def test_the_therapist_points_to_help_and_every_chat_says_it_is_an_ai():
     assert "14416" in personas.THERAPIST and "diagnose" in personas.THERAPIST
-    for key in ("tarot", "life_coach", "therapist"):
-        assert "You are an AI" in personas.SYSTEMS[key]
+    for key in personas.SYSTEMS:
+        if key != personas.ASTROLOGER_KEY:
+            assert "You are an AI" in personas.SYSTEMS[key]
     assert "You are an AI" in personas.generic("Vastu expert")
+    # Every category the app ships with has a prompt of its own.
+    assert set(personas.CATEGORY_KEYS.values()) <= set(personas.SYSTEMS)
+    assert "cannot read anybody's mind" in personas.TELEPATHY
+    assert "Never invent" in personas.VEDIC_WISDOM or "NEVER INVENT" in personas.VEDIC_WISDOM
+
+
+def test_the_rename_moves_pros_and_ai_pros():
+    """ai/0008: Therapist -> Mental health, Life Coach -> Life coach, in a
+    Pro's list, and the AI Pro with its made-up name; Astrologer untouched."""
+    import importlib
+
+    from django.apps import apps as live
+
+    rename = importlib.import_module("apps.ai.migrations.0008_rename_categories")
+    pro = Consultant.objects.create(profile_id=TEST_USER, category="Astrologer, Therapist, Life Coach", status="approved")
+    AiBot.objects.create(key="old_t", category="Therapist", name="NAMO AI · Therapist")
+    AiBot.objects.create(key="old_l", category="Life Coach", name="Guru Ji")
+    rename.forward(live, None)
+    pro.refresh_from_db()
+    assert pro.category == "Astrologer, Mental health, Life coach"
+    assert AiBot.objects.get(key="old_t").name == "NAMO AI · Mental health"
+    coach = AiBot.objects.get(key="old_l")
+    assert coach.category == "Life coach" and coach.name == "Guru Ji"
+    rename.back(live, None)
+    pro.refresh_from_db()
+    assert pro.category == "Astrologer, Therapist, Life Coach"
 
 
 def test_the_api(authed_client, api_client):

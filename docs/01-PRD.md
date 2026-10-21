@@ -286,8 +286,18 @@ chart is timing, not permission.
 
 **An AI Pro for each kind of Pro — decided 21 Oct 2026 (Rahul).** Every
 category on Consult has an AI Pro in a box over its list, chat only: the
-astrologer (the Namo AI chat itself), a tarot reader, a life coach and a
-counsellor (Therapist), each talking as that professional and nothing else.
+astrologer (the Namo AI chat itself) and one for each other category, each
+talking as that professional and nothing else.
+
+**The Pro categories — eleven since 21 Oct 2026 (Rahul):** Astrologer, Tarot,
+Vedic wisdom, Energy Healing, Meditation, Mental health, Puja seva,
+Numerology, Telepathy, Vastu, Life coach. Therapist was renamed Mental health
+and Life Coach Life coach, with every Pro in them moved (Rahul's yes);
+Astrologer kept its name. The Mental health AI is the counsellor: it never
+diagnoses or talks about medicine and gives Tele-MANAS 14416 for any talk of
+self-harm. The Telepathy AI says it cannot read anybody's mind and teaches
+intuition instead. Until then there were four: Astrologer, Tarot, Life Coach,
+Therapist.
 A category added later gets its own, talking as a professional of that
 kind. The console sets each one's **name, picture and AI line** ("This is
 an AI, not a person.", shown on the box and in the chat), can rewrite how

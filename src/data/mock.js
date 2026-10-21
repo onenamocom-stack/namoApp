@@ -66,7 +66,22 @@ export const notifications = [
    CONSULT
    ══════════════════════════════════════════════════════════════════════════ */
 
-export const categories = ['Astrologer', 'Tarot', 'Life Coach', 'Therapist'] // Numerologist removed 5 Oct 2026
+// Rahul's eleven, 21 Oct 2026 (Therapist became Mental health and Life Coach
+// Life coach; Numerologist, removed 5 Oct, is back as Numerology). The same
+// list, in this order, is `CATEGORY_KEYS` in backend-django/apps/ai/personas.py.
+export const categories = [
+  'Astrologer',
+  'Tarot',
+  'Vedic wisdom',
+  'Energy Healing',
+  'Meditation',
+  'Mental health',
+  'Puja seva',
+  'Numerology',
+  'Telepathy',
+  'Vastu',
+  'Life coach',
+]
 
 export const consultants = [
   {

@@ -2066,8 +2066,13 @@ transcript; `ai_quota` is shared.
 `label` (the AI line, default "This is an AI, not a person."), `label_hi`,
 `prompt` (blank = the built-in one for the key, else a generic professional of
 the category; the shared rules are appended either way), `active`, `sort`,
-`created_at`. Rows are created on read for the app's four categories and any
-other category an approved consultant lists; never deleted.
+`created_at`. Rows are created on read for the app's eleven categories and
+any other category an approved consultant lists; never deleted. `ai/0008`
+(21 Oct 2026) renamed two categories in place — `Therapist` to `Mental
+health`, `Life Coach` to `Life coach` — in `consultants.category`,
+`profile_reviews.category` and `ai_bots.category` (and an AI Pro's name while
+it was still the made-up `NAMO AI · <category>`); keys stayed `therapist` and
+`life_coach`.
 
 **`ai_messages`** — the transcript. `session_id` is **nullable**, which was
 for free messages that belonged to nobody's clock. Since the meter was
