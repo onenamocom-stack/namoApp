@@ -103,9 +103,15 @@ against*:
 **The kundli sky** (3 Oct 2026). The sign-up reveal's saffron-to-maroon
 palette and turning ring, carried into the waiting and talking moments: every
 loader is `Loader` (the turning ring, `components/Cosmos.jsx`); both chats sit
-on `.cosmic-dawn` with your own messages in `.bubble-mine` (saffron gradient,
-white text) and the other side's in `.bubble-theirs` (white, hairline);
-Namo AI adds faint stars and thinks with the ring. Text pages stay plain so
+on `.cosmic-dawn`. **Since 21 Oct 2026** (Rahul's reference screenshot) the
+Pro chat and the AI chat draw the other side's words as plain 17px text with
+no bubble, your own in a soft saffron bubble (`bg-gold-wash`, dark text,
+hairline ring) on the right, the time as a centred mark ("Today, 2:15 pm")
+before the first message and after any half-hour gap, and the composer as a
+round field beside a 48px round saffron Send with an arrow. The AI chat's
+header has a 44px picture. `.bubble-mine` and `.bubble-theirs` (saffron
+gradient; white with a hairline) remain on the old Namo AI suggestions and
+elsewhere. Text pages stay plain so
 the effect stays special. `.glass-panel` is no longer used for anything over
 the dark scrim — the Tarot dialog, the chat panel and `Sheet` are solid white,
 because frosted white over a 40% ink scrim reads as grey and disabled.

@@ -1,6 +1,6 @@
 import { BackButton } from './Chrome.jsx'
 import { Loader } from './Cosmos.jsx'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { markConsultReturn } from '../lib/consultReturn.js'
 import AddMoneySheet from './AddMoneySheet.jsx'
@@ -400,7 +400,7 @@ function useUnreadAlerts() {
  * it cannot extend anything.
  */
 function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
-  const { refreshWallet, session, showToast } = useStore()
+  const { refreshWallet, session, showToast, lang } = useStore()
   const [messages, setMessages] = useState(() => loadOutbox(thread.id, myId))
   const [live, setLive] = useState(thread.live_session_id ?? null)
   const [left, setLeft] = useState(null)
@@ -706,22 +706,21 @@ function Thread({ thread, myId, small = false, onLive, onEnded, onBack }) {
 
       <div className="cosmic-dawn no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {messages.map((m, i) => {
-          const next = messages[i + 1]
-          const time = stamp(m.created_at)
-          /* One time under a run of messages from the same person in the
-             same minute, as a messenger does, not one under every line. */
-          const last = !next || next.sender_id !== m.sender_id || stamp(next.created_at) !== time
+          // The time is a DayMark between messages (21 Oct 2026); a bubble
+          // shows only its own Sending or Not sent.
           return (
+            <Fragment key={m.key ?? m.id}>
+            {marksAt(messages, i) && <DayMark iso={m.created_at} lang={lang} />}
             <Bubble
-              key={m.key ?? m.id}
               mine={m.sender_id === myId}
               text={m.image_url && m.body === 'Photo' ? '' : m.body}
               image={m.image_url}
               small={small}
-              time={last || m.state ? time : null}
+              time={m.state ? stamp(m.created_at) : null}
               state={m.state}
               onRetry={m.state === 'failed' && live ? () => deliver(m.key, m.body) : undefined}
             />
+            </Fragment>
           )
         })}
         <div ref={endRef} />
@@ -890,14 +889,19 @@ function Alerts() {
 
 /* ── Shared pieces ───────────────────────────────────────────────────────── */
 
+/* The other person's words as plain text on the page, yours in a soft
+   saffron bubble on the right (21 Oct 2026, Rahul's reference screenshot).
+   The time is a mark between messages (DayMark), not under each one. */
 export function Bubble({ mine, text, image, time, state, onRetry, small = false }) {
   return (
-    <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${time ? 'mb-3' : 'mb-1'}`}>
-      <div className="max-w-[85%]">
+    <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${small ? 'mb-2' : 'mb-4'}`}>
+      <div className={mine ? 'max-w-[85%]' : 'max-w-[92%]'}>
         <div
-          className={`whitespace-pre-wrap break-words px-3 transition-opacity ${small ? 'py-2 text-[12.5px] leading-snug' : 'py-2.5 text-meta'} ${
-            mine ? 'bubble-mine rounded-2xl rounded-br-md' : 'bubble-theirs rounded-2xl rounded-bl-md'
-          } ${state === 'sending' ? 'opacity-70' : ''} ${image ? '!p-1.5' : ''}`}
+          className={`whitespace-pre-wrap break-words transition-opacity ${
+            mine
+              ? `rounded-2xl rounded-br-md bg-gold-wash t-heading ring-1 ring-gold-fill/20 ${small ? 'px-3 py-2 text-[12.5px] leading-snug' : 'px-4 py-2.5 text-body'}`
+              : `t-heading ${small ? 'text-[13px] leading-snug' : 'text-[17px] leading-relaxed'}`
+          } ${state === 'sending' ? 'opacity-60' : ''} ${image ? '!p-1.5' : ''}`}
         >
           {image && (
             <a href={state ? undefined : image} target="_blank" rel="noreferrer" className="block">
@@ -916,15 +920,37 @@ export function Bubble({ mine, text, image, time, state, onRetry, small = false 
             {onRetry ? 'Not sent · Tap to retry' : 'Not sent'}
           </button>
         ) : (
-          time && (
-            <p className={`mt-1 caps-sm t-faint tnum ${mine ? 'text-right' : ''}`}>
-              {state === 'sending' ? 'Sending' : time}
-            </p>
-          )
+          state === 'sending' &&
+          time && <p className={`mt-1 caps-sm t-faint ${mine ? 'text-right' : ''}`}>Sending</p>
         )}
       </div>
     </div>
   )
+}
+
+/** "Today, 2:15 pm" between messages, as a messenger does: before the first
+ *  one and wherever half an hour has passed (21 Oct 2026). */
+export function DayMark({ iso, lang }) {
+  const at = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(Date.now() - 86_400_000)
+  const same = (a, b) => a.toDateString() === b.toDateString()
+  const hi = lang === 'hi'
+  const day = same(at, today)
+    ? hi ? 'आज' : 'Today'
+    : same(at, yesterday)
+      ? hi ? 'कल' : 'Yesterday'
+      : at.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  const time = at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }).toLowerCase()
+  return <p className="my-4 text-center text-[13px] t-faint tnum">{`${day}, ${time}`}</p>
+}
+
+/** Whether a DayMark goes before message `i`. */
+export function marksAt(list, i, at = (m) => m.created_at) {
+  if (!at(list[i])) return false
+  if (i === 0) return true
+  const before = at(list[i - 1])
+  return !before || new Date(at(list[i])) - new Date(before) > 30 * 60_000
 }
 
 /**
@@ -1045,6 +1071,8 @@ export function Composer({ onSend, placeholder, disabled = false, suggestions = 
           />
         </>
       )}
+      {/* A round box and a round saffron Send (21 Oct 2026, Rahul's
+          reference screenshot). */}
       <input
         ref={box}
         value={value}
@@ -1056,7 +1084,7 @@ export function Composer({ onSend, placeholder, disabled = false, suggestions = 
         placeholder={placeholder}
         disabled={disabled}
         aria-label="Message"
-        className="min-w-0 flex-1 border-b border-rule bg-transparent pb-2 text-body t-heading outline-none transition-colors placeholder:text-t4 focus:border-gold disabled:opacity-40"
+        className="min-w-0 flex-1 rounded-full border border-stroke bg-surface px-5 py-3 text-body t-heading outline-none transition-colors placeholder:text-t4 focus:border-gold disabled:opacity-40"
       />
       {voice && (
         <span onPointerDown={(e) => e.preventDefault()} className="flex flex-none items-center gap-1">
@@ -1083,17 +1111,15 @@ export function Composer({ onSend, placeholder, disabled = false, suggestions = 
           </button>
         </span>
       )}
-      <span onPointerDown={(e) => e.preventDefault()} className="flex-none">
-        <PopButton
-          type="submit"
-          variant="gold"
-          full={false}
-          disabled={disabled || !value.trim()}
-          className="px-4 py-2"
-        >
-          Send
-        </PopButton>
-      </span>
+      <button
+        type="submit"
+        onPointerDown={(e) => e.preventDefault()}
+        disabled={disabled || !value.trim()}
+        aria-label="Send"
+        className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gold-fill text-white shadow-md transition active:scale-95 disabled:opacity-50"
+      >
+        <Icon name="send" size={22} />
+      </button>
     </form>
     </div>
   )

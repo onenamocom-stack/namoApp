@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useBirthGate } from '../components/useBirthFirst.js'
 import { aiLine, copyFor } from '../data/aiBots.js'
 import { fetchBots } from '../lib/ai.js'
 import { BackButton } from '../components/Chrome.jsx'
-import { Bubble, Composer, stamp } from '../components/ChatPanel.jsx'
+import { Bubble, Composer, DayMark, marksAt } from '../components/ChatPanel.jsx'
 import { Loader } from '../components/Cosmos.jsx'
 import { PopAvatar } from '../components/Pop.jsx'
 import useAskAi from '../components/useAskAi.js'
@@ -67,11 +67,11 @@ export default function Ask() {
       : t('ask.free', { n: freeLeft })
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="cosmic-dawn absolute inset-0 z-10 flex flex-col">
       {/* The Pro chat's header (ChatPanel's Thread). */}
-      <div className="flex flex-none items-center gap-3 border-b border-rule px-4 py-3">
+      <div className="flex flex-none items-center gap-3 px-4 py-3">
         <BackButton onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/consult'))} />
-        <PopAvatar initials="AI" src={pro?.image_url || null} size={30} online />
+        <PopAvatar initials="AI" src={pro?.image_url || null} size={44} online />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-meta t-heading">{name}</span>
           <span className="block truncate caps-sm text-live">{aiLine(pro, lang) || 'AI'}</span>
@@ -79,7 +79,7 @@ export default function Ask() {
         <span className="flex-none whitespace-nowrap caps-sm t-faint tnum">{line}</span>
       </div>
 
-      <div className="cosmic-dawn no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {loading && <Loader label={t('ask.opening')} />}
 
         {empty && (
@@ -90,14 +90,12 @@ export default function Ask() {
           </div>
         )}
 
-        {messages.map((m, i) => {
-          const next = messages[i + 1]
-          const time = m.created_at ? stamp(m.created_at) : null
-          const last = !next || next.role !== m.role
-          return (
-            <Bubble key={m.id} mine={m.role !== 'model'} text={m.text} time={last ? time : null} />
-          )
-        })}
+        {messages.map((m, i) => (
+          <Fragment key={m.id}>
+            {marksAt(messages, i) && <DayMark iso={m.created_at} lang={lang} />}
+            <Bubble mine={m.role !== 'model'} text={m.text} />
+          </Fragment>
+        ))}
         {thinking && <Bubble mine={false} text={t(bot.thinking)} state="sending" />}
         <div ref={endRef} />
       </div>
