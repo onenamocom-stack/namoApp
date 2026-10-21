@@ -11,19 +11,27 @@ import { fetchDarshanLive } from '../lib/bhakti.js'
  * Only YouTube streams that allow playing in other apps get into the
  * console, and nothing here links out to YouTube.
  *
+ * A temple's channel with a photo of its murti shows the photo; the live
+ * stream plays only when the seeker asks for it (21 Oct 2026, Rahul: "jab
+ * live darshan available hai tab live darshan ka ek button ... nahi to baki
+ * time us deity ki usi mandir ki photo"), and `watch` says they did. Back to
+ * the photo is the same button. Off air it is the photo and nothing else.
+ *
  * A temple's channel is asked first whether it is live, and again every two
- * minutes while it is not. Off air, its latest finished stream plays as a
+ * minutes while it is not. With no photo, it plays without asking, and off air its latest finished stream plays as a
  * recording (Rahul: "jinka nahi h live unka jo last live available h wo
  * dikha de"); with none, the murti's own photo, never another murti's
  * (Rahul: "usi deity ki image ... naki koi aur"). What it is and when the
  * temple is next live go on the plaque's third line (Rahul: "Name plate pe
  * we can have three lines"), so `onAir` tells the page:
  * null (not a channel, or not known yet), {live: true}, or
- * {live: false, at: Date | null (the recording's day), startsAt: Date | null}.
+ * {live: false, at: Date | null (the recording's day), startsAt: Date | null};
+ * with `playing` (the player is on screen, with its own sound) and `choice`
+ * (a channel with a photo: the page offers the Live button).
  */
 const RECHECK_MS = 120000
 
-export default function DarshanFrame({ image, alt, onAir }) {
+export default function DarshanFrame({ image, alt, onAir, watch = false }) {
   const [status, setStatus] = useState(null)
   const checks = image.kind === 'youtube' && image.checksLive
 
@@ -48,18 +56,21 @@ export default function DarshanFrame({ image, alt, onAir }) {
     }
   }, [checks, image.id])
 
-  const playing = image.kind === 'youtube' && (!checks || status?.live)
-  const recording = checks && status && !status.live ? status.last : null
+  const choice = Boolean(checks && image.src)
+  const playing = image.kind === 'youtube' && (!checks || status?.live) && (!choice || watch)
+  const recording = checks && !choice && status && !status.live ? status.last : null
   useEffect(() => {
     let air = null
     if (image.kind === 'youtube') {
       if (!checks) air = { live: true }
       else if (status) {
-        air = status.live ? { live: true } : { live: false, at: status.last?.at ?? null, startsAt: status.startsAt }
+        air = status.live
+          ? { live: true }
+          : { live: false, at: recording?.at ?? null, startsAt: status.startsAt }
       }
     }
-    onAir?.(air)
-  }, [onAir, image.kind, checks, status])
+    onAir?.(air && { ...air, playing: Boolean(playing || recording), choice })
+  }, [onAir, image.kind, checks, status, playing, recording, choice])
 
   if (playing) return <Player id={image.id} src={(checks && status?.embedUrl) || image.embedUrl} title={alt} />
   if (recording) return <Player id={`${image.id}-rec`} src={recording.embedUrl} title={alt} />

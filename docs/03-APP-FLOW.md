@@ -609,6 +609,14 @@ top to bottom —
   live stream once it starts. The
   channel link plays whatever the temple streams that day: nobody changes
   the link for a new day's video.
+  **A channel murti with its own photo** (21 Oct 2026, Rahul: "jab live
+  darshan available hai tab live darshan ka ek button ... nahi to baki time
+  us deity ki usi mandir ki photo") shows the photo, not the stream and not
+  a recording. While the temple is live a red *Live darshan* button sits
+  under the plaque; tapping it plays the stream, and the same button, now
+  *Back to the photo*, returns to it. Another murti or the stream ending
+  goes back to the photo. Off air there is no button; the plaque says when
+  it is next live. A channel murti without a photo behaves as above.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told

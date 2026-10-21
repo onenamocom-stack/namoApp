@@ -366,11 +366,18 @@ export default function Pooja() {
     setTrack(null)
   }
 
-  // A temple's YouTube darshan has its own sound: Sangeet stops for it,
-  // live or as a recording, unless the temple is off air with nothing to
-  // play (from the frame: `air` {live: false, at: null}).
+  // A temple's YouTube darshan has its own sound: Sangeet stops while its
+  // player is on screen, live or as a recording (from the frame:
+  // `air.playing`). `watch`: the seeker tapped Live darshan (21 Oct 2026).
   const [air, setAir] = useState(null)
-  const onYoutube = deity.images[Math.min(pic, deity.images.length - 1)]?.kind === 'youtube' && !(air && !air.live && !air.at)
+  const [watch, setWatch] = useState(false)
+  const onYoutube = Boolean(air?.playing)
+  const murtiId = deity.images[Math.min(pic, deity.images.length - 1)]?.id
+  // Another murti, or the stream ending, goes back to the photo.
+  useEffect(() => setWatch(false), [murtiId])
+  useEffect(() => {
+    if (air && !air.live) setWatch(false)
+  }, [air])
   useEffect(() => {
     if (onYoutube) {
       stopTrack()
@@ -488,7 +495,7 @@ export default function Pooja() {
           style={{ top: bandCqw(BAND.body - 30), bottom: slabCqw(0.62) }}
         >
           {/* A photo, a video or a temple's YouTube video (20 Oct 2026). */}
-          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} onAir={setAir} />
+          <DarshanFrame image={image} alt={`${deity.name} — ${templeName}`} onAir={setAir} watch={watch} />
         </span>
 
         {/* Lamp light over the murti, always breathing. */}
@@ -583,6 +590,32 @@ export default function Pooja() {
             )}
           </button>
         </span>
+
+        {/* Live darshan, under the plaque (21 Oct 2026, Rahul): only while
+            the temple is live; tap to watch, tap again for the photo. When
+            it is next live stays on the plaque's third line. */}
+        {air?.choice && air.live && (
+          <span
+            className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
+            style={{ top: `calc(${bandCqw(BAND.body)} + 14px)` }}
+          >
+            <button
+              type="button"
+              onClick={() => setWatch((w) => !w)}
+              aria-pressed={watch}
+              className={`pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold shadow-lg transition active:scale-95 ${
+                watch ? 'bg-white text-[#b4400a]' : 'bg-[#d93025] text-white'
+              }`}
+            >
+              {watch ? (
+                <Icon name="back" size={12} weight={2.6} />
+              ) : (
+                <span aria-hidden="true" className="inline-block h-2 w-2 animate-pulse rounded-full bg-white" />
+              )}
+              {watch ? t('puja.backToPhoto') : t('puja.watchLive')}
+            </button>
+          </span>
+        )}
 
         <HangingBell side="left" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />
         <HangingBell side="right" ringing={ringing} hint={hint} onRing={() => offer('bell')} label={t(offeringLabel('bell'))} />

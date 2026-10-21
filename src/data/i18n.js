@@ -203,6 +203,8 @@ export const strings = {
   'puja.mandirOf': { en: 'Shri {name} Mandir', hi: 'श्री {name} मंदिर' },
   'puja.live': { en: 'Live', hi: 'लाइव' },
   'puja.lastLive': { en: 'Last live recording', hi: 'पिछले लाइव की रिकॉर्डिंग' },
+  'puja.watchLive': { en: 'Live darshan', hi: 'लाइव दर्शन' },
+  'puja.backToPhoto': { en: 'Back to the photo', hi: 'फ़ोटो पर वापस' },
   'puja.offAir': { en: 'Not live right now', hi: 'अभी लाइव नहीं है' },
   'puja.nextLive': { en: 'Next live: {when}', hi: 'अगला लाइव: {when}' },
   'puja.nextUnknown': { en: 'Next live: not known', hi: 'अगला लाइव: पता नहीं' },
