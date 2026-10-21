@@ -226,6 +226,8 @@ export default function Consult() {
         <TabHeader />
         <FreeTools />
         <section className="px-5 pt-6">
+          {/* The AI chats work with nobody approved (21 Oct 2026). */}
+          <AiBots cat="All" />
           <NobodyYet />
         </section>
         <div className="h-24" />
