@@ -10,15 +10,16 @@ import { warmCharts } from './Computing.jsx'
 
 const RESEND_AFTER = 30
 
-// What NAMO has (22 Oct 2026, Rahul: "Focus on bhakti and darshan and social
-// network"): those three as tiles, everything else as capsules under them.
-// It replaced four tiles (follow gurus, post bhakti, darshan, kundli).
+// What NAMO has (22 Oct 2026, Rahul): Bhakti, Astrology and Social as tiles,
+// everything else as capsules under them. It replaced four tiles (follow
+// gurus, post bhakti, darshan, kundli); Darshan was a tile for an hour.
 const PROMISES = [
   { icon: 'namaste', key: 'w.p.bhakti' },
-  { icon: 'pooja', key: 'w.p.darshan' },
+  { icon: 'horoscope', key: 'w.p.astrology' },
   { icon: 'groups', key: 'w.p.social' },
 ]
 const CAPSULES = [
+  { icon: 'pooja', key: 'w.c.darshan' },
   { icon: 'mala', key: 'w.c.mantra' },
   { icon: 'kundli', key: 'w.c.kundli' },
   { icon: 'sound', key: 'w.c.bhajan' },

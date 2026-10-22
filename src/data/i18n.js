@@ -985,8 +985,9 @@ export const strings = {
   // (was "Connecting Bharat" from 13 Oct, "India's Spiritual Network" 12 Oct).
   'w.title': { en: 'Connecting हिन्दु-स्थान!', hi: 'Connecting हिन्दु-स्थान!' },
   'w.p.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
-  'w.p.darshan': { en: 'Darshan', hi: 'दर्शन' },
-  'w.p.social': { en: 'Social network', hi: 'सोशल नेटवर्क' },
+  'w.p.astrology': { en: 'Astrology', hi: 'ज्योतिष' },
+  'w.p.social': { en: 'Social', hi: 'सोशल' },
+  'w.c.darshan': { en: 'Darshan', hi: 'दर्शन' },
   'w.c.mantra': { en: 'Mantra', hi: 'मंत्र' },
   'w.c.kundli': { en: 'Kundli', hi: 'कुंडली' },
   'w.c.bhajan': { en: 'Bhajan', hi: 'भजन' },

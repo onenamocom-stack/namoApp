@@ -48,7 +48,7 @@ In file order, which is also resolution order.
 | Path | Screen | Layout |
 |---|---|---|
 | `/` | → `/onboarding` | — |
-| `/onboarding` | Welcome — language, the slogan, what the app does (three tiles: Bhakti, Darshan, Social network; ten capsules: Mantra, Kundli, Bhajan, Panchang, Status, Wallpaper, Talk to astrologers, Remedies, E-books, Courses — 22 Oct 2026, Rahul), phone, code | Plain |
+| `/onboarding` | Welcome — language, the slogan, what the app does (three tiles: Bhakti, Astrology, Social; eleven capsules: Darshan, Mantra, Kundli, Bhajan, Panchang, Status, Wallpaper, Talk to astrologers, Remedies, E-books, Courses — 22 Oct 2026, Rahul), phone, code | Plain |
 | `/onboarding/details` | AboutYou — every birth detail on one page | Plain |
 | `/onboarding/computing` | Computing — writes the profile, plays the reveal | Plain |
 | `/onboarding/{name,gender,date,time,place,phone,verify}` | → `/onboarding` (old links). The **pro** build keeps `name`, `phone`, `verify` as real screens for `?next=pro` | — |
