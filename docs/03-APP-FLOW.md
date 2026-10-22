@@ -594,34 +594,24 @@ top to bottom —
   2026, Rahul; set per murti in the console). The video plays on a silent
   loop; the YouTube one plays in YouTube's player inside Namo, nothing links
   out. Either stands in the same frame, with the bells, dhoop, diyas,
-  flowers and aarti in front of it. For a YouTube one the plaque takes a
-  third line (Rahul, 20 Oct) saying what plays, and Sangeet stops and its
-  button hides there (the temple has its own sound). It replaced, the same morning, a
-  separate Live pill with its own list of temples.
-  A temple's channel is asked first whether it is live. Off air, the frame
-  plays the temple's latest finished stream. The plaque's third line reads
-  *● Live* while live; off air, *Last live recording · Next live:
-  <time>* — the stream the temple scheduled on YouTube, else the console's
-  timings, else *not known*. Nothing is laid over the frame. With no
-  recording to play, the frame shows that murti's own photo (never another
-  murti's; dark without one), the line reads *Not live right now · Next
-  live: …*, and Sangeet returns. It asks again every two minutes and plays the
-  live stream once it starts. The
-  channel link plays whatever the temple streams that day: nobody changes
-  the link for a new day's video.
-  **A channel murti with its own photo** (21 Oct 2026, Rahul: "jab live
-  darshan available hai tab live darshan ka ek button ... nahi to baki time
-  us deity ki usi mandir ki photo") shows the photo, not the stream and not
-  a recording. While the temple is live a red *Live darshan* button sits
-  under the plaque; tapping it plays the stream, and the same button, now
-  *Back to the photo*, returns to it. Another murti or the stream ending
-  goes back to the photo. Off air there is no button; the plaque says when
-  it is next live. Since 22 Oct 2026 (Rahul) that holds for every channel
-  murti: none plays by itself and no past recording plays; one without a
-  photo is dark until Live. What the paragraph above says about recordings
-  playing off air is how it worked until then. Since 22 Oct 2026 35 of the 43 channel murtis have
-  their murti's photo (the deity, not the building; Rahul); the seven with
-  none are temples that ban photography in the sanctum.
+  flowers and aarti in front of it.
+  **Aaj ke darshan, Rahul's process (22 Oct 2026):** the famous temples,
+  live or not; those live 24 hours first, then those live some of the time,
+  then those never live (the console's `sort`); every temple shows its
+  deity's own photo; while it is live a red *Live Darshan Available →*
+  button sits under the plaque, plays the live stream, and turns into
+  *Back to the photo*; only a live stream ever plays — never a past
+  recording, and no channel plays by itself; the plaque has two lines, the
+  temple and its place. A temple's channel is asked whether it is live, and
+  again every two minutes; another murti, or the stream ending, goes back
+  to the photo. While the stream plays Sangeet stops and its button hides
+  (the temple has its own sound). The channel link plays whatever the
+  temple streams that day: nobody changes the link for a new day's video.
+  This replaced, 20–22 Oct: a recording playing off air, a channel with no
+  photo playing by itself, and a third plaque line (*Live*, *Last live
+  recording* or *Not live right now*, then *Next live*). 35 of the 43
+  channel murtis have their deity's photo; photos for the other eight are
+  being found.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told

@@ -14,7 +14,7 @@ import {
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
-import DarshanFrame, { airLine } from '../components/DarshanFrame.jsx'
+import DarshanFrame from '../components/DarshanFrame.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -577,23 +577,14 @@ export default function Pooja() {
               )}
               <Icon name="back" size={10} weight={2.4} className="flex-none -rotate-90 opacity-80" />
             </span>
-            {/* A temple channel's third line (20 Oct 2026, Rahul: "Name plate
-                pe we can have three lines. Third line for Last recording.
-                Live timing and Live"). */}
-            {image.kind === 'youtube' && air && (
-              <span
-                className={`mt-0.5 block text-[10.5px] leading-tight ${air.live ? 'font-bold text-[#ff8a7a]' : 'text-[#e9d6a8] opacity-90'}`}
-              >
-                {air.live && <span aria-hidden="true" className="mr-1 inline-block h-1.5 w-1.5 -translate-y-px rounded-full bg-[#ff5a4a] align-middle" />}
-                {airLine(air, image, lang, t)}
-              </span>
-            )}
+            {/* No third line since 22 Oct 2026 (Rahul: "Plate ke 3rd line me ab
+                kuch nahi aayega"); the Live darshan button says it. It said
+                Live, or Last live recording / Not live, and Next live. */}
           </button>
         </span>
 
         {/* Live darshan, under the plaque (21 Oct 2026, Rahul): only while
-            the temple is live; tap to watch, tap again for the photo. When
-            it is next live stays on the plaque's third line. */}
+            the temple is live; tap to watch, tap again for the photo. */}
         {air?.choice && air.live && (
           <span
             className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
@@ -613,6 +604,7 @@ export default function Pooja() {
                 <span aria-hidden="true" className="inline-block h-2 w-2 animate-pulse rounded-full bg-white" />
               )}
               {watch ? t('puja.backToPhoto') : t('puja.watchLive')}
+              {!watch && <Icon name="back" size={12} weight={2.6} className="rotate-180" />}
             </button>
           </span>
         )}

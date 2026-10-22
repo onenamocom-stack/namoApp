@@ -21,16 +21,14 @@ import { fetchDarshanLive } from '../lib/bhakti.js'
  * and no past recording plays; a channel with no photo is dark until Live.
  *
  * A temple's channel is asked first whether it is live, and again every two
- * minutes while it is not. Before 22 Oct, with no photo, it played without asking, and off air its latest finished stream plays as a
- * recording (Rahul: "jinka nahi h live unka jo last live available h wo
- * dikha de"); with none, the murti's own photo, never another murti's
- * (Rahul: "usi deity ki image ... naki koi aur"). What it is and when the
- * temple is next live go on the plaque's third line (Rahul: "Name plate pe
- * we can have three lines"), so `onAir` tells the page:
+ * minutes while it is not. Until 22 Oct 2026 a channel without a photo
+ * played by itself, off air its latest finished stream played as a
+ * recording, and the plaque's third line said which and when it was next
+ * live; Rahul's process of that day ended all three. `onAir` tells the page:
  * null (not a channel, or not known yet), {live: true}, or
- * {live: false, at: Date | null (the recording's day), startsAt: Date | null};
+ * {live: false, at: null, startsAt: Date | null};
  * with `playing` (the player is on screen, with its own sound) and `choice`
- * (a channel with a photo: the page offers the Live button).
+ * (a temple channel: the page offers the Live button).
  */
 const RECHECK_MS = 120000
 
@@ -124,32 +122,4 @@ function Photo({ image, alt }) {
       style={{ objectPosition: '50% 45%' }}
     />
   )
-}
-
-/** The plaque's third line for a temple channel: Live; or what plays and
- *  when the temple is next live — the stream it scheduled on YouTube, else
- *  the console's timings, else "not known" (Rahul: "Last Live ki Recording.
- *  Next Live: Timing. Or agar timing nahi pta to 'Pta nahi'"). */
-export function airLine(air, image, lang, t) {
-  if (!air) return ''
-  if (air.live) return t('puja.live')
-  const locale = lang === 'hi' ? 'hi-IN' : 'en-IN'
-  // No date on the recording (Rahul: "Last live recording ki date mat do").
-  const what = air.at ? t('puja.lastLive') : t('puja.offAir')
-  const hours = (lang === 'hi' && image.liveHoursHi) || image.liveHours
-  const next = air.startsAt
-    ? t('puja.nextLive', { when: when(air.startsAt, locale, t) })
-    : hours
-      ? t('puja.nextLive', { when: hours })
-      : t('puja.nextUnknown')
-  return `${what} · ${next}`
-}
-
-function when(at, locale, t) {
-  const time = at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
-  const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  const days = Math.round((day(at) - day(new Date())) / 86400000)
-  if (days <= 0) return t('puja.today', { time })
-  if (days === 1) return t('puja.tomorrow', { time })
-  return at.toLocaleString(locale, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 }
