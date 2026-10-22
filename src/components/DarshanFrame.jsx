@@ -16,9 +16,12 @@ import { fetchDarshanLive } from '../lib/bhakti.js'
  * live darshan available hai tab live darshan ka ek button ... nahi to baki
  * time us deity ki usi mandir ki photo"), and `watch` says they did. Back to
  * the photo is the same button. Off air it is the photo and nothing else.
+ * Since 22 Oct 2026 (Rahul: "jinme direct video aa rahi hai usme deity ki
+ * image aani chahiye na pehle") no channel plays by itself, photo or not,
+ * and no past recording plays; a channel with no photo is dark until Live.
  *
  * A temple's channel is asked first whether it is live, and again every two
- * minutes while it is not. With no photo, it plays without asking, and off air its latest finished stream plays as a
+ * minutes while it is not. Before 22 Oct, with no photo, it played without asking, and off air its latest finished stream plays as a
  * recording (Rahul: "jinka nahi h live unka jo last live available h wo
  * dikha de"); with none, the murti's own photo, never another murti's
  * (Rahul: "usi deity ki image ... naki koi aur"). What it is and when the
@@ -56,9 +59,9 @@ export default function DarshanFrame({ image, alt, onAir, watch = false }) {
     }
   }, [checks, image.id])
 
-  const choice = Boolean(checks && image.src)
+  const choice = Boolean(checks)
   const playing = image.kind === 'youtube' && (!checks || status?.live) && (!choice || watch)
-  const recording = checks && !choice && status && !status.live ? status.last : null
+  const recording = null
   useEffect(() => {
     let air = null
     if (image.kind === 'youtube') {

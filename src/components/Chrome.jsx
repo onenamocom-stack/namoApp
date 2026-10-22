@@ -5,7 +5,7 @@ import Icon from './Icon.jsx'
 import { PopAvatar } from './Pop.jsx'
 import PresenceToggle from './PresenceToggle.jsx'
 import { rupees, useStore } from '../store.jsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { subscribeToAlerts } from '../lib/notifications.js'
 import { fetchDmThreads } from '../lib/dms.js'
 
@@ -154,8 +154,26 @@ function Tab({ to, label, icon, iconSize = 19, also = [] }) {
  * breaking the top edge was tried and oversold what sat in it.
  */
 export function BottomNav({ tabs = TABS }) {
+  // The bar's real height, safe area included, as `--nav-h` for the space
+  // `main` keeps under it (22 Oct 2026, Rahul: in the Android app the
+  // shrine's altar hid behind the bar; a phone's larger text makes the bar
+  // taller than the 56px that was assumed).
+  const bar = useRef(null)
+  useEffect(() => {
+    const el = bar.current
+    if (!el || typeof ResizeObserver === 'undefined') return undefined
+    const root = document.documentElement
+    const note = () => root.style.setProperty('--nav-h', `${el.offsetHeight}px`)
+    note()
+    const watch = new ResizeObserver(note)
+    watch.observe(el)
+    return () => {
+      watch.disconnect()
+      root.style.removeProperty('--nav-h')
+    }
+  }, [])
   return (
-    <nav className="navbar">
+    <nav ref={bar} className="navbar">
       <ul className="flex items-stretch">
         {tabs.map((t) => (
           <Tab key={t.to} {...t} />

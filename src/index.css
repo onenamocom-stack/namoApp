@@ -136,7 +136,7 @@
 
   main {
     /* Account for fixed navbar at bottom (calc navbar height + safe area) */
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: var(--nav-h, calc(56px + env(safe-area-inset-bottom)));
   }
 
   /* The reservation above is unconditional, and every screen but a few
