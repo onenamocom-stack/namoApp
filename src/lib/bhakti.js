@@ -316,7 +316,7 @@ export const STATUS_H = 1920
 
 export async function composeStatus(
   artworkSrc,
-  { photoSrc, name, dateLine, hinduLine, logoSrc, iconSrc } = {},
+  { photoSrc, name, dateLine, hinduLine, logoSrc, logoDarkSrc, iconSrc } = {},
   { overlay = false } = {},
 ) {
   const art = overlay ? null : await loadImage(artworkSrc)
@@ -333,7 +333,20 @@ export async function composeStatus(
     drawCover(ctx, art, W, H)
   }
 
-  const [photo, logo, icon] = await Promise.all([loadImage(photoSrc), loadImage(logoSrc), loadImage(iconSrc)])
+  // The white mark disappears on a light card (22 Oct 2026, Rahul's beige
+  // status cards): where the artwork is light under the mark, the dark one.
+  let markSrc = logoSrc
+  if (art && logoDarkSrc) {
+    try {
+      const px = ctx.getImageData(W - 52 - 250, 56, 250, 90).data
+      let sum = 0
+      for (let i = 0; i < px.length; i += 16) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]
+      if (sum / (px.length / 16) > 165) markSrc = logoDarkSrc
+    } catch {
+      /* a tainted canvas cannot be read; the white mark stays */
+    }
+  }
+  const [photo, logo, icon] = await Promise.all([loadImage(photoSrc), loadImage(markSrc), loadImage(iconSrc)])
   // The fonts the page already loads; a canvas draws only what has arrived.
   try {
     await document.fonts?.ready

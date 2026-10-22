@@ -720,6 +720,7 @@ function StatusShelf({ list }) {
       dateLine: statusDateLine(istDate()),
       hinduLine,
       logoSrc: `${import.meta.env.BASE_URL}namo-logo-light.png`,
+      logoDarkSrc: `${import.meta.env.BASE_URL}namo-logo.png`,
       iconSrc: `${import.meta.env.BASE_URL}namo-icon.png`,
     }),
     [photo, name, hinduLine],
