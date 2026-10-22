@@ -616,7 +616,9 @@ top to bottom —
   under the plaque; tapping it plays the stream, and the same button, now
   *Back to the photo*, returns to it. Another murti or the stream ending
   goes back to the photo. Off air there is no button; the plaque says when
-  it is next live. A channel murti without a photo behaves as above.
+  it is next live. A channel murti without a photo behaves as above. Since 22 Oct 2026 35 of the 43 channel murtis have
+  their murti's photo (the deity, not the building; Rahul); the seven with
+  none are temples that ban photography in the sanctum.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told
