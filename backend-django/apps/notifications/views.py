@@ -79,6 +79,25 @@ def push_subscribe(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+def fcm_register(request):
+    """The Android app's FCM token, for the caller (22 Oct 2026)."""
+    from . import fcm
+
+    ok = fcm.register(request.user.pk, (request.data or {}).get("token", ""))
+    return Response({"ok": ok}, status=200 if ok else 400)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def fcm_unregister(request):
+    from . import fcm
+
+    token = (request.data or {}).get("token", "")
+    return Response({"ok": True, "removed": fcm.unregister(request.user.pk, token)})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def push_unsubscribe(request):
     from . import push
 

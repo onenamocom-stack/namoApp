@@ -236,6 +236,8 @@ VAPID_PUBLIC_KEY = os.environ.get(
 )
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:support@1namo.com")
+# The Firebase project the Android app's FCM ring goes through (apps/notifications/fcm.py).
+FCM_PROJECT = os.environ.get("FCM_PROJECT", "project-5e5df107-b8f8-4649-9d1")
 
 # --- The split (docs/02-TRD.md §7, revised 22 Sep 2026) -------------------
 # One image, two Cloud Run services. The public API serves no console URL

@@ -77,3 +77,36 @@ export async function keepPushFresh() {
     return 'failed'
   }
 }
+
+/**
+ * The Android app's FCM token (22 Oct 2026): the app's own native ring for
+ * calls, even when the app is closed. The app opens 1namo.com with
+ * `?fcm=<token>`; `catchFcmToken` keeps it and takes it out of the address,
+ * and `sendFcmToken` hands it to the API for whoever is signed in, once per
+ * token and person.
+ */
+const FCM_KEY = 'namo:fcm'
+
+export function catchFcmToken() {
+  try {
+    const url = new URL(window.location.href)
+    const t = url.searchParams.get('fcm')
+    if (!t) return
+    localStorage.setItem(FCM_KEY, JSON.stringify({ token: t, sentFor: null }))
+    url.searchParams.delete('fcm')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  } catch {
+    /* no storage: the next launch brings it again */
+  }
+}
+
+export async function sendFcmToken(uid) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FCM_KEY) || 'null')
+    if (!saved?.token || !uid || saved.sentFor === uid) return
+    await call('/notifications/fcm/', { method: 'POST', body: { token: saved.token } })
+    localStorage.setItem(FCM_KEY, JSON.stringify({ ...saved, sentFor: uid }))
+  } catch (err) {
+    console.error('[fcm] register failed:', err?.message)
+  }
+}

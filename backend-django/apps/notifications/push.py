@@ -79,12 +79,35 @@ def send(profile_id, payload, ttl=TTL_SECONDS):
 
 
 def ring(session, seeker_name):
-    """The incoming-call push for one session request."""
+    """The incoming-call push for one session request: web push to the
+    consultant's browsers and FCM to their Android app (fcm.py)."""
+    from . import fcm
+
     what = "Chat" if session.mode == "chat" else ("Audio call" if session.audio_only else "Video call")
-    return send(session.consultant_id, {
+    payload = {
         "type": "incoming",
         "session_id": str(session.id),
         "title": f"{seeker_name or 'Someone'} is calling",
         "body": f"{what} · ₹{session.rate_paise // 100}/min — tap to answer",
         "mode": session.mode,
+    }
+    fcm.send(session.consultant_id, {**payload, "open": f"/desk/ring/{session.id}"})
+    return send(session.consultant_id, payload)
+
+
+def accepted(session, consultant_name):
+    """The seeker's ring (22 Oct 2026, Rahul): their Pro took the session.
+    FCM only; seekers have no web push. A call rings full screen; a chat is
+    a heads-up."""
+    from . import fcm
+
+    call = session.mode != "chat"
+    return fcm.send(session.seeker_id, {
+        "type": "connecting" if call else "accepted",
+        "session_id": str(session.id),
+        "title": f"{consultant_name or 'Your Pro'} {'is connecting your call' if call else 'accepted your chat'}",
+        "body": "Tap to join" if call else "Tap to open the chat",
+        "mode": session.mode,
+        # The call screen; a chat opens itself on launch (LiveChatResume).
+        "open": f"/call/{session.id}" if call else "/home",
     })

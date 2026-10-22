@@ -928,6 +928,16 @@ create table push_subscriptions (
   user_agent  text not null default '',
   created_at  timestamptz not null default now()
 );
+
+-- 22 Oct 2026, notifications/0003: the Android app installs that may be rung
+-- through Firebase Cloud Messaging (apps/notifications/fcm.py).
+create table fcm_tokens (
+  id          uuid primary key,
+  profile_id  uuid not null,          -- indexed; whoever is signed in on that install
+  token       text not null unique,   -- FCM's registration token; moves with the install
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
 ```
 
 **Two ledger rows per session, not one per minute.** The obvious design is a

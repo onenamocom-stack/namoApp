@@ -497,6 +497,15 @@ def _ring(session):
         pass
 
 
+def _tell_seeker(session, pro_name):
+    from apps.notifications import push
+
+    try:
+        push.accepted(session, pro_name)
+    except Exception:  # noqa: BLE001 — a ring is never allowed to break a request
+        pass
+
+
 def _balance_of(profile_id):
     """The wallet balance with prod's coalesce (014): no wallet row reads
     as 0. Unlocked — advisory checks only; the locked number is taken at
@@ -608,6 +617,8 @@ def accept_chat(consultant_id, session_id, now=None):
                     "hold_paise", "thread_id", "order_id", "free_seconds",
                 )
             )
+            # The seeker's phone rings too (22 Oct 2026, Rahul), after commit.
+            transaction.on_commit(lambda: _tell_seeker(session, pro_name))
 
             # Nothing to hold when the wallet is empty and the session runs
             # on its free minutes alone; the ledger refuses a zero row.

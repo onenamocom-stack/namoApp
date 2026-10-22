@@ -8,4 +8,6 @@ urlpatterns = [
     path("push/key/", views.push_key, name="notifications-push-key"),
     path("push/subscribe/", views.push_subscribe, name="notifications-push-subscribe"),
     path("push/unsubscribe/", views.push_unsubscribe, name="notifications-push-unsubscribe"),
+    path("fcm/", views.fcm_register, name="notifications-fcm-register"),
+    path("fcm/remove/", views.fcm_unregister, name="notifications-fcm-unregister"),
 ]

@@ -21,6 +21,7 @@ import Consult from './screens/Consult.jsx'
 
 import { useReloadIntoNewBuild } from './lib/update.js'
 import IncomingCall from './components/IncomingCall.jsx'
+import { catchFcmToken, sendFcmToken } from './lib/push.js'
 import PresenceToggle, { PresenceKeeper } from './components/PresenceToggle.jsx'
 import Handle, { isHandlePath } from './screens/Handle.jsx'
 import { Loader } from './components/Cosmos.jsx'
@@ -217,6 +218,17 @@ function AffiliateCatcher() {
   return null
 }
 
+/* The Android app's ring for calls: its FCM token arrives in the launch
+   link and is registered for whoever signs in (src/lib/push.js). */
+catchFcmToken()
+function FcmCatcher() {
+  const uid = useStore().session?.user?.id
+  useEffect(() => {
+    if (uid) sendFcmToken(uid)
+  }, [uid])
+  return null
+}
+
 function LiveChatResume() {
   const { session, openChat } = useStore()
   const uid = session?.user?.id
@@ -400,6 +412,7 @@ function Frame() {
         <NotificationRouter />
         <LiveChatResume />
         {!isPro && <AffiliateCatcher />}
+        <FcmCatcher />
         {/* The consultant's "app is open" beat and their incoming calls, on
             every route of either side (19 Oct 2026, Rahul: a call was seen
             only on the Desk, and a Pro who left it went offline in 90 s).

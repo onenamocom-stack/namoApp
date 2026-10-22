@@ -86,3 +86,20 @@ class PushSubscription(models.Model):
 
     class Meta:
         db_table = "push_subscriptions"
+
+
+class FcmToken(models.Model):
+    """One Android app install that may be rung for this person (22 Oct 2026,
+    Rahul: calls ring the phone even when the app is closed). The token
+    Firebase Cloud Messaging gives the app; the app hands it to the website
+    in its launch link, and the website registers it here. Deleted when FCM
+    says it is gone."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile_id = models.UUIDField(db_index=True)
+    token = models.TextField(unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "fcm_tokens"
