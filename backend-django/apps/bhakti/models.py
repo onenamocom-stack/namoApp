@@ -69,6 +69,11 @@ class BhaktiAsset(models.Model):
     # Idempotency key for the seed script, same trick as content.legacy_id
     # (024) — re-running the manifest updates instead of duplicating.
     legacy_id = models.TextField(null=True, blank=True, unique=True)
+    # The days a dated card shows, IST, both ends included (22 Oct 2026,
+    # Rahul: a panchang or rashifal status is for its own day only). NULL
+    # either end: no limit that way. `list_assets` applies them.
+    show_from = models.DateField(null=True, blank=True)
+    show_until = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

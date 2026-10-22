@@ -85,6 +85,7 @@ class BhaktiAssetForm(forms.ModelForm):
         fields = (
             "kind", "title", "deity", "artist", "licence", "source",
             "media_url", "preview_url", "upload", "description", "sort", "active",
+            "show_from", "show_until",
         )
         widgets = {
             "title": forms.TextInput(attrs={"size": 60}),
@@ -170,7 +171,9 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
         ("Credit line", {"fields": ("artist", "licence", "source")}),
         ("File", {"fields": ("preview", "upload", "cover", "media_url", "preview_url")}),
         ("Market (downloads)", {"fields": ("mrp", "description")}),
-        ("Showing", {"fields": ("sort", "active")}),
+        ("Showing", {"fields": ("sort", "active", "show_from", "show_until"),
+                     "description": "Show from / until: the days (IST) a dated card shows, both included. "
+                                    "Empty: always. Category: one or more, comma-separated, in the deity box."}),
     )
 
     @dj.display(description="")

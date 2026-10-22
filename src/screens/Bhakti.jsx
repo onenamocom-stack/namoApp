@@ -130,6 +130,9 @@ const BANNERS = [
   },
 ]
 
+/** The categories one asset sits in: `deity`, split on commas. */
+const categoriesOf = (a) => (a.deity ?? '').split(',').map((d) => d.trim()).filter(Boolean)
+
 export default function Bhakti() {
   const { showToast, lang } = useStore()
   const navigate = useNavigate()
@@ -178,8 +181,10 @@ export default function Bhakti() {
   /* Deities present in THIS kind, not across the library — a chip that filters
      to nothing is a dead control, and the wallpaper deities are not going to
      be the bhajan deities. */
+  // A card can sit in several categories, comma-separated in `deity` (22 Oct
+  // 2026, Rahul: a day-deity status is in Trending and in its deity's).
   const deities = useMemo(
-    () => ['All', ...[...new Set(matching.map((a) => a.deity).filter(Boolean))]],
+    () => ['All', ...[...new Set(matching.flatMap((a) => categoriesOf(a)))]],
     [matching],
   )
 
@@ -189,7 +194,11 @@ export default function Bhakti() {
   // The shared item alone while its shelf is the one open; another tile
   // shows that whole shelf.
   const alone = shared && shared.kind === kind
-  const list = alone ? [shared] : activeDeity === 'All' ? matching : matching.filter((a) => a.deity === activeDeity)
+  const list = alone
+    ? [shared]
+    : activeDeity === 'All'
+      ? matching
+      : matching.filter((a) => categoriesOf(a).includes(activeDeity))
 
   const meta = KINDS.find((k) => k.key === kind)
 

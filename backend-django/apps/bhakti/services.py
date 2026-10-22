@@ -19,7 +19,11 @@ promoted from a composer card into a first-class leading kind. The check
 constraint carries the vocabulary; nothing here invents one.
 """
 
+from datetime import timedelta
+
 from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.utils import timezone
 
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
@@ -30,7 +34,11 @@ def list_assets():
     """Everything active, ordered exactly the way fetchAssets orders the
     Supabase query: kind ascending, then the curated `sort` (024's partial
     index serves precisely this read)."""
-    return with_counts(BhaktiAsset.objects.filter(active=True)).order_by("kind", "sort")
+    today = (timezone.now() + timedelta(hours=5, minutes=30)).date()  # IST, no DST
+    live = (BhaktiAsset.objects.filter(active=True)
+            .filter(Q(show_from__isnull=True) | Q(show_from__lte=today))
+            .filter(Q(show_until__isnull=True) | Q(show_until__gte=today)))
+    return with_counts(live).order_by("kind", "sort")
 
 
 def seed_asset(*, legacy_id, kind, title, deity=None, media_url, preview_url=None,

@@ -1366,6 +1366,11 @@ must not be writable through PostgREST with the anon key.
 the price on the Market; the console refuses one at or under the price.
 `bhakti_assets.description` (same migration): text, default `''`, a
 download's page's *What is inside*.
+`bhakti_assets.show_from` and `show_until` (migration `bhakti/0012`, 22 Oct
+2026): nullable dates, IST, both ends included; the list endpoint leaves a
+row out before `show_from` and after `show_until` (a dated status card shows
+on its own day only). `deity` may hold several categories, comma-separated
+(*Trending, Shani*); the app splits it into chips.
 
 A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
 (`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;

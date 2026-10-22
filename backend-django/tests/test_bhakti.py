@@ -210,6 +210,18 @@ class TestSeedService:
         assert asset.active is True
         assert list_assets().get().pk == asset.pk
 
+    def test_a_dated_card_shows_on_its_days_only(self, monkeypatch):
+        from datetime import datetime, timezone as tz
+        from apps.bhakti import services
+        # 22 Oct 2026, 15:00 IST
+        monkeypatch.setattr(services.timezone, "now", lambda: datetime(2026, 10, 22, 9, 30, tzinfo=tz.utc))
+        mk = lambda key, **days: seed_asset(legacy_id=key, kind="status", title=key, media_url="/x.jpg", **V)[0]
+        today = mk("today"); BhaktiAsset.objects.filter(pk=today.pk).update(show_from="2026-10-22", show_until="2026-10-22")
+        later = mk("later"); BhaktiAsset.objects.filter(pk=later.pk).update(show_from="2026-10-24")
+        gone = mk("gone"); BhaktiAsset.objects.filter(pk=gone.pk).update(show_until="2026-10-21")
+        always = mk("always")
+        assert {a.title for a in services.list_assets()} == {"today", "always"}
+
     def test_reseed_updates_instead_of_duplicating(self):
         args = dict(legacy_id="st-ganesh-1", kind="status", title="Good beginnings",
                     deity="Ganesh", media_url="/deities/ganesh-1.webp", sort=0, **V)
