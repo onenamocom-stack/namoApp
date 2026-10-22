@@ -452,8 +452,8 @@ the same day: the same four icons, then a green **Play**; a mantra's "Repeat 3
 of 108 · Stop" shows under them while it runs. A priced row has no Reshare. A
 reshared bhajan or mantra reaches the feed as its card picture.
 **Mantra jaap counter** (22 Oct 2026, Rahul): on the Mantra shelf, under the
-banners, a card opens a full-screen counter. Choose a mantra (eight) and a
-goal (11, 21, 51, 108, 1008); a tap anywhere below the controls counts one
+banners, a card opens a full-screen counter. Choose a goal (9, 11, 21, 51,
+108, 1008; no mantra is named, Rahul the same evening); a tap anywhere below the controls counts one
 with a short buzz; at the goal the ghanta rings, the phone buzzes twice,
 *Mala complete* shows, a mala is added and the count starts again. The
 malas and today's total show under the ring; reset asks first. It all stays

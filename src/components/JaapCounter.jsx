@@ -8,24 +8,15 @@ import Icon from './Icon.jsx'
  * completes it sound complete ... modern design, on full screen"). Opened
  * from the card on Bhakti's Mantra shelf.
  *
- * A tap anywhere below the controls counts one, with a short buzz. At the
+ * No mantra is named (Rahul, the same evening: "Mantra hata do"). A tap
+ * anywhere below the goals counts one, with a short buzz. At the
  * goal the shrine's ghanta rings, the phone buzzes twice, a mala is added and
- * the count starts again. The mantra, goal, count, malas and today's total
+ * the count starts again. The goal, count, malas and today's total
  * stay on this phone (`namo:jaap`), so closing the screen loses nothing. The
  * screen is kept awake while it is open.
  */
 const KEY = 'namo:jaap'
-const GOALS = [11, 21, 51, 108, 1008]
-const MANTRAS = [
-  'ॐ नमः शिवाय',
-  'ॐ नमो भगवते वासुदेवाय',
-  'ॐ गं गणपतये नमः',
-  'ॐ हं हनुमते नमः',
-  'हरे कृष्ण हरे राम',
-  'श्री राम जय राम जय जय राम',
-  'ॐ श्री महालक्ष्म्यै नमः',
-  'णमो अरिहंताणं',
-]
+const GOALS = [9, 11, 21, 51, 108, 1008]
 const BELL = `${import.meta.env.BASE_URL}puja/ghanta.mp3`
 const today = () => new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10)
 
@@ -34,7 +25,6 @@ function recall() {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}')
     const fresh = s.day === today()
     return {
-      mantra: s.mantra || MANTRAS[0],
       goal: GOALS.includes(s.goal) ? s.goal : 108,
       count: Number(s.count) || 0,
       malas: fresh ? Number(s.malas) || 0 : 0,
@@ -42,7 +32,7 @@ function recall() {
       day: today(),
     }
   } catch {
-    return { mantra: MANTRAS[0], goal: 108, count: 0, malas: 0, total: 0, day: today() }
+    return { goal: 108, count: 0, malas: 0, total: 0, day: today() }
   }
 }
 
@@ -146,17 +136,7 @@ export default function JaapCounter({ onClose, hi }) {
         </button>
       </div>
 
-      <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto px-4">
-        {MANTRAS.map((m) => (
-          <button key={m} type="button" onClick={() => setS((v) => ({ ...v, mantra: m, count: 0 }))}
-            className={`flex-none rounded-full px-3.5 py-1.5 text-[13px] font-semibold ${
-              s.mantra === m ? 'bg-[#0f766e] text-white' : 'border border-[#0f766e]/30 bg-white/70 text-[#0f5f58]'
-            }`}>
-            {m}
-          </button>
-        ))}
-      </div>
-      <div className="mt-2.5 flex justify-center gap-2 px-4">
+      <div className="mt-5 flex justify-center gap-2 px-4">
         {GOALS.map((g) => (
           <button key={g} type="button" onClick={() => setS((v) => ({ ...v, goal: g, count: Math.min(v.count, g - 1) }))}
             className={`rounded-full px-3 py-1 text-[13px] font-bold ${
@@ -170,8 +150,7 @@ export default function JaapCounter({ onClose, hi }) {
       {/* Everything from here down counts. */}
       <button type="button" onClick={tap} aria-label={hi ? 'एक जाप' : 'Count one'}
         className="relative flex flex-1 flex-col items-center justify-center outline-none">
-        <span className="px-6 text-center text-[26px] font-bold leading-snug text-[#c2410c]">{s.mantra}</span>
-        <span key={pulse} className="relative mt-6 block h-[300px] w-[300px] animate-[jaap_.18s_ease-out]">
+        <span key={pulse} className="relative block h-[300px] w-[300px] animate-[jaap_.18s_ease-out]">
           <svg viewBox="0 0 300 300" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
             <circle cx="150" cy="150" r={R} fill="none" stroke="rgba(15,118,110,.15)" strokeWidth="16" />
             <circle cx="150" cy="150" r={R} fill="none" stroke="url(#jg)" strokeWidth="16" strokeLinecap="round"
