@@ -57,14 +57,16 @@ export default function DarshanFrame({ image, alt, onAir, watch = false }) {
     }
   }, [checks, image.id])
 
+  // Only a temple's live stream plays, and only on Live Darshan; a single
+  // YouTube video is a recording and shows its photo (22 Oct 2026, Rahul's
+  // process; Somnath was a fixed video that played by itself).
   const choice = Boolean(checks)
-  const playing = image.kind === 'youtube' && (!checks || status?.live) && (!choice || watch)
+  const playing = image.kind === 'youtube' && checks && status?.live && watch
   const recording = null
   useEffect(() => {
     let air = null
     if (image.kind === 'youtube') {
-      if (!checks) air = { live: true }
-      else if (status) {
+      if (status && checks) {
         air = status.live
           ? { live: true }
           : { live: false, at: recording?.at ?? null, startsAt: status.startsAt }
