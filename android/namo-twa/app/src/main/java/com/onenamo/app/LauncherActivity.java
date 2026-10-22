@@ -45,9 +45,21 @@ public class LauncherActivity
         // The FCM token for calls (22 Oct 2026): kept, and handed to 1namo.com
         // on this or the next launch.
         Calls.channels(this);
+        // On an install's first launch the token is not ready yet: when it
+        // arrives, the app opens 1namo.com once more with it, so the site
+        // registers it without waiting for the next launch.
+        final boolean hadToken = getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getString(Calls.KEY_TOKEN, null) != null;
         try {
-            FirebaseMessaging.getInstance().getToken().addOnSuccessListener(t ->
-                    getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putString(Calls.KEY_TOKEN, t).apply());
+            FirebaseMessaging.getInstance().getToken().addOnSuccessListener(t -> {
+                getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putString(Calls.KEY_TOKEN, t).apply();
+                if (!hadToken && t != null) {
+                    try {
+                        startActivity(Calls.openApp(getApplicationContext(), "/?fcm=" + Uri.encode(t)));
+                    } catch (Exception ignored) {
+                        // The next launch brings it.
+                    }
+                }
+            });
         } catch (Exception ignored) {
             // No Google Play services: calls ring through web push only.
         }
