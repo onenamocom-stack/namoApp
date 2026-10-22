@@ -609,9 +609,12 @@ top to bottom —
   temple streams that day: nobody changes the link for a new day's video.
   This replaced, 20–22 Oct: a recording playing off air, a channel with no
   photo playing by itself, and a third plaque line (*Live*, *Last live
-  recording* or *Not live right now*, then *Next live*). 35 of the 43
-  channel murtis have their deity's photo; photos for the other eight are
-  being found.
+  recording* or *Not live right now*, then *Next live*). Since 22 Oct the
+  page holds 117 temples under 24 deities (73 famous temples added that
+  day, with Vishnu, Ayyappa, Murugan, Ganga, Parshvanath, Neminath,
+  Bahubali, Swaminarayan and Ramakrishna as new deities), every one with
+  its deity's photo; the paintings and lithographs it shipped with are
+  hidden.
 - The deities, their murtis and every plaque come from the console
   (`GET /v1/bhakti/darshan/`, docs/05 §5.2c-bis); until that answers, the
   page shows the eight deities it shipped with. **New temple photos** (told
