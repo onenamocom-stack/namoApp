@@ -14,7 +14,7 @@ import {
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
 import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
-import DarshanFrame from '../components/DarshanFrame.jsx'
+import DarshanFrame, { Pic } from '../components/DarshanFrame.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -481,7 +481,7 @@ export default function Pooja() {
         onPointerCancel={() => (swipe.current = null)}
       >
         {image.src && (
-          <img
+          <Pic
             key={`wash-${image.id}`}
             src={image.src}
             alt=""
@@ -857,7 +857,7 @@ function MurtiSheet({ deity, pic, onPick, onClose }) {
                 }`}
               >
                 {im.src ? (
-                  <img src={im.src} alt="" loading="lazy" className="h-full w-full object-contain" />
+                  <Pic src={im.src} alt="" loading="lazy" className="h-full w-full object-contain" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-ink text-white">▶</span>
                 )}

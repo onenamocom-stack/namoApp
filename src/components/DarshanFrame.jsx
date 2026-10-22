@@ -114,12 +114,27 @@ function Player({ id, src, title }) {
 
 function Photo({ image, alt }) {
   return (
-    <img
+    <Pic
       key={image.id}
       src={image.src}
       alt={alt}
       className="animate-fade absolute inset-0 h-full w-full object-contain"
       style={{ objectPosition: '50% 45%' }}
     />
+  )
+}
+
+/* A temple photo in `public/darshan/temples/` has an AVIF beside its WebP,
+   about 40 KB to the WebP's 100 (22 Oct 2026, Rahul: "Can we do it 30-50kb").
+   The phone takes the AVIF when it can and the WebP when it cannot. */
+const AVIF = /\/darshan\/temples\/[^/]+\.webp$/
+
+export function Pic({ src, ...img }) {
+  if (!src || !AVIF.test(src)) return <img src={src} {...img} />
+  return (
+    <picture>
+      <source srcSet={src.replace(/\.webp$/, '.avif')} type="image/avif" />
+      <img src={src} {...img} />
+    </picture>
   )
 }
