@@ -15,7 +15,12 @@
  */
 package com.onenamo.app;
 
+import android.Manifest;
+import android.app.NotificationManager;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.provider.Settings;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,9 +35,55 @@ public class LauncherActivity
 
     
 
+    // Calls need the app's own notification permission (Android 13+) and,
+    // on Android 14+, full-screen notifications (22-23 Oct 2026: a fresh
+    // install never asked, so nothing rang). Asked once, before the site opens.
+    private static final String KEY_ASKED = "asked_notifications";
+    private boolean asking = false;
+
+    private boolean needsNotificationPermission() {
+        return Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                && !getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getBoolean(KEY_ASKED, false);
+    }
+
+    @Override
+    protected boolean shouldLaunchImmediately() {
+        return !asking;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(code, permissions, results);
+        asking = false;
+        launchTwa();
+        askFullScreen();
+    }
+
+    private void askFullScreen() {
+        if (Build.VERSION.SDK_INT < 34) return;
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm == null || nm.canUseFullScreenIntent()) return;
+        if (getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getBoolean("asked_full_screen", false)) return;
+        getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putBoolean("asked_full_screen", true).apply();
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception ignored) {
+            // No such screen on this phone: the call shows as a heads-up instead.
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        asking = needsNotificationPermission();
         super.onCreate(savedInstanceState);
+        if (asking) {
+            getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putBoolean(KEY_ASKED, true).apply();
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7);
+        } else {
+            askFullScreen();
+        }
         // Setting an orientation crashes the app due to the transparent background on Android 8.0
         // Oreo and below. We only set the orientation on Oreo and above. This only affects the
         // splash screen and Chrome will still respect the orientation.
@@ -52,7 +103,7 @@ public class LauncherActivity
         try {
             FirebaseMessaging.getInstance().getToken().addOnSuccessListener(t -> {
                 getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putString(Calls.KEY_TOKEN, t).apply();
-                if (!hadToken && t != null) {
+                if (!hadToken && t != null && !asking) {  // while asking, the delayed launch carries it
                     try {
                         startActivity(Calls.openApp(getApplicationContext(), "/?fcm=" + Uri.encode(t)));
                     } catch (Exception ignored) {

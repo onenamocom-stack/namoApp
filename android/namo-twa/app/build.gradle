@@ -58,8 +58,8 @@ android {
         applicationId "com.onenamo.app"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 5
+        versionName "1.0.4"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
