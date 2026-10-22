@@ -13,7 +13,10 @@ names a price. It owns no schema, no endpoints and no column names — those are
 The Hindu social network (since 13 Oct 2026, owner's yes to `06` Phase 15;
 it replaced "an astrology marketplace for India"; the tagline is Rahul's,
 "Hindu Social Network", chosen the same day over "India's spiritual
-network", knowing the app also carries Jain content). People follow gurus,
+network", knowing the app also carries Jain content). The slogan on the
+welcome screen and the site's title is Rahul's "new and final" one, 22 Oct
+2026: *Connecting हिन्दु-स्थान!* (it replaced "Connecting Bharat", 13 Oct).
+People follow gurus,
 astrologers and each other, post and share their bhakti, and sit for darshan
 every day. The money is the marketplace inside it: a seeker asks a question
 and a consultant answers it, live, for money. Around that sit a daily reading,

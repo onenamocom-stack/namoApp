@@ -10,13 +10,25 @@ import { warmCharts } from './Computing.jsx'
 
 const RESEND_AFTER = 30
 
-// A spiritual social network first, then what it has (12 Oct 2026, Rahul):
-// two social promises, two features.
+// What NAMO has (22 Oct 2026, Rahul: "Focus on bhakti and darshan and social
+// network"): those three as tiles, everything else as capsules under them.
+// It replaced four tiles (follow gurus, post bhakti, darshan, kundli).
 const PROMISES = [
-  { icon: 'consult', key: 'w.p.follow' },
-  { icon: 'repost', key: 'w.p.share' },
+  { icon: 'namaste', key: 'w.p.bhakti' },
   { icon: 'pooja', key: 'w.p.darshan' },
-  { icon: 'horoscope', key: 'w.p.kundli' },
+  { icon: 'groups', key: 'w.p.social' },
+]
+const CAPSULES = [
+  { icon: 'mala', key: 'w.c.mantra' },
+  { icon: 'kundli', key: 'w.c.kundli' },
+  { icon: 'sound', key: 'w.c.bhajan' },
+  { icon: 'calendar', key: 'w.c.panchang' },
+  { icon: 'play', key: 'w.c.status' },
+  { icon: 'image', key: 'w.c.wallpaper' },
+  { icon: 'consult', key: 'w.c.astrologers' },
+  { icon: 'remedy', key: 'w.c.remedies' },
+  { icon: 'reports', key: 'w.c.ebooks' },
+  { icon: 'academy', key: 'w.c.courses' },
 ]
 
 /**
@@ -185,24 +197,36 @@ export default function Welcome() {
           alt="NAMO"
           className="mx-auto block h-11 w-auto"
         />
-        <h1 className="mx-auto mt-6 max-w-[18ch] text-title font-semibold leading-snug text-t1">
+        <h1 className="mx-auto mt-6 whitespace-nowrap text-title font-semibold leading-snug text-t1">
           {t('w.title')}
         </h1>
       </div>
 
-      {/* What the app is for, in four tiles — the old intro said what a chart
-          is not, and never what NAMO does. */}
-      <ul className="mt-7 grid grid-cols-2 gap-2.5">
+      {/* What the app is for: three tiles, then the rest as capsules — the
+          old intro said what a chart is not, and never what NAMO does. */}
+      <ul className="mt-7 grid grid-cols-3 gap-2.5">
         {PROMISES.map((p, i) => (
           <li
             key={p.key}
-            className="flex items-center gap-2.5 rounded-2xl bg-white px-3 py-3 shadow-sm"
+            className="flex flex-col items-center gap-2 rounded-2xl bg-white px-2 py-3.5 text-center shadow-sm"
             style={{ animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${120 + i * 70}ms backwards` }}
           >
-            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gold-wash text-gold">
-              <Icon name={p.icon} size={18} weight={1.9} />
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-wash text-gold">
+              <Icon name={p.icon} size={22} weight={1.9} />
             </span>
-            <span className="text-meta font-medium leading-tight text-t1">{t(p.key)}</span>
+            <span className="text-meta font-semibold leading-tight text-t1">{t(p.key)}</span>
+          </li>
+        ))}
+      </ul>
+      <ul className="mt-3 flex flex-wrap justify-center gap-1.5">
+        {CAPSULES.map((c, i) => (
+          <li
+            key={c.key}
+            className="inline-flex items-center gap-1 rounded-full border border-gold/25 bg-white px-2.5 py-1 text-[12px] font-medium text-t1"
+            style={{ animation: `pop-in .5s cubic-bezier(.2,.7,.3,1) ${330 + i * 40}ms backwards` }}
+          >
+            <Icon name={c.icon} size={13} weight={2} className="text-gold" />
+            {t(c.key)}
           </li>
         ))}
       </ul>

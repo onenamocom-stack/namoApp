@@ -981,12 +981,22 @@ export const strings = {
 
   // ── Welcome: phone first, the one door in (3 Oct 2026) ───────────────────
   // 12 Oct 2026, Rahul: NAMO is a spiritual social network first.
-  // Rahul's tagline, 13 Oct 2026 (was "India's Spiritual Network", 12 Oct).
-  'w.title': { en: 'Connecting Bharat', hi: 'कनेक्टिंग भारत' },
-  'w.p.follow': { en: 'Follow gurus & astrologers', hi: 'गुरु और ज्योतिषी फ़ॉलो करें' },
-  'w.p.share': { en: 'Post & share bhakti', hi: 'भक्ति पोस्ट और शेयर करें' },
-  'w.p.darshan': { en: 'Daily darshan & bhajans', hi: 'रोज़ दर्शन और भजन' },
-  'w.p.kundli': { en: 'Kundli & horoscope', hi: 'कुंडली और राशिफल' },
+  // Rahul's slogan, "new and final", 22 Oct 2026, the same in both languages
+  // (was "Connecting Bharat" from 13 Oct, "India's Spiritual Network" 12 Oct).
+  'w.title': { en: 'Connecting हिन्दु-स्थान!', hi: 'Connecting हिन्दु-स्थान!' },
+  'w.p.bhakti': { en: 'Bhakti', hi: 'भक्ति' },
+  'w.p.darshan': { en: 'Darshan', hi: 'दर्शन' },
+  'w.p.social': { en: 'Social network', hi: 'सोशल नेटवर्क' },
+  'w.c.mantra': { en: 'Mantra', hi: 'मंत्र' },
+  'w.c.kundli': { en: 'Kundli', hi: 'कुंडली' },
+  'w.c.bhajan': { en: 'Bhajan', hi: 'भजन' },
+  'w.c.panchang': { en: 'Panchang', hi: 'पंचांग' },
+  'w.c.status': { en: 'Status', hi: 'स्टेटस' },
+  'w.c.wallpaper': { en: 'Wallpaper', hi: 'वॉलपेपर' },
+  'w.c.astrologers': { en: 'Talk to astrologers', hi: 'ज्योतिषी से बात करें' },
+  'w.c.remedies': { en: 'Remedies', hi: 'उपाय' },
+  'w.c.ebooks': { en: 'E-books', hi: 'ई-बुक' },
+  'w.c.courses': { en: 'Courses', hi: 'कोर्स' },
   'w.phone': { en: 'Mobile number', hi: 'मोबाइल नंबर' },
   'w.phoneHint': {
     en: 'New here or coming back — same number, same door. We text you a 6-digit code.',
