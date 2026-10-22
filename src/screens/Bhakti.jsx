@@ -34,6 +34,7 @@ import BhaktiActions from '../components/BhaktiActions.jsx'
 import { isVideoUrl } from '../lib/hls.js'
 import { viaCdn } from '../lib/content.js'
 import { tileStyle } from '../lib/tiles.js'
+import JaapCounter, { JaapCard } from '../components/JaapCounter.jsx'
 
 /**
  * Bhakti — the devotional media library, in the slot the shrine used to hold.
@@ -135,6 +136,7 @@ const categoriesOf = (a) => (a.deity ?? '').split(',').map((d) => d.trim()).filt
 
 export default function Bhakti() {
   const { showToast, lang } = useStore()
+  const [jaap, setJaap] = useState(false)
   const navigate = useNavigate()
   // The console's banners first, then the built-in three (4 Oct 2026).
   const banners = useBanners('bhakti', BANNERS, lang)
@@ -332,6 +334,15 @@ export default function Bhakti() {
           })}
         </div>
       </div>
+
+      {/* The jaap counter, under the banners on the Mantra shelf (22 Oct
+          2026, Rahul). */}
+      {kind === 'mantra' && (
+        <div className="px-4 pt-4">
+          <JaapCard hi={lang === 'hi'} onOpen={() => setJaap(true)} />
+        </div>
+      )}
+      {jaap && <JaapCounter hi={lang === 'hi'} onClose={() => setJaap(false)} />}
 
       {deities.length > 1 && (
         /* The same chip as Consult's categories — face, size and gap
