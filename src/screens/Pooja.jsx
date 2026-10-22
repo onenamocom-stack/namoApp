@@ -214,9 +214,17 @@ export default function Pooja() {
       ?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [deity])
 
+  // The console's first deity opens the shrine (22 Oct 2026, Rahul: "jab
+  // darshan kholte hain, Hanuman ji khulne chahiye"), unless a chip was
+  // already tapped or the shrine swiped while the list loaded.
+  const moved = useRef(false)
   useEffect(() => {
     fetchDarshan()
-      .then((rows) => rows.length && setDeities(rows))
+      .then((rows) => {
+        if (!rows.length) return
+        setDeities(rows)
+        if (!moved.current) setDeityName(rows[0].name)
+      })
       .catch((err) => console.error('[darshan] load failed:', err.message))
   }, [])
 
@@ -227,8 +235,11 @@ export default function Pooja() {
   }, [])
 
   /**
-   * Swiping the shrine. Right for the next deity, down for the next murti of
-   * the one you are on; left and up go back. The nameplate on the arch follows
+   * Swiping the shrine. Left for the next deity — the chip beside it, in the
+   * chips' order, stopping at either end (22 Oct 2026, Rahul: "slide karne pe
+   * next adjacent category"; a right swipe was next, and a swipe back from the
+   * first deity wrapped round to the last) — down for the next murti of the
+   * one you are on; right and up go back. The nameplate on the arch follows
    * along — its dots are the murtis, the stack a vertical swipe moves through.
    *
    * The rule that makes this safe to add is the `closest('button')` bail. Every
@@ -272,8 +283,10 @@ export default function Pooja() {
     const wrap = (i, n) => ((i % n) + n) % n
     if (ax > ay * DOMINANCE) {
       const i = deities.findIndex((d) => d.id === deity.id)
-      const next = deities[wrap(i + (dx > 0 ? 1 : -1), deities.length)]
-      setDeityName(next.name)
+      const j = i + (dx < 0 ? 1 : -1)
+      if (j < 0 || j >= deities.length) return
+      moved.current = true
+      setDeityName(deities[j].name)
       setPic(0)
     } else if (ay > ax * DOMINANCE) {
       setPic((p) => wrap(p + (dy > 0 ? 1 : -1), deity.images.length))
@@ -447,6 +460,7 @@ export default function Pooja() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
+                    moved.current = true
                     setDeityName(d.name)
                     setPic(0)
                   }}

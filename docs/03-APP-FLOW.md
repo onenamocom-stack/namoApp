@@ -527,10 +527,14 @@ reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
 `index.css` cancels it for this route only. Every other route scrolls, where
 that reservation is harmless run-off.
 
-Gestures on the shrine — swipe **right/left for the next/previous deity**
-(which resets to that deity's first murti), **down/up for the next/previous
-murti**. Both wrap. The nameplate on the arch follows along; its dots are the
-murtis, the stack a vertical swipe moves through.
+The shrine opens on the console's first deity (Hanuman since 22 Oct 2026,
+Rahul). Gestures on the shrine — swipe **left/right for the next/previous
+deity**, the chip beside it, stopping at the first and last (which resets to
+that deity's first murti; Rahul, 22 Oct 2026 — until then right was next and
+it wrapped, so a swipe back from Hanuman landed on the last deity),
+**down/up for the next/previous murti**, which wraps. The nameplate on the
+arch follows along; its dots are the murtis, the stack a vertical swipe
+moves through.
 
 A swipe is refused when it starts on a control, because every prop is a button
 and two own gestures already. Under 44px is a tap; an ambiguous diagonal is
