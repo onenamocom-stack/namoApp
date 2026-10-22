@@ -183,14 +183,18 @@ export default function Bhakti() {
      be the bhajan deities. */
   // A card can sit in several categories, comma-separated in `deity` (22 Oct
   // 2026, Rahul: a day-deity status is in Trending and in its deity's).
-  const deities = useMemo(
-    () => ['All', ...[...new Set(matching.flatMap((a) => categoriesOf(a)))]],
-    [matching],
-  )
+  // Status has no All (22 Oct 2026, Rahul: "All wali category hata ke
+  // Trending daal do"): Trending opens it, then Panchang & Rashifal.
+  const deities = useMemo(() => {
+    const found = [...new Set(matching.flatMap((a) => categoriesOf(a)))]
+    if (kind !== 'status') return ['All', ...found]
+    const first = ['Trending', 'Panchang & Rashifal'].filter((c) => found.includes(c))
+    return [...first, ...found.filter((c) => !first.includes(c))]
+  }, [matching, kind])
 
   /* A chip selected under one kind may not exist under the next. Fall back
      rather than showing an empty grid under a chip that is still lit. */
-  const activeDeity = deities.includes(deity) ? deity : 'All'
+  const activeDeity = deities.includes(deity) ? deity : deities[0] ?? 'All'
   // The shared item alone while its shelf is the one open; another tile
   // shows that whole shelf.
   const alone = shared && shared.kind === kind
