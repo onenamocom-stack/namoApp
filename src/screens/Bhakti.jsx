@@ -460,11 +460,13 @@ function PictureCard({ asset, busy, onDownload }) {
   return (
     <li>
       <PopCard className="overflow-hidden">
+        {/* A phone-shaped wallpaper (22 Oct 2026: the temples', 1080x2340)
+            shows whole from its small preview; Download takes the full file. */}
         <img
-          src={asset.url}
+          src={asset.previewUrl || asset.url}
           alt={asset.title}
           loading="lazy"
-          className="aspect-[3/4] w-full bg-surface2 object-cover"
+          className={`${asset.previewUrl ? 'aspect-[9/19.5]' : 'aspect-[3/4]'} w-full bg-surface2 object-cover`}
         />
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
           {/* The link share stays on a wallpaper (12 Oct 2026, Rahul); a

@@ -53,7 +53,9 @@ export function toAsset(row) {
     url: row.media_url?.startsWith('/')
       ? `${import.meta.env.BASE_URL}${row.media_url.slice(1)}`
       : row.media_url,
-    previewUrl: row.preview_url,
+    previewUrl: row.preview_url?.startsWith('/')
+      ? `${import.meta.env.BASE_URL}${row.preview_url.slice(1)}`
+      : row.preview_url,
     /* null is "not priced yet", which is not the same as free, and the screen
        says so differently. 0 never appears — the column refuses it. */
     pricePaise: row.price_paise,

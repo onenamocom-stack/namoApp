@@ -129,7 +129,7 @@
           ]
         },
         {
-          "source": "/@(cards|deities|puja|darshan)/**",
+          "source": "/@(cards|deities|puja|darshan|wallpapers|status)/**",
           "headers": [
             {
               "key": "Cache-Control",
