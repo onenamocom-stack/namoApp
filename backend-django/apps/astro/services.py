@@ -97,11 +97,13 @@ def ist_today():
 
 
 def allowed_date(value):
-    """Yesterday, today, tomorrow — the only dates any screen asks for, and
-    therefore the only dates worth spending quota on. None/absent resolves
-    to today; anything else is None (the view's 400)."""
+    """Yesterday to three days ahead: yesterday, today and tomorrow are what
+    the screens ask for, and two and three days ahead are for the status
+    cards made two days early for approval (22 Oct 2026, Rahul). Bounded,
+    so quota stays bounded. None/absent resolves to today; anything else is
+    None (the view's 400)."""
     today = date.fromisoformat(ist_today())
-    around = {(today + timedelta(days=d)).isoformat() for d in (-1, 0, 1)}
+    around = {(today + timedelta(days=d)).isoformat() for d in (-1, 0, 1, 2, 3)}
     if value in (None, ""):
         return ist_today()
     if isinstance(value, str) and value in around:

@@ -322,7 +322,9 @@ class TestKeysAndDates:
         assert services.allowed_date("2026-09-18") == "2026-09-18"  # yesterday
         assert services.allowed_date("2026-09-19") == "2026-09-19"
         assert services.allowed_date("2026-09-20") == "2026-09-20"  # tomorrow
-        assert services.allowed_date("2026-09-21") is None  # walked the calendar
+        assert services.allowed_date("2026-09-21") == "2026-09-21"  # the status cards' two days ahead
+        assert services.allowed_date("2026-09-22") == "2026-09-22"
+        assert services.allowed_date("2026-09-23") is None  # walked the calendar
         assert services.allowed_date("2026-09-17") is None
         assert services.allowed_date("not-a-date") is None
 
@@ -405,7 +407,7 @@ class TestPanchang:
         assert yesterday.status_code == 200
         assert yesterday.json()["date"] == "2026-09-18"
 
-        walked = api_client.get("/v1/astro/panchang/?date=2026-09-22")
+        walked = api_client.get("/v1/astro/panchang/?date=2026-09-23")
         assert walked.status_code == 400
         assert walked.json()["reason"] == "invalid"
 
