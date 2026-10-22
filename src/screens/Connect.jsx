@@ -69,6 +69,11 @@ export default function Connect() {
 
   const ask = useCallback(async () => {
     if (!rateRow) return
+    // Let the phone ring when the Pro takes it, app open or not (22 Oct 2026):
+    // in the Android app this is the app's own notification permission.
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
     setPhase('asking')
     const result = await requestChat(who.id, rateRow.id, {
       audioOnly: via === 'audio',
