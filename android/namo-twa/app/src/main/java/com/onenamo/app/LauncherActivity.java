@@ -81,8 +81,11 @@ public class LauncherActivity
         if (Build.VERSION.SDK_INT < 34) return;
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm == null || nm.canUseFullScreenIntent()) return;
-        if (getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getBoolean("asked_full_screen", false)) return;
-        getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putBoolean("asked_full_screen", true).apply();
+        // Asked again each day while it is off (23 Oct 2026: once was easy
+        // to pass by, and without it a locked phone only vibrates).
+        long day = System.currentTimeMillis() / 86_400_000L;
+        if (getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getLong("asked_full_screen_day", -1) == day) return;
+        getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putLong("asked_full_screen_day", day).apply();
         try {
             startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
                     Uri.parse("package:" + getPackageName())));

@@ -145,6 +145,7 @@ final class Calls {
                         + "&batt=" + (pm != null && Build.VERSION.SDK_INT >= 23
                                 && pm.isIgnoringBatteryOptimizations(ctx.getPackageName()) ? 1 : 0)
                         + "&notif=" + (nm != null && nm.areNotificationsEnabled() ? 1 : 0)
+                        + "&fsi=" + (Build.VERSION.SDK_INT < 34 ? 1 : (nm != null && nm.canUseFullScreenIntent() ? 1 : 0))
                         + "&sdk=" + Build.VERSION.SDK_INT + "&v=" + ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
                 java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(
                         "https://namo-api-499026166575.asia-south1.run.app/v1/health/?fcm="

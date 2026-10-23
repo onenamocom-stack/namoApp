@@ -34,6 +34,16 @@ public class CallActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        try {
+            build();
+        } catch (RuntimeException e) {
+            // Reported, not rethrown: a crash would kill the report with it.
+            Calls.report(this, getIntent().getStringExtra("session_id"), "screen-err-" + e.getClass().getSimpleName());
+            finish();
+        }
+    }
+
+    private void build() {
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
