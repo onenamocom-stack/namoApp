@@ -35,6 +35,7 @@ import { isVideoUrl } from '../lib/hls.js'
 import { viaCdn } from '../lib/content.js'
 import { tileStyle } from '../lib/tiles.js'
 import JaapCounter, { JaapCard } from '../components/JaapCounter.jsx'
+import { dayFirst, dayRank } from '../lib/dayDeity.js'
 
 /**
  * Bhakti — the devotional media library, in the slot the shrine used to hold.
@@ -187,12 +188,19 @@ export default function Bhakti() {
   // 2026, Rahul: a day-deity status is in Trending and in its deity's).
   // Status has no All (22 Oct 2026, Rahul: "All wali category hata ke
   // Trending daal do"): Trending opens it, then Panchang & Rashifal.
+  // Status and Wallpapers lead with the day's deity (23 Oct 2026, Rahul:
+  // the same order as Darshan, changing daily; src/lib/dayDeity.js).
+  const byDay = kind === 'status' || kind === 'wallpaper'
   const deities = useMemo(() => {
-    const found = [...new Set(matching.flatMap((a) => categoriesOf(a)))]
+    const seen = [...new Set(matching.flatMap((a) => categoriesOf(a)))]
+    const found = byDay ? dayFirst(seen) : seen
+    // Wallpapers have no All either (23 Oct 2026, Rahul): they open on the
+    // day's deity.
+    if (kind === 'wallpaper') return found
     if (kind !== 'status') return ['All', ...found]
     const first = ['Trending', 'Panchang & Rashifal'].filter((c) => found.includes(c))
     return [...first, ...found.filter((c) => !first.includes(c))]
-  }, [matching, kind])
+  }, [matching, kind, byDay])
 
   /* A chip selected under one kind may not exist under the next. Fall back
      rather than showing an empty grid under a chip that is still lit. */
@@ -200,11 +208,17 @@ export default function Bhakti() {
   // The shared item alone while its shelf is the one open; another tile
   // shows that whole shelf.
   const alone = shared && shared.kind === kind
+  const shelf = activeDeity === 'All'
+    ? matching
+    : matching.filter((a) => categoriesOf(a).includes(activeDeity))
+  // Under Trending, the day's deity's cards come first.
+  const dayCard = (a) =>
+    categoriesOf(a).filter((c) => dayRank(c) >= 0).sort((x, y) => dayRank(x) - dayRank(y))[0]
   const list = alone
     ? [shared]
-    : activeDeity === 'All'
-      ? matching
-      : matching.filter((a) => categoriesOf(a).includes(activeDeity))
+    : kind === 'status' && activeDeity === 'Trending'
+      ? dayFirst(shelf, dayCard)
+      : shelf
 
   const meta = KINDS.find((k) => k.key === kind)
 

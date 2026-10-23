@@ -418,7 +418,11 @@ approving six invented astrologers, is in `01-PRD.md` §7.
 **The devotional media library**, in the nav slot the shrine used to hold.
 Wallpapers, ringtones, pooja tunes and bhajans, read from `bhakti_assets`
 (migration 024) with a kind switcher and a deity filter built from whichever
-deities are present in the selected kind.
+deities are present in the selected kind. **Status and Wallpapers follow the
+day's deity** (23 Oct 2026, Rahul; the Darshan rule, `src/lib/dayDeity.js`):
+Status opens on Trending, then Panchang & Rashifal, then the day's deity; its
+Trending shows the day's deity's cards first. Wallpapers have no All and open
+on the day's deity. Other kinds keep All and the console's order.
 
 **Five circles, and the fifth leaves the screen — 25 Sep 2026.** Darshan sits
 in the kind row and navigates to `/darshan`: the row answers "pick a

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { creditLine, deities as SHIPPED, offerings } from '../data/mock.js'
+import { dayFirst } from '../lib/dayDeity.js'
 import { markSadhana } from '../lib/streak.js'
 import { startAartiSangeet, stopAartiSangeet } from '../lib/aartiSangeet.js'
 import { BackButton, useGoBack } from '../components/Chrome.jsx'
@@ -150,34 +151,6 @@ const slabCqw = (f) => cqw((SLAB_FRONT + SLAB_TOP) * f)
 const onCounter = (lift = 0) => `calc(${cqw(SLAB_FRONT + SLAB_TOP / 3)} - ${lift}px)`
 const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
-/* Each weekday's deity, Sunday first (23 Oct 2026, Rahul): Monday Shiva,
-   Tuesday Hanuman, Wednesday Ganesh, Thursday Vishnu, Friday Mata, Saturday
-   Shani then Hanuman, Sunday Surya then Krishna. Matched by the console's
-   deity name; one the console does not have is skipped (there is no Surya
-   yet, so Sunday opens on Krishna). The day is India's. */
-const DAY_DEITIES = [
-  ['surya', 'krishna'],
-  ['shiva', 'shiv'],
-  ['hanuman'],
-  ['ganesh', 'ganesha'],
-  ['vishnu'],
-  ['mata', 'durga'],
-  ['shani', 'hanuman'],
-]
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-function dayFirst(rows, now = new Date()) {
-  const day = WEEKDAYS.indexOf(
-    new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'Asia/Kolkata' }).format(now),
-  )
-  const first = []
-  for (const key of DAY_DEITIES[day] ?? []) {
-    const row = rows.find((d) => d.name.trim().toLowerCase() === key)
-    if (row && !first.includes(row)) first.push(row)
-  }
-  return [...first, ...rows.filter((d) => !first.includes(d))]
-}
-
 export default function Pooja() {
   const { showToast, lang, t } = useStore()
   const [deities, setDeities] = useState(shipped)
@@ -250,7 +223,7 @@ export default function Pooja() {
     fetchDarshan()
       .then((loaded) => {
         if (!loaded.length) return
-        const rows = dayFirst(loaded)
+        const rows = dayFirst(loaded, (d) => d.name)
         setDeities(rows)
         if (!moved.current) setDeityName(rows[0].name)
       })
