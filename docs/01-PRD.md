@@ -947,6 +947,9 @@ consultants.
 
 ## 8. Regulatory and legal
 
+- **NAMO is for people aged 18 and over** (23 Oct 2026, Rahul, for the Play
+  Store submission). Stated in `public/privacy.html`; nothing in the app
+  checks an age.
 - **KYC gates the first payout.** Not a feature — a legal gate. It blocks the
   entire payout capability.
 - **Payout schedule** (owner's call, 3 Oct 2026). Everything a consultant

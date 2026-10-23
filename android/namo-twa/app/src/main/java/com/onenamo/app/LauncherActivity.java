@@ -60,24 +60,7 @@ public class LauncherActivity
         askFullScreen();
     }
 
-    // A call must reach a locked phone (23 Oct 2026: a Samsung in its
-    // battery saver got nothing while locked). Android's own dialog, once.
-    private void askBattery() {
-        if (Build.VERSION.SDK_INT < 23) return;
-        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
-        if (pm == null || pm.isIgnoringBatteryOptimizations(getPackageName())) return;
-        if (getSharedPreferences(Calls.PREFS, MODE_PRIVATE).getBoolean("asked_battery", false)) return;
-        getSharedPreferences(Calls.PREFS, MODE_PRIVATE).edit().putBoolean("asked_battery", true).apply();
-        try {
-            startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                    Uri.parse("package:" + getPackageName())));
-        } catch (Exception ignored) {
-            // No such dialog on this phone.
-        }
-    }
-
     private void askFullScreen() {
-        askBattery();
         if (Build.VERSION.SDK_INT < 34) return;
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm == null || nm.canUseFullScreenIntent()) return;
