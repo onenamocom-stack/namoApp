@@ -2,8 +2,8 @@
    Tuesday Hanuman, Wednesday Ganesh, Thursday Vishnu, Friday Mata, Saturday
    Shani then Hanuman, Sunday Surya then Krishna. Darshan opens on it, and
    Status and Wallpapers put it first. Matched by the console's deity name,
-   lower-cased; a name the console does not have is skipped (there is no
-   Surya yet, so Sunday leads with Krishna). The day is India's. */
+   lower-cased; a name the console does not have is skipped (until the
+   console has Surya, Sunday leads with Krishna). The day is India's. */
 const DAY_DEITIES = [
   ['surya', 'krishna'],
   ['shiva', 'shiv'],
