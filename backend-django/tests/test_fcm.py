@@ -106,3 +106,10 @@ class TestTheRing:
         data = google.post.call_args.kwargs["json"]["message"]["data"]
         assert data["type"] == "connecting" and data["title"] == "Pandit Ji is connecting your call"
         assert data["open"] == f"/call/{session.id}"
+
+    def test_the_ring_stops_on_the_pros_phone(self, google):
+        pro = uuid.uuid4()
+        FcmToken.objects.create(profile_id=pro, token="pro-phone")
+        sid = uuid.uuid4()
+        push.ring_over(sid, pro)
+        assert google.post.call_args.kwargs["json"]["message"]["data"] == {"type": "over", "session_id": str(sid)}

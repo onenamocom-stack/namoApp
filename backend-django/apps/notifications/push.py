@@ -111,3 +111,13 @@ def accepted(session, consultant_name):
         # The call screen; a chat opens itself on launch (LiveChatResume).
         "open": f"/call/{session.id}" if call else "/home",
     })
+
+
+def ring_over(session_id, consultant_id):
+    """The ring stops (23 Oct 2026, Rahul: smooth the app): the seeker hung
+    up, or the Pro answered or declined on another device. FCM only; the
+    Android app cancels its ring and closes the call screen. Without it the
+    phone rang on for its full 45 seconds."""
+    from . import fcm
+
+    return fcm.send(consultant_id, {"type": "over", "session_id": str(session_id)})

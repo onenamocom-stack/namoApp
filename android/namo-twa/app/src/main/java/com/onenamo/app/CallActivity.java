@@ -27,6 +27,9 @@ import android.widget.TextView;
  * layout file to keep in step.
  */
 public class CallActivity extends Activity {
+    /** The call on screen, so a "call over" message can close it. */
+    private static java.lang.ref.WeakReference<CallActivity> current = new java.lang.ref.WeakReference<>(null);
+    private String sessionId;
     private Ringtone tone;
     private Vibrator buzz;
     private final Handler clock = new Handler(Looper.getMainLooper());
@@ -62,6 +65,9 @@ public class CallActivity extends Activity {
         String title = getIntent().getStringExtra("title");
         String body = getIntent().getStringExtra("body");
         Calls.report(this, session, "screen");
+        sessionId = session;
+        current = new java.lang.ref.WeakReference<>(this);
+        Calls.quiet(this, type, session, title, body, open);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -132,6 +138,16 @@ public class CallActivity extends Activity {
         clock.removeCallbacksAndMessages(null);
         if (tone != null && tone.isPlaying()) tone.stop();
         if (buzz != null) buzz.cancel();
+    }
+
+    /** Closes the call screen for this session, if it is the one up. */
+    static void closeFor(String session) {
+        CallActivity a = current.get();
+        if (a == null || session == null || !session.equals(a.sessionId)) return;
+        a.runOnUiThread(() -> {
+            a.stopRinging();
+            a.finish();
+        });
     }
 
     @Override

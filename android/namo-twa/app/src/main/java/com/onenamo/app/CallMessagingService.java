@@ -18,6 +18,13 @@ public class CallMessagingService extends FirebaseMessagingService {
         String body = d.containsKey("body") ? d.get("body") : "";
         String open = d.containsKey("open") ? d.get("open") : "/";
         Calls.report(this, session, "got");
+        if ("over".equals(type)) {
+            // The caller hung up, or it was answered or declined elsewhere
+            // (apps/notifications/push.py ring_over): stop ringing.
+            Calls.cancel(this, session);
+            CallActivity.closeFor(session);
+            return;
+        }
         try {
             if ("incoming".equals(type) || "connecting".equals(type)) {
                 Calls.ring(this, type, session, title, body, open);

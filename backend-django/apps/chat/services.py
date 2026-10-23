@@ -504,6 +504,18 @@ def _tell_seeker(session, pro_name):
         push.accepted(session, pro_name)
     except Exception:  # noqa: BLE001 — a ring is never allowed to break a request
         pass
+    _ring_over(session.id, session.consultant_id)
+
+
+def _ring_over(session_id, consultant_id):
+    """The Pro's phone stops ringing for a request that is no longer
+    ringing (push.ring_over). Best-effort, like the ring."""
+    from apps.notifications import push
+
+    try:
+        push.ring_over(session_id, consultant_id)
+    except Exception:  # noqa: BLE001 — a ring is never allowed to break a request
+        pass
 
 
 def _balance_of(profile_id):
@@ -1286,6 +1298,8 @@ def cancel_request(seeker_id, session_id, now=None):
         # Already answered, already gone, or not theirs. All three are
         # "nothing to cancel" and none of them is an error worth a screen.
         return {"ok": True, "already": True}
+    consultant_id = Session.objects.filter(pk=session_id).values_list("consultant_id", flat=True).first()
+    transaction.on_commit(lambda: _ring_over(session_id, consultant_id))
     return {"ok": True}
 
 
@@ -1314,4 +1328,6 @@ def decline_request(consultant_id, session_id, now=None):
         # Already answered, already gone, or not theirs. None of the three
         # is an error the consultant needs a screen about.
         return {"ok": True, "already": True}
+    # Declined on one device: the Pro's other phone stops ringing.
+    transaction.on_commit(lambda: _ring_over(session_id, consultant_id))
     return {"ok": True}

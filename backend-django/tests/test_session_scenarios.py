@@ -256,3 +256,45 @@ def test_two_phones_creating_the_room_at_once(people, daily, monkeypatch):
     monkeypatch.setattr(providers, "create_room", create_room)
     joined = people["post"]("seeker", f"/v1/video/sessions/{sid}/join/")
     assert joined["ok"] is True and joined["url"].endswith(video_services.room_name(sid))
+
+
+@pytest.mark.django_db
+class TestTheRingStops:
+    """The Pro's Android app stops ringing when the request stops ringing
+    (23 Oct 2026, Rahul): push.ring_over, after commit."""
+
+    @pytest.fixture
+    def over(self, monkeypatch):
+        from apps.notifications import push
+
+        sent = []
+        monkeypatch.setattr(push, "ring_over", lambda sid, cid: sent.append((str(sid), _id(cid))))
+        monkeypatch.setattr(push, "ring", lambda *a, **k: 0)
+        monkeypatch.setattr(push, "accepted", lambda *a, **k: 0)
+        return sent
+
+    def test_the_seeker_hanging_up(self, people, daily, over, django_capture_on_commit_callbacks):
+        _fund(SEEKER, RATE * 5)
+        sid = people["ask"]("seeker")["session_id"]
+        with django_capture_on_commit_callbacks(execute=True):
+            people["post"]("seeker", f"/v1/chat/sessions/{sid}/cancel/")
+        assert over == [(sid, _id(PRO))]
+
+    def test_declined_or_answered_on_another_device(self, people, daily, over, django_capture_on_commit_callbacks):
+        _fund(SEEKER, RATE * 5)
+        first = people["ask"]("seeker")["session_id"]
+        with django_capture_on_commit_callbacks(execute=True):
+            people["post"]("pro", f"/v1/chat/sessions/{first}/decline/")
+        second = people["ask"]("seeker")["session_id"]
+        with django_capture_on_commit_callbacks(execute=True):
+            people["post"]("pro", f"/v1/chat/sessions/{second}/accept/")
+        assert [s for s, _ in over] == [first, second]
+
+    def test_nothing_to_stop_sends_nothing(self, people, daily, over, django_capture_on_commit_callbacks):
+        _fund(SEEKER, RATE * 5)
+        sid = people["ask"]("seeker")["session_id"]
+        people["post"]("pro", f"/v1/chat/sessions/{sid}/decline/")
+        over.clear()
+        with django_capture_on_commit_callbacks(execute=True):
+            people["post"]("seeker", f"/v1/chat/sessions/{sid}/cancel/")
+        assert over == []

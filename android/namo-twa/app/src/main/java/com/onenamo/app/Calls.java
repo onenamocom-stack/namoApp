@@ -80,6 +80,21 @@ final class Calls {
     }
 
     static void ring(Context ctx, String type, String sessionId, String title, String body, String open) {
+        post(ctx, type, sessionId, title, body, open, true);
+    }
+
+    /**
+     * The same notification, silent (23 Oct 2026): once the call screen is up
+     * it rings itself, and the notification's own looping sound on top of it
+     * made two ringtones at once. Kept so the call can be found again from
+     * the shade.
+     */
+    static void quiet(Context ctx, String type, String sessionId, String title, String body, String open) {
+        post(ctx, type, sessionId, title, body, open, false);
+    }
+
+    private static void post(Context ctx, String type, String sessionId, String title, String body, String open,
+                             boolean loud) {
         channels(ctx);
         int id = idFor(sessionId);
         Intent screen = new Intent(ctx, CallActivity.class)
@@ -96,15 +111,19 @@ final class Calls {
                 .setOngoing(true)
                 .setAutoCancel(true)
                 .setTimeoutAfter(RING_MS)
-                .setFullScreenIntent(full, true)
                 .setContentIntent(full)
                 .addAction(0, "Answer", activity(ctx, id + 1, openApp(ctx, answerPath(type, open))));
         String decline = declinePath(type, open);
         if (decline != null) {
             b.addAction(0, "Decline", activity(ctx, id + 2, openApp(ctx, decline)));
         }
+        if (loud) {
+            b.setFullScreenIntent(full, true);
+        } else {
+            b.setSilent(true).setOnlyAlertOnce(true);
+        }
         Notification n = b.build();
-        n.flags |= Notification.FLAG_INSISTENT;
+        if (loud) n.flags |= Notification.FLAG_INSISTENT;
         ctx.getSystemService(NotificationManager.class).notify(id, n);
     }
 
