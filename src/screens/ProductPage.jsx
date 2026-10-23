@@ -146,6 +146,11 @@ export default function ProductPage() {
           {off > 0 && <span className="caps-sm rounded-full bg-gold-fill px-2 py-0.5 text-ink">{t('home.off', { n: off })}</span>}
         </div>
         <p className="mt-1 text-micro t-faint">{t('shop.pp.taxes')}</p>
+        {p.cashback > 0 && (
+          <p className="mt-3 rounded-xl bg-ok/10 px-3 py-2 text-meta font-semibold text-ok">
+            {t('shop.cb.page', { n: p.cashback.toLocaleString('en-IN') })}
+          </p>
+        )}
 
         {/* Only when it cannot be bought (7 Oct 2026, Rahul: "Only 3 left"
             and "In stock" were not needed). */}
@@ -378,7 +383,7 @@ function MoreProducts({ current }) {
               <ProductArt product={x} className="aspect-video w-full" />
               <span className="block p-2.5">
                 <span className="line-clamp-2 block text-meta t-heading">{x.name}</span>
-                <MarketPrice price={x.price} mrp={x.mrp} />
+                <MarketPrice price={x.price} mrp={x.mrp} cashback={x.cashback} />
               </span>
             </Link>
           </li>

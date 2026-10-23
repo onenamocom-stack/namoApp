@@ -144,3 +144,26 @@ class TestTodaysRates:
         settings.REFERRAL_SHARER_BPS = 600
         settings.REFERRAL_BUYER_BPS = 0
         assert services.cashback_split([(None, 100000, 1)], prepaid=True) == (0, 6000)
+
+
+@pytest.mark.django_db
+class TestTheCardSaysIt:
+    """The catalogue row carries one item's prepaid cashback, so the card
+    can say "₹100 cashback" (23 Oct 2026, Rahul)."""
+
+    def test_flat_100_is_100_on_the_row(self, item):
+        _rule(item, "flat 100")
+        assert shop_services.product_row(item)["cashback_paise"] == 10_000
+
+    def test_a_capped_percent_is_capped(self, item):
+        _rule(item, "10% upto 50")
+        assert shop_services.product_row(item)["cashback_paise"] == 5_000
+
+    def test_none_is_zero(self, item):
+        _rule(item, "none")
+        assert shop_services.product_row(item)["cashback_paise"] == 0
+
+    def test_the_default_follows_the_buyer_rate(self, item, settings):
+        assert shop_services.product_row(item)["cashback_paise"] == 7_000  # 10% here
+        settings.REFERRAL_BUYER_BPS = 0  # the rate since 15 Oct 2026
+        assert shop_services.product_row(item)["cashback_paise"] == 0

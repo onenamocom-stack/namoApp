@@ -176,7 +176,21 @@ def product_row(product):
         "in_stock": product.stock > 0,
         "featured": product.featured,
         "weight_grams": product.weight_grams,
+        # What one, paid online, puts in the buyer's wallet (23 Oct 2026, Rahul:
+        # the cashback on the card). The order works it out again on its own.
+        "cashback_paise": unit_cashback(product),
     }
+
+
+def unit_cashback(product):
+    """Paise back for one item on a prepaid order: the product's own rule,
+    else the platform's buyer rate (0 since 15 Oct 2026)."""
+    from django.conf import settings
+
+    from . import offers
+
+    own = offers.buyer_cashback(product, product.price_paise, 1)
+    return own if own is not None else product.price_paise * settings.REFERRAL_BUYER_BPS // 10_000
 
 
 def plain_text(text):

@@ -4,7 +4,7 @@ import { fetchCategories, fetchProducts, productHref } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { TabHeader } from '../components/Chrome.jsx'
 import Ebooks from '../components/Ebooks.jsx'
-import { ListingCard, MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
+import { Cashback, ListingCard, MarketCard, MarketPrice, MarketSection } from '../components/MarketCard.jsx'
 import { browse } from '../lib/market.js'
 import { CardCorner, PickBar } from '../components/TagPick.jsx'
 import Plate from '../components/Plate.jsx'
@@ -526,7 +526,7 @@ export default function Shop() {
                   corner={<CardCorner product={p} />}
                   seller={p.brand || 'Namo'}
                   lines={[p.soldOut && t('shop.soldOut')]}
-                  price={!p.soldOut && <MarketPrice price={p.price} mrp={p.mrp} />}
+                  price={!p.soldOut && <MarketPrice price={p.price} mrp={p.mrp} cashback={p.cashback} />}
                   onOpen={() => navigate(productHref(p))}
                 />
               ))}
@@ -603,6 +603,7 @@ export default function Shop() {
                         )}
                         {off > 0 && <span className="text-meta font-semibold text-ok">{t('home.off', { n: off })}</span>}
                       </p>
+                      {p.cashback > 0 && <Cashback n={p.cashback} />}
 
                       {p.recommendedBy && (
                         <p className="mt-2 caps-sm t-faint">{t('shop.namedBy', { name: p.recommendedBy })}</p>

@@ -74,6 +74,8 @@ function toProduct(row) {
     subcategories: row.subcategories ?? (row.subcategory ? [row.subcategory] : []),
     price: row.price_paise / 100,
     mrp: row.mrp_paise ? row.mrp_paise / 100 : null,
+    // Rupees one item puts in the wallet when paid online (23 Oct 2026).
+    cashback: row.cashback_paise ? row.cashback_paise / 100 : 0,
     image: row.image_url || null,
     // The cover then the gallery, photos and videos (6 Oct 2026).
     media: row.media ?? (row.image_url ? [{ url: row.image_url, kind: 'image' }] : []),

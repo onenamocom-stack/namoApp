@@ -38,11 +38,13 @@ export function MarketSection({ title, seeAll, onSeeAll, strip = false, children
 /** The price, the MRP struck through and the saving (15 Oct 2026, Rahul:
  *  "mention MRP"), in rupees. No MRP, or one not above the price, shows the
  *  price alone. A priced `digital` thing shows none in the Android app,
- *  where it is not sold (19 Oct 2026, Rahul; `lib/platform.js`). */
-export function MarketPrice({ price, mrp, free, digital = false }) {
+ *  where it is not sold (19 Oct 2026, Rahul; `lib/platform.js`).
+ *  `cashback`, rupees back in the wallet, is a line under it. */
+export function MarketPrice({ price, mrp, free, digital = false, cashback = 0 }) {
   if (digital && price && inAndroidApp()) return null
   const off = mrp && mrp > price ? Math.round((1 - price / mrp) * 100) : 0
   return (
+    <>
     <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 tnum">
       <span className="text-meta font-semibold t-heading">{price ? `₹${price.toLocaleString('en-IN')}` : free}</span>
       {off > 0 && (
@@ -51,6 +53,18 @@ export function MarketPrice({ price, mrp, free, digital = false }) {
           <span className="text-micro font-semibold text-ok">{off}% off</span>
         </>
       )}
+    </span>
+    {cashback > 0 && <Cashback n={cashback} />}
+    </>
+  )
+}
+
+/** "₹100 cashback" in green, under a product's price (23 Oct 2026, Rahul). */
+export function Cashback({ n, className = '' }) {
+  const { t } = useStore()
+  return (
+    <span className={`mt-0.5 block text-micro font-semibold text-ok tnum ${className}`}>
+      {t('shop.cb.card', { n: n.toLocaleString('en-IN') })}
     </span>
   )
 }

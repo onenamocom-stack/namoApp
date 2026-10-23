@@ -661,6 +661,12 @@ export const strings = {
   'shop.pp.toShop': { en: 'Back to the Market', hi: 'मार्केट पर वापस' },
   'shop.pp.mrp': { en: 'MRP', hi: 'एमआरपी' },
   'shop.pp.taxes': { en: 'Inclusive of all taxes. Free delivery.', hi: 'सभी टैक्स शामिल। डिलीवरी मुफ़्त।' },
+  // The cashback on a card and on the product page (23 Oct 2026, Rahul).
+  'shop.cb.card': { en: '₹{n} cashback', hi: '₹{n} कैशबैक' },
+  'shop.cb.page': {
+    en: 'Pay online and get ₹{n} back in your wallet, seven days after delivery.',
+    hi: 'ऑनलाइन पेमेंट करें, डिलीवरी के सात दिन बाद ₹{n} आपके वॉलेट में।',
+  },
   'shop.pp.few': { en: 'Only {n} left', hi: 'सिर्फ़ {n} बचे हैं' },
   'shop.pp.inStock': { en: 'In stock', hi: 'स्टॉक में है' },
   'shop.pp.share': { en: 'Share', hi: 'शेयर करें' },
