@@ -802,11 +802,11 @@ export async function inviteMessage(asset) {
      picture and title, where the sign-up link showed the site's card. The
      code rides along; a signed-out visitor lands on sign-up with it. */
   const link = `${SEEKER_APP_URL}bhakti/s/${asset.id}${code ? `?ref=${code}` : ''}`
+  // What it is, NAMO, the link: nothing about NAMO after it (23 Oct 2026,
+  // Rahul; it said "bhajans, mantras and daily darshan in one app. Join with
+  // my code ..."). The code stays in the link.
   const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on NAMO` : `“${asset.title}”, from NAMO`
-  return [
-    `${what}: bhajans, mantras and daily darshan in one app.`,
-    code ? `Join with my code ${code}: ${link}` : link,
-  ].join('\n')
+  return [what, link].join('\n')
 }
 
 /** Share one asset: the app's share sheet (14 Oct 2026), whose people get
