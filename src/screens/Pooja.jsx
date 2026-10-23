@@ -107,8 +107,9 @@ const BLOOMS = [
 ]
 /* The deities and their murtis come from the console (8 Oct 2026, Rahul:
    each murti will be a photo from a different temple, its name and place on
-   the plaque). Until they arrive — or if they cannot — the ones the app
-   shipped with, in the same shape. */
+   the plaque). Until they arrive — or if they cannot — the list from the
+   last visit, and on a first visit the ones the app shipped with, in the
+   same shape. */
 const shipped = SHIPPED.map((d) => ({
   id: d.id,
   name: d.name,
@@ -124,6 +125,18 @@ const shipped = SHIPPED.map((d) => ({
     credit: creditLine(im),
   })),
 }))
+/* The console's list from the last visit, so a slow or failed load opens on
+   the real temples rather than the shipped paintings (23 Oct 2026, Rahul's
+   screenshot: "Mandir me abhi purani photos dikh rahi h"). */
+const LIST_KEY = 'namo.darshan.list'
+function rememberedList() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(LIST_KEY))
+    return Array.isArray(rows) && rows.length && rows.every((d) => d.name && Array.isArray(d.images)) ? rows : null
+  } catch {
+    return null
+  }
+}
 
 const SHOWER = 36 // per tap — three times the 12 it was
 const HINT_KEY = 'namo.puja.touched'
@@ -153,8 +166,11 @@ const offeringLabel = (key) => offerings.find((o) => o.key === key).label
 
 export default function Pooja() {
   const { showToast, lang, t } = useStore()
-  const [deities, setDeities] = useState(shipped)
-  const [deityName, setDeityName] = useState(shipped[0].name)
+  const [deities, setDeities] = useState(() => {
+    const last = rememberedList()
+    return last ? dayFirst(last, (d) => d.name) : shipped
+  })
+  const [deityName, setDeityName] = useState(() => deities[0].name)
   const deity = deities.find((d) => d.name === deityName) ?? deities[0]
   const [pic, setPic] = useState(0)
   const [sheet, setSheet] = useState(false)
@@ -217,17 +233,34 @@ export default function Pooja() {
 
   // The day's deity comes first and opens the shrine (23 Oct 2026, Rahul;
   // before, the console's first deity did), unless a chip was already
-  // tapped or the shrine swiped while the list loaded.
+  // tapped or the shrine swiped while the list loaded. A failed load is
+  // tried twice more, after 2 and 6 seconds.
   const moved = useRef(false)
   useEffect(() => {
-    fetchDarshan()
-      .then((loaded) => {
-        if (!loaded.length) return
-        const rows = dayFirst(loaded, (d) => d.name)
-        setDeities(rows)
-        if (!moved.current) setDeityName(rows[0].name)
-      })
-      .catch((err) => console.error('[darshan] load failed:', err.message))
+    let gone = false
+    let timer = null
+    const load = (tries) =>
+      fetchDarshan()
+        .then((loaded) => {
+          if (gone || !loaded.length) return
+          try {
+            localStorage.setItem(LIST_KEY, JSON.stringify(loaded))
+          } catch {
+            // private window or full storage: the next visit loads again
+          }
+          const rows = dayFirst(loaded, (d) => d.name)
+          setDeities(rows)
+          if (!moved.current) setDeityName(rows[0].name)
+        })
+        .catch((err) => {
+          console.error('[darshan] load failed:', err.message)
+          if (!gone && tries > 0) timer = setTimeout(() => load(tries - 1), tries === 2 ? 2000 : 6000)
+        })
+    load(2)
+    return () => {
+      gone = true
+      clearTimeout(timer)
+    }
   }, [])
 
   // Said once, the first time: nothing on the altar looks like a button.
