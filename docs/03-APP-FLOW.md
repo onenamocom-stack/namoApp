@@ -535,8 +535,12 @@ reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
 `index.css` cancels it for this route only. Every other route scrolls, where
 that reservation is harmless run-off.
 
-The shrine opens on the console's first deity (Hanuman since 22 Oct 2026,
-Rahul). Gestures on the shrine — swipe **left/right for the next/previous
+The shrine opens on the day's deity, moved to the front of the chips (23 Oct
+2026, Rahul; it replaced opening on the console's first deity, Hanuman since
+22 Oct): Monday Shiva, Tuesday Hanuman, Wednesday Ganesh, Thursday Vishnu,
+Friday Mata, Saturday Shani then Hanuman, Sunday Surya then Krishna, by
+India's date. A deity the console does not have is skipped (no Surya, so
+Sunday opens on Krishna); the rest keep the console's order. Gestures on the shrine — swipe **left/right for the next/previous
 deity**, the chip beside it, stopping at the first and last (which resets to
 that deity's first murti; Rahul, 22 Oct 2026 — until then right was next and
 it wrapped, so a swipe back from Hanuman landed on the last deity),
