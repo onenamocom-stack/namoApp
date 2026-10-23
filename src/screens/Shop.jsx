@@ -208,7 +208,11 @@ export default function Shop() {
     : [...new Set(products.map((p) => p.category).filter(Boolean))].map((name) => ({ name, subcategories: [] }))
   // The categories that hold products; Downloads, Events, Courses are tiles.
   const catList = allCats.filter((c) => !keyOfName(c.name) && c.show !== false)
-  const subsOf = (name) => catList.find((c) => c.name === name)?.subcategories ?? []
+  // A sub category with no product on sale gets no pill (23 Oct 2026, Rahul:
+  // "jin sab categories me product nahi h unhe hide kar do"); it comes back
+  // with its first product.
+  const stocked = (c, sc) => products.some((p) => p.categories.includes(c) && p.subcategories.includes(sc))
+  const subsOf = (name) => (catList.find((c) => c.name === name)?.subcategories ?? []).filter((sc) => stocked(name, sc))
 
   /* Once the grid exists, bring the linked product to the middle of the
      screen. A product retired since the post went out says so, rather than
@@ -424,7 +428,7 @@ export default function Shop() {
           {t('a.all')}
         </button>
         {(cat === 'All'
-          ? catList.flatMap((c) => c.subcategories.map((sc) => [c.name, sc]))
+          ? catList.flatMap((c) => subsOf(c.name).map((sc) => [c.name, sc]))
           : subsOf(cat).map((sc) => [cat, sc])
         ).map(([c, sc]) => (
           <button

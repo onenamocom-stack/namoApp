@@ -932,7 +932,8 @@ everywhere a person reads it (was Shop; the `/shop/...` addresses stay). `?cat=e
 `?cat=downloads`), `?cat=events` or `?cat=courses` opens on that tile; `/academy` forwards to `?cat=ebooks`, and a shared
 book's address (`/bhakti/s/:id`) to `?cat=ebooks&book=:id`, that book first.
 
-- **All**: the banners and subcategory pills, then one section per
+- **All**: the banners and subcategory pills (a sub category with no
+  product on sale has no pill; 23 Oct 2026, Rahul), then one section per
   category (15 Oct 2026, Rahul's reference layout): its name, *See all*
   (opens that tile), and its first twelve as one strip of cards that swipes
   sideways, about two and a third on screen (15 Oct 2026, Rahul) — picture,
