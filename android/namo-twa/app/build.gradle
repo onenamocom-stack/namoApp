@@ -25,8 +25,8 @@ def twaManifest = [
     applicationId: 'com.onenamo.app',
     hostName: '1namo.com', // The domain being opened in the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
-    name: 'Namo – Connecting Bharat', // The application name.
-    launcherName: 'Namo', // The name shown on the Android Launcher.
+    name: 'NAMO', // The application name.
+    launcherName: 'NAMO', // The name shown on the Android Launcher.
     themeColor: '#F5782C', // The color used for the status bar.
     themeColorDark: '#F5782C', // The color used for the dark status bar.
     navigationColor: '#FFFFFF', // The color used for the navigation bar.
@@ -58,8 +58,8 @@ android {
         applicationId "com.onenamo.app"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 9
-        versionName "1.0.8"
+        versionCode 10
+        versionName "1.0.9"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
