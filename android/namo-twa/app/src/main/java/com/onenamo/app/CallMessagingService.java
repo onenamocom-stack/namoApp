@@ -17,10 +17,17 @@ public class CallMessagingService extends FirebaseMessagingService {
         String title = d.containsKey("title") ? d.get("title") : "NAMO";
         String body = d.containsKey("body") ? d.get("body") : "";
         String open = d.containsKey("open") ? d.get("open") : "/";
-        if ("incoming".equals(type) || "connecting".equals(type)) {
-            Calls.ring(this, type, session, title, body, open);
-        } else {
-            Calls.plain(this, session, title, body, open);
+        Calls.report(this, session, "got");
+        try {
+            if ("incoming".equals(type) || "connecting".equals(type)) {
+                Calls.ring(this, type, session, title, body, open);
+            } else {
+                Calls.plain(this, session, title, body, open);
+            }
+            Calls.report(this, session, "shown");
+        } catch (RuntimeException e) {
+            Calls.report(this, session, "err-" + e.getClass().getSimpleName());
+            throw e;
         }
     }
 

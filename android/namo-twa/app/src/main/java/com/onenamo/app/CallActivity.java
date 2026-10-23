@@ -51,6 +51,7 @@ public class CallActivity extends Activity {
         final String open = getIntent().getStringExtra("open");
         String title = getIntent().getStringExtra("title");
         String body = getIntent().getStringExtra("body");
+        Calls.report(this, session, "screen");
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);

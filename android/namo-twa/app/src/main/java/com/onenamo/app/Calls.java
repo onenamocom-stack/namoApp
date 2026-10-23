@@ -125,4 +125,38 @@ final class Calls {
     static void cancel(Context ctx, String sessionId) {
         ctx.getSystemService(NotificationManager.class).cancel(idFor(sessionId));
     }
+
+    /**
+     * How far a ring got on this phone (23 Oct 2026: a locked Samsung showed
+     * nothing, and nothing outside the phone could say why). A GET to the
+     * API's health check, so the stage shows in its request log; no personal
+     * data, only the session id, the stage and the phone's state. Never
+     * blocks or breaks the ring.
+     */
+    static void report(Context ctx, String sessionId, String stage) {
+        new Thread(() -> {
+            try {
+                android.os.PowerManager pm = ctx.getSystemService(android.os.PowerManager.class);
+                android.app.KeyguardManager km = ctx.getSystemService(android.app.KeyguardManager.class);
+                NotificationManager nm = ctx.getSystemService(NotificationManager.class);
+                String state = "screen=" + (pm != null && pm.isInteractive() ? 1 : 0)
+                        + "&locked=" + (km != null && km.isKeyguardLocked() ? 1 : 0)
+                        + "&idle=" + (pm != null && Build.VERSION.SDK_INT >= 23 && pm.isDeviceIdleMode() ? 1 : 0)
+                        + "&batt=" + (pm != null && Build.VERSION.SDK_INT >= 23
+                                && pm.isIgnoringBatteryOptimizations(ctx.getPackageName()) ? 1 : 0)
+                        + "&notif=" + (nm != null && nm.areNotificationsEnabled() ? 1 : 0)
+                        + "&sdk=" + Build.VERSION.SDK_INT + "&v=" + ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(
+                        "https://namo-api-499026166575.asia-south1.run.app/v1/health/?fcm="
+                                + Uri.encode(sessionId == null ? "-" : sessionId)
+                                + "&s=" + Uri.encode(stage) + "&" + state).openConnection();
+                c.setConnectTimeout(4000);
+                c.setReadTimeout(4000);
+                c.getResponseCode();
+                c.disconnect();
+            } catch (Exception ignored) {
+                // A report that cannot go out changes nothing.
+            }
+        }).start();
+    }
 }
