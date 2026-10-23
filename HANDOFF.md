@@ -6584,7 +6584,11 @@ https://1namo.com/ — every web deploy is the app; no app update needed.
   Listing drafts in `android/play-listing/`: `description.txt` (name,
   short, full; no third-party brand names, no digital goods named),
   `feature-graphic-1024x500.png` and its `feature.html`. Sent to Rahul.
-  Screenshots wait on his phone's (the screens need sign-in). The Play
+  Screenshots: six from Rahul's phone framed at 1080x1920 on a cotton-white
+  base (his rule, 23 Oct; the feature graphic too) in
+  `android/play-listing/screenshots/` (`make.py` writes the pages); his
+  birth date masked on the chart. Telegram had shrunk them to 591 px wide,
+  so they are soft; asked for the originals as files. The Play
   Console's own items stay his or the owner's: App signing SHA-256, the
   full-screen-intent declaration (calling), a reviewer phone with a fixed
   OTP, Data safety, content rating (18+), the payments declaration for
