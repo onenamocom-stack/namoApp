@@ -6567,6 +6567,19 @@ https://1namo.com/ — every web deploy is the app; no app update needed.
 - **Still to do:** after the first upload, add Play App Signing's SHA-256
   (Play Console → App integrity) to `assetlinks.json`, or Play installs open
   with an address bar. Store listing, Data safety, Content rating.
+- **Pre-submission check, 23 Oct (Rahul asked):** ready: 1.0.6 targets API
+  36, code 7, upload-key signed; `assetlinks.json` live; delete account,
+  block, report, guidelines, no in-app digital sales; no sensitive
+  permissions. Not ready: `privacy.html` (15 Oct) leaves out camera and
+  microphone for calls (Daily.co), notifications (Firebase), PhonePe, AI
+  answers (Gemini), in-app deletion and an age line; the battery-exemption
+  permission (1.0.5) is a Play policy risk and the tests showed the
+  full-screen setting, not battery, was the cause; the listing has only the
+  512 icon. Both proposed to Rahul and waiting on his yes. The Play
+  Console's own items stay his or the owner's: App signing SHA-256, the
+  full-screen-intent declaration (calling), a reviewer phone with a fixed
+  OTP, Data safety, content rating (18+), the payments declaration for
+  wallet top-ups.
 
 ## 85. Faster first loads: the API stays warm, pages cached at the CDN, code split — 19–21 Oct 2026
 
