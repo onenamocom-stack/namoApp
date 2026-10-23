@@ -98,13 +98,13 @@ class TestBlog:
     def test_a_blog_with_no_cover_uses_the_site_image(self, client, network, blog):
         Content.objects.filter(pk=blog.id).update(media_url=None)
         page = client.get(f"/read/{blog.id}").content.decode()
-        assert 'og:image" content="https://1namo.com/og.png"' in page
+        assert 'og:image" content="https://1namo.com/og.png?v=2"' in page
 
     def test_a_broken_image_falls_back(self, client, monkeypatch, blog):
         cache.clear()
         monkeypatch.setattr(share.requests, "get", lambda *a, **k: _Resp(content=b"not an image"))
         response = client.get(f"/og/blog/{blog.id}.jpg")
-        assert response.status_code == 302 and response["Location"].endswith("/og.png")
+        assert response.status_code == 302 and response["Location"].endswith("/og.png?v=2")
 
 
 @pytest.mark.django_db
@@ -143,14 +143,14 @@ class TestBhakti:
     def test_a_priced_picture_shows_only_its_preview(self, client, network):
         a = self._asset(price_paise=4_900, media_url="private/key.png", preview_url=None)
         page = client.get(f"/bhakti/s/{a.id}").content.decode()
-        assert 'og:image" content="https://1namo.com/og.png"' in page
+        assert 'og:image" content="https://1namo.com/og.png?v=2"' in page
         assert client.get(f"/og/bhakti/{a.id}.jpg").status_code == 302
 
     def test_a_bhajan_with_no_cover_uses_the_site_image(self, client, network):
         a = self._asset(kind="bhajan", media_url="https://cdn.example/song.mp3")
         page = client.get(f"/bhakti/s/{a.id}").content.decode()
         assert 'og:title" content="Ganesh Chaturthi"' in page
-        assert 'og:image" content="https://1namo.com/og.png"' in page
+        assert 'og:image" content="https://1namo.com/og.png?v=2"' in page
 
     def test_a_bhajan_previews_with_its_cover(self, client, network):
         # 12 Oct 2026, Rahul: the card is the bhajan's, not the site's.
@@ -210,7 +210,7 @@ class TestProfile:
         page = client.get("/RahulVJain").content.decode()
         assert 'og:title" content="Rahul Jain on NAMO"' in page
         assert 'og:description" content="Seeker of the stars."' in page
-        assert 'og:image" content="https://1namo.com/og.png"' in page  # no photo
+        assert 'og:image" content="https://1namo.com/og.png?v=2"' in page  # no photo
 
     def test_a_name_nobody_has_previews_as_namo(self, client, network):
         assert 'og:title" content="NAMO"' in client.get("/nobody-here-1").content.decode()
@@ -249,7 +249,7 @@ class TestHome:
         from apps.appearance.models import LinkCard
 
         LinkCard.objects.create(title="NAMO", description="d")
-        assert 'og:image" content="https://1namo.com/og.png"' in client.get("/").content.decode()
+        assert 'og:image" content="https://1namo.com/og.png?v=2"' in client.get("/").content.decode()
 
 
 @pytest.fixture
@@ -303,7 +303,7 @@ class TestReel:
     def test_a_video_that_will_not_open_falls_back(self, client, network, reel):
         Content.objects.filter(pk=reel.id).update(media_url="https://cdn.example/missing.mp4")
         response = client.get(f"/og/reel/{reel.id}.jpg")
-        assert response.status_code == 302 and response["Location"].endswith("/og.png")
+        assert response.status_code == 302 and response["Location"].endswith("/og.png?v=2")
 
 
 @pytest.mark.django_db

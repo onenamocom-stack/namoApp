@@ -50,7 +50,7 @@ PROFILE_SIZE = (600, 600)
 # A shared photo post is its photo, square (18 Oct 2026, Rahul: every share
 # with its thumbnail); it was the author's profile card.
 POST_SIZE = (1080, 1080)
-FALLBACK_IMAGE = "/og.png"
+FALLBACK_IMAGE = "/og.png?v=2"  # v=2: the logo alone (23 Oct 2026), past day-cached cards
 
 
 def _site():
@@ -135,8 +135,9 @@ def _summary(text, limit=180):
 
 # What a link that matches nothing previews as (13 Oct 2026, Phase 15a:
 # the Hindu social network, not "astrology, darshan and the shop"); the
-# line itself is "Connecting Bharat" since 15 Oct 2026 (Rahul).
-SITE_LINE = "Connecting Bharat. Bhakti, darshan, gurus and your kundli."
+# line was "Connecting Bharat" from 15 Oct 2026; since 23 Oct the card says
+# only NAMO (Rahul), and the line is what the app has.
+SITE_LINE = "Bhakti, darshan, gurus and your kundli."
 
 
 def blog_page(request, content_id):
