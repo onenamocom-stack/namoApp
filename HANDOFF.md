@@ -6580,7 +6580,11 @@ https://1namo.com/ — every web deploy is the app; no app update needed.
   `docs/01` §8; 1.0.7 (code 8) drops the battery exemption
   (`release/namo-1.0.7.aab`, the one to upload); the real call to a locked
   phone with 1.0.6 arrived but rang as a notification, because installing
-  1.0.6 over 1.0.5 had turned full-screen notifications off again. The Play
+  1.0.6 over 1.0.5 had turned full-screen notifications off again.
+  Listing drafts in `android/play-listing/`: `description.txt` (name,
+  short, full; no third-party brand names, no digital goods named),
+  `feature-graphic-1024x500.png` and its `feature.html`. Sent to Rahul.
+  Screenshots wait on his phone's (the screens need sign-in). The Play
   Console's own items stay his or the owner's: App signing SHA-256, the
   full-screen-intent declaration (calling), a reviewer phone with a fixed
   OTP, Data safety, content rating (18+), the payments declaration for
