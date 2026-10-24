@@ -743,16 +743,17 @@ export default function Pooja() {
           ))}
         </span>
 
-        {/* Like, comment, reshare and share for this temple's murti, on the
-            altar's front face (24 Oct 2026, Rahul: "Put like comment repost
-            and share button on each deity in darshan", where he marked the
-            table). Keyed by the row, so the counts start again on each murti. */}
+        {/* Like, comment, reshare and share for this temple's murti, down
+            the right-hand side above Sangeet, the reels' way (24 Oct 2026,
+            Rahul; first on the altar's front, then "Right hand side
+            vertically laga do. Jaise reels me lagate hai"). Keyed by the
+            row, so the counts start again on each murti. */}
         {murtiAsset && (
           <div
-            className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-center gap-5"
-            style={{ height: cqw(SLAB_FRONT) }}
+            className="absolute right-3 z-20 flex w-10 flex-col items-center gap-4"
+            style={{ bottom: `calc(${onCounter()} + 126px)` }}
           >
-            <BhaktiActions key={murtiAsset.id} asset={murtiAsset} share light />
+            <BhaktiActions key={murtiAsset.id} asset={murtiAsset} share rail />
           </div>
         )}
 

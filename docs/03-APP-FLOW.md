@@ -539,9 +539,10 @@ reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
 `index.css` cancels it for this route only. Every other route scrolls, where
 that reservation is harmless run-off.
 
-**Like, Comment, Reshare and Share for the murti on screen** sit on the
-altar's front face (24 Oct 2026, Rahul), with their counts, each temple's
-its own: the Bhakti picture's actions. A reshare puts the murti's photo in
+**Like, Comment, Reshare and Share for the murti on screen** run down the
+right-hand side above Sangeet, each count under its icon, as on a reel (24
+Oct 2026, Rahul; a row on the altar's front first, which he moved), each
+temple's its own: the Bhakti picture's actions. A reshare puts the murti's photo in
 the feed as *Darshan*, opening `/darshan?murti=<id>`; Share sends the photo
 and `/bhakti/s/<id>`, which previews with the murti and opens Darshan on that
 temple. `/darshan?murti=<id>` opens on that murti.
