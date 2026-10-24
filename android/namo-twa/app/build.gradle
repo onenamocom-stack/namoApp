@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,8 +58,8 @@ android {
         applicationId "com.onenamo.app"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 10
-        versionName "1.0.9"
+        versionCode 11
+        versionName "1.0.10"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
