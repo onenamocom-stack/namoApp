@@ -1434,7 +1434,9 @@ function ReelCard({ reel, resharedBy }) {
       <PostText text={r.caption} />
 
       <Link ref={frame} to={`/reels/${r.id}`} className="group relative block">
-        <Plate seed={r.id} className="aspect-[4/5] w-full !rounded-none">
+        {/* Plain grey under the video, not the drawn plate: its lines showed
+            for as long as the first frame took (24 Oct 2026, Rahul). */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-t4/15">
           {/* A video's cover is its own frame at half a second: the `#t=` fragment
               seeks there and `preload="metadata"` fetches just enough to paint it.
               ponytail: no stored thumbnails; add a poster column if this is slow on mobile data. */}
@@ -1455,7 +1457,7 @@ function ReelCard({ reel, resharedBy }) {
           {/* No play mark (24 Oct 2026, Rahul: "hata do"): the reel plays as it
               comes on screen and its sound button says it is a video. The big
               play circle went on 4 Oct 2026. */}
-        </Plate>
+        </div>
         {isVideo && (
           <button
             type="button"
@@ -1856,7 +1858,7 @@ function FeedPlaceholder() {
           <span className="block h-2.5 w-20 rounded bg-t4/15" />
         </span>
       </div>
-      <div className="aspect-[4/5] w-full bg-surface2" />
+      <div className="aspect-[4/5] w-full bg-t4/15" />
       <div className="space-y-2 px-4 pt-3">
         <span className="block h-3 w-3/4 rounded bg-t4/25" />
         <span className="block h-3 w-1/2 rounded bg-t4/15" />
