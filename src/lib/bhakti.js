@@ -803,6 +803,13 @@ function myInviteCode() {
 const LISTENED = new Set(['bhajan', 'mantra', 'tune'])
 const PICTURES = new Set(['status', 'wallpaper', 'darshan'])
 
+/** A deity's name as a share says it, "Ji" after it (24 Oct 2026, Rahul),
+ *  unless it already ends in ji (Balaji, Shrinathji). */
+export function withJi(name) {
+  const n = String(name ?? '').trim()
+  return !n || /ji$/i.test(n) || n.endsWith('जी') ? n : `${n} Ji`
+}
+
 export async function inviteMessage(asset) {
   const code = await myInviteCode()
   /* The item's own address (8 Oct 2026): WhatsApp previews it with the
@@ -812,7 +819,11 @@ export async function inviteMessage(asset) {
   // What it is, NAMO, the link: nothing about NAMO after it (23 Oct 2026,
   // Rahul; it said "bhajans, mantras and daily darshan in one app. Join with
   // my code ..."). The code stays in the link.
-  const what = LISTENED.has(asset.kind) ? `Listen to “${asset.title}” on NAMO` : `“${asset.title}”, from NAMO`
+  const what = LISTENED.has(asset.kind)
+    ? `Listen to “${asset.title}” on NAMO`
+    : asset.kind === 'darshan' && asset.deity
+      ? `Darshan of ${withJi(asset.deity)}, “${asset.title}”, from NAMO`
+      : `“${asset.title}”, from NAMO`
   return [what, link].join('\n')
 }
 

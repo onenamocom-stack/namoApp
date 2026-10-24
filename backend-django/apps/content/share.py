@@ -224,6 +224,7 @@ def bhakti_page(request, asset_id):
     """A shared Bhakti item (8 Oct 2026): its own address, so WhatsApp's
     preview shows the picture with the title, not the site's card."""
     from apps.bhakti.models import BhaktiAsset
+    from apps.bhakti.services import with_ji
 
     url = f"{_site()}/bhakti/s/{asset_id}"
     asset = BhaktiAsset.objects.filter(pk=asset_id, active=True).first()
@@ -238,7 +239,7 @@ def bhakti_page(request, asset_id):
         "wallpaper": "A wallpaper from NAMO.",
         "status": "A WhatsApp status from NAMO.",
         "ebook": "Read this e-book on NAMO.",
-        "darshan": f"Darshan of {asset.deity} on NAMO." if asset.deity else "Darshan on NAMO.",
+        "darshan": f"Darshan of {with_ji(asset.deity)} on NAMO." if asset.deity else "Darshan on NAMO.",
     }.get(asset.kind, "Bhajans, mantras and daily darshan in one app.")
     return _page(_tags(title=asset.title, description=description,
                        image=image, url=url, kind="website"), url)

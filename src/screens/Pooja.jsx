@@ -14,7 +14,7 @@ import {
   Thali,
 } from '../components/PujaProps.jsx'
 import { useStore } from '../store.jsx'
-import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
+import { fetchAssets, fetchDarshan, withJi } from '../lib/bhakti.js'
 import DarshanFrame, { Pic } from '../components/DarshanFrame.jsx'
 import BhaktiActions from '../components/BhaktiActions.jsx'
 
@@ -436,7 +436,8 @@ export default function Pooja() {
     ? {
         ...shown.asset,
         kind: 'darshan',
-        title: shown.temple || `Shri ${deity.name} Mandir`,
+        deity: deity.name,
+        title: shown.temple || `Shri ${withJi(deity.name)} Mandir`,
         url: shown.src,
         pricePaise: null,
       }

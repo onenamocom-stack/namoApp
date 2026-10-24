@@ -54,7 +54,7 @@ class TestDarshanSocial:
         DarshanImage.objects.filter(pk=murti.pk).update(temple="", image_url="/darshan/temples/x.webp")
         _row(api_client, murti)
         asset = BhaktiAsset.objects.get(pk=asset_id)
-        assert (asset.title, asset.media_url) == ("Shri Padmavati Mandir", "/darshan/temples/x.webp")
+        assert (asset.title, asset.media_url) == ("Shri Padmavati Ji Mandir", "/darshan/temples/x.webp")
         DarshanImage.objects.filter(pk=murti.pk).update(active=False)
         api_client.get("/v1/bhakti/darshan/")
         assert not BhaktiAsset.objects.get(pk=asset_id).active
@@ -64,5 +64,12 @@ class TestDarshanSocial:
 
         asset_id = _row(api_client, murti)["asset"]["id"]
         html = share.bhakti_page(None, asset_id).content.decode()
-        assert "Hombuja Padmavati Basadi" in html and "Darshan of Padmavati on NAMO." in html
+        assert "Hombuja Padmavati Basadi" in html and "Darshan of Padmavati Ji on NAMO." in html
         assert f"/og/bhakti/{asset_id}.jpg" in html
+
+
+def test_ji_once():
+    from apps.bhakti.services import with_ji
+
+    assert [with_ji(n) for n in ("Hanuman", "Balaji", "Shrinathji", "Mata", "")] == [
+        "Hanuman Ji", "Balaji", "Shrinathji", "Mata Ji", ""]

@@ -259,8 +259,18 @@ def list_commented(actor_id, *, limit=50):
 DARSHAN_KEY = "darshan:"
 
 
+def with_ji(name):
+    """A deity's name as a share says it, with "Ji" after it (24 Oct 2026,
+    Rahul: "We need to put Ji after every deity name. When we are sharing"),
+    unless it already ends in ji (Balaji, Shrinathji)."""
+    name = (name or "").strip()
+    if not name or name.lower().endswith("ji") or name.endswith("जी"):
+        return name
+    return f"{name} Ji"
+
+
 def darshan_title(image):
-    return (image.temple or "").strip() or f"Shri {image.deity.name} Mandir"
+    return (image.temple or "").strip() or f"Shri {with_ji(image.deity.name)} Mandir"
 
 
 def darshan_assets(images):
