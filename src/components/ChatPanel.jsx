@@ -31,6 +31,7 @@ import {
   ago as alertAgo,
   markRead as markAlertsRead,
   subscribeToAlerts,
+  alertAction,
   alertHref,
 } from '../lib/notifications.js'
 
@@ -880,6 +881,18 @@ function Alerts() {
               <p className="mt-1.5 text-meta t-heading">{n.title}</p>
             )}
             {n.body && <p className="mt-1 text-meta t-sub">{n.body}</p>}
+            {alertAction(n) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setChatOpen(false)
+                  navigate(alertHref(n))
+                }}
+                className="mt-1.5 block text-left text-meta font-semibold gold"
+              >
+                {alertAction(n)}
+              </button>
+            )}
           </li>
         ))}
       </ul>

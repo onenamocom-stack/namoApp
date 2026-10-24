@@ -63,6 +63,13 @@ export function alertHref(n) {
   return null
 }
 
+/** The words of the alert's own link under it, where one is wanted (24 Oct
+ *  2026, Rahul, on a Pro's daily report: "Add link to the report also"). */
+export function alertAction(n) {
+  if (n?.ref_type === 'pro_report') return 'See the full report →'
+  return null
+}
+
 export async function fetchAlerts({ limit = 50 } = {}) {
   const token = await accessToken()
   if (!token) return { items: [], unread: 0 }
