@@ -180,12 +180,17 @@ export default function Home() {
      dealt at random from 16 Sep): `fetchFeed` with `shuffle` asks the
      server's ranking, and deals at random only if that fails. */
   const [published, setPublished] = useState([])
+  // Until the first answer the feed draws placeholder cards, not the courses
+  // and "End of today's feed" alone (24 Oct 2026, Rahul: that read as an
+  // empty feed for as long as the request took).
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     let active = true
     fetchFeed({ kinds: ['post', 'clip', 'article'], limit: 200, shuffle: true })
       .then((rows) => active && setPublished(rows))
       .catch((err) => console.error('[feed] load failed:', err.message))
+      .finally(() => active && setLoaded(true))
     return () => {
       active = false
     }
@@ -370,7 +375,8 @@ export default function Home() {
               {/* The Earn strip on top, before the first post (21 Oct
                   2026, Rahul: "Show on top"; after the second until then). */}
               <JoinAsPro />
-              {items.map((item, i) => {
+              {!loaded && [0, 1].map((n) => <FeedPlaceholder key={n} />)}
+              {loaded && items.map((item, i) => {
                 const card = (() => { switch (item.kind) {
                   case 'post':
                     return <PostCard key={item.id} post={item.data} resharedBy={item.by} />
@@ -400,9 +406,11 @@ export default function Home() {
               })}
             </div>
 
-            <div className="px-5 py-10 text-center">
-              <p className="caps-sm t-faint">{t('home.end')}</p>
-            </div>
+            {loaded && (
+              <div className="px-5 py-10 text-center">
+                <p className="caps-sm t-faint">{t('home.end')}</p>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1834,6 +1842,26 @@ function HouseHead({ name, note, to }) {
           <span className="block text-[11px] text-t3">{note}</span>
         </span>
       </Link>
+    </div>
+  )
+}
+
+/** A post's outline, grey and pulsing, while the feed is on its way. */
+function FeedPlaceholder() {
+  return (
+    <div aria-hidden="true" className="animate-pulse border-b border-rule pb-4">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="h-10 w-10 flex-none rounded-full bg-t4/25" />
+        <span className="flex-1 space-y-2">
+          <span className="block h-3 w-32 rounded bg-t4/25" />
+          <span className="block h-2.5 w-20 rounded bg-t4/15" />
+        </span>
+      </div>
+      <div className="aspect-[4/5] w-full bg-surface2" />
+      <div className="space-y-2 px-4 pt-3">
+        <span className="block h-3 w-3/4 rounded bg-t4/25" />
+        <span className="block h-3 w-1/2 rounded bg-t4/15" />
+      </div>
     </div>
   )
 }
