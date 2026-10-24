@@ -144,7 +144,9 @@ export default function ShareSheet() {
     if (!(statusFile instanceof File)) return // still getting it
     close()
     try {
-      await navigator.share({ files: [statusFile] })
+      // The link rides as the status's text (24 Oct 2026, Rahul: "link to
+      // will be in status text"), so a viewer outside NAMO can find it.
+      await navigator.share({ files: [statusFile], text: [item.title, fullUrl(item.path)].filter(Boolean).join('\n') })
     } catch (err) {
       if (err?.name !== 'AbortError') showToast('This phone cannot send the video to WhatsApp from here.')
     }

@@ -2405,8 +2405,8 @@ goes straight to the phone's sheet.
   title and link; green, Rahul), **Status** (24 Oct 2026, Rahul: a reel to a
   WhatsApp status as the video, not a link; green): the reel's
   `status.mp4` (the NAMO mark burned in) or the picture, fetched as the
-  sheet opens and handed to the phone's sheet, where WhatsApp → My status
-  posts it, since WhatsApp lets no app post a status itself; shown only
+  sheet opens and handed to the phone's sheet with the title and link as
+  its text, where WhatsApp → My status posts it, since WhatsApp lets no app post a status itself; shown only
   where the file loads and the phone shares files. Then Share (the phone's
   sheet, as the button did before) and Copy link.
 
