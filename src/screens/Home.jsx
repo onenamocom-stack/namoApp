@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { courses, feed } from '../data/mock.js'
+import { feed } from '../data/mock.js'
 import { fetchProducts, productHref as pageOf } from '../lib/shop.js'
 import ProductArt from '../components/ProductArt.jsx'
 import { fetchFeed, fetchReposts, fetchSuggestions, isMine, noteSeen, productHref, recordView, reshareToLead } from '../lib/content.js'
@@ -23,7 +23,7 @@ import Composer from '../components/Composer.jsx'
 import Hashtags from '../components/Hashtags.jsx'
 import VerifiedMark from '../components/VerifiedMark.jsx'
 import { BackButton } from '../components/Chrome.jsx'
-import { Kicker, PopAvatar, PopBar, PopTag } from '../components/Pop.jsx'
+import { Kicker, PopAvatar, PopTag } from '../components/Pop.jsx'
 import { Segmented } from '../components/Primitives.jsx'
 import { PhotoSwiper } from '../components/Pieces.jsx'
 import { useStore } from '../store.jsx'
@@ -44,12 +44,13 @@ export function authorHref(c) {
 /**
  * What is still hand-ordered in `mock.js`, and why each one is.
  *
- * `course` / `product` belong to phase 10. Posts, reels and articles are gone
- * from here because they are a query now, and the live room went with live
- * video on 9 Sep 2026.
+ * `product` belongs to phase 10. Posts, reels and articles are gone from
+ * here because they are a query now, and the live room went with live video
+ * on 9 Sep 2026. The Academy card went on 24 Oct 2026 (Rahul's screenshot):
+ * an invented course with made-up progress, linking to an Academy that now
+ * forwards to the Shop's e-books.
  */
 const SOURCES = {
-  course: courses,
   product: [], // filled from the live catalogue, below
 }
 
@@ -141,7 +142,7 @@ const TABS = [
  * before the scroll buried them.
  *
  * The stream itself is unchanged and still mixes formats: reels, notes,
- * articles, courses, products, with `kind` on each record picking the card and
+ * articles, products, with `kind` on each record picking the card and
  * `refId` resolving into the existing collections, so nothing is duplicated.
  *
  * Tabs live in the URL (`/home/:tab`) rather than in state, for the same
@@ -180,7 +181,7 @@ export default function Home() {
      dealt at random from 16 Sep): `fetchFeed` with `shuffle` asks the
      server's ranking, and deals at random only if that fails. */
   const [published, setPublished] = useState([])
-  // Until the first answer the feed draws placeholder cards, not the courses
+  // Until the first answer the feed draws placeholder cards, not the products
   // and "End of today's feed" alone (24 Oct 2026, Rahul: that read as an
   // empty feed for as long as the request took).
   const [loaded, setLoaded] = useState(false)
@@ -289,7 +290,7 @@ export default function Home() {
   })
   real.push(...reshared)
 
-  /* What is left of the hand-ordered mock: courses and products.
+  /* What is left of the hand-ordered mock: products.
      They sit AFTER the real content rather than interleaved, because
      interleaving would need a rank to interleave on and there is no ranking
      yet. When phase 10 makes these queries too, this list goes away and
@@ -386,8 +387,6 @@ export default function Home() {
                     return <ArticleCard key={item.id} read={item.data} />
                   case 'bhakti':
                     return <PictureCard key={item.id} asset={item.data} resharedBy={item.by} />
-                  case 'course':
-                    return <CourseCard key={item.id} course={item.data} />
                   case 'product':
                     return <ProductCard key={item.id} product={item.data} />
                   default:
@@ -1863,32 +1862,6 @@ function FeedPlaceholder() {
         <span className="block h-3 w-1/2 rounded bg-t4/15" />
       </div>
     </div>
-  )
-}
-
-function CourseCard({ course: c }) {
-  const { t } = useStore()
-  return (
-    <article className="border-b border-rule bg-white">
-      <HouseHead name={t('home.namoAcademy')} note={t('home.continueLearning')} to="/academy" />
-      <Link to="/academy" className="block">
-        <Plate seed={c.id} className="aspect-[16/10] w-full !rounded-none" />
-      </Link>
-      {c.progress > 0 && (
-        <div className="px-3 pt-3">
-          <PopBar value={c.progress} />
-        </div>
-      )}
-      <CtaStrip to="/academy" tone="green">
-        {c.progress > 0 ? t('home.resume', { n: c.progress }) : t('home.startCourse')}
-      </CtaStrip>
-      <div className="px-3 pb-4 pt-2">
-        <p className="text-meta font-semibold text-t1">{c.title}</p>
-        <p className="mt-0.5 text-meta text-t2 tnum">
-          {c.tutor} · {t('home.lessons', { n: c.lessons })}
-        </p>
-      </div>
-    </article>
   )
 }
 
