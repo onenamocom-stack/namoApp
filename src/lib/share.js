@@ -59,7 +59,13 @@ export async function fetchStatusFile(media) {
   const url = statusFileUrl(media)
   if (!url) return null
   try {
-    const res = await fetch(url)
+    /* Not from the browser's cache: the reel's own <video> fetched this file
+       without CORS, and that cached copy has no Access-Control header, so the
+       read fails and the button hid (24 Oct 2026, Rahul: "Reel share pe
+       whatsapp status wala button nahi aa raha"). */
+    const res = await fetch(url, { cache: 'no-store' }).catch(() =>
+      fetch(`${url}${url.includes('?') ? '&' : '?'}cors=1`),
+    )
     if (!res.ok) return null
     const blob = await res.blob()
     const ext = (blob.type.split('/')[1] || 'mp4').replace('jpeg', 'jpg')

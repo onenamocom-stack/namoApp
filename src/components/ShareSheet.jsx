@@ -84,7 +84,7 @@ export default function ShareSheet() {
   /* WhatsApp Status (24 Oct 2026, Rahul): the reel's video (or the picture)
      as a file. Fetched as the sheet opens, because the phone's share sheet
      only opens straight after a tap, not after a download. */
-  const [statusFile, setStatusFile] = useState(null) // null · 'loading' · File · 'failed'
+  const [statusFile, setStatusFile] = useState(null) // null · 'loading' · File · 'no-file' · 'no-share'
   useEffect(() => {
     if (!item || !statusFileUrl(item.media)) {
       setStatusFile(null)
@@ -93,7 +93,11 @@ export default function ShareSheet() {
     let live = true
     setStatusFile('loading')
     fetchStatusFile(item.media).then((file) => {
-      if (live) setStatusFile(file && navigator.canShare?.({ files: [file] }) ? file : 'failed')
+      if (!live) return
+      // Which way it failed, said on a tap rather than hiding the button.
+      if (!file) setStatusFile('no-file')
+      else if (!navigator.canShare?.({ files: [file] })) setStatusFile('no-share')
+      else setStatusFile(file)
     })
     return () => {
       live = false
@@ -141,6 +145,8 @@ export default function ShareSheet() {
     if (said) showToast(said)
   }
   const toStatus = async () => {
+    if (statusFile === 'no-file') return showToast('Could not get this video for a status. Try again in a minute.')
+    if (statusFile === 'no-share') return showToast('This phone cannot send a video to WhatsApp from the app.')
     if (!(statusFile instanceof File)) return // still getting it
     close()
     try {
@@ -236,8 +242,8 @@ export default function ShareSheet() {
                   <path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.3 11.3 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" />
                 </svg>
               </Outside>
-              {/* Hidden where the file cannot be had or the phone cannot share files. */}
-              {statusFile && statusFile !== 'failed' && (
+              {/* Dim until the file is in hand; a tap on a dim one says why. */}
+              {statusFile && (
                 <Outside
                   label={statusFile === 'loading' ? 'Getting it' : 'Status'}
                   onClick={toStatus}
