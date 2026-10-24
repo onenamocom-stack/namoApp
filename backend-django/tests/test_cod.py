@@ -20,6 +20,19 @@ from apps.wallet import services as wallet_services
 from .test_delivery import BUYER, _address, _quote, _wallet, client, configured, mala  # noqa: F401
 
 
+@pytest.fixture(autouse=True)
+def _two_percent(settings):
+    """These tests pin the fee at the 2% they were written for; there is no
+    fee since 23 Oct 2026 (Rahul), tested below."""
+    settings.COD_FEE_BPS = 200
+
+
+def test_there_is_no_fee_by_default():
+    from config.settings import base
+
+    assert base.COD_FEE_BPS == 0
+
+
 def _empty_wallet(profile_id=BUYER):
     """A buyer with a wallet and nothing in it (the shared helper writes a
     ledger row, and the ledger refuses a zero)."""

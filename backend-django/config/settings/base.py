@@ -353,7 +353,9 @@ DELIVERY_FREE = os.environ.get("DELIVERY_FREE", "1") == "1"
 # basis points of the order total, delivery included, rounded up to the
 # rupee. A cap on one COD order's total, and on how many may be undelivered
 # at once per account: a refused parcel costs the courier both ways.
-COD_FEE_BPS = int(os.environ.get("COD_FEE_BPS", "200"))
+# No fee since 23 Oct 2026 (Rahul: "Cod pe 2% extra charge nahi lagana hai");
+# it was 200, 2%.
+COD_FEE_BPS = int(os.environ.get("COD_FEE_BPS", "0"))
 # A new seeker's first session with a "free first call" consultant: this many
 # seconds are free (7 Oct 2026; docs/01-PRD.md §4.1). Only the fallback since
 # 21 Oct 2026: the console's FreeFirstSettings row decides.

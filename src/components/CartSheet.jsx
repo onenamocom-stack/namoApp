@@ -179,7 +179,8 @@ export default function CartSheet() {
                 {!delivery ? '—' : delivery.amountPaise === 0 ? 'Free' : `₹${rupees(delivery.amountPaise)}`}
               </span>
             </div>
-            {cod && (
+            {/* No row while the fee is 0 (23 Oct 2026, Rahul: "Cod pe 2% extra charge nahi lagana hai"). */}
+            {cod && fee > 0 && (
               <div className="flex items-baseline justify-between">
                 <span className="caps-sm t-faint">Cash on delivery fee · {delivery.codFeeBps / 100}%</span>
                 <span className="text-meta tnum t-sub">₹{rupees(fee)}</span>
@@ -202,7 +203,7 @@ export default function CartSheet() {
                   {
                     key: 'cod',
                     title: 'Cash on delivery',
-                    note: codOffered ? `${delivery.codFeeBps / 100}% extra` : 'Not at this pincode',
+                    note: !codOffered ? 'Not at this pincode' : delivery.codFeeBps ? `${delivery.codFeeBps / 100}% extra` : 'No extra charge',
                     off: !codOffered,
                   },
                 ].map((o) => (
