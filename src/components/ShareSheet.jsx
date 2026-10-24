@@ -146,7 +146,10 @@ export default function ShareSheet() {
     try {
       // The link rides as the status's text (24 Oct 2026, Rahul: "link to
       // will be in status text"), so a viewer outside NAMO can find it.
-      await navigator.share({ files: [statusFile], text: [item.title, fullUrl(item.path)].filter(Boolean).join('\n') })
+      // Copied too: WhatsApp sometimes drops a file's text, and then it pastes.
+      const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
+      navigator.clipboard?.writeText(text).catch(() => {})
+      await navigator.share({ files: [statusFile], text })
     } catch (err) {
       if (err?.name !== 'AbortError') showToast('This phone cannot send the video to WhatsApp from here.')
     }
