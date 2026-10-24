@@ -1341,6 +1341,22 @@ their own rate (sum ÷ 1000, floored) to the person's link and tag
 commission (`earnings_ledger` rows starting "Referral" for a Pro,
 `creator_earnings` for a Creator) and returns one figure.
 
+### 5.2b″ `short_links` — the short address on a share (24 Oct 2026)
+
+```sql
+create table short_links (
+  code        varchar(12) primary key,   -- 6 characters, no 0/O/1/l/I
+  path        text not null,             -- a path on 1namo.com, e.g. /reels/<id>
+  ref         varchar(32) not null default '',  -- the sharer's referral code
+  created_at  timestamptz not null,
+  constraint short_links_path_ref unique (path, ref)
+);
+```
+
+Migration `content/0018_short_links`. Made by `POST /v1/content/links/`
+(signed in); `GET /s/<code>` redirects to `1namo.com<path>?ref=<ref>`. The
+same path and code always get the same row. No RLS: the API alone reads it.
+
 ### 5.2c `entitlements` — things bought from the wallet and kept (30 Sep 2026)
 
 ```sql
