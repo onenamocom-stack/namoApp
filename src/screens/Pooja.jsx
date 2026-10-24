@@ -282,8 +282,9 @@ export default function Pooja() {
    * Swiping the shrine. Left for the next deity — the chip beside it, in the
    * chips' order, stopping at either end (22 Oct 2026, Rahul: "slide karne pe
    * next adjacent category"; a right swipe was next, and a swipe back from the
-   * first deity wrapped round to the last) — down for the next murti of the
-   * one you are on; right and up go back. The nameplate on the arch follows
+   * first deity wrapped round to the last) — up for the next murti of the
+   * one you are on, as on Instagram (24 Oct 2026, Rahul; it was down); right
+   * and down go back. The nameplate on the arch follows
    * along — its dots are the murtis, the stack a vertical swipe moves through.
    *
    * The rule that makes this safe to add is the `closest('button')` bail. Every
@@ -333,7 +334,8 @@ export default function Pooja() {
       setDeityName(deities[j].name)
       setPic(0)
     } else if (ay > ax * DOMINANCE) {
-      setPic((p) => wrap(p + (dy > 0 ? 1 : -1), deity.images.length))
+      // Up for the next murti, as on Instagram (24 Oct 2026, Rahul: down was next).
+      setPic((p) => wrap(p + (dy < 0 ? 1 : -1), deity.images.length))
     }
   }
 
