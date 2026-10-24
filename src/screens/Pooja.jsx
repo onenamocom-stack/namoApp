@@ -139,6 +139,15 @@ function rememberedList() {
   }
 }
 
+/* A temple's live schedule when it is live every day (its timings start
+   "Daily", or it streams round the clock); null otherwise, and the plate
+   says it does not know. In the reader's language where the console has it. */
+function dailySchedule(image, lang) {
+  const hours = (image?.liveHours || '').trim()
+  if (!/^daily|24 hours/i.test(hours)) return null
+  return (lang === 'hi' && image.liveHoursHi?.trim()) || hours
+}
+
 const SHOWER = 36 // per tap — three times the 12 it was
 const HINT_KEY = 'namo.puja.touched'
 /* Where the gold band's two pendants hang, as a share of its width — the
@@ -649,9 +658,12 @@ export default function Pooja() {
               )}
               <Icon name="back" size={10} weight={2.4} className="flex-none -rotate-90 opacity-80" />
             </span>
-            {/* No third line since 22 Oct 2026 (Rahul: "Plate ke 3rd line me ab
-                kuch nahi aayega"); the Live darshan button says it. It said
-                Live, or Last live recording / Not live, and Next live. */}
+            {/* Third line, the schedule (24 Oct 2026, Rahul: "Expected Live
+                Schedule ... jisme roj live aate hai. Jinme roj live nahi aate
+                unka Dont Know"); it was empty from 22 Oct. */}
+            <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-[#d9c08a]">
+              {t('puja.schedule', { when: dailySchedule(image, lang) || t('puja.scheduleUnknown') })}
+            </span>
           </button>
         </span>
 

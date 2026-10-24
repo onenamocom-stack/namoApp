@@ -199,6 +199,9 @@ export const strings = {
   'puja.endAarti': { en: 'End aarti', hi: 'आरती समाप्त' },
   'puja.sangeet': { en: 'Sangeet', hi: 'संगीत' },
   'puja.chooseMurti': { en: 'Choose a murti', hi: 'मूर्ति चुनें' },
+  // The plate's third line (24 Oct 2026, Rahul).
+  'puja.schedule': { en: 'Expected Live Schedule: {when}', hi: 'लाइव का अनुमानित समय: {when}' },
+  'puja.scheduleUnknown': { en: "Don't know", hi: 'पता नहीं' },
   'puja.touchHint': { en: 'Touch the ghanti, diya, dhoop or flowers to offer', hi: 'अर्पण के लिए घंटी, दीया, धूप या पुष्प को छुएँ' },
   'puja.mandirOf': { en: 'Shri {name} Mandir', hi: 'श्री {name} मंदिर' },
   'puja.watchLive': { en: 'Live Darshan Available', hi: 'लाइव दर्शन उपलब्ध' },
