@@ -16,12 +16,17 @@
             queue or rejected), or why not.
   approve   the console's review queue: live, or rejected with its files
   reject    deleted.
+  upgrade   a reel already live as a whole MP4 (the Drive job's posts) is
+            sent through too, two a minute from the sweep, and gets the
+            HLS copy and a cover when it is done.
 
 The same calls serve the web app and the Android app.
 """
 
+import hashlib
 import logging
 import re
+from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
@@ -365,3 +370,71 @@ def sweep_stale(now=None):
         n += 1
     return n
 
+
+# ── whole-MP4 reels to HLS (24 Oct 2026) ────────────────────────────────────
+
+UPGRADE = "backfill"  # the category the 19 Oct one-off backfill used too
+UPGRADE_PER_SWEEP = 2
+
+
+def _bucket_key(url):
+    """The media bucket's key for one of its public addresses, else None."""
+    parts = urlparse(url or "")
+    host = parts.hostname or ""
+    ours = {urlparse(settings.MEDIA_PUBLIC_BASE_URL or "").hostname, "media.1namo.com"}
+    if host in ours or host.endswith(".r2.dev"):
+        return parts.path.lstrip("/") or None
+    return None
+
+
+def upgrade(content, now=None):
+    """Send a reel that went up as a whole MP4 through the pipeline, for
+    HLS and a cover (24 Oct 2026, Rahul: the feed's videos are slow; the
+    Drive job posts plain MP4s). The file is copied inside R2 to the
+    uploads bucket and a row made at `processing`; the minute sweep hands
+    it to the worker. The post plays its MP4 until the video is live, then
+    the playlist replaces it (content.video_settled); a failed encode
+    leaves the post as it was. Returns the Video, or None."""
+    from apps.content.models import Content
+
+    key = _bucket_key(content.media_url)
+    if content.kind != "clip" or content.video_id or not key or key.endswith(".m3u8"):
+        return None
+    now = now or timezone.now()
+    url_hash = hashlib.sha256(content.media_url.encode()).hexdigest()
+    video = Video(user_id=content.author_id, source_hash=url_hash, duration_s=0, size_bytes=1,
+                  category=UPGRADE, parts=1, created_at=now)
+    video.upload_key = f"uploads/{video.id}/source"
+    try:
+        video.size_bytes, video.mime = get_store().copy_in(key, video.upload_key)
+    except Exception as exc:  # noqa: BLE001 — the file is gone: noted, never tried again
+        video.status, video.error = VideoStatus.DELETED, f"backfill: missing, {exc}"[:500]
+        video.save()
+        return None
+    video.status = VideoStatus.PROCESSING
+    # Two minutes back, so the same sweep's redispatch sends it at once.
+    video.completed_at = now - timezone.timedelta(minutes=2)
+    video.save()
+    Content.objects.filter(pk=content.pk).update(video_id=video.id)
+    return video
+
+
+def upgrade_due(now=None, limit=UPGRADE_PER_SWEEP):
+    """The sweep's share: the newest live MP4 reels not tried yet."""
+    from apps.content.models import Content
+
+    if not settings.VIDEO_WORKER_URL:
+        return 0
+    tried = set(Video.objects.filter(category=UPGRADE).values_list("source_hash", flat=True))
+    rows = (Content.objects.filter(kind="clip", status=Content.Status.LIVE, video_id__isnull=True)
+            .exclude(media_url__isnull=True).exclude(media_url__contains=".m3u8")
+            .order_by("-published_at"))
+    n = 0
+    for row in rows.iterator():
+        if n >= limit:
+            break
+        if not _bucket_key(row.media_url) or hashlib.sha256(row.media_url.encode()).hexdigest() in tried:
+            continue
+        if upgrade(row, now) is not None:
+            n += 1
+    return n

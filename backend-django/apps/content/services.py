@@ -498,8 +498,15 @@ def video_settled(video_ids):
                 row.save(update_fields=["status", "media_url", "published_at"])
                 notify.push(row.author_id, kind="content.video.live", title="Your reel is live",
                             ref_type="content", ref_id=row.id, dedupe_key=f"video-live:{row.id}")
+            # A live MP4 reel sent through for its HLS copy (clips.upgrade):
+            # the playlist replaces the file, with no alert.
+            if playlist:
+                rows.filter(status=Content.Status.LIVE).exclude(media_url=playlist).update(media_url=playlist)
         elif video.status in (VideoStatus.REJECTED, VideoStatus.DELETED):
             rejected = video.status == VideoStatus.REJECTED
+            if not rejected:
+                # Its HLS copy failed: a live MP4 reel keeps its file and stays up.
+                rows.filter(status=Content.Status.LIVE).exclude(media_url__contains=".m3u8").update(video_id=None)
             for row in rows.exclude(status=Content.Status.REMOVED):
                 row.status = Content.Status.REMOVED
                 row.save(update_fields=["status"])

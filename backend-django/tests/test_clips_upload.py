@@ -388,3 +388,63 @@ class TestPost:
         other = sign_hs256(claims=make_claims(sub=OTHER_USER))
         done = self._completed(api_client, token)
         assert self._post(api_client, other, done).status_code == 403
+
+
+@pytest.mark.django_db
+class TestUpgrade:
+    """A reel already live as a whole MP4 (the Drive job's posts, 24 Oct
+    2026) is sent through by the sweep and gets the playlist when live."""
+
+    @pytest.fixture(autouse=True)
+    def worker(self, settings, monkeypatch):
+        settings.VIDEO_WORKER_URL, settings.VIDEO_WORKER_TOKEN = "https://worker.test", "wt"
+        settings.R2_BUCKET = "namo-media"
+        settings.MEDIA_PUBLIC_BASE_URL = "https://media.test"
+        self.post = _Posted()
+        monkeypatch.setattr(services.requests, "post", self.post)
+
+    def _reel(self, name="3049490012993062148.mp4"):
+        from apps.content.models import Content
+
+        return Content.objects.create(
+            author_id=TEST_USER, kind="clip", status="live", published_at=timezone.now(),
+            media_url=f"https://pub-abc.r2.dev/clips/{TEST_USER}/{uuid.uuid4()}/{name}")
+
+    def _encode(self, api_client, video, verdict):
+        body = {"video_id": str(video.id), "ok": True, "hls_path": f"v/{video.id}/master.m3u8",
+                "thumb_path": f"v/{video.id}/thumb.webp", "duration_s": 30, "moderation": verdict}
+        api_client.post("/v1/videos/worker/done/", body, format="json", HTTP_X_WORKER_TOKEN="wt")
+
+    def test_the_sweep_sends_two_and_the_playlist_replaces_the_mp4(self, api_client, me):
+        reels = [self._reel() for _ in range(3)]
+        assert services.upgrade_due() == 2
+        sent = Video.objects.filter(category="backfill", status="processing")
+        assert sent.count() == 2 and LocalStore.copied[-1][1].startswith("uploads/")
+        services.redispatch()
+        assert len(self.post.calls) == 2
+        video = sent.first()
+        post = reels[0].__class__.objects.get(video_id=video.id)
+        assert post.status == "live" and post.media_url.endswith(".mp4")  # plays its MP4 meanwhile
+        self._encode(api_client, video, CLEAR)
+        post.refresh_from_db()
+        assert post.status == "live" and post.media_url == f"https://media.test/v/{video.id}/master.m3u8"
+        # The third goes next minute; none is sent twice.
+        assert services.upgrade_due() == 1 and services.upgrade_due() == 0
+
+    def test_a_failed_encode_keeps_the_post_and_its_mp4(self, api_client, me):
+        reel = self._reel()
+        services.upgrade_due()
+        video = Video.objects.get(category="backfill")
+        api_client.post("/v1/videos/worker/done/", {
+            "video_id": str(video.id), "ok": False, "final": True, "reason": "bad", "error": "x"},
+            format="json", HTTP_X_WORKER_TOKEN="wt")
+        reel.refresh_from_db()
+        assert reel.status == "live" and reel.media_url.endswith(".mp4") and reel.video_id is None
+        assert services.upgrade_due() == 0  # not tried again
+
+    def test_a_missing_file_is_noted_once(self, me):
+        reel = self._reel(name="missing.mp4")
+        assert services.upgrade_due() == 0
+        assert Video.objects.get(category="backfill").status == "deleted"
+        reel.refresh_from_db()
+        assert reel.video_id is None and services.upgrade_due() == 0

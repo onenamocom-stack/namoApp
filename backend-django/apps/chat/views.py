@@ -242,6 +242,10 @@ def sweep(request):
     from apps.clips.services import redispatch
 
     result["videos_redispatched"] = redispatch()
+    # Live reels that are whole MP4s, two at a time to HLS (24 Oct 2026).
+    from apps.clips.services import upgrade_due
+
+    result["videos_upgraded"] = upgrade_due()
     # Pros' daily reports: written and sent at 23:00 IST (19 Oct 2026).
     from apps.consultants.report import tick
 

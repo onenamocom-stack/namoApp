@@ -90,6 +90,15 @@ class R2Store:
         except Exception:  # noqa: BLE001 — already gone is fine
             pass
 
+    def copy_in(self, source_key, key):
+        """A file already in the public media bucket, copied to the uploads
+        bucket for the worker; returns its (size, type)."""
+        client = self._client()
+        head = client.head_object(Bucket=settings.R2_BUCKET, Key=source_key)
+        client.copy_object(Bucket=uploads_bucket(), Key=key,
+                           CopySource={"Bucket": settings.R2_BUCKET, "Key": source_key})
+        return head["ContentLength"], head.get("ContentType") or "video/mp4"
+
     def delete_outputs(self, prefix):
         """Every encoded file of a video (`v/{id}/`) in the public bucket,
         for a rejected one. Returns how many went."""
@@ -128,6 +137,14 @@ class LocalStore:
 
     def abort(self, key, upload_id):
         LocalStore.uploads.pop(upload_id, None)
+
+    copied = []
+
+    def copy_in(self, source_key, key):
+        if "missing" in source_key:
+            raise KeyError(source_key)
+        LocalStore.copied.append((source_key, key))
+        return 1000, "video/mp4"
 
     def delete_outputs(self, prefix):
         LocalStore.deleted.append(prefix)
