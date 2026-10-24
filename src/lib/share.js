@@ -6,6 +6,7 @@
  * link. `ShareSheet.jsx` draws it; this file holds what it needs, so a
  * screen calls one function and knows nothing about the sheet.
  */
+import { supabase } from './supabase.js'
 import { SEEKER_APP_URL } from './urls.js'
 
 /* The one sheet listens here. A module-level listener rather than store
@@ -135,6 +136,37 @@ export async function copyLink(path) {
    shared from the pro app (11 Oct 2026). */
 export function fullUrl(path) {
   return /^https?:/.test(path) ? path : `${window.location.origin}${path}`
+}
+
+/* The short address for a share (24 Oct 2026, Rahul: the link on a
+   WhatsApp status was long): 1namo.com/s/<code>, which the server sends on
+   to the full one with the referral code. The same share gets the same
+   code, kept here for the session. Signed out, slow (over two seconds) or
+   failing, it is the full address, so a share never waits on it. */
+const API_BASE = import.meta.env.VITE_DJANGO_API_URL
+const shorts = new Map()
+export function shortLink(path, ref = '') {
+  const full = `${SEEKER_APP_URL.replace(/\/$/, '')}${path}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`
+  if (/^https?:/.test(path)) return Promise.resolve(path)
+  const key = `${path}|${ref}`
+  if (!shorts.has(key)) {
+    const made = (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token || !API_BASE) return full
+      const res = await fetch(`${API_BASE}/content/links/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(ref ? { path, ref } : { path }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      return (await res.json()).url || full
+    })().catch(() => {
+      shorts.delete(key)
+      return full
+    })
+    shorts.set(key, made)
+  }
+  return Promise.race([shorts.get(key), new Promise((done) => setTimeout(() => done(full), 2000))])
 }
 
 /* ── In a chat ─────────────────────────────────────────────────────────────

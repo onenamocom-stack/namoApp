@@ -3,7 +3,7 @@ import { useStore } from '../store.jsx'
 import { fetchDmThreads, sendDm, startDm } from '../lib/dms.js'
 import { followList } from '../lib/content.js'
 import { searchPeople } from '../lib/people.js'
-import { copyLink, fetchStatusFile, fullUrl, onShareRequest, shareMessage, statusFileUrl } from '../lib/share.js'
+import { copyLink, fetchStatusFile, fullUrl, onShareRequest, shareMessage, shortLink, statusFileUrl } from '../lib/share.js'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import Icon from './Icon.jsx'
 
@@ -96,6 +96,20 @@ export default function ShareSheet() {
     setStatusPct(0)
   }, [item])
 
+  /* The short address (24 Oct 2026, Rahul), asked for as the sheet opens so
+     WhatsApp, Status and Copy link have it on the tap; the full one until then. */
+  const [link, setLink] = useState(null)
+  useEffect(() => {
+    setLink(null)
+    if (!item) return undefined
+    let live = true
+    shortLink(item.path).then((url) => live && setLink(url))
+    return () => {
+      live = false
+    }
+  }, [item])
+  const address = link || (item ? fullUrl(item.path) : '')
+
   const shown = found ?? people
   /* Somebody picked from a search stays picked when the search changes. */
   const [names, setNames] = useState({})
@@ -140,7 +154,7 @@ export default function ShareSheet() {
     // The link rides as the status's text (24 Oct 2026, Rahul: "link to
     // will be in status text"), so a viewer outside NAMO can find it.
     // Copied too: WhatsApp sometimes drops a file's text, and then it pastes.
-    const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
+    const text = [item.title, address].filter(Boolean).join('\n')
     navigator.clipboard?.writeText(text).catch(() => {})
     try {
       await navigator.share({ files: [file], text })
@@ -175,7 +189,7 @@ export default function ShareSheet() {
     setStatusFile(file)
   }
   const whatsapp = () => {
-    const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
+    const text = [item.title, address].filter(Boolean).join('\n')
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
     close()
   }
@@ -276,7 +290,7 @@ export default function ShareSheet() {
               <Outside label="Share" onClick={() => outside(item.external)}>
                 <Icon name="share" size={22} />
               </Outside>
-              <Outside label="Copy link" onClick={() => outside(() => copyLink(item.path))}>
+              <Outside label="Copy link" onClick={() => outside(() => copyLink(address))}>
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                   <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
                   <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />

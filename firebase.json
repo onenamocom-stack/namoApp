@@ -23,6 +23,13 @@
           }
         },
         {
+          "source": "/s/**",
+          "run": {
+            "serviceId": "namo-api",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "/reels/**",
           "run": {
             "serviceId": "namo-api",

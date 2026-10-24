@@ -32,8 +32,7 @@
 
 import { supabase } from './supabase.js'
 import { myCodes } from './referrals.js'
-import { openShare } from './share.js'
-import { SEEKER_APP_URL } from './urls.js'
+import { openShare, shortLink } from './share.js'
 
 /** The Django API's base, e.g. https://api.example.com/v1 */
 const API_BASE = import.meta.env.VITE_DJANGO_API_URL
@@ -832,7 +831,8 @@ export async function inviteMessage(asset) {
   /* The item's own address (8 Oct 2026): WhatsApp previews it with the
      picture and title, where the sign-up link showed the site's card. The
      code rides along; a signed-out visitor lands on sign-up with it. */
-  const link = `${SEEKER_APP_URL}bhakti/s/${asset.id}${code ? `?ref=${code}` : ''}`
+  // Short since 24 Oct 2026 (Rahul): 1namo.com/s/<code> carries both.
+  const link = await shortLink(`/bhakti/s/${asset.id}`, code || '')
   // What it is, NAMO, the link: nothing about NAMO after it (23 Oct 2026,
   // Rahul; it said "bhajans, mantras and daily darshan in one app. Join with
   // my code ..."). The code stays in the link.
