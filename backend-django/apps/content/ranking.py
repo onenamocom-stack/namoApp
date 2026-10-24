@@ -25,7 +25,12 @@ The order:
     reel ya post hamne dekh li wo peeche chali jaani chahiye"; until
     then a seen post only kept a third of its score). Each row carries
     `_seen`, for the app's "you are all caught up" line;
-  * no author twice in a row, while another author is left;
+  * your own posts are not in your feed (24 Oct 2026, Rahul: "Mujhe meri
+    he reels dikhti h puri feed pe"), except one published in the last
+    hour, which leads it, as on Instagram;
+  * no author twice in a row, and at most two of any ten slots, while
+    another author is left (24 Oct 2026; it was only "not twice in a
+    row", so once the others ran out one author filled the feed);
   * every fifth slot is a post drawn at random from the rest, so new and
     quiet authors are seen;
   * signed out, or with nothing liked or followed yet, the follow, author
@@ -58,6 +63,8 @@ W_POPULAR = 1.5
 SEEN_DAYS = 14
 JITTER = 0.3
 EXPLORE_EVERY = 5  # slots 5, 10, 15 … are a random pick
+AUTHOR_WINDOW, AUTHOR_MAX = 10, 2  # at most two of any ten slots per author
+OWN_FRESH_HOURS = 1  # your own post leads your feed for its first hour
 
 # How much one action says about what you like.
 ENGAGEMENT = {"like": 1, "save": 2, "repost": 2}
@@ -150,17 +157,26 @@ def score(row, signals, *, now, top_popularity, rng):
 
 
 def arrange(scored, *, rng):
-    """Best first, never the same author twice running while another is
-    left, and every EXPLORE_EVERY-th slot a random pick from the rest."""
+    """Best first; never the same author twice running, nor more than
+    AUTHOR_MAX in any AUTHOR_WINDOW slots, while another author is left;
+    every EXPLORE_EVERY-th slot a random pick from the rest."""
     pool = [row for _, row in sorted(scored, key=lambda pair: pair[0], reverse=True)]
     out = []
+
+    def fits(r):
+        author = str(r.author_id)
+        recent = [str(x.author_id) for x in out[-(AUTHOR_WINDOW - 1):]]
+        return (not out or str(out[-1].author_id) != author) and recent.count(author) < AUTHOR_MAX
+
     while pool:
         last = str(out[-1].author_id) if out else None
         if (len(out) + 1) % EXPLORE_EVERY == 0 and len(pool) > 1:
-            choices = [r for r in pool[1:] if str(r.author_id) != last] or pool[1:]
+            choices = ([r for r in pool[1:] if fits(r)] or [r for r in pool[1:] if str(r.author_id) != last]
+                       or pool[1:])
             pick = rng.choice(choices)
         else:
-            pick = next((r for r in pool if str(r.author_id) != last), pool[0])
+            pick = (next((r for r in pool if fits(r)), None)
+                    or next((r for r in pool if str(r.author_id) != last), pool[0]))
         pool.remove(pick)
         out.append(pick)
     return out
@@ -174,9 +190,17 @@ def for_you(qs, viewer_id, *, limit, rng=None):
         return []
     signals = viewer_signals(viewer_id)
     now = timezone.now()
+    me = str(viewer_id) if viewer_id is not None else None
+    just_posted = [r for r in rows if me and str(r.author_id) == me and r.published_at
+                   and now - r.published_at <= timedelta(hours=OWN_FRESH_HOURS)]
+    rows = [r for r in rows if not (me and str(r.author_id) == me)]
+    for r in just_posted:
+        r._seen = False
+    if not rows:
+        return just_posted[:limit]
     top = max(_popularity(r) for r in rows)
     fresh, seen = [], []
     for r in rows:
         r._seen = str(r.id) in signals["seen"]
         (seen if r._seen else fresh).append((score(r, signals, now=now, top_popularity=top, rng=rng), r))
-    return (arrange(fresh, rng=rng) + arrange(seen, rng=rng))[:limit]
+    return (just_posted + arrange(fresh, rng=rng) + arrange(seen, rng=rng))[:limit]

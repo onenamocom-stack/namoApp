@@ -143,3 +143,24 @@ class TestInterests:
         ok = api_client.patch("/v1/profiles/me/", {"interests": ["yoga", "mantra", "jain"]}, format="json", **auth(seeker_token))
         assert ok.status_code == 200
         assert ok.json()["interests"] == ["yoga", "mantra", "jain"]
+
+
+@pytest.mark.django_db
+class TestYourOwnAndOneAuthor:
+    """24 Oct 2026, Rahul: "Mujhe meri he reels dikhti h puri feed pe"."""
+
+    def test_your_own_posts_stay_out_but_a_new_one_leads_for_an_hour(self, api_client, roster, seeker_token):
+        old = _post(SEEKER, minutes_ago=120)
+        new = _post(SEEKER, minutes_ago=5)
+        other = _post(ADMIN)
+        order = _ids(api_client.get(URL, **auth(seeker_token)))
+        assert order[0] == str(new.id) and str(other.id) in order and str(old.id) not in order
+
+    def test_one_author_has_at_most_two_of_ten_while_others_last(self):
+        rng = random.Random(1)
+        busy = [(10.0 - i * 0.01, SimpleNamespace(id=f"b{i}", author_id="busy")) for i in range(20)]
+        quiet = [(1.0 - i * 0.01, SimpleNamespace(id=f"q{i}", author_id=f"a{i % 8}")) for i in range(16)]
+        out = ranking.arrange(busy + quiet, rng=rng)
+        first = [r.author_id for r in out[:20]]
+        for start in range(0, 11):
+            assert first[start:start + 10].count("busy") <= 2

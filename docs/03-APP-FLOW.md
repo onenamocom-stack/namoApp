@@ -258,8 +258,12 @@ posts and more popular posts rank higher. A post or reel you watched (two
 seconds on screen) in the last two weeks comes **after everything you have
 not seen**, in Home and in Reels alike (19 Oct 2026, Rahul; before, it only
 sank), with no line or label where they begin (Rahul). Signed out, the phone remembers its
-last 500 seen posts and orders the same way. The same author never shows twice in a row while there is
-another, and every fifth post is a random pick. Signed out, or with nothing
+last 500 seen posts and orders the same way. Your own posts are not in your
+feed, except one you published in the last hour, which leads it (24 Oct
+2026, Rahul: his own reels filled his feed). The same author never shows
+twice in a row, nor more than twice in any ten, while there is another
+(24 Oct 2026), and every fifth post is a random pick. When everything new
+is seen, the seen posts follow with no "caught up" line (Rahul). Signed out, or with nothing
 liked or followed yet, the feed is fresh and popular posts. If the ranked
 feed fails to load, the old random deal stands in.
 
