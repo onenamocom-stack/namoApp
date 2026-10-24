@@ -214,6 +214,21 @@ class TestDataApi:
             got = youtube.live_status(CHANNEL)
             assert got["live"] is True and "/embed/" + "s" * 11 in got["embed_url"]
 
+    def test_a_24_hour_stream_behind_a_finished_one_is_found(self):
+        """Salangpur, 24 Oct 2026: a finished stream among the newest fifty,
+        the round-the-clock one further back."""
+        done = self._video("d" * 11, actualStartTime="2026-10-23T02:00:00Z", actualEndTime="2026-10-23T03:00:00Z")
+        with self._api([done], live_search=["z" * 11]):
+            assert youtube.live_status(CHANNEL)["live"] is False  # an ordinary channel: off air
+            got = youtube.live_status(CHANNEL, always_on=True)
+        assert got["live"] is True and "/embed/" + "z" * 11 in got["embed_url"]
+
+    def test_a_24_hour_temple_really_off_air_keeps_its_last_stream(self):
+        done = self._video("d" * 11, actualStartTime="2026-10-23T02:00:00Z", actualEndTime="2026-10-23T03:00:00Z")
+        with self._api([done]):
+            got = youtube.live_status(CHANNEL, always_on=True)
+        assert got["live"] is False and got["last"]["video_id"] == "d" * 11
+
     def test_not_live_and_nothing_recent_plays_the_last_stream_search_finds(self):
         old = self._video("o" * 11, actualStartTime="2026-01-20T02:00:00Z", actualEndTime="2026-01-20T03:00:00Z")
         with self._api([self._video("s" * 11), old], done_search=["o" * 11]):

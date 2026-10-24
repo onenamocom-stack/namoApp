@@ -141,7 +141,7 @@ def recording_url(video_id):
             "?autoplay=1&playsinline=1&rel=0&modestbranding=1")
 
 
-def live_status(channel_id):
+def live_status(channel_id, always_on=False):
     """{"live", "starts_at", "last"} for a channel (20 Oct 2026, Rahul: "agar
     live available nahi h to time kab live hoga. Ye likh do"). `starts_at`
     is the next scheduled stream's start, unix seconds, when the temple
@@ -155,12 +155,18 @@ def live_status(channel_id):
     every page, or on some and not others), so channels read as off air with
     nothing to play and the frames went dark (20 Oct 2026). Without a key,
     or when the API fails, every channel plays YouTube's live player, which
-    says itself when nothing is on."""
+    says itself when nothing is on.
+
+    `always_on`: the temple streams round the clock ("Usually live 24
+    hours"). Its stream can be months old, behind fifty newer uploads with a
+    finished one among them, so it read as off air (24 Oct 2026, Rahul:
+    Salangpur said 24 hours and showed no Live button). Such a channel not
+    found live among its uploads is also searched for a live broadcast."""
     from django.core.cache import cache
 
     if not _key():
         return {"live": True, "starts_at": None, "last": None}
-    key = f"yt-live:{channel_id}"
+    key = f"yt-live:{channel_id}{':24h' if always_on else ''}"
     hit = cache.get(key)
     if hit is not None:
         return hit
@@ -173,7 +179,16 @@ def live_status(channel_id):
             # (Siddhivinayak, live since 3 Oct) the channel player says "This
             # video is unavailable" while the stream itself plays (20 Oct 2026).
             status["embed_url"] = recording_url(got["live_video"])
-        if not status["live"] and status["last"] is None:
+        if not status["live"] and status["last"] is not None and always_on:
+            # A round-the-clock stream behind newer finished ones: one live
+            # search (100 units), kept three hours either way.
+            found = _api("search", part="id", channelId=channel_id, eventType="live", type="video",
+                         maxResults=1).get("items") or []
+            if found:
+                status = {"live": True, "starts_at": None, "last": None,
+                          "embed_url": recording_url(found[0]["id"]["videoId"])}
+            seconds = SEARCH_SECONDS
+        elif not status["live"] and status["last"] is None:
             # Nothing among the newest fifty: a channel that uploads many
             # videos a day (Tirupati's SVBC, a 24-hour stream started weeks
             # ago) keeps its stream further back. ASK, rather than assume

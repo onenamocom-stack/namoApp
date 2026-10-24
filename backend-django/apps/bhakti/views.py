@@ -145,7 +145,10 @@ def darshan_live(request, image_id):
     row = DarshanImage.objects.filter(pk=image_id, active=True).exclude(youtube_channel_id="").first()
     if row is None:
         return Response(refusal_body("not_found", "That darshan is not a temple channel."), status=404)
-    return Response(youtube.live_status(row.youtube_channel_id))
+    # A temple that streams round the clock is searched when its uploads
+    # show it off air (24 Oct 2026).
+    always_on = "24 hours" in (row.live_hours or "").lower()
+    return Response(youtube.live_status(row.youtube_channel_id, always_on=always_on))
 
 
 def _comment_row(c):
