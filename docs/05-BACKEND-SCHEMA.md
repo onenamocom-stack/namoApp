@@ -1221,7 +1221,7 @@ rows.
 
 `reactions.target_type` gained `'bhakti'` (`reactions/0003`, 12 Oct 2026): a like
 or a reshare (`repost`) of a Bhakti picture, `target_id` a `bhakti_assets.id`. Only
-an active, free status, wallpaper, bhajan, mantra or e-book can be reshared;
+an active, free status, wallpaper, bhajan, mantra, e-book or Darshan murti can be reshared;
 nobody is notified. **`bhakti_comments`**
 (`bhakti/0005`): `asset_id` (FK, cascade), `author_id`, `body`, `status` (live ·
 removed), `created_at`; index (asset, status, created_at). The same rules as
@@ -1381,6 +1381,15 @@ download's page's *What is inside*.
 row out before `show_from` and after `show_until` (a dated status card shows
 on its own day only). `deity` may hold several categories, comma-separated
 (*Trending, Shani*); the app splits it into chips.
+
+`bhakti_assets.kind` gained **`'darshan'`** (migration `bhakti/0013`, 24 Oct
+2026; `bhakti_assets_kind_check` dropped and re-added): one row per
+`darshan_images` row, `legacy_id` `darshan:<image id>`, title the temple (or
+*Shri <deity> Mandir*), `deity` the Darshan deity, `media_url` the murti's
+photo (or its YouTube picture), `active` off when the murti or its deity is.
+The darshan endpoint makes and updates these rows; the list endpoint and the
+console's Bhakti list leave them out. They carry a murti's likes, comments
+and reshares, and `/bhakti/s/<id>`.
 
 A priced `bhakti_assets` row's `media_url` is a **key in the private bucket**
 (`R2_PRIVATE_BUCKET`), not a URL. The list endpoint never returns it;

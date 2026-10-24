@@ -539,6 +539,13 @@ reserves for the fixed navbar is dead space here — `main:has(.darshan)` in
 `index.css` cancels it for this route only. Every other route scrolls, where
 that reservation is harmless run-off.
 
+**Like, Comment, Reshare and Share for the murti on screen** sit on the
+altar's front face (24 Oct 2026, Rahul), with their counts, each temple's
+its own: the Bhakti picture's actions. A reshare puts the murti's photo in
+the feed as *Darshan*, opening `/darshan?murti=<id>`; Share sends the photo
+and `/bhakti/s/<id>`, which previews with the murti and opens Darshan on that
+temple. `/darshan?murti=<id>` opens on that murti.
+
 The shrine opens on the day's deity, moved to the front of the chips (23 Oct
 2026, Rahul; it replaced opening on the console's first deity, Hanuman since
 22 Oct): Monday Shiva, Tuesday Hanuman, Wednesday Ganesh, Thursday Vishnu,
