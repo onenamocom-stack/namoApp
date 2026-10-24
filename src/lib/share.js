@@ -39,6 +39,36 @@ export async function openShare({ path, title = '', media = null, external } = {
   return null
 }
 
+/**
+ * The file a WhatsApp status takes for a shared thing's `media` (24 Oct 2026,
+ * Rahul: a reel goes to status as the video, not a link): a reel's
+ * `share.mp4` beside its HLS playlist, an MP4 or a picture as it is. Null
+ * for anything else. WhatsApp lets no app post to a status itself, so the
+ * file goes to the phone's share sheet and the person picks My status.
+ */
+export function statusFileUrl(media) {
+  const url = String(media || '')
+  if (/\/master\.m3u8(\?|#|$)/i.test(url)) return url.replace(/master\.m3u8.*$/i, 'share.mp4')
+  if (/\.(mp4|webm|mov|m4v|jpe?g|png|webp)(\?|#|$)/i.test(url)) return url
+  return null
+}
+
+/** That file, fetched, as a File the share sheet can take; null when it
+ *  cannot be had. */
+export async function fetchStatusFile(media) {
+  const url = statusFileUrl(media)
+  if (!url) return null
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    const ext = (blob.type.split('/')[1] || 'mp4').replace('jpeg', 'jpg')
+    return new File([blob], `namo-status.${ext}`, { type: blob.type })
+  } catch {
+    return null
+  }
+}
+
 /** Every Share button's old call, unchanged: it opens the sheet now. */
 export function shareLink(path, { title, media } = {}) {
   return openShare({ path, title, media })

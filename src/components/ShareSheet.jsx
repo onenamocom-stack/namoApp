@@ -3,7 +3,7 @@ import { useStore } from '../store.jsx'
 import { fetchDmThreads, sendDm, startDm } from '../lib/dms.js'
 import { followList } from '../lib/content.js'
 import { searchPeople } from '../lib/people.js'
-import { copyLink, fullUrl, onShareRequest, shareMessage } from '../lib/share.js'
+import { copyLink, fetchStatusFile, fullUrl, onShareRequest, shareMessage, statusFileUrl } from '../lib/share.js'
 import { PopAvatar, PopButton } from './Pop.jsx'
 import Icon from './Icon.jsx'
 
@@ -81,6 +81,25 @@ export default function ShareSheet() {
     }
   }, [q, me])
 
+  /* WhatsApp Status (24 Oct 2026, Rahul): the reel's video (or the picture)
+     as a file. Fetched as the sheet opens, because the phone's share sheet
+     only opens straight after a tap, not after a download. */
+  const [statusFile, setStatusFile] = useState(null) // null · 'loading' · File · 'failed'
+  useEffect(() => {
+    if (!item || !statusFileUrl(item.media)) {
+      setStatusFile(null)
+      return undefined
+    }
+    let live = true
+    setStatusFile('loading')
+    fetchStatusFile(item.media).then((file) => {
+      if (live) setStatusFile(file && navigator.canShare?.({ files: [file] }) ? file : 'failed')
+    })
+    return () => {
+      live = false
+    }
+  }, [item])
+
   const shown = found ?? people
   /* Somebody picked from a search stays picked when the search changes. */
   const [names, setNames] = useState({})
@@ -120,6 +139,15 @@ export default function ShareSheet() {
     close()
     const said = await run()
     if (said) showToast(said)
+  }
+  const toStatus = async () => {
+    if (!(statusFile instanceof File)) return // still getting it
+    close()
+    try {
+      await navigator.share({ files: [statusFile] })
+    } catch (err) {
+      if (err?.name !== 'AbortError') showToast('This phone cannot send the video to WhatsApp from here.')
+    }
   }
   const whatsapp = () => {
     const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
@@ -174,7 +202,7 @@ export default function ShareSheet() {
                       aria-pressed={on}
                       className="flex w-full flex-col items-center gap-2 transition-transform active:scale-95"
                     >
-                      <span className={`relative rounded-full p-[3px] transition-shadow ${on ? 'ring-2 ring-gold' : ''}`}>
+                      <span className={`relative flex rounded-full p-[3px] transition-shadow ${on ? 'ring-2 ring-gold' : ''}`}>
                         <PopAvatar initials={initialsOf(p.name)} src={p.avatar_url} size={70} />
                         {on && (
                           <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-gold-fill text-white">
@@ -203,6 +231,21 @@ export default function ShareSheet() {
                   <path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.3 11.3 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" />
                 </svg>
               </Outside>
+              {/* Hidden where the file cannot be had or the phone cannot share files. */}
+              {statusFile && statusFile !== 'failed' && (
+                <Outside
+                  label={statusFile === 'loading' ? 'Getting it' : 'Status'}
+                  onClick={toStatus}
+                  green
+                  dim={!(statusFile instanceof File)}
+                >
+                  {/* WhatsApp's mark in a dashed ring: its status. */}
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.5" strokeDasharray="4.2 2.2" />
+                    <path d="M9.5 8.8v6.4l5.4-3.2z" fill="currentColor" stroke="none" />
+                  </svg>
+                </Outside>
+              )}
               <Outside label="Share" onClick={() => outside(item.external)}>
                 <Icon name="share" size={22} />
               </Outside>
@@ -221,9 +264,13 @@ export default function ShareSheet() {
 }
 
 /* WhatsApp's button is the app's green (Rahul); the others plain. */
-function Outside({ label, onClick, green = false, children }) {
+function Outside({ label, onClick, green = false, dim = false, children }) {
   return (
-    <button type="button" onClick={onClick} className="flex flex-col items-center gap-1.5 transition-transform active:scale-95">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1.5 transition-transform active:scale-95 ${dim ? 'opacity-50' : ''}`}
+    >
       <span
         className={`flex h-14 w-14 items-center justify-center rounded-full ${
           green ? 'pop-btn-gold border-0' : 'bg-ink/[0.06] t-heading'

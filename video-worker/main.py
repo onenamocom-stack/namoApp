@@ -46,7 +46,7 @@ WAITING_MAX = 4
 # Encoded files never change once written: cache them for a year.
 IMMUTABLE = "public, max-age=31536000, immutable"
 TYPES = {".m3u8": "application/vnd.apple.mpegurl", ".ts": "video/mp2t", ".webp": "image/webp",
-         ".jpg": "image/jpeg"}
+         ".jpg": "image/jpeg", ".mp4": "video/mp4"}
 
 jobs = queue.Queue()
 held = set()

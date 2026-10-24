@@ -194,6 +194,17 @@ def _run(cmd, timeout=600):
         raise RuntimeError(f"ffmpeg failed: {out.stderr.strip()[-500:]}")
 
 
+def share_command(playlist, out_path):
+    """The top version as one MP4, the same frames copied rather than
+    encoded again (24 Oct 2026, Rahul): a WhatsApp status needs one video
+    file, and a reel is otherwise only HLS pieces."""
+    return [
+        FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", playlist,
+        "-c", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart",
+        "-map_metadata", "-1", out_path,
+    ]
+
+
 def master(variants):
     """`variants`: [(dir name, width, height, video kbps, audio kbps)],
     largest first; written smallest first."""
@@ -207,7 +218,8 @@ def master(variants):
 
 def build(src, out_dir):
     """Everything for one upload, into `out_dir`: master.m3u8, one folder
-    per version, thumb.webp, the moderation sheets. Returns what the API
+    per version, thumb.webp, share.mp4 (the top version as one file), the
+    moderation sheets. Returns what the API
     stores, and the sheets' local paths under `sheets`."""
     info = probe(src)
     variants = []
@@ -221,5 +233,6 @@ def build(src, out_dir):
         f.write(master(variants))
     _run(thumb_command(src, os.path.join(out_dir, "thumb.webp"), info), timeout=120)
     top = variants[0]
+    _run(share_command(os.path.join(out_dir, top[0], "index.m3u8"), os.path.join(out_dir, "share.mp4")), timeout=120)
     return {"duration_s": info["duration"], "width": top[1], "height": top[2],
             "versions": [v[0] for v in variants], "sheets": sheets(src, out_dir, info)}

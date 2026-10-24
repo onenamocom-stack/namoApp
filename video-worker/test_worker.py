@@ -165,7 +165,10 @@ class TestEncode:
         assert (got["width"], got["height"], got["versions"]) == (720, 1280, ["720p", "480p"])
         assert 8.5 < got["duration_s"] < 9.5
         keys = set(s3.put)
-        assert {"v/abc/master.m3u8", "v/abc/thumb.webp", "v/abc/720p/index.m3u8", "v/abc/480p/index.m3u8"} <= keys
+        assert {"v/abc/master.m3u8", "v/abc/thumb.webp", "v/abc/720p/index.m3u8", "v/abc/480p/index.m3u8",
+                "v/abc/share.mp4"} <= keys
+        # The top version as one MP4 for a WhatsApp status (24 Oct 2026).
+        assert s3.put["v/abc/share.mp4"]["ContentType"] == "video/mp4"
         # 9 seconds in 4-second segments: three per version.
         assert len([k for k in keys if k.startswith("v/abc/480p/seg_")]) == 3
         assert s3.put["v/abc/480p/seg_000.ts"]["ContentType"] == "video/mp2t"
