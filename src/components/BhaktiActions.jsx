@@ -20,8 +20,11 @@ import { useStore } from '../store.jsx'
  * a status has its WhatsApp button instead). A priced row has no Reshare —
  * the server refuses it, and a feed card for something you must buy is an
  * advert under a person's name.
+ *
+ * `light`: white icons and counts, on the Darshan altar's green front (24 Oct
+ * 2026, Rahul), where the colours stay readable on the marble.
  */
-export default function BhaktiActions({ asset, share = false }) {
+export default function BhaktiActions({ asset, share = false, light = false }) {
   const { hasFlag, toggleFlag, showToast } = useStore()
   const [thread, setThread] = useState(false)
   const [comments, setComments] = useState(asset.comments ?? 0)
@@ -29,6 +32,10 @@ export default function BhaktiActions({ asset, share = false }) {
   const reshared = hasFlag(`brepost:${asset.id}`)
   const [was] = useState(() => ({ liked, reshared }))
   const reshare = useReshare(`brepost:${asset.id}`)
+  const look = light
+    ? { idle: 'text-white/90 hover:text-white drop-shadow', size: 22 }
+    : {}
+  const count = light ? 'text-white drop-shadow' : undefined
 
   return (
     <>
@@ -39,10 +46,11 @@ export default function BhaktiActions({ asset, share = false }) {
         on={liked}
         tone="text-gold-fill"
         onClick={() => toggleFlag(`blike:${asset.id}`)}
+        {...look}
       />
-      <Count n={(asset.likes ?? 0) + (liked - was.liked)} />
-      <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} />
-      <Count n={comments} />
+      <Count n={(asset.likes ?? 0) + (liked - was.liked)} className={count} />
+      <ActIcon icon="chat" label="Comments" onClick={() => setThread(true)} {...look} />
+      <Count n={comments} className={count} />
       {asset.pricePaise == null && (
         <>
           <ActIcon
@@ -50,10 +58,11 @@ export default function BhaktiActions({ asset, share = false }) {
             label="Reshare"
             onLabel="Reshared"
             on={reshared}
-            tone="text-[#1f7a4d]"
+            tone={light ? 'text-white' : 'text-[#1f7a4d]'}
             onClick={reshare.tap}
+            {...look}
           />
-          <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} />
+          <Count n={(asset.reposts ?? 0) + (reshared - was.reshared)} className={count} />
           {reshare.sheet}
         </>
       )}
@@ -65,6 +74,7 @@ export default function BhaktiActions({ asset, share = false }) {
             const said = await shareAsset(asset)
             if (said) showToast(said)
           }}
+          {...look}
         />
       )}
       <CommentSheet open={thread} onClose={() => setThread(false)} bhaktiId={asset.id} onCount={setComments} />

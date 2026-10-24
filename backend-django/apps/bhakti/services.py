@@ -35,7 +35,8 @@ def list_assets():
     Supabase query: kind ascending, then the curated `sort` (024's partial
     index serves precisely this read)."""
     today = (timezone.now() + timedelta(hours=5, minutes=30)).date()  # IST, no DST
-    live = (BhaktiAsset.objects.filter(active=True)
+    # A Darshan murti's row is the frame's, never a shelf's (24 Oct 2026).
+    live = (BhaktiAsset.objects.filter(active=True).exclude(kind=BhaktiAsset.Kind.DARSHAN)
             .filter(Q(show_from__isnull=True) | Q(show_from__lte=today))
             .filter(Q(show_until__isnull=True) | Q(show_until__gte=today)))
     return with_counts(live).order_by("kind", "sort")
@@ -168,7 +169,8 @@ def remove_comment(comment_id, actor_id, role):
 
 
 # Bhajans and mantras joined the same day (Rahul); a priced one never reshares.
-REPOSTABLE_KINDS = ("status", "wallpaper", "bhajan", "mantra", "ebook")
+# A Darshan murti since 24 Oct 2026 (Rahul).
+REPOSTABLE_KINDS = ("status", "wallpaper", "bhajan", "mantra", "ebook", "darshan")
 
 
 def assert_repostable(asset_id, actor_id):
@@ -242,6 +244,52 @@ def list_commented(actor_id, *, limit=50):
         if len(out) == limit:
             break
     return out
+
+
+# ── a Darshan murti's likes, comments, reshares and link (24 Oct 2026) ──────
+#
+# Rahul: "Put like comment repost and share button on each deity in darshan".
+# Each murti gets one hidden catalogue row, kind `darshan`, keyed
+# `darshan:<image id>`, so the Bhakti picture's machinery (reactions,
+# comments, the reshare in the feed, the /bhakti/s/<id> link and its preview)
+# works on it unchanged. The darshan endpoint keeps the rows in step with the
+# console: made when missing, the plaque and photo copied when they change,
+# withdrawn with the murti.
+
+DARSHAN_KEY = "darshan:"
+
+
+def darshan_title(image):
+    return (image.temple or "").strip() or f"Shri {image.deity.name} Mandir"
+
+
+def darshan_assets(images):
+    """{image id: its row, with counts} for these murtis, making or
+    updating rows as needed. `images` carry their deity."""
+    from . import youtube
+
+    want = {}
+    for i in images:
+        want[f"{DARSHAN_KEY}{i.id}"] = dict(
+            kind=BhaktiAsset.Kind.DARSHAN, title=darshan_title(i), deity=i.deity.name,
+            media_url=i.image_url or youtube.thumbnail(i), active=bool(i.active and i.deity.active),
+        )
+    have = {a.legacy_id: a for a in BhaktiAsset.objects.filter(legacy_id__in=list(want))}
+    for key, fields in want.items():
+        row = have.get(key)
+        if row is None:
+            seed_asset(legacy_id=key, preview_url=None, artist="Temple photo", licence="As credited",
+                       source="Darshan", sort=0, **fields)
+        elif any(getattr(row, k) != v for k, v in fields.items()):
+            BhaktiAsset.objects.filter(pk=row.pk).update(**fields)
+    rows = with_counts(BhaktiAsset.objects.filter(legacy_id__in=list(want)))
+    return {r.legacy_id[len(DARSHAN_KEY):]: r for r in rows}
+
+
+def darshan_image_id(asset):
+    """The murti a `darshan` row stands for, or None."""
+    key = asset.legacy_id or ""
+    return key[len(DARSHAN_KEY):] if asset.kind == BhaktiAsset.Kind.DARSHAN and key.startswith(DARSHAN_KEY) else None
 
 
 # ── e-books tagged on posts (15 Oct 2026, Rahul) ───────────────────────────

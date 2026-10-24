@@ -1095,11 +1095,13 @@ function Quoted({ on, children }) {
  * the same rows as on the Status shelf. A tap on the picture opens its shelf.
  */
 function PictureCard({ asset, resharedBy }) {
+  // A reshared Darshan murti opens Darshan on its temple (24 Oct 2026).
+  const open = asset.darshanId ? `/darshan?murti=${asset.darshanId}` : `/bhakti/s/${asset.id}`
   return (
     <article className="border-b border-rule bg-white">
       <ResharedLine by={resharedBy} />
       <Quoted on={!!resharedBy?.note}>
-      <Link to={`/bhakti/s/${asset.id}`} className={`${resharedBy?.note ? '' : 'mt-2.5 '}block`}>
+      <Link to={open} className={`${resharedBy?.note ? '' : 'mt-2.5 '}block`}>
         {/* A bhajan or mantra is a sound and a book a PDF; their cover
             picture stands in. */}
         {/* A video status (19 Oct 2026) shows its cover, or its own frame. */}
@@ -1132,8 +1134,8 @@ function PictureCard({ asset, resharedBy }) {
         <BhaktiActions asset={asset} share />
       </div>
       <p className="px-3 pb-4 pt-2 text-meta text-t2">
-        <Link to={`/bhakti/s/${asset.id}`} className="mr-1.5 font-semibold text-t1">
-          {asset.kind === 'ebook' ? 'E-book' : 'Bhakti'}
+        <Link to={open} className="mr-1.5 font-semibold text-t1">
+          {asset.kind === 'ebook' ? 'E-book' : asset.kind === 'darshan' ? 'Darshan' : 'Bhakti'}
         </Link>
         {asset.title}
       </p>

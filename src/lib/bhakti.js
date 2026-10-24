@@ -70,6 +70,8 @@ export function toAsset(row) {
     likes: row.likes ?? 0,
     comments: row.comments ?? 0,
     reposts: row.reposts ?? 0,
+    // A Darshan murti's row (24 Oct 2026): the murti it opens.
+    darshanId: row.darshan_id ?? null,
   }
 }
 
@@ -114,6 +116,11 @@ export async function fetchDarshan() {
       locationHi: i.location_hi,
       title: i.title,
       credit: i.credit,
+      // The murti's own catalogue row: what its Like, Comment, Reshare and
+      // Share hang on (24 Oct 2026, Rahul). Null from an older API.
+      asset: i.asset
+        ? { id: i.asset.id, likes: i.asset.likes ?? 0, comments: i.asset.comments ?? 0, reposts: i.asset.reposts ?? 0 }
+        : null,
     })),
   }))
 }
@@ -794,7 +801,7 @@ function myInviteCode() {
 }
 
 const LISTENED = new Set(['bhajan', 'mantra', 'tune'])
-const PICTURES = new Set(['status', 'wallpaper'])
+const PICTURES = new Set(['status', 'wallpaper', 'darshan'])
 
 export async function inviteMessage(asset) {
   const code = await myInviteCode()

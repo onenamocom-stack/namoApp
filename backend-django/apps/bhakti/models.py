@@ -11,6 +11,9 @@ class Kind(models.TextChoices):
     BHAJAN = "bhajan", "Bhajan"
     EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
     MANTRA = "mantra", "Mantra"  # a short clip the screen repeats a chosen number of times
+    # One per Darshan murti, made by the darshan endpoint, never on a shelf:
+    # what its likes, comments, reshares and share link hang on (24 Oct 2026).
+    DARSHAN = "darshan", "Darshan murti"
 
 
 class BhaktiAsset(models.Model):
@@ -39,6 +42,10 @@ class BhaktiAsset(models.Model):
         BHAJAN = "bhajan", "Bhajan"
         EBOOK = "ebook", "E-book"  # the Academy's E-book tab; not a Bhakti shelf
         MANTRA = "mantra", "Mantra"  # a short clip the screen repeats a chosen number of times
+        # One per Darshan murti, made by the darshan endpoint, never on a
+        # shelf: what its likes, comments, reshares and share link hang on
+        # (24 Oct 2026).
+        DARSHAN = "darshan", "Darshan murti"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     kind = models.CharField(max_length=16, choices=Kind.choices)

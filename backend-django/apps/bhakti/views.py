@@ -19,13 +19,13 @@ from rest_framework.response import Response
 
 from apps.core.views import refusal_body
 
-from .models import BhaktiAsset, DarshanDeity
+from .models import BhaktiAsset, DarshanDeity, DarshanImage
 from . import services
-from .services import list_assets
+from .services import darshan_assets, darshan_image_id, list_assets
 
 
 def _row(asset):
-    return {
+    row = {
         "id": str(asset.id),
         "kind": asset.kind,
         "title": asset.title,
@@ -46,6 +46,10 @@ def _row(asset):
         "comments": getattr(asset, "comment_count", 0),
         "reposts": getattr(asset, "repost_count", 0),
     }
+    # A Darshan murti's row (24 Oct 2026): the murti it opens.
+    if asset.kind == BhaktiAsset.Kind.DARSHAN:
+        row["darshan_id"] = darshan_image_id(asset)
+    return row
 
 
 @api_view(["GET"])
@@ -80,6 +84,12 @@ def asset_file(request, asset_id):
     return Response({"ok": True, "url": url})
 
 
+def _counts(row):
+    if row is None:
+        return None
+    return {"id": str(row.id), "likes": row.like_count, "comments": row.comment_count, "reposts": row.repost_count}
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])  # the darshan page shows to anybody
 def darshan(request):
@@ -88,7 +98,10 @@ def darshan(request):
     from . import youtube
 
     out = []
-    deities = DarshanDeity.objects.filter(active=True).prefetch_related("images").order_by("sort", "name")
+    deities = list(DarshanDeity.objects.filter(active=True).prefetch_related("images").order_by("sort", "name"))
+    # Each murti's likes, comments and reshares hang on its own row (24 Oct
+    # 2026); every murti is passed, so a hidden one's row is withdrawn too.
+    rows = darshan_assets(DarshanImage.objects.select_related("deity"))
     for d in deities:
         images = [
             {
@@ -111,6 +124,7 @@ def darshan(request):
                 "location_hi": i.location_hi,
                 "title": i.title,
                 "credit": i.credit,
+                "asset": _counts(rows.get(str(i.id))),
             }
             for i in sorted(d.images.all(), key=lambda i: i.sort)
             if i.active

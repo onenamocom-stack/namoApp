@@ -16,6 +16,7 @@ import {
 import { useStore } from '../store.jsx'
 import { fetchAssets, fetchDarshan } from '../lib/bhakti.js'
 import DarshanFrame, { Pic } from '../components/DarshanFrame.jsx'
+import BhaktiActions from '../components/BhaktiActions.jsx'
 
 /**
  * Mandir — e-puja only, and it does not scroll.
@@ -250,7 +251,15 @@ export default function Pooja() {
           }
           const rows = dayFirst(loaded, (d) => d.name)
           setDeities(rows)
-          if (!moved.current) setDeityName(rows[0].name)
+          // A shared murti's link, `/darshan?murti=<id>` (24 Oct 2026), opens
+          // on that temple.
+          const wanted = new URLSearchParams(window.location.search).get('murti')
+          const at = wanted ? rows.find((d) => d.images.some((i) => i.id === wanted)) : null
+          if (at && !moved.current) {
+            moved.current = true
+            setDeityName(at.name)
+            setPic(at.images.findIndex((i) => i.id === wanted))
+          } else if (!moved.current) setDeityName(rows[0].name)
         })
         .catch((err) => {
           console.error('[darshan] load failed:', err.message)
@@ -421,6 +430,17 @@ export default function Pooja() {
   const [watch, setWatch] = useState(false)
   const onYoutube = Boolean(air?.playing)
   const murtiId = deity.images[Math.min(pic, deity.images.length - 1)]?.id
+  // The murti's catalogue row, shaped as a Bhakti picture for BhaktiActions.
+  const shown = deity.images[Math.min(pic, deity.images.length - 1)]
+  const murtiAsset = shown?.asset
+    ? {
+        ...shown.asset,
+        kind: 'darshan',
+        title: shown.temple || `Shri ${deity.name} Mandir`,
+        url: shown.src,
+        pricePaise: null,
+      }
+    : null
   // Another murti, or the stream ending, goes back to the photo.
   useEffect(() => setWatch(false), [murtiId])
   useEffect(() => {
@@ -722,6 +742,19 @@ export default function Pooja() {
             />
           ))}
         </span>
+
+        {/* Like, comment, reshare and share for this temple's murti, on the
+            altar's front face (24 Oct 2026, Rahul: "Put like comment repost
+            and share button on each deity in darshan", where he marked the
+            table). Keyed by the row, so the counts start again on each murti. */}
+        {murtiAsset && (
+          <div
+            className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-center gap-5"
+            style={{ height: cqw(SLAB_FRONT) }}
+          >
+            <BhaktiActions key={murtiAsset.id} asset={murtiAsset} share light />
+          </div>
+        )}
 
         {/* ── The altar, on the steps. Every piece of samagri is its own
             control (5 Oct 2026; there was a rail of round buttons down the

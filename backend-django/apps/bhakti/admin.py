@@ -166,6 +166,12 @@ class BhaktiAssetAdmin(AuditedAdmin, dj.ModelAdmin):
     search_fields = ("title", "deity", "artist")
     ordering = ("kind", "sort")
     readonly_fields = ("preview",)
+
+    def get_queryset(self, request):
+        # A Darshan murti's hidden row is the darshan page's, kept in step
+        # with Darshan pictures (24 Oct 2026); it is not edited here.
+        return super().get_queryset(request).exclude(kind=BhaktiAsset.Kind.DARSHAN)
+
     fieldsets = (
         ("What it is", {"fields": ("kind", "deity", "title")}),
         ("Credit line", {"fields": ("artist", "licence", "source")}),

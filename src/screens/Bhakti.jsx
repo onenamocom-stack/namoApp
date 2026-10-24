@@ -21,6 +21,7 @@ import {
   rememberStatusName,
   rememberStatusPhoto,
   saveBlob,
+  fetchDarshan,
   inviteMessage,
   shareAsset,
   shareFile,
@@ -163,6 +164,21 @@ export default function Bhakti() {
   }, [])
 
   const shared = sharedId ? (assets ?? []).find((a) => a.id === sharedId) ?? null : null
+  // A shared Darshan murti (24 Oct 2026) is not on a shelf: its link opens
+  // Darshan on that temple.
+  useEffect(() => {
+    if (!sharedId || !assets || shared) return
+    let active = true
+    fetchDarshan()
+      .then((rows) => {
+        const image = rows.flatMap((d) => d.images).find((i) => i.asset?.id === sharedId)
+        if (active && image) navigate(`/darshan?murti=${image.id}`, { replace: true })
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [sharedId, assets, shared, navigate])
   useEffect(() => {
     if (shared) setKind(shared.kind)
   }, [shared])
