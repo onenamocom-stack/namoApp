@@ -903,17 +903,17 @@ function StatusCard({ asset, details, onEdit }) {
               </button>
             ))}
         </div>
-        {/* Home's like, comment and reshare, then WhatsApp (12 Oct 2026,
-            Rahul). The title and credit went: the pictures here are NAMO's
-            own. No link-share icon: the green button is the one share, and
-            it only shares the status. */}
+        {/* Home's like, comment, reshare and the share arrow (the arrow
+            since 24 Oct 2026, Rahul: the standard share sheet on every
+            card), then WhatsApp. The title and credit went: the pictures
+            here are NAMO's own. The green button sends the status image. */}
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
-          <BhaktiActions asset={asset} />
+          <BhaktiActions asset={asset} share />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working || !preview} onClick={share}>
             <span className="flex items-center gap-1.5">
               <WhatsAppGlyph />
-              {working ? 'Preparing…' : 'Share'}
+              {working ? 'Preparing…' : 'Status'}
             </span>
           </PopButton>
         </div>
@@ -1006,7 +1006,7 @@ function VideoStatusCard({ asset, details, onEdit }) {
       ? `Preparing ${Math.round(progress * 100)}%`
       : made?.blob
         ? 'Send to WhatsApp'
-        : 'Share'
+        : 'Status'
 
   return (
     <li>
@@ -1045,7 +1045,7 @@ function VideoStatusCard({ asset, details, onEdit }) {
           </span>
         </div>
         <div className="flex items-center gap-4 py-3 pl-4 pr-3.5">
-          <BhaktiActions asset={asset} />
+          <BhaktiActions asset={asset} share />
           <span className="flex-1" />
           <PopButton size="sm" variant="gold" full={false} disabled={working || progress !== null} onClick={share}>
             <span className="flex items-center gap-1.5 tnum">
