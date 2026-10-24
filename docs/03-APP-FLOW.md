@@ -563,7 +563,7 @@ since 23 Oct, so Sunday opens on Surya); the rest keep the console's order. Gest
 deity**, the chip beside it, stopping at the first and last (which resets to
 that deity's first murti; Rahul, 22 Oct 2026 — until then right was next and
 it wrapped, so a swipe back from Hanuman landed on the last deity),
-**up/down for the next/previous murti**, which wraps (Instagram's way; 24 Oct 2026, Rahul — down was next). The plate's third line reads *Expected Live Schedule:* and the temple's timings when it is live every day (timings starting *Daily*, or *Usually live 24 hours*), else *Don't know* (24 Oct 2026, Rahul; empty from 22 Oct). The nameplate on the
+**up/down for the next/previous murti**, which wraps (Instagram's way; 24 Oct 2026, Rahul — down was next). The plate's third line reads *Est. Live Time:* (Rahul's shorter wording; first *Expected Live Schedule:*) and the temple's timings when it is live every day (timings starting *Daily*, or *Usually live 24 hours*), else *Don't know* (24 Oct 2026, Rahul; empty from 22 Oct). The nameplate on the
 arch follows along; its dots are the murtis, the stack a vertical swipe
 moves through.
 
