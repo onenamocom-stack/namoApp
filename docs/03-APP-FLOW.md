@@ -472,8 +472,12 @@ its picture, or a bhajan's or mantra's cover, and its title. Since 12 Oct 2026 a
 the finished status (below), 9:16, composed as it nears the screen.
 
 **Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it
-replaced a gradient strip with a photo, name and date). The artwork fills the
-frame; the NAMO mark sits top right; low on the frame one frosted card carries
+replaced a gradient strip with a photo, name and date). The artwork, whole
+and a little smaller, with rounded corners, sits above an empty band at the
+foot, about two lines, for the caption a person types on WhatsApp (24 Oct
+2026, Rahul: it sat over the card; the artwork filled the frame until then);
+around it the same artwork blurred and darkened; the NAMO mark sits top
+right; over the artwork's foot, above the band, one frosted card carries
 the person's photo in a white ring (their initial when there is none), their
 name, today's date ("09 OCT 2026 | FRIDAY"), the Hindu date in Hindi from the
 day's panchang ("आश्विन कृष्ण पक्ष • चतुर्दशी" — the month named purnimanta,
@@ -2399,8 +2403,13 @@ goes straight to the phone's sheet.
 - **Never a Pro.** Approved Pros are left out of the list and the search
   (Rahul: "Pro ko koi msg nahi jayga"); their paid chat is the way to them.
 - **Outside NAMO.** Round buttons along the foot: WhatsApp (`wa.me`, the
-  title and link; green, Rahul), Share (the phone's sheet, as the button
-  did before) and Copy link.
+  title and link; green, Rahul), **Status** (24 Oct 2026, Rahul: a reel to a
+  WhatsApp status as the video, not a link; green): the reel's
+  `status.mp4` (the NAMO mark burned in) or the picture, fetched as the
+  sheet opens and handed to the phone's sheet, where WhatsApp → My status
+  posts it, since WhatsApp lets no app post a status itself; shown only
+  where the file loads and the phone shares files. Then Share (the phone's
+  sheet, as the button did before) and Copy link.
 
 In the chat, a share is a card, about half the screen wide (18 Oct 2026,
 Rahul, after Instagram's; it was wider). A reel is all picture: its link
