@@ -417,8 +417,9 @@ prepaid only). Two ways to pay at checkout:
   charges nothing. A payment that lands after the window closed is kept as
   wallet balance, never lost.
 - **Cash on delivery** — nothing leaves the wallet; the courier collects the
-  total, which carries a **2% fee** on goods plus delivery, rounded up to the
-  rupee. Offered only where a courier at the pincode takes cash, for orders
+  total, with **no fee** (23 Oct 2026, Rahul: "Cod pe 2% extra charge nahi
+  lagana hai"; it was 2% of goods plus delivery, rounded up to the rupee;
+  `COD_FEE_BPS` 0). Offered only where a courier at the pincode takes cash, for orders
   **up to ₹10,000**, and **at most 2 undelivered COD orders per account**
   (all three: `COD_FEE_BPS`, `COD_MAX_PAISE`, `COD_MAX_OPEN`). Shiprocket
   collects the cash and remits it to the business. The order is pending until
