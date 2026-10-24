@@ -1445,12 +1445,9 @@ function ReelCard({ reel, resharedBy }) {
           {r.mediaUrl && !isVideo && (
             <img src={r.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           )}
-          {/* Instagram marks a reel with a glyph in the corner, not a badge. */}
-          <span className="absolute right-3 top-3 text-white drop-shadow">
-            <Icon name="play" size={22} filled />
-          </span>
-          {/* The big play circle in the middle was removed on 4 Oct 2026
-              (owner's call); the corner glyph still says it is a reel. */}
+          {/* No play mark (24 Oct 2026, Rahul: "hata do"): the reel plays as it
+              comes on screen and its sound button says it is a video. The big
+              play circle went on 4 Oct 2026. */}
         </Plate>
         {isVideo && (
           <button
