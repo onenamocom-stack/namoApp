@@ -1445,10 +1445,18 @@ function ReelCard({ reel, resharedBy }) {
           {r.mediaUrl && !isVideo && (
             <img src={r.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           )}
-          {/* Instagram marks a reel with a glyph in the corner, not a badge. */}
-          <span className="absolute right-3 top-3 text-white drop-shadow">
+          {/* Instagram marks a reel with a glyph in the corner, not a badge;
+              top left since the NAMO mark took the right (24 Oct 2026). */}
+          <span className="absolute left-3 top-3 text-white drop-shadow">
             <Icon name="play" size={22} filled />
           </span>
+          {/* The NAMO mark, small, top right on every reel (24 Oct 2026, Rahul). */}
+          <img
+            src={`${import.meta.env.BASE_URL}namo-logo-light.png`}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-3.5 h-[16px] w-auto opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,.5)]"
+          />
           {/* The big play circle in the middle was removed on 4 Oct 2026
               (owner's call); the corner glyph still says it is a reel. */}
         </Plate>

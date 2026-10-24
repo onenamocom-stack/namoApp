@@ -266,6 +266,16 @@ function ReelFrame({ reel: c, active, near, next, paused, onTogglePlay, muted, s
         className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/80 via-black/45 to-transparent"
       />
 
+      {/* The NAMO mark, small, top right on every reel (24 Oct 2026, Rahul:
+          "Jo bhi reel post hogi uspe namo ka chhota logo right hand corner pe
+          aayga"). The video WhatsApp gets carries it too (status.mp4). */}
+      <img
+        src={`${import.meta.env.BASE_URL}namo-logo-light.png`}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute right-3 top-4 z-10 h-[18px] w-auto opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,.5)]"
+      />
+
       {/* Progress. A hairline across the very top. */}
       <span className="pointer-events-none absolute inset-x-0 top-0 h-[2.5px] bg-white/25">
         <span className={`block h-full w-1/3 bg-white ${paused ? '' : 'animate-breathe'}`} />

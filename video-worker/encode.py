@@ -194,13 +194,24 @@ def _run(cmd, timeout=600):
         raise RuntimeError(f"ffmpeg failed: {out.stderr.strip()[-500:]}")
 
 
-def share_command(playlist, out_path):
-    """The top version as one MP4, the same frames copied rather than
-    encoded again (24 Oct 2026, Rahul): a WhatsApp status needs one video
-    file, and a reel is otherwise only HLS pieces."""
+MARK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "namo-mark.png")
+
+
+def share_command(playlist, out_path, width):
+    """The top version as one MP4 with the NAMO mark small in its top right
+    corner (24 Oct 2026, Rahul): a WhatsApp status needs one video file, a
+    reel is otherwise only HLS pieces, and a reel that leaves NAMO carries
+    the mark. The picture is encoded again under the mark; the sound is
+    copied."""
+    mark_w = max(2, round(width * 0.2 / 2) * 2)
+    margin = round(width * 0.035)
     return [
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", playlist,
-        "-c", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart",
+        FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-i", playlist, "-i", MARK,
+        "-filter_complex", f"[1:v]scale={mark_w}:-1,format=rgba,colorchannelmixer=aa=0.9[m];"
+                           f"[0:v][m]overlay=W-w-{margin}:{margin}[v]",
+        "-map", "[v]", "-map", "0:a?",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "main", "-pix_fmt", "yuv420p",
+        "-c:a", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart",
         "-map_metadata", "-1", out_path,
     ]
 
@@ -218,7 +229,7 @@ def master(variants):
 
 def build(src, out_dir):
     """Everything for one upload, into `out_dir`: master.m3u8, one folder
-    per version, thumb.webp, share.mp4 (the top version as one file), the
+    per version, thumb.webp, status.mp4 (the top version as one file), the
     moderation sheets. Returns what the API
     stores, and the sheets' local paths under `sheets`."""
     info = probe(src)
@@ -233,6 +244,7 @@ def build(src, out_dir):
         f.write(master(variants))
     _run(thumb_command(src, os.path.join(out_dir, "thumb.webp"), info), timeout=120)
     top = variants[0]
-    _run(share_command(os.path.join(out_dir, top[0], "index.m3u8"), os.path.join(out_dir, "share.mp4")), timeout=120)
+    _run(share_command(os.path.join(out_dir, top[0], "index.m3u8"), os.path.join(out_dir, "status.mp4"), top[1]),
+         timeout=300)
     return {"duration_s": info["duration"], "width": top[1], "height": top[2],
             "versions": [v[0] for v in variants], "sheets": sheets(src, out_dir, info)}
