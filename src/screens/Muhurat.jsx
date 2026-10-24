@@ -28,18 +28,19 @@ import { useStore } from '../store.jsx'
  * **An empty month is a real answer, not a failure.** Griha pravesh returns
  * nothing through Chaturmas, and saying so is the correct screen.
  */
-/* `label` and `note` are i18n keys. */
+/* `label` and `note` are i18n keys. General work is last (24 Oct 2026,
+   Rahul), and the page opens on the first. */
 const PURPOSES = [
-  { key: 'general_work', label: 'mu.p.general', note: 'mu.p.generalNote', icon: 'calendar' },
   { key: 'vehicle_purchase', label: 'mu.p.vehicle', note: 'mu.p.vehicleNote', icon: 'car' },
   { key: 'property_purchase', label: 'mu.p.property', note: 'mu.p.propertyNote', icon: 'home' },
   { key: 'griha_pravesh', label: 'mu.p.griha', note: 'mu.p.grihaNote', icon: 'key' },
   { key: 'namkaran', label: 'mu.p.naming', note: 'mu.p.namingNote', icon: 'baby' },
   { key: 'mundan', label: 'mu.p.mundan', note: 'mu.p.mundanNote', icon: 'scissors' },
+  { key: 'general_work', label: 'mu.p.general', note: 'mu.p.generalNote', icon: 'calendar' },
 ]
 
 /**
- * Judged against the reader's zodiac, only the best QUARTER of the month's
+ * Judged against the reader's kundli, only the best QUARTER of the month's
  * windows is shown (5 Oct 2026, the owner's call — "fewer, and accurate").
  * Ranked by the vendor's own score for this chart, at least one kept, then
  * put back in date order so the list still reads as a calendar.
@@ -75,7 +76,7 @@ export default function Muhurat() {
   const { profile, session, sessionReady, t, lang } = useStore()
   const monthTabs = useMemo(() => months(lang), [lang])
 
-  const [purpose, setPurpose] = useState('general_work')
+  const [purpose, setPurpose] = useState(PURPOSES[0].key)
   const [month, setMonth] = useState(monthTabs[0].key)
   const [place, setPlace] = useState(null)
   const [changingPlace, setChangingPlace] = useState(false)

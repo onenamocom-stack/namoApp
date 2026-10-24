@@ -784,8 +784,8 @@ export const strings = {
     en: 'Sunrise moves about two hours across India, and every window below is built from it.',
     hi: 'पूरे भारत में सूर्योदय का समय लगभग दो घंटे तक बदलता है, और नीचे का हर शुभ समय उसी से बनता है।',
   },
-  'mu.judged': { en: 'Judged against your zodiac', hi: 'आपकी राशि के हिसाब से' },
-  'mu.judge': { en: 'Judge against your zodiac', hi: 'अपनी राशि के हिसाब से देखें' },
+  'mu.judged': { en: 'Judged against your kundli', hi: 'आपकी कुंडली के हिसाब से' },
+  'mu.judge': { en: 'Judge against your kundli', hi: 'अपनी कुंडली के हिसाब से देखें' },
   'mu.judgeNote': {
     en: 'Ranks the {label} windows against your own birth chart and keeps only the best quarter of them.',
     hi: '{label} के शुभ समय को आपकी अपनी कुंडली से परखकर केवल सबसे अच्छे एक-चौथाई रखता है।',

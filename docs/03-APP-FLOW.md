@@ -1080,15 +1080,16 @@ read off the Moon, which crosses a nakshatra in about a day, so a substituted
 noon can move the score.
 
 ### `/muhurat`
-**A purpose, a month and a place.** Six purposes as circle tiles (general work,
-vehicle, property, griha pravesh, namkaran, mundan — 5 Oct 2026, they were
-pills), this month or the next two, and a
+**A purpose, a month and a place.** Six purposes as circle tiles (vehicle,
+property, griha pravesh, namkaran, mundan, general work — 5 Oct 2026, they were
+pills; general work moved from first to last on 24 Oct 2026, Rahul, and the
+screen opens on vehicle), this month or the next two, and a
 place prefilled from the birth row and changeable in one tap — a muhurat is
 built from sunrise, and where you were born is rarely where you are buying a
 car. The place is named on screen for the same reason the panchang names
 Ujjain.
 
-**Judge against your zodiac** is a card at the foot of the screen, where *Before
+**Judge against your kundli** (*zodiac* until 24 Oct 2026, Rahul) is a card at the foot of the screen, where *Before
 you act on this* was until 5 Oct 2026. Judged, only the **best quarter** of the
 month's windows is shown, ranked by the vendor's score for this chart and listed
 by date — fewer and more accurate, the owner's ask. It appears only when a birth row exists, and is paid
