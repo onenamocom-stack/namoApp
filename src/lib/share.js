@@ -55,7 +55,7 @@ export function statusFileUrl(media) {
 
 /** That file, fetched, as a File the share sheet can take; null when it
  *  cannot be had. */
-export async function fetchStatusFile(media) {
+export async function fetchStatusFile(media, onProgress = null) {
   const url = statusFileUrl(media)
   if (!url) return null
   try {
@@ -67,12 +67,29 @@ export async function fetchStatusFile(media) {
       fetch(`${url}${url.includes('?') ? '&' : '?'}cors=1`),
     )
     if (!res.ok) return null
-    const blob = await res.blob()
+    const blob = await readWithProgress(res, onProgress)
     const ext = (blob.type.split('/')[1] || 'mp4').replace('jpeg', 'jpg')
     return new File([blob], `namo-status.${ext}`, { type: blob.type })
   } catch {
     return null
   }
+}
+
+/** The body as a Blob, reporting 0 to 1 as it arrives when the size is known. */
+async function readWithProgress(res, onProgress) {
+  const total = Number(res.headers.get('content-length')) || 0
+  if (!onProgress || !total || !res.body) return res.blob()
+  const reader = res.body.getReader()
+  const parts = []
+  let got = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    parts.push(value)
+    got += value.length
+    onProgress(Math.min(1, got / total))
+  }
+  return new Blob(parts, { type: res.headers.get('content-type') || '' })
 }
 
 /** Every Share button's old call, unchanged: it opens the sheet now. */

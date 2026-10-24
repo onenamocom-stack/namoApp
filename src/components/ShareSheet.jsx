@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store.jsx'
 import { fetchDmThreads, sendDm, startDm } from '../lib/dms.js'
 import { followList } from '../lib/content.js'
@@ -82,26 +82,18 @@ export default function ShareSheet() {
   }, [q, me])
 
   /* WhatsApp Status (24 Oct 2026, Rahul): the reel's video (or the picture)
-     as a file. Fetched as the sheet opens, because the phone's share sheet
-     only opens straight after a tap, not after a download. */
-  const [statusFile, setStatusFile] = useState(null) // null · 'loading' · File · 'no-file' · 'no-share'
+     as a file. Fetched on the tap, not as the sheet opens (24 Oct 2026,
+     Rahul: the wait belongs after the tap, and a person who never posts a
+     status should not download the video). The phone opens its share sheet
+     only within a few seconds of a tap, so a quick download goes straight
+     to WhatsApp and a slow one turns the button into Send, one more tap. */
+  const [statusFile, setStatusFile] = useState(null) // null · 'idle' · 'loading' · File · 'no-file' · 'no-share'
+  const [statusPct, setStatusPct] = useState(0)
+  const statusRun = useRef(0)
   useEffect(() => {
-    if (!item || !statusFileUrl(item.media)) {
-      setStatusFile(null)
-      return undefined
-    }
-    let live = true
-    setStatusFile('loading')
-    fetchStatusFile(item.media).then((file) => {
-      if (!live) return
-      // Which way it failed, said on a tap rather than hiding the button.
-      if (!file) setStatusFile('no-file')
-      else if (!navigator.canShare?.({ files: [file] })) setStatusFile('no-share')
-      else setStatusFile(file)
-    })
-    return () => {
-      live = false
-    }
+    statusRun.current += 1 // a download still going for the last item is ignored
+    setStatusFile(item && statusFileUrl(item.media) ? 'idle' : null)
+    setStatusPct(0)
   }, [item])
 
   const shown = found ?? people
@@ -144,21 +136,43 @@ export default function ShareSheet() {
     const said = await run()
     if (said) showToast(said)
   }
-  const toStatus = async () => {
-    if (statusFile === 'no-file') return showToast('Could not get this video for a status. Try again in a minute.')
-    if (statusFile === 'no-share') return showToast('This phone cannot send a video to WhatsApp from the app.')
-    if (!(statusFile instanceof File)) return // still getting it
-    close()
+  const postStatus = async (file) => {
+    // The link rides as the status's text (24 Oct 2026, Rahul: "link to
+    // will be in status text"), so a viewer outside NAMO can find it.
+    // Copied too: WhatsApp sometimes drops a file's text, and then it pastes.
+    const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
+    navigator.clipboard?.writeText(text).catch(() => {})
     try {
-      // The link rides as the status's text (24 Oct 2026, Rahul: "link to
-      // will be in status text"), so a viewer outside NAMO can find it.
-      // Copied too: WhatsApp sometimes drops a file's text, and then it pastes.
-      const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
-      navigator.clipboard?.writeText(text).catch(() => {})
-      await navigator.share({ files: [statusFile], text })
+      await navigator.share({ files: [file], text })
+      close()
     } catch (err) {
-      if (err?.name !== 'AbortError') showToast('This phone cannot send the video to WhatsApp from here.')
+      if (err?.name === 'AbortError') return close()
+      // Too long after the tap for the phone: the file waits for a second tap.
+      if (err?.name === 'NotAllowedError') return setStatusFile(file)
+      close()
+      showToast('This phone cannot send the video to WhatsApp from here.')
     }
+  }
+  const toStatus = async () => {
+    if (statusFile === 'loading') return
+    if (statusFile === 'no-share') return showToast('This phone cannot send a video to WhatsApp from the app.')
+    if (statusFile instanceof File) return postStatus(statusFile)
+    const run = ++statusRun.current
+    const tapped = Date.now()
+    setStatusFile('loading')
+    setStatusPct(0)
+    const file = await fetchStatusFile(item.media, (p) => run === statusRun.current && setStatusPct(p))
+    if (run !== statusRun.current) return
+    if (!file) {
+      setStatusFile('no-file')
+      return showToast('Could not get this video for a status. Try again in a minute.')
+    }
+    if (!navigator.canShare?.({ files: [file] })) {
+      setStatusFile('no-share')
+      return showToast('This phone cannot send a video to WhatsApp from the app.')
+    }
+    if (Date.now() - tapped < 4500) return postStatus(file)
+    setStatusFile(file)
   }
   const whatsapp = () => {
     const text = [item.title, fullUrl(item.path)].filter(Boolean).join('\n')
@@ -242,13 +256,15 @@ export default function ShareSheet() {
                   <path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.2 21.8l5.1-1.3A9.7 9.7 0 1 0 12 2.2Zm0 17.7a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 19.9Zm4.4-6c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 5 5 0 0 0 1 2.6 11.3 11.3 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1l-.4-.2Z" />
                 </svg>
               </Outside>
-              {/* Dim until the file is in hand; a tap on a dim one says why. */}
+              {/* Ready at once; while the video comes it counts up, and a
+                  file that came too slowly for the phone waits as Send. */}
               {statusFile && (
                 <Outside
-                  label={statusFile === 'loading' ? 'Getting it' : 'Status'}
+                  label={statusFile === 'loading' ? (statusPct ? `${Math.round(statusPct * 100)}%` : 'Getting it')
+                    : statusFile instanceof File ? 'Send' : 'Status'}
                   onClick={toStatus}
                   green
-                  dim={!(statusFile instanceof File)}
+                  dim={statusFile === 'loading' || statusFile === 'no-share'}
                 >
                   {/* WhatsApp's mark in a dashed ring: its status. */}
                   <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
