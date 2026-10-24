@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import views
+from . import links, views
 
 urlpatterns = [
     path("feed/", views.feed, name="content-feed"),
+    path("links/", links.create, name="content-links"),
     path("me/earnings/", views.my_content_earnings, name="content-my-earnings"),
     path("<uuid:content_id>/qualify/", views.qualify, name="content-qualify"),
     path("feed/for-you/", views.for_you, name="content-feed-for-you"),

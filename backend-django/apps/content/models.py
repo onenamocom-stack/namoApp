@@ -575,3 +575,22 @@ class QualifiedView(models.Model):
             models.UniqueConstraint(fields=["content", "viewer_id", "day"], name="qualified_views_once_a_day"),
         ]
         indexes = [models.Index(fields=["author_id", "created_at"], name="qualified_views_author_at")]
+
+
+class ShortLink(models.Model):
+    """A short address for a shared link (24 Oct 2026, Rahul: the link on a
+    WhatsApp status was long). `1namo.com/s/<code>` sends the visitor to
+    `path`, with `?ref=<ref>` when the sharer's referral code rode along.
+    One row per (path, ref): sharing the same thing again gives the same
+    code."""
+
+    code = models.CharField(max_length=12, primary_key=True)
+    path = models.TextField()
+    ref = models.CharField(max_length=32, blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "short_links"
+        constraints = [
+            models.UniqueConstraint(fields=["path", "ref"], name="short_links_path_ref"),
+        ]

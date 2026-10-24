@@ -15,7 +15,7 @@ without the phone app noticing.
 from django.conf import settings
 from django.urls import include, path, re_path
 
-from apps.content import share
+from apps.content import links, share
 
 urlpatterns = []
 
@@ -46,6 +46,8 @@ if settings.PUBLIC_API_ENABLED:
         # addresses of 1namo.com here. No trailing slash — they are the app's
         # own addresses, and a redirect would break the shared link.
         re_path(r"^read/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.blog_page, name="share-blog"),
+        # A short link (24 Oct 2026): a redirect to one of the addresses here.
+        re_path(r"^s/(?P<code>[A-Za-z0-9]{4,12})/?$", links.follow, name="short-link"),
         re_path(r"^reels/(?P<content_id>[0-9a-fA-F-]{36})/?$", share.reel_page, name="share-reel"),
         re_path(r"^shop/p/(?P<key>[^/]+)/?$", share.product_page, name="share-product"),
         re_path(r"^bhakti/s/(?P<asset_id>[0-9a-fA-F-]{36})/?$", share.bhakti_page, name="share-bhakti"),
