@@ -472,12 +472,11 @@ its picture, or a bhajan's or mantra's cover, and its title. Since 12 Oct 2026 a
 the finished status (below), 9:16, composed as it nears the screen.
 
 **Sharing a status composes a picture** (Rahul's design, 9 Oct 2026; it
-replaced a gradient strip with a photo, name and date). The artwork, whole
-and a little smaller, with rounded corners, sits above an empty band at the
-foot, about two lines, for the caption a person types on WhatsApp (24 Oct
-2026, Rahul: it sat over the card; the artwork filled the frame until then);
-around it the same artwork blurred and darkened; the NAMO mark sits top
-right; over the artwork's foot, above the band, one frosted card carries
+replaced a gradient strip with a photo, name and date). The artwork fills the
+frame; the NAMO mark sits top right; one frosted card, two thirds of its
+first size (24 Oct 2026, Rahul), sits just above an empty band at the foot,
+about two lines, kept for the caption a person types on WhatsApp (it sat
+over the card). The card carries
 the person's photo in a white ring (their initial when there is none), their
 name, today's date ("09 OCT 2026 | FRIDAY"), the Hindu date in Hindi from the
 day's panchang ("आश्विन कृष्ण पक्ष • चतुर्दशी" — the month named purnimanta,

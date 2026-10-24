@@ -323,9 +323,11 @@ function drawCover(ctx, img, width, height, x = 0, y = 0) {
 export const STATUS_W = 1080
 export const STATUS_H = 1920
 /* Room at the foot for the line a person types on WhatsApp, about two lines
-   (24 Oct 2026, Rahul: the caption sat over the name card). The picture is
-   drawn smaller above it and the card moves up with it. */
-const STATUS_FOOT = 240
+   (24 Oct 2026, Rahul: the caption sat over the name card). The artwork stays
+   whole and full-bleed (Rahul: not smaller); the card is drawn smaller and
+   sits just above the room. */
+const STATUS_FOOT = 170
+const CARD_SCALE = 0.66
 
 export async function composeStatus(
   artworkSrc,
@@ -341,25 +343,9 @@ export async function composeStatus(
   c.height = H
   const ctx = c.getContext('2d')
   if (art) {
-    // The whole frame is the artwork, blurred and darkened; the artwork
-    // itself, whole, above the foot.
     ctx.fillStyle = '#0e0e10'
     ctx.fillRect(0, 0, W, H)
-    if ('filter' in ctx) {
-      ctx.filter = 'blur(40px)'
-      drawCover(ctx, art, W, H)
-      ctx.filter = 'none'
-    }
-    ctx.fillStyle = 'rgba(14, 10, 8, 0.45)'
-    ctx.fillRect(0, 0, W, H)
-    const top = 28
-    const h = H - STATUS_FOOT - top
-    const w = Math.min(W - 56, (art.width / art.height) * h)
-    ctx.save()
-    roundRect(ctx, (W - w) / 2, top, w, h, 36)
-    ctx.clip()
-    drawCover(ctx, art, w, h, (W - w) / 2, top)
-    ctx.restore()
+    drawCover(ctx, art, W, H)
   }
 
   // The white mark disappears on a light card (22 Oct 2026, Rahul's beige
@@ -395,23 +381,28 @@ export async function composeStatus(
   }
 
   // ── the card ───────────────────────────────────────────────────────────
-  // Low on the frame (Rahul: "card thoda neeche"), clear of the deity, and
-  // above the caption's room at the foot (24 Oct 2026).
-  // Over the picture's foot, where the cards keep their room (the bottom
-  // fifth, drawn smaller), clear of the foot's caption room.
-  const card = { x: 52, y: H - STATUS_FOOT - 345, w: W - 104, h: 350, r: 54 }
+  // Low on the frame (Rahul: "card thoda neeche"), clear of the deity. Laid
+  // out at full size, then drawn CARD_SCALE smaller, centred, its foot on
+  // the caption's room (24 Oct 2026); `at` maps a full-size point onto it.
+  const card = { x: 52, y: H - 52 - 350, w: W - 104, h: 350, r: 54 }
+  const k = CARD_SCALE
+  const ty = H - STATUS_FOOT - k * (card.y + card.h)
+  const at = (x, y) => ({ x: (W / 2) * (1 - k) + k * x, y: ty + k * y })
+  ctx.save()
+  ctx.setTransform(k, 0, 0, k, (W / 2) * (1 - k), ty)
   const pad = 40
   // Frosted: the artwork under the card, blurred, then a warm dark wash.
   ctx.save()
   roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
   ctx.clip()
+  ctx.setTransform(1, 0, 0, 1, 0, 0) // the artwork under it at its own size
   if (art && 'filter' in ctx) {
     ctx.filter = 'blur(26px)'
     drawCover(ctx, art, W, H)
     ctx.filter = 'none'
   }
   ctx.fillStyle = art ? 'rgba(28, 16, 10, 0.52)' : 'rgba(28, 16, 10, 0.66)'
-  ctx.fillRect(card.x, card.y, card.w, card.h)
+  ctx.fillRect(0, 0, W, H)
   ctx.restore()
   roundRect(ctx, card.x, card.y, card.w, card.h, card.r)
   ctx.lineWidth = 2.5
@@ -516,10 +507,13 @@ export async function composeStatus(
   ctx.closePath()
   ctx.fill()
 
+  ctx.restore()
+  const photoAt = at(pcx + d * 0.36, pcy - d * 0.36)
+  // Clear of the name at preview size (about a third of the image).
+  const nameAt = at(Math.min(nameEnd + 76, right - 10), card.y + 92)
   const marks = {
-    photo: { x: (pcx + d * 0.36) / W, y: (pcy - d * 0.36) / H },
-    // Clear of the name at preview size (about a third of the image).
-    name: { x: Math.min(nameEnd + 76, right - 10) / W, y: (card.y + 92) / H },
+    photo: { x: photoAt.x / W, y: photoAt.y / H },
+    name: { x: nameAt.x / W, y: nameAt.y / H },
   }
   if (overlay) return { canvas: c, marks }
   const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.92))
