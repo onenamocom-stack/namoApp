@@ -744,14 +744,15 @@ export default function Pooja() {
         </span>
 
         {/* Like, comment, reshare and share for this temple's murti, down
-            the right-hand side above Sangeet, the reels' way (24 Oct 2026,
+            the right-hand side, a little above Sangeet ("Thoda upar kar do"),
+            the reels' way (24 Oct 2026,
             Rahul; first on the altar's front, then "Right hand side
             vertically laga do. Jaise reels me lagate hai"). Keyed by the
             row, so the counts start again on each murti. */}
         {murtiAsset && (
           <div
             className="absolute right-3 z-20 flex w-10 flex-col items-center gap-4"
-            style={{ bottom: `calc(${onCounter()} + 126px)` }}
+            style={{ bottom: `calc(${onCounter()} + 206px)` }}
           >
             <BhaktiActions key={murtiAsset.id} asset={murtiAsset} share rail />
           </div>
